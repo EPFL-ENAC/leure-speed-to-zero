@@ -15,7 +15,7 @@ In detail
 
 2) The virtual environment is to be created using the file requirements.txt.
     In PyCharm, you can create a Python environment using a requirements.txt file by following these steps:
-    Open your project: Open your project in PyCharm.
+    Open PathwayCalc as a project in PyCharm.
     Access project settings: Navigate to the project settings by clicking on File -> Settings (on Windows/Linux)
         or PyCharm -> Preferences (on macOS).
     Configure Python interpreter: In the settings window, find the Project: <Your Project Name> section
@@ -25,7 +25,7 @@ In detail
         or Conda Environment, depending on your preference. For this example, I'll use Virtualenv Environment.
     Select base interpreter: Choose the base interpreter (the Python interpreter you want to use) from the dropdown.
         If you don't have one installed, you can install it by clicking on the three dots (...) and selecting New Environment
-        or Existing Environment, depending on your preference.
+        or Existing Environment, depending on your preference. Choose Python 3.9 which is compatible with the other requirements.
     Specify requirements file: In the Create Virtual Environment dialog, select Existing environment, and then click on the folder icon next to the Location field to navigate to the directory containing your requirements.txt file.
     Choose requirements.txt: Navigate to and select your requirements.txt file.
     Create environment: Click OK to create the virtual environment using the packages listed in your requirements.txt file.
