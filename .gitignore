@@ -1,7 +1,20 @@
+# discard the data
 _database/data/
+
+# discard .idea pycharm folder
 .idea/
+
+# discard excel files being edited
+~$*.xlsx
+
+# discard the virtual environment
 venv
+
+# discard the log file
 knime2python/api.log
+
+# discard the config file
 knime2python/config/config_eu.yml
-#For Mac
+
+# For Mac
 *.DS_Store
