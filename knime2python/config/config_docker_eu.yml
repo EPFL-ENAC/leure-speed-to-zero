@@ -1,0 +1,111 @@
+---
+database:
+  host: localhost  # Changed by tobi
+  port: 3535
+  user: root
+  password: admin
+  schema: levers
+  output_table: output
+  baseyear: 2015
+model:
+  db_caching: false
+  reset_db: true
+  workspace: /eucalc
+  knime_preferences_file: /knime/knime_preferences.epf
+  init_workflow: /eucalc/_interactions/workflows/data-preprocessing-database/
+  dev:
+    levers_file: /eucalc/_interactions/configuration/lever_position.json
+    model_workflow: /eucalc/_interactions/workflows/data-processing
+  prod:
+    model_workflow: /eucalc/_interactions/workflows/data-processing
+    output_nodes:
+      - 'node_6582_out_0' #Lifestyles
+      - 'node_0_out_0' # Buildings
+      # - 'node_4660_out_1'   # Transport
+      # - 'node_4660_out_12'   # Transport Warning
+      # - 'node_4694_out_1'   # Industry
+      # - 'node_4663_out_1'   # Ammonia
+      # - 'node_4740_out_5'   # Storage
+      # - 'node_4740_out_7'   # Storage Warnings
+      # - 'node_4677_out_7'   # Electricity
+      # - 'node_1299_out_1'   # Agriculture
+      # - 'node_4738_out_1'   # Land use
+      # - 'node_4077_out_1'   # Oil All Countries
+      # - 'node_3942_out_1'   # Water
+      # - 'node_3942_out_2'   # Water Water Stress
+      # - 'node_3942_out_3'   # Water Water Stress
+      # - 'node_3942_out_5'   # Water WARNING
+      # - 'node_3941_out_1'   # CCUS
+      # - 'node_3944_out_1'   # District Heating
+      # - 'node_4640_out_1'   # Climate Emissions - All Countries
+      # - 'node_4640_out_2'   # Climate Emissions - Europe and RoW
+      # - 'node_4640_out_3'   # Climate Emissions - Cumulative
+      # - 'node_4640_out_5'   # Climate Emissions - Warning
+      # - 'node_1206_out_1'   # Biodiversity
+      # - 'node_4638_out_1'   # Minerals Countries
+      # - 'node_4638_out_3'   # Minerals Warnings
+      # - 'node_4642_out_1'   # Air pollution
+      #- 'node_4680_out_1'   # Employment
+  interfaces:
+    file: /eucalc/_interactions/configuration/interface.xlsx
+    levers_sheet: Levers
+    cube_sheet: "0.2 Pathway Explorer"
+  max_cache_size: 100
+  scenarios:
+    - [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] #REF scenario
+    - [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,1]
+    - [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
+    #- [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,3,2,2,2,3,3]
+    #- [4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,2,2,2,4,2,2,2,4,4]
+  GTAP:
+    scenarios:
+      EUREF: [1, 1, 1, 1, 1, 2, 2, 1.5, 1.5, 2.1, 1, 1, 2, 1, 1, 2, 2, 2, 1, 2, 1, 1, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1, 1, 1, 1, 4, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 2, 1, 1, 2, 2, 1, 2, 2, 2, 1]
+      #Scenario1: [4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,1,2]
+      #Scenario2: [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
+    metrics:
+      - "lfs_diet_bov[kcal]" #FIXME!
+      # - "ind_energy-demand[TWh]"
+      # - "tra_energy-demand[TWh]"
+      # - "bld_energy-demand[TWh]"
+      #- "agr_energy-demand[Twh]"
+log:
+  suppress_run_logs: True
+  level: INFO
+  file: api.log
+api:
+  port: 5000
+  country_codes:
+    Austria: AT
+    Belgium: BE
+    Bulgaria: BG
+    Croatia: HR
+    Cyprus: CY
+    Czech Republic: CZ
+    Denmark: DK
+    Estonia: EE
+    Finland: FI
+    France: FR
+    Germany: DE
+    Greece: EL
+    Hungary: HU
+    Ireland: IE
+    Italy: IT
+    Latvia: LV
+    Lithuania: LT
+    Luxembourg: LU
+    Malta: MT
+    Netherlands: NL
+    Poland: PL
+    Portugal: PT
+    Romania: RO
+    Slovakia: SK
+    Slovenia: SI
+    Spain: ES
+    Sweden: SE
+    Switzerland: CH
+    United Kingdom: UK
+    Europe: EU
+    RoW : RW
+    World : WD
+api_db:
+  port: 5001

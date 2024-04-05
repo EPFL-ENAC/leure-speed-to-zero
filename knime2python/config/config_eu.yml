@@ -1,0 +1,81 @@
+---
+database:
+  host: localhost
+  port: 3535
+  user: root
+  password: admin
+  schema: levers
+  output_table: output
+  baseyear: 2015
+model:
+  db_caching: false
+  reset_db: true
+  workspace: /Users/paruta/2050-Calculators/PathwayCalc/
+  dev:
+    levers_file: /Users/paruta/2050-Calculators/PathwayCalc/config/lever_position.json
+  prod:
+    output_nodes:
+      - 'transport'
+  years: [1990, 2015, 2050, 5]
+  geoscale: 'France|Paris'
+  interfaces:
+    file: /Users/paruta/2050-Calculators/PathwayCalc/config/interface.xlsx
+    levers_sheet: Levers
+    cube_sheet: "0.2 Pathway Explorer"
+  max_cache_size: 100
+  scenarios:
+    - [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    - [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,1,1]
+    - [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1]
+  GTAP:
+    scenarios:
+      EUREF: [1, 1, 1, 1, 1, 2, 2, 1.5, 1.5, 2.1, 1, 1, 2, 1, 1, 2, 2, 2, 1, 2, 1, 1, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1, 1, 1, 1, 4, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 2, 1, 1, 2, 2, 1, 2, 2, 2, 1, 1]
+    metrics:
+      #- "ind_energy-demand[TWh]"
+      - "tra_energy-demand_total[TWh]"
+      #- "bld_energy-demand[TWh]"
+      #- "lfs_diet_bov[kcal]" #FIXME!
+      #- "agr_energy-demand[Twh]"
+log:
+  suppress_run_logs: False
+  level: INFO
+  file: api.log
+api:
+  port: 9393
+  country_codes:
+    Austria: AT
+    Belgium: BE
+    Bulgaria: BG
+    Croatia: HR
+    Cyprus: CY
+    Czech Republic: CZ
+    Denmark: DK
+    Estonia: EE
+    Finland: FI
+    France: FR
+    Germany: DE
+    Greece: EL
+    Hungary: HU
+    Ireland: IE
+    Italy: IT
+    Latvia: LV
+    Lithuania: LT
+    Luxembourg: LU
+    Malta: MT
+    Netherlands: NL
+    Paris: PS
+    Poland: PL
+    Portugal: PT
+    Romania: RO
+    Slovakia: SK
+    Slovenia: SI
+    Spain: ES
+    Sweden: SE
+    Switzerland: CH
+    United Kingdom: UK
+    Europe: EU
+    RoW : RW
+    World : WD
+    Vaud: VD
+api_db:
+  port: 5001

@@ -1,0 +1,86 @@
+{
+  "subtabs": [
+    {
+      "title": "Food Supply",
+      "charts": [ "DietIntake", "FoodWaste"],
+      "route": "diet-split"
+    },
+    {
+      "title": "Own & used appliances",
+      "charts": ["AppliancesNumber","AppliancesHours"],
+      "route": "appliances"
+    },
+    {
+      "title": "Spending on appliances",
+      "charts": [ "AppliancesNumber", "AppliancesSpending" ],
+      "route": "crop-consumption"
+    }
+  ],
+
+  "charts": {
+    "AppliancesHours": {
+      "title": "Time spent on screens",
+      "unit": "hours",
+      "type": "StackedArea",
+      "outputs": [
+        "lfs_total-appliance-use_comp[h]",
+        "lfs_total-appliance-use_tv[h]",
+        "lfs_total-appliance-use_phone[h]"
+      ]
+    },
+    "AppliancesNumber": {
+      "title": "Appliance per household",
+      "unit": "unit",
+      "type": "Line",
+      "outputs": [
+        "lfs_appliance-own_comp[num]",
+        "lfs_appliance-own_dishwasher[num]",
+        "lfs_appliance-own_dryer[num]",
+        "lfs_appliance-own_freezer[num]",
+        "lfs_appliance-own_fridge[num]",
+        "lfs_appliance-own_phone[num]",
+        "lfs_appliance-own_tv[num]",
+        "lfs_appliance-own_wmachine[num]"
+      ]
+    },
+    "AppliancesSpending": {
+      "title": "Spending on appliances",
+      "unit": "million euro",
+      "type": "StackedArea",
+      "outputs": [
+        "bld_appliances_costs_comp[MEUR]",
+        "bld_appliances_costs_dishwasher[MEUR]",
+        "bld_appliances_costs_dryer[MEUR]",
+        "bld_appliances_costs_freezer[MEUR]",
+        "bld_appliances_costs_fridge[MEUR]",
+        "bld_appliances_costs_phone[MEUR]",
+        "bld_appliances_costs_tv[MEUR]",
+        "bld_appliances_costs_wmachine[MEUR]"
+      ]
+    },
+    "DietIntake": {
+      "title": "Food intake",
+      "unit": "kcal",
+      "type": "StackedArea",
+      "outputs": [
+        "lfs_diet_bov[kcal]",
+        "lfs_diet_sheep[kcal]",
+        "lfs_diet_pigs[kcal]",
+        "lfs_diet_poultry[kcal]",
+        "lfs_diet_oth-animals[kcal]"
+      ]
+    },
+    "FoodWaste": {
+      "title": "Food wastes",
+      "unit": "kcal",
+      "type": "StackedArea",
+      "outputs": [
+        "lfs_food-wastes_bov[kcal]",
+        "lfs_food-wastes_sheep[kcal]",
+        "lfs_food-wastes_pigs[kcal]",
+        "lfs_food-wastes_poultry[kcal]",
+        "lfs_food-wastes_oth-animals[kcal]"
+      ]
+    }
+  }
+}

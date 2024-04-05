@@ -1,0 +1,16 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\public",
+    "\\src",
+    "\\src\\assets",
+    "\\src\\charts",
+    "\\src\\components",
+    "\\src\\components\\tabs",
+    "\\src\\config",
+    "\\src\\config\\subtabs",
+    "\\src\\lib"
+  ],
+  "SelectedNode": "\\src\\config\\tabItems.js",
+  "PreviewInSolutionExplorer": false
+}

@@ -1,0 +1,80 @@
+---
+database:
+  host: localhost
+  port: 3535
+  user: root
+  password: admin
+  schema: levers
+  output_table: output
+  baseyear: 2015
+model:
+  db_caching: false
+  reset_db: true
+  workspace: /eucalc/dev
+  knime_preferences_file: /knime/knime_preferences.epf
+  init_workflow: /eucalc/dev/_interactions/workflows/data-preprocessing-database/
+  dev:
+    levers_file: /eucalc/prod/temp/lever_position.json
+    model_workflow: /eucalc/dev/_interactions/workflows/data-processing/
+  prod:
+    model_workflow: /eucalc/dev/_interactions/workflows/data-processing
+    output_nodes:
+      - 'node_6582_out_0' #Lifestyles
+      - 'node_0_out_0' # Buildings
+      - 'node_6585_out_0'   # Transport
+  interfaces:
+    file: /eucalc/dev/_interactions/configuration/interface.xlsx
+    levers_sheet: Levers
+    cube_sheet: "0.2 Pathway Explorer"
+  max_cache_size: 100
+  scenarios:
+    - [ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 ] #REF scenario
+    - [ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,1,1 ]
+    - [ 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1 ]
+  GTAP:
+    scenarios:
+      EUREF: [ 1, 1, 1, 1, 1, 2, 2, 1.5, 1.5, 2.1, 1, 1, 2, 1, 1, 2, 2, 2, 1, 2, 1, 1, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1, 1, 1, 1, 4, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 2, 1, 1, 2, 2, 1, 2, 2, 2, 1, 1 ]
+    metrics:
+      - "tra_energy-demand_total[TWh]"
+log:
+  suppress_run_logs: False
+  level: INFO
+  file: api.log
+api:
+  port: 5000
+  country_codes:
+    Austria: AT
+    Belgium: BE
+    Bulgaria: BG
+    Croatia: HR
+    Cyprus: CY
+    Czech Republic: CZ
+    Denmark: DK
+    Estonia: EE
+    Finland: FI
+    France: FR
+    Germany: DE
+    Greece: EL
+    Hungary: HU
+    Ireland: IE
+    Italy: IT
+    Latvia: LV
+    Lithuania: LT
+    Luxembourg: LU
+    Malta: MT
+    Netherlands: NL
+    Paris: PS
+    Poland: PL
+    Portugal: PT
+    Romania: RO
+    Slovakia: SK
+    Slovenia: SI
+    Spain: ES
+    Sweden: SE
+    Switzerland: CH
+    United Kingdom: UK
+    Europe: EU
+    RoW : RW
+    World : WD
+api_db:
+  port: 5001
