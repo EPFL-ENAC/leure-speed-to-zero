@@ -1,6 +1,6 @@
 _database/data/
 .idea/
 venv
-
+knime2python/api.log
 #For Mac
 *.DS_Store
