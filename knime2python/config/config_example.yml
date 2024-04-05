@@ -10,38 +10,38 @@ database:
 model:
   db_caching: false
   reset_db: true
-  workspace: /eucalc/dev
-  knime_preferences_file: /knime/knime_preferences.epf
-  init_workflow: /eucalc/dev/_interactions/workflows/data-preprocessing-database/
+  workspace: /Users/paruta/2050-Calculators/PathwayCalc/
   dev:
-    levers_file: /eucalc/prod/temp/lever_position.json
-    model_workflow: /eucalc/dev/_interactions/workflows/data-processing/
+    levers_file: /Users/paruta/2050-Calculators/PathwayCalc/config/lever_position.json
   prod:
-    model_workflow: /eucalc/dev/_interactions/workflows/data-processing
     output_nodes:
-      - 'node_6582_out_0' #Lifestyles
-      - 'node_0_out_0' # Buildings
-      - 'node_6585_out_0'   # Transport
+      - 'transport'
+  years: [1990, 2015, 2050, 5]
+  geoscale: 'France|Paris'
   interfaces:
-    file: /eucalc/dev/_interactions/configuration/interface.xlsx
+    file: /Users/paruta/2050-Calculators/PathwayCalc/config/interface.xlsx
     levers_sheet: Levers
     cube_sheet: "0.2 Pathway Explorer"
   max_cache_size: 100
   scenarios:
-    - [ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 ] #REF scenario
-    - [ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,1,1 ]
-    - [ 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1 ]
+    - [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    - [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,1,1]
+    - [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1]
   GTAP:
     scenarios:
-      EUREF: [ 1, 1, 1, 1, 1, 2, 2, 1.5, 1.5, 2.1, 1, 1, 2, 1, 1, 2, 2, 2, 1, 2, 1, 1, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1, 1, 1, 1, 4, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 2, 1, 1, 2, 2, 1, 2, 2, 2, 1, 1 ]
+      EUREF: [1, 1, 1, 1, 1, 2, 2, 1.5, 1.5, 2.1, 1, 1, 2, 1, 1, 2, 2, 2, 1, 2, 1, 1, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1, 1, 1, 1, 4, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 2, 1, 1, 2, 2, 1, 2, 2, 2, 1, 1]
     metrics:
+      #- "ind_energy-demand[TWh]"
       - "tra_energy-demand_total[TWh]"
+      #- "bld_energy-demand[TWh]"
+      #- "lfs_diet_bov[kcal]" #FIXME!
+      #- "agr_energy-demand[Twh]"
 log:
   suppress_run_logs: False
   level: INFO
   file: api.log
 api:
-  port: 5000
+  port: 9393
   country_codes:
     Austria: AT
     Belgium: BE
@@ -76,5 +76,6 @@ api:
     Europe: EU
     RoW : RW
     World : WD
+    Vaud: VD
 api_db:
   port: 5001

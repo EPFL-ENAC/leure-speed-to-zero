@@ -2,5 +2,6 @@ _database/data/
 .idea/
 venv
 knime2python/api.log
+knime2python/config/config_eu.yml
 #For Mac
 *.DS_Store
