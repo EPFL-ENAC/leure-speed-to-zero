@@ -1,0 +1,9 @@
+#New:Old
+
+##Lifestyles
+lfs_demography_urban-population[%]:ots_lfs_urbpop_urbpop[%]
+lfs_demography_urban-population[%]:fts_lfs_urbpop_urbpop[%]
+lfs_pkm_pkm[pkm/cap]:ots_lfs_pkm_pkm[pkm/cap]
+lfs_pkm_pkm[pkm/cap]:fts_lfs_pkm_pkm[pkm/cap]
+caf_lfs_floor-space[%]:caf_lfs_floor-space_total[1000m2]
+caf_lfs_total-demand[%]:caf_lfs_total-demand_pkm[%]
