@@ -436,7 +436,7 @@ def add_biofuel_efuel(dm_energy, dm_fuel_shares, mapping_cat):
 
 def rename_and_group(dm_new_cat, groups, dict_end, grouped_var='tra_total-energy'):
 
-    # Sum columns unsing the same fuel
+    # Sum columns using the same fuel
     i = 0
     for fuel in groups:
         fuel_str = '.*' + fuel
@@ -637,11 +637,13 @@ def passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const, years_sett
     col_labels = dm_energy_em.col_labels.copy()
     col_labels.pop('Categories3')
     col_labels['Categories2'] = cdm_const.col_labels['Categories1'].copy()  # GHG category
+    col_labels['Variables'] = ['tra_passenger_emissions']
     unit = {'tra_passenger_emissions': 'Mt'}
     dm_emissions_by_mode = DataMatrix(col_labels=col_labels, units=unit)
     dm_emissions_by_mode.array = tmp[:, :, np.newaxis, :, :]  # The variable dimension was lost when doing nansum
     del tmp, unit, col_labels, idx_e, idx_c, tmp_en, dm_energy_em
 
+    # Group emissions by GHG gas
     tmp = np.nansum(dm_emissions_by_mode.array, axis=-2)
     col_labels = dm_emissions_by_mode.col_labels.copy()
     col_labels['Categories1'] = col_labels['Categories2'].copy()
@@ -658,10 +660,25 @@ def passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const, years_sett
     dm_no_cat = DataMatrix(col_labels=col_labels, units=dm_energy.units.copy())
     dm_no_cat.array = tmp[:, :, np.newaxis]
 
-    dm_tech.rename_col('tra_passenger_technology-share_fleet', 'tra_passenger_techology-share-fleet', dim='Variables')
+    dm_tech.rename_col('tra_passenger_technology-share_fleet', 'tra_passenger_technology-share-fleet', dim='Variables')
 
+    idx = dm_tech.idx
+    tmp = np.nansum(dm_tech.array[:, :, idx['tra_passenger_transport-demand'], :, :], axis=-1)
+    dm_mode.add(tmp, dim='Variables', col_label='tra_passenger_transport-demand-by-mode', unit='pkm')
 
-    return dm_mode, dm_tech, dm_energy
+    # Compute passenger demand by mode
+    idx = dm_energy.idx
+    tmp = np.nansum(dm_energy.array[:, :, idx['tra_passenger_energy-demand'], :, :], axis=-1)
+    dm_mode.add(tmp, dim='Variables', col_label='tra_passenger_energy-demand-by-mode', unit='TWh')
+
+    # Compute CO2 emissions by mode
+    idx = dm_emissions_by_mode.idx
+    tmp = dm_emissions_by_mode.array[:, :, idx['tra_passenger_emissions'], :, idx['CO2']]
+    dm_mode.add(tmp, dim='Variables', col_label='tra_passenger_emissions-by-mode_CO2', unit='Mt')
+
+    dm_tot_energy.rename_col(col_in='tra_passenger_total-energy', col_out='tra_passenger_energy-demand-by-fuel', dim='Variables')
+
+    return dm_mode, dm_tech, dm_tot_energy
 
 
 def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
@@ -857,20 +874,46 @@ def transport(lever_setting, years_setting):
 
     # PASSENGER
     cdm_const_passenger = cdm_const.copy()
-    dm_pass_mode, dm_pass_tech, dm_pass_energy = passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const_passenger, years_setting)
+    dm_pass_mode, dm_pass_tech, dm_pass_fuel = passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const_passenger, years_setting)
     # FREIGHT
     cdm_const_freight = cdm_const.copy()
     dm_fre_mode, dm_fre_tech, dm_fre_energy = freight_fleet_energy(DM_freight, DM_other, cdm_const_freight, years_setting)
 
-    idx = dm_pass_tech.idx
-    tmp = np.nansum(dm_pass_tech.array[:, :, idx['tra_passenger_transport-demand'], :, :], axis=-1)
-    dm_pass_mode.add(tmp, dim='Variables', col_label='tra_passenger_transport-demand-by-mode', unit='pkm')
+    dm_keep_mode = dm_pass_mode.filter({'Variables': ['tra_passenger_transport-demand-by-mode',
+                                                      'tra_passenger_energy-demand-by-mode',
+                                                      'tra_passenger_emissions-by-mode_CO2']})
+    dm_keep_tech = dm_pass_tech.filter({'Variables': ['tra_passenger_technology-share-fleet']})
 
-    df = dm_pass_mode.write_df()
+    dm_keep_fuel = dm_pass_fuel
 
+    # Turn datamatrix to dataframe (because converter and TPE work with dataframes)
+    df = dm_keep_mode.write_df()
+    df2 = dm_keep_tech.write_df()
+    df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
+    df3 = dm_keep_fuel.write_df()
+    df = pd.concat([df, df3.drop(columns=['Country', 'Years'])], axis=1)
+
+    # Dummy variable
+    # !FIXME: update this with actual total energy demand
     df['tra_energy-demand_total[TWh]'] = 1
 
     results_run = {'transport': df}
 
     return results_run
 
+
+def local_transport_run():
+    # Function to run only transport module without converter and tpe
+    years_setting = [1990, 2015, 2050, 5]
+    f = open('../config/lever_position.json')
+    lever_setting = json.load(f)[0]
+
+    for i in range(3):
+
+        level = i + 1
+        lever_setting['lever_passenger_technology-share_new'] = level
+
+        transport(lever_setting, years_setting)
+    return
+
+#local_transport_run()
