@@ -654,7 +654,7 @@ class DataMatrix:
 
         # Create an empty figure
         fig = px.line(x=years_list, labels={'x': 'Years', 'y': 'Values'}, title=title)
-
+        fig.data[0]['y'] = np.nan*np.ones(shape = np.shape(fig.data[0]['y']))
         if dims == 3:
             for c in countries_list:
                 for v in vars_list:
