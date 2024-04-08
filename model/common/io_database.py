@@ -37,7 +37,20 @@ def read_database(filename, lever, folderpath="default", db_format=False, level=
     return df_ots, df_fts
 
 
-def edit_database(filename, lever, column, pattern, mode, level=None):
+def edit_database(filename: str, lever: str, column: str, pattern, mode: str, level=None):
+    # it edits the database either by renaming or removing strings in the database
+    # it requires as input the 'filename' as a string, the 'lever' containing the lever name,
+    # 'column' indicating the columns in the database that you want to edit, 'mode' is either 'remove' or 'rename',
+    # if 'mode'=='remove', then 'pattern' is a regex pattern and the algorithm will remove the entire row
+    # e.g. edit_database('lifestyles_population', 'pop', column='geoscale', pattern='Norway|Vaud', mode='remove')
+    # it will remove Norway and Vaud from the country list
+    # if 'mode'=='rename', then 'pattern' is a dictionary to replace the substring in key with the substring in value.
+    # e.g. edit_database('lifestyles_population', 'pop', column='eucalc-name',
+    #                    pattern={'population':'pop', 'lfs:'lifestyles'}, mode='rename')
+    # if it find for example 'lfs_urban_population' in 'eucalc-name', this would become 'lifestyle_urban_population'
+    assert mode in ('rename', 'remove'), f"Invalid mode: {mode}, mode should be rename or remove"
+
+    filename = filename.replace('.csv', '')  # drop .csv extension
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     folderpath = os.path.join(current_file_directory, "../../_database/data/csv/")
     file = folderpath + filename + '.csv'
@@ -83,8 +96,8 @@ def change_unit_database(filename, target_col_pattern, new_unit):
 
 
 def update_database(filename, df_new, lever=None):
-    # Update csv file in database/data/csv based on a df with columns
-    # "Country, Years, lever-name, variable-columns"
+    # Update csv file in database/data/csv based on a dataframe with columns
+    # "Country, Years, lever-name, (col1, col2, col3)"
     if lever is not None:
         rename_cols = {"Country": 'geoscale', 'Years': 'timescale', lever: 'level'}
     else:
@@ -161,7 +174,7 @@ def read_database_w_filter(filename, lever, filter_dict, folderpath="default", d
         return df_ots, df_fts
 
 
-def update_database_from_db(filename, db_new, folderpath = "default"):
+def update_database_from_db(filename, db_new, folderpath="default"):
     # Update csv file in database/data/csv based on a database with columns
     # "geoscale, timescale, eucalc-name, level, value"
     if folderpath == "default":
