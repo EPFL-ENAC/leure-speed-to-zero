@@ -1,7 +1,7 @@
 import numpy as np
 from model.common.data_matrix_class import DataMatrix
 from scipy.interpolate import interp1d, CubicSpline
-from model.common.io_database import read_database, update_database_from_db
+from model.common.io_database import read_database, update_database_from_db, read_database_w_filter
 import pandas as pd
 import os
 import re
@@ -204,14 +204,17 @@ def dm_lever_dict_from_df(df_fts, levername, num_cat):
     return dict_dm
 
 
-def read_database_to_ots_fts_dict(file, lever, num_cat, baseyear, years, dict_ots, dict_fts, df_ots=None, df_fts=None):
+def read_database_to_ots_fts_dict(file, lever, num_cat, baseyear, years, dict_ots, dict_fts, df_ots=None, df_fts=None, filter_dict=None):
     # It reads the database in data/csv with name file and returns the ots and the fts in form
     # of datamatrix accessible by dictionaries:
     # e.g.  dict_ots = {file: (dm_ots, lever)}
     #       dict_fts = {lever: dm_fts}
     # where file is the name of the file and lever is the levername
     if df_ots is None and df_fts is None:
-        df_ots, df_fts = read_database(file, lever, level='all')
+        if filter_dict is None:
+            df_ots, df_fts = read_database(file, lever, level='all')
+        else:
+            df_ots, df_fts = read_database_w_filter(file, lever, filter_dict)
     # Drop from fts the baseyear and earlier years if any
     df_fts.drop(df_fts[df_fts.Years <= baseyear].index, inplace=True)
     # Keep fts only one every five years
@@ -233,6 +236,30 @@ def read_database_to_ots_fts_dict(file, lever, num_cat, baseyear, years, dict_ot
     return dict_ots, dict_fts
 
 
+def read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list, baseyear, years, dict_ots, dict_fts, column: str, group_list: list):
+    # It reads the database in data/csv with name file and returns the ots and the fts in form
+    # of datamatrix accessible by dictionaries:
+    # e.g.  dict_ots = {file: ([dm_ots_a, dm_ots_b, dm_ots_c], lever)}
+    #       dict_fts = {lever: [dm_fts_a, dm_fts_b, dm_fts_c]}
+    # where file is the name of the file and lever is the levername
+    dict_ots_list = []
+    dict_fts_list = []
+    for (i, group) in enumerate(group_list):
+        filter_dict = {column: group}
+        num_cat = num_cat_list[i]
+        dict_tmp_ots = {}
+        dict_tmp_fts = {}
+        read_database_to_ots_fts_dict(file, lever, num_cat, baseyear, years, dict_tmp_ots, dict_tmp_fts, filter_dict=filter_dict)
+        dict_ots_list.append(dict_tmp_ots[file][0])
+        dict_fts_list.append(dict_tmp_fts[lever])
+
+    dict_ots[file] = (dict_ots_list, lever)
+    dict_fts[lever] = dict_fts_list
+    return dict_ots, dict_fts
+
+
+
+
 def filter_geoscale(global_vars):
 
     geo_pattern = global_vars['geoscale']
@@ -241,7 +268,7 @@ def filter_geoscale(global_vars):
     files = [f for f in listdir(mypath) if isfile(join(mypath, f))]
 
     for file in files:
-        with open(join(mypath,file), 'rb') as handle:
+        with open(join(mypath, file), 'rb') as handle:
            DM_module = pickle.load(handle)
 
         DM_module_geo = {'fxa': {}, 'fts': {}, 'ots': {}}
@@ -257,13 +284,27 @@ def filter_geoscale(global_vars):
                     DM_module_geo[key][lever_name] = {}
                     for level_val in DM_module[key][lever_name].keys():
                         dm = DM_module[key][lever_name][level_val]
-                        dm_geo = dm.filter_w_regex({'Country': geo_pattern})
+                        # If dm is a list of dm
+                        if isinstance(dm, list):
+                            dm_geo = []
+                            for dm_i in dm:
+                                dm_geo_i = dm_i.filter_w_regex({'Country': geo_pattern})
+                                dm_geo.append(dm_geo_i)
+                        else:
+                            dm_geo = dm.filter_w_regex({'Country': geo_pattern})
                         DM_module_geo[key][lever_name][level_val] = dm_geo
             if key == 'ots':
                 for csv_name in DM_module[key].keys():
                     dm = DM_module[key][csv_name][0]
                     lever_name = DM_module[key][csv_name][1]
-                    dm_geo = dm.filter_w_regex({'Country': geo_pattern})
+                    # If dm is a list of dm
+                    if isinstance(dm, list):
+                        dm_geo = []
+                        for dm_i in dm:
+                            dm_geo_i = dm_i.filter_w_regex({'Country': geo_pattern})
+                            dm_geo.append(dm_geo_i)
+                    else:
+                        dm_geo = dm.filter_w_regex({'Country': geo_pattern})
                     DM_module_geo[key][csv_name] = (dm_geo, lever_name)
             if key == 'constant':
                 DM_module_geo[key] = DM_module[key]
