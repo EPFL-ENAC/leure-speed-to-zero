@@ -10,6 +10,13 @@ def read_database(filename, lever, folderpath="default", db_format=False, level=
         folderpath = os.path.join(current_file_directory, "../../_database/data/csv/")
     file = folderpath + filename + '.csv'
     df_db = pd.read_csv(file, sep=";")
+
+    # Remove duplicates
+    len_init = len(df_db)
+    df_db = df_db.drop_duplicates(subset=['geoscale', 'timescale', 'level', 'string-pivot', 'eucalc-name'])
+    if len(df_db) - len_init < 0:
+        print(f"Duplicates found in: {filename}, use .duplicated of dataframe to check which lines are repeated")
+
     if db_format:
         return df_db
     else:
@@ -18,6 +25,7 @@ def read_database(filename, lever, folderpath="default", db_format=False, level=
             df_db_fts = (df_db.loc[(df_db["level"] != 0) & (df_db['lever'] == lever)]).copy()
         else:
             df_db_fts = (df_db.loc[(df_db["level"] == level) & (df_db['lever'] == lever)]).copy()
+
         if (df_db_ots['string-pivot'] != 'none').any():
             df_ots = df_db_ots.pivot(index=['geoscale', 'timescale', 'level', 'string-pivot'], columns="eucalc-name",
                                      values='value')
@@ -29,6 +37,9 @@ def read_database(filename, lever, folderpath="default", db_format=False, level=
                                      values='value')
         else:
             df_fts = df_db_fts.pivot(index=['geoscale', 'timescale', 'level'], columns="eucalc-name", values='value')
+
+
+
         df_fts.reset_index(inplace=True)
         rename_cols = {'geoscale': "Country", 'timescale': 'Years', 'level': lever}
         df_ots.rename(columns=rename_cols, inplace=True)
@@ -149,6 +160,13 @@ def read_database_w_filter(filename, lever, filter_dict, folderpath="default", d
     for column, pattern in filter_dict.items():
         mask = df_db[column].astype(str).str.contains(pattern)
         df_db = df_db.loc[mask]
+
+    # Remove duplicates
+    len_init = len(df_db)
+    df_db = df_db.drop_duplicates(subset=['geoscale', 'timescale', 'level', 'string-pivot', 'eucalc-name'])
+    if len(df_db) - len_init < 0:
+        print(f"Duplicates found in: {filename}, use .duplicated of dataframe to check which lines are repeated")
+
     if db_format:
         return df_db
     else:
