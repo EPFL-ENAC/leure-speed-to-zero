@@ -15,7 +15,7 @@ def read_database(filename, lever, folderpath="default", db_format=False, level=
     len_init = len(df_db)
     df_db = df_db.drop_duplicates(subset=['geoscale', 'timescale', 'level', 'string-pivot', 'eucalc-name'])
     if len(df_db) - len_init < 0:
-        print(f"Duplicates found in: {filename}, use .duplicated of dataframe to check which lines are repeated")
+        print(f"Duplicates found in: {filename}, use .duplicated on dataframe to check which lines are repeated")
 
     if db_format:
         return df_db
@@ -48,7 +48,7 @@ def read_database(filename, lever, folderpath="default", db_format=False, level=
     return df_ots, df_fts
 
 
-def edit_database(filename: str, lever: str, column: str, pattern, mode: str, level=None):
+def edit_database(filename: str, lever: str, column: str, pattern, mode: str, level=None, filter_dict=None):
     # it edits the database either by renaming or removing strings in the database
     # it requires as input the 'filename' as a string, the 'lever' containing the lever name,
     # 'column' indicating the columns in the database that you want to edit, 'mode' is either 'remove' or 'rename',
@@ -59,6 +59,7 @@ def edit_database(filename: str, lever: str, column: str, pattern, mode: str, le
     # e.g. edit_database('lifestyles_population', 'pop', column='eucalc-name',
     #                    pattern={'population':'pop', 'lfs:'lifestyles'}, mode='rename')
     # if it find for example 'lfs_urban_population' in 'eucalc-name', this would become 'lifestyle_urban_population'
+    # name-filter allows to rename only for a specific set of rows before applying the rename
     assert mode in ('rename', 'remove'), f"Invalid mode: {mode}, mode should be rename or remove"
 
     filename = filename.replace('.csv', '')  # drop .csv extension
@@ -73,10 +74,20 @@ def edit_database(filename: str, lever: str, column: str, pattern, mode: str, le
             col_to_rename = ["eucalc-name", "element", "item", "unit"]
         else:
             col_to_rename = [column]
+        df_db_unchanged = pd.DataFrame()
+        if filter_dict is not None:
+            # allows to only filter a set of row before applying the rename
+            filter_col = list(filter_dict.keys())[0]
+            filter_pattern = filter_dict[filter_col]
+            mask = df_db_lever[filter_col].astype(str).str.contains(filter_pattern)
+            df_db_unchanged = df_db_lever.loc[~mask].copy()
+            df_db_lever = df_db_lever.loc[mask].copy()
         for str1 in pattern:
             str2 = pattern[str1]
             for col in col_to_rename:
                 df_db_lever[col] = df_db_lever[col].str.replace(str1, str2)
+        if not df_db_unchanged.empty:
+            df_db_lever = pd.concat([df_db_lever, df_db_unchanged], axis=0)
     if mode == "remove":
         if level is None:
             mask = df_db_lever[column].str.contains(pattern)
@@ -86,8 +97,8 @@ def edit_database(filename: str, lever: str, column: str, pattern, mode: str, le
             mask = (df_db_lever[column].astype(str).str.contains(pattern)) & (df_db_lever['level'] == level)
             df_db_lever = df_db_lever[~mask]
     df_db_new = pd.concat([df_db_lever, df_db_other], axis=0)
+    df_db_new.sort_values(by=['geoscale', 'timescale'], axis=0, inplace=True)
     df_db_new.to_csv(file, sep=";", index=False)
-
     return
 
 
@@ -165,7 +176,7 @@ def read_database_w_filter(filename, lever, filter_dict, folderpath="default", d
     len_init = len(df_db)
     df_db = df_db.drop_duplicates(subset=['geoscale', 'timescale', 'level', 'string-pivot', 'eucalc-name'])
     if len(df_db) - len_init < 0:
-        print(f"Duplicates found in: {filename}, use .duplicated of dataframe to check which lines are repeated")
+        print(f"Duplicates found in: {filename}, use .duplicated on dataframe to check which lines are repeated")
 
     if db_format:
         return df_db
@@ -221,13 +232,17 @@ def update_database_from_db(filename, db_new, folderpath="default"):
     return
 
 
-def read_database_fxa(filename, folderpath="default", db_format=False):
+def read_database_fxa(filename, folderpath="default", db_format=False, filter_dict=None):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     if folderpath == "default":
         folderpath = os.path.join(current_file_directory, "../../_database/data/csv/")
     file = folderpath + filename + '.csv'
     df_db = pd.read_csv(file, sep=";")
+    if filter_dict is not None:
+        for column, pattern in filter_dict.items():
+            mask = df_db[column].astype(str).str.contains(pattern)
+            df_db = df_db.loc[mask]
     if db_format:
         return df_db
     else:
