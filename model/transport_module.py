@@ -3,7 +3,7 @@ import pandas as pd
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database, read_database_fxa
-from model.common.auxiliary_functions import compute_stock, constant_filter, read_database_to_ots_fts_dict
+from model.common.auxiliary_functions import compute_stock, read_database_to_ots_fts_dict
 import pickle
 import json
 import os
@@ -215,9 +215,8 @@ def read_data(data_file, lever_setting):
 
     # Read fts based on lever_setting
     DM_ots_fts = {}
-    for file in DM_transport['ots'].keys():
-        dm = DM_transport['ots'][file][0]
-        lever = DM_transport['ots'][file][1]
+    for lever in DM_transport['ots'].keys():
+        dm = DM_transport['ots'][lever]
         level_value = lever_setting['lever_'+lever]
         dm_fts = DM_transport['fts'][lever][level_value]
         dm.append(dm_fts, dim='Years')
@@ -914,6 +913,7 @@ def local_transport_run():
         lever_setting['lever_passenger_technology-share_new'] = level
 
         transport(lever_setting, years_setting)
+
     return
 
 #local_transport_run()
