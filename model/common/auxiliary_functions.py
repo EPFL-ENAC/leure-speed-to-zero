@@ -256,55 +256,56 @@ def filter_geoscale(global_vars):
     files = [f for f in listdir(mypath) if isfile(join(mypath, f))]
 
     for file in files:
-        with open(join(mypath, file), 'rb') as handle:
-           DM_module = pickle.load(handle)
+        if '.pickle' in file:
+            with open(join(mypath, file), 'rb') as handle:
+               DM_module = pickle.load(handle)
 
-        DM_module_geo = {'fxa': {}, 'fts': {}, 'ots': {}}
+            DM_module_geo = {'fxa': {}, 'fts': {}, 'ots': {}}
 
-        for key in DM_module.keys():
-            if key == 'fxa':
-                for var_name in DM_module[key].keys():
-                    dm = DM_module[key][var_name]
-                    dm_geo = dm.filter_w_regex({'Country': geo_pattern})
-                    DM_module_geo[key][var_name] = dm_geo
-            if key == 'fts':
-                for lever_name in DM_module[key].keys():
-                    DM_module_geo[key][lever_name] = {}
-                    # If you have lever_value,
-                    if 1 in DM_module[key][lever_name]:
-                        for level_val in DM_module[key][lever_name].keys():
-                            dm = DM_module[key][lever_name][level_val]
-                            dm_geo = dm.filter_w_regex({'Country': geo_pattern})
-                            DM_module_geo[key][lever_name][level_val] = dm_geo
-                    else:
-                        for group in DM_module[key][lever_name].keys():
-                            DM_module_geo[key][lever_name][group] = {}
-                            for level_val in DM_module[key][lever_name][group].keys():
-                                dm = DM_module[key][lever_name][group][level_val]
-                                dm_geo = dm.filter_w_regex({'Country': geo_pattern})
-                                DM_module_geo[key][lever_name][group][level_val] = dm_geo
-            if key == 'ots':
-                for lever_name in DM_module[key].keys():
-                    # if there are groups
-                    if isinstance(DM_module[key][lever_name], dict):
-                        DM_module_geo[key][lever_name] = {}
-                        for group in DM_module[key][lever_name].keys():
-                            dm = DM_module[key][lever_name][group]
-                            dm_geo = dm.filter_w_regex({'Country': geo_pattern})
-                            DM_module_geo[key][lever_name][group] = (dm_geo, lever_name)
-                    # otherwise if you only have one dataframe
-                    else:
-                        dm = DM_module[key][lever_name]
+            for key in DM_module.keys():
+                if key == 'fxa':
+                    for var_name in DM_module[key].keys():
+                        dm = DM_module[key][var_name]
                         dm_geo = dm.filter_w_regex({'Country': geo_pattern})
-                        DM_module_geo[key][lever_name] = dm_geo
-            if key == 'constant':
-                DM_module_geo[key] = DM_module[key]
+                        DM_module_geo[key][var_name] = dm_geo
+                if key == 'fts':
+                    for lever_name in DM_module[key].keys():
+                        DM_module_geo[key][lever_name] = {}
+                        # If you have lever_value,
+                        if 1 in DM_module[key][lever_name]:
+                            for level_val in DM_module[key][lever_name].keys():
+                                dm = DM_module[key][lever_name][level_val]
+                                dm_geo = dm.filter_w_regex({'Country': geo_pattern})
+                                DM_module_geo[key][lever_name][level_val] = dm_geo
+                        else:
+                            for group in DM_module[key][lever_name].keys():
+                                DM_module_geo[key][lever_name][group] = {}
+                                for level_val in DM_module[key][lever_name][group].keys():
+                                    dm = DM_module[key][lever_name][group][level_val]
+                                    dm_geo = dm.filter_w_regex({'Country': geo_pattern})
+                                    DM_module_geo[key][lever_name][group][level_val] = dm_geo
+                if key == 'ots':
+                    for lever_name in DM_module[key].keys():
+                        # if there are groups
+                        if isinstance(DM_module[key][lever_name], dict):
+                            DM_module_geo[key][lever_name] = {}
+                            for group in DM_module[key][lever_name].keys():
+                                dm = DM_module[key][lever_name][group]
+                                dm_geo = dm.filter_w_regex({'Country': geo_pattern})
+                                DM_module_geo[key][lever_name][group] = (dm_geo, lever_name)
+                        # otherwise if you only have one dataframe
+                        else:
+                            dm = DM_module[key][lever_name]
+                            dm_geo = dm.filter_w_regex({'Country': geo_pattern})
+                            DM_module_geo[key][lever_name] = dm_geo
+                if key == 'constant':
+                    DM_module_geo[key] = DM_module[key]
 
-        current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        path_geo = os.path.join(current_file_directory, '../../_database/data/datamatrix/geoscale/')
-        f_geo = join(path_geo, file)
-        with open(f_geo, 'wb') as handle:
-            pickle.dump(DM_module_geo, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            current_file_directory = os.path.dirname(os.path.abspath(__file__))
+            path_geo = os.path.join(current_file_directory, '../../_database/data/datamatrix/geoscale/')
+            f_geo = join(path_geo, file)
+            with open(f_geo, 'wb') as handle:
+                pickle.dump(DM_module_geo, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     return
 
