@@ -2,7 +2,6 @@ import re
 import numpy as np
 import copy
 from model.common.io_database import read_database
-from model.common.auxiliary_functions import constant_filter
 
 # ConstantDataMatrix is a class used to deal with constants in a way that is similar to DataMatrix class.
 # The main difference if that ConstantDataMatrix has no Country or Years dimensions.
@@ -140,6 +139,18 @@ class ConstantDataMatrix:
         # it extract constant from the file const_file (database format) using pattern a filter for 'eucalc-name'.
         # it returns a ConstantDataMatrix with the number of categories set by num_cat
         # it uses the class method 'crate from constant
+        def constant_filter(constant, pattern):
+            re_pattern = re.compile(pattern)
+            labels = constant['name']
+            keep_l_i = [(l, i) for (i, l) in enumerate(labels) if re.match(re_pattern, l)]
+            keep = {
+                'name': [t[0] for t in keep_l_i],
+                'value': [constant['value'][t[1]] for t in keep_l_i],
+                'idx': [t[0] for t in keep_l_i],
+                'units': [constant['units'][t[0]] for t in keep_l_i]
+            }
+            return keep
+
         db_const = read_database(const_file, lever='none', db_format=True)
         const = {
             'name': list(db_const['eucalc-name']),
@@ -147,8 +158,8 @@ class ConstantDataMatrix:
             'idx': dict(zip(list(db_const['eucalc-name']), range(len(db_const['eucalc-name'])))),
             'units': dict(zip(list(db_const['eucalc-name']), list(db_const['unit'])))
         }
-        emission_fact = constant_filter(const, pattern)
-        cdm_const = ConstantDataMatrix.create_from_constant(emission_fact, num_cat=num_cat)
+        tmp = constant_filter(const, pattern)
+        cdm_const = ConstantDataMatrix.create_from_constant(tmp, num_cat=num_cat)
         return cdm_const
 
     def index_all(self):

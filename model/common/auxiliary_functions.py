@@ -2,6 +2,7 @@ import numpy as np
 from model.common.data_matrix_class import DataMatrix
 from scipy.interpolate import interp1d, CubicSpline
 from model.common.io_database import read_database, update_database_from_db, read_database_w_filter
+from model.common.constant_data_matrix_class import ConstantDataMatrix
 import pandas as pd
 import os
 import re
@@ -176,19 +177,6 @@ def compute_stock(dm, rr_regex, tot_regex, waste_col, new_col):
     return
 
 
-def constant_filter(constant, pattern):
-    re_pattern = re.compile(pattern)
-    labels = constant['name']
-    keep_l_i = [(l, i) for (i, l) in enumerate(labels) if re.match(re_pattern, l)]
-    keep = {
-        'name': [t[0] for t in keep_l_i],
-        'value': [constant['value'][t[1]] for t in keep_l_i],
-        'idx': [t[0] for t in keep_l_i],
-        'units': [constant['units'][t[0]] for t in keep_l_i]
-    }
-    return keep
-
-
 def dm_lever_dict_from_df(df_fts, levername, num_cat):
     levels = list(set(df_fts[levername]))
     dict_dm = {}
@@ -231,7 +219,7 @@ def read_database_to_ots_fts_dict(file, lever, num_cat, baseyear, years, dict_ot
     # Sort by country years
     df_ots.sort_values(by=['Country', 'Years'], axis=0, inplace=True)
     dm_ots = DataMatrix.create_from_df(df_ots, num_cat)
-    dict_ots[file] = (dm_ots, lever)
+    dict_ots[lever] = dm_ots
     dict_fts[lever] = dict_lever
     return dict_ots, dict_fts
 
@@ -239,25 +227,25 @@ def read_database_to_ots_fts_dict(file, lever, num_cat, baseyear, years, dict_ot
 def read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list, baseyear, years, dict_ots, dict_fts, column: str, group_list: list):
     # It reads the database in data/csv with name file and returns the ots and the fts in form
     # of datamatrix accessible by dictionaries:
-    # e.g.  dict_ots = {file: ([dm_ots_a, dm_ots_b, dm_ots_c], lever)}
+    # e.g.  dict_ots = {lever: {group1: dm_1, group2: dm_2, grou}}
     #       dict_fts = {lever: [dm_fts_a, dm_fts_b, dm_fts_c]}
     # where file is the name of the file and lever is the levername
-    dict_ots_list = []
-    dict_fts_list = []
+    dm_ots_groups = {}
+    dm_fts_groups = {}
     for (i, group) in enumerate(group_list):
         filter_dict = {column: group}
         num_cat = num_cat_list[i]
         dict_tmp_ots = {}
         dict_tmp_fts = {}
         read_database_to_ots_fts_dict(file, lever, num_cat, baseyear, years, dict_tmp_ots, dict_tmp_fts, filter_dict=filter_dict)
-        dict_ots_list.append(dict_tmp_ots[file][0])
-        dict_fts_list.append(dict_tmp_fts[lever])
+        group = group.replace('.*', '')
+        dm_ots_groups[group] = dict_tmp_ots[lever]
+        dm_fts_groups[group] = dict_tmp_fts[lever]
 
-    dict_ots[file] = (dict_ots_list, lever)
-    dict_fts[lever] = dict_fts_list
+    dict_ots[file] = dm_ots_groups
+    dict_fts[lever] = dm_fts_groups
+
     return dict_ots, dict_fts
-
-
 
 
 def filter_geoscale(global_vars):
@@ -282,30 +270,33 @@ def filter_geoscale(global_vars):
             if key == 'fts':
                 for lever_name in DM_module[key].keys():
                     DM_module_geo[key][lever_name] = {}
-                    for level_val in DM_module[key][lever_name].keys():
-                        dm = DM_module[key][lever_name][level_val]
-                        # If dm is a list of dm
-                        if isinstance(dm, list):
-                            dm_geo = []
-                            for dm_i in dm:
-                                dm_geo_i = dm_i.filter_w_regex({'Country': geo_pattern})
-                                dm_geo.append(dm_geo_i)
-                        else:
+                    # If you have lever_value,
+                    if 1 in DM_module[key][lever_name]:
+                        for level_val in DM_module[key][lever_name].keys():
+                            dm = DM_module[key][lever_name][level_val]
                             dm_geo = dm.filter_w_regex({'Country': geo_pattern})
-                        DM_module_geo[key][lever_name][level_val] = dm_geo
-            if key == 'ots':
-                for csv_name in DM_module[key].keys():
-                    dm = DM_module[key][csv_name][0]
-                    lever_name = DM_module[key][csv_name][1]
-                    # If dm is a list of dm
-                    if isinstance(dm, list):
-                        dm_geo = []
-                        for dm_i in dm:
-                            dm_geo_i = dm_i.filter_w_regex({'Country': geo_pattern})
-                            dm_geo.append(dm_geo_i)
+                            DM_module_geo[key][lever_name][level_val] = dm_geo
                     else:
+                        for group in DM_module[key][lever_name].keys():
+                            DM_module_geo[key][lever_name][group] = {}
+                            for level_val in DM_module[key][lever_name][group].keys():
+                                dm = DM_module[key][lever_name][group][level_val]
+                                dm_geo = dm.filter_w_regex({'Country': geo_pattern})
+                                DM_module_geo[key][lever_name][group][level_val] = dm_geo
+            if key == 'ots':
+                for lever_name in DM_module[key].keys():
+                    # if there are groups
+                    if isinstance(DM_module[key][lever_name], dict):
+                        DM_module_geo[key][lever_name] = {}
+                        for group in DM_module[key][lever_name].keys():
+                            dm = DM_module[key][lever_name][group]
+                            dm_geo = dm.filter_w_regex({'Country': geo_pattern})
+                            DM_module_geo[key][lever_name][group] = (dm_geo, lever_name)
+                    # otherwise if you only have one dataframe
+                    else:
+                        dm = DM_module[key][lever_name]
                         dm_geo = dm.filter_w_regex({'Country': geo_pattern})
-                    DM_module_geo[key][csv_name] = (dm_geo, lever_name)
+                        DM_module_geo[key][lever_name] = dm_geo
             if key == 'constant':
                 DM_module_geo[key] = DM_module[key]
 
@@ -316,5 +307,4 @@ def filter_geoscale(global_vars):
             pickle.dump(DM_module_geo, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     return
-
 
