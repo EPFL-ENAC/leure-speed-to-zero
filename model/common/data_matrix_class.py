@@ -644,17 +644,23 @@ class DataMatrix:
         countries_list = selected_cols["Country"]
         if countries_list == "all":
             countries_list = self.col_labels["Country"]
+        if isinstance(countries_list, str):  # if 'Country': 'France' -> 'Country': ['France']
+            countries_list = [countries_list]
         years_list = selected_cols["Years"]
         if years_list == "all":
             years_list = self.col_labels["Years"]
+        if isinstance(years_list, str):  # if 'Years': 2020 -> 'Years': [2020]
+            years_list = [years_list]
         years_idx = [i[x] for x in years_list]
         vars_list = selected_cols["Variables"]
         if vars_list == "all":
             vars_list = self.col_labels["Variables"]
+        if isinstance(vars_list, str):
+            vars_list = [vars_list]
 
         # Create an empty figure
         fig = px.line(x=years_list, labels={'x': 'Years', 'y': 'Values'}, title=title)
-        fig.data[0]['y'] = np.nan*np.ones(shape = np.shape(fig.data[0]['y']))
+        fig.data[0]['y'] = np.nan*np.ones(shape=np.shape(fig.data[0]['y']))
         if dims == 3:
             for c in countries_list:
                 for v in vars_list:
