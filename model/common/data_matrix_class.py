@@ -469,6 +469,8 @@ class DataMatrix:
         # The pre-requisite is that all other dimensions match
         dim_lab = self.dim_labels.copy()
         dim_lab.remove(dim)
+        if 'Variables' in dim_lab:
+            dim_lab.remove("Variables")
         for d in dim_lab:
             if self.col_labels[d] != data2.col_labels[d]:
                 self.sort(dim=d)

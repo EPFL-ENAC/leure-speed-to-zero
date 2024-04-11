@@ -236,6 +236,12 @@ def food_workflow(DM_food,cdm_const):
     dm_diet_split.add(ay_total_food, dim='Variables', col_label='lfs_diet', unit='kcal')
 
     # Calibration - Food supply
+    dm_fxa_caf_food = DM_food['food-caf']
+    dm_diet_split.append(dm_diet_share, dim='Categories1')
+    dm_diet_split.drop(dim='Categories1',col_label=['rice','afats'])
+    dm_diet_split.append(dm_fxa_caf_food, dim='Variables')
+    dm_diet_split.operation('lfs_diet', '*', 'caf_lfs_diet',
+                                  dim="Variables", out_col='cal_diet', unit='kcal')
 
 
 
