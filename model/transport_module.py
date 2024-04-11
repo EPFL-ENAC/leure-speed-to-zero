@@ -3,13 +3,13 @@ import pandas as pd
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database, read_database_fxa
-from model.common.auxiliary_functions import compute_stock, read_database_to_ots_fts_dict
+from model.common.auxiliary_functions import compute_stock, read_database_to_ots_fts_dict, filter_geoscale
+from model.common.auxiliary_functions import read_level_data
 import pickle
 import json
 import os
 import numpy as np
 import time
-
 
 
 def database_from_csv_to_datamatrix():
@@ -214,13 +214,8 @@ def read_data(data_file, lever_setting):
     dm_freight_mode_road = dict_fxa['freight_mode_road']
 
     # Read fts based on lever_setting
-    DM_ots_fts = {}
-    for lever in DM_transport['ots'].keys():
-        dm = DM_transport['ots'][lever]
-        level_value = lever_setting['lever_'+lever]
-        dm_fts = DM_transport['fts'][lever][level_value]
-        dm.append(dm_fts, dim='Years')
-        DM_ots_fts[lever] = dm
+    DM_ots_fts = read_level_data(DM_transport, lever_setting)
+
 
     # PASSENGER
     dm_passenger_aviation = DM_ots_fts['passenger-aviation-pkm']
@@ -907,13 +902,11 @@ def local_transport_run():
     f = open('../config/lever_position.json')
     lever_setting = json.load(f)[0]
 
-    for i in range(3):
+    global_vars = {'geoscale': 'Switzerland'}
+    filter_geoscale(global_vars)
 
-        level = i + 1
-        lever_setting['lever_passenger_technology-share_new'] = level
+    results_run = transport(lever_setting, years_setting)
 
-        transport(lever_setting, years_setting)
+    return results_run
 
-    return
-
-#local_transport_run()
+#results_run = local_transport_run()
