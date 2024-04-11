@@ -24,3 +24,4 @@ knime2python/config/config_eu.yml
 
 # Do not sync __pycache__
 __pycache__/
+.cache/
