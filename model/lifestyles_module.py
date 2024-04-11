@@ -199,8 +199,6 @@ def read_data(data_file, lever_setting):
     }
 
     cdm_const = DM_lifestyles['constant']
-    dm_diet_split.datamatrix_plot(
-        {"Country": ["Switzerland"], "Years": "all", "Variables": "all", 'Categories1': "all"}, title="title")
     return DM_food, cdm_const
 
 # Calculation tree (Functions)
@@ -243,10 +241,7 @@ def food_workflow(DM_food,cdm_const):
     dm_diet_split.operation('lfs_diet', '*', 'caf_lfs_diet',
                                   dim="Variables", out_col='cal_diet', unit='kcal')
 
-
-
-
-    return
+    return dm_diet_split
 
 # CORE module
 def lifestyles(lever_setting, years_setting):
@@ -256,11 +251,17 @@ def lifestyles(lever_setting, years_setting):
     DM_food, cdm_const = read_data(lifestyles_data_file, lever_setting)
 
     # Calculation tree - Start
-    food_workflow(DM_food, cdm_const)
+    dm_diet_split = food_workflow(DM_food, cdm_const)
 
+    dm_diet = dm_diet_split.filter({'Variables': ['cal_diet']})
+    dm_diet.rename_col('cal_diet', 'lfs_diet', dim="Variables")
 
+    df_diet = dm_diet.write_df()
 
-    return
+    # concatenate all results to df
+
+    results_run = df_diet
+    return results_run
 
 
 # Local run of lifestyles
@@ -268,7 +269,9 @@ def local_lifestyles_run():
     # Initiate the year & lever setting
     years_setting, lever_setting = init_years_lever()
     lifestyles(lever_setting, years_setting)
+
+
     return
 
 
-local_lifestyles_run()  # to un-comment to run in local
+#  local_lifestyles_run()  # to un-comment to run in local
