@@ -124,8 +124,8 @@ class DataMatrix:
             try:
                 unit = re.search(r'\[(.*?)\]', col).group(1)
             except AttributeError:
-                print('Error: try to remove the lever column from the dataframe')
-
+                print('Error: try to remove the lever column from the dataframe and make sure all variables have units in eucalc-name')
+                exit()
             col_tmp = col.replace(f'[{unit}]', '')
             for i in range(num_cat):
                 i = i + 1

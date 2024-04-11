@@ -242,7 +242,7 @@ def read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list, baseyear, 
         dm_ots_groups[group] = dict_tmp_ots[lever]
         dm_fts_groups[group] = dict_tmp_fts[lever]
 
-    dict_ots[file] = dm_ots_groups
+    dict_ots[lever] = dm_ots_groups
     dict_fts[lever] = dm_fts_groups
 
     return dict_ots, dict_fts
@@ -309,3 +309,24 @@ def filter_geoscale(global_vars):
 
     return
 
+
+def read_level_data(DM, lever_setting):
+    # Reads the pickle database for ots and fts for the right lever_setting and returns a dictionary of datamatrix
+    DM_ots_fts = {}
+    for lever in DM['ots'].keys():
+        level_value = lever_setting['lever_' + lever]
+        # If there are groups
+        if isinstance(DM['ots'][lever], dict):
+            DM_ots_fts[lever] = {}
+            for group in DM['ots'][lever].keys():
+                dm = DM['ots'][lever][group]
+                dm_fts = DM['fts'][lever][group][level_value]
+                dm.append(dm_fts, dim='Years')
+                DM_ots_fts[lever][group] = dm
+        else:
+            dm = DM['ots'][lever]
+            dm_fts = DM['fts'][lever][level_value]
+            dm.append(dm_fts, dim='Years')
+            DM_ots_fts[lever] = dm
+
+    return DM_ots_fts
