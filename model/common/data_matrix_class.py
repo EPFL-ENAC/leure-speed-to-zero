@@ -121,7 +121,11 @@ class DataMatrix:
         units = dict()
         i = 1
         for col in cols:
-            unit = re.search(r'\[(.*?)\]', col).group(1)
+            try:
+                unit = re.search(r'\[(.*?)\]', col).group(1)
+            except AttributeError:
+                print('Error: try to remove the lever column from the dataframe')
+
             col_tmp = col.replace(f'[{unit}]', '')
             for i in range(num_cat):
                 i = i + 1
@@ -157,7 +161,7 @@ class DataMatrix:
 
     @classmethod
     def create_from_df(cls, df, num_cat):
-        # Creates a datamatrxi given a dataframe and the number of categories that we want
+        # Creates a datamatrix given a dataframe and the number of categories that we want
         # Note that df needs to have columns 'Country' and 'Years'
         # it returns a datamatrix
         dm = cls()
