@@ -292,7 +292,7 @@ def filter_geoscale(global_vars):
                             for group in DM_module[key][lever_name].keys():
                                 dm = DM_module[key][lever_name][group]
                                 dm_geo = dm.filter_w_regex({'Country': geo_pattern})
-                                DM_module_geo[key][lever_name][group] = (dm_geo, lever_name)
+                                DM_module_geo[key][lever_name][group] = dm_geo
                         # otherwise if you only have one dataframe
                         else:
                             dm = DM_module[key][lever_name]
