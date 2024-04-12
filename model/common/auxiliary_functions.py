@@ -208,6 +208,7 @@ def read_database_to_ots_fts_dict(file, lever, num_cat, baseyear, years, dict_ot
     # Keep fts only one every five years
     df_fts = df_fts[df_fts['Years'].isin(years)].copy()
     # Keep only years from 1990
+    df_ots.drop(df_ots[df_ots.Years > baseyear].index, inplace=True)
     df_ots = df_ots[df_ots['Years'].isin(years)].copy()
     dict_lever = dm_lever_dict_from_df(df_fts, lever, num_cat)
     # Remove 'ots_' and drop lever
