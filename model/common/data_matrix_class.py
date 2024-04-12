@@ -42,6 +42,9 @@ class DataMatrix:
         if len(col_labels) > 0:
             self.idx = self.index_all()
 
+    def __repr__(self):
+        return f'DataMatrix with shape {self.array.shape} and variables {self.col_labels["Variables"]}'
+
     def read_data(self, df, num_cat):
         # Function called by the classmethod 'create_from_df' (see below)
         # It is used to transform a dataframe df (table) into a datamatrix by specifying the number of categories
@@ -469,6 +472,8 @@ class DataMatrix:
         # The pre-requisite is that all other dimensions match
         dim_lab = self.dim_labels.copy()
         dim_lab.remove(dim)
+        if 'Variables' in dim_lab:
+            dim_lab.remove("Variables")
         for d in dim_lab:
             if self.col_labels[d] != data2.col_labels[d]:
                 self.sort(dim=d)

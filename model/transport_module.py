@@ -891,7 +891,7 @@ def transport(lever_setting, years_setting):
     # !FIXME: update this with actual total energy demand
     df['tra_energy-demand_total[TWh]'] = 1
 
-    results_run = {'transport': df}
+    results_run = df
 
     return results_run
 
