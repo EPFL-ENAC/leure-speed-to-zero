@@ -195,8 +195,8 @@ def dm_lever_dict_from_df(df_fts, levername, num_cat):
 def read_database_to_ots_fts_dict(file, lever, num_cat, baseyear, years, dict_ots, dict_fts, df_ots=None, df_fts=None, filter_dict=None):
     # It reads the database in data/csv with name file and returns the ots and the fts in form
     # of datamatrix accessible by dictionaries:
-    # e.g.  dict_ots = {file: (dm_ots, lever)}
-    #       dict_fts = {lever: dm_fts}
+    # e.g.  dict_ots = {lever: dm_ots}
+    #       dict_fts = {lever: {1: dm_fts_level_1, 2: dm_fts_level_2, 3: dm_fts_level_3, 4: dm_fts_level_4}}
     # where file is the name of the file and lever is the levername
     if df_ots is None and df_fts is None:
         if filter_dict is None:
