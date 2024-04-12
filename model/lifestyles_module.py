@@ -142,7 +142,8 @@ def database_from_csv_to_datamatrix():
 
     # Data - Constants
     cdm_const = ConstantDataMatrix.extract_constant('interactions_constants',
-                                                    pattern='cp_time_days-per-year.*|cp_appliances_charging-time-share',
+                                                    pattern='cp_time_days-per-year.*|cp_appliances_charging-time-share|'
+                                                            'cp_packaging_aluminium-factor',
                                                     num_cat=0)
 
     #  Create the data matrix for lifestyles
@@ -163,7 +164,7 @@ def database_from_csv_to_datamatrix():
 
 
 # Update/Create the Pickle
-database_from_csv_to_datamatrix()  # un-comment to update
+#  database_from_csv_to_datamatrix()  # un-comment to update
 
 
 #  Reading the Pickle
@@ -196,6 +197,12 @@ def read_data(data_file, lever_setting):
     dm_pop_urban = DM_ots_fts['urbpop']
     dm_passenger_distance = DM_ots_fts['pkm']
 
+    # Industry sub-flow data
+    dm_population = DM_ots_fts['pop']['lfs_population_']
+    dm_macro = DM_ots_fts['pop']['lfs_macro-scenarii_']
+    dm_packaging = DM_ots_fts['paperpack']
+
+
     # Aggregate datamatrix by theme/flow
     # Aggregated Data Matrix - Food
     DM_food = {
@@ -226,8 +233,14 @@ def read_data(data_file, lever_setting):
         'pkm': dm_passenger_distance
     }
 
+    DM_industry = {
+        'macro': dm_macro,
+        'population': dm_population,
+        'paperpack': dm_packaging
+    }
+
     cdm_const = DM_lifestyles['constant']
-    return DM_food, DM_appliance, DM_transport ,cdm_const
+    return DM_food, DM_appliance, DM_transport, DM_industry, cdm_const
 
 
 # Calculation tree - Lifestyles
@@ -321,27 +334,53 @@ def appliances_workflow(DM_appliance, cdm_const):
 # Calculation tree - Transport (Functions)
 
 def transport_workflow(DM_transport):
+
     # Urban population
     dm_population_urban = DM_transport['urbpop']
     dm_population = DM_transport['population']
-    idx = dm_population.idx
+    idx_pop = dm_population.idx
     idx_urb = dm_population_urban.idx
-    ay_population_urban = dm_population.array[:, :, idx['lfs_population_total'],np.newaxis] * dm_population_urban[:, :, :,:]
-    dm_population.add(ay_population_urban, dim='Variables', col_label='lfs_population', unit='inhabitants')
+    ay_population_urban = dm_population.array[:, :, idx_pop['lfs_population_total'], np.newaxis] * \
+                          dm_population_urban.array[:, :, idx_urb['lfs_demography'],:]
+    dm_population_urban.add(ay_population_urban, dim='Variables', col_label='lfs_population', unit='inhabitants')
+
+    # TODO: Paola transport flow
 
     return dm_population_urban
+
+
+# [TUTORIAL] Calculation tree - Industry (Functions) - (Tree Split)
+def industry_workflow(DM_industry, cdm_const):
+    # Consumption of packaging
+    dm_population = DM_industry['population']
+    dm_packaging = DM_industry['paperpack']
+    idx_pop = dm_population.idx
+    idx_pak = dm_packaging.idx
+    ay_packaging = dm_population.array[:, :, idx_pop['lfs_population_total'], np.newaxis] * \
+                          dm_packaging.array[:, :, idx_pak['lfs_paperpack'], :]
+    dm_packaging.add(ay_packaging, dim='Variables', col_label='lfs', unit='t/cap')
+
+    # Aluminium conversion
+    idx_const = cdm_const.idx
+    idx = dm_packaging.idx
+    dm_packaging.array[:, :, idx['lfs_paperpack'], idx['aluminium-pack']] = \
+        dm_packaging.array[:, :, idx['lfs_paperpack'], idx['aluminium-pack']] \
+        * cdm_const.array[idx_const['cp_packaging_aluminium-factor']]
+
+    return dm_packaging
 
 # CORE module
 def lifestyles(lever_setting, years_setting):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     lifestyles_data_file = os.path.join(current_file_directory,
                                         '../_database/data/datamatrix/geoscale/lifestyles.pickle')
-    DM_food, DM_appliance, DM_transport, cdm_const = read_data(lifestyles_data_file, lever_setting)
+    DM_food, DM_appliance, DM_transport, DM_industry, cdm_const = read_data(lifestyles_data_file, lever_setting)
 
     # To send to TPE (result run)
     dm_diet_split = food_workflow(DM_food, cdm_const)
     dm_household = appliances_workflow(DM_appliance, cdm_const)
     dm_population_urban = transport_workflow(DM_transport)
+    dm_packaging = industry_workflow(DM_industry, cdm_const)
 
     dm_diet = dm_diet_split.filter({'Variables': ['cal_diet']})
     dm_diet.rename_col('cal_diet', 'lfs_diet', dim="Variables")
