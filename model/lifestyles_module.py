@@ -171,8 +171,9 @@ def database_from_csv_to_datamatrix():
 def read_data(data_file, lever_setting):
     with open(data_file, 'rb') as handle:  # read binary (rb)
         DM_lifestyles = pickle.load(handle)
-
+    # FXA data matrix
     dm_fxa_caf_food=DM_lifestyles['fxa']['caf_food']
+
 
     DM_ots_fts = read_level_data(DM_lifestyles, lever_setting)  # creates the datamatrix according to the lever setting?
 
@@ -241,6 +242,13 @@ def food_workflow(DM_food,cdm_const):
     dm_diet_split.operation('lfs_diet', '*', 'caf_lfs_diet',
                                   dim="Variables", out_col='cal_diet', unit='kcal')
 
+    # Calibration - Food wastes
+    dm_diet_fwaste.drop(dim='Categories1', col_label=['rice', 'afats'])
+    dm_diet_fwaste.append(dm_fxa_caf_food, dim='Variables')
+    dm_diet_fwaste.operation('lfs_food-wastes', '*', 'caf_lfs_food-wastes',
+                            dim="Variables", out_col='cal_food-wastes', unit='kcal')
+
+    # Data to return to the TPE
     return dm_diet_split
 
 # CORE module
@@ -250,7 +258,7 @@ def lifestyles(lever_setting, years_setting):
                                         '../_database/data/datamatrix/geoscale/lifestyles.pickle')
     DM_food, cdm_const = read_data(lifestyles_data_file, lever_setting)
 
-    # Calculation tree - Start
+    # To send to TPE (result run)
     dm_diet_split = food_workflow(DM_food, cdm_const)
 
     dm_diet = dm_diet_split.filter({'Variables': ['cal_diet']})
@@ -274,4 +282,4 @@ def local_lifestyles_run():
     return
 
 
-#  local_lifestyles_run()  # to un-comment to run in local
+local_lifestyles_run()  # to un-comment to run in local
