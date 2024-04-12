@@ -135,11 +135,14 @@ def database_from_csv_to_datamatrix():
 
     # Data - Fixed assumptions
     df = read_database_fxa('lifestyles_calibration-factors',
-                           filter_dict={'eucalc-name': 'caf_lfs_food-wastes|caf_lfs_diet'})
+                           filter_dict={'eucalc-name': 'caf_lfs_food-wastes|caf_lfs_diet|caf_lfs_floor-space_'})
     dm_caf_food = DataMatrix.create_from_df(df, num_cat=1)
+    dm_caf_intensity = DataMatrix.create_from_df(df, num_cat=0)
+
     dict_fxa = {}
     dict_fxa['caf_food'] = dm_caf_food
-
+    dict_fxa['caf_intensity'] = dm_caf_intensity
+    # TODO: possible issue here for caf issues ?
     # Data - Constants
     cdm_const = ConstantDataMatrix.extract_constant('interactions_constants',
                                                     pattern='cp_time_days-per-year.*|cp_appliances_charging-time-share|'
@@ -164,7 +167,7 @@ def database_from_csv_to_datamatrix():
 
 
 # Update/Create the Pickle
-#  database_from_csv_to_datamatrix()  # un-comment to update
+database_from_csv_to_datamatrix()  # un-comment to update
 
 
 #  Reading the Pickle
@@ -173,6 +176,7 @@ def read_data(data_file, lever_setting):
         DM_lifestyles = pickle.load(handle)
     # FXA data matrix
     dm_fxa_caf_food = DM_lifestyles['fxa']['caf_food']
+    dm_fxa_caf_intensity = DM_lifestyles['fxa']['caf_intensity']
 
     DM_ots_fts = read_level_data(DM_lifestyles, lever_setting)  # creates the datamatrix according to the lever setting?
 
@@ -201,6 +205,13 @@ def read_data(data_file, lever_setting):
     dm_population = DM_ots_fts['pop']['lfs_population_']
     dm_macro = DM_ots_fts['pop']['lfs_macro-scenarii_']
     dm_packaging = DM_ots_fts['paperpack']
+
+    # Buildings
+    dm_population = DM_ots_fts['pop']['lfs_population_']
+    dm_heat_behaviour = DM_ots_fts['heatcool-behaviour']
+    dm_cool_fraction = DM_ots_fts['floor-area-fraction']
+    dm_floor_intensity = DM_ots_fts['floor-intensity']
+
 
 
     # Aggregate datamatrix by theme/flow
@@ -239,8 +250,16 @@ def read_data(data_file, lever_setting):
         'paperpack': dm_packaging
     }
 
+    DM_building = {
+        'population': dm_population,
+        'heat_behaviour': dm_heat_behaviour,
+        'floor-area-fraction': dm_cool_fraction,
+        'floor-intensity': dm_floor_intensity,
+        'intensity-caf': dm_fxa_caf_intensity
+    }
+
     cdm_const = DM_lifestyles['constant']
-    return DM_food, DM_appliance, DM_transport, DM_industry, cdm_const
+    return DM_food, DM_appliance, DM_transport, DM_industry, DM_building, cdm_const
 
 
 # Calculation tree - Lifestyles
@@ -369,19 +388,45 @@ def industry_workflow(DM_industry, cdm_const):
 
     return dm_packaging
 
+# Calculation tree - Building (Functions)
+def building_workflow(DM_building):
+    # Total Floor Area
+    dm_population = DM_building['population']
+    dm_intensity = DM_building['floor-intensity']
+    idx_pop = dm_population.idx
+    idx_int = dm_intensity.idx
+    ay_floor_total= dm_population.array[:, :, idx_pop['lfs_population_total']] \
+                    * dm_intensity.array[:,:,idx_int['lfs_floor-intensity_space-cap']]/1000
+    dm_intensity.add(ay_floor_total, dim='Variables', col_label='lfs_floor-space_total',
+                         unit='km2')
+
+    # Calibration - Space area demand
+    dm_fxa_caf_intensity = DM_building['intensity-caf']
+    dm_cool_fraction = DM_building['floor-area-fraction']
+    dm_intensity.append(dm_cool_fraction, dim='Variables')
+    dm_calibration = dm_intensity.filter({'Variables': ['lfs_floor-space_total','lfs_floor-area-fraction_perc']})
+    # TODO: issue with fxa caf-intensity which is caf-food
+    idx_fxa = dm_fxa_caf_intensity.idx
+    ay_floor_total = dm_population.array[:, :, idx_pop['lfs_population_total']] \
+                     * dm_intensity.array[:, :, idx_int['lfs_floor-intensity_space-cap']] / 1000
+    dm_intensity.add(ay_floor_total, dim='Variables', col_label='lfs_floor-space_total',
+                     unit='km2')
+
+    return dm_floor_total
+
 # CORE module
 def lifestyles(lever_setting, years_setting):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     lifestyles_data_file = os.path.join(current_file_directory,
                                         '../_database/data/datamatrix/geoscale/lifestyles.pickle')
-    DM_food, DM_appliance, DM_transport, DM_industry, cdm_const = read_data(lifestyles_data_file, lever_setting)
+    DM_food, DM_appliance, DM_transport, DM_industry, DM_building, cdm_const = read_data(lifestyles_data_file, lever_setting)
 
     # To send to TPE (result run)
     dm_diet_split = food_workflow(DM_food, cdm_const)
     dm_household = appliances_workflow(DM_appliance, cdm_const)
     dm_population_urban = transport_workflow(DM_transport)
     dm_packaging = industry_workflow(DM_industry, cdm_const)
-
+    dm_floor_total = building_workflow(DM_building)
     dm_diet = dm_diet_split.filter({'Variables': ['cal_diet']})
     dm_diet.rename_col('cal_diet', 'lfs_diet', dim="Variables")
 
