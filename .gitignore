@@ -28,4 +28,4 @@ __pycache__/
 
 # Remove jupiter checkpoints
 .ipynb_checkpoints
-*checkpoints*
+*checkpoint*
