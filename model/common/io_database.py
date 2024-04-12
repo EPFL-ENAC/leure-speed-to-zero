@@ -243,6 +243,11 @@ def read_database_fxa(filename, folderpath="default", db_format=False, filter_di
         for column, pattern in filter_dict.items():
             mask = df_db[column].astype(str).str.contains(pattern)
             df_db = df_db.loc[mask]
+    # Remove duplicates
+    len_init = len(df_db)
+    df_db = df_db.drop_duplicates(subset=['geoscale', 'timescale', 'level', 'string-pivot', 'eucalc-name'])
+    if len(df_db) - len_init < 0:
+        print(f"Duplicates found in: {filename}, use .duplicated on dataframe to check which lines are repeated")
     if db_format:
         return df_db
     else:
