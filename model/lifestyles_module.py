@@ -44,8 +44,6 @@ def database_from_csv_to_datamatrix():
     # Defines the part of dataset that is scenario
     years_all = years_ots + years_fts  # Defines all years
 
-    # Data - Fixed Assumptions - Calibration factors
-
     # Initiate the dictionary for ots & fts
     dict_ots = {}
     dict_fts = {}
@@ -134,15 +132,24 @@ def database_from_csv_to_datamatrix():
                                                        years=years_all, dict_ots=dict_ots, dict_fts=dict_fts)
 
     # Data - Fixed assumptions
-    df = read_database_fxa('lifestyles_calibration-factors',
-                           filter_dict={'eucalc-name': 'caf_lfs_food-wastes|caf_lfs_diet|caf_lfs_floor-space_'})
-    dm_caf_food = DataMatrix.create_from_df(df, num_cat=1)
-    dm_caf_intensity = DataMatrix.create_from_df(df, num_cat=0)
-
     dict_fxa = {}
+    file = 'lifestyles_calibration-factors'
+
+    # Data - Fixed assumptions - Calibration factors - Food
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_lfs_food-wastes|caf_lfs_diet'})
+    dm_caf_food = DataMatrix.create_from_df(df, num_cat=1)
     dict_fxa['caf_food'] = dm_caf_food
+
+    # Data - Fixed assumptions - Calibration factors - Food
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_lfs_floor-space'})
+    dm_caf_intensity = DataMatrix.create_from_df(df, num_cat=0)
     dict_fxa['caf_intensity'] = dm_caf_intensity
-    # TODO: possible issue here for caf issues ?
+
+    dict_fxa = {
+        'caf_food': dm_caf_food,
+        'caf_intensity': dm_caf_intensity
+    }
+
     # Data - Constants
     cdm_const = ConstantDataMatrix.extract_constant('interactions_constants',
                                                     pattern='cp_time_days-per-year.*|cp_appliances_charging-time-share|'
@@ -167,7 +174,7 @@ def database_from_csv_to_datamatrix():
 
 
 # Update/Create the Pickle
-database_from_csv_to_datamatrix()  # un-comment to update
+# database_from_csv_to_datamatrix()  # un-comment to update
 
 
 #  Reading the Pickle
@@ -404,15 +411,23 @@ def building_workflow(DM_building):
     dm_fxa_caf_intensity = DM_building['intensity-caf']
     dm_cool_fraction = DM_building['floor-area-fraction']
     dm_intensity.append(dm_cool_fraction, dim='Variables')
-    dm_calibration = dm_intensity.filter({'Variables': ['lfs_floor-space_total','lfs_floor-area-fraction_perc']})
-    # TODO: issue with fxa caf-intensity which is caf-food
+    #dm_calibration = dm_intensity.filter({'Variables': ['lfs_floor-space_total','lfs_floor-area-fraction_perc']})
     idx_fxa = dm_fxa_caf_intensity.idx
-    ay_floor_total = dm_population.array[:, :, idx_pop['lfs_population_total']] \
-                     * dm_intensity.array[:, :, idx_int['lfs_floor-intensity_space-cap']] / 1000
-    dm_intensity.add(ay_floor_total, dim='Variables', col_label='lfs_floor-space_total',
-                     unit='km2')
+    idx_int = dm_intensity.idx
+    #ay_floor_cal = dm_calibration.array[:, :, :] \
+                     #* dm_fxa_caf_intensity.array[:, :, idx_fxa['caf_lfs_floor-space'],np.newaxis]
+    #dm_intensity.add(ay_floor_cal, dim='Variables', col_label='lfs_floor-space_total', unit='km2')
+    dm_intensity.array[:,:,idx_int['lfs_floor-space_total']]=dm_intensity.array[:, :, idx_int['lfs_floor-space_total']] \
+                     * dm_fxa_caf_intensity.array[:, :, idx_fxa['caf_lfs_floor-space']]
+    dm_intensity.array[:, :, idx_int['lfs_floor-area-fraction_perc']] = dm_intensity.array[:, :,
+                                                                 idx_int['lfs_floor-area-fraction_perc']] \
+                                                                 * dm_fxa_caf_intensity.array[:, :,
+                                                                   idx_fxa['caf_lfs_floor-space']]
 
-    return dm_floor_total
+    # Cooled Area
+
+
+    return dm_intensity
 
 # CORE module
 def lifestyles(lever_setting, years_setting):
@@ -426,7 +441,7 @@ def lifestyles(lever_setting, years_setting):
     dm_household = appliances_workflow(DM_appliance, cdm_const)
     dm_population_urban = transport_workflow(DM_transport)
     dm_packaging = industry_workflow(DM_industry, cdm_const)
-    dm_floor_total = building_workflow(DM_building)
+    dm_intensity = building_workflow(DM_building)
     dm_diet = dm_diet_split.filter({'Variables': ['cal_diet']})
     dm_diet.rename_col('cal_diet', 'lfs_diet', dim="Variables")
 
@@ -447,4 +462,6 @@ def local_lifestyles_run():
     return
 
 
-local_lifestyles_run()  # to un-comment to run in local
+# local_lifestyles_run()  # to un-comment to run in local
+
+#TODO: (1) Interface; (2) Transport sub flow
