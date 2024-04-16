@@ -419,13 +419,19 @@ def building_workflow(DM_building):
     #dm_intensity.add(ay_floor_cal, dim='Variables', col_label='lfs_floor-space_total', unit='km2')
     dm_intensity.array[:,:,idx_int['lfs_floor-space_total']]=dm_intensity.array[:, :, idx_int['lfs_floor-space_total']] \
                      * dm_fxa_caf_intensity.array[:, :, idx_fxa['caf_lfs_floor-space']]
-    dm_intensity.array[:, :, idx_int['lfs_floor-area-fraction_perc']] = dm_intensity.array[:, :,
-                                                                 idx_int['lfs_floor-area-fraction_perc']] \
-                                                                 * dm_fxa_caf_intensity.array[:, :,
-                                                                   idx_fxa['caf_lfs_floor-space']]
-
+    #dm_intensity.array[:, :, idx_int['lfs_floor-area-fraction_perc']] = dm_intensity.array[:, :,
+                                                               #  idx_int['lfs_floor-area-fraction_perc']] \
+                                                               #  * dm_fxa_caf_intensity.array[:, :,
+                                                                #   idx_fxa['caf_lfs_floor-space']]
+    # FIXME: KNIME tree split but seems unrelevant
     # Cooled Area
 
+    # ay_cool_floor = dm_intensity.array[:,:,idx_int['lfs_floor-space_total']] \
+                   #  * idx_int['lfs_floor-area-fraction_perc']
+    # dm_intensity.add(ay_cool_floor, dim='Variables', col_label='lfs_floor-space_total',
+                     # unit='km2')
+    dm_intensity.operation('lfs_floor-area-fraction_perc', '*', 'lfs_floor-space_total',
+                                    dim="Variables", out_col='lfs_floor-space_cool', unit='km2')
 
     return dm_intensity
 
