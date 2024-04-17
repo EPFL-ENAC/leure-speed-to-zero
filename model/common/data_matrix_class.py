@@ -191,23 +191,44 @@ class DataMatrix:
 
         self.array = array
 
-    def add(self, new_array, dim, col_label, unit=None):
+    def add(self, new_array, dim, col_label, unit=None, dummy=False):
         # Adds the numpy array new_array to the datamatrix over dimension dim.
         # The label associated with the array is in defined by the string col_label
         # The unit is needed as a string (e.g. 'km') only if dim = 'Variables'
         # It does not return a new datamatrix
-        a = self.dim_labels.index(dim)  #
-        self.col_labels[dim].append(col_label)
-        if dim == "Variables":
-            self.units[col_label] = unit
-        self.array = np.moveaxis(self.array, a, -1)  # Move the axis of array to the end
-        self.array = np.concatenate((self.array, new_array[..., np.newaxis]), axis=-1)
-        self.array = np.moveaxis(self.array, -1, a)
-        i_v = self.single_index(col_label, dim)  # dict i_v[col_label] = index in dimension dim
-        if col_label not in list(self.idx.keys()):
-            self.idx[col_label] = i_v[col_label]
-        else:
-            raise ValueError("You are trying to append data under the label " + col_label + " which already exists")
+        # You can also use to add 'dummy' dimension to a datamatrix,
+        # usually before appending it to another that has more categories
+        self_shape = self.array.shape
+        a = self.dim_labels.index(dim)
+        new_shape = list(self_shape)
+        if isinstance(col_label, str):
+            # if I'm adding only one column
+            col_label = [col_label]
+            unit = [unit]
+            # if it is not a dummy
+            if not isinstance(new_array, float):
+                new_array = new_array[..., np.newaxis]
+                new_array = np.moveaxis(new_array, -1, a)
+        new_shape[a] = len(col_label)
+        new_shape = tuple(new_shape)
+        # If it is adding a new array of constant value (e.g. nan) to have a dummy dimension:
+        if isinstance(new_array, float) and dummy is True:
+            new_array = new_array * np.ones(new_shape)
+        # Else check that the new array dimension is correct
+        if new_array.shape != new_shape and dummy is False:
+            raise AttributeError(f'The new_array should have dimension {new_shape} instead of {new_array.shape}, '
+                                 f'unless you want to add dummy dimensions, then you should add dummy = True and new_array should be a float')
+        for col in col_label:
+            self.col_labels[dim].append(col)
+            i_v = self.single_index(col, dim)
+            if col not in list(self.idx.keys()):
+                self.idx[col] = i_v[col]
+            else:
+                raise ValueError("You are trying to append data under the label " + col_label + " which already exists")
+        if dim == 'Variables':
+            for i, col in enumerate(col_label):
+                self.units[col] = unit[i]
+        self.array = np.concatenate((self.array, new_array), axis=a)
 
     def drop(self, dim, col_label):
         # It removes the column col_label along dimension dim
@@ -499,7 +520,7 @@ class DataMatrix:
 
         return
 
-    def deepen(self, sep="_"):
+    def deepen(self, sep="_", based_on=None):
         # Adds a category to the datamatrix based on the "Variables" names
         idx_old = self.index_all()
 
@@ -518,6 +539,9 @@ class DataMatrix:
             self.dim_labels.append(new_dim)
         else:
             raise Exception('You cannot deepen (aka add a dimension) to a datamatrix with already 3 categories')
+
+        if based_on is not None:
+            root_dim = based_on
 
         # Add col labels the added dimension and rename col labels of existing dimension
         # It also takes care of rename the units dictionary if relevant
@@ -554,11 +578,16 @@ class DataMatrix:
             dims.append(len(self.col_labels[i]))
         array_new = np.empty(dims)
         array_new[...] = np.nan
+        if based_on is not None:
+            a_root = self.dim_labels.index(root_dim)
+            array_new = np.moveaxis(array_new, a_root, -2)
+            array_old = np.moveaxis(array_old, a_root, -1)
         for col in rename_mapping.keys():
             [root_cat, new_cat] = rename_mapping[col]
             array_new[..., idx_new[root_cat], idx_new[new_cat]] = array_old[..., idx_old[col]]
+        if based_on is not None:
+            array_new = np.moveaxis(array_new, -2, a_root)
         self.array = array_new
-        self.idx = self.index_all()
         return
 
     def deepen_twice(self):
@@ -688,6 +717,7 @@ class DataMatrix:
                         fig.add_scatter(x=years_list, y=y_values, name=label, mode='lines')
 
         fig.show()
+
 
         return
 
