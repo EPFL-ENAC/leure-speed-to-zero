@@ -36,7 +36,7 @@ class ConstantDataMatrix:
             self.idx = self.index_all()
             
     def __repr__(self):
-        return f'DataMatrix with shape {self.array.shape} and variables {self.col_labels["Variables"]}'
+        return f'ConstantDataMatrix with shape {self.array.shape} and variables {self.col_labels["Variables"]}'
 
     def read_data(self, constant, num_cat):
         dims = []
