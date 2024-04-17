@@ -34,6 +34,9 @@ class ConstantDataMatrix:
         self.units = copy.deepcopy(units)  # dictionary
         if len(col_labels) > 0:
             self.idx = self.index_all()
+            
+    def __repr__(self):
+        return f'DataMatrix with shape {self.array.shape} and variables {self.col_labels["Variables"]}'
 
     def read_data(self, constant, num_cat):
         dims = []
@@ -222,4 +225,98 @@ class ConstantDataMatrix:
         cdm = ConstantDataMatrix(col_labels=col_labels, units=units)
         cdm.array = array
         return cdm
+    
+    def filter(self, selected_cols):
+        # Sort the subset list based on the order of elements in list1
+        sorted_cols = {}
+        for d in self.dim_labels:
+            if d in selected_cols.keys():
+                if selected_cols[d] == "all":
+                    sorted_cols[d] = self.col_labels[d].copy()
+                else:
+                    sorted_cols[d] = sorted(selected_cols[d], key=lambda x: self.col_labels[d].index(x))
+            else:
+                sorted_cols[d] = self.col_labels[d].copy()
+        out = ConstantDataMatrix(col_labels=sorted_cols)
+        out.dim_labels = self.dim_labels.copy()
+        # Extract list of indices
+        cols_idx = []
+        for d in self.dim_labels:
+            cols_idx.append([self.idx[xi] for xi in sorted_cols[d]])
+        mesh = np.ix_(*cols_idx)
+        out.array = self.array[mesh].copy()
+        out.units = {key: self.units[key] for key in sorted_cols["Variables"]}
+        if len(sorted_cols) > 3:
+            out.idx = out.index_all()
+        return out
+    
+    def deepen(self, sep="_", based_on=None):
+        # Adds a category to the datamatrix based on the "Variables" names
+        idx_old = self.index_all()
+
+        # Add one category to the dim_labels list depending on the current structure
+        if self.dim_labels[-1] == "Variables":
+            new_dim = 'Categories1'
+            root_dim = 'Variables'
+            self.dim_labels.append(new_dim)
+        elif self.dim_labels[-1] == 'Categories1':
+            new_dim = 'Categories2'
+            root_dim = 'Categories1'
+            self.dim_labels.append(new_dim)
+        elif self.dim_labels[-1] == 'Categories2':
+            new_dim = 'Categories3'
+            root_dim = 'Categories2'
+            self.dim_labels.append(new_dim)
+        else:
+            raise Exception('You cannot deepen (aka add a dimension) to a datamatrix with already 3 categories')
+
+        if based_on is not None:
+            root_dim = based_on
+
+        # Add col labels the added dimension and rename col labels of existing dimension
+        # It also takes care of rename the units dictionary if relevant
+        self.col_labels[new_dim] = []
+        root_cols = []
+        rename_mapping = {}
+
+        for col in self.col_labels[root_dim]:
+            last_underscore_index = col.rfind(sep)
+            if last_underscore_index == -1:
+                raise Exception('No separator _ could be found in the last category')
+            new_cat = col[last_underscore_index + 1:]
+            root_cat = col[:last_underscore_index]
+            rename_mapping[col] = [root_cat, new_cat]
+            # crates col_labels list for the new dimension
+            if new_cat not in self.col_labels[new_dim]:
+                self.col_labels[new_dim].append(new_cat)
+            # renames the existing root_cat dimension
+            if root_cat not in root_cols:
+                root_cols.append(root_cat)
+            # renames units dict
+            if root_dim == 'Variables':
+                if root_cat not in self.units.keys():
+                    self.units[root_cat] = self.units[col]
+                self.units.pop(col)
+        self.col_labels[root_dim] = sorted(root_cols)
+        self.col_labels[new_dim] = sorted(self.col_labels[new_dim])
+
+        # Restructure data array
+        idx_new = self.index_all()
+        array_old = self.array
+        dims = []
+        for i in self.dim_labels:
+            dims.append(len(self.col_labels[i]))
+        array_new = np.empty(dims)
+        array_new[...] = np.nan
+        if based_on is not None:
+            a_root = self.dim_labels.index(root_dim)
+            array_new = np.moveaxis(array_new, a_root, -2)
+            array_old = np.moveaxis(array_old, a_root, -1)
+        for col in rename_mapping.keys():
+            [root_cat, new_cat] = rename_mapping[col]
+            array_new[..., idx_new[root_cat], idx_new[new_cat]] = array_old[..., idx_old[col]]
+        if based_on is not None:
+            array_new = np.moveaxis(array_new, -2, a_root)
+        self.array = array_new
+        return
 
