@@ -205,15 +205,14 @@ class DataMatrix:
             # if I'm adding only one column
             col_label = [col_label]
             unit = [unit]
-            # if it is not a dummy
-            if not isinstance(new_array, float):
-                new_array = new_array[..., np.newaxis]
-                new_array = np.moveaxis(new_array, -1, a)
         new_shape[a] = len(col_label)
         new_shape = tuple(new_shape)
         # If it is adding a new array of constant value (e.g. nan) to have a dummy dimension:
         if isinstance(new_array, float) and dummy is True:
             new_array = new_array * np.ones(new_shape)
+        elif len(col_label) == 1 and new_array.shape != new_shape:
+            new_array = new_array[..., np.newaxis]
+            new_array = np.moveaxis(new_array, -1, a)
         # Else check that the new array dimension is correct
         if new_array.shape != new_shape and dummy is False:
             raise AttributeError(f'The new_array should have dimension {new_shape} instead of {new_array.shape}, '
