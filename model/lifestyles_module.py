@@ -174,7 +174,7 @@ def database_from_csv_to_datamatrix():
 
 
 # Update/Create the Pickle
-# database_from_csv_to_datamatrix()  # un-comment to update
+database_from_csv_to_datamatrix()  # un-comment to update
 
 
 #  Reading the Pickle
