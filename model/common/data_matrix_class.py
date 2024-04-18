@@ -571,6 +571,7 @@ class DataMatrix:
 
         # Restructure data array
         idx_new = self.index_all()
+        self.idx = idx_new
         array_old = self.array
         dims = []
         for i in self.dim_labels:
