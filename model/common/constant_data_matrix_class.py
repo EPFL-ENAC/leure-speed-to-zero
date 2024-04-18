@@ -250,6 +250,19 @@ class ConstantDataMatrix:
             out.idx = out.index_all()
         return out
     
+    def filter_w_regex(self, dict_dim_pattern):
+        # Return only a portion of the DataMatrix based on a dict_dim_patter
+        # E.g. if we wanted to only keep Austria and France, the dict_dim_pattern would be {'Country':'France|Austria'}
+        keep = {}
+        for d in self.dim_labels:
+            if d in dict_dim_pattern.keys():
+                pattern = re.compile(dict_dim_pattern[d])
+                keep[d] = [col for col in self.col_labels[d] if re.match(pattern, col)]
+            else:
+                keep[d] = 'all'
+        dm_keep = self.filter(keep)
+        return dm_keep
+    
     def deepen(self, sep="_", based_on=None):
         # Adds a category to the datamatrix based on the "Variables" names
         idx_old = self.index_all()
