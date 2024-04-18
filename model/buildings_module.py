@@ -35,6 +35,7 @@ def database_pre_processing():
     edit_database(file, lever, column='eucalc-name', mode='rename',
                   pattern={'_reference-year': ''},
                   filter_dict={'eucalc-name': 'bld_heatcool-efficiency'})
+
     edit_database(file, lever, column='eucalc-name', mode='rename',
                   pattern={'bld_hot-water-demand': 'bld_hot-water-demand-non-residential'},
                   filter_dict={'eucalc-name': '_non-residential'})
@@ -77,6 +78,10 @@ def database_pre_processing():
                   pattern={'bld_heatcool-technology-fuel': 'bld_heatcool-technology-fuel_reference-year'},
                   filter_dict={'eucalc-name': '-reference-year'})
     edit_database(file, lever, column='eucalc-name', mode='rename', pattern={'-reference-year': ''})
+
+    edit_database(file, lever, column='eucalc-name', mode='rename', pattern={'residential': 'residential_current'})
+    edit_database(file, lever, column='eucalc-name', mode='rename', pattern={'reference-year_residential_current': 'residential_reference-year'})
+    edit_database(file, lever, column='eucalc-name', mode='rename', pattern={'reference-year_nonresidential_current': 'nonresidential_reference-year'})
 
     return
 
@@ -134,6 +139,7 @@ def database_from_csv_to_datamatrix():
                                                                 column='eucalc-name',
                                                                 group_list=['bld_heat-district-technology', 'bld_heatcool-technology'])
 
+
     #file = 'buildings_residential-appeff'
     #lever = 'residential-appeff'
     #dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1, baseyear=baseyear,
@@ -159,9 +165,12 @@ def database_from_csv_to_datamatrix():
     df = read_database_fxa(file, filter_dict={'eucalc-name': "bld_building-mix|bld_floor-area-previous-year|bld_floor-area"})
     dm_bld_type = DataMatrix.create_from_df(df, num_cat=1)
     dict_fxa['bld_type'] = dm_bld_type
-    df = read_database_fxa(file, filter_dict={'eucalc-name': "bld_building-renovation-energy-achieved|bld_capex_.*Mm2"})
-    dm_bld_double = DataMatrix.create_from_df(df, num_cat=2)
-    dict_fxa['bld_double'] = dm_bld_double
+    df = read_database_fxa(file, filter_dict={'eucalc-name': "bld_building-renovation-energy-achieved"})
+    dm_ren_energy = DataMatrix.create_from_df(df, num_cat=2)
+    dict_fxa['renovation-energy'] = dm_ren_energy
+    df = read_database_fxa(file, filter_dict={'eucalc-name': "bld_capex_.*Mm2"})
+    dm_capex = DataMatrix.create_from_df(df, num_cat=2)
+    dict_fxa['capex'] = dm_capex
     df = read_database_fxa(file, filter_dict={'eucalc-name': "bld_surface-per-floorarea"})
     dm_surface = DataMatrix.create_from_df(df, num_cat=2)
     dict_fxa['surface'] = dm_surface
@@ -199,8 +208,16 @@ def read_data(data_file, lever_setting):
         'building_mix': DM_buildings['fxa']['bld_type'].filter_w_regex({'Variables': 'bld_building-mix.*', 'Categories1': '.*households'})
     }
 
+    DM_energy = {
+        'building_mix': DM_ots_fts['building-renovation-rate']['bld_building'].filter_w_regex({'Variables': '.*mix'}).copy(),
+        'heating': DM_ots_fts['building-renovation-rate']['bld_energy'].filter({'Variables': ['bld_energy-need_space-heating']}),
+        'heatcool-tech-fuel': DM_ots_fts['heatcool-technology-fuel']['bld_heatcool-technology'],
+        'renovation-energy': DM_buildings['fxa']['renovation-energy'],
+        'heatcool-efficiency': DM_buildings['fxa']['energy'].filter({'Variables': ['bld_heatcool-efficiency', 'bld_heatcool-efficiency-reference-year']}),
+        'district-heating': DM_ots_fts['district-heating-share']
+    }
 
-    return DM_floor_area
+    return DM_floor_area, DM_energy
 
 
 
@@ -221,7 +238,22 @@ def simulate_lifestyles_to_buildings_input():
     return DM_lfs
 
 
-def floor_area_workflow(DM_floor_area, dm_lfs):
+def simulate_climate_to_buildings_input():
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(current_file_directory, "../_database/data/xls/All-Countries-interface_from-climate-to-buildings.xlsx")
+    df = pd.read_excel(f, sheet_name="default")
+    dm = DataMatrix.create_from_df(df, num_cat=0)
+    dm_clm_energy = dm.filter_w_regex({'Variables': 'bld_climate-impact-space'})
+    dm_clm_energy.deepen()
+    dm_clm_average = dm.filter_w_regex({'Variables': 'bld_climate-impact_average'})
+    DM_clm = {
+        'climate-impact-space': dm_clm_energy,
+        'climate-impact-average': dm_clm_average
+    }
+    return DM_clm
+
+
+def bld_floor_area_workflow(DM_floor_area, dm_lfs):
 
     dm_building_mix = DM_floor_area['building_mix']
     idx_b = dm_building_mix.idx
@@ -248,7 +280,8 @@ def floor_area_workflow(DM_floor_area, dm_lfs):
     dm_floor_area.units['bld_floor-area'] = 'Mm2'
 
     # Floor area increase (t) [Mm2] = floor-area (t) [Mm2] - floor-area (t-1) [Mm2]
-    dm_floor_area.operation('bld_floor-area', '-', 'bld_floor-area-previous-year', out_col='bld_floor-area-increase', unit='Mm2')
+    dm_floor_area.operation('bld_floor-area', '-', 'bld_floor-area-previous-year',
+                            out_col='bld_cumulated-floor-area-increase', unit='Mm2')
 
     dm_rates = DM_floor_area['buildings_rates']
 
@@ -259,7 +292,7 @@ def floor_area_workflow(DM_floor_area, dm_lfs):
     dm_floor_area.operation('bld_floor-area-previous-year', '*', 'bld_building-demolition-rate', out_col='bld_floor-area-demolished', unit='Mm2')
 
     # New area constructed [Mm2] = Area demolished + Area increase
-    dm_floor_area.operation('bld_building-demolition-rate', '+', 'bld_floor-area-increase', out_col='bld_floor-area-constructed', unit='Mm2')
+    dm_floor_area.operation('bld_building-demolition-rate', '+', 'bld_cumulated-floor-area-increase', out_col='bld_floor-area-constructed', unit='Mm2')
     # Remove negative
     idx = dm_floor_area.idx
     dm_floor_area.array[:, :, idx['bld_floor-area-constructed'], :] = \
@@ -287,8 +320,171 @@ def floor_area_workflow(DM_floor_area, dm_lfs):
         dm_floor_area.rename_col(var, new_var, dim='Variables')
 
     # Keep only floor area and cumulated floor area
-    dm_floor_area.drop(col_label=['bld_floor-area-previous-year', 'bld_floor-area-increase', 'bld_building-demolition-rate'], dim='Variables')
+    dm_floor_area.drop(col_label=['bld_floor-area-previous-year', 'bld_building-demolition-rate'], dim='Variables')
 
+    dm_floor_area.operation('bld_cumulated-floor-area-constructed', '+', 'bld_cumulated-floor-area-renovated',
+                            out_col= 'bld_floor-area-new-and-renovated', unit='Mm2')
+
+    dm_floor_area.operation('bld_floor-area', '-', 'bld_floor-area-new-and-renovated',
+                            out_col='bld_cumulated-floor-area-unrenovated', unit='Mm2')
+
+    return dm_floor_area
+
+
+def bld_energy_workflow(DM_energy, DM_clm, dm_floor_area):
+    # Compute renovation area by building type (e.g. office, households, ..) and renovation type aka depth (e.g. dep, exi, med, shl)
+    dm_mix = DM_energy['building_mix']
+    idx_m = dm_mix.idx
+    idx_f = dm_floor_area.idx
+    arr_renovated_area_mix = dm_floor_area.array[:, :, idx_f['bld_cumulated-floor-area-renovated'], :, np.newaxis] \
+                             * dm_mix.array[:, :, idx_m['bld_building-renovation-mix'], :, :]
+    dm_mix.add(arr_renovated_area_mix, dim='Variables', col_label='bld_cumulated-floor-area-renovated', unit='Mm2')
+    del arr_renovated_area_mix
+
+    # Compute construction mix by building type and depth
+    idx_m = dm_mix.idx
+    arr_construction_area_mix = dm_floor_area.array[:, :, idx_f['bld_cumulated-floor-area-constructed'], :, np.newaxis] \
+                                * dm_mix.array[:, :, idx_m['bld_building-construction-mix'], :, :]
+    dm_mix.add(arr_construction_area_mix, dim='Variables', col_label='bld_cumulated-floor-area-constructed', unit='Mm2')
+    del arr_construction_area_mix
+
+    # Climate impacts
+    # climate impacts are considered through the temperature impacts on heating demand
+    dm_renovation_energy = DM_energy['renovation-energy']
+    ## Add dummy 'exi' to dm_renovation_energy
+    nan_arr = np.nan * np.ones(dm_renovation_energy.array[:, :, :, 0, :].shape)
+    dm_renovation_energy.add(nan_arr, dim='Categories1', col_label='exi')
+    dm_renovation_energy.sort(dim='Categories1')
+    ## Multiply climate impact by energy achieved
+    dm_clm_impact_space = DM_clm['climate-impact-space']
+    idx_c = dm_clm_impact_space.idx
+    idx_r = dm_renovation_energy.idx
+    arr_renovation_energy = dm_clm_impact_space.array[:, :, idx_c['bld_climate-impact-space-heating'], :, np.newaxis] \
+                            * dm_renovation_energy.array[:, :, idx_r['bld_building-renovation-energy-achieved'], :, :]
+    dm_renovation_energy.array[:, :, idx_r['bld_building-renovation-energy-achieved'], :, :] = arr_renovation_energy
+    del arr_renovation_energy, nan_arr, idx_r
+
+    # energy need space heating = climate impact space heating * energy need
+    dm_heating = DM_energy['heating']
+    idx_h = dm_heating.idx
+    arr = dm_clm_impact_space.array[:, :, idx_c['bld_climate-impact-space-heating'], :, np.newaxis] \
+          * dm_heating.array[:, :, idx_h['bld_energy-need_space-heating'], np.newaxis, :]
+    arr = np.moveaxis(arr, -2, -1)  # invert the position of the last two axis
+    dm_mix.add(arr, col_label='bld_energy-need-climate-impact_space-heating', dim='Variables', unit='kwh/m2/year')
+    del arr, idx_h, idx_c, dm_clm_impact_space, dm_heating
+
+    # add dummy 'other' category to dm_renovation_energy
+    dm_renovation_energy.add(np.nan, dim='Categories2', col_label='other', dummy=True)
+    dm_renovation_energy.sort(dim='Categories2')
+
+    # Switch the position of Categories1 and Categories1 for dm_renovation_energy
+    dm_renovation_energy.array = np.moveaxis(dm_renovation_energy.array, -2, -1)
+    tmp = dm_renovation_energy.col_labels['Categories1']
+    dm_renovation_energy.col_labels['Categories1'] = dm_renovation_energy.col_labels['Categories2']
+    dm_renovation_energy.col_labels['Categories2'] = tmp
+    # join renovation energy achieved with energy mix
+    dm_mix.append(dm_renovation_energy, dim='Variables')
+    del dm_renovation_energy, tmp
+
+    # energy need space heating [GWh] = renovation-energy-achieved [kWh/m2] * floor area renovated (constructed) [GWh]
+    dm_mix.operation('bld_building-renovation-energy-achieved', '*', 'bld_cumulated-floor-area-renovated',
+                     out_col='bld_energy-need_space-heating_renovated', unit='GWh')
+    dm_mix.operation('bld_building-renovation-energy-achieved', '*', 'bld_cumulated-floor-area-constructed',
+                     out_col='bld_energy-need_space-heating_constructed', unit='GWh')
+
+    # energy need space heating unrenovated [GWh] = energy need [kWh/m2] * floor area unrenovated (constructed) [GWh]
+    idx_f = dm_floor_area.idx
+    idx_m = dm_mix.idx
+    arr_unren_exi = dm_floor_area.array[:, :, idx_f['bld_cumulated-floor-area-unrenovated'], :] \
+        * dm_mix.array[:, :, idx_m['bld_energy-need-climate-impact_space-heating'], :, idx_m['exi']]
+    # Put renovated / constructed / unrenovated together
+    # Add dummy energy need unrenovated variable and then assign to 'exi' cat the above computation
+    dm_mix.add(np.nan, dummy=True, col_label='bld_energy-need_space-heating_unrenovated', dim='Variables', unit='GWh')
+    idx_m = dm_mix.idx
+    dm_mix.array[:, :, idx_m['bld_energy-need_space-heating_unrenovated'], :, idx_m['exi']] = arr_unren_exi
+    del idx_m, idx_f, arr_unren_exi
+
+    # Add constructed, unrenovated, renovated category
+    list_var = ['bld_energy-need_space-heating_unrenovated', 'bld_energy-need_space-heating_renovated',
+                'bld_energy-need_space-heating_constructed']
+    dm_energy_heating = dm_mix.filter({'Variables': list_var})
+    dm_energy_heating.deepen(based_on='Variables')
+    dm_mix.drop(col_label=list_var, dim='Variables')
+    del list_var
+
+    # 'bld_district-heating-space-heating-supply' = energy space heating * district_heating %
+    arr_dh_supply = dm_energy_heating.array*DM_energy['district-heating'].array[..., np.newaxis, np.newaxis, np.newaxis]
+    dm_energy_heating.add(arr_dh_supply, dim='Variables', col_label='bld_district-heating-space-heating-supply', unit='GWh')
+    del arr_dh_supply
+
+    # in house supply = energy need - district heating supply
+    dm_energy_heating.operation('bld_energy-need_space-heating', '-', 'bld_district-heating-space-heating-supply',
+                                out_col='bld_in-house-space-heating-supply', unit='GWh')
+
+    # Sum bld_energy-need_space-heating
+    idx = dm_energy_heating.idx
+    arr_energy_by_bld = np.nansum(dm_energy_heating.array[:, :, idx['bld_energy-need_space-heating'], :, :, :], axis=(-1, -2))
+    dm_floor_area.add(arr_energy_by_bld, dim='Variables', unit='GWh', col_label='bld_space-heating')
+    del arr_energy_by_bld
+
+    # HEATCOOL
+    # !FIXME this rename and restructuring could be done before the pickle is created
+    # Extract heatcool technology
+    dm_heatcool = DM_energy['heatcool-tech-fuel'].filter_w_regex({'Variables': '.*residential.*'})
+    dm_heatcool.deepen(based_on='Variables')
+    # Extract heatcool efficiency
+    dm_heatcool_eff = DM_energy['heatcool-efficiency']
+    dm_heatcool_eff.rename_col('bld_heatcool-efficiency', 'bld_heatcool-efficiency_current', dim='Variables')
+    dm_heatcool_eff.rename_col('bld_heatcool-efficiency-reference-year', 'bld_heatcool-efficiency_reference-year', dim='Variables')
+    dm_heatcool_eff.deepen(based_on='Variables')
+
+    dm_heatcool.append(dm_heatcool_eff, dim='Variables')
+    del dm_heatcool_eff
+    dm_heatcool.operation('bld_heatcool-efficiency', '*', 'bld_heatcool-technology-fuel_residential',
+                          out_col='bld_technology-factor_residential', unit='%')
+    dm_heatcool.operation('bld_heatcool-efficiency', '*', 'bld_heatcool-technology-fuel_nonresidential',
+                          out_col='bld_technology-factor_nonresidential', unit='%')
+
+    # multiply space heating energy demand with technology factor for residential and nonresidential buildings
+    dm_heating_res = dm_floor_area.filter({'Variables': ['bld_space-heating'],
+                                                  'Categories1': ['multi-family-households', 'single-family-households']})
+    dm_heating_nonres = dm_floor_area.filter({'Variables': ['bld_space-heating']})
+    dm_heating_nonres.drop(dim='Categories1', col_label=['single-family-households', 'multi-family-households'])
+
+    idx_h = dm_heatcool.idx
+    arr_res = dm_heating_res.array[:, :, 0, np.newaxis, :, np.newaxis] \
+              * dm_heatcool.array[:, :, idx_h['bld_technology-factor_residential'], np.newaxis, np.newaxis, :, idx_h['current']]
+    arr_nonres = dm_heating_nonres.array[:, :, 0, np.newaxis, :, np.newaxis] \
+                 * dm_heatcool.array[:, :, idx_h['bld_technology-factor_nonresidential'], np.newaxis, np.newaxis, :, idx_h['current']]
+
+    # Create new dataframe with categories bld type and fuel type
+    res_cols = {
+        'Country': dm_heating_res.col_labels['Country'],
+        'Years': dm_heating_res.col_labels['Years'],
+        'Variables': ['bld_space-heating-energy-demand'],
+        'Categories1': dm_heating_res.col_labels['Categories1'],
+        'Categories2': dm_heatcool.col_labels['Categories1']
+    }
+    nonres_cols = {
+        'Country': dm_heating_res.col_labels['Country'],
+        'Years': dm_heating_res.col_labels['Years'],
+        'Variables': ['bld_space-heating-energy-demand'],
+        'Categories1': dm_heating_nonres.col_labels['Categories1'],
+        'Categories2': dm_heatcool.col_labels['Categories1']
+    }
+    new_units = {'bld_space-heating-energy-demand': 'GWh'}
+
+    # Join residential and non-residential
+    dm_heating = DataMatrix(res_cols, new_units)
+    dm_heating.array = arr_res
+    dm_heating_nonres = DataMatrix(nonres_cols, new_units)
+    dm_heating_nonres.array = arr_nonres
+    dm_heating.append(dm_heating_nonres, dim='Categories1')
+    del dm_heating_res, dm_heating_nonres, idx, idx_h, new_units, arr_nonres, arr_res, res_cols, nonres_cols
+
+    # Renovation and Construction per depth
+    idx = dm_mix.idx
+    arr_renovated = np.nansum(dm_mix.array[:, :, idx['bld_cumulated-floor-area-renovated'], :, :], axis=-2)
 
     return
 
@@ -297,7 +493,7 @@ def buildings(lever_setting, years_setting):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     buildings_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/buildings.pickle')
     # Read data into workflow datamatrix dictionaries
-    DM_floor_area = read_data(buildings_data_file, lever_setting)
+    DM_floor_area, DM_energy = read_data(buildings_data_file, lever_setting)
 
     # Simulate lifestyle input
     DM_lfs = simulate_lifestyles_to_buildings_input()
@@ -305,8 +501,16 @@ def buildings(lever_setting, years_setting):
     for key in DM_lfs.keys():
         DM_lfs[key] = DM_lfs[key].filter({'Country': cntr_list})
 
+    DM_clm = simulate_climate_to_buildings_input()
+    cntr_list = DM_floor_area['floor_area'].col_labels['Country']
+    for key in DM_clm.keys():
+        DM_clm[key] = DM_clm[key].filter({'Country': cntr_list})
+
     # Floor area workflow
-    floor_area_workflow(DM_floor_area, DM_lfs['floor'])
+    dm_floor_area = bld_floor_area_workflow(DM_floor_area, DM_lfs['floor'])
+    bld_energy_workflow(DM_energy, DM_clm, dm_floor_area)
+
+    return
 
 
 def buildings_local_run():
@@ -316,5 +520,6 @@ def buildings_local_run():
     return
 
 
-#database_from_csv_to_datamatrix() 
+#database_from_csv_to_datamatrix()
 #buildings_local_run()
+
