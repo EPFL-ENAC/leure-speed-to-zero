@@ -320,3 +320,28 @@ class ConstantDataMatrix:
         self.array = array_new
         return
 
+    def rename_col(self, col_in, col_out, dim):
+        # Rename col_labels
+        if isinstance(col_in, str):
+            col_in = [col_in]
+            col_out = [col_out]
+        for i in range(len(col_in)):
+            # Rename column labels
+            ci = self.idx[col_in[i]]
+            self.col_labels[dim][ci] = col_out[i]
+            # Rename key for units
+            if dim == "Variables":
+                self.units[col_out[i]] = self.units[col_in[i]]
+                self.units.pop(col_in[i])
+            # Rename idx
+            self.idx[col_out[i]] = self.idx[col_in[i]]
+            self.idx.pop(col_in[i])
+    
+        return
+
+    def rename_col_regex(self, str1, str2, dim):
+        # Rename all columns containing str1 with str2
+        col_in = [col for col in self.col_labels[dim] if str1 in col]
+        col_out = [word.replace(str1, str2) for word in col_in]
+        self.rename_col(col_in, col_out, dim=dim)
+        return
