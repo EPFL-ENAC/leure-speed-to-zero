@@ -27,7 +27,7 @@ def database_pre_processing():
     edit_database(file, lever, column='lever', mode='rename',
                   pattern={lever: 'bld_fixed-assumptions'})
     lever = 'bld_fixed-assumptions'
-    edit_database(file, lever, column='eucalc-name', mode='rename',pattern={'bld_CO2-factors': 'bld_CO2-factors-GHG'},
+    edit_database(file, lever, column='eucalc-name', mode='rename', pattern={'bld_CO2-factors': 'bld_CO2-factors-GHG'},
                   filter_dict={'eucalc-name': '_CH4|_N2O|_SO2'})
     edit_database(file, lever, column='eucalc-name', mode='rename',
                   pattern={'bld_heatcool-efficiency': 'bld_heatcool-efficiency-reference-year'},
@@ -194,6 +194,7 @@ def database_from_csv_to_datamatrix():
 
     return
 
+
 def read_data(data_file, lever_setting):
 
     with open(data_file, 'rb') as handle:
@@ -205,7 +206,8 @@ def read_data(data_file, lever_setting):
     DM_floor_area = {
         'buildings_rates': DM_ots_fts['building-renovation-rate']['bld_building'].filter_w_regex({'Variables': '.*rate'}),
         'floor_area': DM_buildings['fxa']['bld_type'].filter_w_regex({'Variables': 'bld_floor-area.*'}),
-        'building_mix': DM_buildings['fxa']['bld_type'].filter_w_regex({'Variables': 'bld_building-mix.*', 'Categories1': '.*households'})
+        'building_mix': DM_buildings['fxa']['bld_type'].filter_w_regex({'Variables': 'bld_building-mix.*', 'Categories1': '.*households'}),
+        'surface-per-floorarea': DM_buildings['fxa']['surface']
     }
 
     DM_energy = {
@@ -217,8 +219,10 @@ def read_data(data_file, lever_setting):
         'district-heating': DM_ots_fts['district-heating-share']
     }
 
-    return DM_floor_area, DM_energy
 
+    cdm_const = DM_buildings['constant']
+
+    return DM_floor_area, DM_energy, cdm_const
 
 
 def simulate_lifestyles_to_buildings_input():
@@ -253,7 +257,8 @@ def simulate_climate_to_buildings_input():
     return DM_clm
 
 
-def bld_floor_area_workflow(DM_floor_area, dm_lfs):
+def bld_floor_area_workflow(DM_floor_area, dm_lfs, baseyear):
+    # Floor area and material workflow
 
     dm_building_mix = DM_floor_area['building_mix']
     idx_b = dm_building_mix.idx
@@ -305,10 +310,28 @@ def bld_floor_area_workflow(DM_floor_area, dm_lfs):
                     * dm_floor_area.array[:, :, idx_f['bld_floor-area'], :]
     dm_floor_area.add(arr_renovated, dim='Variables', col_label='bld_floor-area-renovated', unit='Mm2')
 
+    #################
+    ### MATERIALS ###
+    #################
+
+    # Floor area renovated and constructed for fts take into account the gap years
+    # Therefore to obtain the renovated and construction areas only for the year of interest
+    # we need to devide by 1 for ots and 5 for fts
+    gap_years = np.array(dm_floor_area.col_labels['Years'][1:]) - np.array(dm_floor_area.col_labels['Years'][:-1])
+    gap_years = np.concatenate(([1], gap_years))
+    arr_renovated = dm_floor_area.array[:, :, idx['bld_floor-area-renovated'], :]/gap_years[np.newaxis, :, np.newaxis]
+    arr_constructed = dm_floor_area.array[:, :, idx['bld_floor-area-constructed'], :]/gap_years[np.newaxis, :, np.newaxis]
+    dm_surface = DM_floor_area['surface-per-floorarea']
+    idx = dm_surface.idx
+    arr_surf_renovated = dm_surface.array[:, :, idx['bld_surface-per-floorarea'], :, :] * arr_renovated[..., np.newaxis]
+    arr_surf_constructed = dm_surface.array[:, :, idx['bld_surface-per-floorarea'], :, :] * arr_constructed[..., np.newaxis]
+    dm_surface.add(arr_surf_renovated, dim='Variables', col_label='bld_renovated-surface-area-renovated', unit='Mm2')
+    dm_surface.add(arr_surf_constructed, dim='Variables', col_label='bld_renovated-surface-area-constructed', unit='Mm2')
+    del arr_surf_constructed, arr_constructed, arr_demolition, arr_renovated, arr_surf_renovated
+
     # Compute cumulation of demolished renovated and constructed area from baseyear onwards
     # Note that the rates already accounted for the fact that we only have one in 5 years
     variables = ['bld_floor-area-demolished', 'bld_floor-area-constructed', 'bld_floor-area-renovated']
-    baseyear = 2015
     idx = dm_floor_area.idx
     for var in variables:
         # comulate dum of constructed, demolished, renovated
@@ -331,8 +354,9 @@ def bld_floor_area_workflow(DM_floor_area, dm_lfs):
     return dm_floor_area
 
 
-def bld_energy_workflow(DM_energy, DM_clm, dm_floor_area):
-    # Compute renovation area by building type (e.g. office, households, ..) and renovation type aka depth (e.g. dep, exi, med, shl)
+def bld_energy_workflow(DM_energy, DM_clm, dm_floor_area, cdm_const):
+    # Compute renovation area by building type (e.g. office, households, ..)
+    # and renovation type aka depth (e.g. dep, exi, med, shl)
     dm_mix = DM_energy['building_mix']
     idx_m = dm_mix.idx
     idx_f = dm_floor_area.idx
@@ -343,7 +367,7 @@ def bld_energy_workflow(DM_energy, DM_clm, dm_floor_area):
 
     # Compute construction mix by building type and depth
     idx_m = dm_mix.idx
-    arr_construction_area_mix = dm_floor_area.array[:, :, idx_f['bld_cumulated-floor-area-constructed'], :, np.newaxis] \
+    arr_construction_area_mix = dm_floor_area.array[:, :, idx_f['bld_cumulated-floor-area-constructed'], :, np.newaxis]\
                                 * dm_mix.array[:, :, idx_m['bld_building-construction-mix'], :, :]
     dm_mix.add(arr_construction_area_mix, dim='Variables', col_label='bld_cumulated-floor-area-constructed', unit='Mm2')
     del arr_construction_area_mix
@@ -482,18 +506,116 @@ def bld_energy_workflow(DM_energy, DM_clm, dm_floor_area):
     dm_heating.append(dm_heating_nonres, dim='Categories1')
     del dm_heating_res, dm_heating_nonres, idx, idx_h, new_units, arr_nonres, arr_res, res_cols, nonres_cols
 
-    # Renovation and Construction per depth
+    # Sum floor area and energy-need over building type
     idx = dm_mix.idx
     arr_renovated = np.nansum(dm_mix.array[:, :, idx['bld_cumulated-floor-area-renovated'], :, :], axis=-2)
+    arr_constructed = np.nansum(dm_mix.array[:, :, idx['bld_cumulated-floor-area-constructed'], :, :], axis=-2)
+    idx = dm_floor_area.idx
+    arr_unrenovated = np.nansum(dm_floor_area.array[:, :, idx['bld_cumulated-floor-area-unrenovated'], :], axis=-1)
+    arr_demolished = np.nansum(dm_floor_area.array[:, :, idx['bld_cumulated-floor-area-demolished'], :], axis=-1)
 
-    return
+    idx = dm_energy_heating.idx
+    arr_energy_need = np.nansum(dm_energy_heating.array[:, :, idx['bld_energy-need_space-heating'], :, :, :], axis=-3)
+
+    # Create datamatrix by depth
+    col_labels = {
+        'Country': dm_mix.col_labels['Country'].copy(),
+        'Years': dm_mix.col_labels['Years'].copy(),
+        'Variables': ['bld_floor-area-renovated'],
+        'Categories1': dm_mix.col_labels['Categories2'].copy()
+    }
+    dm_depth = DataMatrix(col_labels, units={'bld_floor-area-renovated': 'Mm2'})
+    dm_depth.array = arr_renovated[:, :, np.newaxis, :]
+    dm_depth.add(arr_constructed, dim='Variables', col_label='bld_floor-area-constructed', unit='Mm2')
+    dm_depth.add(np.nan, dim='Variables', col_label=['bld_floor-area-unrenovated', 'bld_floor-area-demolished'],
+                 unit=['Mm2', 'Mm2'], dummy=True)
+    idx = dm_depth.idx
+    dm_depth.array[:, :, idx['bld_floor-area-unrenovated'], idx['exi']] = arr_unrenovated
+    dm_depth.array[:, :, idx['bld_floor-area-demolished'], idx['exi']] = arr_demolished
+
+    # Add energy to dataframe
+    # Build the col_labels
+    var_name_list = []
+    for cat in dm_energy_heating.col_labels['Categories3']:
+        var_name_list.append('bld_energy-demand-space-heating-' + cat)
+    # Switch the last two axis
+    arr_energy_need = np.moveaxis(arr_energy_need, -2, -1)
+    dm_depth.add(arr_energy_need, dim='Variables', col_label=var_name_list, unit=['GWh', 'GWh', 'GWh'])
+    del arr_constructed, arr_demolished, arr_energy_need, arr_renovated, arr_unrenovated, col_labels, cat, var_name_list
+
+    ###################
+    ###  EMISSIONS  ###
+    ###################
+    # Filter emissions from fuel used in building
+    cdm_const = cdm_const.filter({'Categories1': dm_heating.col_labels['Categories2']})
+    # Compute emissions by building type and fuel
+    arr_emissions = cdm_const.array[np.newaxis, np.newaxis, :, np.newaxis, :] * dm_heating.array/1000  # converts to TWh
+    dm_heating.add(arr_emissions, dim='Variables', col_label='bld_CO2-emissions', unit='Mt')
+    # Compute emissions by building type
+    idx = dm_heating.idx
+    arr_CO2_by_bld = np.nansum(dm_heating.array[:, :, idx['bld_CO2-emissions'], :, :], axis=-1)
+    dm_floor_area.add(arr_CO2_by_bld, dim='Variables', col_label='bld_CO2-emissions', unit='Mt')
+    # Compute emissions by fuel type
+    arr_CO2_by_fuel = np.nansum(dm_heating.array[:, :, idx['bld_CO2-emissions'], :, :], axis=-2)
+    cols_by_fuel = {
+        'Country': dm_heating.col_labels['Country'].copy(),
+        'Years': dm_heating.col_labels['Years'].copy(),
+        'Variables': ['bld_CO2-emissions'],
+        'Categories1': dm_heating.col_labels['Categories2'].copy()
+    }
+    dm_CO2_by_fuel = DataMatrix(cols_by_fuel, units={'bld_CO2-emissions': 'Mt'})
+    dm_CO2_by_fuel.array = arr_CO2_by_fuel[:, :, np.newaxis, :]
+
+    # Prepare output
+    DM_energy_out = {}
+
+    DM_energy_out['TPE'] = {
+        'floor-area_energy-demand': dm_depth,
+        'floor-area': dm_floor_area.filter({'Variables': ['bld_floor-area', 'bld_space-heating']})
+    }
+
+    DM_energy_out['district-heating'] = {
+        'heat-supply': dm_energy_heating.filter({'Variables': ['bld_district-heating-space-heating-supply']}),
+        'heat-electricity': dm_heating.filter({'Variables': ['bld_space-heating-energy-demand'],
+                                               'Categories2': ['electricity']})
+    }
+
+    DM_energy_out['air-pollution'] = {
+        'energy-demand': dm_heating.filter({'Variables': ['bld_space-heating-energy-demand'],
+                                            'Categories2': ['electricity', 'gas-ff-natural', 'heat-ambient',
+                                                            'liquid-ff-heatingoil', 'solid-bio', 'solid-ff-coal']})
+    }
+
+    DM_energy_out['agriculture'] = {
+        'energy-demand': dm_heating.filter({'Variables': ['bld_space-heating-energy-demand'],
+                                            'Categories2': ['liquid-bio-gasoline', 'liquid-bio-diesel', 'gas-bio', 'solid-bio']})
+    }
+
+    DM_energy_out['emissions'] = {
+        'heat-emissions-by-bld':  dm_floor_area.filter({'Variables': ['bld_CO2-emissions']}),
+        'heat-emissions-by-fuel': dm_CO2_by_fuel
+    }
+
+    DM_energy_out['wf_materials'] = {
+        'area_increase_unrenovated': dm_floor_area.filter_w_regex({'Variables': '.*increase|.*unrenovated|.*demolished'}),
+        'area_constructed_renovated': dm_mix.filter_w_regex({'Variables': '.*renovated|.*constructed'})
+    }
+
+    DM_energy_out['wf_costs'] = {
+        'households-dh': dm_energy_heating.filter_w_regex({'Variables': 'bld_district-heating-space-heating-supply',
+                                                           'Categories1': '.*households'})
+    }
+
+    return DM_energy_out
+
 
 
 def buildings(lever_setting, years_setting):
+
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     buildings_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/buildings.pickle')
     # Read data into workflow datamatrix dictionaries
-    DM_floor_area, DM_energy = read_data(buildings_data_file, lever_setting)
+    DM_floor_area, DM_energy, cdm_const = read_data(buildings_data_file, lever_setting)
 
     # Simulate lifestyle input
     DM_lfs = simulate_lifestyles_to_buildings_input()
@@ -507,8 +629,11 @@ def buildings(lever_setting, years_setting):
         DM_clm[key] = DM_clm[key].filter({'Country': cntr_list})
 
     # Floor area workflow
-    dm_floor_area = bld_floor_area_workflow(DM_floor_area, DM_lfs['floor'])
-    bld_energy_workflow(DM_energy, DM_clm, dm_floor_area)
+    baseyear = years_setting[1]
+    dm_floor_area = bld_floor_area_workflow(DM_floor_area, DM_lfs['floor'], baseyear)
+    DM_energy_wf = bld_energy_workflow(DM_energy, DM_clm, dm_floor_area, cdm_const)
+
+
 
     return
 
