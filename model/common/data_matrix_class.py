@@ -667,7 +667,9 @@ class DataMatrix:
         array = self.array.copy()
         col_labels = self.col_labels.copy()  # dictionary with dim_labels[i] as key
         units = self.units.copy()
+        dim_labels = self.dim_labels.copy()
         dm = DataMatrix(col_labels=col_labels, units=units)
+        dm.dim_labels = dim_labels
         dm.array = array
         return dm
 
