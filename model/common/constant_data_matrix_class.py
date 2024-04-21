@@ -333,6 +333,37 @@ class ConstantDataMatrix:
             array_new = np.moveaxis(array_new, -2, a_root)
         self.array = array_new
         return
+    
+    def deepen_twice(self):
+        # Adds two dimensions to the datamatrix based on the last dimension column names
+        root_dim = self.dim_labels[-1]
+        tmp_cols = []
+
+        for col in self.col_labels[root_dim]:
+            last_index = col.rfind("_")
+            new_col = col[:last_index] + '?' + col[last_index+1:]
+            tmp_cols.append(new_col)
+            if root_dim == 'Variables':
+                self.units[new_col] = self.units[col]
+                self.units.pop(col)
+        self.col_labels[root_dim] = tmp_cols
+
+        self.deepen(sep='_')
+
+        tmp_cols = []
+        root_dim = self.dim_labels[-1]
+        for col in self.col_labels[root_dim]:
+            last_index = col.rfind("?")
+            new_col = col[:last_index] + '_' + col[last_index+1:]
+            tmp_cols.append(new_col)
+            if root_dim == 'Variables':
+                self.units[new_col] = self.units[col]
+                self.units.pop(col)
+        self.col_labels[root_dim] = tmp_cols
+
+        self.deepen(sep='_')
+
+        return
 
     def rename_col(self, col_in, col_out, dim):
         # Rename col_labels
