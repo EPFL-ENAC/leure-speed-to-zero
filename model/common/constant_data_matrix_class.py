@@ -222,7 +222,11 @@ class ConstantDataMatrix:
         array = self.array.copy()
         col_labels = self.col_labels.copy()  # dictionary with dim_labels[i] as key
         units = self.units.copy()
+        dim_labels = self.dim_labels.copy()
+        idx = self.idx.copy()
         cdm = ConstantDataMatrix(col_labels=col_labels, units=units)
+        cdm.dim_labels = dim_labels
+        cdm.idx = idx
         cdm.array = array
         return cdm
     
