@@ -11,6 +11,7 @@ from os import listdir
 from os.path import isfile, join
 import pickle
 
+
 def add_all_missing_fts_years(dm, baseyear, lastyear):
     # Given a DataMatrix in the style of EUcalc with years every 5 for fts, it returns a DataMatrix with all years
     # whose values are set to nan
@@ -49,7 +50,6 @@ def interpolate_nan_cubic(arr, x_values):
 
 
 def interpolate_nan_smooth(arr, x_values):
-
     not_nan_indices = ~np.isnan(arr)
 
     if np.any(not_nan_indices):
@@ -75,7 +75,8 @@ def adjust_trend(dm, baseyear, expected_trend):
     if expected_trend == None:
         return dm
     # perform a mean over the last years
-    last_ots_years = slice(dm.idx[baseyear-5], dm.idx[baseyear+1]) #last_ots_years = range(dm.idx[baseyear-5], dm.idx[baseyear+1])
+    last_ots_years = slice(dm.idx[baseyear - 5],
+                           dm.idx[baseyear + 1])  # last_ots_years = range(dm.idx[baseyear-5], dm.idx[baseyear+1])
     last_ots_values = np.mean(dm.array[:, last_ots_years, ...], axis=1)
     increasing_loc = (dm.array[:, -1, ...] > last_ots_values)
     noise = dm.array[:, 0:dm.idx[baseyear], ...].std(axis=1)
@@ -89,8 +90,8 @@ def adjust_trend(dm, baseyear, expected_trend):
 def flatten_curve_edges(dm, baseyear, length):
     idx = dm.idx
     for j in range(length):
-        dm.array[:, idx[baseyear]+j, ...] = dm.array[:, idx[baseyear], ...]
-        dm.array[:, -1-j, ...] = dm.array[:, -1, ...]
+        dm.array[:, idx[baseyear] + j, ...] = dm.array[:, idx[baseyear], ...]
+        dm.array[:, -1 - j, ...] = dm.array[:, -1, ...]
     return dm
 
 
@@ -155,8 +156,9 @@ def compute_stock(dm, rr_regex, tot_regex, waste_col, new_col):
     idx = dm.index_all()
     # Compute tot and rr at time t-1
     dm.array = np.moveaxis(dm.array, 1, -1)  # moves years dim at the end
-    tot_tm1 = ((n-1)/n * dm.array[:, idx[tot_col], ...] + 1/n * dm.array[:, idx[tot_col+'_tmn'], ...]).astype(int)
-    rr_tm1 = (n-1)/n * dm.array[:, idx[rr_col], ...] + 1/n * dm.array[:, idx[rr_col+'_tmn'], ...]
+    tot_tm1 = ((n - 1) / n * dm.array[:, idx[tot_col], ...] + 1 / n * dm.array[:, idx[tot_col + '_tmn'], ...]).astype(
+        int)
+    rr_tm1 = (n - 1) / n * dm.array[:, idx[rr_col], ...] + 1 / n * dm.array[:, idx[rr_col + '_tmn'], ...]
     dm.array = np.moveaxis(dm.array, -1, 1)  # moves years back in position
     tot_tm1 = np.moveaxis(tot_tm1, -1, 1)
     rr_tm1 = np.moveaxis(rr_tm1, -1, 1)
@@ -192,7 +194,8 @@ def dm_lever_dict_from_df(df_fts, levername, num_cat):
     return dict_dm
 
 
-def read_database_to_ots_fts_dict(file, lever, num_cat, baseyear, years, dict_ots, dict_fts, df_ots=None, df_fts=None, filter_dict=None):
+def read_database_to_ots_fts_dict(file, lever, num_cat, baseyear, years, dict_ots, dict_fts, df_ots=None, df_fts=None,
+                                  filter_dict=None):
     # It reads the database in data/csv with name file and returns the ots and the fts in form
     # of datamatrix accessible by dictionaries:
     # e.g.  dict_ots = {lever: dm_ots}
@@ -225,7 +228,8 @@ def read_database_to_ots_fts_dict(file, lever, num_cat, baseyear, years, dict_ot
     return dict_ots, dict_fts
 
 
-def read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list, baseyear, years, dict_ots, dict_fts, column: str, group_list: list):
+def read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list, baseyear, years, dict_ots, dict_fts, column: str,
+                                           group_list: list):
     # It reads the database in data/csv with name file and returns the ots and the fts in form
     # of datamatrix accessible by dictionaries:
     # e.g.  dict_ots = {lever: {group1: dm_1, group2: dm_2, grou}}
@@ -238,7 +242,8 @@ def read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list, baseyear, 
         num_cat = num_cat_list[i]
         dict_tmp_ots = {}
         dict_tmp_fts = {}
-        read_database_to_ots_fts_dict(file, lever, num_cat, baseyear, years, dict_tmp_ots, dict_tmp_fts, filter_dict=filter_dict)
+        read_database_to_ots_fts_dict(file, lever, num_cat, baseyear, years, dict_tmp_ots, dict_tmp_fts,
+                                      filter_dict=filter_dict)
         group = group.replace('.*', '')
         dm_ots_groups[group] = dict_tmp_ots[lever]
         dm_fts_groups[group] = dict_tmp_fts[lever]
@@ -250,7 +255,6 @@ def read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list, baseyear, 
 
 
 def filter_geoscale(global_vars):
-
     geo_pattern = global_vars['geoscale']
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     mypath = os.path.join(current_file_directory, '../../_database/data/datamatrix')
@@ -259,7 +263,7 @@ def filter_geoscale(global_vars):
     for file in files:
         if '.pickle' in file:
             with open(join(mypath, file), 'rb') as handle:
-               DM_module = pickle.load(handle)
+                DM_module = pickle.load(handle)
 
             DM_module_geo = {'fxa': {}, 'fts': {}, 'ots': {}}
 
@@ -331,3 +335,11 @@ def read_level_data(DM, lever_setting):
             DM_ots_fts[lever] = dm
 
     return DM_ots_fts
+
+
+#  Update Constant file (overwrite existing & append new data)
+def update_interaction_constant_from_file(file_new):
+    db_new = read_database(file_new, lever='',db_format=True)
+    file_out = 'interactions_constants'
+    update_database_from_db(file_out, db_new)
+    return
