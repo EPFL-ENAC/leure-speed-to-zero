@@ -248,14 +248,14 @@
       "type": "StackedArea",
       "unit": "million EUR",
       "outputs": [
-		"bld_capex_reno_dep_single-family-households[MEUR]",
-		"bld_capex_reno_dep_multi-family-households[MEUR]",
-		"bld_capex_reno_dep_offices[MEUR]",
-		"bld_capex_reno_dep_hotels[MEUR]",
-		"bld_capex_reno_dep_education[MEUR]",
-		"bld_capex_reno_dep_health[MEUR]",
-		"bld_capex_reno_dep_trade[MEUR]",
-		"bld_capex_reno_dep_other[MEUR]"
+		"bld_capex_reno_single-family-households[MEUR]",
+		"bld_capex_reno_multi-family-households[MEUR]",
+		"bld_capex_reno_offices[MEUR]",
+		"bld_capex_reno_hotels[MEUR]",
+		"bld_capex_reno_education[MEUR]",
+		"bld_capex_reno_health[MEUR]",
+		"bld_capex_reno_trade[MEUR]",
+		"bld_capex_reno_other[MEUR]"
       ]
     },
    "RenovationInvestmentDepth": {
