@@ -75,7 +75,7 @@ def database_from_csv_to_datamatrix():
     with open(f, 'wb') as handle:  # 'wb': writing binary / standard protocol for pickle
         pickle.dump(DM_climate, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    return
+    return DM_climate
 
 # Update/Create the Pickle
 # database_from_csv_to_datamatrix()  # un-comment to update
