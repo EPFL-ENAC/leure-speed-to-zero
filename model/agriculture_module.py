@@ -70,7 +70,7 @@ df = pd.read_excel(f, sheet_name="default")
 dm_lfs = DataMatrix.create_from_df(df, num_cat=1)
 
 # Read self-sufficiency
-file = 'agriculture_self-sufficiency'
+file = 'agriculture_self-sufficiency_pathwaycalc'
 lever = 'food-net-import'
 # Rename to correct format
 edit_database(file,lever,column='eucalc-name',pattern={'processeced':'processed'},mode='rename')
@@ -78,6 +78,13 @@ edit_database(file,lever,column='eucalc-name',pattern={'meat_':'meat-', 'abp_':'
 dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1, baseyear=baseyear, years=years_all,
                                                        dict_ots=dict_ots, dict_fts=dict_fts)
 
+# Group all datamatrix in a single structure
+DM_agriculture = {
+    #'fxa': dict_fxa,
+    #'constant': cdm_const,
+    'fts': dict_fts,
+    'ots': dict_ots
+}
 
 #####################
 # CALCULATION TREE  #
@@ -96,6 +103,12 @@ dm_lfs.operation('lfs_diet', '+', 'lfs_food-wastes', out_col='agr_demand', unit=
 pro_liv_meat = ['bov', 'sheep', 'pigs', 'poultry', 'oth-animals']
 for cat in pro_liv_meat:
     new_cat = 'pro-liv-meat-'+cat
+    # Dropping the -s at the end of pigs (for name matching reasons)
+    if new_cat.endswith('pigs'):
+        new_cat = new_cat[:-1]
+    # Replacing bov by bovine (for name matching reasons)
+    if new_cat == 'pro-liv-meat-bov':
+        new_cat = 'pro-liv-meat-bovine'
     dm_lfs.rename_col(cat, new_cat, dim='Categories1')
 
 # Adding bev prefix
@@ -104,22 +117,60 @@ for cat in pro_bev:
     new_cat = 'pro-bev-' + cat
     dm_lfs.rename_col(cat, new_cat, dim='Categories1')
 
+# Adding milk prefix
+pro_milk = ['milk']
+for cat in pro_milk:
+    new_cat = 'pro-liv-abp-dairy-' + cat
+    dm_lfs.rename_col(cat, new_cat, dim='Categories1')
+
+# Adding egg prefix
+pro_egg = ['egg']
+for cat in pro_egg:
+    new_cat = 'pro-liv-abp-hens-' + cat
+    dm_lfs.rename_col(cat, new_cat, dim='Categories1')
+
 # Adding crop prefix
 crop = ['cereals', 'oilcrops', 'pulses', 'starch', 'fruits', 'veg']
 for cat in crop:
-    new_cat = 'pro-crop-' + cat
+    new_cat = 'crop-' + cat
+    # Dropping the -s at the end of cereals, oilcrops, pulses, fruits (for name matching reasons)
+    if new_cat.endswith('s'):
+        new_cat = new_cat[:-1]
     dm_lfs.rename_col(cat, new_cat, dim='Categories1')
-# Dropping the -s at the end of cereals, oilcrops, pulses, fruits ??
-######
+
+# Adding abp-processed prefix
+processed = ['afats', 'offal']
+for cat in processed:
+    new_cat = 'pro-liv-abp-processed-' + cat
+    # Dropping the -s at the end afats (for name matching reasons)
+    if new_cat.endswith('s'):
+        new_cat = new_cat[:-1]
+    dm_lfs.rename_col(cat, new_cat, dim='Categories1')
 
 # Adding crop processed prefix
-processed = ['voil', 'sweet', 'sugar', 'afats', 'offal']
+processed = ['voil', 'sweet', 'sugar']
 for cat in processed:
     new_cat = 'pro-crop-processed-' + cat
     dm_lfs.rename_col(cat, new_cat, dim='Categories1')
 
-# Domestic production [kcal] = agr_demand [kcal] * net-imports [%] (processed food)
 # Filtering dms to only keep pro
+dm_lfs_pro = dm_lfs.filter_w_regex({'Categories1':'pro-.*','Variables':'agr_demand'})
+food_net_import_pro = DM_agriculture['food-net-import'].filter_w_regex({'Categories1':'pro-.*','Variables':'agr_food-net-import'})
+# Dropping the unwanted columns
+food_net_import_pro.drop(dim='Categories1', col_label=['pro-crop-processed-cake', 'pro-crop-processed-molasse'])
+
+# Sorting the dms alphabetically
+food_net_import_pro.sort(dim='Categories1')
+dm_lfs_pro.sort(dim='Categories1')
+
+# Domestic production processed food [kcal] = agr_demand_pro_(.*) [kcal] * net-imports_pro_(.*) [%]
+idx_lfs = dm_lfs_pro.idx
+idx_import = food_net_import_pro.idx
+agr_domestic_production = dm_lfs_pro.array[:,:,idx_lfs['agr_demand'],:] \
+                          * food_net_import_pro.array[:,:,idx_import['agr_food-net-import'],:]
+
+dm_lfs_pro.add(agr_domestic_production, dim='Variables', col_label='agr_domestic_production', unit='kcal')
+
 
 # idx = dm_lfs.idx
 # overall_food_demand = dm_lfs.array[:,:,idx['lfs_diet'],:] + dm_lfs.array[:,:,idx['lfs_food-wastes'],:]
