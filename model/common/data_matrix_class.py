@@ -49,6 +49,9 @@ class DataMatrix:
         # Function called by the classmethod 'create_from_df' (see below)
         # It is used to transform a dataframe df (table) into a datamatrix by specifying the number of categories
         # ATT: to be run after extract_structure which initialises dim_labels, col_labels and units
+        if df.empty:
+            ValueError(f'You cannot create a datamatrix from an empty dataframe.')
+
         dims = []
         df.sort_values(by=['Country', 'Years'], inplace=True)
         if num_cat > 3:
@@ -105,6 +108,9 @@ class DataMatrix:
             if missing_columns:
                 raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
             return
+
+        if df.empty:
+            ValueError(f'You cannot create a datamatrix from an empty dataframe.')
 
         check_columns(df)
 
@@ -167,6 +173,8 @@ class DataMatrix:
         # Creates a datamatrix given a dataframe and the number of categories that we want
         # Note that df needs to have columns 'Country' and 'Years'
         # it returns a datamatrix
+        if df.empty:
+            ValueError(f'You cannot create a datamatrix from an empty dataframe.')
         dm = cls()
         dm.extract_structure(df, num_cat)
         dm.read_data(df, num_cat)
