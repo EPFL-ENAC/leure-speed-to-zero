@@ -104,11 +104,11 @@
    "BldRenovationInvestmentDepth": {
       "title": "Capital expenditures for renovation by renovation depth",
       "type": "StackedArea",
-      "unit": "billion EUR",
+      "unit": "million EUR",
       "outputs": [
-		"bld_capex_reno_shl[billion_EUR]",
-		"bld_capex_reno_med[billion_EUR]",
-		"bld_capex_reno_dep[billion_EUR]"
+		"bld_capex_reno_shl[MEUR]",
+		"bld_capex_reno_med[MEUR]",
+		"bld_capex_reno_dep[MEUR]"
       ]
     },
 	"CCUSCAPEX": {
