@@ -43,7 +43,15 @@ class DataMatrix:
             self.idx = self.index_all()
 
     def __repr__(self):
-        return f'DataMatrix with shape {self.array.shape} and variables {self.col_labels["Variables"]}'
+        
+        if len(self.col_labels) == 3:
+            return f'DataMatrix with shape {self.array.shape} and variables {self.col_labels["Variables"]}'
+        if len(self.col_labels) == 4:
+            return f'DataMatrix with shape {self.array.shape}, variables {self.col_labels["Variables"]} and categories1 {self.col_labels["Categories1"]}'
+        if len(self.col_labels) == 5:
+            return f'DataMatrix with shape {self.array.shape}, variables {self.col_labels["Variables"]}, categories1 {self.col_labels["Categories1"]} and categories2 {self.col_labels["Categories2"]}'
+        if len(self.col_labels) == 6:
+            return f'DataMatrix with shape {self.array.shape}, variables {self.col_labels["Variables"]}, categories1 {self.col_labels["Categories1"]}, categories2 {self.col_labels["Categories2"]} and categories3 {self.col_labels["Categories3"]}'
 
     def read_data(self, df, num_cat):
         # Function called by the classmethod 'create_from_df' (see below)
