@@ -6,11 +6,12 @@ import numpy as np
 import pickle  # read/write the data in pickle
 import json  # read the lever setting
 import os  # operating system (e.g., look for workspace)
+import pandas as pd
 
 # Import Class
 from model.common.data_matrix_class import DataMatrix  # Class for the model inputs
 from model.common.constant_data_matrix_class import ConstantDataMatrix  # Class for the constant inputs
-from model.common.auxiliary_functions import read_level_data
+from model.common.auxiliary_functions import read_level_data, filter_geoscale
 
 # ImportFunctions
 from model.common.io_database import read_database, read_database_fxa  # read functions for levers & fixed assumptions
@@ -170,8 +171,8 @@ def database_from_csv_to_datamatrix():
 
     return
 
-update_interaction_constant_from_file('interactions_constants_local')
-database_from_csv_to_datamatrix()  # un-comment to update
+# update_interaction_constant_from_file('interactions_constants_local') # uncomment to update constant
+# database_from_csv_to_datamatrix()  # un-comment to update
 
 #######################################################################################################################
 # Database - Power - Sub Data Matrices
@@ -223,7 +224,7 @@ def read_data(data_file, lever_setting):
     dm_hydroelectric = DM_ots_fts['hydroelectric-capacity']
     dm_capacity_non_fuel_based.append(dm_hydroelectric, dim='Categories1')
 
-    dm_geothermal = DM_ots_fts['geothermal-wind-capacity']
+    dm_geothermal = DM_ots_fts['geothermal-capacity']
     dm_capacity_non_fuel_based.append(dm_geothermal, dim='Categories1')
 
     dm_marine = DM_ots_fts['marine-capacity']
@@ -231,17 +232,14 @@ def read_data(data_file, lever_setting):
 
     # Aggregated Data Matrix - Non-fuel-based power production
 
-    DM_nfb_capacity = {
+    DM_capacity = {
         'pv-capacity': dm_pv,
         'csp-capacity': dm_csp,
         'offshore-wind-capacity': dm_offshore_wind,
         'onshore-wind-capacity': dm_onshore_wind,
         'hydroelectric-capacity': dm_hydroelectric,
         'geothermal-capacity': dm_geothermal,
-        'marine-capacity': dm_marine
-    }
-
-    DM_fb_capacity = {
+        'marine-capacity': dm_marine,
         'coal-capacity': dm_coal,
         'gas-capacity': dm_gas,
         'oil-capacity': dm_oil,
@@ -252,12 +250,59 @@ def read_data(data_file, lever_setting):
 
     cdm_const = DM_power['constant']
 
-    return DM_nfb_capacity, DM_fb_capacity, cdm_const
+    return DM_capacity, cdm_const
+
+
+#######################################################################################################################
+# Database - Power - Local interface - Climate
+#######################################################################################################################
+def simulate_climate_to_power_input():
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(current_file_directory, "../_database/data/xls/All-Countries-interface_from-climate-to-power.xlsx")
+    df = pd.read_excel(f, sheet_name="default")
+    dm_climate = DataMatrix.create_from_df(df, num_cat=1)
+
+    return dm_climate
+
+#######################################################################################################################
+# Database - Power - Local interface - Buildings
+#######################################################################################################################
+
+def simulate_buildings_to_power_input():
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(current_file_directory, "../_database/data/xls/"
+                                             "All-Countries-interface_from-buildings-to-power.xlsx")
+    df = pd.read_excel(f, sheet_name="default")
+    dm = DataMatrix.create_from_df(df, num_cat=0)
+
+    # Space heating flow:
+    dm_bld_heating = dm.filter_w_regex({'Variables': 'bld_space-heating-energy-demand_.*'})
+    dm_bld_appliances = dm.filter_w_regex({'Variables': 'bld_energy-demand_appliances_.*'})
+    dm_bld_electricity = dm.filter_w_regex({'Variables': 'bld_residential_cooking_.*|bld_hot-water-demand_.*|'
+                                                         'bld_lighting-energy-demand_.*|'
+                                                         'bld_space-cooling-energy-demand_.*'})
+
+    DM_bld= {
+        'appliance': dm_bld_appliances,
+        'space-heating': dm_bld_heating,
+        'electricity': dm_bld_electricity
+    }
+
+    return DM_bld
+
 
 
 #######################################################################################################################
 # Calculation tree - Power - Production
 #######################################################################################################################
+def fuel_production_workflow(dm_climate, DM_capacity, cdm_const):
+    # Gross electricity production [GWh]
+    dm_existing_capacity = DM_capacity['existing-capacity']
+    #dm_existing_capacity.add(dm_climate, dim='Variables', col_label='lfs_energy-intake_total', unit='kcal/cap/day')
+    #dm_diet_requirement.operation('lfs_kcal-req_req', '-', 'lfs_energy-intake_total',
+                                 # dim="Variables", out_col='lfs_healthy-gap', unit='kcal/cap/day')
+
+    return dm_existing_capacity
 
 #######################################################################################################################
 # Calculation tree - Power - Demand
@@ -271,16 +316,14 @@ def power(lever_setting, years_setting):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     power_data_file = os.path.join(current_file_directory,
                                         '../_database/data/datamatrix/geoscale/power.pickle')
-    DM_nfb_capacity, DM_fb_capacity, cdm_const = read_data(power_data_file,lever_setting)
+    DM_capacity, dm_climate, cdm_const = read_data(power_data_file,lever_setting)
 
     # To send to TPE (result run)
-    dm_diet = dm_diet_split.filter({'Variables': ['cal_diet']})
-    dm_diet.rename_col('cal_diet', 'lfs_diet', dim="Variables")
-    df_diet = dm_diet.write_df()
+    dm_fake = fuel_production_workflow(dm_climate, DM_capacity, cdm_const)
 
     # concatenate all results to df
 
-    results_run = df_diet
+    results_run = dm_fake
     return results_run
 
 
@@ -303,3 +346,6 @@ def local_power_run():
 
 
 results_run = local_power_run()
+
+# TODO: (decommissioned) refresh dataset on KINME pre-processing (existing capacity x 13) & pickle
+# TODO: Compute gross production [GWh]
