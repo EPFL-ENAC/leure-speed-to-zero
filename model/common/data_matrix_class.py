@@ -697,6 +697,8 @@ class DataMatrix:
         return dm
 
     def switch_categories_order(self, cat1='Categories1', cat2='Categories2'):
+        if 'Categories' not in cat1 or 'Categories' not in cat2:
+            raise ValueError(' You can only switch the order of two Categories')
         # Extract axis of cat1, cat2
         a1 = self.dim_labels.index(cat1)
         a2 = self.dim_labels.index(cat2)
