@@ -343,3 +343,16 @@ def update_interaction_constant_from_file(file_new):
     file_out = 'interactions_constants'
     update_database_from_db(file_out, db_new)
     return
+
+def cdm_to_dm(cdm, countries_list, years_list):
+    arr_temp = cdm.array[np.newaxis, np.newaxis, ...]
+    arr_temp = np.repeat(arr_temp, len(countries_list), axis=0)
+    arr_temp = np.repeat(arr_temp, len(years_list), axis=1)
+    cy_cols = {
+        'Country': countries_list.copy(),
+        'Years': years_list.copy(),
+    }
+    new_cols = {**cy_cols, **cdm.col_labels}
+    dm = DataMatrix(col_labels=new_cols, units=cdm.units)
+    dm.array = arr_temp
+    return dm
