@@ -123,6 +123,12 @@ def database_from_csv_to_datamatrix():
     dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1,baseyear=baseyear, years=years_all,
                                                        dict_ots=dict_ots,dict_fts=dict_fts)
 
+    # Database - Power - Lever: CCUS capacity
+    file = 'power_carbon-storage'
+    lever = 'carbon-storage-capacity'
+    dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1, baseyear=baseyear, years=years_all,
+                                                       dict_ots=dict_ots, dict_fts=dict_fts)
+
 #######################################################################################################################
 # Database - Power - FXA
 #######################################################################################################################
@@ -139,7 +145,7 @@ def database_from_csv_to_datamatrix():
 
     cdm_const_cat0 = ConstantDataMatrix.extract_constant('interactions_constants',
                                                         pattern='cp_timestep_hours-a-year|'
-                                                                'cp_carbon-capture_power-self-consumption|', num_cat=0)
+                                                                'cp_carbon-capture_power-self-consumption', num_cat=0)
 
     cdm_const_cat1 = ConstantDataMatrix.extract_constant('interactions_constants',
                                                         pattern='cp_power-unit-self-consumption|'
@@ -190,67 +196,54 @@ def read_data(data_file, lever_setting):
     # Capacity per technology (fuel-based)
 
     dm_coal = DM_ots_fts['coal-capacity']
-    dm_capacity_fuel_based = dm_coal.copy()
+    dm_capacity = dm_coal.copy()
 
     dm_oil = DM_ots_fts['oil-capacity']
-    dm_capacity_fuel_based.append(dm_oil, dim='Categories1')
+    dm_capacity.append(dm_oil, dim='Categories1')
 
     dm_gas = DM_ots_fts['gas-capacity']
-    dm_capacity_fuel_based.append(dm_gas, dim='Categories1')
+    dm_capacity.append(dm_gas, dim='Categories1')
 
     dm_nuclear = DM_ots_fts['nuclear-capacity']
-    dm_capacity_fuel_based.append(dm_nuclear, dim='Categories1')
+    dm_capacity.append(dm_nuclear, dim='Categories1')
 
     dm_biogas = DM_ots_fts['biogas-capacity']
-    dm_capacity_fuel_based.append(dm_biogas, dim='Categories1')
+    dm_capacity.append(dm_biogas, dim='Categories1')
 
     dm_biomass = DM_ots_fts['biomass-capacity']
-    dm_capacity_fuel_based.append(dm_biomass, dim='Categories1')
+    dm_capacity.append(dm_biomass, dim='Categories1')
 
     # Capacity per technology (non-fuel based)
 
     dm_pv = DM_ots_fts['pv-capacity']
-    dm_capacity_non_fuel_based=dm_pv.copy()
+    dm_capacity.append(dm_pv, dim='Categories1')
 
     dm_csp = DM_ots_fts['csp-capacity']
-    dm_capacity_non_fuel_based.append(dm_csp, dim='Categories1')
+    dm_capacity.append(dm_csp, dim='Categories1')
 
     dm_offshore_wind = DM_ots_fts['offshore-wind-capacity']
-    dm_capacity_non_fuel_based.append(dm_offshore_wind, dim='Categories1')
+    dm_capacity.append(dm_offshore_wind, dim='Categories1')
 
     dm_onshore_wind = DM_ots_fts['onshore-wind-capacity']
-    dm_capacity_non_fuel_based.append(dm_onshore_wind, dim='Categories1')
+    dm_capacity.append(dm_onshore_wind, dim='Categories1')
 
     dm_hydroelectric = DM_ots_fts['hydroelectric-capacity']
-    dm_capacity_non_fuel_based.append(dm_hydroelectric, dim='Categories1')
+    dm_capacity.append(dm_hydroelectric, dim='Categories1')
 
     dm_geothermal = DM_ots_fts['geothermal-capacity']
-    dm_capacity_non_fuel_based.append(dm_geothermal, dim='Categories1')
+    dm_capacity.append(dm_geothermal, dim='Categories1')
 
     dm_marine = DM_ots_fts['marine-capacity']
-    dm_capacity_non_fuel_based.append(dm_marine, dim='Categories1')
+    dm_capacity.append(dm_marine, dim='Categories1')
+
+    dm_ccus = DM_ots_fts['carbon-storage-capacity']
 
     # Aggregated Data Matrix - Non-fuel-based power production
 
-    DM_capacity = {
-        'pv-capacity': dm_pv,
-        'csp-capacity': dm_csp,
-        'offshore-wind-capacity': dm_offshore_wind,
-        'onshore-wind-capacity': dm_onshore_wind,
-        'hydroelectric-capacity': dm_hydroelectric,
-        'geothermal-capacity': dm_geothermal,
-        'marine-capacity': dm_marine,
-        'coal-capacity': dm_coal,
-        'gas-capacity': dm_gas,
-        'oil-capacity': dm_oil,
-        'nuclear-capacity': dm_nuclear,
-        'biogas-capacity': dm_biogas,
-        'biomass-capacity': dm_biomass
-    }
 
     cdm_const = DM_power['constant']
 
-    return DM_capacity, cdm_const
+    return dm_capacity, dm_ccus, cdm_const
 
 
 #######################################################################################################################
@@ -295,14 +288,59 @@ def simulate_buildings_to_power_input():
 #######################################################################################################################
 # Calculation tree - Power - Production
 #######################################################################################################################
-def fuel_production_workflow(dm_climate, DM_capacity, cdm_const):
-    # Gross electricity production [GWh]
-    dm_existing_capacity = DM_capacity['existing-capacity']
-    #dm_existing_capacity.add(dm_climate, dim='Variables', col_label='lfs_energy-intake_total', unit='kcal/cap/day')
-    #dm_diet_requirement.operation('lfs_kcal-req_req', '-', 'lfs_energy-intake_total',
-                                 # dim="Variables", out_col='lfs_healthy-gap', unit='kcal/cap/day')
+def fuel_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
 
-    return dm_existing_capacity
+    ######################################
+    # Gross electricity production [GWh]
+    ######################################
+    idx_cap = dm_capacity.idx
+    idx_clm = dm_climate.idx
+    ay_gross_yearly_production = dm_capacity.array[:,:,idx_cap['pow_existing-capacity'],:] \
+                                 * dm_climate.array[:,:,idx_clm['clm_capacity-factor'],:]*8760
+    dm_capacity.add(ay_gross_yearly_production, dim='Variables', col_label='pow_gross-yearly-production', unit='GWh')
+
+    #######################################################
+    # Net production (fuel based, self-consumption) [GWh]
+    #######################################################
+    cdm_self_consumption = cdm_const['constant_1']
+    idx_const = cdm_self_consumption.idx
+    dm_fb_capacity = dm_capacity.filter_w_regex({'Categories1': 'biogas|biomass|coal|gas|oil|nuclear'})
+    ay_self_consumption = dm_fb_capacity.array[:, :, idx_cap['pow_gross-yearly-production'], :] \
+                          * cdm_self_consumption.array[np.newaxis, np.newaxis,
+                            idx_const['cp_power-unit-self-consumption'],:]
+    dm_fb_capacity.add(ay_self_consumption, dim='Variables', col_label='pow_net-yearly-production', unit='GWh')
+
+    #########################################
+    # Self consumption of power units [GWh]
+    #########################################
+
+    dm_fb_capacity.operation('pow_gross-yearly-production', '-', 'pow_net-yearly-production',
+                            dim="Variables", out_col='pow_power-loss-self-consumption', unit='GWh')
+
+    #########################################
+    # Self consumption of power units [GWh]
+    #########################################
+
+    idx_cap = dm_fb_capacity.idx
+    cdm_fuel_efficiency = cdm_const['constant_1']
+    idx_const = cdm_fuel_efficiency.idx
+    ay_fuel_consumption = dm_fb_capacity.array[:, :, idx_cap['pow_gross-yearly-production'], :] \
+                          / cdm_fuel_efficiency.array[np.newaxis, np.newaxis,
+                            idx_const['cp_fuel-based-power-efficiency'], :]
+    dm_fb_capacity.add(ay_fuel_consumption, dim='Variables', col_label='pow_fuel-demand-for-power', unit='GWh')
+
+    #########################################
+    # CCUS ratio [GWh]
+    #########################################
+
+    idx_cap = dm_fb_capacity.idx
+    idx_ccus = dm_ccus.idx
+    ay_ccus_production = dm_fb_capacity.array[:, :, idx_cap['pow_net-yearly-production'], :] \
+                          * dm_ccus.array[:, :, idx_ccus['pow_carbon-capture-storage'], idx_ccus['ratio'],np.newaxis]
+    dm_fb_capacity.add(ay_ccus_production, dim='Variables', col_label='pow_gross-yearly-production-with-ccs', unit='GWh')
+
+    return dm_capacity, dm_fb_capacity, dm_ccus
+
 
 #######################################################################################################################
 # Calculation tree - Power - Demand
@@ -316,14 +354,20 @@ def power(lever_setting, years_setting):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     power_data_file = os.path.join(current_file_directory,
                                         '../_database/data/datamatrix/geoscale/power.pickle')
-    DM_capacity, dm_climate, cdm_const = read_data(power_data_file,lever_setting)
+    dm_capacity, dm_ccus, cdm_const = read_data(power_data_file,lever_setting)
+    dm_climate = simulate_climate_to_power_input()
+
+    # filter local interface country list
+    cntr_list = dm_capacity.col_labels['Country']
+    dm_climate = dm_climate.filter({'Country': cntr_list})
 
     # To send to TPE (result run)
-    dm_fake = fuel_production_workflow(dm_climate, DM_capacity, cdm_const)
+    dm_fake_1, dm_fake_2, dm_fake_3 = fuel_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const) # input fonctions
+    # same number of arg than the return function
 
     # concatenate all results to df
 
-    results_run = dm_fake
+    results_run = dm_fake_1
     return results_run
 
 
