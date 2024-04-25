@@ -473,6 +473,9 @@ class DataMatrix:
         out.units = {key: self.units[key] for key in sorted_cols["Variables"]}
         if len(sorted_cols) > 3:
             out.idx = out.index_all()
+        # check if out datamatrix is empty
+        if out.array.size == 0:
+            raise ValueError('.filter() return an empty datamatrix')
         return out
 
     def filter_w_regex(self, dict_dim_pattern):
@@ -486,6 +489,8 @@ class DataMatrix:
             else:
                 keep[d] = 'all'
         dm_keep = self.filter(keep)
+        if dm_keep.array.size == 0:
+            raise ValueError('.filter() return an empty datamatrix')
         return dm_keep
 
     def rename_col_regex(self, str1, str2, dim):
@@ -690,6 +695,20 @@ class DataMatrix:
         dm.idx = idx
         dm.array = array
         return dm
+
+    def switch_categories_order(self, cat1='Categories1', cat2='Categories2'):
+        # Extract axis of cat1, cat2
+        a1 = self.dim_labels.index(cat1)
+        a2 = self.dim_labels.index(cat2)
+        # Switch axis in array
+        self.array = np.moveaxis(self.array, a1, a2)
+        # Switch col_labels
+        col1 = self.col_labels[cat1]
+        col2 = self.col_labels[cat2]
+        self.col_labels[cat1] = col2
+        self.col_labels[cat2] = col1
+        return
+
 
     def datamatrix_plot(self, selected_cols, title):
 
