@@ -1,5 +1,5 @@
 #######################################################################################################################
-# Import Packages, Classes & Functions
+# SECTION: Import Packages, Classes & Functions
 #######################################################################################################################
 
 import numpy as np
@@ -20,7 +20,7 @@ from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read
 
 
 #######################################################################################################################
-# Database - Power - Setting up database
+# ModelSetting - Power
 #######################################################################################################################
 
 def database_from_csv_to_datamatrix():
@@ -42,7 +42,7 @@ def database_from_csv_to_datamatrix():
     dict_fts = {}
 
 #######################################################################################################################
-# Database - Power - Levers
+# DataLever - Power
 #######################################################################################################################
 
     # Database - Power - Lever: Solar PV capacity
@@ -130,7 +130,7 @@ def database_from_csv_to_datamatrix():
                                                        dict_ots=dict_ots, dict_fts=dict_fts)
 
 #######################################################################################################################
-# Database - Power - FXA
+# DataFixedAssumptions - Power
 #######################################################################################################################
 
 
@@ -138,7 +138,7 @@ def database_from_csv_to_datamatrix():
 
 
 #######################################################################################################################
-# Database - Power - Constants
+# DataConstants - Power
 #######################################################################################################################
 
 
@@ -157,7 +157,7 @@ def database_from_csv_to_datamatrix():
     }
 
 #######################################################################################################################
-# Database - Power Data Matrix
+# DataMatrices - Power Data Matrix
 #######################################################################################################################
 
     DM_power = {
@@ -167,7 +167,7 @@ def database_from_csv_to_datamatrix():
         'constant': dict_const
     }
 #######################################################################################################################
-# Database - Power - Pickle Update
+# DataPickle - Power
 #######################################################################################################################
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -181,7 +181,7 @@ def database_from_csv_to_datamatrix():
 # database_from_csv_to_datamatrix()  # un-comment to update
 
 #######################################################################################################################
-# Database - Power - Sub Data Matrices
+# DataSubMatrices - Power
 #######################################################################################################################
 
 def read_data(data_file, lever_setting):
@@ -247,7 +247,7 @@ def read_data(data_file, lever_setting):
 
 
 #######################################################################################################################
-# Database - Power - Local interface - Climate
+# LocalInterfaces - Climate
 #######################################################################################################################
 def simulate_climate_to_power_input():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -258,10 +258,11 @@ def simulate_climate_to_power_input():
     return dm_climate
 
 #######################################################################################################################
-# Database - Power - Local interface - Buildings
+# LocalInterfaces - Buildings
 #######################################################################################################################
 
 def simulate_buildings_to_power_input():
+    # Tuto: Local module interface
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     f = os.path.join(current_file_directory, "../_database/data/xls/"
                                              "All-Countries-interface_from-buildings-to-power.xlsx")
@@ -269,30 +270,82 @@ def simulate_buildings_to_power_input():
     dm = DataMatrix.create_from_df(df, num_cat=0)
 
     # Space heating flow:
-    dm_bld_heating = dm.filter_w_regex({'Variables': 'bld_space-heating-energy-demand_.*'})
-    dm_bld_appliances = dm.filter_w_regex({'Variables': 'bld_energy-demand_appliances_.*'})
-    dm_bld_electricity = dm.filter_w_regex({'Variables': 'bld_residential_cooking_.*|bld_hot-water-demand_.*|'
-                                                         'bld_lighting-energy-demand_.*|'
-                                                         'bld_space-cooling-energy-demand_.*'})
+    dm_bld_heating = dm.filter_w_regex({'Variables': 'bld_power-demand_.*residential_space-heating.*'})
+    dm_bld_appliances = dm.filter_w_regex({'Variables': 'bld_power-demand_.*residential_appliances.*'})
+    dm_bld_electricity = dm.filter_w_regex({'Variables': 'bld_power-demand_.*residential_cooking.*|'
+                                                         'bld_power-demand_.*residential_hot-water.*|'
+                                                         'bld_power-demand_.*residential_lighting.*|'
+                                                         'bld_power-demand_.*residential_space-cooling.*'})
+    dm_bld_heatpump = dm.filter_w_regex({'Variables': 'bld_power-demand_.*residential_heatpump.*'})
 
     DM_bld= {
         'appliance': dm_bld_appliances,
         'space-heating': dm_bld_heating,
-        'electricity': dm_bld_electricity
+        'electricity': dm_bld_electricity,
+        'heatpump': dm_bld_heatpump
     }
 
     return DM_bld
 
+#######################################################################################################################
+# LocalInterfaces - Industry
+#######################################################################################################################
 
+def simulate_industry_to_power_input():
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(current_file_directory, "../_database/data/xls/"
+                                             "All-Countries-interface_from-industry-to-power.xlsx")
+    df = pd.read_excel(f, sheet_name="default")
+    dm = DataMatrix.create_from_df(df, num_cat=0)
+
+    # Space heating flow:
+    dm_ind_electricity = dm.filter_w_regex({'Variables': 'ind_energy-demand_electricity'})
+    dm_ind_hydrogen = dm.filter_w_regex({'Variables': 'ind_energy-demand_hydrogen'})
+
+    return dm_ind_electricity, dm_ind_hydrogen
 
 #######################################################################################################################
-# Calculation tree - Power - Yearly Production
+# LocalInterfaces - Ammonia
+#######################################################################################################################
+
+def simulate_ammonia_to_power_input():
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(current_file_directory, "../_database/data/xls/"
+                                             "All-Countries-interface_from-ammonia-to-power.xlsx")
+    df = pd.read_excel(f, sheet_name="default")
+    dm = DataMatrix.create_from_df(df, num_cat=0)
+
+    # Space heating flow:
+    dm_amm_electricity = dm.filter_w_regex({'Variables': 'amm_energy-demand_electricity'})
+    dm_amm_hydrogen = dm.filter_w_regex({'Variables': 'amm_energy-demand_hydrogen'})
+
+    return dm_amm_electricity, dm_amm_hydrogen
+
+#######################################################################################################################
+# LocalInterfaces - Agriculture
+#######################################################################################################################
+
+def simulate_agriculture_to_power_input():
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(current_file_directory, "../_database/data/xls/"
+                                             "All-Countries-interface_from-agriculture-to-power.xlsx")
+    df = pd.read_excel(f, sheet_name="default")
+    dm = DataMatrix.create_from_df(df, num_cat=0)
+
+    # Space heating flow:
+    dm_agr_electricity = dm.filter_w_regex({'Variables': 'agr_energy-demand_electricity'})
+
+    return dm_agr_electricity
+
+#######################################################################################################################
+# CalculationTree - Power - Yearly Production
 #######################################################################################################################
 def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
 
     ######################################
-    # Gross electricity production [GWh]
+    # CalculationLeafs - Gross electricity production [GWh]
     ######################################
+    # Tuto: Tree parallel (array)
     idx_cap = dm_capacity.idx
     idx_clm = dm_climate.idx
     ay_gross_yearly_production = dm_capacity.array[:,:,idx_cap['pow_existing-capacity'],:] \
@@ -300,8 +353,9 @@ def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
     dm_capacity.add(ay_gross_yearly_production, dim='Variables', col_label='pow_gross-yearly-production', unit='GWh')
 
     #######################################################
-    # Net production (fuel based, self-consumption) [GWh]
+    # CalculationLeafs - Net production (fuel based, self-consumption) [GWh]
     #######################################################
+    # Tuto: Tree Split & constants
     cdm_self_consumption = cdm_const['constant_1']
     idx_const = cdm_self_consumption.idx
     dm_fb_capacity = dm_capacity.filter_w_regex({'Categories1': 'biogas|biomass|coal|gas|oil|nuclear'})
@@ -311,14 +365,14 @@ def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
     dm_fb_capacity.add(ay_self_consumption, dim='Variables', col_label='pow_net-yearly-production', unit='GWh')
 
     #########################################
-    # Self consumption of power units [GWh]
+    # CalculationLeafs - Self consumption of power units [GWh]
     #########################################
-
+    # Tuto: Tree parallel (operation)
     dm_fb_capacity.operation('pow_gross-yearly-production', '-', 'pow_net-yearly-production',
                             dim="Variables", out_col='pow_power-loss-self-consumption', unit='GWh')
 
     #########################################
-    # Self consumption of power units [GWh]
+    # CalculationLeafs - Self consumption of power units [GWh]
     #########################################
 
     idx_cap = dm_fb_capacity.idx
@@ -330,7 +384,7 @@ def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
     dm_fb_capacity.add(ay_fuel_consumption, dim='Variables', col_label='pow_fuel-demand-for-power', unit='GWh')
 
     #########################################
-    # Production share under CCUS [GWh]
+    # CalculationLeafs - Production share under CCUS [GWh]
     #########################################
 
     idx_cap = dm_fb_capacity.idx
@@ -341,7 +395,7 @@ def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
                        dim='Variables', col_label='pow_gross-yearly-production-with-ccs', unit='GWh')
 
     #########################################
-    # Production share without CCUS [GWh]
+    # CalculationLeafs - Production share without CCUS [GWh]
     #########################################
 
     idx_cap = dm_fb_capacity.idx
@@ -352,7 +406,7 @@ def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
                        dim='Variables', col_label='pow_net-yearly-production-without-ccs', unit='GWh')
 
     ###########################################################################
-    # Net fuel-based production accounting for CCUS process consumption [GWh]
+    # CalculationLeafs - Net fuel-based production accounting for CCUS process consumption [GWh]
     ###########################################################################
 
     idx_cap = dm_fb_capacity.idx
@@ -365,14 +419,14 @@ def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
                        col_label='pow_net-yearly-production-with-ccs', unit='GWh')
 
     ###########################################################################
-    # CCUS process consumption [GWh]
+    # CalculationLeafs - CCUS process consumption [GWh]
     ###########################################################################
 
     dm_fb_capacity.operation('pow_gross-yearly-production-with-ccs', '-', 'pow_net-yearly-production-with-ccs',
                              dim="Variables", out_col='pow_power-consumption-ccus', unit='GWh')
 
     #####################################################################################
-    # Net power production [GWh] - Fuel based - Accounting for self & CCUS consumption
+    # CalculationLeafs - Net power production [GWh] - Fuel based - Accounting for self & CCUS consumption
     #####################################################################################
 
     dm_fb_capacity.drop(col_label=['pow_net-yearly-production'], dim='Variables')
@@ -382,15 +436,15 @@ def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
     return dm_capacity, dm_fb_capacity
 
 #######################################################################################################################
-# Calculation tree - Power - Yearly Production
+# CalculationTree - Power - Yearly Demand
 #######################################################################################################################
 
-def yearly_demand_workflow(DM_bld):
+def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_ind_hydrogen):
 
     #######################################################
-    # Electricity demand - Residential - Appliances [GWh]
+    # CalculationLeafs - Electricity demand - Residential - Appliances [GWh]
     #######################################################
-    #TUTO: Tree Merge appender & overwrite
+    #Tuto: Tree Merge appender & overwrite
     dm_bld_appliances = DM_bld['appliance']
     dm_bld_appliances.deepen()
     ay_x = dm_bld_appliances.array[...].sum(axis=-1)
@@ -406,13 +460,8 @@ def yearly_demand_workflow(DM_bld):
 
     return DM_bld
 
-
 #######################################################################################################################
-# Calculation tree - Power - Demand
-#######################################################################################################################
-
-#######################################################################################################################
-# CORE module - Power
+# CoreModule - Power
 #######################################################################################################################
 
 def power(lever_setting, years_setting):
@@ -422,6 +471,8 @@ def power(lever_setting, years_setting):
     dm_capacity, dm_ccus, cdm_const = read_data(power_data_file,lever_setting)
     dm_climate = simulate_climate_to_power_input()
     DM_bld = simulate_buildings_to_power_input()
+    dm_ind_hydrogen, dm_ind_hydrogen = simulate_industry_to_power_input()
+    dm_amm_hydrogen, dm_amm_hydrogen = simulate_ammonia_to_power_input()
 
     # filter local interface country list
     cntr_list = dm_capacity.col_labels['Country']
@@ -429,7 +480,7 @@ def power(lever_setting, years_setting):
 
     # To send to TPE (result run)
     dm_fake_1, dm_fake_2 = yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const)
-    dm_fake_3 = yearly_demand_workflow(DM_bld)# input fonctions
+    dm_fake_3 = yearly_demand_workflow(DM_bld, dm_ind_electricity,dm_ind_hydrogen)# input fonctions
     # same number of arg than the return function
 
     # concatenate all results to df
@@ -439,7 +490,7 @@ def power(lever_setting, years_setting):
 
 
 #######################################################################################################################
-# Local run - Power module
+# LocalRun - Power
 #######################################################################################################################
 
 def local_power_run():
@@ -457,6 +508,3 @@ def local_power_run():
 
 
 results_run = local_power_run()
-
-# TODO: (decommissioned) refresh dataset on KINME pre-processing (existing capacity x 13) & pickle
-# TODO: Compute gross production [GWh]
