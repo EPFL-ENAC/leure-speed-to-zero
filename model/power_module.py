@@ -286,9 +286,9 @@ def simulate_buildings_to_power_input():
 
 
 #######################################################################################################################
-# Calculation tree - Power - Production
+# Calculation tree - Power - Yearly Production
 #######################################################################################################################
-def fuel_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
+def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
 
     ######################################
     # Gross electricity production [GWh]
@@ -381,6 +381,31 @@ def fuel_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
 
     return dm_capacity, dm_fb_capacity
 
+#######################################################################################################################
+# Calculation tree - Power - Yearly Production
+#######################################################################################################################
+
+def yearly_demand_workflow(DM_bld):
+
+    #######################################################
+    # Electricity demand - Residential - Appliances [GWh]
+    #######################################################
+    #TUTO: Tree Merge appender & overwrite
+    dm_bld_appliances = DM_bld['appliance']
+    dm_bld_appliances.deepen()
+    ay_x = dm_bld_appliances.array[...].sum(axis=-1)
+    dm_bld_appliances.add(ay_x, dim='Categories1', col_label='total')
+    cols = {
+        'Country': dm_bld_appliances.col_labels['Country'].copy(),
+        'Years': dm_bld_appliances.col_labels['Years'].copy(),
+        'Variables': ['bld_residential'],
+        'Categories1': ['appliances']
+    }
+    dm_bld_demand = DataMatrix(col_labels=cols, units={'bld_residential': 'kWh'})
+    dm_bld_demand.array = ay_x[..., np.newaxis]
+
+    return DM_bld
+
 
 #######################################################################################################################
 # Calculation tree - Power - Demand
@@ -396,13 +421,15 @@ def power(lever_setting, years_setting):
                                         '../_database/data/datamatrix/geoscale/power.pickle')
     dm_capacity, dm_ccus, cdm_const = read_data(power_data_file,lever_setting)
     dm_climate = simulate_climate_to_power_input()
+    DM_bld = simulate_buildings_to_power_input()
 
     # filter local interface country list
     cntr_list = dm_capacity.col_labels['Country']
     dm_climate = dm_climate.filter({'Country': cntr_list})
 
     # To send to TPE (result run)
-    dm_fake_1, dm_fake_2 = fuel_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const) # input fonctions
+    dm_fake_1, dm_fake_2 = yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const)
+    dm_fake_3 = yearly_demand_workflow(DM_bld)# input fonctions
     # same number of arg than the return function
 
     # concatenate all results to df
