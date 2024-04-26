@@ -349,7 +349,35 @@ def fuel_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
     ay_ccus_production = dm_fb_capacity.array[:, :, idx_cap['pow_net-yearly-production'], :] \
                          * dm_ccus.array[:, :, idx_ccus['pow_carbon-capture-storage'], idx_ccus['reverse-ratio'], np.newaxis]
     dm_fb_capacity.add(ay_ccus_production,
-                       dim='Variables', col_label='pow_gross-yearly-production-without-ccs', unit='GWh')
+                       dim='Variables', col_label='pow_net-yearly-production-without-ccs', unit='GWh')
+
+    ###########################################################################
+    # Net fuel-based production accounting for CCUS process consumption [GWh]
+    ###########################################################################
+
+    idx_cap = dm_fb_capacity.idx
+    cdm_ccus_efficiency = cdm_const['constant_0']
+    idx_const = cdm_ccus_efficiency.idx
+    ay_net_production_ccus = dm_fb_capacity.array[:, :, idx_cap['pow_gross-yearly-production-with-ccs'], :] \
+                          * cdm_fuel_efficiency.array[np.newaxis, np.newaxis,
+                            idx_const['cp_carbon-capture_power-self-consumption'], :]
+    dm_fb_capacity.add(ay_net_production_ccus, dim='Variables',
+                       col_label='pow_net-yearly-production-with-ccs', unit='GWh')
+
+    ###########################################################################
+    # CCUS process consumption [GWh]
+    ###########################################################################
+
+    dm_fb_capacity.operation('pow_gross-yearly-production-with-ccs', '-', 'pow_net-yearly-production-with-ccs',
+                             dim="Variables", out_col='pow_power-consumption-ccus', unit='GWh')
+
+    #####################################################################################
+    # Net power production [GWh] - Fuel based - Accounting for self & CCUS consumption
+    #####################################################################################
+
+    dm_fb_capacity.drop(col_label=['pow_net-yearly-production'], dim='Variables')
+    dm_fb_capacity.operation('pow_net-yearly-production-with-ccs', '+', 'pow_net-yearly-production-without-ccs',
+                             dim="Variables", out_col='pow_net-yearly-production', unit='GWh')
 
     return dm_capacity, dm_fb_capacity
 
