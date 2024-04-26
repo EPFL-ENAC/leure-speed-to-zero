@@ -330,16 +330,28 @@ def fuel_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
     dm_fb_capacity.add(ay_fuel_consumption, dim='Variables', col_label='pow_fuel-demand-for-power', unit='GWh')
 
     #########################################
-    # CCUS ratio [GWh]
+    # Production share under CCUS [GWh]
     #########################################
 
     idx_cap = dm_fb_capacity.idx
     idx_ccus = dm_ccus.idx
     ay_ccus_production = dm_fb_capacity.array[:, :, idx_cap['pow_net-yearly-production'], :] \
                           * dm_ccus.array[:, :, idx_ccus['pow_carbon-capture-storage'], idx_ccus['ratio'],np.newaxis]
-    dm_fb_capacity.add(ay_ccus_production, dim='Variables', col_label='pow_gross-yearly-production-with-ccs', unit='GWh')
+    dm_fb_capacity.add(ay_ccus_production,
+                       dim='Variables', col_label='pow_gross-yearly-production-with-ccs', unit='GWh')
 
-    return dm_capacity, dm_fb_capacity, dm_ccus
+    #########################################
+    # Production share without CCUS [GWh]
+    #########################################
+
+    idx_cap = dm_fb_capacity.idx
+    idx_ccus = dm_ccus.idx
+    ay_ccus_production = dm_fb_capacity.array[:, :, idx_cap['pow_net-yearly-production'], :] \
+                         * dm_ccus.array[:, :, idx_ccus['pow_carbon-capture-storage'], idx_ccus['reverse-ratio'], np.newaxis]
+    dm_fb_capacity.add(ay_ccus_production,
+                       dim='Variables', col_label='pow_gross-yearly-production-without-ccs', unit='GWh')
+
+    return dm_capacity, dm_fb_capacity
 
 
 #######################################################################################################################
@@ -362,7 +374,7 @@ def power(lever_setting, years_setting):
     dm_climate = dm_climate.filter({'Country': cntr_list})
 
     # To send to TPE (result run)
-    dm_fake_1, dm_fake_2, dm_fake_3 = fuel_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const) # input fonctions
+    dm_fake_1, dm_fake_2 = fuel_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const) # input fonctions
     # same number of arg than the return function
 
     # concatenate all results to df
