@@ -45,22 +45,36 @@ def database_from_csv_to_datamatrix():
     # FIXED ASSUMPTIONS #
     #####################
 
-    # Read database
+    # Data - Fixed assumptions
     file = 'agriculture_fixed-assumptions'
     lever = 'fixed-assumption'
     # edit_database(file, lever, column='eucalc-name', mode='rename',pattern={'meat_': 'meat-', 'abp_': 'abp-'})
 
-    # Create dm for relevant fxa categories
-    # Read fixed assumptions & create dict_fxa
+    # Data - Fixed assumptions
     dict_fxa = {}
-    # this is just a dataframe of zeros
-    # df = read_database_fxa(file, filter_dict={'eucalc-name': 'bld_CO2-factors-GHG'})
+    file = 'agriculture_calibration-factors_pathwaycalc'
+    lever = 'none'
+    # Renaming to correct format : Calibration factors - Livestock domestic production
+    edit_database(file, lever, column='eucalc-name', mode='rename', pattern={'production_liv': 'production-liv',
+                                                                             'abp_': 'abp-', 'meat_': 'meat-',
+                                                                             'liv-population_liv-population': 'liv-population'})
 
-    # Food demand to domestic production
+    # Data - Fixed assumptions - Calibration factors - Livestock domestic production
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_domestic-production-liv.*'})
+    dm_caf_liv_dom_prod = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['caf_agr_domestic-production-liv'] = dm_caf_liv_dom_prod
 
-    df = read_database_fxa(file, filter_dict={'eucalc-name': 'agr_food-net-import_pro'})
-    # dm_food_net_import = DataMatrix.create_from_df(df, num_cat=1)
-    # dict_fxa['food_net_import_pro'] = dm_food_net_import
+    # Data - Fixed assumptions - Calibration factors - Livestock population
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_liv-population.*'})
+    dm_caf_liv_pop = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['caf_agr_liv-population'] = dm_caf_liv_pop
+
+    # Create a dictionnay with all the fixed assumptions
+    dict_fxa = {
+        'caf_agr_domestic-production-liv': dm_caf_liv_dom_prod,
+        'caf_agr_liv-population': dm_caf_liv_pop
+    }
+
 
     #####################
     ###### LEVERS #######
@@ -73,14 +87,23 @@ def database_from_csv_to_datamatrix():
     file = 'agriculture_self-sufficiency_pathwaycalc'
     lever = 'food-net-import'
     # Rename to correct format
-    edit_database(file,lever,column='eucalc-name',pattern={'processeced':'processed'},mode='rename')
-    edit_database(file,lever,column='eucalc-name',pattern={'meat_':'meat-', 'abp_':'abp-', 'processed_':'processed-', 'pro_':'pro-','liv_':'liv-','crop_':'crop-','bev_':'bev-'},mode='rename')
+    #edit_database(file,lever,column='eucalc-name',pattern={'processeced':'processed'},mode='rename')
+    #edit_database(file,lever,column='eucalc-name',pattern={'meat_':'meat-', 'abp_':'abp-', 'processed_':'processed-', 'pro_':'pro-','liv_':'liv-','crop_':'crop-','bev_':'bev-'},mode='rename')
     dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1, baseyear=baseyear, years=years_all,
                                                            dict_ots=dict_ots, dict_fts=dict_fts)
 
+    # Read climate smart livestock
+    file = 'agriculture_climate-smart-livestock_pathwaycalc_renamed'
+    lever = 'climate-smart-livestock'
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1], baseyear=baseyear,
+                                                                years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
+                                                                column='eucalc-name',
+                                                                group_list=['climate-smart-livestock_losses.*', 'climate-smart-livestock_yield.*', 'climate-smart-livestock_slaughtered.*'])
+
+    # num_cat_list=[1 = nb de cat de losses, 1 = nb de cat yield]
     # Group all datamatrix in a single structure
     DM_agriculture = {
-        #'fxa': dict_fxa,
+        'fxa': dict_fxa,
         #'constant': cdm_const,
         'fts': dict_fts,
         'ots': dict_ots
@@ -103,13 +126,41 @@ def read_data(data_file, lever_setting):
     # Read fts based on lever_setting
     DM_ots_fts = read_level_data(DM_agriculture, lever_setting)
 
-    return DM_ots_fts
+    # FXA data matrix
+    dm_fxa_caf_liv_prod = DM_agriculture['fxa']['caf_agr_domestic-production-liv']
+    dm_fxa_caf_liv_pop = DM_agriculture['fxa']['caf_agr_liv-population']
+
+    # Extract sub-data-matrices according to the flow (parallel)
+    # Diet sub-matrix for the food demand to domestic production sub-flow
+    dm_food_net_import_pro = DM_ots_fts['food-net-import'].filter_w_regex({'Categories1': 'pro-.*', 'Variables': 'agr_food-net-import'})
+
+    # Diet sub-matrix for the food demand to domestic production sub-flow
+    dm_livestock_losses = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_losses']
+    dm_livestock_yield = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_yield']
+    dm_livestock_slaughtered = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_slaughtered']
+
+    # Aggregate datamatrix by theme/flow
+    # Aggregated Data Matrix - Food demand to domestic production
+    DM_food_demand = {
+        'food-net-import-pro': dm_food_net_import_pro
+    }
+
+    # Aggregated Data Matrix - ASF to livestock population and livestock products
+    DM_livestock = {
+        'losses': dm_livestock_losses,
+        'yield': dm_livestock_yield,
+        'liv_slaughtered_rate': dm_livestock_slaughtered,
+        'caf_liv_prod': dm_fxa_caf_liv_prod,
+        'caf_liv_population': dm_fxa_caf_liv_pop
+    }
+
+    return DM_ots_fts, DM_food_demand, DM_livestock
 
 
 def simulate_lifestyles_to_agriculture_input():
     # Read input from lifestyle : food waste & diet
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    f = os.path.join(current_file_directory, "../_database/data/xls/All-Countries-interface_from-lifestyles-to-agriculture.xlsx")
+    f = os.path.join(current_file_directory, "../_database/data/xls/All-Countries-interface_from-lifestyles-to-agriculture_EUCALC.xlsx")
     df = pd.read_excel(f, sheet_name="default")
     dm_lfs = DataMatrix.create_from_df(df, num_cat=1)
 
@@ -183,11 +234,12 @@ def agriculture(lever_setting, years_setting):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     # !FIXME: change path to '../_database/data/datamatrix/agriculture.pickle'
     agriculture_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/agriculture.pickle')
-    DM_ots_fts = read_data(agriculture_data_file, lever_setting)
+    DM_ots_fts, DM_food_demand, DM_livestock = read_data(agriculture_data_file, lever_setting)
 
+    # Simulate data from lifestyles
     dm_lfs = simulate_lifestyles_to_agriculture_input()
     # Filter by country
-    cntr_list = DM_ots_fts['food-net-import'].col_labels['Country']
+    cntr_list = DM_food_demand['food-net-import-pro'].col_labels['Country']
     dm_lfs = dm_lfs.filter({'Country': cntr_list})
 
     # FOOD DEMAND TO DOMESTIC FOOD PRODUCTION ------------------------------------------------------------------------------
@@ -196,7 +248,7 @@ def agriculture(lever_setting, years_setting):
 
     # Filtering dms to only keep pro
     dm_lfs_pro = dm_lfs.filter_w_regex({'Categories1':'pro-.*','Variables':'agr_demand'})
-    food_net_import_pro = DM_ots_fts['food-net-import'].filter_w_regex({'Categories1':'pro-.*','Variables':'agr_food-net-import'})
+    food_net_import_pro = DM_food_demand['food-net-import-pro'].filter_w_regex({'Categories1':'pro-.*','Variables':'agr_food-net-import'})
     # Dropping the unwanted columns
     food_net_import_pro.drop(dim='Categories1', col_label=['pro-crop-processed-cake', 'pro-crop-processed-molasse'])
 
@@ -210,11 +262,74 @@ def agriculture(lever_setting, years_setting):
     agr_domestic_production = dm_lfs_pro.array[:,:,idx_lfs['agr_demand'],:] \
                               * food_net_import_pro.array[:,:,idx_import['agr_food-net-import'],:]
 
+    # Adding agr_domestic_production to dm_lfs_pro
     dm_lfs_pro.add(agr_domestic_production, dim='Variables', col_label='agr_domestic_production', unit='kcal')
 
+    # Checking that the results are similar to KNIME
+    dm_temp = dm_lfs_pro.copy()
+    df_temp = dm_temp.write_df()
+    filtered_df_pro = df_temp[df_temp['Country'].str.contains('France')]
 
-    # idx = dm_lfs.idx
-    # overall_food_demand = dm_lfs.array[:,:,idx['lfs_diet'],:] + dm_lfs.array[:,:,idx['lfs_food-wastes'],:]
+    dm_temp = dm_lfs.copy()
+    df_temp = dm_temp.write_df()
+    filtered_df = df_temp[df_temp['Country'].str.contains('France')]
+
+    # ASF TO LIVESTOCK POPULATION AND LIVESTOCK PRODUCTS ------------------------------------------------------------------------------
+
+    # Filter dm_lfs_pro to only have livestock products
+    dm_lfs_pro_liv = dm_lfs_pro.filter_w_regex({'Categories1': 'pro-liv.*', 'Variables': 'agr_domestic_production'})
+    # Drop the pro- prefix of the categories
+    dm_lfs_pro_liv.rename_col_regex(str1="pro-liv-", str2="", dim="Categories1")
+    # Sort the dms
+    dm_lfs_pro_liv.sort(dim='Categories1')
+    DM_livestock['losses'].sort(dim='Categories1')
+    DM_livestock['yield'].sort(dim='Categories1')
+
+    # Append dm_lfs_pro_liv to DM_livestock['losses']
+    DM_livestock['losses'].append(dm_lfs_pro_liv, dim='Variables')
+
+    # Livestock domestic prod with losses [kcal] = livestock domestic prod [kcal] * Production losses livestock [%]
+    DM_livestock['losses'].operation('agr_climate-smart-livestock_losses', '*', 'agr_domestic_production', out_col='agr_domestic_production_liv_afw', unit='kcal')
+
+    # Calibration Livestock domestic production
+    dm_liv_prod = DM_livestock['losses'].filter({'Variables': ['agr_domestic_production_liv_afw']})
+    dm_liv_prod.drop(dim='Categories1', col_label=['abp-processed-offal', 'abp-processed-afat'])# Filter dm_liv_prod to drop offal & afats
+    DM_livestock['caf_liv_prod'].append(dm_liv_prod, dim='Variables') # Append to caf
+    DM_livestock['caf_liv_prod'].operation('caf_agr_domestic-production-liv', '*', 'agr_domestic_production_liv_afw', # Calibrate
+                                            dim="Variables", out_col='cal_agr_domestic_production_liv_afw', unit='kcal')
+
+    # Livestock slaughtered [lsu] = meat demand [kcal] / livestock meat content [kcal/lsu]
+    dm_liv_slau = DM_livestock['caf_liv_prod'].filter({'Variables': ['cal_agr_domestic_production_liv_afw']})
+    DM_livestock['yield'].append(dm_liv_slau, dim='Variables') # Append cal_agr_domestic_production_liv_afw in yield
+    DM_livestock['yield'].operation('cal_agr_domestic_production_liv_afw', '/', 'agr_climate-smart-livestock_yield',
+                                           dim="Variables", out_col='agr_liv_population', unit='lsu')
+
+    # Livestock population for meat [lsu] = Livestock slaughtered [lsu] / slaughter rate [%]
+    dm_liv_slau_meat = DM_livestock['yield'].filter({'Variables': ['agr_liv_population'], 'Categories1': ['meat-bovine', 'meat-pig', 'meat-poultry', 'meat-sheep', 'meat-oth-animals']})
+    DM_livestock['liv_slaughtered_rate'].append(dm_liv_slau_meat, dim='Variables')
+    DM_livestock['liv_slaughtered_rate'].operation('agr_liv_population', '/', 'agr_climate-smart-livestock_slaughtered',
+                                    dim="Variables", out_col='agr_liv_population_meat', unit='lsu')
+
+    # Processeing for calibration: Livestock population for meat, eggs and dairy ( meat pop & slaughtered livestock for eggs and dairy)
+    # Filtering eggs, dairy and meat
+    dm_liv_slau_egg_dairy = DM_livestock['yield'].filter({'Variables': ['agr_liv_population'], 'Categories1': ['abp-dairy-milk', 'abp-hens-egg']})
+    dm_liv_slau_meat = DM_livestock['liv_slaughtered_rate'].filter({'Variables': ['agr_liv_population_meat']})
+    # Rename dm_liv_slau_meat variable to match with dm_liv_slau_egg_dairy
+    dm_liv_slau_meat.rename_col('agr_liv_population_meat', 'agr_liv_population', dim='Variables')
+    # Appending between livestock population
+    dm_liv_slau_egg_dairy.append(dm_liv_slau_meat, dim='Categories1')
+
+    # Calibration Livestock population
+    DM_livestock['caf_liv_population'].append(dm_liv_slau_egg_dairy, dim='Variables')  # Append to caf
+    DM_livestock['caf_liv_population'].operation('caf_agr_liv-population', '*', 'agr_liv_population',
+                                           dim="Variables", out_col='cal_agr_liv_population', unit='lsu')
+
+
+    # Grazing livestock
+
+    # Livestock byproducts
+
+
 
     print('hello') # list: the 3 dimensions, i.e. country, years and variables
     return
@@ -225,6 +340,8 @@ def agriculture_local_run():
     agriculture(lever_setting, years_setting)
     return
 
+# Creates the pickle, to do only once
+#database_from_csv_to_datamatrix()
 
-database_from_csv_to_datamatrix()  # Creates the pickle, to do only once
+# Run the code un local
 agriculture_local_run()
