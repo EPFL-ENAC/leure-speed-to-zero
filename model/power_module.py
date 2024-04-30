@@ -267,25 +267,28 @@ def simulate_buildings_to_power_input():
     f = os.path.join(current_file_directory, "../_database/data/xls/"
                                              "All-Countries-interface_from-buildings-to-power.xlsx")
     df = pd.read_excel(f, sheet_name="default")
-    dm = DataMatrix.create_from_df(df, num_cat=0)
+    dm = DataMatrix.create_from_df(df, num_cat=2)
 
     # Space heating flow:
-    dm_bld_heating = dm.filter_w_regex({'Variables': 'bld_power-demand_.*residential_space-heating.*'})
-    dm_bld_appliances = dm.filter_w_regex({'Variables': 'bld_power-demand_.*residential_appliances.*'})
-    dm_bld_electricity = dm.filter_w_regex({'Variables': 'bld_power-demand_.*residential_cooking.*|'
-                                                         'bld_power-demand_.*residential_hot-water.*|'
-                                                         'bld_power-demand_.*residential_lighting.*|'
-                                                         'bld_power-demand_.*residential_space-cooling.*'})
-    dm_bld_heatpump = dm.filter_w_regex({'Variables': 'bld_power-demand_.*residential_heatpump.*'})
+    dm_bld_heating = dm.filter_w_regex({'Categories2': 'space-heating'})
+    dm_bld_cooling = dm.filter_w_regex({'Categories2': 'space-cooling'})
+    dm_bld_appliances = dm.filter_w_regex({'Categories2': 'cooking|hot-water|lighting|appliances'})
+    dm_bld_heatpump = dm.filter_w_regex({'Categories2': 'heatpumps'})
 
     DM_bld= {
         'appliance': dm_bld_appliances,
         'space-heating': dm_bld_heating,
-        'electricity': dm_bld_electricity,
+        'cooling': dm_bld_cooling,
         'heatpump': dm_bld_heatpump
     }
 
     return DM_bld
+
+#######################################################################################################################
+# LocalInterfaces - Transport
+#######################################################################################################################
+
+
 
 #######################################################################################################################
 # LocalInterfaces - Industry
@@ -436,29 +439,30 @@ def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
     return dm_capacity, dm_fb_capacity
 
 #######################################################################################################################
-# CalculationTree - Power - Yearly Demand
+# CalculationTree - Power - Building yearly demand
 #######################################################################################################################
 
-def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_ind_hydrogen):
+def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_agr_electricity):
 
-    #######################################################
-    # CalculationLeafs - Electricity demand - Residential - Appliances [GWh]
-    #######################################################
-    #Tuto: Tree Merge appender & overwrite
+    #########################################################################
+    # CalculationLeafs - Electricity demand - Appliances [GWh]
+    #########################################################################
+
+    #Tuto: Group Tree Merge appender & overwrite
+
     dm_bld_appliances = DM_bld['appliance']
-    dm_bld_appliances.deepen()
-    ay_x = dm_bld_appliances.array[...].sum(axis=-1)
-    dm_bld_appliances.add(ay_x, dim='Categories1', col_label='total')
-    cols = {
-        'Country': dm_bld_appliances.col_labels['Country'].copy(),
-        'Years': dm_bld_appliances.col_labels['Years'].copy(),
-        'Variables': ['bld_residential'],
-        'Categories1': ['appliances']
-    }
-    dm_bld_demand = DataMatrix(col_labels=cols, units={'bld_residential': 'kWh'})
-    dm_bld_demand.array = ay_x[..., np.newaxis]
+    ay_x = np.nansum(dm_bld_appliances.array[...],axis=-1)
+    dm_bld_appliances.add(ay_x, dim='Categories2', col_label='total')
 
-    return DM_bld
+    #########################################################################
+    # CalculationLeafs - Electricity demand - Other sectors [GWh]
+    #########################################################################
+
+    dm_demand_other = dm_agr_electricity.copy()
+    dm_demand_other.append(dm_ind_electricity, dim='Variables')
+    dm_demand_other.append(dm_amm_electricity, dim='Variables')
+
+    return dm_bld_appliances, dm_demand_other
 
 #######################################################################################################################
 # CoreModule - Power
@@ -470,9 +474,10 @@ def power(lever_setting, years_setting):
                                         '../_database/data/datamatrix/geoscale/power.pickle')
     dm_capacity, dm_ccus, cdm_const = read_data(power_data_file,lever_setting)
     dm_climate = simulate_climate_to_power_input()
+    dm_agr_electricity = simulate_agriculture_to_power_input()
     DM_bld = simulate_buildings_to_power_input()
-    dm_ind_hydrogen, dm_ind_hydrogen = simulate_industry_to_power_input()
-    dm_amm_hydrogen, dm_amm_hydrogen = simulate_ammonia_to_power_input()
+    dm_ind_electricity, dm_ind_hydrogen = simulate_industry_to_power_input()
+    dm_amm_electricity, dm_amm_hydrogen = simulate_ammonia_to_power_input()
 
     # filter local interface country list
     cntr_list = dm_capacity.col_labels['Country']
@@ -480,7 +485,7 @@ def power(lever_setting, years_setting):
 
     # To send to TPE (result run)
     dm_fake_1, dm_fake_2 = yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const)
-    dm_fake_3 = yearly_demand_workflow(DM_bld, dm_ind_electricity,dm_ind_hydrogen)# input fonctions
+    dm_fake_3, dm_fake_4 = yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_agr_electricity)# input fonctions
     # same number of arg than the return function
 
     # concatenate all results to df
