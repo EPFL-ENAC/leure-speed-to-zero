@@ -711,6 +711,40 @@ class DataMatrix:
         self.col_labels[cat2] = col1
         return
 
+    def groupby(self, group_cols={}, dim=str, regex=False, inplace=False):
+        # Sum values in group, e.g.
+        # dm.groupby({'road': ['LDV', '2W']}, dim='Categories1') sums LDV and 2W and calls it road
+        # dm.groupby({'freight': 'HDV.*|marine.*', 'passenger': 'LDV|bus|aviation'}, dim='Categories2', regex = True)
+        i = 0
+        for out_col, col_to_group in group_cols.items():
+            if regex:
+                dm_to_group = self.filter_w_regex({dim: col_to_group})
+            else:
+                dm_to_group = self.filter({dim: col_to_group})
+            # if inplace, drop col_to_group from self
+            if inplace:
+                self.drop(dim=dim, col_label=col_to_group)
+            a = self.dim_labels.index(dim)
+            new_array = np.moveaxis(dm_to_group.array, a, -1)
+            new_array = np.nansum(new_array, axis=-1, keepdims=True)
+            dm_to_group.array = np.moveaxis(new_array, -1, a)
+            for col in dm_to_group.col_labels[dim]:
+                dm_to_group.idx.pop(col)
+            dm_to_group.col_labels[dim] = [out_col]
+            dm_to_group.idx[out_col] = i
+            if i == 0:
+                dm_out = dm_to_group
+            else:
+                dm_out.append(dm_to_group, dim=dim)
+            i = i + 1
+        if inplace:
+            self.append(dm_out, dim=dim)
+            self.sort(dim=dim)
+            return
+        else:
+            dm_out.sort(dim=dim)
+            return dm_out
+
     def datamatrix_plot(self, selected_cols={}, title='title'):
 
         dims = len(self.dim_labels)
