@@ -711,8 +711,7 @@ class DataMatrix:
         self.col_labels[cat2] = col1
         return
 
-
-    def datamatrix_plot(self, selected_cols, title):
+    def datamatrix_plot(self, selected_cols={}, title='title'):
 
         dims = len(self.dim_labels)
         if (dims != 3) & (dims != 4):
@@ -720,47 +719,37 @@ class DataMatrix:
 
         i = self.idx
 
-        countries_list = selected_cols["Country"]
-        if countries_list == "all":
-            countries_list = self.col_labels["Country"]
-        if isinstance(countries_list, str):  # if 'Country': 'France' -> 'Country': ['France']
-            countries_list = [countries_list]
-        years_list = selected_cols["Years"]
-        if years_list == "all":
-            years_list = self.col_labels["Years"]
-        if isinstance(years_list, str):  # if 'Years': 2020 -> 'Years': [2020]
-            years_list = [years_list]
-        years_idx = [i[x] for x in years_list]
-        vars_list = selected_cols["Variables"]
-        if vars_list == "all":
-            vars_list = self.col_labels["Variables"]
-        if isinstance(vars_list, str):
-            vars_list = [vars_list]
+        plot_cols = self.col_labels.copy()
 
+        for key, value in selected_cols.items():
+            if value != 'all':
+                if isinstance(value, str):
+                    plot_cols[key] = [value]
+                else:
+                    plot_cols[key] = value
+
+        years_idx = [i[x] for x in plot_cols['Years']]
         # Create an empty figure
-        fig = px.line(x=years_list, labels={'x': 'Years', 'y': 'Values'}, title=title)
+        fig = px.line(x=plot_cols['Years'], labels={'x': 'Years', 'y': 'Values'}, title=title)
         fig.data[0]['y'] = np.nan*np.ones(shape=np.shape(fig.data[0]['y']))
         if dims == 3:
-            for c in countries_list:
-                for v in vars_list:
+            for c in plot_cols['Country']:
+                for v in plot_cols['Variables']:
                     y_values = self.array[i[c], years_idx, i[v]]
                     label = c + "_" + v
-                    fig.add_scatter(x=years_list, y=y_values, name=label, mode='lines')
+                    fig.add_scatter(x=plot_cols['Years'], y=y_values, name=label, mode='lines')
         if dims == 4:
-            cat_list = selected_cols["Categories1"]
-            if cat_list == "all":
-                cat_list = self.col_labels["Categories1"]
-            for c in countries_list:
-                for v in vars_list:
-                    for cat in cat_list:
+            for c in plot_cols['Country']:
+                for v in plot_cols['Variables']:
+                    for cat in plot_cols['Categories1']:
                         y_values = self.array[i[c], years_idx, i[v], i[cat]]
                         label = c + "_" + v + "_" + cat
-                        fig.add_scatter(x=years_list, y=y_values, name=label, mode='lines')
+                        fig.add_scatter(x=plot_cols['Years'], y=y_values, name=label, mode='lines')
 
         fig.show()
 
-
         return
+
 
 
 
