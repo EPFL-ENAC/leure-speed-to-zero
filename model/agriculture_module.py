@@ -98,7 +98,18 @@ def database_from_csv_to_datamatrix():
     dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 0], baseyear=baseyear,
                                                                 years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
                                                                 column='eucalc-name',
-                                                                group_list=['climate-smart-livestock_losses.*', 'climate-smart-livestock_yield.*', 'climate-smart-livestock_slaughtered.*', 'climate-smart-livestock_density'])
+                                                                group_list=['climate-smart-livestock_losses.*', 'climate-smart-livestock_yield.*',
+                                                                            'climate-smart-livestock_slaughtered.*', 'climate-smart-livestock_density'])
+
+    # Read self-sufficiency
+    file = 'agriculture_biomass-use-hierarchy_pathwaycalc'
+    lever = 'biomass-hierarchy'
+    # Rename to correct format
+    edit_database(file,lever,column='eucalc-name',pattern={'bev_ibp_use_oth':'bev-ibp-use-oth', 'biomass-hierarchy_bev':'biomass-hierarchy-bev', 'solid_bioenergy':'solid-bioenergy'},mode='rename')
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1], baseyear=baseyear,
+                                                                years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
+                                                                column='eucalc-name',
+                                                                group_list=['biomass-hierarchy-bev-ibp-use-oth.*'])
 
     # num_cat_list=[1 = nb de cat de losses, 1 = nb de cat yield]
 
@@ -141,22 +152,25 @@ def read_data(data_file, lever_setting):
     dm_fxa_caf_liv_pop = DM_agriculture['fxa']['caf_agr_liv-population']
 
     # Extract sub-data-matrices according to the flow (parallel)
-    # Diet sub-matrix for the food demand to domestic production sub-flow
+    # Diet sub-matrix for the FOOD DEMAND
     dm_food_net_import_pro = DM_ots_fts['food-net-import'].filter_w_regex({'Categories1': 'pro-.*', 'Variables': 'agr_food-net-import'})
 
-    # Diet sub-matrix for the food demand to domestic production sub-flow
+    # Diet sub-matrix for LIVESTOCK
     dm_livestock_losses = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_losses']
     dm_livestock_yield = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_yield']
     dm_livestock_slaughtered = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_slaughtered']
     dm_livestock_density = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_density']
 
+    # Diet sub-matrix for ALCOHOLIC BEVERAGES
+    dm_alc_bev = DM_ots_fts['biomass-hierarchy']['biomass-hierarchy-bev-ibp-use-oth']
+
     # Aggregate datamatrix by theme/flow
-    # Aggregated Data Matrix - Food demand to domestic production
+    # Aggregated Data Matrix - FOOD DEMAND
     DM_food_demand = {
         'food-net-import-pro': dm_food_net_import_pro
     }
 
-    # Aggregated Data Matrix - ASF to livestock population and livestock products
+    # Aggregated Data Matrix - LIVESTOCK
     DM_livestock = {
         'losses': dm_livestock_losses,
         'yield': dm_livestock_yield,
@@ -166,9 +180,14 @@ def read_data(data_file, lever_setting):
         'ruminant_density': dm_livestock_density
     }
 
+    # Aggregated Data Matrix - ALCOHOLIC BEVERAGES
+    DM_alc_bev = {
+        'biomass_hierarchy': dm_alc_bev
+    }
+
     cdm_const = DM_agriculture['constant']
 
-    return DM_ots_fts, DM_food_demand, DM_livestock, cdm_const
+    return DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, cdm_const
 
 
 def simulate_lifestyles_to_agriculture_input():
@@ -240,29 +259,16 @@ def simulate_lifestyles_to_agriculture_input():
     return dm_lfs
 
 
-def agriculture(lever_setting, years_setting):
-    #####################
-    # CALCULATION TREE  #
-    #####################
+# FOOD DEMAND TO DOMESTIC FOOD PRODUCTION ------------------------------------------------------------------------------
+def food_demand_workflow(DM_food_demand, dm_lfs):
 
-    current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    # !FIXME: change path to '../_database/data/datamatrix/agriculture.pickle'
-    agriculture_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/agriculture.pickle')
-    DM_ots_fts, DM_food_demand, DM_livestock, cdm_const = read_data(agriculture_data_file, lever_setting)
-
-    # Simulate data from lifestyles
-    dm_lfs = simulate_lifestyles_to_agriculture_input()
-    # Filter by country
-    cntr_list = DM_food_demand['food-net-import-pro'].col_labels['Country']
-    dm_lfs = dm_lfs.filter({'Country': cntr_list})
-
-    # FOOD DEMAND TO DOMESTIC FOOD PRODUCTION ------------------------------------------------------------------------------
     # Overall food demand [kcal] = food demand [kcal] + food waste [kcal]
     dm_lfs.operation('lfs_diet', '+', 'lfs_food-wastes', out_col='agr_demand', unit='kcal')
 
     # Filtering dms to only keep pro
-    dm_lfs_pro = dm_lfs.filter_w_regex({'Categories1':'pro-.*','Variables':'agr_demand'})
-    food_net_import_pro = DM_food_demand['food-net-import-pro'].filter_w_regex({'Categories1':'pro-.*','Variables':'agr_food-net-import'})
+    dm_lfs_pro = dm_lfs.filter_w_regex({'Categories1': 'pro-.*', 'Variables': 'agr_demand'})
+    food_net_import_pro = DM_food_demand['food-net-import-pro'].filter_w_regex(
+        {'Categories1': 'pro-.*', 'Variables': 'agr_food-net-import'})
     # Dropping the unwanted columns
     food_net_import_pro.drop(dim='Categories1', col_label=['pro-crop-processed-cake', 'pro-crop-processed-molasse'])
 
@@ -273,8 +279,8 @@ def agriculture(lever_setting, years_setting):
     # Domestic production processed food [kcal] = agr_demand_pro_(.*) [kcal] * net-imports_pro_(.*) [%]
     idx_lfs = dm_lfs_pro.idx
     idx_import = food_net_import_pro.idx
-    agr_domestic_production = dm_lfs_pro.array[:,:,idx_lfs['agr_demand'],:] \
-                              * food_net_import_pro.array[:,:,idx_import['agr_food-net-import'],:]
+    agr_domestic_production = dm_lfs_pro.array[:, :, idx_lfs['agr_demand'], :] \
+                              * food_net_import_pro.array[:, :, idx_import['agr_food-net-import'], :]
 
     # Adding agr_domestic_production to dm_lfs_pro
     dm_lfs_pro.add(agr_domestic_production, dim='Variables', col_label='agr_domestic_production', unit='kcal')
@@ -288,7 +294,10 @@ def agriculture(lever_setting, years_setting):
     df_temp = dm_temp.write_df()
     filtered_df = df_temp[df_temp['Country'].str.contains('France')]
 
-    # ANIMAL SOURCED FOOD DEMAND TO LIVESTOCK POPULATION AND LIVESTOCK PRODUCTS ------------------------------------------------------------------------------
+    return dm_lfs, dm_lfs_pro
+
+# ANIMAL SOURCED FOOD DEMAND TO LIVESTOCK POPULATION AND LIVESTOCK PRODUCTS --------------------------------------------
+def livestock_workflow(DM_livestock, cdm_const, dm_lfs_pro):
 
     # Filter dm_lfs_pro to only have livestock products
     dm_lfs_pro_liv = dm_lfs_pro.filter_w_regex({'Categories1': 'pro-liv.*', 'Variables': 'agr_domestic_production'})
@@ -303,30 +312,36 @@ def agriculture(lever_setting, years_setting):
     DM_livestock['losses'].append(dm_lfs_pro_liv, dim='Variables')
 
     # Livestock domestic prod with losses [kcal] = livestock domestic prod [kcal] * Production losses livestock [%]
-    DM_livestock['losses'].operation('agr_climate-smart-livestock_losses', '*', 'agr_domestic_production', out_col='agr_domestic_production_liv_afw', unit='kcal')
+    DM_livestock['losses'].operation('agr_climate-smart-livestock_losses', '*', 'agr_domestic_production',
+                                     out_col='agr_domestic_production_liv_afw', unit='kcal')
 
     # Calibration Livestock domestic production
     dm_liv_prod = DM_livestock['losses'].filter({'Variables': ['agr_domestic_production_liv_afw']})
-    dm_liv_prod.drop(dim='Categories1', col_label=['abp-processed-offal', 'abp-processed-afat'])# Filter dm_liv_prod to drop offal & afats
-    DM_livestock['caf_liv_prod'].append(dm_liv_prod, dim='Variables') # Append to caf
-    DM_livestock['caf_liv_prod'].operation('caf_agr_domestic-production-liv', '*', 'agr_domestic_production_liv_afw', # Calibrate
-                                            dim="Variables", out_col='cal_agr_domestic_production_liv_afw', unit='kcal')
+    dm_liv_prod.drop(dim='Categories1', col_label=['abp-processed-offal',
+                                                   'abp-processed-afat'])  # Filter dm_liv_prod to drop offal & afats
+    DM_livestock['caf_liv_prod'].append(dm_liv_prod, dim='Variables')  # Append to caf
+    DM_livestock['caf_liv_prod'].operation('caf_agr_domestic-production-liv', '*', 'agr_domestic_production_liv_afw',
+                                           # Calibrate
+                                           dim="Variables", out_col='cal_agr_domestic_production_liv_afw', unit='kcal')
 
     # Livestock slaughtered [lsu] = meat demand [kcal] / livestock meat content [kcal/lsu]
     dm_liv_slau = DM_livestock['caf_liv_prod'].filter({'Variables': ['cal_agr_domestic_production_liv_afw']})
-    DM_livestock['yield'].append(dm_liv_slau, dim='Variables') # Append cal_agr_domestic_production_liv_afw in yield
+    DM_livestock['yield'].append(dm_liv_slau, dim='Variables')  # Append cal_agr_domestic_production_liv_afw in yield
     DM_livestock['yield'].operation('cal_agr_domestic_production_liv_afw', '/', 'agr_climate-smart-livestock_yield',
-                                           dim="Variables", out_col='agr_liv_population', unit='lsu')
+                                    dim="Variables", out_col='agr_liv_population', unit='lsu')
 
     # Livestock population for meat [lsu] = Livestock slaughtered [lsu] / slaughter rate [%]
-    dm_liv_slau_meat = DM_livestock['yield'].filter({'Variables': ['agr_liv_population'], 'Categories1': ['meat-bovine', 'meat-pig', 'meat-poultry', 'meat-sheep', 'meat-oth-animals']})
+    dm_liv_slau_meat = DM_livestock['yield'].filter({'Variables': ['agr_liv_population'],
+                                                     'Categories1': ['meat-bovine', 'meat-pig', 'meat-poultry',
+                                                                     'meat-sheep', 'meat-oth-animals']})
     DM_livestock['liv_slaughtered_rate'].append(dm_liv_slau_meat, dim='Variables')
     DM_livestock['liv_slaughtered_rate'].operation('agr_liv_population', '/', 'agr_climate-smart-livestock_slaughtered',
-                                    dim="Variables", out_col='agr_liv_population_meat', unit='lsu')
+                                                   dim="Variables", out_col='agr_liv_population_meat', unit='lsu')
 
     # Processeing for calibration: Livestock population for meat, eggs and dairy ( meat pop & slaughtered livestock for eggs and dairy)
     # Filtering eggs, dairy and meat
-    dm_liv_slau_egg_dairy = DM_livestock['yield'].filter({'Variables': ['agr_liv_population'], 'Categories1': ['abp-dairy-milk', 'abp-hens-egg']})
+    dm_liv_slau_egg_dairy = DM_livestock['yield'].filter(
+        {'Variables': ['agr_liv_population'], 'Categories1': ['abp-dairy-milk', 'abp-hens-egg']})
     dm_liv_slau_meat = DM_livestock['liv_slaughtered_rate'].filter({'Variables': ['agr_liv_population_meat']})
     # Rename dm_liv_slau_meat variable to match with dm_liv_slau_egg_dairy
     dm_liv_slau_meat.rename_col('agr_liv_population_meat', 'agr_liv_population', dim='Variables')
@@ -336,29 +351,29 @@ def agriculture(lever_setting, years_setting):
     # Calibration Livestock population
     DM_livestock['caf_liv_population'].append(dm_liv_slau_egg_dairy, dim='Variables')  # Append to caf
     DM_livestock['caf_liv_population'].operation('caf_agr_liv-population', '*', 'agr_liv_population',
-                                           dim="Variables", out_col='cal_agr_liv_population', unit='lsu')
+                                                 dim="Variables", out_col='cal_agr_liv_population', unit='lsu')
 
-
-    # Grazing livestock
+    # GRAZING LIVESTOCK
     # Filtering ruminants (bovine & sheep)
-    dm_liv_ruminants = DM_livestock['caf_liv_population'].filter({'Variables': ['cal_agr_liv_population'], 'Categories1': ['meat-bovine', 'meat-sheep']})
+    dm_liv_ruminants = DM_livestock['caf_liv_population'].filter(
+        {'Variables': ['cal_agr_liv_population'], 'Categories1': ['meat-bovine', 'meat-sheep']})
     # Ruminant livestock [lsu] = population bovine + population sheep
     dm_liv_ruminants.operation('meat-bovine', '+', 'meat-sheep', dim="Categories1", out_col='ruminant')
     # Append to relevant dm
     dm_liv_ruminants = dm_liv_ruminants.filter({'Variables': ['cal_agr_liv_population'], 'Categories1': ['ruminant']})
-    dm_liv_ruminants = dm_liv_ruminants.flatten() # change from category to variable
+    dm_liv_ruminants = dm_liv_ruminants.flatten()  # change from category to variable
     DM_livestock['ruminant_density'].append(dm_liv_ruminants, dim='Variables')  # Append to caf
     # Agriculture grassland [ha] = ruminant livestock [lsu] / livestock density [lsu/ha]
-    DM_livestock['ruminant_density'].operation('cal_agr_liv_population_ruminant', '/', 'agr_climate-smart-livestock_density',
+    DM_livestock['ruminant_density'].operation('cal_agr_liv_population_ruminant', '/',
+                                               'agr_climate-smart-livestock_density',
                                                dim="Variables", out_col='agr_lus_land_grassland', unit='ha')
 
-    # Livestock byproducts
-
+    # LIVESTOCK BYPRODUCTS
     # Filter ibp constants for offal
     cdm_cp_ibp_offal = cdm_const.filter_w_regex({'Variables': 'cp_ibp_liv_.*_brf_fdk_offal'})
     cdm_cp_ibp_offal.rename_col_regex('_brf_fdk_offal', '', dim='Variables')
     cdm_cp_ibp_offal.rename_col_regex('liv_', 'liv_meat-', dim='Variables')
-    cdm_cp_ibp_offal.deepen(based_on='Variables') # Creating categories
+    cdm_cp_ibp_offal.deepen(based_on='Variables')  # Creating categories
 
     # Filter ibp constants for afat
     cdm_cp_ibp_afat = cdm_const.filter_w_regex({'Variables': 'cp_ibp_liv_.*_brf_fdk_afat'})
@@ -367,8 +382,10 @@ def agriculture(lever_setting, years_setting):
     cdm_cp_ibp_afat.deepen(based_on='Variables')  # Creating categories
 
     # Filter cal_agr_liv_population for meat
-    cal_liv_population_meat = DM_livestock['caf_liv_population'].filter_w_regex({'Variables': 'cal_agr_liv_population', 'Categories1': 'meat'})
-    DM_livestock['liv_slaughtered_rate'].append(cal_liv_population_meat, dim='Variables') # Appending to the dm that has the same categories
+    cal_liv_population_meat = DM_livestock['caf_liv_population'].filter_w_regex(
+        {'Variables': 'cal_agr_liv_population', 'Categories1': 'meat'})
+    DM_livestock['liv_slaughtered_rate'].append(cal_liv_population_meat,
+                                                dim='Variables')  # Appending to the dm that has the same categories
 
     # Sort categories ?? already in correct order
 
@@ -376,14 +393,14 @@ def agriculture(lever_setting, years_setting):
     idx_liv_pop = DM_livestock['liv_slaughtered_rate'].idx
     idx_cdm_offal = cdm_cp_ibp_offal.idx
     agr_ibp_offal = DM_livestock['liv_slaughtered_rate'].array[:, :, idx_liv_pop['cal_agr_liv_population'], :] \
-                              * cdm_cp_ibp_offal.array[idx_cdm_offal['cp_ibp_liv']]
+                    * cdm_cp_ibp_offal.array[idx_cdm_offal['cp_ibp_liv']]
     DM_livestock['liv_slaughtered_rate'].add(agr_ibp_offal, dim='Variables', col_label='agr_ibp_offal', unit='kcal')
 
     # Afat per livestock type [kcal] = livestock population meat [lsu] * yield afat [kcal/lsu]
     idx_liv_pop = DM_livestock['liv_slaughtered_rate'].idx
     idx_cdm_afat = cdm_cp_ibp_afat.idx
     agr_ibp_afat = DM_livestock['liv_slaughtered_rate'].array[:, :, idx_liv_pop['cal_agr_liv_population'], :] \
-                    * cdm_cp_ibp_afat.array[idx_cdm_afat['cp_ibp_liv']]
+                   * cdm_cp_ibp_afat.array[idx_cdm_afat['cp_ibp_liv']]
     DM_livestock['liv_slaughtered_rate'].add(agr_ibp_afat, dim='Variables', col_label='agr_ibp_afat', unit='kcal')
 
     # Totals offal/afat [kcal] = sum (Offal/afat per livestock type [kcal])
@@ -400,18 +417,64 @@ def agriculture(lever_setting, years_setting):
 
     # Filter Processed offal/afats afw (not calibrated), rename and append with dm_liv_ibp
     dm_processed_offal_afat = DM_livestock['losses'].filter({'Variables': ['agr_domestic_production_liv_afw'],
-                                                          'Categories1': ['abp-processed-offal','abp-processed-afat']})
+                                                             'Categories1': ['abp-processed-offal',
+                                                                             'abp-processed-afat']})
     dm_processed_offal_afat.rename_col_regex(str1="abp-processed-", str2="", dim="Categories1")
     dm_liv_ibp.append(dm_processed_offal_afat, dim='Variables')
 
     # Offal/afats for feedstock [kcal] = produced offal/afats [kcal] - processed offal/afat [kcal]
-    dm_liv_ibp.operation('agr_ibp_total', '-', 'agr_domestic_production_liv_afw', out_col='agr_ibp_liv_fdk', unit='kcal')
+    dm_liv_ibp.operation('agr_ibp_total', '-', 'agr_domestic_production_liv_afw', out_col='agr_ibp_liv_fdk',
+                         unit='kcal')
 
     # Total offal and afats for feedstock [kcal] = Offal for feedstock [kcal] + Afats for feedstock [kcal]
     dm_ibp_fdk = dm_liv_ibp.filter({'Variables': ['agr_ibp_liv_fdk']})
-    dm_ibp_fdk.groupby({'total': '.*'}, dim='Categories1', regex=True, inplace=True)
+    dm_liv_ibp.groupby({'total': '.*'}, dim='Categories1', regex=True, inplace=True)
 
-    print('hello') # list: the 3 dimensions, i.e. country, years and variables
+    return DM_livestock, dm_liv_ibp, dm_liv_ibp
+
+def agriculture(lever_setting, years_setting):
+
+
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    # !FIXME: change path to '../_database/data/datamatrix/agriculture.pickle'
+    agriculture_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/agriculture.pickle')
+    DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, cdm_const = read_data(agriculture_data_file, lever_setting)
+
+    # Simulate data from lifestyles
+    dm_lfs = simulate_lifestyles_to_agriculture_input()
+    # Filter by country
+    cntr_list = DM_food_demand['food-net-import-pro'].col_labels['Country']
+    dm_lfs = dm_lfs.filter({'Country': cntr_list})
+
+    #####################
+    # CALCULATION TREE  #
+    #####################
+
+    dm_lfs, dm_lfs_pro = food_demand_workflow(DM_food_demand, dm_lfs)
+    DM_livestock, dm_liv_ibp, dm_liv_ibp= livestock_workflow(DM_livestock, cdm_const, dm_lfs_pro)
+
+    # ALCOHOLIC BEVERAGES INDUSTRY -------------------------------------------------------------------------------------
+
+    # From FOOD DEMAND filtering domestic production bev and renaming
+    dm_lfs_pro_bev= dm_lfs_pro.filter_w_regex({'Categories1': 'pro-bev.*', 'Variables': 'agr_domestic_production'})
+    dm_lfs_pro_bev.rename_col_regex(str1="pro-bev-", str2="", dim="Categories1")
+
+    # Byproducts [kcal] = agr_domestic_production bev [kcal] * yields [%]
+
+
+    # Byproducts for other uses [kcal] = sum (wine byproducts [kcal])
+
+
+    # Byproducts biomass use per sector = byproducts for other uses * share of bev biomass per sector [%]
+
+
+    # Cereal bev byproducts allocated to feed [kcal] = sum (beer byproducts [kcal])
+
+
+    #
+
+
+    print('hello')
     return
 
 
