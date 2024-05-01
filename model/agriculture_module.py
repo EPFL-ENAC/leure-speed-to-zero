@@ -95,16 +95,26 @@ def database_from_csv_to_datamatrix():
     # Read climate smart livestock
     file = 'agriculture_climate-smart-livestock_pathwaycalc_renamed'
     lever = 'climate-smart-livestock'
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1], baseyear=baseyear,
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 0], baseyear=baseyear,
                                                                 years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
                                                                 column='eucalc-name',
-                                                                group_list=['climate-smart-livestock_losses.*', 'climate-smart-livestock_yield.*', 'climate-smart-livestock_slaughtered.*'])
+                                                                group_list=['climate-smart-livestock_losses.*', 'climate-smart-livestock_yield.*', 'climate-smart-livestock_slaughtered.*', 'climate-smart-livestock_density'])
 
     # num_cat_list=[1 = nb de cat de losses, 1 = nb de cat yield]
+
+    #####################
+    ###### CONSTANTS #######
+    #####################
+
+    # Data - Constants
+    cdm_const = ConstantDataMatrix.extract_constant('interactions_constants',
+                                                    pattern='cp_ibp_liv_.*_brf_fdk_afat|cp_ibp_liv_.*_brf_fdk_offal', #use 'xx|xx|xx' to add
+                                                    num_cat=0)
+
     # Group all datamatrix in a single structure
     DM_agriculture = {
         'fxa': dict_fxa,
-        #'constant': cdm_const,
+        'constant': cdm_const,
         'fts': dict_fts,
         'ots': dict_ots
     }
@@ -138,6 +148,7 @@ def read_data(data_file, lever_setting):
     dm_livestock_losses = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_losses']
     dm_livestock_yield = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_yield']
     dm_livestock_slaughtered = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_slaughtered']
+    dm_livestock_density = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_density']
 
     # Aggregate datamatrix by theme/flow
     # Aggregated Data Matrix - Food demand to domestic production
@@ -151,10 +162,13 @@ def read_data(data_file, lever_setting):
         'yield': dm_livestock_yield,
         'liv_slaughtered_rate': dm_livestock_slaughtered,
         'caf_liv_prod': dm_fxa_caf_liv_prod,
-        'caf_liv_population': dm_fxa_caf_liv_pop
+        'caf_liv_population': dm_fxa_caf_liv_pop,
+        'ruminant_density': dm_livestock_density
     }
 
-    return DM_ots_fts, DM_food_demand, DM_livestock
+    cdm_const = DM_agriculture['constant']
+
+    return DM_ots_fts, DM_food_demand, DM_livestock, cdm_const
 
 
 def simulate_lifestyles_to_agriculture_input():
@@ -234,7 +248,7 @@ def agriculture(lever_setting, years_setting):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     # !FIXME: change path to '../_database/data/datamatrix/agriculture.pickle'
     agriculture_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/agriculture.pickle')
-    DM_ots_fts, DM_food_demand, DM_livestock = read_data(agriculture_data_file, lever_setting)
+    DM_ots_fts, DM_food_demand, DM_livestock, cdm_const = read_data(agriculture_data_file, lever_setting)
 
     # Simulate data from lifestyles
     dm_lfs = simulate_lifestyles_to_agriculture_input()
@@ -274,7 +288,7 @@ def agriculture(lever_setting, years_setting):
     df_temp = dm_temp.write_df()
     filtered_df = df_temp[df_temp['Country'].str.contains('France')]
 
-    # ASF TO LIVESTOCK POPULATION AND LIVESTOCK PRODUCTS ------------------------------------------------------------------------------
+    # ANIMAL SOURCED FOOD DEMAND TO LIVESTOCK POPULATION AND LIVESTOCK PRODUCTS ------------------------------------------------------------------------------
 
     # Filter dm_lfs_pro to only have livestock products
     dm_lfs_pro_liv = dm_lfs_pro.filter_w_regex({'Categories1': 'pro-liv.*', 'Variables': 'agr_domestic_production'})
@@ -326,10 +340,76 @@ def agriculture(lever_setting, years_setting):
 
 
     # Grazing livestock
+    # Filtering ruminants (bovine & sheep)
+    dm_liv_ruminants = DM_livestock['caf_liv_population'].filter({'Variables': ['cal_agr_liv_population'], 'Categories1': ['meat-bovine', 'meat-sheep']})
+    # Ruminant livestock [lsu] = population bovine + population sheep
+    dm_liv_ruminants.operation('meat-bovine', '+', 'meat-sheep', dim="Categories1", out_col='ruminant')
+    # Append to relevant dm
+    dm_liv_ruminants = dm_liv_ruminants.filter({'Variables': ['cal_agr_liv_population'], 'Categories1': ['ruminant']})
+    dm_liv_ruminants = dm_liv_ruminants.flatten() # change from category to variable
+    DM_livestock['ruminant_density'].append(dm_liv_ruminants, dim='Variables')  # Append to caf
+    # Agriculture grassland [ha] = ruminant livestock [lsu] / livestock density [lsu/ha]
+    DM_livestock['ruminant_density'].operation('cal_agr_liv_population_ruminant', '/', 'agr_climate-smart-livestock_density',
+                                               dim="Variables", out_col='agr_lus_land_grassland', unit='ha')
 
     # Livestock byproducts
 
+    # Filter ibp constants for offal
+    cdm_cp_ibp_offal = cdm_const.filter_w_regex({'Variables': 'cp_ibp_liv_.*_brf_fdk_offal'})
+    cdm_cp_ibp_offal.rename_col_regex('_brf_fdk_offal', '', dim='Variables')
+    cdm_cp_ibp_offal.rename_col_regex('liv_', 'liv_meat-', dim='Variables')
+    cdm_cp_ibp_offal.deepen(based_on='Variables') # Creating categories
 
+    # Filter ibp constants for afat
+    cdm_cp_ibp_afat = cdm_const.filter_w_regex({'Variables': 'cp_ibp_liv_.*_brf_fdk_afat'})
+    cdm_cp_ibp_afat.rename_col_regex('_brf_fdk_afat', '', dim='Variables')
+    cdm_cp_ibp_afat.rename_col_regex('liv_', 'liv_meat-', dim='Variables')
+    cdm_cp_ibp_afat.deepen(based_on='Variables')  # Creating categories
+
+    # Filter cal_agr_liv_population for meat
+    cal_liv_population_meat = DM_livestock['caf_liv_population'].filter_w_regex({'Variables': 'cal_agr_liv_population', 'Categories1': 'meat'})
+    DM_livestock['liv_slaughtered_rate'].append(cal_liv_population_meat, dim='Variables') # Appending to the dm that has the same categories
+
+    # Sort categories ?? already in correct order
+
+    # Offal per livestock type [kcal] = livestock population meat [lsu] * yield offal [kcal/lsu]
+    idx_liv_pop = DM_livestock['liv_slaughtered_rate'].idx
+    idx_cdm_offal = cdm_cp_ibp_offal.idx
+    agr_ibp_offal = DM_livestock['liv_slaughtered_rate'].array[:, :, idx_liv_pop['cal_agr_liv_population'], :] \
+                              * cdm_cp_ibp_offal.array[idx_cdm_offal['cp_ibp_liv']]
+    DM_livestock['liv_slaughtered_rate'].add(agr_ibp_offal, dim='Variables', col_label='agr_ibp_offal', unit='kcal')
+
+    # Afat per livestock type [kcal] = livestock population meat [lsu] * yield afat [kcal/lsu]
+    idx_liv_pop = DM_livestock['liv_slaughtered_rate'].idx
+    idx_cdm_afat = cdm_cp_ibp_afat.idx
+    agr_ibp_afat = DM_livestock['liv_slaughtered_rate'].array[:, :, idx_liv_pop['cal_agr_liv_population'], :] \
+                    * cdm_cp_ibp_afat.array[idx_cdm_afat['cp_ibp_liv']]
+    DM_livestock['liv_slaughtered_rate'].add(agr_ibp_afat, dim='Variables', col_label='agr_ibp_afat', unit='kcal')
+
+    # Totals offal/afat [kcal] = sum (Offal/afat per livestock type [kcal])
+    dm_offal = DM_livestock['liv_slaughtered_rate'].filter({'Variables': ['agr_ibp_offal']})
+    dm_liv_ibp = dm_offal.copy()
+    dm_liv_ibp.groupby({'offal': '.*'}, dim='Categories1', regex=True, inplace=True)
+    dm_afat = DM_livestock['liv_slaughtered_rate'].filter({'Variables': ['agr_ibp_afat']})
+    dm_total_afat = dm_afat.copy()
+    dm_total_afat.groupby({'afat': '.*'}, dim='Categories1', regex=True, inplace=True)
+
+    # Append Totals offal with total afat and rename variable
+    dm_liv_ibp.append(dm_total_afat, dim='Categories1')
+    dm_liv_ibp.rename_col('agr_ibp_offal', 'agr_ibp_total', dim='Variables')
+
+    # Filter Processed offal/afats afw (not calibrated), rename and append with dm_liv_ibp
+    dm_processed_offal_afat = DM_livestock['losses'].filter({'Variables': ['agr_domestic_production_liv_afw'],
+                                                          'Categories1': ['abp-processed-offal','abp-processed-afat']})
+    dm_processed_offal_afat.rename_col_regex(str1="abp-processed-", str2="", dim="Categories1")
+    dm_liv_ibp.append(dm_processed_offal_afat, dim='Variables')
+
+    # Offal/afats for feedstock [kcal] = produced offal/afats [kcal] - processed offal/afat [kcal]
+    dm_liv_ibp.operation('agr_ibp_total', '-', 'agr_domestic_production_liv_afw', out_col='agr_ibp_liv_fdk', unit='kcal')
+
+    # Total offal and afats for feedstock [kcal] = Offal for feedstock [kcal] + Afats for feedstock [kcal]
+    dm_ibp_fdk = dm_liv_ibp.filter({'Variables': ['agr_ibp_liv_fdk']})
+    dm_ibp_fdk.groupby({'total': '.*'}, dim='Categories1', regex=True, inplace=True)
 
     print('hello') # list: the 3 dimensions, i.e. country, years and variables
     return
