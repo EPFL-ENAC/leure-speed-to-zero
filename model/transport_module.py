@@ -579,6 +579,32 @@ def passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const, years_sett
     dm_energy.array = dm_energy.array*0.277778
     dm_energy.units['tra_passenger_energy-demand'] = 'TWh'
 
+    # Prepare output for energy
+    dm_electricity = dm_energy.groupby({'power-demand': ['BEV', 'CEV', 'PHEV-elec', 'mt']}, dim='Categories2')
+    dm_electricity.groupby({'road': ['2W', 'bus', 'LDV'], 'rail': ['metrotram', 'rail'], 'other': ['aviation']},
+                           dim='Categories1', inplace=True)
+    dm_electricity.switch_categories_order()
+    dm_electricity.rename_col('tra_passenger_energy-demand', 'tra', dim='Variables')
+    dm_electricity = dm_electricity.flatten()
+    dm_electricity = dm_electricity.flatten()
+    dm_electricity.deepen()
+
+    dm_efuel = dm_energy.groupby({'efuel': '.*efuel'}, dim='Categories2', regex=True)
+    dm_efuel.groupby({'power-demand': '.*'}, dim='Categories1', inplace=True, regex=True)
+    dm_efuel.rename_col('tra_passenger_energy-demand', 'tra', dim='Variables')
+    dm_efuel = dm_efuel.flatten()
+    dm_efuel = dm_efuel.flatten()
+    dm_efuel.deepen()
+
+    dm_electricity.append(dm_efuel, dim='Categories1')
+    dm_electricity.array = dm_electricity.array/1000
+    dm_electricity.units['tra_power-demand'] = 'GWh'
+
+    DM_passenger_out = {
+        'power': dm_electricity,
+    }
+    # end energy output
+
     dict1 = {'FCEV': 'FCV-hydrogen', 'BEV': 'BEV-elec', 'CEV': 'CEV-elec', 'metrotram_mt': 'metrotram_elec',
              'aviation_ICEefuel': 'aviation_ejetfuel', 'aviation_ICEbio': 'aviation_biojetfuel',
              'aviation_ICE': 'aviation_kerosene', 'PHEVbio': 'dieselbio', 'PHEVefuel': 'dieselefuel'}
@@ -672,7 +698,11 @@ def passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const, years_sett
 
     dm_tot_energy.rename_col(col_in='tra_passenger_total-energy', col_out='tra_passenger_energy-demand-by-fuel', dim='Variables')
 
-    return dm_mode, dm_tech, dm_tot_energy
+    DM_passenger_out['mode'] = dm_mode
+    DM_passenger_out['tech'] = dm_tech
+    DM_passenger_out['fuel'] = dm_fuel
+
+    return DM_passenger_out
 
 
 def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
@@ -772,6 +802,32 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
     dm_energy.array = dm_energy.array*0.277778
     dm_energy.units['tra_freight_energy-demand'] = 'TWh'
 
+    # Prepare output for energy
+    dm_electricity = dm_energy.groupby({'power-demand': ['BEV', 'CEV', 'PHEV-elec']}, dim='Categories2')
+    dm_electricity.groupby({'road': ['HDVH', 'HDVL', 'HDVM'], 'rail': ['rail'], 'other': ['aviation', 'marine', 'IWW']},
+                           dim='Categories1', inplace=True)
+    dm_electricity.switch_categories_order()
+    dm_electricity.rename_col('tra_freight_energy-demand', 'tra', dim='Variables')
+    dm_electricity = dm_electricity.flatten()
+    dm_electricity = dm_electricity.flatten()
+    dm_electricity.deepen()
+
+    dm_efuel = dm_energy.groupby({'efuel': '.*efuel'}, dim='Categories2', regex=True)
+    dm_efuel.groupby({'power-demand': '.*'}, dim='Categories1', inplace=True, regex=True)
+    dm_efuel.rename_col('tra_freight_energy-demand', 'tra', dim='Variables')
+    dm_efuel = dm_efuel.flatten()
+    dm_efuel = dm_efuel.flatten()
+    dm_efuel.deepen()
+
+    dm_electricity.append(dm_efuel, dim='Categories1')
+    dm_electricity.array = dm_electricity.array/1000
+    dm_electricity.units['tra_power-demand'] = 'GWh'
+
+    DM_freight_out = {
+        'power': dm_electricity,
+    }
+    ## end
+
     dict1 = {'FCEV': 'FCV-hydrogen', 'BEV': 'BEV-elec', 'CEV': 'CEV-elec',
              'aviation_ICEefuel': 'aviation_ejetfuel', 'aviation_ICEbio': 'aviation_biojetfuel',
              'aviation_ICE': 'aviation_kerosene'}
@@ -849,9 +905,11 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
 
     dm_tech.rename_col('tra_freight_technology-share_fleet', 'tra_freight_techology-share-fleet', dim='Variables')
 
+    DM_freight_out['mode'] = dm_mode
+    DM_freight_out['tech'] = dm_tech
+    DM_freight_out['energy'] = dm_energy
 
-
-    return dm_mode, dm_tech, dm_energy
+    return DM_freight_out
 
 
 def transport(lever_setting, years_setting):
@@ -868,17 +926,18 @@ def transport(lever_setting, years_setting):
 
     # PASSENGER
     cdm_const_passenger = cdm_const.copy()
-    dm_pass_mode, dm_pass_tech, dm_pass_fuel = passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const_passenger, years_setting)
+    DM_passenger_out = passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const_passenger, years_setting)
     # FREIGHT
     cdm_const_freight = cdm_const.copy()
-    dm_fre_mode, dm_fre_tech, dm_fre_energy = freight_fleet_energy(DM_freight, DM_other, cdm_const_freight, years_setting)
+    DM_freight_out = freight_fleet_energy(DM_freight, DM_other, cdm_const_freight, years_setting)
 
-    dm_keep_mode = dm_pass_mode.filter({'Variables': ['tra_passenger_transport-demand-by-mode',
+    dm_keep_mode = DM_passenger_out['mode'].filter({'Variables': ['tra_passenger_transport-demand-by-mode',
                                                       'tra_passenger_energy-demand-by-mode',
                                                       'tra_passenger_emissions-by-mode_CO2']})
-    dm_keep_tech = dm_pass_tech.filter({'Variables': ['tra_passenger_technology-share-fleet']})
 
-    dm_keep_fuel = dm_pass_fuel
+    dm_keep_tech = DM_passenger_out['tech'].filter({'Variables': ['tra_passenger_technology-share-fleet']})
+
+    dm_keep_fuel = DM_passenger_out['fuel']
 
     # Turn datamatrix to dataframe (because converter and TPE work with dataframes)
     df = dm_keep_mode.write_df()
@@ -893,6 +952,12 @@ def transport(lever_setting, years_setting):
 
     results_run = df
 
+    # Power-module
+    #dm_electricity = DM_passenger_out['power']
+    #dm_electricity.array = dm_electricity.array + DM_freight_out['power'].array
+    #df = dm_electricity.write_df()
+    #df.to_excel('transport-to-power.xlsx', index=False)
+
     return results_run
 
 
@@ -902,11 +967,13 @@ def local_transport_run():
     f = open('../config/lever_position.json')
     lever_setting = json.load(f)[0]
 
-    global_vars = {'geoscale': 'Switzerland'}
+    global_vars = {'geoscale': '.*'}
     filter_geoscale(global_vars)
 
     results_run = transport(lever_setting, years_setting)
 
     return results_run
 
-#results_run = local_transport_run()
+#database_from_csv_to_datamatrix
+
+results_run = local_transport_run()
