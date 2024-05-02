@@ -288,7 +288,14 @@ def simulate_buildings_to_power_input():
 # LocalInterfaces - Transport
 #######################################################################################################################
 
+def simulate_transport_to_power_input():
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(current_file_directory, "../_database/data/xls/"
+                                             "All-Countries-interface_from-transport-to-power.xlsx")
+    df = pd.read_excel(f, sheet_name="default")
+    DM_tra = DataMatrix.create_from_df(df, num_cat=1)
 
+    return DM_tra
 
 #######################################################################################################################
 # LocalInterfaces - Industry
@@ -436,13 +443,22 @@ def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
     dm_fb_capacity.operation('pow_net-yearly-production-with-ccs', '+', 'pow_net-yearly-production-without-ccs',
                              dim="Variables", out_col='pow_net-yearly-production', unit='GWh')
 
+    #####################################################################################
+    # CalculationLeafs - Aggregated net power production with no profiles
+    #####################################################################################
+
+    dm_fb_np = dm_fb_capacity.filter({'Variables': ['pow_net-yearly-production']})
+    dm_nfb_np = dm_capacity.filter({'Variables': ['pow_gross-yearly-production']})
+    #dm_nfb_np = dm_nfb_np.filter_w_regex({'Categories1': 'hydroelectric|solar-csp|geothermal|marine'})                                                                   'hydroelectric|geothermal|marine|solar-csp'})
+
     return dm_capacity, dm_fb_capacity
 
 #######################################################################################################################
 # CalculationTree - Power - Building yearly demand
 #######################################################################################################################
 
-def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_agr_electricity):
+def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_agr_electricity, DM_tra,
+                           dm_ind_hydrogen, dm_amm_hydrogen):
 
     #########################################################################
     # CalculationLeafs - Electricity demand - Appliances [GWh]
@@ -454,15 +470,37 @@ def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_ag
     ay_x = np.nansum(dm_bld_appliances.array[...],axis=-1)
     dm_bld_appliances.add(ay_x, dim='Categories2', col_label='total')
 
-    #########################################################################
-    # CalculationLeafs - Electricity demand - Other sectors [GWh]
-    #########################################################################
+    #############################################################################
+    # CalculationLeafs - Electricity demand - Other sectors [GWh] (no-profiles)
+    #############################################################################
 
-    dm_demand_other = dm_agr_electricity.copy()
+    dm_tra_electricity = DM_tra.filter_w_regex({'Categories1': 'other'})
+    dm_tra_electricity = dm_tra_electricity.flatten()
+    dm_demand_other = dm_tra_electricity.copy()
+
+    # Tuto: Append matrices
+    dm_demand_other.append(dm_agr_electricity, dim='Variables')
     dm_demand_other.append(dm_ind_electricity, dim='Variables')
     dm_demand_other.append(dm_amm_electricity, dim='Variables')
 
-    return dm_bld_appliances, dm_demand_other
+    ay_total = np.nansum(dm_demand_other.array[...], axis=-1)
+    dm_demand_other.add(ay_total, dim='Variables', col_label='total')
+
+    #############################################################################
+    # CalculationLeafs - Electricity demand - Hydrogen [GWh]
+    #############################################################################
+
+    dm_tra_hydrogen = DM_tra.filter_w_regex({'Categories1': 'hydrogen'})
+    dm_tra_hydrogen = dm_tra_hydrogen.flatten()
+    dm_demand_hydrogen = dm_tra_hydrogen.copy()
+
+    dm_demand_hydrogen.append(dm_amm_hydrogen, dim='Variables')
+    dm_demand_hydrogen.append(dm_ind_hydrogen, dim='Variables')
+
+    ay_total = np.nansum(dm_demand_hydrogen.array[...], axis=-1)
+    dm_demand_hydrogen.add(ay_total, dim='Variables', col_label='total')
+
+    return dm_bld_appliances, dm_demand_other, dm_demand_hydrogen
 
 #######################################################################################################################
 # CoreModule - Power
@@ -478,6 +516,7 @@ def power(lever_setting, years_setting):
     DM_bld = simulate_buildings_to_power_input()
     dm_ind_electricity, dm_ind_hydrogen = simulate_industry_to_power_input()
     dm_amm_electricity, dm_amm_hydrogen = simulate_ammonia_to_power_input()
+    DM_tra = simulate_transport_to_power_input()
 
     # filter local interface country list
     cntr_list = dm_capacity.col_labels['Country']
@@ -485,7 +524,9 @@ def power(lever_setting, years_setting):
 
     # To send to TPE (result run)
     dm_fake_1, dm_fake_2 = yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const)
-    dm_fake_3, dm_fake_4 = yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_agr_electricity)# input fonctions
+    dm_fake_3, dm_fake_4, dm_fake_5 = yearly_demand_workflow(DM_bld, dm_ind_electricity,dm_amm_electricity,
+                                                             dm_agr_electricity, DM_tra, dm_ind_hydrogen,
+                                                             dm_amm_hydrogen)# input fonctions
     # same number of arg than the return function
 
     # concatenate all results to df
