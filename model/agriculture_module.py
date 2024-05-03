@@ -113,6 +113,18 @@ def database_from_csv_to_datamatrix():
                                                                 column='eucalc-name',
                                                                 group_list=['.*biomass-hierarchy-bev-ibp-use-oth.*'])
 
+    # Read bioenergy capacity
+    file = 'agriculture_bioenergy-capacity_pathwaycalc'
+    lever = 'bioenergy-capacity'
+    # Rename to correct format
+    #edit_database(file,lever,column='eucalc-name',pattern={'capacity_solid-biofuel':'capacity_elec_solid-biofuel', 'capacity_biogases':'capacity_elec_biogases'},mode='rename')
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 1, 1], baseyear=baseyear,
+                                                                years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
+                                                                column='eucalc-name',
+                                                                group_list=['bioenergy-capacity_load-factor.*', 'bioenergy-capacity_bgs-mix.*',
+                                                                            'bioenergy-capacity_efficiency.*', 'bioenergy-capacity_liq_b.*', 'bioenergy-capacity_elec.*'])
+
+
     # num_cat_list=[1 = nb de cat de losses, 1 = nb de cat yield]
 
     #####################
@@ -121,7 +133,7 @@ def database_from_csv_to_datamatrix():
     # ConstantsToDatamatrix
     # Data - Constants (use 'xx|xx|xx' to add)
     cdm_const = ConstantDataMatrix.extract_constant('interactions_constants',
-                                                    pattern='cp_ibp_liv_.*_brf_fdk_afat|cp_ibp_liv_.*_brf_fdk_offal|cp_ibp_bev_.*',
+                                                    pattern='cp_ibp_liv_.*_brf_fdk_afat|cp_ibp_liv_.*_brf_fdk_offal|cp_ibp_bev_.*|cp_liquid_tec.*|cp_load_hours',
                                                     num_cat=0)
 
     # Group all datamatrix in a single structure
@@ -153,18 +165,27 @@ def read_data(data_file, lever_setting):
     dm_fxa_caf_liv_prod = DM_agriculture['fxa']['caf_agr_domestic-production-liv']
     dm_fxa_caf_liv_pop = DM_agriculture['fxa']['caf_agr_liv-population']
 
-    # Extract sub-data-matrices according to the flow (parallel)
-    # Diet sub-matrix for the FOOD DEMAND
+    # Extract sub-data-matrices according to the flow
+    # Sub-matrix for the FOOD DEMAND
     dm_food_net_import_pro = DM_ots_fts['food-net-import'].filter_w_regex({'Categories1': 'pro-.*', 'Variables': 'agr_food-net-import'})
 
-    # Diet sub-matrix for LIVESTOCK
+    # Sub-matrix for LIVESTOCK
     dm_livestock_losses = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_losses']
     dm_livestock_yield = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_yield']
     dm_livestock_slaughtered = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_slaughtered']
     dm_livestock_density = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_density']
 
-    # Diet sub-matrix for ALCOHOLIC BEVERAGES
+    # Sub-matrix for ALCOHOLIC BEVERAGES
     dm_alc_bev = DM_ots_fts['biomass-hierarchy']['biomass-hierarchy-bev-ibp-use-oth']
+
+    # Sub-matrix for BIOENERGY
+    dm_bioenergy_cap_load_factor = DM_ots_fts['bioenergy-capacity']['bioenergy-capacity_load-factor']
+    dm_bioenergy_cap_bgs_mix = DM_ots_fts['bioenergy-capacity']['bioenergy-capacity_bgs-mix']
+    dm_bioenergy_cap_efficiency = DM_ots_fts['bioenergy-capacity']['bioenergy-capacity_efficiency']
+    dm_bioenergy_cap_liq = DM_ots_fts['bioenergy-capacity']['bioenergy-capacity_liq_b']
+    dm_bioenergy_cap_elec = DM_ots_fts['bioenergy-capacity']['bioenergy-capacity_elec']
+    dm_bioenergy_cap_elec.append(dm_bioenergy_cap_load_factor, dim='Variables')
+    dm_bioenergy_cap_elec.append(dm_bioenergy_cap_efficiency, dim='Variables')
 
     # Aggregate datamatrix by theme/flow
     # Aggregated Data Matrix - FOOD DEMAND
@@ -187,11 +208,18 @@ def read_data(data_file, lever_setting):
         'biomass_hierarchy': dm_alc_bev
     }
 
+    # Aggregated Data Matrix - BIOENERGY
+    DM_bioenergy = {
+        'electricity_production': dm_bioenergy_cap_elec,
+        'bgs-mix': dm_bioenergy_cap_bgs_mix,
+        'liq': dm_bioenergy_cap_liq
+    }
+
     cdm_const = DM_agriculture['constant']
 
-    return DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, cdm_const
+    return DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, cdm_const
 
-
+# SimulateInteractions
 def simulate_lifestyles_to_agriculture_input():
     # Read input from lifestyle : food waste & diet
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -259,7 +287,29 @@ def simulate_lifestyles_to_agriculture_input():
         dm_lfs.rename_col(cat, new_cat, dim='Categories1')
 
     return dm_lfs
+def simulate_buildings_to_agriculture_input():
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(current_file_directory, "../_database/data/xls/All-Countries-interface_from-buildings-to-agriculture_renamed.xlsx")
+    # the renamed version has - instead of _
+    df = pd.read_excel(f, sheet_name="default")
+    dm_bld = DataMatrix.create_from_df(df, num_cat=1)
 
+    return dm_bld
+def simulate_industry_to_agriculture_input():
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(current_file_directory, "../_database/data/xls/All-Countries-interface_from-industry-to-agriculture.xlsx")
+    df = pd.read_excel(f, sheet_name="default")
+    dm_ind = DataMatrix.create_from_df(df, num_cat=0)
+
+    return dm_ind
+def simulate_transport_to_agriculture_input():
+    # Read input from lifestyle : food waste & diet
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(current_file_directory, "../_database/data/xls/All-Countries-interface_from-transport-to-agriculture_renamed.xlsx")
+    df = pd.read_excel(f, sheet_name="default")
+    dm_tra = DataMatrix.create_from_df(df, num_cat=1)
+
+    return dm_tra
 
 # CalculationLeaf FOOD DEMAND TO DOMESTIC FOOD PRODUCTION --------------------------------------------------------------
 def food_demand_workflow(DM_food_demand, dm_lfs):
@@ -555,13 +605,20 @@ def agriculture(lever_setting, years_setting):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     agriculture_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/agriculture.pickle')
-    DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, cdm_const = read_data(agriculture_data_file, lever_setting)
+    DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, cdm_const = read_data(agriculture_data_file, lever_setting)
 
-    # Simulate data from lifestyles
+    # Simulate data from other modules
     dm_lfs = simulate_lifestyles_to_agriculture_input()
+    dm_bld = simulate_buildings_to_agriculture_input()
+    dm_ind = simulate_industry_to_agriculture_input()
+    dm_tra = simulate_transport_to_agriculture_input()
+
     # Filter by country
     cntr_list = DM_food_demand['food-net-import-pro'].col_labels['Country']
     dm_lfs = dm_lfs.filter({'Country': cntr_list})
+    dm_bld = dm_bld.filter({'Country': cntr_list})
+    dm_ind = dm_ind.filter({'Country': cntr_list})
+    dm_tra = dm_tra.filter({'Country': cntr_list})
 
     # CalculationTree
 
@@ -569,6 +626,63 @@ def agriculture(lever_setting, years_setting):
     DM_livestock, dm_liv_ibp, dm_liv_ibp= livestock_workflow(DM_livestock, cdm_const, dm_lfs_pro)
     DM_alc_bev, dm_bev_ibp_cereal_feed = alcoholic_beverages_workflow(DM_alc_bev, cdm_const, dm_lfs_pro)
 
+    # CalculationLeaf BIOENERGY CAPACITY -------------------------------------------------------------------------------
+
+    # Electricity production
+    # Bioenergy capacity [TWh] = bioenergy capacity [GW] * load hours per year [h] (accounting for unit change)
+    idx_bio_cap_elec = DM_bioenergy['electricity_production'].idx
+    idx_const = cdm_const.idx
+    dm_bio_cap = DM_bioenergy['electricity_production'].array[:, :, idx_bio_cap_elec['agr_bioenergy-capacity_elec'], :] \
+                    * cdm_const.array[idx_const['cp_load_hours-per-year-twh']]
+    DM_bioenergy['electricity_production'].add(dm_bio_cap, dim='Variables', col_label='agr_bioenergy-capacity_lfe', unit='TWh')
+
+    # Electricity production [TWh] = bioenergy capacity [TWh] * load-factors per technology [%]
+    DM_bioenergy['electricity_production'].operation('agr_bioenergy-capacity_lfe', '*', 'agr_bioenergy-capacity_load-factor',
+                                                     out_col='agr_bioenergy-capacity_elec-prod', unit='TWh')
+
+    # Feedstock requirements [TWh] = Electricity production [TWh] / Efficiency per technology [%]
+    DM_bioenergy['electricity_production'].operation('agr_bioenergy-capacity_elec-prod', '*',
+                                                     'agr_bioenergy-capacity_efficiency',
+                                                     out_col='agr_bioenergy-capacity_fdk-req', unit='TWh')
+
+    # Filtering input from other modules
+    # Industry
+    dm_ind_bioenergy = dm_ind.filter_w_regex({'Variables': 'ind_bioenergy'})
+    dm_ind_bioenergy.deepen()
+    dm_ind_biomaterial = dm_ind.filter_w_regex({'Variables': 'ind_biomaterial'})
+    dm_ind_biomaterial.deepen()
+
+    # BIOGAS -----------------------------------------------------------------------------------------------------------
+    # Biogas feedstock requirements [TWh] =
+    # (transport + bld + industry bioenergy + industry biomaterial) bio gas demand + biogases feedstock requirements
+    idx_bld = dm_bld.idx
+    idx_ind_bioenergy = dm_ind_bioenergy.idx
+    idx_ind_biomaterial = dm_ind_biomaterial.idx
+    idx_tra = dm_tra.idx
+    idx_elec = DM_bioenergy['electricity_production'].idx
+
+    dm_bio_gas_demand = dm_bld.array[:, :, idx_bld['bld_bioenergy'], idx_bld['gas']] \
+                        + dm_ind_bioenergy.array[:, :, idx_ind_bioenergy['ind_bioenergy'], idx_ind_bioenergy['gas-bio']] \
+                        + dm_ind_biomaterial.array[:, :, idx_ind_biomaterial['ind_biomaterial'], idx_ind_biomaterial['gas-bio']] \
+                        + dm_tra.array[:, :, idx_tra['tra_bioenergy'], idx_tra['gas']] \
+                        + DM_bioenergy['electricity_production'].array[:, :, idx_elec['agr_bioenergy-capacity_fdk-req'], idx_elec['biogases']] \
+                        + DM_bioenergy['electricity_production'].array[:, :, idx_elec['agr_bioenergy-capacity_fdk-req'], idx_elec['biogases-hf']]
+
+    dm_biogas = dm_ind.filter({'Variables': ['ind_bioenergy_gas-bio']}) # FIXME backup I do not know how to create a blanck dm with Country & Years
+    dm_biogas.add(dm_bio_gas_demand, dim='Variables', col_label='agr_bioenergy-capacity_biogas-req', unit='TWh')
+    dm_biogas.drop(dim='Variables', col_label=['ind_bioenergy_gas-bio']) # FIXME to empty when upper comment fixed
+
+    # Biogas per type [TWh] = Biogas feedstock requirements [GWh] * biogas technology share [%]
+    idx_biogas = dm_biogas.idx
+    idx_mix = DM_bioenergy['bgs-mix'].idx
+    dm_biogas_mix = dm_biogas.array[:, :, idx_biogas['agr_bioenergy-capacity_biogas-req'], np.newaxis] * \
+                    DM_bioenergy['bgs-mix'].array[:, :,idx_mix['agr_bioenergy-capacity_bgs-mix'], :]
+    DM_bioenergy['bgs-mix'].add(dm_biogas_mix, dim='Variables', col_label='agr_bioenergy-capacity_bgs-tec', unit='TWh')
+
+    # SOLID BIOFUEL ----------------------------------------------------------------------------------------------------
+
+
+    # LIQUID BIOFUEL ----------------------------------------------------------------------------------------------------
 
     print('hello')
     return
@@ -580,7 +694,7 @@ def agriculture_local_run():
     return
 
 # Creates the pickle, to do only once
-#database_from_csv_to_datamatrix()
+database_from_csv_to_datamatrix()
 
 # Run the code un local
-agriculture_local_run()
+#agriculture_local_run()
