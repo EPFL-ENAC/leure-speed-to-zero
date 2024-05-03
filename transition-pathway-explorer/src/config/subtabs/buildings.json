@@ -72,14 +72,14 @@
       "type": "StackedArea",
       "unit": "GWh",
       "outputs": [
-    "bld_space-heating_residential_single-family-households[GWh]",
-    "bld_space-heating_residential_multi-family-households[GWh]",
-    "bld_space-heating_non-residential_offices[GWh]",
-    "bld_space-heating_non-residential_hotels[GWh]",
-    "bld_space-heating_non-residential_education[GWh]",
-    "bld_space-heating_non-residential_health[GWh]",
-    "bld_space-heating_non-residential_trade[GWh]",
-    "bld_space-heating_non-residential_other[GWh]",
+    "bld_space-heating_single-family-households[GWh]",
+    "bld_space-heating_multi-family-households[GWh]",
+    "bld_space-heating_offices[GWh]",
+    "bld_space-heating_hotels[GWh]",
+    "bld_space-heating_education[GWh]",
+    "bld_space-heating_health[GWh]",
+    "bld_space-heating_trade[GWh]",
+    "bld_space-heating_other[GWh]",
     "dhg_energy-demand_heat-district[TWh]"
       ]
     },
