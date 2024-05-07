@@ -20,7 +20,7 @@ from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read
 
 
 #######################################################################################################################
-# ModelSetting - Module name
+# ModelSetting - Oil Refinery
 #######################################################################################################################
 
 def database_from_csv_to_datamatrix():
@@ -37,22 +37,10 @@ def database_from_csv_to_datamatrix():
     # Defines the part of dataset that is scenario
     years_all = years_ots + years_fts  # Defines all years
 
-    # Initiate the dictionary for ots & fts
-    dict_ots = {}
-    dict_fts = {}
-
-#######################################################################################################################
-# DataLever - Module
-#######################################################################################################################
-
-    # Database - Power - Lever: Solar PV capacity
-    file = 'power_pv-capacity'
-    lever = 'pv-capacity'
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1,baseyear=baseyear, years=years_all,
-
 #######################################################################################################################
 # DataFixedAssumptions - Power
 #######################################################################################################################
+
 
 
 #######################################################################################################################
@@ -91,60 +79,21 @@ def read_data(data_file, lever_setting):
     dm_coal = DM_ots_fts['coal-capacity']
     dm_capacity = dm_coal.copy()
 
-    dm_oil = DM_ots_fts['oil-capacity']
-    dm_capacity.append(dm_oil, dim='Categories1')
-
-    dm_gas = DM_ots_fts['gas-capacity']
-    dm_capacity.append(dm_gas, dim='Categories1')
-
-    dm_nuclear = DM_ots_fts['nuclear-capacity']
-    dm_capacity.append(dm_nuclear, dim='Categories1')
-
-    dm_biogas = DM_ots_fts['biogas-capacity']
-    dm_capacity.append(dm_biogas, dim='Categories1')
-
-    dm_biomass = DM_ots_fts['biomass-capacity']
-    dm_capacity.append(dm_biomass, dim='Categories1')
-
     # Capacity per technology (non-fuel based)
 
     dm_pv = DM_ots_fts['pv-capacity']
     dm_capacity.append(dm_pv, dim='Categories1')
 
-    dm_csp = DM_ots_fts['csp-capacity']
-    dm_capacity.append(dm_csp, dim='Categories1')
-
-    dm_offshore_wind = DM_ots_fts['offshore-wind-capacity']
-    dm_capacity.append(dm_offshore_wind, dim='Categories1')
-
-    dm_onshore_wind = DM_ots_fts['onshore-wind-capacity']
-    dm_capacity.append(dm_onshore_wind, dim='Categories1')
-
-    dm_hydroelectric = DM_ots_fts['hydroelectric-capacity']
-    dm_capacity.append(dm_hydroelectric, dim='Categories1')
-
-    dm_geothermal = DM_ots_fts['geothermal-capacity']
-    dm_capacity.append(dm_geothermal, dim='Categories1')
-
-    dm_marine = DM_ots_fts['marine-capacity']
-    dm_capacity.append(dm_marine, dim='Categories1')
-
-    dm_ccus = DM_ots_fts['carbon-storage-capacity']
-
-    # Aggregated Data Matrix - Non-fuel-based power production
-
-
-    cdm_const = DM_power['constant']
-
     return dm_capacity, dm_ccus, cdm_const
 
 
 #######################################################################################################################
-# LocalInterfaces - Module
+# LocalInterfaces - Power
 #######################################################################################################################
-def simulate_climate_to_power_input():
+def simulate_power_to_refinery_input():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    f = os.path.join(current_file_directory, "../_database/data/xls/All-Countries-interface_from-climate-to-power.xlsx")
+    f = os.path.join(current_file_directory, "../_database/data/xls/"
+                                             "All-Countries-interface_from-power-to-oil-refinery.xlsx")
     df = pd.read_excel(f, sheet_name="default")
     dm_climate = DataMatrix.create_from_df(df, num_cat=1)
 

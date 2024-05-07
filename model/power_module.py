@@ -444,6 +444,17 @@ def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
                              dim="Variables", out_col='pow_net-yearly-production', unit='GWh')
 
     #####################################################################################
+    # CalculationLeafs - Fuel demand for fuel-based power production
+    #####################################################################################
+
+    dm_fuel_demand = dm_fb_capacity.filter({'Variables': ['pow_gross-yearly-production']})
+    dm_fuel_efficiency = cdm_fuel_efficiency.filter({'Variables': ['cp_fuel-based-power-efficiency']})
+    ay_fuel_demand = dm_fuel_demand.array[...] \
+                                 * dm_fuel_efficiency.array[...]
+    dm_fuel_demand.add(ay_fuel_demand, dim='Variables', col_label='pow_fuel-demand-for-power', unit='GWh')
+
+
+    #####################################################################################
     # CalculationLeafs - Aggregated net power production with no hourly profiles
     #####################################################################################
 
