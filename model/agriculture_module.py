@@ -108,10 +108,18 @@ def database_from_csv_to_datamatrix():
     lever = 'biomass-hierarchy'
     # Rename to correct format
     #edit_database(file,lever,column='eucalc-name',pattern={'bev_ibp_use_oth':'bev-ibp-use-oth', 'biomass-hierarchy_bev':'biomass-hierarchy-bev', 'solid_bioenergy':'solid-bioenergy'},mode='rename')
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1], baseyear=baseyear,
+    #edit_database(file,lever,column='eucalc-name',pattern={'liquid_eth_':'liquid_eth-', 'liquid_oil_':'liquid_oil-', 'lgn_btl_':'lgn-btl-', 'lgn_ezm_':'lgn-ezm-'},mode='rename')
+    #edit_database(file,lever,column='eucalc-name',pattern={'biodiesel_tec_':'biodiesel_', 'biogasoline_tec_':'biogasoline_', 'biojetkerosene_tec_':'biojetkerosene_'},mode='rename')
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 1, 1, 1, 1], baseyear=baseyear,
                                                                 years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
                                                                 column='eucalc-name',
-                                                                group_list=['.*biomass-hierarchy-bev-ibp-use-oth.*'])
+                                                                group_list=['.*biomass-hierarchy-bev-ibp-use-oth.*',
+                                                                            'biomass-hierarchy_biomass-mix_digestor.*',
+                                                                            'biomass-hierarchy_biomass-mix_solid.*',
+                                                                            'biomass-hierarchy_biomass-mix_liquid.*',
+                                                                            'biomass-hierarchy_bioenergy_liquid_biodiesel.*',
+                                                                            'biomass-hierarchy_bioenergy_liquid_biogasoline.*',
+                                                                            'biomass-hierarchy_bioenergy_liquid_biojetkerosene.*'])
 
     # Read bioenergy capacity
     file = 'agriculture_bioenergy-capacity_pathwaycalc'
@@ -184,6 +192,12 @@ def read_data(data_file, lever_setting):
     dm_bioenergy_cap_efficiency = DM_ots_fts['bioenergy-capacity']['bioenergy-capacity_efficiency']
     dm_bioenergy_cap_liq = DM_ots_fts['bioenergy-capacity']['bioenergy-capacity_liq_b']
     dm_bioenergy_cap_elec = DM_ots_fts['bioenergy-capacity']['bioenergy-capacity_elec']
+    dm_bioenergy_mix_digestor = DM_ots_fts['biomass-hierarchy']['biomass-hierarchy_biomass-mix_digestor']
+    dm_bioenergy_mix_solid = DM_ots_fts['biomass-hierarchy']['biomass-hierarchy_biomass-mix_solid']
+    dm_bioenergy_mix_liquid = DM_ots_fts['biomass-hierarchy']['biomass-hierarchy_biomass-mix_liquid']
+    dm_bioenergy_liquid_biodiesel = DM_ots_fts['biomass-hierarchy']['biomass-hierarchy_bioenergy_liquid_biodiesel']
+    dm_bioenergy_liquid_biogasoline = DM_ots_fts['biomass-hierarchy']['biomass-hierarchy_bioenergy_liquid_biogasoline']
+    dm_bioenergy_liquid_biojetkerosene = DM_ots_fts['biomass-hierarchy']['biomass-hierarchy_bioenergy_liquid_biojetkerosene']
     dm_bioenergy_cap_elec.append(dm_bioenergy_cap_load_factor, dim='Variables')
     dm_bioenergy_cap_elec.append(dm_bioenergy_cap_efficiency, dim='Variables')
 
@@ -212,7 +226,13 @@ def read_data(data_file, lever_setting):
     DM_bioenergy = {
         'electricity_production': dm_bioenergy_cap_elec,
         'bgs-mix': dm_bioenergy_cap_bgs_mix,
-        'liq': dm_bioenergy_cap_liq
+        'liq': dm_bioenergy_cap_liq,
+        'digestor-mix': dm_bioenergy_mix_digestor,
+        'solid-mix': dm_bioenergy_mix_solid,
+        'liquid-mix': dm_bioenergy_mix_liquid,
+        'liquid-biodiesel': dm_bioenergy_liquid_biodiesel,
+        'liquid-biogasoline': dm_bioenergy_liquid_biogasoline,
+        'liquid-biojetkerosene': dm_bioenergy_liquid_biojetkerosene
     }
 
     cdm_const = DM_agriculture['constant']
@@ -597,6 +617,258 @@ def alcoholic_beverages_workflow(DM_alc_bev, cdm_const, dm_lfs_pro):
     # (Not used after) Fruits bev allocated to bioenergy [kcal] = bp bev for solid bioenergy (+ bp use for ethanol (not found in knime))
     return DM_alc_bev, dm_bev_ibp_cereal_feed
 
+# CalculationLeaf BIOENERGY CAPACITY ----------------------------------------------------------------------------------
+def bioenergy_workflow(DM_bioenergy, cdm_const, dm_ind, dm_bld, dm_tra):
+
+    # Electricity production
+    # Bioenergy capacity [TWh] = bioenergy capacity [GW] * load hours per year [h] (accounting for unit change)
+    idx_bio_cap_elec = DM_bioenergy['electricity_production'].idx
+    idx_const = cdm_const.idx
+    dm_bio_cap = DM_bioenergy['electricity_production'].array[:, :, idx_bio_cap_elec['agr_bioenergy-capacity_elec'], :] \
+                 * cdm_const.array[idx_const['cp_load_hours-per-year-twh']]
+    DM_bioenergy['electricity_production'].add(dm_bio_cap, dim='Variables', col_label='agr_bioenergy-capacity_lfe',
+                                               unit='TWh')
+
+    # Electricity production [TWh] = bioenergy capacity [TWh] * load-factors per technology [%]
+    DM_bioenergy['electricity_production'].operation('agr_bioenergy-capacity_lfe', '*',
+                                                     'agr_bioenergy-capacity_load-factor',
+                                                     out_col='agr_bioenergy-capacity_elec-prod', unit='TWh')
+
+    # Feedstock requirements [TWh] = Electricity production [TWh] / Efficiency per technology [%]
+    DM_bioenergy['electricity_production'].operation('agr_bioenergy-capacity_elec-prod', '*',
+                                                     'agr_bioenergy-capacity_efficiency',
+                                                     out_col='agr_bioenergy-capacity_fdk-req', unit='TWh')
+
+    # Filtering input from other modules
+    # Industry
+    dm_ind_bioenergy = dm_ind.filter_w_regex({'Variables': 'ind_bioenergy'})
+    dm_ind_bioenergy.deepen()
+    dm_ind_biomaterial = dm_ind.filter_w_regex({'Variables': 'ind_biomaterial'})
+    dm_ind_biomaterial.deepen()
+
+    # BIOGAS -----------------------------------------------------------------------------------------------------------
+    # Biogas feedstock requirements [TWh] =
+    # (transport + bld + industry bioenergy + industry biomaterial) bio gas demand + biogases feedstock requirements
+    idx_bld = dm_bld.idx
+    idx_ind_bioenergy = dm_ind_bioenergy.idx
+    idx_ind_biomaterial = dm_ind_biomaterial.idx
+    idx_tra = dm_tra.idx
+    idx_elec = DM_bioenergy['electricity_production'].idx
+
+    dm_bio_gas_demand = dm_bld.array[:, :, idx_bld['bld_bioenergy'], idx_bld['gas']] \
+                        + dm_ind_bioenergy.array[:, :, idx_ind_bioenergy['ind_bioenergy'], idx_ind_bioenergy['gas-bio']] \
+                        + dm_ind_biomaterial.array[:, :, idx_ind_biomaterial['ind_biomaterial'],
+                          idx_ind_biomaterial['gas-bio']] \
+                        + dm_tra.array[:, :, idx_tra['tra_bioenergy'], idx_tra['gas']] \
+                        + DM_bioenergy['electricity_production'].array[:, :, idx_elec['agr_bioenergy-capacity_fdk-req'],
+                          idx_elec['biogases']] \
+                        + DM_bioenergy['electricity_production'].array[:, :, idx_elec['agr_bioenergy-capacity_fdk-req'],
+                          idx_elec['biogases-hf']]
+
+    dm_biogas = dm_ind.filter({'Variables': [
+        'ind_bioenergy_gas-bio']})  # FIXME backup I do not know how to create a blanck dm with Country & Years
+    dm_biogas.add(dm_bio_gas_demand, dim='Variables', col_label='agr_bioenergy-capacity_biogas-req', unit='TWh')
+    dm_biogas.drop(dim='Variables', col_label=['ind_bioenergy_gas-bio'])  # FIXME to empty when upper comment fixed
+
+    # Biogas per type [TWh] = Biogas feedstock requirements [GWh] * biogas technology share [%]
+    idx_biogas = dm_biogas.idx
+    idx_mix = DM_bioenergy['bgs-mix'].idx
+    dm_biogas_mix = dm_biogas.array[:, :, idx_biogas['agr_bioenergy-capacity_biogas-req'], np.newaxis] * \
+                    DM_bioenergy['bgs-mix'].array[:, :, idx_mix['agr_bioenergy-capacity_bgs-mix'], :]
+    DM_bioenergy['bgs-mix'].add(dm_biogas_mix, dim='Variables', col_label='agr_bioenergy-capacity_bgs-tec', unit='TWh')
+
+    # Digestor feedstock per type [TWh] = biogas demand for digestor [TWh] * biomass share for digestor [%]
+    dm_digestor_demand = DM_bioenergy['bgs-mix'].filter({'Variables': ['agr_bioenergy-capacity_bgs-tec'],
+                                                         'Categories1': ['digestor']})
+    dm_digestor_demand = dm_digestor_demand.flatten()
+    idx_demand_digestor = dm_digestor_demand.idx
+    idx_mix_digestor = DM_bioenergy['digestor-mix'].idx
+    dm_biogas_demand_digestor = dm_digestor_demand.array[:, :,
+                                idx_demand_digestor['agr_bioenergy-capacity_bgs-tec_digestor'], np.newaxis] * \
+                                DM_bioenergy['digestor-mix'].array[:, :,
+                                idx_mix_digestor['agr_biomass-hierarchy_biomass-mix_digestor'], :]
+    DM_bioenergy['digestor-mix'].add(dm_biogas_demand_digestor, dim='Variables',
+                                     col_label='agr_bioenergy_biomass-demand_biogas', unit='TWh')
+
+    # SOLID BIOFUEL ----------------------------------------------------------------------------------------------------
+    # Solid biomass feedstock requirements [TWh] =
+    # (bld + industry) solid bioenergy demand + solid biofuel feedstock requirements (hf and not)
+    idx_bld = dm_bld.idx
+    idx_ind_bioenergy = dm_ind_bioenergy.idx
+    idx_elec = DM_bioenergy['electricity_production'].idx
+
+    dm_solid_demand = dm_bld.array[:, :, idx_bld['bld_bioenergy'], idx_bld['solid-pellets']] \
+                      + dm_bld.array[:, :, idx_bld['bld_bioenergy'], idx_bld['solid-woodlogs']] \
+                      + dm_ind_bioenergy.array[:, :, idx_ind_bioenergy['ind_bioenergy'], idx_ind_bioenergy['solid-bio']] \
+                      + DM_bioenergy['electricity_production'].array[:, :, idx_elec['agr_bioenergy-capacity_fdk-req'],
+                        idx_elec['solid-biofuel']] \
+                      + DM_bioenergy['electricity_production'].array[:, :, idx_elec['agr_bioenergy-capacity_fdk-req'],
+                        idx_elec['solid-biofuel-hf']]
+
+    dm_solid = dm_ind.filter({'Variables': [
+        'ind_bioenergy_gas-bio']})  # FIXME backup I do not know how to create a blanck dm with Country & Years
+    dm_solid.add(dm_solid_demand, dim='Variables', col_label='agr_bioenergy-capacity_solid-biofuel-req', unit='TWh')
+    dm_solid.drop(dim='Variables', col_label=['ind_bioenergy_gas-bio'])  # FIXME to empty when upper comment fixed
+
+    # Solid feedstock per type [TWh] = solid demand for  biofuel [TWh] * biomass share solid [%]
+    idx_demand_solid = dm_solid.idx
+    idx_mix_solid = DM_bioenergy['solid-mix'].idx
+    dm_solid_fdk = dm_solid.array[:, :, idx_demand_solid['agr_bioenergy-capacity_solid-biofuel-req'], np.newaxis] * \
+                   DM_bioenergy['solid-mix'].array[:, :, idx_mix_solid['agr_biomass-hierarchy_biomass-mix_solid'], :]
+    DM_bioenergy['solid-mix'].add(dm_solid_fdk, dim='Variables', col_label='agr_bioenergy_biomass-demand_solid',
+                                  unit='TWh')
+
+    # LIQUID BIOFUEL ----------------------------------------------------------------------------------------------------
+
+    # Liquid biofuel per type [TWh] = liquid biofuel capacity [TWh] * share per technology [%]
+    # Biodiesel
+    dm_biodiesel = DM_bioenergy['liq'].filter({'Categories1': ['biodiesel']})
+    dm_biodiesel = dm_biodiesel.flatten()
+    idx_biodiesel_cap = dm_biodiesel.idx
+    idx_biodiesel_tec = DM_bioenergy['liquid-biodiesel'].idx
+    dm_biodiesel_temp = dm_biodiesel.array[:, :, idx_biodiesel_cap['agr_bioenergy-capacity_liq_biodiesel'],
+                        np.newaxis] * \
+                        DM_bioenergy['liquid-biodiesel'].array[:, :,
+                        idx_biodiesel_tec['agr_biomass-hierarchy_bioenergy_liquid_biodiesel'], :]
+    DM_bioenergy['liquid-biodiesel'].add(dm_biodiesel_temp, dim='Variables',
+                                         col_label='agr_bioenergy-capacity_liq-bio-prod_biodiesel', unit='TWh')
+
+    # Biogasoline
+    dm_biogasoline = DM_bioenergy['liq'].filter({'Categories1': ['biogasoline']})
+    dm_biogasoline = dm_biogasoline.flatten()
+    idx_biogasoline_cap = dm_biogasoline.idx
+    idx_biogasoline_tec = DM_bioenergy['liquid-biogasoline'].idx
+    dm_biogasoline_temp = dm_biogasoline.array[:, :, idx_biogasoline_cap['agr_bioenergy-capacity_liq_biogasoline'],
+                          np.newaxis] * \
+                          DM_bioenergy['liquid-biogasoline'].array[:, :,
+                          idx_biogasoline_tec['agr_biomass-hierarchy_bioenergy_liquid_biogasoline'], :]
+    DM_bioenergy['liquid-biogasoline'].add(dm_biogasoline_temp, dim='Variables',
+                                           col_label='agr_bioenergy-capacity_liq-bio-prod_biogasoline', unit='TWh')
+
+    # Biojetkerosene
+    dm_biojetkerosene = DM_bioenergy['liq'].filter({'Categories1': ['biojetkerosene']})
+    dm_biojetkerosene = dm_biojetkerosene.flatten()
+    idx_biojetkerosene_cap = dm_biojetkerosene.idx
+    idx_biojetkerosene_tec = DM_bioenergy['liquid-biojetkerosene'].idx
+    dm_biojetkerosene_temp = dm_biojetkerosene.array[:, :,
+                             idx_biojetkerosene_cap['agr_bioenergy-capacity_liq_biojetkerosene'],
+                             np.newaxis] * \
+                             DM_bioenergy['liquid-biojetkerosene'].array[:, :,
+                             idx_biojetkerosene_tec['agr_biomass-hierarchy_bioenergy_liquid_biojetkerosene'], :]
+    DM_bioenergy['liquid-biojetkerosene'].add(dm_biojetkerosene_temp, dim='Variables',
+                                              col_label='agr_bioenergy-capacity_liq-bio-prod_biojetkerosene',
+                                              unit='TWh')
+
+    # Liquid biofuel feedtsock requirements [kcal] = Liquid biofuel per type [TWh] * share per technology [kcal/TWh]
+
+    # Constant pre-processing
+    cdm_biodiesel = cdm_const.filter_w_regex(({'Variables': 'cp_liquid_tec_biodiesel'}))
+    cdm_biodiesel.rename_col_regex(str1="_fdk_oil", str2="", dim="Variables")
+    cdm_biodiesel.rename_col_regex(str1="_fdk_lgn", str2="", dim="Variables")
+    cdm_biodiesel.deepen()
+    cdm_biogasoline = cdm_const.filter_w_regex(({'Variables': 'cp_liquid_tec_biogasoline'}))
+    cdm_biogasoline.rename_col_regex(str1="_fdk_eth", str2="", dim="Variables")
+    cdm_biogasoline.rename_col_regex(str1="_fdk_lgn", str2="", dim="Variables")
+    cdm_biogasoline.deepen()
+    cdm_biojetkerosene = cdm_const.filter_w_regex(({'Variables': 'cp_liquid_tec_biojetkerosene'}))
+    cdm_biojetkerosene.rename_col_regex(str1="_fdk_oil", str2="", dim="Variables")
+    cdm_biojetkerosene.rename_col_regex(str1="_fdk_lgn", str2="", dim="Variables")
+    cdm_biojetkerosene.deepen()
+
+    # Biodiesel
+    idx_cdm = cdm_biodiesel.idx
+    idx_bio = DM_bioenergy['liquid-biodiesel'].idx
+    dm_calc = DM_bioenergy['liquid-biodiesel'].array[:, :, idx_bio['agr_bioenergy-capacity_liq-bio-prod_biodiesel'], :] \
+              * cdm_biodiesel.array[idx_cdm['cp_liquid_tec_biodiesel'], :]
+    DM_bioenergy['liquid-biodiesel'].add(dm_calc, dim='Variables',
+                                         col_label='agr_bioenergy-capacity_liq-bio-prod_fdk-req_biodiesel',
+                                         unit='kcal')
+
+    # Biogasoline
+    idx_cdm = cdm_biogasoline.idx
+    idx_bio = DM_bioenergy['liquid-biogasoline'].idx
+    dm_calc = DM_bioenergy['liquid-biogasoline'].array[:, :, idx_bio['agr_bioenergy-capacity_liq-bio-prod_biogasoline'],
+              :] \
+              * cdm_biogasoline.array[idx_cdm['cp_liquid_tec_biogasoline'], :]
+    DM_bioenergy['liquid-biogasoline'].add(dm_calc, dim='Variables',
+                                           col_label='agr_bioenergy-capacity_liq-bio-prod_fdk-req_biogasoline',
+                                           unit='kcal')
+
+    # Biojetkerosene
+    idx_cdm = cdm_biojetkerosene.idx
+    idx_bio = DM_bioenergy['liquid-biojetkerosene'].idx
+    dm_calc = DM_bioenergy['liquid-biojetkerosene'].array[:, :,
+              idx_bio['agr_bioenergy-capacity_liq-bio-prod_biojetkerosene'], :] \
+              * cdm_biojetkerosene.array[idx_cdm['cp_liquid_tec_biojetkerosene'], :]
+    DM_bioenergy['liquid-biojetkerosene'].add(dm_calc, dim='Variables',
+                                              col_label='agr_bioenergy-capacity_liq-bio-prod_fdk-req_biojetkerosene',
+                                              unit='kcal')
+
+    # Total liquid biofuel feedstock req per feedstock type [kcal]
+    # = liquid biofuel fdk req per fdk type (biodiesel + biogasoline + biojetkerosene)
+    # Feedstock types : lgn => lignin, eth => ethanol, oil
+
+    # Filter the dms
+    dm_biofuel_fdk = DM_bioenergy['liquid-biodiesel'].filter(
+        {'Variables': ['agr_bioenergy-capacity_liq-bio-prod_fdk-req_biodiesel']})
+    dm_biogasoline = DM_bioenergy['liquid-biogasoline'].filter(
+        {'Variables': ['agr_bioenergy-capacity_liq-bio-prod_fdk-req_biogasoline']})
+    dm_biojetkerosene = DM_bioenergy['liquid-biojetkerosene'].filter(
+        {'Variables': ['agr_bioenergy-capacity_liq-bio-prod_fdk-req_biojetkerosene']})
+    # Flatten
+    dm_biofuel_fdk = dm_biofuel_fdk.flatten()
+    dm_biogasoline = dm_biogasoline.flatten()
+    dm_biojetkerosene = dm_biojetkerosene.flatten()
+    # Append the dms together
+    dm_biofuel_fdk.append(dm_biogasoline, dim='Variables')
+    dm_biofuel_fdk.append(dm_biojetkerosene, dim='Variables')
+    # Create dms for each feedstock (eth, lgn & oil)
+    # dm_eth = cdm_const.filter_w_regex(({'Variables': 'eth'}))
+
+    # Sum using group by for each feedstock (fer => eth, btl & ezm => lgn, hvo & est =>oil)
+    dm_biofuel_fdk.groupby({'agr_bioenergy_biomass-demand_liquid_eth': '.*_fer'}, dim='Variables', regex=True,
+                           inplace=True)
+    dm_biofuel_fdk.groupby({'agr_bioenergy_biomass-demand_liquid_lgn': '.*_btl|.*_ezm'}, dim='Variables', regex=True,
+                           inplace=True)
+    dm_biofuel_fdk.groupby({'agr_bioenergy_biomass-demand_liquid_oil': '.*_hvo|.*_est'}, dim='Variables', regex=True,
+                           inplace=True)
+
+    # Liquid biofuel demand per type [kcal] = Total liquid biofuel feedstock req per fdk type [kcal]
+    # * biomass hierarchy per type [%]
+
+    # Filtering liquid-mix per fdk type
+    dm_eth = DM_bioenergy['liquid-mix'].filter_w_regex(({'Categories1': 'eth'}))
+    dm_lgn = DM_bioenergy['liquid-mix'].filter_w_regex(({'Categories1': 'lgn'}))
+    dm_oil = DM_bioenergy['liquid-mix'].filter_w_regex(({'Categories1': 'oil'}))
+
+    # computation for each fdk type using a tree split method
+    # eth
+    idx_eth_mix = dm_eth.idx
+    idx_eth_demand = dm_biofuel_fdk.idx
+    dm_temp = dm_biofuel_fdk.array[:, :, idx_eth_demand['agr_bioenergy_biomass-demand_liquid_eth'], np.newaxis] * \
+              dm_eth.array[:, :, idx_eth_mix['agr_biomass-hierarchy_biomass-mix_liquid'], :]
+    dm_eth.add(dm_temp, dim='Variables', col_label='agr_bioenergy_biomass-demand_liquid_eth',
+               unit='kcal')
+
+    # lgn
+    idx_lgn_mix = dm_lgn.idx
+    idx_lgn_demand = dm_biofuel_fdk.idx
+    dm_temp = dm_biofuel_fdk.array[:, :, idx_lgn_demand['agr_bioenergy_biomass-demand_liquid_lgn'], np.newaxis] * \
+              dm_lgn.array[:, :, idx_lgn_mix['agr_biomass-hierarchy_biomass-mix_liquid'], :]
+    dm_lgn.add(dm_temp, dim='Variables', col_label='agr_bioenergy_biomass-demand_liquid_lgn',
+               unit='kcal')
+
+    # oil
+    idx_oil_mix = dm_oil.idx
+    idx_oil_demand = dm_biofuel_fdk.idx
+    dm_temp = dm_biofuel_fdk.array[:, :, idx_oil_demand['agr_bioenergy_biomass-demand_liquid_oil'], np.newaxis] * \
+              dm_oil.array[:, :, idx_oil_mix['agr_biomass-hierarchy_biomass-mix_liquid'], :]
+    dm_oil.add(dm_temp, dim='Variables', col_label='agr_bioenergy_biomass-demand_liquid_oil',
+               unit='kcal')
+
+    # Cellulosic liquid biofuel per type [kcal] : In KNIME but not computed as not used later
+    return DM_bioenergy
+
 # ----------------------------------------------------------------------------------------------------------------------
 # AGRICULTURE ----------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
@@ -625,64 +897,11 @@ def agriculture(lever_setting, years_setting):
     dm_lfs, dm_lfs_pro = food_demand_workflow(DM_food_demand, dm_lfs)
     DM_livestock, dm_liv_ibp, dm_liv_ibp= livestock_workflow(DM_livestock, cdm_const, dm_lfs_pro)
     DM_alc_bev, dm_bev_ibp_cereal_feed = alcoholic_beverages_workflow(DM_alc_bev, cdm_const, dm_lfs_pro)
+    DM_bioenergy = bioenergy_workflow(DM_bioenergy, cdm_const, dm_ind, dm_bld, dm_tra)
 
-    # CalculationLeaf BIOENERGY CAPACITY -------------------------------------------------------------------------------
-
-    # Electricity production
-    # Bioenergy capacity [TWh] = bioenergy capacity [GW] * load hours per year [h] (accounting for unit change)
-    idx_bio_cap_elec = DM_bioenergy['electricity_production'].idx
-    idx_const = cdm_const.idx
-    dm_bio_cap = DM_bioenergy['electricity_production'].array[:, :, idx_bio_cap_elec['agr_bioenergy-capacity_elec'], :] \
-                    * cdm_const.array[idx_const['cp_load_hours-per-year-twh']]
-    DM_bioenergy['electricity_production'].add(dm_bio_cap, dim='Variables', col_label='agr_bioenergy-capacity_lfe', unit='TWh')
-
-    # Electricity production [TWh] = bioenergy capacity [TWh] * load-factors per technology [%]
-    DM_bioenergy['electricity_production'].operation('agr_bioenergy-capacity_lfe', '*', 'agr_bioenergy-capacity_load-factor',
-                                                     out_col='agr_bioenergy-capacity_elec-prod', unit='TWh')
-
-    # Feedstock requirements [TWh] = Electricity production [TWh] / Efficiency per technology [%]
-    DM_bioenergy['electricity_production'].operation('agr_bioenergy-capacity_elec-prod', '*',
-                                                     'agr_bioenergy-capacity_efficiency',
-                                                     out_col='agr_bioenergy-capacity_fdk-req', unit='TWh')
-
-    # Filtering input from other modules
-    # Industry
-    dm_ind_bioenergy = dm_ind.filter_w_regex({'Variables': 'ind_bioenergy'})
-    dm_ind_bioenergy.deepen()
-    dm_ind_biomaterial = dm_ind.filter_w_regex({'Variables': 'ind_biomaterial'})
-    dm_ind_biomaterial.deepen()
-
-    # BIOGAS -----------------------------------------------------------------------------------------------------------
-    # Biogas feedstock requirements [TWh] =
-    # (transport + bld + industry bioenergy + industry biomaterial) bio gas demand + biogases feedstock requirements
-    idx_bld = dm_bld.idx
-    idx_ind_bioenergy = dm_ind_bioenergy.idx
-    idx_ind_biomaterial = dm_ind_biomaterial.idx
-    idx_tra = dm_tra.idx
-    idx_elec = DM_bioenergy['electricity_production'].idx
-
-    dm_bio_gas_demand = dm_bld.array[:, :, idx_bld['bld_bioenergy'], idx_bld['gas']] \
-                        + dm_ind_bioenergy.array[:, :, idx_ind_bioenergy['ind_bioenergy'], idx_ind_bioenergy['gas-bio']] \
-                        + dm_ind_biomaterial.array[:, :, idx_ind_biomaterial['ind_biomaterial'], idx_ind_biomaterial['gas-bio']] \
-                        + dm_tra.array[:, :, idx_tra['tra_bioenergy'], idx_tra['gas']] \
-                        + DM_bioenergy['electricity_production'].array[:, :, idx_elec['agr_bioenergy-capacity_fdk-req'], idx_elec['biogases']] \
-                        + DM_bioenergy['electricity_production'].array[:, :, idx_elec['agr_bioenergy-capacity_fdk-req'], idx_elec['biogases-hf']]
-
-    dm_biogas = dm_ind.filter({'Variables': ['ind_bioenergy_gas-bio']}) # FIXME backup I do not know how to create a blanck dm with Country & Years
-    dm_biogas.add(dm_bio_gas_demand, dim='Variables', col_label='agr_bioenergy-capacity_biogas-req', unit='TWh')
-    dm_biogas.drop(dim='Variables', col_label=['ind_bioenergy_gas-bio']) # FIXME to empty when upper comment fixed
-
-    # Biogas per type [TWh] = Biogas feedstock requirements [GWh] * biogas technology share [%]
-    idx_biogas = dm_biogas.idx
-    idx_mix = DM_bioenergy['bgs-mix'].idx
-    dm_biogas_mix = dm_biogas.array[:, :, idx_biogas['agr_bioenergy-capacity_biogas-req'], np.newaxis] * \
-                    DM_bioenergy['bgs-mix'].array[:, :,idx_mix['agr_bioenergy-capacity_bgs-mix'], :]
-    DM_bioenergy['bgs-mix'].add(dm_biogas_mix, dim='Variables', col_label='agr_bioenergy-capacity_bgs-tec', unit='TWh')
-
-    # SOLID BIOFUEL ----------------------------------------------------------------------------------------------------
+    # CalculationLeaf LIVESTOCK MANURE MANAGEMENT & GHG EMISSIONS ------------------------------------------------------
 
 
-    # LIQUID BIOFUEL ----------------------------------------------------------------------------------------------------
 
     print('hello')
     return
@@ -694,7 +913,7 @@ def agriculture_local_run():
     return
 
 # Creates the pickle, to do only once
-database_from_csv_to_datamatrix()
+#database_from_csv_to_datamatrix()
 
 # Run the code un local
-#agriculture_local_run()
+agriculture_local_run()
