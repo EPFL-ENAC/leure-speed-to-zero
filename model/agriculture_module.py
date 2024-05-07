@@ -57,9 +57,26 @@ def database_from_csv_to_datamatrix():
     file = 'agriculture_calibration-factors_pathwaycalc'
     lever = 'none'
     # Renaming to correct format : Calibration factors - Livestock domestic production
-    edit_database(file, lever, column='eucalc-name', mode='rename', pattern={'production_liv': 'production-liv',
-                                                                             'abp_': 'abp-', 'meat_': 'meat-',
-                                                                             'liv-population_liv-population': 'liv-population'})
+    # edit_database(file, lever, column='eucalc-name', mode='rename', pattern={'production_liv': 'production-liv',
+     #                                                                        'abp_': 'abp-', 'meat_': 'meat-',
+     #                                                                        'liv-population_liv-population': 'liv-population'})
+    # Renaming to correct format : Calibration factors - Livestock CH4 emissions
+    #edit_database(file, lever, column='eucalc-name', mode='rename', pattern={'enteric_meat-bovine': 'meat-bovine_enteric',
+    #                                                                         'enteric_meat-oth-animals': 'meat-oth-animals_enteric',
+    #                                                                         'enteric_meat-pig': 'meat-pig_enteric',
+    #                                                                         'enteric_meat-poultry': 'meat-poultry_enteric',
+    #                                                                         'enteric_meat-sheep': 'meat-sheep_enteric',
+    #                                                                         'enteric_abp-dairy-milk': 'abp-dairy-milk_enteric',
+    #                                                                         'enteric_abp-hens-egg': 'abp-hens-egg_enteric'})
+    #edit_database(file, lever, column='eucalc-name', mode='rename',
+    #              pattern={'treated_meat-bovine': 'meat-bovine_treated',
+    #                       'treated_meat-oth-animals': 'meat-oth-animals_treated',
+    #                       'treated_meat-pig': 'meat-pig_treated',
+    #                       'treated_meat-poultry': 'meat-poultry_treated',
+    #                       'treated_meat-sheep': 'meat-sheep_treated',
+    #                       'treated_abp-dairy-milk': 'abp-dairy-milk_treated',
+    #                       'treated_abp-hens-egg': 'abp-hens-egg_treated',
+    #                       'meat-abp': 'abp'})
 
     # Data - Fixed assumptions - Calibration factors - Livestock domestic production
     df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_domestic-production-liv.*'})
@@ -71,10 +88,23 @@ def database_from_csv_to_datamatrix():
     dm_caf_liv_pop = DataMatrix.create_from_df(df, num_cat=1)
     dict_fxa['caf_agr_liv-population'] = dm_caf_liv_pop
 
+    # Data - Fixed assumptions - Calibration factors - Livestock CH4 enteric emissions
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_liv_CH4-emission.*'})
+    dm_caf_liv_CH4 = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['caf_agr_liv_CH4-emission'] = dm_caf_liv_CH4
+
+
+    # Data - Fixed assumptions - Calibration factors - Livestock N2O emissions
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_liv_N2O-emission.*'})
+    dm_caf_liv_N2O = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['caf_agr_liv_N2O-emission'] = dm_caf_liv_N2O
+
     # Create a dictionnay with all the fixed assumptions
     dict_fxa = {
         'caf_agr_domestic-production-liv': dm_caf_liv_dom_prod,
-        'caf_agr_liv-population': dm_caf_liv_pop
+        'caf_agr_liv-population': dm_caf_liv_pop,
+        'caf_agr_liv_CH4-emission': dm_caf_liv_CH4,
+        'caf_agr_liv_N2O-emission': dm_caf_liv_N2O
     }
 
 
@@ -97,11 +127,13 @@ def database_from_csv_to_datamatrix():
     # Read climate smart livestock
     file = 'agriculture_climate-smart-livestock_pathwaycalc_renamed'
     lever = 'climate-smart-livestock'
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 0], baseyear=baseyear,
+    #edit_database(file,lever,column='eucalc-name',pattern={'_CH4-emission':''},mode='rename')
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 0, 1, 1], baseyear=baseyear,
                                                                 years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
                                                                 column='eucalc-name',
                                                                 group_list=['climate-smart-livestock_losses.*', 'climate-smart-livestock_yield.*',
-                                                                            'climate-smart-livestock_slaughtered.*', 'climate-smart-livestock_density'])
+                                                                            'climate-smart-livestock_slaughtered.*', 'climate-smart-livestock_density',
+                                                                            'climate-smart-livestock_enteric.*', 'climate-smart-livestock_manure.*'])
 
     # Read biomass hierarchy
     file = 'agriculture_biomass-use-hierarchy_pathwaycalc'
@@ -172,6 +204,8 @@ def read_data(data_file, lever_setting):
     # FXA data matrix
     dm_fxa_caf_liv_prod = DM_agriculture['fxa']['caf_agr_domestic-production-liv']
     dm_fxa_caf_liv_pop = DM_agriculture['fxa']['caf_agr_liv-population']
+    dm_fxa_caf_liv_CH4 = DM_agriculture['fxa']['caf_agr_liv_CH4-emission']
+    dm_fxa_caf_liv_N2O = DM_agriculture['fxa']['caf_agr_liv_N2O-emission']
 
     # Extract sub-data-matrices according to the flow
     # Sub-matrix for the FOOD DEMAND
@@ -182,6 +216,7 @@ def read_data(data_file, lever_setting):
     dm_livestock_yield = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_yield']
     dm_livestock_slaughtered = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_slaughtered']
     dm_livestock_density = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_density']
+
 
     # Sub-matrix for ALCOHOLIC BEVERAGES
     dm_alc_bev = DM_ots_fts['biomass-hierarchy']['biomass-hierarchy-bev-ibp-use-oth']
@@ -200,6 +235,10 @@ def read_data(data_file, lever_setting):
     dm_bioenergy_liquid_biojetkerosene = DM_ots_fts['biomass-hierarchy']['biomass-hierarchy_bioenergy_liquid_biojetkerosene']
     dm_bioenergy_cap_elec.append(dm_bioenergy_cap_load_factor, dim='Variables')
     dm_bioenergy_cap_elec.append(dm_bioenergy_cap_efficiency, dim='Variables')
+
+    # Sub-matrix for LIVESTOCK MANURE MANGEMENT & GHG EMISSIONS
+    dm_livestock_enteric_emissions = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_enteric']
+    dm_livestock_manure = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_manure']
 
     # Aggregate datamatrix by theme/flow
     # Aggregated Data Matrix - FOOD DEMAND
@@ -235,9 +274,17 @@ def read_data(data_file, lever_setting):
         'liquid-biojetkerosene': dm_bioenergy_liquid_biojetkerosene
     }
 
+    # Aggregated Data Matrix - LIVESTOCK MANURE MANAGEMENT & GHG EMISSIONS
+    DM_manure = {
+        'enteric_emission': dm_livestock_enteric_emissions,
+        'manure': dm_livestock_manure,
+        'caf_liv_CH4': dm_fxa_caf_liv_CH4,
+        'caf_liv_N2O': dm_fxa_caf_liv_N2O
+    }
+
     cdm_const = DM_agriculture['constant']
 
-    return DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, cdm_const
+    return DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, cdm_const
 
 # SimulateInteractions
 def simulate_lifestyles_to_agriculture_input():
@@ -877,7 +924,7 @@ def agriculture(lever_setting, years_setting):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     agriculture_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/agriculture.pickle')
-    DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, cdm_const = read_data(agriculture_data_file, lever_setting)
+    DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, cdm_const = read_data(agriculture_data_file, lever_setting)
 
     # Simulate data from other modules
     dm_lfs = simulate_lifestyles_to_agriculture_input()
