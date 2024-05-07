@@ -444,14 +444,40 @@ def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
                              dim="Variables", out_col='pow_net-yearly-production', unit='GWh')
 
     #####################################################################################
-    # CalculationLeafs - Aggregated net power production with no profiles
+    # CalculationLeafs - Aggregated net power production with no hourly profiles
     #####################################################################################
 
+    # Filter - Energy production with no hourly profile
     dm_fb_np = dm_fb_capacity.filter({'Variables': ['pow_net-yearly-production']})
-    dm_nfb_np = dm_capacity.filter({'Variables': ['pow_gross-yearly-production']})
-    #dm_nfb_np = dm_nfb_np.filter_w_regex({'Categories1': 'hydroelectric|solar-csp|geothermal|marine'})                                                                   'hydroelectric|geothermal|marine|solar-csp'})
 
-    return dm_capacity, dm_fb_capacity
+    # Filter - Renewable energy production
+    dm_nfb = dm_capacity.filter({'Variables': ['pow_gross-yearly-production']})
+    dm_nfb.rename_col(col_in='pow_gross-yearly-production', col_out='pow_net-yearly-production', dim='Variables')
+    dm_nfb = dm_nfb.filter({'Categories1':['hydroelectric','solar-csp','geothermal','marine','solar-pv',
+                                           'wind-onshore','wind-offshore']})
+
+    # Data Matrix - Yearly production [GWh]
+    dm_yearly_production = dm_fb_np.copy()
+    dm_yearly_production.append(dm_nfb, dim='Categories1')
+
+    # Sub Data Matrix - Yearly production [GWh] (no hourly profiles)
+
+    dm_production_np = dm_yearly_production.filter_w_regex({'Categories1': 'hydroelectric|solar-csp|geothermal|marine|'
+                                                                    'oil|gas|coal|biomass|biogas|nuclear'})
+
+    # Sum - Total (Categories1) energy production with no hourly profile
+    ay_total_np = np.nansum(dm_production_np.array[...], axis=-1)
+    dm_production_np.add(ay_total_np, dim='Categories1', col_label='total')
+
+    #####################################################################################
+    # CalculationLeafs - Net power production with hourly profiles
+    #####################################################################################
+
+    # Sub Data Matrix - Yearly production [GWh] (hourly profiles)
+
+    dm_production_p = dm_yearly_production.filter_w_regex({'Categories1': 'solar-pv|wind-onshore|wind-offshore'})
+
+    return dm_capacity, dm_fb_capacity, dm_production_np, dm_production_p
 
 #######################################################################################################################
 # CalculationTree - Power - Building yearly demand
