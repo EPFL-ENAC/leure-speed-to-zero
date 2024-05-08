@@ -248,6 +248,14 @@ def read_database_fxa(filename, folderpath="default", db_format=False, filter_di
     df_db = df_db.drop_duplicates(subset=['geoscale', 'timescale', 'level', 'string-pivot', 'eucalc-name'])
     if len(df_db) - len_init < 0:
         print(f"Duplicates found in: {filename}, use .duplicated on dataframe to check which lines are repeated")
+
+    # Check occurrences of countries:
+    countries_counts = df_db['geoscale'].value_counts()
+    wrong_countries = countries_counts - countries_counts.mean()
+    if not (wrong_countries == 0).all():
+        wrong = list(wrong_countries[wrong_countries != 0].index)
+        ValueError(f'The country {wrong} has not the right number of rows')
+    
     if db_format:
         return df_db
     else:
