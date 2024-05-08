@@ -47,13 +47,26 @@ def database_from_csv_to_datamatrix():
     # FIXED ASSUMPTIONS #
     #####################
 
-    # Data - Fixed assumptions
-    file = 'agriculture_fixed-assumptions'
-    lever = 'fixed-assumption'
-    # edit_database(file, lever, column='eucalc-name', mode='rename',pattern={'meat_': 'meat-', 'abp_': 'abp-'})
-
-    # Data - Fixed assumptions
+    # FixedAssumptionsToDatamatrix
     dict_fxa = {}
+    file = 'agriculture_fixed-assumptions_pathwaycalc'
+    lever = 'none'
+    #edit_database(file, lever, column='eucalc-name', mode='rename',pattern={'meat_': 'meat-', 'abp_': 'abp-'})
+    # LIVESTOCK MANURE - N2O emissions
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'ef_liv_N2O-emission_ef.*'})
+    dm_ef_N2O = DataMatrix.create_from_df(df, num_cat=2)
+    dict_fxa['ef_liv_N2O-emission'] = dm_ef_N2O
+    # LIVESTOCK MANURE - CH4 emissions
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'ef_liv_CH4-emission_treated.*'})
+    dm_ef_CH4 = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['ef_liv_CH4-emission_treated'] = dm_ef_CH4
+    # LIVESTOCK MANURE - N stock
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'liv_manure_n-stock.*'})
+    dm_nstock = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['liv_manure_n-stock'] = dm_nstock
+
+    # CalibrationFactorsToDatamatrix
+    # Data - Fixed assumptions
     file = 'agriculture_calibration-factors_pathwaycalc'
     lever = 'none'
     # Renaming to correct format : Calibration factors - Livestock domestic production
@@ -88,15 +101,15 @@ def database_from_csv_to_datamatrix():
     dm_caf_liv_pop = DataMatrix.create_from_df(df, num_cat=1)
     dict_fxa['caf_agr_liv-population'] = dm_caf_liv_pop
 
-    # Data - Fixed assumptions - Calibration factors - Livestock CH4 enteric emissions
+    # Data - Fixed assumptions - Calibration factors - Livestock CH4 emissions
     df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_liv_CH4-emission.*'})
-    dm_caf_liv_CH4 = DataMatrix.create_from_df(df, num_cat=1)
+    dm_caf_liv_CH4 = DataMatrix.create_from_df(df, num_cat=2)
     dict_fxa['caf_agr_liv_CH4-emission'] = dm_caf_liv_CH4
 
 
     # Data - Fixed assumptions - Calibration factors - Livestock N2O emissions
     df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_liv_N2O-emission.*'})
-    dm_caf_liv_N2O = DataMatrix.create_from_df(df, num_cat=1)
+    dm_caf_liv_N2O = DataMatrix.create_from_df(df, num_cat=2)
     dict_fxa['caf_agr_liv_N2O-emission'] = dm_caf_liv_N2O
 
     # Create a dictionnay with all the fixed assumptions
@@ -104,7 +117,10 @@ def database_from_csv_to_datamatrix():
         'caf_agr_domestic-production-liv': dm_caf_liv_dom_prod,
         'caf_agr_liv-population': dm_caf_liv_pop,
         'caf_agr_liv_CH4-emission': dm_caf_liv_CH4,
-        'caf_agr_liv_N2O-emission': dm_caf_liv_N2O
+        'caf_agr_liv_N2O-emission': dm_caf_liv_N2O,
+        'ef_liv_N2O-emission': dm_ef_N2O,
+        'ef_liv_CH4-emission_treated': dm_ef_CH4,
+        'liv_manure_n-stock': dm_nstock
     }
 
 
@@ -128,7 +144,7 @@ def database_from_csv_to_datamatrix():
     file = 'agriculture_climate-smart-livestock_pathwaycalc_renamed'
     lever = 'climate-smart-livestock'
     #edit_database(file,lever,column='eucalc-name',pattern={'_CH4-emission':''},mode='rename')
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 0, 1, 1], baseyear=baseyear,
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 0, 1, 2], baseyear=baseyear,
                                                                 years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
                                                                 column='eucalc-name',
                                                                 group_list=['climate-smart-livestock_losses.*', 'climate-smart-livestock_yield.*',
@@ -206,6 +222,12 @@ def read_data(data_file, lever_setting):
     dm_fxa_caf_liv_pop = DM_agriculture['fxa']['caf_agr_liv-population']
     dm_fxa_caf_liv_CH4 = DM_agriculture['fxa']['caf_agr_liv_CH4-emission']
     dm_fxa_caf_liv_N2O = DM_agriculture['fxa']['caf_agr_liv_N2O-emission']
+    #dm_fxa_caf_liv_CH4.rename_col_regex(str1="caf_agr_liv_CH4-emission_", str2="", dim="Variables")
+    #dm_fxa_caf_liv_N2O.rename_col_regex(str1="caf_agr_liv_N2O-emission_", str2="", dim="Variables")
+    dm_fxa_ef_liv_N2O = DM_agriculture['fxa']['ef_liv_N2O-emission']
+    #dm_fxa_ef_liv_N2O.rename_col_regex(str1="fxa_ef_liv_N2O-emission_", str2="", dim="Variables")
+    dm_fxa_ef_liv_CH4_treated = DM_agriculture['fxa']['ef_liv_CH4-emission_treated']
+    dm_fxa_liv_nstock = DM_agriculture['fxa']['liv_manure_n-stock']
 
     # Extract sub-data-matrices according to the flow
     # Sub-matrix for the FOOD DEMAND
@@ -239,6 +261,7 @@ def read_data(data_file, lever_setting):
     # Sub-matrix for LIVESTOCK MANURE MANGEMENT & GHG EMISSIONS
     dm_livestock_enteric_emissions = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_enteric']
     dm_livestock_manure = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_manure']
+    dm_livestock_manure.rename_col_regex(str1="agr_climate-smart-livestock_manure_", str2="", dim="Variables")
 
     # Aggregate datamatrix by theme/flow
     # Aggregated Data Matrix - FOOD DEMAND
@@ -279,7 +302,10 @@ def read_data(data_file, lever_setting):
         'enteric_emission': dm_livestock_enteric_emissions,
         'manure': dm_livestock_manure,
         'caf_liv_CH4': dm_fxa_caf_liv_CH4,
-        'caf_liv_N2O': dm_fxa_caf_liv_N2O
+        'caf_liv_N2O': dm_fxa_caf_liv_N2O,
+        'ef_liv_N2O': dm_fxa_ef_liv_N2O ,
+        'ef_liv_CH4_treated': dm_fxa_ef_liv_CH4_treated,
+        'liv_n-stock': dm_fxa_liv_nstock
     }
 
     cdm_const = DM_agriculture['constant']
@@ -916,6 +942,69 @@ def bioenergy_workflow(DM_bioenergy, cdm_const, dm_ind, dm_bld, dm_tra):
     # Cellulosic liquid biofuel per type [kcal] : In KNIME but not computed as not used later
     return DM_bioenergy
 
+# CalculationLeaf LIVESTOCK MANURE MANAGEMENT & GHG EMISSIONS ----------------------------------------------------------
+def livestock_manure_workflow(DM_manure, DM_livestock, cdm_const):
+
+    # Pre processing livestock population
+    dm_liv_pop = DM_livestock['caf_liv_population'].filter({'Variables': ['cal_agr_liv_population']})
+    DM_manure['liv_n-stock'].append(dm_liv_pop, dim='Variables')
+    DM_manure['enteric_emission'].append(dm_liv_pop, dim='Variables')
+    DM_manure['ef_liv_CH4_treated'].append(dm_liv_pop, dim='Variables')
+
+    # N2O
+    # Manure production [tN] = livestock population [lsu] * Manure yield [t/lsu]
+    DM_manure['liv_n-stock'].operation('fxa_liv_manure_n-stock', '*', 'cal_agr_liv_population',
+                                       out_col='agr_liv_n-stock', unit='t')
+
+    # Manure management practices [MtN] = Manure production [MtN] * Share of management practices [%]
+    idx_nstock = DM_manure['liv_n-stock'].idx
+    idx_split = DM_manure['manure'].idx
+    dm_temp = DM_manure['liv_n-stock'].array[:, :, idx_nstock['agr_liv_n-stock'], :, np.newaxis] * \
+              DM_manure['manure'].array[:, :, idx_split['agr_climate-smart-livestock_manure'], :, :]
+    DM_manure['ef_liv_N2O'].add(dm_temp, dim='Variables', col_label='agr_liv_n-stock_split',
+                                unit='t')
+
+    # Manure emission [MtN2O] = Manure management practices [MtN] * emission factors per practices [MtN2O/Mt]
+    DM_manure['ef_liv_N2O'].operation('agr_liv_n-stock_split', '*', 'fxa_ef_liv_N2O-emission_ef',
+                                      out_col='agr_liv_N2O-emission', unit='t')
+
+    # Calibration N2O
+    dm_liv_N2O = DM_manure['ef_liv_N2O'].filter({'Variables': ['agr_liv_N2O-emission']})
+    DM_manure['caf_liv_N2O'].append(dm_liv_N2O, dim='Variables')  # Append to caf
+    DM_manure['caf_liv_N2O'].operation('caf_agr_liv_N2O-emission', '*', 'agr_liv_N2O-emission',
+                                       dim="Variables", out_col='cal_agr_liv_N2O-emission', unit='t')
+
+    # CH4
+    # Enteric emission [tCH4] = livestock population [lsu] * enteric emission factor [tCH4/lsu]
+    DM_manure['enteric_emission'].operation('agr_climate-smart-livestock_enteric', '*', 'cal_agr_liv_population',
+                                            dim="Variables", out_col='agr_liv_CH4-emission', unit='t')
+
+    # Manure emission [tCH4] = livestock population [lsu] * emission factors treated manure [tCH4/lsu]
+    DM_manure['ef_liv_CH4_treated'].operation('fxa_ef_liv_CH4-emission_treated', '*', 'cal_agr_liv_population',
+                                              dim="Variables", out_col='agr_liv_CH4-emission', unit='t')
+
+    # Processing for calibration (putting enteric and treated CH4 emission in the same dm)
+    # Treated
+    dm_CH4 = DM_manure['ef_liv_CH4_treated'].filter({'Variables': ['agr_liv_CH4-emission']})
+    dm_CH4.rename_col_regex(str1="meat", str2="treated_meat", dim="Categories1")
+    dm_CH4.rename_col_regex(str1="abp", str2="treated_abp", dim="Categories1")
+    dm_CH4.deepen()
+    dm_CH4.switch_categories_order(cat1='Categories2', cat2='Categories1')
+    # Enteric
+    dm_CH4_enteric = DM_manure['enteric_emission'].filter({'Variables': ['agr_liv_CH4-emission']})
+    dm_CH4_enteric.rename_col_regex(str1="meat", str2="enteric_meat", dim="Categories1")
+    dm_CH4_enteric.rename_col_regex(str1="abp", str2="enteric_abp", dim="Categories1")
+    dm_CH4_enteric.deepen()
+    dm_CH4_enteric.switch_categories_order(cat1='Categories2', cat2='Categories1')
+    # Appending
+    dm_CH4.append(dm_CH4_enteric, dim='Categories2')
+
+    # Calibration CH4
+    DM_manure['caf_liv_CH4'].append(dm_CH4, dim='Variables')  # Append to caf
+    DM_manure['caf_liv_CH4'].operation('caf_agr_liv_CH4-emission', '*', 'agr_liv_CH4-emission',
+                                       dim="Variables", out_col='cal_agr_liv_CH4-emission', unit='t')
+    return DM_manure
+
 # ----------------------------------------------------------------------------------------------------------------------
 # AGRICULTURE ----------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
@@ -945,8 +1034,7 @@ def agriculture(lever_setting, years_setting):
     DM_livestock, dm_liv_ibp, dm_liv_ibp= livestock_workflow(DM_livestock, cdm_const, dm_lfs_pro)
     DM_alc_bev, dm_bev_ibp_cereal_feed = alcoholic_beverages_workflow(DM_alc_bev, cdm_const, dm_lfs_pro)
     DM_bioenergy = bioenergy_workflow(DM_bioenergy, cdm_const, dm_ind, dm_bld, dm_tra)
-
-    # CalculationLeaf LIVESTOCK MANURE MANAGEMENT & GHG EMISSIONS ------------------------------------------------------
+    DM_manure = livestock_manure_workflow(DM_manure, DM_livestock, cdm_const)
 
 
 
@@ -962,5 +1050,5 @@ def agriculture_local_run():
 # Creates the pickle, to do only once
 #database_from_csv_to_datamatrix()
 
-# Run the code un local
+# Run the code in local
 agriculture_local_run()
