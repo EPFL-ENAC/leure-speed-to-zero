@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-
+import warnings
 
 def read_database(filename, lever, folderpath="default", db_format=False, level='all'):
     # Reads csv file in database/data/csv and extracts it in df format with columns
@@ -10,6 +10,7 @@ def read_database(filename, lever, folderpath="default", db_format=False, level=
         folderpath = os.path.join(current_file_directory, "../../_database/data/csv/")
     file = folderpath + filename + '.csv'
     df_db = pd.read_csv(file, sep=";")
+
 
     # Remove duplicates
     len_init = len(df_db)
@@ -251,10 +252,10 @@ def read_database_fxa(filename, folderpath="default", db_format=False, filter_di
 
     # Check occurrences of countries:
     countries_counts = df_db['geoscale'].value_counts()
-    wrong_countries = countries_counts - countries_counts.mean()
+    wrong_countries = countries_counts - countries_counts.median()
     if not (wrong_countries == 0).all():
         wrong = list(wrong_countries[wrong_countries != 0].index)
-        ValueError(f'The country {wrong} has not the right number of rows')
+        warnings.warn(f'The country {wrong} has not the right number of rows')
     
     if db_format:
         return df_db
