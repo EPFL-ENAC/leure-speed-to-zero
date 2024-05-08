@@ -396,40 +396,39 @@ class DataMatrix:
         return
 
     def write_df(self):
-        years = self.col_labels["Years"]
-        countries = self.col_labels["Country"]
+        dm = self.copy()
+        years = dm.col_labels["Years"]
+        countries = dm.col_labels["Country"]
         n_y = len(years)
         n_c = len(countries)
         country_list = [item for item in countries for _ in range(n_y)]
         years_list = years * n_c
         df = pd.DataFrame(data=zip(country_list, years_list), columns=["Country", "Years"])
 
-        num_cat = len(self.dim_labels) - 3
+        num_cat = len(dm.dim_labels) - 3
 
         if num_cat == 3:
-            dm_new = self.flatten()
-            self.__dict__.update(dm_new.__dict__) # it replaces self with dm_new
-            num_cat = len(self.dim_labels) - 3
+            dm_new = dm.flatten()
+            dm.__dict__.update(dm_new.__dict__) # it replaces self with dm_new
+            num_cat = len(dm.dim_labels) - 3
 
         if num_cat == 2:
-            dm_new = self.flatten()
-            self.__dict__.update(dm_new.__dict__)  # it replaces self with dm_new
-            num_cat = len(self.dim_labels) - 3
+            dm_new = dm.flatten()
+            dm.__dict__.update(dm_new.__dict__)  # it replaces self with dm_new
+            num_cat = len(dm.dim_labels) - 3
 
         if num_cat == 0:
-            for v in self.col_labels["Variables"]:
-                col_name = v + "[" + self.units[v] + "]"
-                col_value = self.array[:, :, self.idx[v]].flatten()
+            for v in dm.col_labels["Variables"]:
+                col_name = v + "[" + dm.units[v] + "]"
+                col_value = dm.array[:, :, dm.idx[v]].flatten()
                 df[col_name] = col_value
         if num_cat == 1:
-            for v in self.col_labels["Variables"]:
-                for c in self.col_labels["Categories1"]:
-                    col_name = v + "_" + c + "[" + self.units[v] + "]"
-                    col_value = self.array[:, :, self.idx[v], self.idx[c]].flatten()
+            for v in dm.col_labels["Variables"]:
+                for c in dm.col_labels["Categories1"]:
+                    col_name = v + "_" + c + "[" + dm.units[v] + "]"
+                    col_value = dm.array[:, :, dm.idx[v], dm.idx[c]].flatten()
                     if not np.isnan(col_value).all():
                         df[col_name] = col_value
-
-
         return df
 
     def rename_col(self, col_in, col_out, dim):
