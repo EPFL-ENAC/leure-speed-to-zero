@@ -17,7 +17,7 @@ from model.common.auxiliary_functions import read_level_data, filter_geoscale
 from model.common.io_database import read_database, read_database_fxa  # read functions for levers & fixed assumptions
 from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups,\
     update_interaction_constant_from_file
-
+from model.common.hourly_data_functions import hourly_data_reader
 
 #######################################################################################################################
 # ModelSetting - Power
@@ -90,38 +90,38 @@ def database_from_csv_to_datamatrix():
     # Database - Power - Lever: Geothermal capacity
     file = 'power_geothermal-capacity'
     lever = 'geothermal-capacity'
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1,baseyear=baseyear, years=years_all,
-                                                       dict_ots=dict_ots,dict_fts=dict_fts)
+    dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1, baseyear=baseyear, years=years_all,
+                                                       dict_ots=dict_ots, dict_fts=dict_fts)
 
     # Database - Power - Lever: Marine energy capacity
     file = 'power_marine-capacity'
     lever = 'marine-capacity'
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1,baseyear=baseyear, years=years_all,
-                                                       dict_ots=dict_ots,dict_fts=dict_fts)
+    dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1, baseyear=baseyear, years=years_all,
+                                                       dict_ots=dict_ots, dict_fts=dict_fts)
 
     # Database - Power - Lever: Gas capacity
     file = 'power_gas-capacity'
     lever = 'gas-capacity'
     dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1,baseyear=baseyear, years=years_all,
-                                                       dict_ots=dict_ots,dict_fts=dict_fts)
+                                                       dict_ots=dict_ots, dict_fts=dict_fts)
 
     # Database - Power - Lever: Oil capacity
     file = 'power_oil-capacity'
     lever = 'oil-capacity'
     dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1,baseyear=baseyear, years=years_all,
-                                                       dict_ots=dict_ots,dict_fts=dict_fts)
+                                                       dict_ots=dict_ots, dict_fts=dict_fts)
 
     # Database - Power - Lever: Coal capacity
     file = 'power_coal-capacity'
     lever = 'coal-capacity'
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1,baseyear=baseyear, years=years_all,
-                                                       dict_ots=dict_ots,dict_fts=dict_fts)
+    dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1, baseyear=baseyear, years=years_all,
+                                                       dict_ots=dict_ots, dict_fts=dict_fts)
 
     # Database - Power - Lever: Nuclear capacity
     file = 'power_nuclear-capacity'
     lever = 'nuclear-capacity'
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1,baseyear=baseyear, years=years_all,
-                                                       dict_ots=dict_ots,dict_fts=dict_fts)
+    dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1, baseyear=baseyear, years=years_all,
+                                                       dict_ots=dict_ots, dict_fts=dict_fts)
 
     # Database - Power - Lever: CCUS capacity
     file = 'power_carbon-storage'
@@ -129,12 +129,21 @@ def database_from_csv_to_datamatrix():
     dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1, baseyear=baseyear, years=years_all,
                                                        dict_ots=dict_ots, dict_fts=dict_fts)
 
+    # Database - Power - Lever: ev-charging-power
+    file = 'power_ev-charging-profile'
+    lever = 'ev-charging-profile'
+    dict_ots, dict_fts = hourly_data_reader(file, years_setting, lever, dict_ots, dict_fts)
+
 #######################################################################################################################
 # DataFixedAssumptions - Power
 #######################################################################################################################
 
+    file = 'power_train-profile'
+    dm_pow_train = hourly_data_reader(file, years_setting)
 
-
+    dict_fxa = {
+        'train-hourly': dm_pow_train
+    }
 
 
 #######################################################################################################################
@@ -163,7 +172,7 @@ def database_from_csv_to_datamatrix():
     DM_power = {
         'fts': dict_fts,
         'ots': dict_ots,
-        #'fxa': dict_fxa,
+        'fxa': dict_fxa,
         'constant': dict_const
     }
 #######################################################################################################################
