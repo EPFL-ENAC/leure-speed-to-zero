@@ -90,6 +90,9 @@ def database_from_csv_to_datamatrix():
     #                       'treated_abp-dairy-milk': 'abp-dairy-milk_treated',
     #                       'treated_abp-hens-egg': 'abp-hens-egg_treated',
     #                       'meat-abp': 'abp'})
+    #edit_database(file, lever, column='eucalc-name', mode='rename', pattern={'processed_': 'processed-',
+     #                                                                        'feed_crop_':'feed_crop-',
+     #                                                                        'feed_liv_':'feed_liv-'})
 
     # Data - Fixed assumptions - Calibration factors - Livestock domestic production
     df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_domestic-production-liv.*'})
@@ -112,12 +115,18 @@ def database_from_csv_to_datamatrix():
     dm_caf_liv_N2O = DataMatrix.create_from_df(df, num_cat=2)
     dict_fxa['caf_agr_liv_N2O-emission'] = dm_caf_liv_N2O
 
+    # Data - Fixed assumptions - Calibration factors - Feed demand
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_demand_feed.*'})
+    dm_caf_feed = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['caf_agr_demand_feed'] = dm_caf_feed
+
     # Create a dictionnay with all the fixed assumptions
     dict_fxa = {
         'caf_agr_domestic-production-liv': dm_caf_liv_dom_prod,
         'caf_agr_liv-population': dm_caf_liv_pop,
         'caf_agr_liv_CH4-emission': dm_caf_liv_CH4,
         'caf_agr_liv_N2O-emission': dm_caf_liv_N2O,
+        'caf_agr_demand_feed': dm_caf_feed,
         'ef_liv_N2O-emission': dm_ef_N2O,
         'ef_liv_CH4-emission_treated': dm_ef_CH4,
         'liv_manure_n-stock': dm_nstock
@@ -144,12 +153,14 @@ def database_from_csv_to_datamatrix():
     file = 'agriculture_climate-smart-livestock_pathwaycalc_renamed'
     lever = 'climate-smart-livestock'
     #edit_database(file,lever,column='eucalc-name',pattern={'_CH4-emission':''},mode='rename')
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 0, 1, 2], baseyear=baseyear,
+    #edit_database(file,lever,column='eucalc-name',pattern={'ration_crop_':'ration_crop-', 'ration_liv_':'ration_liv-'},mode='rename')
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 0, 1, 2, 1], baseyear=baseyear,
                                                                 years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
                                                                 column='eucalc-name',
                                                                 group_list=['climate-smart-livestock_losses.*', 'climate-smart-livestock_yield.*',
                                                                             'climate-smart-livestock_slaughtered.*', 'climate-smart-livestock_density',
-                                                                            'climate-smart-livestock_enteric.*', 'climate-smart-livestock_manure.*'])
+                                                                            'climate-smart-livestock_enteric.*', 'climate-smart-livestock_manure.*',
+                                                                            'climate-smart-livestock_ration.*'])
 
     # Read biomass hierarchy
     file = 'agriculture_biomass-use-hierarchy_pathwaycalc'
@@ -180,6 +191,15 @@ def database_from_csv_to_datamatrix():
                                                                 group_list=['bioenergy-capacity_load-factor.*', 'bioenergy-capacity_bgs-mix.*',
                                                                             'bioenergy-capacity_efficiency.*', 'bioenergy-capacity_liq_b.*', 'bioenergy-capacity_elec.*'])
 
+    # Read livestock protein meals
+    file = 'agriculture_livestock-protein-meals_pathwaycalc'
+    lever = 'alt-protein'
+    #edit_database(file,lever,column='eucalc-name',pattern={'meat_':'meat-', 'abp_':'abp-'},mode='rename')
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[2],
+                                                                baseyear=baseyear,
+                                                                years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
+                                                                column='eucalc-name',
+                                                                group_list=['agr_alt-protein.*'])
 
     # num_cat_list=[1 = nb de cat de losses, 1 = nb de cat yield]
 
@@ -189,7 +209,7 @@ def database_from_csv_to_datamatrix():
     # ConstantsToDatamatrix
     # Data - Constants (use 'xx|xx|xx' to add)
     cdm_const = ConstantDataMatrix.extract_constant('interactions_constants',
-                                                    pattern='cp_ibp_liv_.*_brf_fdk_afat|cp_ibp_liv_.*_brf_fdk_offal|cp_ibp_bev_.*|cp_liquid_tec.*|cp_load_hours',
+                                                    pattern='cp_ibp_liv_.*_brf_fdk_afat|cp_ibp_liv_.*_brf_fdk_offal|cp_ibp_bev_.*|cp_liquid_tec.*|cp_load_hours|cp_ibp_aps_insect.*|cp_ibp_aps_algae.*|cp_efficiency_liv.*',
                                                     num_cat=0)
 
     # Group all datamatrix in a single structure
@@ -222,6 +242,7 @@ def read_data(data_file, lever_setting):
     dm_fxa_caf_liv_pop = DM_agriculture['fxa']['caf_agr_liv-population']
     dm_fxa_caf_liv_CH4 = DM_agriculture['fxa']['caf_agr_liv_CH4-emission']
     dm_fxa_caf_liv_N2O = DM_agriculture['fxa']['caf_agr_liv_N2O-emission']
+    dm_fxa_caf_demand_feed = DM_agriculture['fxa']['caf_agr_demand_feed']
     #dm_fxa_caf_liv_CH4.rename_col_regex(str1="caf_agr_liv_CH4-emission_", str2="", dim="Variables")
     #dm_fxa_caf_liv_N2O.rename_col_regex(str1="caf_agr_liv_N2O-emission_", str2="", dim="Variables")
     dm_fxa_ef_liv_N2O = DM_agriculture['fxa']['ef_liv_N2O-emission']
@@ -262,6 +283,10 @@ def read_data(data_file, lever_setting):
     dm_livestock_enteric_emissions = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_enteric']
     dm_livestock_manure = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_manure']
     dm_livestock_manure.rename_col_regex(str1="agr_climate-smart-livestock_manure_", str2="", dim="Variables")
+
+    # Sub-matrix for FEED
+    dm_ration = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_ration']
+    dm_alt_protein = DM_ots_fts['alt-protein']['agr_alt-protein']
 
     # Aggregate datamatrix by theme/flow
     # Aggregated Data Matrix - FOOD DEMAND
@@ -308,9 +333,16 @@ def read_data(data_file, lever_setting):
         'liv_n-stock': dm_fxa_liv_nstock
     }
 
+    # Aggregated Data Matrix - FEED
+    DM_feed = {
+        'ration': dm_ration,
+        'alt-protein': dm_alt_protein,
+        'caf_agr_demand_feed': dm_fxa_caf_demand_feed
+    }
+
     cdm_const = DM_agriculture['constant']
 
-    return DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, cdm_const
+    return DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, cdm_const
 
 # SimulateInteractions
 def simulate_lifestyles_to_agriculture_input():
@@ -668,6 +700,7 @@ def alcoholic_beverages_workflow(DM_alc_bev, cdm_const, dm_lfs_pro):
         {'agr_bev_ibp_use_oth': 'agr_ibp_bev_wine_fdk_marc|agr_ibp_bev_wine_fdk_lees'}, dim='Variables',
         regex=True)
 
+
     # Byproducts biomass use per sector = byproducts for other uses * share of bev biomass per sector [%]
     idx_bev_ibp_use_oth = dm_bev_ibp_use_oth.idx
     idx_bev_biomass_hierarchy = DM_alc_bev['biomass_hierarchy'].idx
@@ -943,7 +976,7 @@ def bioenergy_workflow(DM_bioenergy, cdm_const, dm_ind, dm_bld, dm_tra):
     return DM_bioenergy
 
 # CalculationLeaf LIVESTOCK MANURE MANAGEMENT & GHG EMISSIONS ----------------------------------------------------------
-def livestock_manure_workflow(DM_manure, DM_livestock, cdm_const):
+def livestock_manure_workflow(DM_manure, DM_livestock,  cdm_const):
 
     # Pre processing livestock population
     dm_liv_pop = DM_livestock['caf_liv_population'].filter({'Variables': ['cal_agr_liv_population']})
@@ -1005,6 +1038,95 @@ def livestock_manure_workflow(DM_manure, DM_livestock, cdm_const):
                                        dim="Variables", out_col='cal_agr_liv_CH4-emission', unit='t')
     return DM_manure
 
+# CalculationLeaf FEED -------------------------------------------------------------------------------------------------
+def feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, cdm_const):
+
+    # FEED REQUIREMENTS
+    # Filter protein conversion efficiency constant
+    cdm_cp_efficiency = cdm_const.filter_w_regex({'Variables': 'cp_efficiency_liv.*'})
+    cdm_cp_efficiency.rename_col_regex('meat_', 'meat-', dim='Variables')
+    cdm_cp_efficiency.rename_col_regex('abp_', 'abp-', dim='Variables')
+    cdm_cp_efficiency.deepen(based_on='Variables')  # Creating categories
+
+    # Pre processing domestic ASF prod accounting for waste [kcal]
+    dm_feed_req = DM_livestock['losses'].filter({'Variables': ['agr_domestic_production_liv_afw']})
+    dm_feed_req.drop(dim='Categories1', col_label=['abp-processed-afat', 'abp-processed-offal'])
+
+    # Feed req per livestock type [kcal] = domestic ASF prod accounting for waste [kcal] / protein conversion efficiency [%]
+    idx_cdm = cdm_cp_efficiency.idx
+    idx_feed = dm_feed_req.idx
+    dm_temp = dm_feed_req.array[:, :, idx_feed['agr_domestic_production_liv_afw'], :] \
+              * cdm_cp_efficiency.array[idx_cdm['cp_efficiency_liv'], :]
+    dm_feed_req.add(dm_temp, dim='Variables', col_label='agr_feed-requierement', unit='kcal')
+
+    # Total feed req [kcal] = sum(Feed req per livestock type [kcal])
+    dm_feed_req_total = dm_feed_req.filter({'Variables': ['agr_feed-requierement']})
+    dm_feed_req_total.groupby({'total': '.*'}, dim='Categories1', regex=True, inplace=True)
+    dm_feed_req_total = dm_feed_req_total.flatten()
+
+    # ALTERNATIVE PROTEIN SOURCE (APS) FOR LIVESTOCK FEED
+    # APS [kcal] = Feed req per livestock type [kcal] * APS share per type [%]
+    idx_aps = DM_feed['alt-protein'].idx
+    idx_feed = dm_feed_req.idx
+    dm_temp = dm_feed_req.array[:, :, idx_feed['agr_feed-requierement'], :, np.newaxis] \
+              * DM_feed['alt-protein'].array[:, :, idx_aps['agr_alt-protein'], :, :]
+    DM_feed['alt-protein'].add(dm_temp, dim='Variables', col_label='agr_feed_aps', unit='kcal')
+
+    # Algae meals [kcal] = sum algae feed req
+    dm_aps = DM_feed['alt-protein'].filter({'Variables': ['agr_feed_aps'], 'Categories2': ['algae']})
+    dm_aps = dm_aps.flatten()
+    dm_aps.groupby({'algae': '.*'}, dim='Categories1', regex=True, inplace=True)
+
+    # Insect meals [kcal] = sum insect feed req
+    dm_insect = DM_feed['alt-protein'].filter({'Variables': ['agr_feed_aps'], 'Categories2': ['insect']})
+    dm_insect = dm_insect.flatten()
+    dm_insect.groupby({'insect': '.*'}, dim='Categories1', regex=True, inplace=True)
+    dm_aps.append(dm_insect, dim='Categories1')
+
+    # Filter APS byproduct ration constant
+    cdm_aps_ibp = cdm_const.filter_w_regex({'Variables': 'cp_ibp_aps.*'})
+    cdm_aps_ibp.rename_col_regex('brf_', '', dim='Variables')
+    cdm_aps_ibp.rename_col_regex('crop_', 'crop-', dim='Variables')
+    cdm_aps_ibp.rename_col_regex('fdk_', 'fdk-', dim='Variables')
+    cdm_aps_ibp.rename_col_regex('algae_', 'algae-', dim='Variables')  # Extra steps to have the correct cat order
+    cdm_aps_ibp.rename_col_regex('insect_', 'insect-', dim='Variables')
+    cdm_aps_ibp.deepen(based_on='Variables')  # Creating categories
+    cdm_aps_ibp.rename_col_regex('algae-', 'algae_', dim='Categories1')  # Extra steps to have the correct cat order
+    cdm_aps_ibp.rename_col_regex('insect-', 'insect_', dim='Categories1')
+    cdm_aps_ibp.deepen(based_on='Categories1')
+
+    # APS byproducts [kcal] = APS production [kcal] * byproduct ratio [%]
+    idx_cdm = cdm_aps_ibp.idx
+    idx_aps = dm_aps.idx
+    dm_temp = dm_aps.array[:, :, idx_aps['agr_feed_aps'], :, np.newaxis] \
+              * cdm_aps_ibp.array[idx_cdm['cp_ibp_aps'], :, :]
+    # dm_aps.add(dm_temp, dim='Variables', col_label='agr_aps', unit='kcal') FIXME find correct dm to add to or create one
+
+    # FEED RATION
+    # Alternative feed ration [kcal] = sum (cereals from bev for feed, APS, grass) FIXME check what is supposed to be considered
+    idx_ibp_bev = dm_bev_ibp_cereal_feed.idx
+    dm_alt_feed = dm_bev_ibp_cereal_feed.copy()
+    # dm_alt_feed.rename_col('agr_use_bev_ibp_cereal_feed', 'agr_feed-diet-switch', dim='Variables') FIXME find the issue because this line does not work, probably because of previous groupby in ALC BEV
+    dm_feed_req_total.append(dm_alt_feed, dim='Variables')
+
+    # Total feed demand [kcal] = Total feed req [kcal] - Alternative feed ration [kcal] FIXME change 1st component name
+    dm_feed_req_total.operation('agr_use_bev_ibp_cereal_feed', '-', 'agr_feed-requierement_total',
+                                out_col='agr_feed-demand', unit='kcal')
+
+    # Feed demand by type [kcal] = Crop based feed demand by type [kcal] * Share of feed per type [%]
+    idx_feed = dm_feed_req_total.idx
+    idx_ration = DM_feed['ration'].idx
+    dm_temp = dm_feed_req_total.array[:, :, idx_feed['agr_feed-demand'], np.newaxis] \
+              * DM_feed['ration'].array[:, :, idx_ration['agr_climate-smart-livestock_ration'], :]
+    DM_feed['ration'].add(dm_temp, dim='Variables', col_label='agr_demand_feed', unit='kcal')
+
+    # Calibration Feed demand
+    dm_feed_demand = DM_feed['ration'].filter({'Variables': ['agr_demand_feed']})
+    DM_feed['caf_agr_demand_feed'].append(dm_feed_demand, dim='Variables')
+    DM_feed['caf_agr_demand_feed'].operation('agr_demand_feed', '*', 'caf_agr_demand_feed',
+                                             out_col='cal_agr_feed-demand', unit='kcal')
+    return DM_feed
+
 # ----------------------------------------------------------------------------------------------------------------------
 # AGRICULTURE ----------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
@@ -1013,7 +1135,7 @@ def agriculture(lever_setting, years_setting):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     agriculture_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/agriculture.pickle')
-    DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, cdm_const = read_data(agriculture_data_file, lever_setting)
+    DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, cdm_const = read_data(agriculture_data_file, lever_setting)
 
     # Simulate data from other modules
     dm_lfs = simulate_lifestyles_to_agriculture_input()
@@ -1035,6 +1157,8 @@ def agriculture(lever_setting, years_setting):
     DM_alc_bev, dm_bev_ibp_cereal_feed = alcoholic_beverages_workflow(DM_alc_bev, cdm_const, dm_lfs_pro)
     DM_bioenergy = bioenergy_workflow(DM_bioenergy, cdm_const, dm_ind, dm_bld, dm_tra)
     DM_manure = livestock_manure_workflow(DM_manure, DM_livestock, cdm_const)
+    DM_feed = feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, cdm_const)
+
 
 
 
