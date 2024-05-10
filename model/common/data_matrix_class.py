@@ -349,7 +349,7 @@ class DataMatrix:
 
         return
 
-    def operation(self, col1, operator, col2, dim="Variables", out_col=None, unit=None, div0="error", type=float):
+    def operation(self, col1, operator, col2, dim="Variables", out_col=None, unit=None, div0="error", nansum=False, type=float):
         # operation allows to perform operation between two columns belonging to the same
         # dimensions in DataMatrix and to append/overwrite the result to the dataframe
         i = self.idx
@@ -378,10 +378,16 @@ class DataMatrix:
                     tmp = np.apply_along_axis(interpolate_nans, axis_to_interp, tmp)
 
         if operator == "-":
-            tmp = self.array[..., i[col1]] - self.array[..., i[col2]]
+            if not nansum:
+                tmp = self.array[..., i[col1]] - self.array[..., i[col2]]
+            else:
+                tmp = np.nan_to_num(self.array[..., i[col1]]) - np.nan_to_num(self.array[..., i[col2]])
 
         if operator == "+":
-            tmp = self.array[..., i[col1]] + self.array[..., i[col2]]
+            if not nansum:
+                tmp = self.array[..., i[col1]] + self.array[..., i[col2]]
+            else:
+                tmp = np.nan_to_num(self.array[..., i[col1]]) + np.nan_to_num(self.array[..., i[col2]])
 
         if operator == "*":
             tmp = self.array[..., i[col1]] * self.array[..., i[col2]]
