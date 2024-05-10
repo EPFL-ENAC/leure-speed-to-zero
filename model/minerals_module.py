@@ -257,12 +257,12 @@ def simulate_interfaces():
 def product_demand(DM_minerals, DM_interface, cdm_constants):
 
     # get fxa
-    DM_fxa = DM_minerals['fxa'].copy()
+    DM_fxa = DM_minerals['fxa']
 
     # get datamatrixes
-    dm_tra = DM_interface["transport"].copy()
-    dm_bld = DM_interface["buildings"].copy()
-    dm_str = DM_interface["storage"].copy()
+    dm_tra = DM_interface["transport"]
+    dm_bld = DM_interface["buildings"]
+    dm_str = DM_interface["storage"]
     
     #####################
     ##### TRANSPORT #####
@@ -324,7 +324,7 @@ def product_demand(DM_minerals, DM_interface, cdm_constants):
     # get demand for batteries from transport and electronics
 
     # get kWh from constants
-    cdm_temp = cdm_constants.filter_w_regex({"Variables": ".*batveh.*"}).copy()
+    cdm_temp = cdm_constants.filter_w_regex({"Variables": ".*batveh.*"})
     cdm_temp.deepen()
 
     # get transport and electronics variables which correspond to the constants
@@ -501,7 +501,7 @@ def product_demand(DM_minerals, DM_interface, cdm_constants):
 def product_import(DM_interface):
     
     # get datamatrixes
-    dm_ind = DM_interface["industry"].copy()
+    dm_ind = DM_interface["industry"]
     
     # get imports and rename
     dm_import = dm_ind.filter_w_regex({"Variables":".*import.*"})
@@ -559,7 +559,7 @@ def product_demand_split(DM_demand, dm_import, cdm_constants):
     # add to dm_trade the share for other products from constants
     countries_list = dm_demand_split_share.col_labels["Country"]
     years_list = dm_demand_split_share.col_labels["Years"]
-    cdm_temp = cdm_constants.filter_w_regex({"Variables":".*trade*"}).copy()
+    cdm_temp = cdm_constants.filter_w_regex({"Variables":".*trade*"})
     cdm_temp = cdm_to_dm(cdm_temp, countries_list, years_list)
 
     # deepen
@@ -615,9 +615,9 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     minerals = ['aluminium','copper','graphite','lead','lithium','manganese','nickel','steel']
     
     # get data
-    DM_fxa = DM_minerals['fxa'].copy()
-    dm_ind = DM_interface["industry"].copy()
-    dm_str = DM_interface["storage"].copy()
+    DM_fxa = DM_minerals['fxa']
+    dm_ind = DM_interface["industry"]
+    dm_str = DM_interface["storage"]
 
     #####################
     ##### BATTERIES #####
@@ -1389,8 +1389,8 @@ def mineral_extraction(DM_minerals, DM_interface, dm_mindec, cdm_constants):
     minerals = ['aluminium','copper','graphite','lead','lithium','manganese','nickel','steel']
     
     # get data
-    DM_fxa = DM_minerals['fxa'].copy()
-    dm_ind = DM_interface["industry"].copy()
+    DM_fxa = DM_minerals['fxa']
+    dm_ind = DM_interface["industry"]
     
     ###################################
     ##### MINERAL PRODUCTION (KG) #####
@@ -1539,7 +1539,7 @@ def mineral_reserves(DM_minerals, DM_interface, dm_mindec, dm_mindec_sect, dm_ex
     minerals = ['bauxite', 'copper', 'graphite', "iron", 'lead', 'lithium', 'manganese', 'nickel', 'phosphate', 'potash']
     
     # get data
-    DM_fxa = DM_minerals['fxa'].copy()
+    DM_fxa = DM_minerals['fxa']
     
     ###############################################################
     #################### MINERAL RESERVES (Mt) ####################
@@ -1648,7 +1648,6 @@ def mineral_production_bysector(dm_mindec, dm_mindec_sect, cdm_constants):
     # apply extraction parameter to total indir, exp and dir
     # note: not clear why this is applied now directly here, as before we applied after all the modifications in industry, etc ...
     cdm_temp = cdm_constants.filter_w_regex({"Variables":".*param*"})
-    # dm_temp = dm_mindec.copy()
     dm_mindec.array = dm_mindec.array * cdm_temp.array
     # note: here we apply the parameter to dm_mindec directly as for tpe we need the indir after multiplication
 
@@ -1679,10 +1678,11 @@ def variables_for_tpe(DM_interface, DM_minerals, dm_production_sect, dm_fossil, 
                       dict_relres_fossil, dict_relres_minerals):
     
     # get data
-    DM_fxa = DM_minerals['fxa'].copy()
-    dm_min_other = DM_fxa["min_other"].copy()
-    dm_agr = DM_interface["agriculture"].copy()
-    dm_ccus = DM_interface["ccus"].copy()
+    DM_fxa = DM_minerals['fxa']
+    dm_min_other = DM_fxa["min_other"]
+    dm_agr = DM_interface["agriculture"]
+    dm_ccus = DM_interface["ccus"]
+    dm_ind = DM_interface["industry"]
     
     ###########################
     ##### EXTRA MATERIALS #####
@@ -1695,8 +1695,7 @@ def variables_for_tpe(DM_interface, DM_minerals, dm_production_sect, dm_fossil, 
     dm_extramaterials = dm_temp.filter({"Variables":['bioenergy_wood']})
 
     # from industry
-    dm_temp = DM_interface["industry"].copy()
-    dm_temp = dm_temp.filter({"Variables":["ind_material-production_glass", 'ind_timber', 
+    dm_temp = dm_ind.filter({"Variables":["ind_material-production_glass", 'ind_timber', 
                                            'ind_material-production_cement', 'ind_material-production_paper_woodpulp']})
     idx = dm_temp.idx
 
