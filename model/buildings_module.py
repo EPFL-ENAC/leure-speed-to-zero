@@ -1,5 +1,6 @@
 import pandas as pd
 from model.common.data_matrix_class import DataMatrix
+from model.common.interface_class import Interface
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database, read_database_fxa, edit_database, read_database_w_filter
 from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups
@@ -211,19 +212,19 @@ def read_data(data_file, lever_setting):
         'buildings_rates': DM_ots_fts['building-renovation-rate']['bld_building'].filter_w_regex({'Variables': '.*rate'}),
         'floor_area': DM_buildings['fxa']['bld_type'].filter_w_regex({'Variables': 'bld_floor-area.*'}),
         'building_mix': DM_buildings['fxa']['bld_type'].filter_w_regex({'Variables': 'bld_building-mix.*', 'Categories1': '.*households'}),
-        'surface-per-floorarea': DM_buildings['fxa']['surface']
+        'surface-per-floorarea': DM_buildings['fxa']['surface'].copy()
     }
 
     DM_energy = {
         'building_mix': DM_ots_fts['building-renovation-rate']['bld_building'].filter_w_regex({'Variables': '.*mix'}).copy(),
         'heating': DM_ots_fts['building-renovation-rate']['bld_energy'].filter({'Variables': ['bld_energy-need_space-heating']}),
         'heatcool-tech-fuel': DM_ots_fts['heatcool-technology-fuel']['bld_heatcool-technology'].copy(),
-        'renovation-energy': DM_buildings['fxa']['renovation-energy'],
+        'renovation-energy': DM_buildings['fxa']['renovation-energy'].copy(),
         'heatcool-efficiency': DM_buildings['fxa']['energy'].filter({'Variables': ['bld_heatcool-efficiency', 'bld_heatcool-efficiency-reference-year']}),
-        'district-heating': DM_ots_fts['district-heating-share']
+        'district-heating': DM_ots_fts['district-heating-share'].copy()
     }
 
-    dm_appliance = DM_ots_fts['appliance-efficiency']
+    dm_appliance = DM_ots_fts['appliance-efficiency'].copy()
     dm_appliance.append(DM_buildings['fxa']['appliances'].filter({'Variables': ['bld_appliance-lifetime']}).copy(), dim='Variables')
     dm_appliance.drop(dim='Categories1', col_label='ac')
 
@@ -240,19 +241,37 @@ def read_data(data_file, lever_setting):
                                                                       'bld_capex_new-pipes']})
     }
 
-    dm_heatcool = DM_ots_fts['heatcool-technology-fuel']['bld_heatcool-technology']
+    # Light heating and cooling workflow data
+
+    DM_light_heat = {
+        'ac-efficiency': DM_ots_fts['appliance-efficiency'].filter({'Categories1': ['ac']}),
+        'hot-water': DM_buildings['fxa']['various'].filter_w_regex({'Variables': '.*hot-water|.*lighting'}),
+        'energy': DM_buildings['fxa']['energy'].filter({'Variables': ['bld_heatcool-efficiency',
+                                                                      'bld_hot-water-demand-non-residential',
+                                                                      'bld_hot-water-demand-residential',
+                                                                      'bld_residential-cooking-energy-demand',
+                                                                      'bld_space-cooling-energy-demand_non-residential',
+                                                                      'bld_space-cooling-energy-demand_residential']})
+    }
+
+    # Split heatcool techology between renewable and fossil
+    #!FIXME: heatcool shares by type of fuel should sum to 1, this is mostly the case but some countries are off
+    #!FIXME: you should calibrate non-residential + residential to sum to 'heatcool-technology-fuel'
+    dm_heatcool = DM_ots_fts['heatcool-technology-fuel']['bld_heatcool-technology'].copy()
     dm_heatcool_renewable_res = dm_heatcool.filter_w_regex({'Variables': 'bld_heatcool-technology-fuel_residential.*',
-                                                            'Categories': 'electricity-heatpumps|heat.*|.*bio|solid-waste'})
-    dm_heatcool_fossil = dm_heatcool.filter_w_regex({'Categories': 'electricity|.*ff.*'})
+                                                            'Categories1': 'electricity-heatpumps|heat.*|.*bio|solid-waste'})
+    dm_heatcool_fossil = dm_heatcool.filter({'Categories1': ['electricity', 'gas-ff-natural',
+                                                             'liquid-ff-heatingoil', 'solid-ff-coal']})
+    dm_heatcool_fossil.drop(col_label=['bld_heatcool-technology-fuel'], dim='Variables')
 
     DM_fuel_switch = {
-        'heatcool-tech-shares': DM_ots_fts['heatcool-technology-fuel']['bld_heatcool-technology'].filter_w_regex({'Variables': 'bld_heatcool-technology-fuel_residential.*'})
-
+        'heatcool-shares-renew': dm_heatcool_renewable_res,
+        'heatcool-shares-fossil': dm_heatcool_fossil
     }
 
     cdm_const = DM_buildings['constant']
 
-    return DM_floor_area, DM_energy, DM_appliances, DM_costs, cdm_const
+    return DM_floor_area, DM_energy, DM_appliances, DM_costs, DM_light_heat, DM_fuel_switch, cdm_const
 
 
 def simulate_lifestyles_to_buildings_input():
@@ -307,11 +326,12 @@ def bld_floor_area_workflow(DM_floor_area, dm_lfs, baseyear):
     for cat in categories:
         dm_floor_area.array[:, :, idx_f['bld_floor-area'], idx_f[cat]] = \
             dm_building_mix.array[:, :, idx_b['bld_floor-area'], idx_b[cat]]
+        # previous year floor area is in Mm2, building-mix is in 1000m2
         dm_floor_area.array[:, :, idx_f['bld_floor-area-previous-year'], idx_f[cat]] = \
-            dm_building_mix.array[:, :, idx_b['bld_floor-area-previous-year'], idx_b[cat]]
+            dm_building_mix.array[:, :, idx_b['bld_floor-area-previous-year'], idx_b[cat]]/1000
 
     # Change units to million m2
-    dm_floor_area.array = dm_floor_area.array/1000
+    dm_floor_area.array[:, :, idx_f['bld_floor-area'], :] = dm_floor_area.array[:, :, idx_f['bld_floor-area'], :]/1000
     dm_floor_area.units['bld_floor-area'] = 'Mm2'
 
     # Floor area increase (t) [Mm2] = floor-area (t) [Mm2] - floor-area (t-1) [Mm2]
@@ -387,7 +407,7 @@ def bld_floor_area_workflow(DM_floor_area, dm_lfs, baseyear):
     dm_floor_area.drop(col_label=['bld_floor-area-previous-year', 'bld_building-demolition-rate'], dim='Variables')
 
     dm_floor_area.operation('bld_cumulated-floor-area-constructed', '+', 'bld_cumulated-floor-area-renovated',
-                            out_col= 'bld_floor-area-new-and-renovated', unit='Mm2')
+                            out_col='bld_floor-area-new-and-renovated', unit='Mm2')
 
     dm_floor_area.operation('bld_floor-area', '-', 'bld_floor-area-new-and-renovated',
                             out_col='bld_cumulated-floor-area-unrenovated', unit='Mm2')
@@ -430,6 +450,7 @@ def bld_energy_workflow(DM_energy, DM_clm, dm_floor_area, cdm_const):
     dm_renovation_energy.sort(dim='Categories1')
     ## Multiply climate impact by energy achieved
     dm_clm_impact_space = DM_clm['climate-impact-space']
+    # !FIXME: introducing the same 'error' as in KNIME
     idx_c = dm_clm_impact_space.idx
     idx_r = dm_renovation_energy.idx
     arr_renovation_energy = dm_clm_impact_space.array[:, :, idx_c['bld_climate-impact-space-heating'], :, np.newaxis] \
@@ -623,6 +644,7 @@ def bld_energy_workflow(DM_energy, DM_clm, dm_floor_area, cdm_const):
         'floor-area': dm_floor_area.filter({'Variables': ['bld_floor-area', 'bld_space-heating']})
     }
 
+
     DM_energy_out['district-heating'] = {
         'heat-supply': dm_energy_heating.filter({'Variables': ['bld_district-heating-space-heating-supply']}),
         'heat-electricity': dm_heating.filter({'Variables': ['bld_space-heating-energy-demand'],
@@ -655,6 +677,30 @@ def bld_energy_workflow(DM_energy, DM_clm, dm_floor_area, cdm_const):
                                                            'Categories1': '.*households'})
     }
 
+    # Prepare energy output
+    # Residential heating
+    dm_energy_pow_res = dm_heating.filter({'Variables': ['bld_space-heating-energy-demand'],
+                                           'Categories1': ['multi-family-households', 'single-family-households'],
+                                           'Categories2': ['electricity', 'electricity-heatpumps']})
+    arr_res = np.nansum(dm_energy_pow_res.array, axis=-2)
+    cols = {
+        'Country': dm_energy_pow_res.col_labels['Country'],
+        'Years': dm_energy_pow_res.col_labels['Years'],
+        'Variables': ['bld_power-demand_residential'],
+        'Categories1': ['space-heating', 'heatpumps']
+    }
+    dm_energy_pow = DataMatrix(cols, {'bld_power-demand_residential': 'GWh'})
+    dm_energy_pow.array = arr_res
+    # Non-residential heating
+    dm_energy_pow_nonres = dm_heating.filter({'Variables': ['bld_space-heating-energy-demand'],
+                                              'Categories2': ['electricity', 'electricity-heatpumps']})
+    dm_energy_pow_nonres.drop(col_label=['single-family-households', 'multi-family-households'], dim='Categories1')
+    arr_nonres = np.nansum(dm_energy_pow_nonres.array, axis=-2)
+    dm_energy_pow.add(arr_nonres, col_label='bld_power-demand_non-residential', dim='Variables', unit='GWh')
+    dm_energy_pow = dm_energy_pow.flatten()
+
+    DM_energy_out['power'] = dm_energy_pow
+
     return DM_energy_out
 
 
@@ -673,9 +719,16 @@ def bld_appliances_workflow(DM_appliances):
     dm_energy = DataMatrix(col_labels, units={'bld_energy-demand_residential_appliances': 'KWh'})
     dm_energy.array = arr_energy_tot
 
+    dm_energy_pow = dm_energy.copy()
+    dm_energy_pow.array = dm_energy_pow.array/1000
+    dm_energy_pow.units['bld_energy-demand_residential_appliances'] = 'GWh'
+    dm_energy_pow.rename_col_regex('bld_energy-demand', 'bld_power-demand', dim='Variables')
+
+
     DM_appliance_out = {
         'district-heating': dm_energy,
-        'wf_costs': dm_appliance.filter({'Variables': ['bld_appliance-new']})
+        'wf_costs': dm_appliance.filter({'Variables': ['bld_appliance-new']}),
+        'power': dm_energy_pow
     }
 
     return DM_appliance_out
@@ -734,12 +787,307 @@ def bld_costs_workflow(DM_costs, dm_district_heat_supply, dm_new_appliance, dm_f
     return DM_costs_out
 
 
-def buildings(lever_setting, years_setting):
+def bld_light_heat_cool_workflow(DM_light_heat, DM_lfs, DM_clm, baseyear):
+    # Extract relevant lfs data
+    dm_floor = DM_lfs['floor'].filter({'Variables': ['lfs_floor-space_cool']})
+    dm_lfs = DM_lfs['other'].filter({'Variables': ['lfs_heatcool-behaviour_degrees']})
+    dm_lfs.append(dm_floor, dim='Variables')
+    del dm_floor
+    dm_clm = DM_clm['climate-impact-average']
+    idx_l = dm_lfs.idx
+    idx_c = dm_clm.idx
+    # bld_index_lfs_heatcool-behaviour_degrees\[#\]|bld_index_lfs_floor-space_cool\[#\]|bld_climate-impact_average\[%\]
+    arr_tmp = dm_clm.array[:, :, idx_c['bld_climate-impact_average']] *\
+              dm_lfs.array[:, :, idx_l['lfs_floor-space_cool']]/dm_lfs.array[:, np.newaxis, idx_l[baseyear], idx_l['lfs_floor-space_cool']] *\
+              dm_lfs.array[:, :, idx_l['lfs_heatcool-behaviour_degrees']]/dm_lfs.array[:, np.newaxis, idx_l[baseyear], idx_l['lfs_heatcool-behaviour_degrees']]
+    # !FIXME this should be the same unit as climate-impact_average
+    dm_lfs.add(arr_tmp, dim='Variables', col_label='bld_lifestyles-impact-factor', unit='#')
+
+    dm_water_light = DM_light_heat['hot-water']
+    dm_ac = DM_light_heat['ac-efficiency']
+    # Rescale to reference year
+    idx = dm_ac.idx
+    arr_tmp = dm_ac.array[:, :, idx['bld_appliance-efficiency'], :]\
+              /dm_ac.array[:, idx[baseyear], np.newaxis, idx['bld_appliance-efficiency'], :]
+    dm_ac.array[:, :, idx['bld_appliance-efficiency'], :] = arr_tmp
+    dm_ac = dm_ac.flatten()
+
+    # lighting demand * rescaled efficiency
+    dm_water_light.append(dm_ac, dim='Variables')
+    del dm_ac
+    dm_water_light.operation('bld_lighting-demand_non-residential_electricity', '/', 'bld_appliance-efficiency_ac',
+                             out_col='bld_lighting-energy-demand_non-residential_electricity', unit='GWh', div0='interpolate')
+    dm_water_light.operation('bld_lighting-demand_residential_electricity', '/', 'bld_appliance-efficiency_ac',
+                             out_col='bld_lighting-energy-demand_residential_electricity', unit='GWh', div0='interpolate')
+    # Remove raw lighting demand
+    #dm_water_light.drop(col_label='bld_lighting-demand.*', dim='Variables')
+
+    # Extract cooling and hot water
+    # !FIXME this rename should happen in the csv directly
+    dm_cooling = DM_light_heat['energy'].filter({'Variables': ['bld_space-cooling-energy-demand_non-residential',
+                                                               'bld_space-cooling-energy-demand_residential'],
+                                                               'Categories1': ['electricity', 'gas-bio', 'gas-ff-natural']})
+    dm_cooling.deepen(based_on='Variables')
+
+    # Correct space cooling by climate and lifestyle factor
+    idx = dm_cooling.idx
+    idx_l = dm_lfs.idx
+    idx_w = dm_water_light.idx
+    arr_tmp = dm_cooling.array[:, :, idx['bld_space-cooling-energy-demand'], :, :] \
+              * dm_lfs.array[:, :, idx_l['bld_lifestyles-impact-factor'], np.newaxis, np.newaxis] \
+              * dm_water_light.array[:, :, idx_w['bld_appliance-efficiency_ac'], np.newaxis, np.newaxis]
+    dm_cooling.array[:, :, idx['bld_space-cooling-energy-demand'], :, :] = arr_tmp
+
+    # Adjust heatcool-efficiency to reference year
+    dm_other = DM_light_heat['energy'].filter({'Variables': ['bld_heatcool-efficiency', 'bld_residential-cooking-energy-demand']})
+    idx = dm_other.idx
+    dm_other.array[:, :, idx['bld_heatcool-efficiency'], :] = dm_other.array[:, :, idx['bld_heatcool-efficiency'], :] \
+                                                             /dm_other.array[:, idx[baseyear], np.newaxis, idx['bld_heatcool-efficiency'], :]
+
+    # Adj hot water demand by heat-cool efficiency factor
+    dm_water = DM_light_heat['energy'].filter({'Variables': ['bld_hot-water-demand-non-residential',
+                                                             'bld_hot-water-demand-residential']})
+    dm_water.rename_col_regex('demand-non-residential', 'demand_non-residential', dim='Variables')
+    dm_water.rename_col_regex('demand-residential', 'demand_residential', dim='Variables')
+    dm_water.deepen(based_on='Variables')
+    idx_c = dm_water.idx
+    dm_water.array[:, :, idx_c['bld_hot-water-demand'], :, :] = dm_water.array[:, :, idx_c['bld_hot-water-demand'], :, :] \
+                                                                * dm_other.array[:, :, idx['bld_heatcool-efficiency'], :, np.newaxis]
+
+
+
+    ### Prepare district heating output
+    dm_district_heating = dm_other.filter({'Variables': ['bld_residential-cooking-energy-demand'],
+                                           'Categories1': ['electricity']})
+    dm_tmp = dm_water_light.filter({'Variables': ['bld_lighting-demand_non-residential_electricity',
+                                                 'bld_lighting-demand_residential_electricity']})
+    dm_tmp.deepen()
+    dm_district_heating.append(dm_tmp, dim='Variables')
+
+    dm_tmp = dm_cooling.filter({'Variables': ['bld_space-cooling-energy-demand'],
+                                'Categories1': ['electricity']})
+    dm_tmp.switch_categories_order('Categories1', 'Categories2')
+    dm_tmp = dm_tmp.flatten()
+    dm_tmp = dm_tmp.flatten()
+    dm_tmp.deepen()
+    dm_district_heating.append(dm_tmp, dim='Variables')
+
+    dm_tmp = dm_water.filter({'Variables': ['bld_hot-water-demand'],
+                              'Categories1': ['electricity']})
+    dm_tmp.switch_categories_order('Categories1', 'Categories2')
+    # We need both flatten()
+    dm_tmp = dm_tmp.flatten()
+    dm_tmp = dm_tmp.flatten()
+    dm_tmp.deepen()
+    dm_district_heating.append(dm_tmp, dim='Variables')
+    ### End preparing district heating output
+
+    ### Prepare wf_emissions output
+    dm_cooking = dm_other.filter({'Variables': ['bld_residential-cooking-energy-demand'],
+                                  'Categories1': ['gas-bio', 'gas-ff-natural', 'solid-bio', 'solid-ff-coal']})
+    dm_cool = dm_cooling.filter({'Variables': ['bld_space-cooling-energy-demand'],
+                                 'Categories1': ['gas-bio', 'gas-ff-natural']})
+
+    # Prepare energy output
+    # cooking electricity
+    dm_energy = dm_other.filter({'Variables': ['bld_residential-cooking-energy-demand'], 'Categories1': ['electricity']})
+    dm_energy = dm_energy.flatten()
+    dm_energy.rename_col('bld_residential-cooking-energy-demand_electricity', 'bld_power-demand_residential_cooking', dim='Variables')
+    # lighting electricity
+    dm_lighting = dm_water_light.filter({'Variables': ['bld_lighting-energy-demand_non-residential_electricity',
+                                           'bld_lighting-energy-demand_residential_electricity']})
+    dm_lighting.rename_col('bld_lighting-energy-demand_non-residential_electricity', 'bld_power-demand_non-residential_lighting', dim='Variables')
+    dm_lighting.rename_col('bld_lighting-energy-demand_residential_electricity', 'bld_power-demand_residential_lighting', dim='Variables')
+    dm_energy.append(dm_lighting, dim='Variables')
+    # cooling electricity
+    dm_pow_cooling = dm_cooling.filter({'Categories1': ['electricity']})
+    dm_pow_cooling.switch_categories_order()
+    dm_pow_cooling.rename_col('bld_space-cooling-energy-demand', 'bld_power-demand', dim='Variables')
+    dm_pow_cooling.rename_col('electricity', 'space-cooling', dim='Categories2')
+    dm_pow_cooling = dm_pow_cooling.flatten()
+    dm_pow_cooling = dm_pow_cooling.flatten()
+    dm_energy.append(dm_pow_cooling, dim='Variables')
+    del dm_lighting, dm_pow_cooling
+
+    # (cooking), (space-heating), appliances, hot-water, (lighting), (space-cooling),
+    DM_light_heat_out = {
+        'wf_fuel_switch': dm_water,
+        'district-heating': dm_district_heating,
+        'wf_emissions_appliances': {'cooking': dm_cooking, 'cooling': dm_cool},
+        'power': dm_energy
+    }
+    return DM_light_heat_out
+
+
+def bld_fuel_switch_workflow(DM_fuel_switch, dm_fuel_switch, baseyear):
+    lastyear = dm_fuel_switch.col_labels['Years'][-1]
+    dm_renewable = DM_fuel_switch['heatcool-shares-renew'].copy()
+    # Compute percentage change
+    dm_renewable.operation('bld_heatcool-technology-fuel_residential_current', '-',
+                           'bld_heatcool-technology-fuel_residential_reference-year',
+                           out_col='bld_percentage-change', unit='%')
+    # % increase-normalised = % increase / sum( % increase)
+    idx = dm_renewable.idx
+    arr_sum_increase = np.nansum(dm_renewable.array[:, :, idx['bld_percentage-change'], :], axis=-1, keepdims=True)
+    arr_norm = dm_renewable.array[:, :, idx['bld_percentage-change'], :]/arr_sum_increase
+    dm_renewable.add(arr_norm, col_label='bld_substitution-per-renewable_residential', dim='Variables', unit='%')
+    # Drop unnecessary columns
+    dm_renewable = dm_renewable.filter({'Variables': ['bld_substitution-per-renewable_residential']})
+    # !FIXME the fact that we are using the ratio for fossil fuel and the difference for renewable doesn't make sense
+    dm_fossil = DM_fuel_switch['heatcool-shares-fossil'].copy()
+    dm_fossil.operation('bld_heatcool-technology-fuel_residential_current', '/',
+                        'bld_heatcool-technology-fuel_residential_reference-year',
+                           out_col='bld_percentage-change_residential', unit='%')
+    dm_fossil.operation('bld_heatcool-technology-fuel_nonresidential_current', '/',
+                        'bld_heatcool-technology-fuel_nonresidential_reference-year',
+                        out_col='bld_percentage-change_nonresidential', unit='%')
+    idx = dm_fossil.idx
+    arr_max_res_nonres = np.maximum(dm_fossil.array[:, :, idx['bld_percentage-change_residential'], :],
+                                    dm_fossil.array[:, :, idx['bld_percentage-change_nonresidential'], :])
+    # !FIXME I'm also adding the normalisation here because it makes sense, similarly to what done for renewables
+    dm_fossil.add(arr_max_res_nonres, col_label='bld_space-heating-fuel-mix', dim='Variables', unit='%')
+    # Drop unnecessary columns
+    dm_fossil = dm_fossil.filter({'Variables': ['bld_space-heating-fuel-mix']})
+
+    # Sum residential and non-residential hot water and compute share by fuel
+    arr_hot_water = np.nansum(dm_fuel_switch.array, axis=-1)
+    tot_hot_water = np.nansum(arr_hot_water, axis=-1)
+    shares_hot_water = arr_hot_water/tot_hot_water[:, :, :, np.newaxis]
+    new_col = dm_fuel_switch.col_labels.copy()
+    new_col.pop('Categories2')
+    new_col['Variables'] = ['bld_hot-water-energy-demand']
+    dm_hot_water = DataMatrix(new_col, units={'bld_hot-water-energy-demand': '%'})
+    dm_hot_water.array = shares_hot_water
+
+    # !FIXME I don't think this makes sense, it is using baseyear data for 2050
+    #  (also somehow this should not apply to electricity)
+    # Multiplies hot water energy fossil share by the space heating fuel mix for the baseyear
+    # Also here electricity is not included, but probably then it should be excluded also
+    # when doing the assessment above for fossil fuel
+    dm_space_heating = dm_fossil.copy()
+    dm_space_heating.drop(col_label=['electricity'], dim='Categories1')
+    dm_hot_water_fossil = dm_hot_water.filter({'Categories1': dm_space_heating.col_labels['Categories1']})
+    idx = dm_hot_water_fossil.idx
+    idx_f = dm_fossil.idx
+    # sum.fuel-type ( hot-water-demand-fossil (t=2050) [%]
+    #               - hot-water-demand-fossil (t=2015) [%] * heating-fuel-mix (t=2015) [%])
+    # --> bld_hot-water_total-substitution
+    arr_tmp = dm_hot_water_fossil.array[:, idx[baseyear], idx['bld_hot-water-energy-demand'], :] \
+             * dm_space_heating.array[:, idx_f[baseyear], idx_f['bld_space-heating-fuel-mix'], :]
+    dm_hot_water_fossil_2050 = dm_hot_water_fossil.filter({'Years': [lastyear]})
+    dm_hot_water_fossil_2050.array = arr_tmp[:, np.newaxis, np.newaxis, :]
+    arr_tmp = np.nansum(dm_hot_water_fossil.array[:, idx[lastyear], idx['bld_hot-water-energy-demand'], :] - \
+                        arr_tmp, axis=-1)
+    # bld_substitution-per-renewable_residential.by_RES (t=2050) =
+    # bld_hot-water_total-substitution (t=2050) * bld_substitution-per-renewable_residential.by_RES (t=2050)
+    idx = dm_renewable.idx
+    arr_renew = dm_renewable.array[:, idx[lastyear], idx['bld_substitution-per-renewable_residential'], :] \
+                * arr_tmp[:, np.newaxis]
+    dm_hot_water_renew = dm_hot_water.filter({'Categories1': dm_renewable.col_labels['Categories1']})
+    # bld_hot-water-fuel-mix-2050 = bld_hot-water-energy-demand +
+    #                               bld_substitution-per-renewable_residential * bld_hot-water_total-substitution
+    idx = dm_hot_water_renew.idx
+    arr_hot_water_renew = dm_hot_water_renew.array[:, idx[lastyear], idx['bld_hot-water-energy-demand'], :] + arr_renew[:, :]
+    dm_hot_water_renew_2050 = dm_hot_water_renew.filter({'Years': [lastyear]})
+    dm_hot_water_renew_2050.array = arr_hot_water_renew[:, np.newaxis, np.newaxis, :]
+    del arr_hot_water_renew, arr_hot_water, arr_norm, arr_max_res_nonres, arr_renew, arr_sum_increase, arr_tmp, new_col
+
+    dm_hot_water_2050 = dm_hot_water_renew_2050
+    dm_hot_water_2050.append(dm_hot_water_fossil_2050, dim='Categories1')
+    # Extract electricity
+    dm_hot_water_elect_2050 = dm_hot_water.filter({'Categories1': ['electricity'], 'Years': [lastyear]})
+    dm_hot_water_2050.append(dm_hot_water_elect_2050, dim='Categories1')
+    dm_hot_water_2050.sort(dim='Categories1')
+    # Put 2050 data into hot_water datamatrix
+    idx = dm_hot_water.idx
+    dm_hot_water.array[:, idx[lastyear], :, :] = dm_hot_water_renew_2050.array[:, 0, :, :]
+    # Perform linear interpolation between 2015 - 2050
+    dm_hot_water.array[:, idx[baseyear]+1:idx[lastyear], :, :] = np.nan
+    dm_hot_water.fill_nans(dim_to_interp='Years')
+
+    # Use these newly computed shares to project the demand_hot_water in GWh for both residential and non-residential
+    idx = dm_fuel_switch.idx
+    # sum over fuel type, mantain residential & non-residential split
+    arr = np.nansum(dm_fuel_switch.array[:, :, idx['bld_hot-water-demand'], :, :], axis=-2)
+    idx_h = dm_hot_water.idx
+    # for FTS : hot-water-demand.by_fuel_res_type = hot-water-demand.by_fuel_type[%] * hot-water-demand.by_res_non-res[GWh]
+    arr_tmp = dm_hot_water.array[:, :, idx_h['bld_hot-water-energy-demand'], np.newaxis, :] * arr[:, :, :, np.newaxis]
+    dm_fuel_switch.switch_categories_order()
+    idx = dm_fuel_switch.idx
+    dm_fuel_switch.array[:, idx[baseyear]:, idx['bld_hot-water-demand'], :, :] = arr_tmp[:, idx[baseyear]:, :, :]
+
+    # Prepare power module output
+    dm_water_pow = dm_fuel_switch.filter({'Categories2': ['electricity']})
+    dm_water_pow.rename_col('bld_hot-water-demand', 'bld_power-demand', dim='Variables')
+    dm_water_pow.rename_col('electricity', 'hot-water', dim='Categories2')
+    dm_water_pow = dm_water_pow.flatten()
+    dm_water_pow = dm_water_pow.flatten()
+
+    # ! FIXME: you are here, prepare output
+    DM_fuel_switch_out = {
+        'wf_emissions_appliances': dm_fuel_switch,
+        'power': dm_water_pow
+    }
+
+    return DM_fuel_switch_out
+
+
+def bld_emissions_appliances_workflow(DM_cooking_cooling, dm_hot_water, cdm_const):
+    # In order to have split by fuel in categories1
+    dm_cooking = DM_cooking_cooling['cooking']
+    dm_cooking.rename_col('bld_residential-cooking-energy-demand', 'bld_cooking-energy-demand_residential', dim='Variables')
+    dm_cooking.deepen(based_on='Variables')
+
+    dm_hot_water.switch_categories_order()
+    DM_emissions = {
+        'cooking': dm_cooking,
+        'cooling': DM_cooking_cooling['cooling'],
+        'hot_water': dm_hot_water
+    }
+    # Initialize numpy array to gather residential and non-residential CO2 emissions
+    arr_CO2_res = np.zeros((len(dm_hot_water.col_labels['Country']), len(dm_hot_water.col_labels['Years'])))
+    arr_CO2_nonres = np.zeros((len(dm_hot_water.col_labels['Country']), len(dm_hot_water.col_labels['Years'])))
+    for key in DM_emissions.keys():
+        dm_tmp = DM_emissions[key]
+        # From GWh to TWh
+        dm_tmp.array = dm_tmp.array/1000
+        for var in dm_tmp.units.keys():
+            dm_tmp.units[var] = 'TWh'
+        cdm_const_tmp = cdm_const.filter({'Categories1': dm_tmp.col_labels['Categories1']})
+        assert cdm_const_tmp.col_labels['Categories1'] == dm_tmp.col_labels['Categories1'], f"Fuels categories do not match"
+        # Multiply energy * emissions-factors
+        arr_emission = dm_tmp.array[:, :, 0, ...] * cdm_const_tmp.array[np.newaxis, np.newaxis, 0, :, np.newaxis]
+        new_var = var + '_CO2-emissions'
+        dm_tmp.add(arr_emission, col_label=new_var, dim='Variables', unit='Mt')
+        DM_emissions[key] = dm_tmp
+        # Sum emissions for all fuel types by residential and non-residential
+        idx = dm_tmp.idx
+        arr_CO2_res = arr_CO2_res + np.nansum(DM_emissions[key].array[:, :, idx[new_var], :, idx['residential']], axis=-1)
+        if 'non-residential' in idx.keys():
+            arr_CO2_nonres = arr_CO2_nonres + np.nansum(DM_emissions[key].array[:, :, idx[new_var], :, idx['non-residential']], axis=-1)
+
+    # Gather tot 'appliances' (incl. hot water) emissions by residential and not residential in new datamatrix
+    new_cols = {
+        'Country': dm_tmp.col_labels['Country'],
+        'Years': dm_tmp.col_labels['Years'],
+        'Variables': ['bld_CO2-emissions_appliances'],
+        'Categories1': ['non-residential', 'residential']
+    }
+    dm_emissions_appliances = DataMatrix(new_cols, units={'bld_emissions-CO2_appliances': 'Mt'})
+    dm_emissions_appliances.array = np.concatenate((arr_CO2_nonres[..., np.newaxis, np.newaxis],
+                                                   arr_CO2_res[..., np.newaxis, np.newaxis]), axis=-1)
+
+    DM_emissions_appliances_out = {'emissions': dm_emissions_appliances}
+
+    return DM_emissions_appliances_out
+
+
+def buildings(lever_setting, years_setting, interface=Interface()):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     buildings_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/buildings.pickle')
     # Read data into workflow datamatrix dictionaries
-    DM_floor_area, DM_energy, DM_appliances, DM_costs, cdm_const = read_data(buildings_data_file, lever_setting)
+    DM_floor_area, DM_energy, DM_appliances, DM_costs, DM_light_heat, DM_fuel_switch, cdm_const = read_data(buildings_data_file, lever_setting)
 
     # Simulate lifestyle input
     DM_lfs = simulate_lifestyles_to_buildings_input()
@@ -756,18 +1104,46 @@ def buildings(lever_setting, years_setting):
     baseyear = years_setting[1]
     # Floor Area, Comulated floor area, Construction material
     DM_floor_out = bld_floor_area_workflow(DM_floor_area, DM_lfs['floor'], baseyear)
+
+    del DM_floor_area
     # Total Energy demand, Renovation and Construction per depth, GHG emissions (for Space Heating)
     DM_energy_out = bld_energy_workflow(DM_energy, DM_clm, DM_floor_out['wf_energy'], cdm_const)
+    del DM_energy
     # Appliances
     # join appliance data from lfs with lever & fxa data
     DM_appliances['appliances'].append(DM_lfs['appliance'], dim='Variables')
     DM_appliances_out = bld_appliances_workflow(DM_appliances)
+    del DM_appliances
     # Costs
-    DM_costs_out = bld_costs_workflow(DM_costs, DM_energy_out['wf_costs'], DM_appliances_out['wf_costs'], DM_floor_out['wf_costs'])
+    DM_costs_out = bld_costs_workflow(DM_costs, DM_energy_out['wf_costs'], DM_appliances_out['wf_costs'],  DM_floor_out['wf_costs'])
+    del DM_costs
+    # Light-heat-cool
+    DM_light_heat_out = bld_light_heat_cool_workflow(DM_light_heat, DM_lfs, DM_clm, baseyear)
+    del DM_light_heat
+    # Fuel switch
+    DM_fuel_switch_out = bld_fuel_switch_workflow(DM_fuel_switch, DM_light_heat_out['wf_fuel_switch'], baseyear)
+    del DM_fuel_switch
+    # Emissions appliances
+    DM_emissions_appliances_out = bld_emissions_appliances_workflow(DM_light_heat_out['wf_emissions_appliances'],
+                                                                    DM_fuel_switch_out['wf_emissions_appliances'],
+                                                                    cdm_const)
 
+    # 'Power' module interface
+    dm_power = DM_appliances_out['power']
+    dm_power.append(DM_energy_out['power'], dim='Variables')
+    dm_power.append(DM_fuel_switch_out['power'], dim='Variables')
+    dm_power.append(DM_light_heat_out['power'], dim='Variables')
 
-    return
+    #df = dm_power.write_df()
+    #df.to_excel('buildings-to-power.xlsx')
 
+    df = DM_energy_out['TPE']['floor-area_energy-demand'].write_df()
+    df2 = DM_energy_out['TPE']['floor-area'].write_df()
+    df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
+
+    results_run = df
+
+    return results_run
 
 
 def buildings_local_run():
@@ -778,5 +1154,7 @@ def buildings_local_run():
 
 
 #database_from_csv_to_datamatrix()
-buildings_local_run()
+#buildings_local_run()
+
+
 
