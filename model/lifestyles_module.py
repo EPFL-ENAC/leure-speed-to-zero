@@ -9,12 +9,12 @@ import os  # operating system (e.g., look for workspace)
 # Import Class
 from model.common.data_matrix_class import DataMatrix  # Class for the model inputs
 from model.common.constant_data_matrix_class import ConstantDataMatrix  # Class for the constant inputs
-from model.common.auxiliary_functions import read_level_data
+from model.common.interface_class import Interface
 
 # ImportFunctions
 from model.common.io_database import read_database, read_database_fxa  # read functions for levers & fixed assumptions
 from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups
-
+from model.common.auxiliary_functions import read_level_data, filter_geoscale
 
 # filtering the constants & read csv and prepares it for the pickle format
 
@@ -174,7 +174,7 @@ def database_from_csv_to_datamatrix():
 
 
 # Update/Create the Pickle
-# database_from_csv_to_datamatrix()  # un-comment to update
+#database_from_csv_to_datamatrix()  # un-comment to update
 
 
 #  Reading the Pickle
@@ -361,18 +361,60 @@ def appliances_workflow(DM_appliance, cdm_const):
 
 def transport_workflow(DM_transport):
 
-    # Urban population
-    dm_population_urban = DM_transport['urbpop']
-    dm_population = DM_transport['population']
-    idx_pop = dm_population.idx
-    idx_urb = dm_population_urban.idx
-    ay_population_urban = dm_population.array[:, :, idx_pop['lfs_population_total'], np.newaxis] * \
-                          dm_population_urban.array[:, :, idx_urb['lfs_demography'],:]
-    dm_population_urban.add(ay_population_urban, dim='Variables', col_label='lfs_population', unit='inhabitants')
+    # Prepare urban rural population share
+    dm_urban_rural_share = DM_transport['urbpop']
+    arr_pop_rural = 100 - dm_urban_rural_share.array
+    dm_urban_rural_share.add(arr_pop_rural, dim='Categories1', col_label='non-urban')
+    dm_urban_rural_share.rename_col('urban-population', 'urban', dim='Categories1')
+    dm_urban_rural_share.rename_col('lfs_demography', 'lfs_pop-share', dim='Variables')
+    dm_urban_rural_share.array = dm_urban_rural_share.array/100
+    del arr_pop_rural
 
-    # TODO: Paola transport flow
+    dm_tra = DM_transport['pkm']
 
-    return dm_population_urban
+    # Compute urb_factor
+    idx_u = dm_urban_rural_share.idx
+    idx_t = dm_tra.idx
+    # factor_a is obtained by computing: urb_pkm_cap / rur_pkm_cap = factor_a
+    # urb_pkm_cap * urb_pop + urb_pkm_cap / factor_a * rural_pop = total_pkm
+    # urb_pkm_cap * (urb_pop + rural_pop / factor_a) = total_pkm
+    # urb_pkm_cap = total_pkm / (urb_pop + rural_pop / factor_a)
+    # rural_pkm_cap = urb_pkm_cap / factor_a
+    # urb_factor [%] = urb-pop[%] + rur-pop[%]/factor-a[%]
+    arr_urb_factor = dm_urban_rural_share.array[:, :, idx_u['lfs_pop-share'], idx_u['urban']] \
+                  + dm_urban_rural_share.array[:, :, idx_u['lfs_pop-share'], idx_u['non-urban']]\
+                     /dm_tra.array[:, :, idx_t['lfs_tra-factor-a']]
+    dm_tra.add(arr_urb_factor, dim='Variables', col_label='lfs_urb-factor-pkm', unit='%')
+    del arr_urb_factor, idx_t
+
+    dm_tra.operation('lfs_pkm_pkm', '/', 'lfs_urb-factor-pkm', out_col='lfs_pkm-cap_urban', unit='pkm/cap')
+    dm_tra.operation('lfs_pkm-cap_urban', '/', 'lfs_tra-factor-a', out_col='lfs_pkm-cap_non-urban', unit='pkm/cap')
+
+    dm_pkm_cap = dm_tra.filter({'Variables': ['lfs_pkm-cap_urban', 'lfs_pkm-cap_non-urban']})
+    dm_pkm_cap.deepen()
+
+    # Turn urban-rural share in urban rural pop
+    dm_pop = DM_transport['population']
+    idx_p = dm_pop.idx
+    idx_u = dm_urban_rural_share.idx
+    dm_urban_rural_share.array = dm_urban_rural_share.array[:, :, idx_u['lfs_pop-share'], np.newaxis, :] \
+                                 * dm_pop.array[:, :, idx_p['lfs_population_total'], np.newaxis, np.newaxis]
+    dm_urban_rural_share.rename_col('lfs_pop-share', 'lfs_pop', dim='Variables')
+    dm_pkm_cap.append(dm_urban_rural_share, dim='Variables')
+    del dm_urban_rural_share, dm_tra, idx_p, idx_u
+    # Compute total pkm
+    dm_pkm_cap.operation('lfs_pkm-cap', '*', 'lfs_pop', out_col='lfs_passenger-travel-demand', unit='pkm')
+
+    # Prepare output for transport
+    dm_tra = dm_pkm_cap.filter({'Variables': ['lfs_passenger-travel-demand']})
+
+    DM_transport_out = {}
+
+    DM_transport_out['transport'] = {
+        'lfs_pop': dm_pop,
+        'lfs_passenger_demand': dm_tra
+    }
+    return DM_transport_out
 
 
 # [TUTORIAL] Calculation tree - Industry (Functions) - (Tree Split)
@@ -436,7 +478,7 @@ def building_workflow(DM_building):
     return dm_intensity
 
 # CORE module
-def lifestyles(lever_setting, years_setting):
+def lifestyles(lever_setting, years_setting, interface=Interface()):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     lifestyles_data_file = os.path.join(current_file_directory,
                                         '../_database/data/datamatrix/geoscale/lifestyles.pickle')
@@ -445,7 +487,7 @@ def lifestyles(lever_setting, years_setting):
     # To send to TPE (result run)
     dm_diet_split = food_workflow(DM_food, cdm_const)
     dm_household = appliances_workflow(DM_appliance, cdm_const)
-    dm_population_urban = transport_workflow(DM_transport)
+    DM_transport_out = transport_workflow(DM_transport)
     dm_packaging = industry_workflow(DM_industry, cdm_const)
     dm_intensity = building_workflow(DM_building)
     dm_diet = dm_diet_split.filter({'Variables': ['cal_diet']})
@@ -454,8 +496,11 @@ def lifestyles(lever_setting, years_setting):
     df_diet = dm_diet.write_df()
 
     # concatenate all results to df
-
     results_run = df_diet
+
+    interface.add_link(from_sector='lifestyles', to_sector='agriculture', dm=dm_diet)
+    interface.add_link(from_sector='lifestyles', to_sector='transport', dm=DM_transport_out['transport'])
+
     return results_run
 
 
@@ -463,11 +508,14 @@ def lifestyles(lever_setting, years_setting):
 def local_lifestyles_run():
     # Initiate the year & lever setting
     years_setting, lever_setting = init_years_lever()
-    lifestyles(lever_setting, years_setting)
 
+    global_vars = {'geoscale': 'France|Switzerland'}
+    filter_geoscale(global_vars)
+
+    lifestyles(lever_setting, years_setting)
     return
 
 
-local_lifestyles_run()  # to un-comment to run in local
+#local_lifestyles_run()  # to un-comment to run in local
 
 #TODO: (1) Interface; (2) Transport sub flow

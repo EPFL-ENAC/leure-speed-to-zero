@@ -23,3 +23,10 @@ class Interface:
 
     def list_link(self):
         return list(self.link.keys())
+
+    def has_link(self, from_sector, to_sector):
+        key = (from_sector, to_sector)
+        if key in self.link:
+            return True
+        else:
+            return False
