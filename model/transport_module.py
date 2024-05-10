@@ -1,6 +1,7 @@
 import pandas as pd
 
 from model.common.data_matrix_class import DataMatrix
+from model.common.interface_class import Interface
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database, read_database_fxa
 from model.common.auxiliary_functions import compute_stock, read_database_to_ots_fts_dict, filter_geoscale
@@ -912,7 +913,7 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
     return DM_freight_out
 
 
-def transport(lever_setting, years_setting):
+def transport(lever_setting, years_setting, interface=Interface()):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     transport_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/transport.pickle')
@@ -974,6 +975,6 @@ def local_transport_run():
 
     return results_run
 
-#database_from_csv_to_datamatrix
+#database_from_csv_to_datamatrix()
 
-results_run = local_transport_run()
+#results_run = local_transport_run()

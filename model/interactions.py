@@ -1,6 +1,9 @@
 
 from model.transport_module import transport
 from model.lifestyles_module import lifestyles
+from model.buildings_module import buildings
+from model.minerals_module import minerals
+from model.common.interface_class import Interface
 
 import math
 import time
@@ -16,12 +19,15 @@ def runner(lever_setting, global_vars, output_nodes, logger):
     # Transport module
     start_time = time.time()
 
-    results_run = {}
+    TPE = {}
+    interface = Interface()
 
-    results_run['lifestyles'] = lifestyles(lever_setting, years_setting)
-    results_run['transport'] = transport(lever_setting, years_setting)
+    #TPE['lifestyles'] = lifestyles(lever_setting, years_setting, interface)
+    TPE['transport'] = transport(lever_setting, years_setting, interface)
+    TPE['buildings'] = buildings(lever_setting, years_setting, interface)
+    TPE['minerals'] = minerals(lever_setting, years_setting, interface)
 
-    logger.info('Execution time TRANSPORT module: {0:.3g} s'.format(time.time() - start_time))
+    logger.info('Execution time: {0:.3g} s'.format(time.time() - start_time))
 
-    return results_run
+    return TPE
 
