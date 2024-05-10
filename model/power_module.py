@@ -214,8 +214,11 @@ def read_data(data_file, lever_setting):
     # Attention: you need to only multiply 2015 + fts years ('idx_p[baseyear]:') and you need to add 3 np.newaxis to match the dimensions
     arr_cap_hourly = dm_pv_cap.array[:, idx_p[baseyear]:, idx_p['pow_new-capacity'], idx_p['solar-pv'], np.newaxis, np.newaxis, np.newaxis] \
                      * dm_pv_hourly.array[:, :, idx_h['pow_ev-charging-profile'], ...]
+
     # The new array has the same shape as dm_pv_hourly and can be appended to it
     dm_pv_hourly.add(arr_cap_hourly, dim='Variables', col_label='pow_new-solar-pv', unit='GW')
+    dm_pv_hourly.array[:, :, 0, ...] = 1
+    dm_pv_hourly.operation('pow_ev-charging-profile', '+', 'pow_new-solar-pv', out_col='test', unit='GW')
 
     # Capacity per technology (fuel-based)
     dm_coal = DM_ots_fts['coal-capacity']
