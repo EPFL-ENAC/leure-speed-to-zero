@@ -921,9 +921,13 @@ def transport(lever_setting, years_setting, interface=Interface()):
 
     cntr_list = DM_passenger['passenger_modal_split'].col_labels['Country']
 
-    DM_lfs = simulate_lifestyles_input()
-    for key in DM_lfs.keys():
-        DM_lfs[key] = DM_lfs[key].filter({'Country': cntr_list})
+    # If the input from lifestyles are available in the interface, read them, else read from xls
+    if interface.has_link(from_sector='lifestyles', to_sector='transport'):
+        DM_lfs = interface.get_link(from_sector='lifestyles', to_sector='transport')
+    else:
+        DM_lfs = simulate_lifestyles_input()
+        for key in DM_lfs.keys():
+            DM_lfs[key] = DM_lfs[key].filter({'Country': cntr_list})
 
     # PASSENGER
     cdm_const_passenger = cdm_const.copy()
