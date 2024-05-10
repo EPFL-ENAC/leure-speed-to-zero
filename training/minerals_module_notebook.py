@@ -23,18 +23,141 @@ import pandas as pd
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database, read_database_fxa, edit_database, update_database_from_db
-from model.common.auxiliary_functions import compute_stock, read_database_to_ots_fts_dict, filter_geoscale, read_level_data
+from model.common.auxiliary_functions import compute_stock, read_database_to_ots_fts_dict, filter_geoscale, read_level_data, cdm_to_dm
 import pickle
 import json
 import os
 import numpy as np
 import re
+import warnings
+warnings.simplefilter("ignore")
+
+import plotly.express as px
+import plotly.io as pio
+pio.renderers.default='browser'
 
 from tqdm import tqdm, trange
 import time
 
 __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/training/minerals_module_notebook.py"
 current_file_directory = os.path.dirname(os.path.abspath(__file__))
+
+#############################################################################################
+######################################### FUNCTIONS #########################################
+#############################################################################################
+
+def get_mindec(dm, cdm):
+    
+    # sort
+    dm.sort("Categories1")
+    dm.sort("Categories2")
+    cdm.sort("Categories2")
+    
+    # col names
+    cols = {"Country" : dm.col_labels["Country"],
+            "Years" : dm.col_labels["Years"],
+            "Variables" : ["mineral-decomposition"],
+            "Categories1" : dm.col_labels["Categories1"],
+            "Categories2" : dm.col_labels["Categories2"],
+            "Categories3" : cdm.col_labels["Categories2"]
+            }
+    
+    # dim labels
+    dim_labels_new = list(cols)
+    
+    # idx
+    values = cols["Country"]
+    idx_new = dict(zip(iter(values), iter(list(range(0,len(values))))))
+    myrange = list(cols)[1:len(list(cols))]
+    for key in myrange:
+        values = cols[key]
+        mydict = dict(zip(iter(values), iter(list(range(0,len(values))))))
+        idx_new.update(mydict)
+    
+    # unit
+    unit = cdm.units
+    key_old = list(unit)[0]
+    unit["mineral-decomposition"] = unit.pop(key_old)
+    value_old = list(unit.values())[0]
+    unit["mineral-decomposition"] = value_old.split("/")[0]
+    
+    # data matrix
+    dm_out = DataMatrix(col_labels=cols, units=unit)
+    dm_out.idx = idx_new
+    dm_out.dim_labels = dim_labels_new
+    
+    # get array
+    arr = dm.array[...,np.newaxis] * cdm.array[np.newaxis,np.newaxis,:,:,np.newaxis,:]
+    
+    # insert array
+    dm_out.array = arr
+    
+    return dm_out
+
+def relative_reserve(minerals, dm, reserve_starting_year, mineral_type, range_max):
+
+    prefix_1 = "min_reserve_"
+    if mineral_type == "fossil_fuel":
+        prefix_2 = "min_energy_"
+    if mineral_type == "mineral":
+        prefix_2 = "min_extraction_"
+    warning_name = "min_" + mineral_type + "_warning"
+    
+    
+    # create empty array for warning
+    index_warning = np.empty(0)
+    
+    # create dictionary where to save things
+    variabs_relresleft = ["min_relative_reserves_left_" + i + "[%]" for i in minerals]
+    output = dict.fromkeys(variabs_relresleft, None)
+    output[warning_name] = None
+    output["Country"] = "Europe"
+    output["Years"] = 2050
+    
+    for k in range(len(minerals)):
+        
+        # get names of reserves and mineral variables
+        variabs_reserve = [prefix_1 + i for i in minerals]
+        variabs_mineral = [prefix_2 + i for i in minerals]
+        
+        # get indexes
+        idx = dm.idx
+        
+        # get last year of considered reserves
+        reserve_starting = dm.array[:,idx[reserve_starting_year],idx[variabs_reserve[k]]]
+        
+        # get indexes for years after start reserves
+        years = dm.col_labels["Years"]
+        years = np.array(years)[[i > reserve_starting_year for i in years]].tolist()
+        idx_years = [idx[i] for i in years]
+        
+        # make cumulative use of minerals
+        mineral_yearly = dm.array[:,idx_years,idx[variabs_mineral[k]]] * 5
+        mineral_cum = np.cumsum(mineral_yearly)
+        
+        # compute series for reserves left
+        reserve_left = np.append(reserve_starting, reserve_starting - mineral_cum) 
+        
+        # get warning if there is no more reserves left in 2050 
+        relative_reserve_left = (reserve_left[len(reserve_left)-1]/reserve_left[0] - 1)*-100
+        output[variabs_relresleft[k]] = relative_reserve_left
+        
+        if 100 <= relative_reserve_left <= range_max:
+            index_warning = np.append(index_warning, 1)
+    
+    # count how many warnings for minerals
+    index_warning = np.count_nonzero(index_warning)
+    if index_warning == 0:
+        index_warning = 0
+    if index_warning == 1:
+        index_warning = 1
+    if index_warning >= 2:
+        index_warning = 2
+    
+    # store warnings
+    output[warning_name] = index_warning
+    
+    return output
 
 #######################################################################################################
 ######################################### LOAD TRANSPORT DATA #########################################
@@ -144,88 +267,34 @@ with open(minerals_data_file, 'rb') as handle:
 # get countries
 cntr_list = DM_minerals["fxa"]["elec_new"].col_labels['Country']
 
+# get interface files
 
-########################################
-##### begin of simulate_interfaces #####
-########################################
+DM_interface = {}
 
-# Description: in transport_module.py, this function is used in transport(lever_setting, years_setting) to
-# make the fake interface data from lifestyle. This function does not have arguments and it is solely used to run code.
-
-# get files' names
 f = os.path.join(current_file_directory, "../_database/data/xls")
 files = np.array(os.listdir(f))
-files = files[
-              [bool(re.search("All-Countries", str(i), flags=re.IGNORECASE)) for i in files] and
-              [bool(re.search("minerals", str(i), flags=re.IGNORECASE)) for i in files]
-              ]
+files = files[[bool(re.search("minerals", str(i), flags=re.IGNORECASE)) for i in files]]
+files = files[[not bool(re.search("tpe", str(i), flags=re.IGNORECASE)) for i in files]].tolist()
 
-# drop the ones that already run
-files = files[[not bool(re.search("tpe", str(i), flags=re.IGNORECASE)) for i in files]]
-files = files[[not bool(re.search("lifestyles", str(i), flags=re.IGNORECASE)) for i in files]]
-files = files[[not bool(re.search("buildings", str(i), flags=re.IGNORECASE)) for i in files]]
+keys = [i.split("from-")[1].split("-to")[0] for i in files]
 
-# function to get data and add missing geoscales
-def myfun(x):
+for i in range(len(files)):
     
-    # read
-    f = os.path.join(current_file_directory, "../_database/data/xls/" + x)
-    df = pd.read_excel(f, sheet_name="default")
-    
-    # do eu27, paris and vaud
-    df_eu27 = df.loc[df["Country"] == "Germany"].copy()
-    df_eu27["Country"] = "EU27"
-    df_paris = df.loc[df["Country"] == "Germany"].copy()
-    df_paris["Country"] = "Paris"
-    df_vaud = df.loc[df["Country"] == "Germany"].copy()
-    df_vaud["Country"] = "Vaud"
-    df = pd.concat([df, df_eu27, df_paris, df_vaud])
-    df.sort_values(by=["Country","Years"])
-    
-    # get data matrix
+    f = os.path.join(current_file_directory, "../_database/data/xls/" + files[i])
+    df = pd.read_excel(f)
     dm = DataMatrix.create_from_df(df, num_cat=0)
     
-    return dm
-
-# run function per file and save in dictionary
-DM_interface = {}
-keys = [i[0] for i in [i.split('-to-minerals') for i in files]]
-keys = [i[1] for i in [i.split('All-Countries-interface_from-') for i in keys]]
-for i in range(len(keys)): 
-    DM_interface[keys[i]] = myfun(files[i])
-
-# add buildings and lifestyle
-# read
-f = os.path.join(current_file_directory, "../_database/data/xls/" + "All-Countries-interface_from-buildings-to-minerals.xlsx")
-df = pd.read_excel(f, sheet_name="default")
-dm_buildings = DataMatrix.create_from_df(df, num_cat=0)
-DM_interface["buildings"] = dm_buildings
-
-f = os.path.join(current_file_directory, "../_database/data/xls/" + "All-Countries-interface_from-lifestyles-to-minerals.xlsx")
-df = pd.read_excel(f, sheet_name="default")
-dm_lifestyles = DataMatrix.create_from_df(df, num_cat=0)
-DM_interface["lifestyles"] = dm_lifestyles
+    DM_interface[keys[i]] = dm
 
 # keep only the countries in cntr_list
 for i in keys:
     DM_interface[i] = DM_interface[i].filter({'Country': cntr_list})
-    
-del df, dm_buildings, dm_lifestyles, f, files, handle, i, keys
 
+# rename interfaces
 
-####################################
-##### end of simulate__input() #####
-####################################
-
-#############################
-##### RENAME INTERFACES #####
-#############################
-
-# get excel for renaming
 filepath = os.path.join(current_file_directory, '../_database/data/csv/minerals_variables-names.csv')
 df_names = pd.read_csv(filepath, sep=",")
 
-# rename
 for key in DM_interface.keys():
     
     if key in df_names["module_input"].values:
@@ -241,7 +310,7 @@ for key in DM_interface.keys():
                 dm_temp.rename_col(col_in = old_name[i], col_out = new_name[i], dim = "Variables")
 
 # clean
-del df_names, dm_temp, i, idx_temp, key, new_name, old_name, filepath
+del df, df_names, dm, dm_temp, f, files, handle, i, idx_temp, key, keys, new_name, old_name, filepath
 
 ########################################################
 #################### PRODUCT DEMAND ####################
@@ -368,9 +437,20 @@ dm_battery.add(arr_temp, dim = "Categories1", col_label = "transport-battery")
 arr_temp = np.nansum(dm_temp_electr.array, axis=-1, keepdims = True)
 dm_battery.add(arr_temp, dim = "Categories1", col_label = "electronics-battery")
 
+# sort
+dm_battery.sort(dim = "Categories1")
+
 # clean
 del arr_temp, cdm_temp, cdm_variabs, dm_electr_variabs, dm_temp, dm_temp2, dm_temp_electr, dm_temp_tra,\
     dm_tra_veh_variabs, i
+    
+# # checks
+
+# dm_temp = dm_battery.copy()
+# dm_temp.col_labels
+# dm_temp.units
+# idx = dm_temp.idx
+# dm_temp.array[idx["Austria"], idx[1990], :,idx["transport-battery"]]
 
 ##########################
 ##### INFRASTRUCTURE #####
@@ -402,7 +482,7 @@ del dm_infra_temp
 
 # get domestic appliances in bld
 domapp = ['dom-appliance-dishwasher','dom-appliance-dryer','dom-appliance-freezer',
-          'dom-appliance-fridge','dom-appliance-wmachine',]
+          'dom-appliance-fridge','dom-appliance-wmachine']
 find = ["bld_" + i for i in domapp]
 dm_domapp = dm_bld.filter({"Variables": find})
 
@@ -517,6 +597,9 @@ idx = dm_import.idx
 for i in range(len(variabs)):
     dm_import.add(dm_import.array[:,:,idx[variabs[i]]], dim="Variables", col_label=variabs_new[i], unit="%")
     
+# sort
+dm_import.sort(dim = "Variables")
+    
 # clean
 del i, idx, variabs, variabs_new
 
@@ -548,20 +631,6 @@ arr_temp = dm_demand_split_share.array[:,:,:,:,idx["indir"]]-dm_demand_split_sha
 dm_demand_split_share.add(arr_temp, dim = "Categories2", col_label = "dir", unit = "%")
 
 # add to dm_trade the share for other products from constants
-
-def cdm_to_dm(cdm, countries_list, years_list):
-    arr_temp = cdm.array[np.newaxis, np.newaxis, ...]
-    arr_temp = np.repeat(arr_temp, len(countries_list), axis=0)
-    arr_temp = np.repeat(arr_temp, len(years_list), axis=1)
-    cy_cols = {
-        'Country': countries_list.copy(),
-        'Years': years_list.copy(),
-    }
-    new_cols = {**cy_cols, **cdm.col_labels}
-    dm = DataMatrix(col_labels=new_cols, units=cdm.units)
-    dm.array = arr_temp
-    return dm
-
 countries_list = dm_demand_split_share.col_labels["Country"]
 years_list = dm_demand_split_share.col_labels["Years"]
 cdm_temp = cdm_constants.filter_w_regex({"Variables":".*trade*"}).copy()
@@ -574,8 +643,23 @@ cdm_temp.rename_col(col_in = "min_trade", col_out = "product-demand-split-share"
 # append
 dm_demand_split_share.append(cdm_temp, dim = "Categories1")
 
+# sort
+dm_demand_split_share.sort(dim = "Categories1")
+# note: careful that here sorts first the variables with cap letters
+
 # clean
 del arr_temp, cdm_temp, i, idx, name_new, name_old
+
+# # checks
+
+# dm_temp = dm_demand_split_share.copy()
+# dm_temp.col_labels
+# dm_temp.units
+
+# # df = dm_temp.write_df()
+
+# idx = dm_temp.idx
+# dm_temp.array[idx["Austria"], idx[1990], :,idx["LDV-ICE"], idx["indir"]]
 
 ####################################################################################################
 #################### PRODUCT INDIRECT DEMAND, NET EXPORT, DIRECT DEMAND (UNITS) ####################
@@ -592,8 +676,6 @@ for key in DM_demand_split.keys():
     
     # get corresponding split share
     dm_demand_split_temp = dm_demand_split_share.filter({"Categories1": dm_demand_temp.col_labels["Categories1"]})
-    
-    # multiply demand with split share to make split in unit
     arr_temp = dm_demand_temp.array[...,np.newaxis] * dm_demand_split_temp.array
     
     # add split in unit as a variable
@@ -611,95 +693,20 @@ for key in DM_demand_split.keys():
 del key, dm_demand_temp, dm_demand_split_temp, arr_temp
 
 
-###############################################################
-#################### MINERAL DECOMPOSITION ####################
-###############################################################
+# # checks
 
-def get_mindec(dm, cdm):
-    
-    # sort
-    dm.sort("Categories1")
-    dm.sort("Categories2")
-    cdm.sort("Categories2")
-    
-    # col names
-    cols = {"Country" : dm.col_labels["Country"],
-            "Years" : dm.col_labels["Years"],
-            "Variables" : ["mineral-decomposition"],
-            "Categories1" : dm.col_labels["Categories1"],
-            "Categories2" : dm.col_labels["Categories2"],
-            "Categories3" : cdm.col_labels["Categories2"]
-            }
-    
-    # dim labels
-    dim_labels_new = list(cols)
-    
-    # idx
-    values = cols["Country"]
-    idx_new = dict(zip(iter(values), iter(list(range(0,len(values))))))
-    myrange = list(cols)[1:len(list(cols))]
-    for key in myrange:
-        values = cols[key]
-        mydict = dict(zip(iter(values), iter(list(range(0,len(values))))))
-        idx_new.update(mydict)
-    
-    # unit
-    unit = cdm.units
-    key_old = list(unit)[0]
-    unit["mineral-decomposition"] = unit.pop(key_old)
-    value_old = list(unit.values())[0]
-    unit["mineral-decomposition"] = value_old.split("/")[0]
-    
-    # data matrix
-    dm_out = DataMatrix(col_labels=cols, units=unit)
-    dm_out.idx = idx_new
-    dm_out.dim_labels = dim_labels_new
-    
-    # get array
-    arr = dm.array[...,np.newaxis] * cdm.array[np.newaxis,np.newaxis,:,:,np.newaxis,:]
-    
-    # insert array
-    dm_out.array = arr
-    
-    return dm_out
+# dm_temp = DM_demand_split["batteries"].copy()
+# dm_temp.col_labels
+# dm_temp.units
+# idx = dm_temp.idx
+# dm_temp.array[idx["Austria"], idx[1990], idx['product-demand-split-unit'],idx["electronics-battery"], idx["indir"]]
+
+# df_temp = DM_demand_split["vehicles"].copy().write_df()
 
 
-# def add_missing_minerals(minerals_list, DM):
-
-#     for key in DM.keys():
-        
-#         # get dm (puntator)
-#         dm = DM[key]
-        
-#         # get missing minerals
-#         minerals = dm.col_labels["Categories3"]
-#         minerals_missing = np.array(minerals_list)[[i not in minerals for i in minerals_list]].tolist()
-        
-#         # add nan arrays for missing minerals
-#         for i in minerals_missing:
-#             arr = dm.array[:,:,:,:,:,0]
-#             arr.fill(np.NaN)
-#             dm.add(arr, dim = "Categories3", col_label = i)
-            
-#         # sort
-#         dm.sort("Categories3")
-
-
-def add_nan(dm, variables_list, dim):
-
-    # get missing variables
-    variables = dm.col_labels[dim]
-    variables_missing = np.array(variables_list)[[i not in variables for i in variables_list]].tolist()
-    
-    # add nan arrays for missing variables
-    for i in variables_missing:
-        arr = dm.array[...,0]
-        arr = arr[...,np.newaxis]
-        arr.fill(np.NaN)
-        dm.add(arr, dim = dim, col_label = i)
-        
-    # sort
-    dm.sort(dim)
+#################################################################################################
+#################### MINERAL INDIRECT DEMAND, NET EXPORT, DIRECT DEMAND (KG) ####################
+#################################################################################################
     
 minerals = ['aluminium','copper','graphite','lead','lithium','manganese','nickel','steel']
 
@@ -779,6 +786,11 @@ dm_veh_ldv_mindec.drop(dim = "Categories3", col_label = [mineral_in_unadj, miner
 # clean
 del dm_temp, cdm_temp, mineral_in, mineral_out, mineral_switched, mineral_in_unadj, idx, arr_temp
 
+# # check
+# df_temp = dm_veh_ldv_mindec.copy().write_df()
+# variabs = df_temp.columns[[[bool(re.search("_dir_steel", i, flags=re.IGNORECASE)) for i in df_temp.columns]]].tolist()
+# df_temp = df_temp.loc[:,["Country","Years"] + variabs]
+
 
 ########################
 ##### TRUCKS (HDV) #####
@@ -836,8 +848,13 @@ arr_temp = arr_temp[...,np.newaxis] * dm_temp_alu.array[:,:,np.newaxis,np.newaxi
 dm_veh_hdv_mindec.add(arr_temp, dim = "Categories3", col_label = mineral_switched2)
 
 # do mineral unadjusted - mineral switched
-dm_veh_hdv_mindec.operation(col1 = mineral_in_unadj, operator = "-", col2 = mineral_switched, dim = "Categories3",
-                        out_col = mineral_in)
+idx = dm_veh_hdv_mindec.idx
+arr_temp = dm_veh_hdv_mindec.array[...,idx[mineral_in_unadj]] - \
+    dm_veh_hdv_mindec.array[...,idx[mineral_switched]] - \
+        dm_veh_hdv_mindec.array[...,idx[mineral_switched2]]
+dm_veh_hdv_mindec.add(arr_temp, dim = "Categories3", col_label = mineral_in)
+# dm_veh_hdv_mindec.operation(col1 = mineral_in_unadj, operator = "-", col2 = mineral_switched, dim = "Categories3",
+#                         out_col = mineral_in)
 
 # do aluminium + steel-switched-to-aluminium
 dm_veh_hdv_mindec.operation(col1 = mineral_out2_unadj, operator = "+", col2 = mineral_switched2, dim = "Categories3",
@@ -857,6 +874,10 @@ dm_veh_hdv_mindec.sort("Categories3")
 del dm_temp, cdm_temp, mineral_in, mineral_out, mineral_out2, mineral_switched, \
     mineral_switched2, mineral_in_unadj, mineral_out2_unadj, idx, arr_temp, dm_temp_alu
 
+# # check
+# df_temp = dm_veh_hdv_mindec.copy().write_df()
+# variabs = df_temp.columns[[[bool(re.search("_dir_steel", i, flags=re.IGNORECASE)) for i in df_temp.columns]]].tolist()
+# df_temp = df_temp.loc[:,["Country","Years"] + variabs]
 
 ##########################
 ##### OTHER VEHICLES #####
@@ -901,17 +922,30 @@ DM_temp = {"ldv": dm_veh_ldv_mindec,
            "oth": dm_veh_oth_mindec, 
            "batt" : dm_veh_batt_mindec}
 
+
 for key in DM_temp.keys():
-    add_nan(dm = DM_temp[key], variables_list = minerals, dim = "Categories3")
+    
+    variables = DM_temp[key].col_labels["Categories3"]
+    variables_missing = np.array(minerals)[[i not in variables for i in minerals]].tolist()
+    
+    for variable in variables_missing:
+        DM_temp[key].add(np.nan, dim = "Categories3", col_label = variable, dummy = True)
 
 # sum across vehicles and batteries
 dm_veh_mindec = dm_veh_ldv_mindec.copy()
-arr_temp = dm_veh_ldv_mindec.array + dm_veh_hdv_mindec.array + dm_veh_oth_mindec.array + dm_veh_batt_mindec.array
+dm_veh_mindec.append(dm_veh_hdv_mindec, dim = "Categories1")
+dm_veh_mindec.append(dm_veh_oth_mindec, dim = "Categories1")
+dm_veh_mindec.append(dm_veh_batt_mindec, dim = "Categories1")
+arr_temp = np.nansum(dm_veh_mindec.array, axis=-3, keepdims = True)
 dm_veh_mindec.add(arr_temp, dim = "Categories1", col_label = "transport")
-dm_veh_mindec.drop(dim = "Categories1", col_label = "LDV")
+dm_veh_mindec.drop(dim = "Categories1", col_label = ['LDV', 'HDV', 'other', 'transport-battery'])
 
-del dm_veh_ldv_mindec, dm_veh_hdv_mindec, dm_veh_oth_mindec, arr_temp, DM_temp
+del dm_veh_ldv_mindec, dm_veh_hdv_mindec, dm_veh_oth_mindec, arr_temp, DM_temp, variable, variables, variables_missing
 
+# # check
+# df_temp = dm_veh_mindec.copy().write_df()
+# variabs = df_temp.columns[[[bool(re.search("_dir_steel", i, flags=re.IGNORECASE)) for i in df_temp.columns]]].tolist()
+# df_temp = df_temp.loc[:,["Country","Years"] + variabs]
 
 ##########################
 ##### INFRASTRUCTURE #####
@@ -937,6 +971,7 @@ dm_infra_mindec.drop(dim = "Categories1", col_label = infra)
 
 # clean
 del dm_temp, cdm_temp, arr_temp
+
 
 ##############################
 ##### DOMESTIC APPLIANCE #####
@@ -968,13 +1003,12 @@ cdm_temp.sort("Categories2")
 # divide mineral split by this factor (to get mineral + extra mineral from unaccounted sectors)
 dm_domapp_mindec.array = dm_domapp_mindec.array / cdm_temp.array[np.newaxis,np.newaxis,np.newaxis,...]
 
-# get aluminium packages (t) and add it to aluminium from dom appliance
+# get aluminium packages (t) and add it to aluminium from dom appliance (only for dir)
 dm_temp = dm_ind.filter({"Variables":["ind_product_aluminium-pack"]})
-dm_temp.array = dm_temp.array * 1000 # make Mt
-
+dm_temp.array = dm_temp.array * 1000 # make kg
 idx = dm_domapp_mindec.idx
-dm_domapp_mindec.array[:,:,:,:,:,idx["aluminium"]] = dm_domapp_mindec.array[:,:,:,:,:,idx["aluminium"]] + \
-    dm_temp.array[...,np.newaxis,np.newaxis]
+dm_domapp_mindec.array[:,:,:,:,idx["dir"],idx["aluminium"]] = dm_domapp_mindec.array[:,:,:,:,idx["dir"],idx["aluminium"]] + \
+    dm_temp.array[...,np.newaxis]
 
 # clean
 del dm_temp, cdm_temp, arr_temp, idx
@@ -1004,7 +1038,12 @@ DM_temp = {"electr": dm_electr_cotvph_mindec,
            "batt": dm_electr_batt_mindec}
 
 for key in DM_temp.keys():
-    add_nan(dm = DM_temp[key], variables_list = minerals, dim = "Categories3")
+    
+    variables = DM_temp[key].col_labels["Categories3"]
+    variables_missing = np.array(minerals)[[i not in variables for i in minerals]].tolist()
+    
+    for variable in variables_missing:
+        DM_temp[key].add(np.nan, dim = "Categories3", col_label = variable, dummy = True)
     
 # append
 dm_electr_cotvph_mindec.append(dm_electr_batt_mindec, dim = "Categories1")
@@ -1019,7 +1058,8 @@ dm_electr_cotvph_mindec.drop(dim = "Categories1", col_label = electr)
 dm_electr_mindec = dm_electr_cotvph_mindec.copy()
 
 # clean
-del dm_electr_cotvph_mindec, dm_electr_batt_mindec, dm_temp, cdm_temp, arr_temp, DM_temp, key, 
+del dm_electr_cotvph_mindec, dm_electr_batt_mindec, dm_temp, cdm_temp, arr_temp, DM_temp, key
+
 
 ########################
 ##### CONSTRUCTION #####
@@ -1039,8 +1079,9 @@ dm_temp.dim_labels = dm_temp.dim_labels + ["Categories2"]
 dm_temp.idx["Categories2"] = 0
 
 # add exp and indir as nan 
-variables_list = ["dir", "exp", "indir"]
-add_nan(dm = dm_temp, variables_list = variables_list, dim = "Categories2")
+variables_missing = ["exp", "indir"]
+for variable in variables_missing:
+    dm_temp.add(np.nan, dim = "Categories2", col_label = variable, dummy = True)
 
 # get constants for mineral decomposition
 cdm_temp = cdm_constants.filter_w_regex({"Variables":".*building*"})
@@ -1087,7 +1128,8 @@ dm_constr_mindec.array[:,:,:,:,idx["exp"],idx[mineral_in]] = dm_constr_mindec.ar
 dm_constr_mindec.drop(dim = "Categories3", col_label = [mineral_in_unadj, mineral_switched])
 
 # clean
-del dm_temp, cdm_temp, mineral_in, mineral_out, mineral_switched, mineral_in_unadj, idx, arr_temp, variables_list
+del dm_temp, cdm_temp, mineral_in, mineral_out, mineral_switched, mineral_in_unadj, idx, arr_temp, variables, variable,\
+    variables_missing
 
 
 ##################
@@ -1131,35 +1173,61 @@ DM_temp = {"energy": dm_energy_tech_mindec,
            "batt": dm_energy_batt_mindec}
 
 for key in DM_temp.keys():
-    add_nan(dm = DM_temp[key], variables_list = minerals, dim = "Categories3")
+    
+    variables = DM_temp[key].col_labels["Categories3"]
+    variables_missing = np.array(minerals)[[i not in variables for i in minerals]].tolist()
+    
+    for variable in variables_missing:
+        DM_temp[key].add(np.nan, dim = "Categories3", col_label = variable, dummy = True)
     
 # append
 dm_energy_tech_mindec.append(dm_energy_batt_mindec, dim = "Categories1")
 dm_energy_mindec = dm_energy_tech_mindec.copy()
+
+# # checks
+# df_temp = dm_energy_mindec.copy().write_df()
+# variabs = df_temp.columns[[[bool(re.search("_dir_lithium", i, flags=re.IGNORECASE)) for i in df_temp.columns]]].tolist()
+# df_temp = df_temp.loc[:,["Country","Years"] + variabs]
 
 # get sum across energy
 arr_temp = np.nansum(dm_energy_mindec.array, axis=-3, keepdims = True)
 dm_energy_mindec.add(arr_temp, dim = "Categories1", col_label = "energy")
 energy = energy + ["energy-battery"]
 dm_energy_mindec.drop(dim = "Categories1", col_label = energy)
+# not that here for example Austria 2020 for dir_energy_aluminium differs slightly from KNIME, supposedly for rounding differences (numbers are generally fine)
+
+# # checks
+# df_temp = dm_energy_mindec.copy().write_df()
+# variabs = df_temp.columns[[[bool(re.search("_dir_lithium", i, flags=re.IGNORECASE)) for i in df_temp.columns]]].tolist()
+# df_temp = df_temp.loc[:,["Country","Years"] + variabs]
 
 # get electricity demand total (GWh) and constant for amount of copper in wires (kg/GWh)
 dm_temp = dm_str.filter({"Variables":["elc_electricity-demand_total"]})
 cdm_temp = cdm_constants.filter_w_regex({"Variables":".*wire_copper*"})
 
-# multiply demand times amount of copper in wires to get amount of copper in wires (kg)
-dm_temp.array = dm_temp.array * cdm_temp.array[0]
-dm_temp.units["elc_electricity-demand_total"] = "kg"
+# multiply direct demand times amount of copper in wires to get amount of copper in wires (kg)
+arr_temp = dm_temp.array * cdm_temp.array
+dm_temp = dm_energy_mindec.filter({"Categories2" : ["dir"]})
+dm_temp = dm_temp.filter({"Categories3" : ["copper"]})
+dm_temp.add(arr_temp[...,np.newaxis,np.newaxis,np.newaxis], col_label = "copper-wire", dim = "Categories3")
 
 # add amount of coppers in wires to copper from energy
-idx = dm_energy_mindec.idx
-arr_temp = dm_energy_mindec.array[...,idx["copper"]]
-arr_temp = arr_temp + dm_temp.array[...,np.newaxis,np.newaxis]
-dm_energy_mindec.array[...,idx["copper"]] = arr_temp
+idx = dm_temp.idx
+dm_temp.array[...,idx["copper"]] = np.nansum(dm_temp.array, axis = -1)
+dm_temp.drop(dim = "Categories3", col_label = ["copper-wire"])
+
+idx1 = dm_energy_mindec.idx
+idx2 = dm_temp.idx
+dm_energy_mindec.array[:,:,:,:,idx1["dir"],idx1["copper"]] = dm_temp.array[:,:,:,:,idx2["dir"],idx2["copper"]]
 
 # clean
 del dm_energy_tech_mindec, dm_energy_batt_mindec, dm_temp, cdm_temp, arr_temp, cdm_temp2, idx, idx2, \
-    DM_temp, key
+    DM_temp, key, variable, variables, variables_missing, idx1
+
+# # checks
+# df_temp = dm_energy_mindec.copy().write_df()
+# variabs = df_temp.columns[[[bool(re.search("_dir_copper", i, flags=re.IGNORECASE)) for i in df_temp.columns]]].tolist()
+# df_temp = df_temp.loc[:,["Country","Years"] + variabs]
 
 
 ########################
@@ -1169,59 +1237,711 @@ del dm_energy_tech_mindec, dm_energy_batt_mindec, dm_temp, cdm_temp, arr_temp, c
 
 # add minerals as nans for those dms which do not have all minerals
 
-DM_mindec = {"veh": dm_veh_mindec, 
+DM_mindec = {"transport": dm_veh_mindec, 
              "infra": dm_infra_mindec,
-             "domapp": dm_domapp_mindec,
-             "electr": dm_electr_mindec, 
-             "constr": dm_constr_mindec, 
+             "dom-appliance": dm_domapp_mindec,
+             "electronics": dm_electr_mindec, 
+             "construction": dm_constr_mindec, 
              "energy" : dm_energy_mindec}
 
 for key in DM_mindec.keys():
     
-    dm_temp = DM_mindec[key]
-    minerals_temp = dm_temp.col_labels["Categories3"]
+    variables = DM_mindec[key].col_labels["Categories3"]
+    variables_missing = np.array(minerals)[[i not in variables for i in minerals]].tolist()
     
-    if not minerals_temp == minerals:
-        add_nan(dm = dm_temp, variables_list = minerals, dim = "Categories3")
+    for variable in variables_missing:
+        DM_mindec[key].add(np.nan, dim = "Categories3", col_label = variable, dummy = True)
         
+# # checks
+# df_temp = DM_mindec["energy"].copy().write_df()
 
 # sum minerals across all sectors
 dm_mindec = dm_veh_mindec.copy()
-arr_temp = dm_veh_mindec.array + dm_infra_mindec.array + dm_domapp_mindec.array + \
-           dm_electr_mindec.array  + dm_constr_mindec.array + dm_energy_mindec.array
+mylist = ['infra', 'dom-appliance', 'electronics', 'construction', 'energy']
+for key in mylist:
+    dm_mindec.append(DM_mindec[key], dim = "Categories1")
+arr_temp = np.nansum(dm_mindec.array, axis=-3, keepdims = True)
+drop = list(DM_mindec)
 dm_mindec.add(arr_temp, dim = "Categories1", col_label = "all-sectors")
-dm_mindec.drop(dim = "Categories1", col_label ="transport")
+dm_mindec.drop(dim = "Categories1", col_label = drop)
+
+# clean
+del key, arr_temp, variables, variable, variables_missing, mylist
+
+# # checks
+# df_temp = dm_mindec.copy().write_df()
 
 
-#############################################
-##### MINERALS FROM UNACCOUNTED SECTORS #####
-#############################################
+#######################################
+##### OTHER (UNACCOUNTED) SECTORS #####
+#######################################
 
-# add aluminium, copper, lead and steel from unaccounted sectors
+minerals_sub1 = ["aluminium","copper","lead","steel"]
+
+# create dm for other minerals
+dm_other_mindec = dm_mindec.filter({"Categories3" : minerals_sub1})
+dm_other_mindec = dm_other_mindec.filter({"Categories2" : ["dir"]})
 
 # get constants
 cdm_temp = cdm_constants.filter_w_regex({"Variables":".*other*"})
 cdm_temp = cdm_temp.filter_w_regex({"Variables":"^((?!vehicle|appliance).)*$"})
 cdm_temp.deepen_twice()
+cdm_temp = cdm_temp.filter({"Categories2" : minerals_sub1})
+
+# expand constants
+dm_temp = cdm_to_dm(cdm_temp, countries_list = dm_other_mindec.col_labels["Country"], 
+                    years_list = dm_other_mindec.col_labels["Years"])
+
+# multiply total times factors and add them to dm_other_mindec
+arr_temp = dm_other_mindec.array * dm_temp.array[...,np.newaxis,:]
+dm_other_mindec.add(arr_temp, dim = "Categories1", col_label = "other")
+dm_other_mindec.drop(dim = "Categories1", col_label = "all-sectors")
+
+# # add nans for exp and indir
+# dm_other_mindec.add(np.nan, col_label = "exp", dim = "Categories2", dummy = True)
+# dm_other_mindec.add(np.nan, col_label = "indir", dim = "Categories2", dummy = True)
+
+# # add these "other" to total
+# dm_mindec_sub1 = dm_mindec.filter({"Categories3":minerals_sub1})
+# dm_mindec_sub1.add(dm_other_mindec.array, col_label = "other", dim = "Categories1")
+# arr_temp = np.nansum(dm_mindec_sub1.array, axis = -3, keepdims=True)
+# dm_mindec_sub1.drop(dim = "Categories1", col_label = "all-sectors")
+# dm_mindec_sub1.add(arr_temp, dim = "Categories1", col_label = "all-sectors")
+# dm_mindec_sub1.drop(dim = "Categories1", col_label = "other")
+
+# clean
+del cdm_temp, dm_temp, arr_temp
+
+####################
+##### INDUSTRY #####
+####################
+
+# Note: this is done only for direct demand, so industries in foreign countries are not considered
+
+minerals_sub2 = ["graphite","lithium","manganese","nickel"]
+
+# add other aluminium and steel temporarely to total (this is just for computing industry, you'll redo the addition of everything at the end)
+dm_mindec_temp = dm_mindec.filter({"Categories3" : ["aluminium","steel"], "Categories2" : ["dir"]})
+dm_other_mindec_temp = dm_other_mindec.filter({"Categories3" : ["aluminium","steel"], "Categories2" : ["dir"]})
+dm_mindec_temp.append(dm_other_mindec_temp, "Categories1")
+arr_temp = np.nansum(dm_mindec_temp.array, axis = -3, keepdims=True)
+dm_mindec_temp.drop(dim = "Categories1", col_label = "all-sectors")
+dm_mindec_temp.add(arr_temp, dim = "Categories1", col_label = "all-sectors")
+dm_mindec_temp.drop(dim = "Categories1", col_label = "other")
+
+# create dm for industry: take direct demand for steel and aluminium and convert from kg to mt
+dm_industry_mindec = dm_mindec_temp.copy()
+dm_industry_mindec.array = dm_industry_mindec.array * 0.000000001
+dm_industry_mindec.units['mineral-decomposition'] = "Mt"
+
+# take glass
+dm_temp2 = dm_ind.filter({"Variables" : ["ind_material-production_glass"]})
+dm_industry_mindec.add(dm_temp2.array[:,:,np.newaxis,np.newaxis,np.newaxis,:], dim = "Categories3", col_label = "glass")
+
+# get constants for switches
+conversions_old = ["min_industry_aluminium_lithium", "min_industry_steel_nickel", "min_industry_steel_manganese",
+                   "min_industry_steel_graphite","min_industry_glass_lithium", "min_industry_aluminium_manganese"]
+cdm_temp = cdm_constants.filter({"Variables":conversions_old})
+conversions = ["min_aluminium-lithium", "min_steel-nickel", "min_steel-manganese",
+               "min_steel-graphite","min_glass-lithium", "min_aluminium-manganese"]
+for i in range(len(conversions)):
+    cdm_temp.rename_col(col_in = conversions_old[i], col_out = conversions[i], dim = "Variables")
+cdm_temp.deepen()
+
+# multiply direct demand by these switch factors
+idx_dm = dm_industry_mindec.idx
+idx_cdm = cdm_temp.idx
+col1 = ["aluminium","aluminium","steel","steel","steel","glass"]
+col2 = ["aluminium-lithium", "aluminium-manganese", "steel-nickel", "steel-manganese","steel-graphite", "glass-lithium"]
+for i in range(len(col1)):
+    arr_temp = dm_industry_mindec.array[...,idx_dm[col1[i]]] * cdm_temp.array[...,idx_cdm[col2[i]]]
+    dm_industry_mindec.add(arr_temp, dim = "Categories3", col_label = col2[i])
+
+# drop starting point minerals
+dm_industry_mindec.drop(dim = "Categories3", col_label = ["aluminium","glass","steel"])
+
+# transform in kg
+dm_industry_mindec.array = dm_industry_mindec.array * 1000000000
+dm_industry_mindec.units['mineral-decomposition'] = "kg"
+
+# sum over end point minerals
+dm_temp = dm_industry_mindec.filter({"Categories3" : ["aluminium-lithium", "glass-lithium"]})
+arr_temp = np.nansum(dm_temp.array, axis = -1, keepdims=True)
+dm_industry_mindec.add(arr_temp, dim = "Categories3", col_label = "lithium")
+dm_industry_mindec.drop(dim = "Categories3", col_label = ["aluminium-lithium","glass-lithium"])
+
+dm_temp2 = dm_industry_mindec.filter({"Categories3" : ["aluminium-manganese", "steel-manganese"]})
+arr_temp = np.nansum(dm_temp2.array, axis = -1, keepdims=True)
+dm_industry_mindec.add(arr_temp, dim = "Categories3", col_label = "manganese")
+dm_industry_mindec.drop(dim = "Categories3", col_label = ["aluminium-manganese","steel-manganese"])
+
+dm_industry_mindec.rename_col(col_in = 'steel-nickel', col_out = "nickel", dim = "Categories3")
+dm_industry_mindec.rename_col(col_in = 'steel-graphite', col_out = "graphite", dim = "Categories3")
+
+# adjust graphite for how much graphite is used in electric arc furnace to make steel
+dm_temp = DM_fxa["min_proportion"].filter({"Variables":["min_proportion_eu_steel_EAF"]})
+idx = dm_industry_mindec.idx
+dm_industry_mindec.array[...,idx["graphite"]] = dm_industry_mindec.array[...,idx["graphite"]] * dm_temp.array[:,:,np.newaxis,np.newaxis,:]
+
+# sort and rename
+dm_industry_mindec.sort("Categories3")
+dm_industry_mindec.rename_col(col_in = "all-sectors", col_out = "industry", dim = "Categories1")
+
+# # add exp and indir as nans
+# dm_industry_mindec.add(np.nan, col_label = "exp", dim = "Categories2", dummy = True)
+# dm_industry_mindec.add(np.nan, col_label = "indir", dim = "Categories2", dummy = True)
+
+# add industry graphite, lithium, manganese and nickel temporarely to total to compute other graphite, lithium, manganese and nickel
+dm_mindec_temp = dm_mindec.filter({"Categories3":minerals_sub2})
+dm_mindec_temp = dm_mindec_temp.filter({"Categories2":["dir"]})
+dm_mindec_temp.add(dm_industry_mindec.array, col_label = "industry", dim = "Categories1")
+arr_temp = np.nansum(dm_mindec_temp.array, axis = -3, keepdims=True)
+dm_mindec_temp.drop(dim = "Categories1", col_label = "all-sectors")
+dm_mindec_temp.add(arr_temp, dim = "Categories1", col_label = "all-sectors")
+dm_mindec_temp.drop(dim = "Categories1", col_label = "industry")
+
+# multiply these total with factors for other unaccounted sectos 
+
+# get constants
+cdm_temp = cdm_constants.filter_w_regex({"Variables":".*other*"})
+cdm_temp = cdm_temp.filter_w_regex({"Variables":"^((?!vehicle|appliance).)*$"})
+cdm_temp.deepen_twice()
+cdm_temp = cdm_temp.filter({"Categories2" : minerals_sub2})
+dm_temp = cdm_to_dm(cdm_temp, countries_list = dm_other_mindec.col_labels["Country"], 
+                    years_list = dm_other_mindec.col_labels["Years"])
+
+# multiply total from dm_mindec_temp times factors and add them to dm_mindec_temp
+arr_temp = dm_mindec_temp.array * dm_temp.array[...,np.newaxis,:]
+dm_mindec_temp.add(arr_temp, dim = "Categories1", col_label = "other")
+
+# add other to dm_other_mindec
+dm_temp = dm_mindec_temp.filter({"Categories1":["other"]})
+dm_other_mindec.append(dm_temp, dim = "Categories3")
+dm_other_mindec.sort("Categories3")
+
+# add exp and indir to other
+dm_other_mindec.add(np.nan, dim = "Categories2", col_label = "exp", dummy = True)
+dm_other_mindec.add(np.nan, dim = "Categories2", col_label = "indir", dummy = True)
+
+# add exp and indir, and other materials, to industry
+dm_industry_mindec.add(np.nan, dim = "Categories2", col_label = "exp", dummy = True)
+dm_industry_mindec.add(np.nan, dim = "Categories2", col_label = "indir", dummy = True)
+for i in minerals_sub1:
+    dm_industry_mindec.add(np.nan, dim = "Categories3", col_label = i, dummy = True)
+dm_industry_mindec.sort(dim = "Categories3")
+
+# sum industry and other to total
+dm_mindec.append(dm_other_mindec, dim = "Categories1")
+dm_mindec.append(dm_industry_mindec, dim = "Categories1")
+arr_temp = np.nansum(dm_mindec.array, axis = -3, keepdims=True)
+dm_mindec.drop(dim = "Categories1", col_label = "all-sectors")
+dm_mindec.add(arr_temp, dim = "Categories1", col_label = "all-sectors")
+dm_mindec.drop(dim = "Categories1", col_label = "industry")
+dm_mindec.drop(dim = "Categories1", col_label = "other")
+
+# clean
+del cdm_temp, dm_temp, arr_temp, col1, col2, conversions, conversions_old, dm_temp2, drop, i, idx,\
+    idx_cdm, idx_dm, minerals_sub1, minerals_sub2, dm_mindec_temp
+
+# # checks
+# df_temp = dm_other_mindec.copy().write_df()
+
+###############################################################
+#################### SECTORIAL PERCENTAGES ####################
+###############################################################
+
+# put dms together
+DM_mindec = {"transport": dm_veh_mindec, 
+              "infrastructure": dm_infra_mindec,
+              "domestic-appliance": dm_domapp_mindec,
+              "electronics": dm_electr_mindec, 
+              "construction": dm_constr_mindec, 
+              "energy" : dm_energy_mindec,
+              "industry" : dm_industry_mindec,
+              "other" : dm_other_mindec}
+
+# # checks
+# df_temp = DM_mindec["infrastructure"].copy().write_df()
+# variabs = df_temp.columns[[[bool(re.search("_dir_aluminium", i, flags=re.IGNORECASE)) for i in df_temp.columns]]].tolist()
+# df_temp = df_temp.loc[:,["Country","Years"] + variabs]
+
+# put sectors in one dm
+dm_mindec_sect = DM_mindec["transport"].copy()
+mykey = list(DM_mindec)[1:]
+for i in mykey:
+    dm_mindec_sect.append(DM_mindec[i], dim = "Categories1")
+
+# make percentages
+# note: I have to to this here as these percenteges are done on dm_mindec before computing effifiency (not clear why)
+dm_mindec_sect.array = dm_mindec_sect.array / dm_mindec.array
+dm_mindec_sect.units['mineral-decomposition'] = "%"
+
+# make nan for indir (as at the moment percentages are not done for indir)
+idx = dm_mindec_sect.idx
+dm_mindec_sect.array[:,:,idx["mineral-decomposition"],:,idx["indir"],:] = np.nan
+
+# clean
+del idx, mykey
+
+# # check
+# df_temp = dm_mindec_sect.copy().write_df()
+# variabs = df_temp.columns[[[bool(re.search("_dir_aluminium", i, flags=re.IGNORECASE)) for i in df_temp.columns]]].tolist()
+# df_temp = df_temp.loc[:,["Country","Years"] + variabs]
+
+##############################################################################
+#################### EFFICIENCY FOR MINERAL DIRECT DEMAND ####################
+##############################################################################
+
+# get material-efficiency from constant and industry
+cdm_temp = cdm_constants.filter_w_regex({"Variables":".*eff*"})
+dm_temp = dm_ind.filter_w_regex({"Variables":".*eff*"})
+
+# expand constants and add
+dm_temp2 = cdm_to_dm(cdm_temp, countries_list = dm_temp.col_labels["Country"], years_list = dm_temp.col_labels["Years"])
+dm_temp.append(dm_temp2, dim = "Variables")
+dm_temp.deepen()
+
+# do 1 - ind efficiency and substitute back in
+dm_temp.array = 1 - dm_temp.array
+
+# mutltiply total times ind efficiency and substitute back in
+dm_temp2 = dm_mindec.filter({"Categories2" : ["dir"]})
+idx = dm_mindec.idx
+idx2 = dm_temp2.idx
+dm_mindec.array[:,:,:,:,idx["dir"],:] = dm_temp2.array[...,idx2["dir"],:] * dm_temp.array[:,:,np.newaxis,:]
+
+# clean
+del cdm_temp, dm_temp, dm_temp2, idx, idx2
+
+# # checks
+# df_temp = dm_mindec.copy().write_df()
+# df_temp.columns
+# df_temp = df_temp.loc[:,["Country","Years",'mineral-decomposition_all-sectors_dir_aluminium[kg]',
+#                          'mineral-decomposition_all-sectors_exp_aluminium[kg]',
+#                          'mineral-decomposition_all-sectors_indir_aluminium[kg]']]
 
 
+#####################################################
+#################### CALIBRATION ####################
+#####################################################
+
+# TBD
 
 
+#################################################################
+#################### MINERAL PRODUCTION (KG) ####################
+#################################################################
+
+# !FIXME: in the knime this is dir - exp.
+
+# mineral production at home
+dm_production = dm_mindec.copy()
+idx = dm_production.idx
+dm_production.array[...,idx["exp"]] = np.nan_to_num(dm_production.array[...,idx["exp"]])
+dm_production.operation('dir', "-", 'exp', dim = "Categories2", out_col="mineral-production-home", div0="error")
+
+# mineral production abroad
+idx = dm_mindec.idx
+arr_temp = dm_production.array[...,idx["indir"],:]
+dm_production.add(arr_temp[...,np.newaxis,:,:], dim = "Categories2", col_label = "mineral-production-abroad")
+# note: in theory mineral demand = mineral produced at home + mineral produced abroad
+
+# clean
+dm_production.drop(dim = "Categories2", col_label = ["dir","exp","indir"])
+del idx, arr_temp
+
+# # checks
+# df_temp = dm_production.copy().write_df()
+# df_temp = df_temp.loc[:,["Country","Years",'abroad_aluminium[kg]','home_aluminium[kg]']]
 
 
+################################################
+##### SCRAP USE IN MINERAL PRODUCTION (KG) #####
+################################################
 
-# additional minerals from industry and unaccounted sectors
+# get variables
+dm_proportion = DM_fxa["min_proportion"].copy()
+dm_temp = dm_ind.filter_w_regex({"Variables":".*technology.*"})
+dm_temp.rename_col_regex(str1 = "technology-development", str2 = "proportion", dim = "Variables")
+dm_temp.rename_col_regex(str1 = "copper_tech", str2 = "copper_secondary", dim = "Variables")
+dm_temp.rename_col_regex(str1 = "_prim", str2 = "_primary", dim = "Variables")
+dm_temp.rename_col_regex(str1 = "aluminium_sec", str2 = "aluminium_secondary", dim = "Variables")
+
+# adjust steel eaf for scraps
+idx1 = dm_proportion.idx
+idx2 = dm_temp.idx
+
+dm_proportion.array[:,:,idx1["min_proportion_eu_steel_EAF"]] = dm_proportion.array[:,:,idx1["min_proportion_eu_steel_EAF"]] + \
+                                                         dm_temp.array[:,:,idx2['ind_proportion_steel_scrap-EAF']] - \
+                                                         dm_temp.array[:,:,idx2['ind_proportion_steel_hydrog-DRI']] - \
+                                                         (dm_temp.array[:,:,idx2['ind_proportion_steel_hisarna']]/2) - \
+                                                         dm_temp.array[:,:,idx2['ind_proportion_steel_BF-BOF']]
+
+# adjust steel bof for scraps
+dm_proportion.array[:,:,idx1["min_proportion_eu_steel_BOF"]] = dm_proportion.array[:,:,idx1["min_proportion_eu_steel_BOF"]] + \
+                                                         dm_temp.array[:,:,idx2['ind_proportion_steel_BF-BOF']] - \
+                                                         (dm_temp.array[:,:,idx2['ind_proportion_steel_hisarna']]/2) - \
+                                                         dm_temp.array[:,:,idx2['ind_proportion_steel_scrap-EAF']]
+
+# make proportion of primary copper in industry
+dm_temp.add(dm_temp.array[:,:,idx2["ind_proportion_copper_secondary"]], 
+             dim = "Variables", col_label = "ind_proportion_copper_primary")
+
+# adjust proportions of aluminium and copper
+dm_proportion.array[:,:,idx1["min_proportion_eu_aluminium_primary"]] = \
+    dm_proportion.array[:,:,idx1["min_proportion_eu_aluminium_primary"]] -  dm_temp.array[:,:,idx2['ind_proportion_aluminium_primary']]
+dm_proportion.array[:,:,idx1["min_proportion_eu_copper_primary"]] = \
+    dm_proportion.array[:,:,idx1["min_proportion_eu_copper_primary"]] -  dm_temp.array[:,:,idx2['ind_proportion_copper_primary']]
+dm_proportion.array[:,:,idx1["min_proportion_eu_aluminium_secondary"]] = \
+    dm_proportion.array[:,:,idx1["min_proportion_eu_aluminium_secondary"]] -  dm_temp.array[:,:,idx2['ind_proportion_aluminium_secondary']]
+dm_proportion.array[:,:,idx1["min_proportion_eu_copper_secondary"]] = \
+    dm_proportion.array[:,:,idx1["min_proportion_eu_copper_secondary"]] -  dm_temp.array[:,:,idx2['ind_proportion_copper_secondary']]
+    
+# get proportions for hisarna and dri from temp into dm_proportion
+dm_proportion.add(dm_temp.array[:,:,idx2["ind_proportion_steel_hisarna"]], dim = "Variables", col_label = "min_proportion_eu_steel_hisarna")
+dm_proportion.add(dm_temp.array[:,:,idx2["ind_proportion_steel_hydrog-DRI"]], dim = "Variables", col_label = "min_proportion_eu_steel_DRI")
+
+# fix dimensions of dm_production
+dm_production = dm_production.flatten()
+dm_production = dm_production.flatten()
+dm_production = dm_production.flatten()
+dm_production.rename_col_regex(str1 = "mineral-decomposition_all-sectors_mineral-production-", str2 = "", dim = "Variables")
+dm_production.deepen()
+
+# fix dimensions of dm_proportion
+dm_proportion.deepen_twice()
+dm_proportion.rename_col(col_in = "min_proportion_eu", col_out = "home", dim = "Variables")
+dm_proportion.rename_col(col_in = "min_proportion_row", col_out = "abroad", dim = "Variables")
+dm_proportion.sort("Variables")
+dm_proportion.drop(dim = "Categories1", col_label = ['cobalt'])
+
+# clean
+del idx1, idx2
+
+#################################################################
+#################### MINERAL EXTRACTION (KG) ####################
+#################################################################
+
+# multiply production with proportion
+dm_primsec = dm_proportion.copy()
+dm_primsec.array = dm_production.array[...,np.newaxis] * dm_proportion.array
+dm_primsec.units["home"] = "kg"
+dm_primsec.units["abroad"] = "kg"
+
+# # checks
+# df_temp = dm_primsec.copy().write_df()
+
+# get factor to keep only primary
+cdm_temp = cdm_constants.filter_w_regex({"Variables":".*recy*"})
+cdm_temp.sort("Variables")
+
+# apply factor to keep only primary
+dm_extraction = dm_primsec.copy()
+dm_extraction.array = dm_extraction.array * cdm_temp.array[np.newaxis,np.newaxis,np.newaxis,np.newaxis,:]
+
+# sum over prim and sec, and home and abroad
+dm_extraction.add(np.nansum(dm_extraction.array, axis = -1, keepdims=True), dim = "Categories2", col_label = "total-sub")
+drops = ['BOF', 'DRI', 'EAF', 'hisarna', 'primary', 'secondary']
+dm_extraction.drop(dim = "Categories2", col_label = drops)
+dm_extraction.add(np.nansum(dm_extraction.array, axis = -3, keepdims=True), dim = "Variables", col_label = "total")
+drops = ['abroad', 'home']
+dm_extraction.drop(dim = "Variables", col_label = drops)
+
+# reshape
+dm_extraction = dm_extraction.flatten()
+dm_extraction = dm_extraction.flatten()
+dm_extraction.rename_col_regex(str1 = "total_", str2 = "", dim = "Variables")
+dm_extraction.rename_col_regex(str1 = "_total-sub", str2 = "", dim = "Variables")
+for i in minerals:
+    dm_extraction.units[i] = "kg"
+
+# multiply by extraction parameters
+cdm_temp = cdm_constants.filter_w_regex({"Variables":".*param*"})
+dm_extraction.array = dm_extraction.array * cdm_temp.array[np.newaxis,np.newaxis,:]
+
+# # checks
+# df_temp = dm_extraction.copy().write_df()
+
+# rename aluminium to bauxite and steel to iron
+dm_extraction.rename_col("aluminium", "bauxite", "Variables")
+dm_extraction.rename_col("steel", "iron", "Variables")
+dm_extraction.sort("Variables")
+minerals = ['bauxite', 'copper', 'graphite', "iron", 'lead', 'lithium', 'manganese', 'nickel', 'phosphate', 'potash']
+
+# convert to mt
+dm_extraction.array = dm_extraction.array * 0.000000001
+for i in minerals:
+    dm_extraction.units[i] = "Mt"
+
+# clean
+del cdm_temp, dm_proportion, dm_temp, drops, i
+
+###############################################################
+#################### MINERAL RESERVES (Mt) ####################
+###############################################################
+
+# get reserves
+cdm_reserves = cdm_constants.filter_w_regex({"Variables" : ".*reserve.*"})
+dm_reserves = cdm_to_dm(cdm_reserves, countries_list = dm_extraction.col_labels["Country"], 
+                        years_list = dm_extraction.col_labels["Years"])
+
+# scale reserves by population share to make it country level
+dm_lfs = DM_interface["lifestyles"].copy()
+idx_lfs = dm_lfs.idx
+arr_temp = dm_lfs.array[...,idx_lfs['lfs_pop_population']] / dm_lfs.array[...,idx_lfs['lfs_macro-scenarii_iiasa-ssp2']]
+dm_reserves.array = dm_reserves.array * arr_temp[...,np.newaxis]
+
+# clean
+del idx_lfs, arr_temp, dm_lfs, cdm_reserves
+
+# # checks
+# df_temp = dm_reserves.copy().write_df()
 
 
-###################################################################################################
-#################### ADDITIONAL MINERALS FROM INDUSTRY AND UNACCOUNTED SECTORS ####################
-###################################################################################################
+########################
+##### FOSSIL FUELS #####
+########################
 
+# demand for oil, gas and coal
+dm_fossil = DM_interface["oil-refinery"].copy()
+dm_fossil.rename_col_regex(str1 = "fos_primary-demand_", str2 = "min_energy_", dim = "Variables")
+idx = dm_fossil.idx
+dm_fossil.array[...,idx["min_energy_coal"]] = dm_fossil.array[...,idx["min_energy_coal"]] * 0.123
+dm_fossil.array[...,idx["min_energy_gas"]] = dm_fossil.array[...,idx["min_energy_gas"]] * 0.076
+dm_fossil.array[...,idx["min_energy_oil"]] = dm_fossil.array[...,idx["min_energy_oil"]] * 0.086
+fossils = ["coal","gas","oil"]
+variables = ["min_energy_" + i for i in fossils]
+for i in variables:
+    dm_fossil.units[i] = "Mt"
+    
+# adjust min_energy_gas for ccus_gas
+dm_gas = dm_fossil.filter({"Variables":["min_energy_gas"]})
+dm_ccus = DM_interface["ccus"].copy()
+dm_ccus.array[dm_gas.array < 0] = dm_ccus.array[dm_gas.array < 0] + dm_gas.array[dm_gas.array < 0] # in the ambitious pathway, the supply of ccus (which include biogas) is more than the demand for gaz leading to gas demand being negative. The following operation serves to correct this difference by substracting the negative gas demand by the over supply of ccus.
+idx = dm_fossil.idx
+dm_fossil.array[:,:,idx["min_energy_gas"], np.newaxis] = dm_fossil.array[:,:,idx["min_energy_gas"], np.newaxis] + dm_ccus.array
 
+# relative reserves for fossil fuels 
+variables = ["min_reserve_" + i for i in fossils]
+dm_relres_fossil = dm_reserves.filter({"Variables":variables})
+dm_relres_fossil.append(dm_fossil, dim = "Variables")
 
+# get yearly (sum across countries)
+dm_relres_fossil.add(np.nansum(dm_relres_fossil.array, axis = -3, keepdims=True), dim = "Country", col_label = "total")
+drops = dm_fossil.col_labels["Country"]
+dm_relres_fossil.drop(dim = "Country", col_label = drops)
 
+# make relative reserves
+dict_relres_fossil = relative_reserve(minerals = ["coal","gas","oil"], dm = dm_relres_fossil.copy(), 
+                                      reserve_starting_year = 2015, mineral_type = "fossil_fuel",
+                                      range_max = 200)
 
+# clean
+del idx, fossils, variables, drops
 
+####################
+##### MINERALS #####
+####################
+
+# add phosphate and potash extraction
+dm_min_other = DM_fxa["min_other"].copy()
+dm_agr = DM_interface["agriculture"].copy()
+
+dm_temp = dm_agr.filter_w_regex({"Variables" : ".*phosphate.*"})
+dm_temp.append(dm_min_other.filter_w_regex({"Variables" : ".*phosphate.*"}), dim = "Variables")
+dm_temp.add(np.nansum(dm_temp.array, axis=-1, keepdims=True), dim = "Variables", col_label = "phosphate", unit = "Mt")
+dm_extraction.append(dm_temp.filter({"Variables" : ["phosphate"]}), dim = "Variables")
+
+dm_temp = dm_agr.filter_w_regex({"Variables" : ".*potash.*"})
+dm_temp.append(dm_min_other.filter_w_regex({"Variables" : ".*potash.*"}), dim = "Variables")
+dm_temp.add(np.nansum(dm_temp.array, axis=-1, keepdims=True), dim = "Variables", col_label = "potash", unit = "Mt")
+dm_extraction.append(dm_temp.filter({"Variables" : ["potash"]}), dim = "Variables")
+
+# relative reserves for minerals
+variables = ["min_reserve_" + i for i in minerals]
+dm_relres_mineral = dm_reserves.filter({"Variables":variables})
+dm_temp = dm_extraction.copy()
+for i in minerals:
+    dm_temp.rename_col(col_in = i, col_out = "min_extraction_" + i, dim="Variables")
+dm_relres_mineral.append(dm_temp, dim = "Variables")
+
+# get yearly (sum across countries)
+dm_relres_mineral.add(np.nansum(dm_relres_mineral.array, axis = -3, keepdims=True), dim = "Country", col_label = "total")
+drops = dm_extraction.col_labels["Country"]
+dm_relres_mineral.drop(dim = "Country", col_label = drops)
+
+# make relative reserves
+dict_relres_minerals = relative_reserve(minerals = ["bauxite","copper","graphite", "iron","lead","lithium","manganese","nickel","phosphate","potash"], 
+                                        dm = dm_relres_mineral.copy(), reserve_starting_year = 2015, 
+                                        mineral_type = "mineral", range_max = 300)
+
+# clean
+del dm_temp, variables, drops
+
+# # checks
+# df_temp = dm_reserves.copy().write_df()
+# df_temp = dm_relres_mineral.copy().write_df()
+# df_temp = df_temp.loc[:,["Country","Years","min_extraction_bauxite[Mt]"]]
+
+######################################################################
+#################### MINERAL PRODUCTION BY SECTOR ####################
+######################################################################
+
+# apply extraction parameter to total indir, exp and dir
+# note: not clear why this is applied now directly here, as before we applied after all the modifications in industry, etc ...
+cdm_temp = cdm_constants.filter_w_regex({"Variables":".*param*"})
+# dm_temp = dm_mindec.copy()
+dm_mindec.array = dm_mindec.array * cdm_temp.array
+# note: here we apply the parameter to dm_mindec directly as for tpe we need the indir after multiplication
+
+# multiply exp and dir by sectoral percentages to get sectoral exp and dir (indir will be nan)
+dm_mindec_sect.array = dm_mindec.array * dm_mindec_sect.array
+dm_mindec_sect.units['mineral-decomposition'] = "kg"
+
+# !FIXME: in the knime this is dir - exp.
+
+# mineral production by sector
+dm_production_sect = dm_mindec_sect.copy()
+idx = dm_production_sect.idx
+
+dm_production_sect.array[:,:,:,:,idx["exp"],:] = np.nan_to_num(dm_production_sect.array[:,:,:,:,idx["exp"],:])
+dm_production_sect.operation('dir', "-", 'exp', dim = "Categories2", out_col="mineral-production", div0="error")
+dm_production_sect.drop(dim = "Categories2", col_label = ['dir', 'exp', 'indir'])
+dm_production_sect.rename_col(col_in = "aluminium", col_out = "bauxite", dim = "Categories3")
+dm_production_sect.rename_col(col_in = "steel", col_out = "iron", dim = "Categories3")
+dm_production_sect.sort("Categories3")
+
+# clean
+del idx, cdm_temp
+
+###########################################################
+#################### VARIABLES FOR TPE ####################
+###########################################################
+
+###########################
+##### EXTRA MATERIALS #####
+###########################
+
+# bioenergy wood
+dm_temp = dm_agr.filter({"Variables":['agr_bioenergy_biomass-demand_liquid_btl_fuelwood-and-res', 
+                                      'agr_bioenergy_biomass-demand_solid_fuelwood-and-res']})
+dm_temp.add(np.nansum(dm_temp.array, axis=-1, keepdims=True), dim = "Variables", col_label="bioenergy_wood", unit = "Mt")
+dm_extramaterials = dm_temp.filter({"Variables":['bioenergy_wood']})
+
+# from industry
+dm_temp = DM_interface["industry"].copy()
+dm_temp = dm_temp.filter({"Variables":["ind_material-production_glass", 'ind_timber', 
+                                       'ind_material-production_cement', 'ind_material-production_paper_woodpulp']})
+idx = dm_temp.idx
+
+# glass sand
+dm_temp.array[...,idx["ind_material-production_glass"]] = dm_temp.array[...,idx["ind_material-production_glass"]] * 1.9/2.4
+dm_temp.rename_col(col_in = "ind_material-production_glass", col_out = "glass_sand", dim = "Variables")
+
+# timber
+dm_temp.array[...,idx["ind_timber"]] = dm_temp.array[...,idx["ind_timber"]] * 0.001
+dm_temp.units["ind_timber"] = "Mt"
+dm_temp.rename_col(col_in = "ind_timber", col_out = "construction_wood", dim = "Variables")
+
+# cement sand
+dm_temp.array[...,idx["ind_material-production_cement"]] = dm_temp.array[...,idx["ind_material-production_cement"]] * 90/50
+dm_temp.rename_col(col_in = "ind_material-production_cement", col_out = "cement_sand", dim = "Variables")
+
+# paper wood
+dm_temp.array[...,idx["ind_material-production_paper_woodpulp"]] = dm_temp.array[...,idx["ind_material-production_paper_woodpulp"]] * 2.5
+dm_temp.rename_col(col_in = "ind_material-production_paper_woodpulp", col_out = "paper_wood", dim = "Variables")
+
+dm_extramaterials.append(dm_temp, dim = "Variables")
+
+# gas ccus
+dm_temp = dm_ccus.copy()
+dm_temp.rename_col(col_in = "ccu_ccus_gas-ff-natural", col_out = "ccus_gas", dim = "Variables")
+dm_extramaterials.append(dm_temp, dim = "Variables")
+
+# rename
+for i in dm_extramaterials.col_labels["Variables"]:
+    dm_extramaterials.rename_col(col_in = i, col_out = "min_" + i, dim = "Variables")
+
+# clean
+del dm_temp, idx, i
+
+##################################
+##### PUT VARIABLES TOGETHER #####
+##################################
+
+# extra materials
+dm_tpe = dm_extramaterials.copy()
+
+# mineral production by mineral and sector
+
+# potash and phosphate from other and agriculture
+dm_temp = dm_agr.filter({"Variables" : ['agr_demand_phosphate', 'agr_demand_potash']})
+dm_temp.rename_col_regex(str1 = "agr_demand", str2 = "min_agr", dim = "Variables")
+dm_tpe.append(dm_temp, dim = "Variables")
+dm_temp = dm_min_other.filter({"Variables" : ['min_other_phosphate', 'min_other_potash']})
+dm_tpe.append(dm_temp, dim = "Variables")
+
+# minerals from all sectors
+dm_temp = dm_production_sect.copy()
+dm_temp.rename_col(col_in = 'mineral-decomposition', col_out = "min", dim = "Variables")
+dm_temp.rename_col(col_in = 'construction', col_out = "building", dim = "Categories1")
+dm_temp = dm_temp.flatten()
+dm_temp = dm_temp.flatten()
+dm_temp = dm_temp.flatten()
+dm_temp.rename_col_regex(str1 = "mineral-production_", str2 = "", dim = "Variables")
+dm_temp.array = dm_temp.array * 0.000000001
+for key in dm_temp.units.keys():
+    dm_temp.units[key] = "Mt"
+dm_tpe.append(dm_temp, dim = "Variables")
+
+# fossil fuels
+dm_tpe.append(dm_fossil, dim = "Variables")
+
+# indirect demand by mineral
+dm_temp = dm_mindec.filter({"Categories2":["indir"]})
+dm_temp.rename_col(col_in = 'aluminium', col_out = "bauxite", dim = "Categories3")
+dm_temp.rename_col(col_in = 'steel', col_out = "iron", dim = "Categories3")
+dm_temp.sort("Categories3")
+dm_temp.rename_col(col_in = 'mineral-decomposition', col_out = "min", dim = "Variables")
+dm_temp.rename_col(col_in = 'indir', col_out = "indirect", dim = "Categories2")
+dm_temp.array = dm_temp.array * 0.000000001
+dm_temp.units["min"] = "Mt"
+dm_temp = dm_temp.flatten()
+dm_temp = dm_temp.flatten()
+dm_temp = dm_temp.flatten()
+dm_temp.rename_col_regex(str1 = "all-sectors_", str2 = "", dim = "Variables")
+dm_tpe.append(dm_temp, dim = "Variables")
+
+# extraction
+dm_temp = dm_extraction.copy()
+for i in dm_temp.col_labels["Variables"]:
+    dm_temp.rename_col(col_in = i, col_out = "min_extraction_" + i, dim = "Variables")
+dm_tpe.append(dm_temp, dim = "Variables")
+
+# sort
+dm_tpe.sort("Variables")
+
+# # check
+# df_temp = dm_tpe.copy().write_df()
+
+# get as df
+df_tpe = dm_tpe.copy().write_df()
+
+# get relative reserves
+df_relres_fossil = pd.DataFrame(dict_relres_fossil, index=[0])
+df_relres_minerals = pd.DataFrame(dict_relres_minerals, index=[0])
+df_tpe_relres = pd.merge(df_relres_fossil, df_relres_minerals, how="left", on=["Country","Years"])
+indexes = ["Country","Years"]
+variables = df_tpe_relres.columns.tolist()
+variables = np.array(variables)[[i not in indexes for i in variables]].tolist()
+df_tpe_relres = df_tpe_relres.loc[:,indexes + variables]
+
+# clean
+del dm_temp, key, i, indexes, variables
+
+# plot
+
+dm_tpe.datamatrix_plot(selected_cols={"Variables": 'min_transport_copper'})
 
 
 
