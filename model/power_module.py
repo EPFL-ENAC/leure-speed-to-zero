@@ -187,7 +187,7 @@ def database_from_csv_to_datamatrix():
     return
 
 # update_interaction_constant_from_file('interactions_constants_local') # uncomment to update constant
-# database_from_csv_to_datamatrix()  # un-comment to update
+#database_from_csv_to_datamatrix()  # un-comment to update
 
 #######################################################################################################################
 # DataSubMatrices - Power
@@ -202,8 +202,22 @@ def read_data(data_file, lever_setting):
 
     DM_ots_fts = read_level_data(DM_power, lever_setting)
 
-    # Capacity per technology (fuel-based)
+    # TUTO
+    baseyear = 2015  # take this from years_setting
+    # Extract yearly pv capacity
+    dm_pv_cap = DM_ots_fts['pv-capacity']
+    # Extract hourly data (fake pv hourly profile)
+    dm_pv_hourly = DM_ots_fts['ev-charging-profile']
+    idx_p = dm_pv_cap.idx
+    idx_h = dm_pv_hourly.idx
+    # hourly new pv profile [GW] = new-capacity-solar [GW] * hourly-capacity-factor [%]
+    # Attention: you need to only multiply 2015 + fts years ('idx_p[baseyear]:') and you need to add 3 np.newaxis to match the dimensions
+    arr_cap_hourly = dm_pv_cap.array[:, idx_p[baseyear]:, idx_p['pow_new-capacity'], idx_p['solar-pv'], np.newaxis, np.newaxis, np.newaxis] \
+                     * dm_pv_hourly.array[:, :, idx_h['pow_ev-charging-profile'], ...]
+    # The new array has the same shape as dm_pv_hourly and can be appended to it
+    dm_pv_hourly.add(arr_cap_hourly, dim='Variables', col_label='pow_new-solar-pv', unit='GW')
 
+    # Capacity per technology (fuel-based)
     dm_coal = DM_ots_fts['coal-capacity']
     dm_capacity = dm_coal.copy()
 
@@ -248,11 +262,12 @@ def read_data(data_file, lever_setting):
     dm_ccus = DM_ots_fts['carbon-storage-capacity']
 
     # Aggregated Data Matrix - Non-fuel-based power production
-
+    # TUTO: hourly profiles read_data output
+    dm_ev_hourly = DM_ots_fts['ev-charging-profile']
 
     cdm_const = DM_power['constant']
 
-    return dm_capacity, dm_ccus, cdm_const
+    return dm_capacity, dm_ccus, cdm_const, dm_ev_hourly
 
 
 #######################################################################################################################
@@ -470,6 +485,7 @@ def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
     # Filter - Energy production with no hourly profile
     dm_fb_np = dm_fb_capacity.filter({'Variables': ['pow_net-yearly-production']})
 
+
     # Filter - Renewable energy production
     dm_nfb = dm_capacity.filter({'Variables': ['pow_gross-yearly-production']})
     dm_nfb.rename_col(col_in='pow_gross-yearly-production', col_out='pow_net-yearly-production', dim='Variables')
@@ -504,7 +520,7 @@ def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
 #######################################################################################################################
 
 def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_agr_electricity, DM_tra,
-                           dm_ind_hydrogen, dm_amm_hydrogen):
+                           dm_ind_hydrogen, dm_amm_hydrogen, dm_ev_hourly):
 
     #########################################################################
     # CalculationLeafs - Electricity demand - Appliances [GWh]
@@ -556,7 +572,7 @@ def power(lever_setting, years_setting):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     power_data_file = os.path.join(current_file_directory,
                                         '../_database/data/datamatrix/geoscale/power.pickle')
-    dm_capacity, dm_ccus, cdm_const = read_data(power_data_file,lever_setting)
+    dm_capacity, dm_ccus, cdm_const, dm_ev_hourly = read_data(power_data_file,lever_setting)
     dm_climate = simulate_climate_to_power_input()
     dm_agr_electricity = simulate_agriculture_to_power_input()
     DM_bld = simulate_buildings_to_power_input()
@@ -570,9 +586,10 @@ def power(lever_setting, years_setting):
 
     # To send to TPE (result run)
     dm_fake_1, dm_fake_2 = yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const)
-    dm_fake_3, dm_fake_4, dm_fake_5 = yearly_demand_workflow(DM_bld, dm_ind_electricity,dm_amm_electricity,
+    # TUTO give dm_ev_hourly as input to yearly_demand_workflow
+    dm_fake_3, dm_fake_4, dm_fake_5 = yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity,
                                                              dm_agr_electricity, DM_tra, dm_ind_hydrogen,
-                                                             dm_amm_hydrogen)# input fonctions
+                                                             dm_amm_hydrogen, dm_ev_hourly)# input fonctions
     # same number of arg than the return function
 
     # concatenate all results to df
