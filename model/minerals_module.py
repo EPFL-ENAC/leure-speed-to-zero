@@ -9,6 +9,7 @@ Created on Thu May  9 16:29:51 2024
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database_fxa
+from model.common.interface_class import Interface
 from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm
 import pandas as pd
 import pickle
@@ -1804,11 +1805,11 @@ def variables_for_tpe(DM_interface, DM_minerals, dm_production_sect, dm_fossil, 
     # return
     return df_tpe, df_tpe_relres
 
-def minerals(years_setting):
+def minerals(years_setting, interface=Interface()):
     
     # directories
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    minerals_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/minerals.pickle')
+    minerals_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/minerals.pickle')
     
     # get data
     DM_minerals, cdm_constants = read_data(minerals_data_file)
@@ -1851,9 +1852,11 @@ def minerals(years_setting):
     # get variables for TPE
     df_tpe, df_tpe_relres = variables_for_tpe(DM_interface, DM_minerals, dm_production_sect, dm_fossil, dm_mindec, dm_extraction, 
                                               dict_relres_fossil, dict_relres_minerals)
-    
+
+
     # return
-    results_run = {"out1": df_tpe, "out2": "calibration_tbd", "out3" : df_tpe_relres}
+    #results_run = {"out1": df_tpe, "out2": "calibration_tbd", "out3" : df_tpe_relres}
+    results_run = df_tpe
     return results_run
 
 def local_minerals_run():
