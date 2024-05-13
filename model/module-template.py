@@ -11,12 +11,14 @@ import pandas as pd
 # Import Class
 from model.common.data_matrix_class import DataMatrix  # Class for the model inputs
 from model.common.constant_data_matrix_class import ConstantDataMatrix  # Class for the constant inputs
-from model.common.auxiliary_functions import read_level_data, filter_geoscale
+from model.common.interface_class import Interface
 
 # ImportFunctions
 from model.common.io_database import read_database, read_database_fxa  # read functions for levers & fixed assumptions
 from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups,\
     update_interaction_constant_from_file
+from model.common.auxiliary_functions import read_level_data, filter_geoscale
+
 
 
 #######################################################################################################################
@@ -169,14 +171,20 @@ def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
 # CoreModule - Power
 #######################################################################################################################
 
-def power(lever_setting, years_setting):
+def power(lever_setting, years_setting, interface=Interface()):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     power_data_file = os.path.join(current_file_directory,
                                         '../_database/data/datamatrix/geoscale/power.pickle')
     dm_capacity, dm_ccus, cdm_const = read_data(power_data_file,lever_setting)
     dm_climate = simulate_climate_to_power_input()
-    dm_agr_electricity = simulate_agriculture_to_power_input()
-    DM_bld = simulate_buildings_to_power_input()
+    if interface.has_link(from_sector='agriculture', to_sector='power'):
+        dm_agr_electricity = interface.get_link(from_sector='agriculture', to_sector='power')
+    else:
+        dm_agr_electricity = simulate_agriculture_to_power_input()
+    if interface.has_link(from_sector='buildings', to_sector='power'):
+        DM_bld = interface.get_link(from_sector='buildings', to_sector='power')
+    else:
+        DM_bld = simulate_buildings_to_power_input()
     dm_ind_electricity, dm_ind_hydrogen = simulate_industry_to_power_input()
     dm_amm_electricity, dm_amm_hydrogen = simulate_ammonia_to_power_input()
     DM_tra = simulate_transport_to_power_input()
