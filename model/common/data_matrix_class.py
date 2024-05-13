@@ -750,6 +750,39 @@ class DataMatrix:
             dm_out.sort(dim=dim)
             return dm_out
 
+    def group_all(self, dim=str, inplace=True):
+        # Function to drop a dimension by summing all categories
+        # Call example: dm_to_group.group_all(dim='Categories2', inplace=True)
+        # or dm_grouped = dm_to_group.group_all(dim='Categories1', inplace=False)
+        # when inplace = False dm_to_group remains unchanged and the grouped dm is return as output
+        if 'Categories' not in dim:
+            raise ValueError(f'You can only use goup_all() on Categories')
+        if inplace:
+            dm = self
+        else:
+            dm = self.copy()
+        a = dm.dim_labels.index(dim)
+        dm.array = np.nansum(dm.array, axis=a)
+        # Remove indexes
+        for col in dm.col_labels[dim]:
+            dm.idx.pop(col)
+        # Rename categories
+        categories_to_rename = [cat for cat in dm.dim_labels if 'Categories' in cat]
+        categories_to_rename.remove(dim)
+        i = 1
+        for old_cat in categories_to_rename:
+            new_cat = 'Categories' + str(i)
+            dm.col_labels[new_cat] = dm.col_labels[old_cat]
+            i = i + 1
+        # Remove last category and dimension
+        last_dim = dm.dim_labels[-1]
+        dm.col_labels.pop(last_dim)
+        dm.dim_labels = dm.dim_labels[:-1]
+
+        if not inplace:
+            return dm
+        return
+
     def datamatrix_plot(self, selected_cols={}, title='title'):
 
         dims = len(self.dim_labels)
