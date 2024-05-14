@@ -224,7 +224,7 @@ class DataMatrix:
         new_shape[a] = len(col_label)
         new_shape = tuple(new_shape)
         # If it is adding a new array of constant value (e.g. nan) to have a dummy dimension:
-        if isinstance(new_array, float) and dummy is True:
+        if isinstance(new_array, (float, int)) and dummy is True:
             new_array = new_array * np.ones(new_shape)
         elif len(col_label) == 1 and new_array.shape != new_shape:
             new_array = new_array[..., np.newaxis]
