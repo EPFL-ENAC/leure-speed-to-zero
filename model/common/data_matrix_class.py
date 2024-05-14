@@ -224,7 +224,7 @@ class DataMatrix:
         new_shape[a] = len(col_label)
         new_shape = tuple(new_shape)
         # If it is adding a new array of constant value (e.g. nan) to have a dummy dimension:
-        if isinstance(new_array, float) and dummy is True:
+        if isinstance(new_array, (float, int)) and dummy is True:
             new_array = new_array * np.ones(new_shape)
         elif len(col_label) == 1 and new_array.shape != new_shape:
             new_array = new_array[..., np.newaxis]
@@ -720,6 +720,8 @@ class DataMatrix:
         # Sum values in group, e.g.
         # dm.groupby({'road': ['LDV', '2W']}, dim='Categories1') sums LDV and 2W and calls it road
         # dm.groupby({'freight': 'HDV.*|marine.*', 'passenger': 'LDV|bus|aviation'}, dim='Categories2', regex = True)
+        if 'Categories' not in dim:
+            raise ValueError(f'You can only use groupby() on Categories')
         i = 0
         for out_col, col_to_group in group_cols.items():
             if regex:
@@ -756,7 +758,7 @@ class DataMatrix:
         # or dm_grouped = dm_to_group.group_all(dim='Categories1', inplace=False)
         # when inplace = False dm_to_group remains unchanged and the grouped dm is return as output
         if 'Categories' not in dim:
-            raise ValueError(f'You can only use goup_all() on Categories')
+            raise ValueError(f'You can only use group_all() on Categories')
         if inplace:
             dm = self
         else:
