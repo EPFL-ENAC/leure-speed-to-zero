@@ -1154,7 +1154,7 @@ def buildings_local_run():
 
 
 #database_from_csv_to_datamatrix()
-#buildings_local_run()
+buildings_local_run()
 
 
 
