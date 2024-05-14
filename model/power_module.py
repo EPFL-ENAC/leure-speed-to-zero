@@ -134,15 +134,32 @@ def database_from_csv_to_datamatrix():
     lever = 'ev-charging-profile'
     dict_ots, dict_fts = hourly_data_reader(file, years_setting, lever, dict_ots, dict_fts)
 
+
+
 #######################################################################################################################
 # DataFixedAssumptions - Power
 #######################################################################################################################
+
+    # Database - PV profile
+    file = 'power_pv-profile'
+    dm_profile_pv = hourly_data_reader(file, years_setting)
+
+    # Database - Onshore wind profile
+    file = 'power_wind-onshore-profile'
+    dm_profile_onshore = hourly_data_reader(file, years_setting)
+
+    # Database - POnshore wind profile
+    file = 'power_wind-offshore-profile'
+    dm_profile_offshore = hourly_data_reader(file, years_setting)
 
     file = 'power_train-profile'
     dm_pow_train = hourly_data_reader(file, years_setting)
 
     dict_fxa = {
-        'train-hourly': dm_pow_train
+        'train-hourly': dm_pow_train,
+        'pv-profile': dm_profile_pv,
+        'onshore-wind-profile': dm_profile_onshore,
+        'offshore-wind-profile': dm_profile_offshore
     }
 
 
@@ -187,7 +204,7 @@ def database_from_csv_to_datamatrix():
     return
 
 # update_interaction_constant_from_file('interactions_constants_local') # uncomment to update constant
-#database_from_csv_to_datamatrix()  # un-comment to update
+# database_from_csv_to_datamatrix()  # un-comment to update
 
 #######################################################################################################################
 # DataSubMatrices - Power
@@ -198,27 +215,8 @@ def read_data(data_file, lever_setting):
         DM_power = pickle.load(handle)
 
     # FXA data matrix
-    # dm_fxa_caf_food = DM_lifestyles['fxa']['caf_food']
 
     DM_ots_fts = read_level_data(DM_power, lever_setting)
-
-    # TUTO
-    baseyear = 2015  # take this from years_setting
-    # Extract yearly pv capacity
-    dm_pv_cap = DM_ots_fts['pv-capacity']
-    # Extract hourly data (fake pv hourly profile)
-    dm_pv_hourly = DM_ots_fts['ev-charging-profile']
-    idx_p = dm_pv_cap.idx
-    idx_h = dm_pv_hourly.idx
-    # hourly new pv profile [GW] = new-capacity-solar [GW] * hourly-capacity-factor [%]
-    # Attention: you need to only multiply 2015 + fts years ('idx_p[baseyear]:') and you need to add 3 np.newaxis to match the dimensions
-    arr_cap_hourly = dm_pv_cap.array[:, idx_p[baseyear]:, idx_p['pow_new-capacity'], idx_p['solar-pv'], np.newaxis, np.newaxis, np.newaxis] \
-                     * dm_pv_hourly.array[:, :, idx_h['pow_ev-charging-profile'], ...]
-
-    # The new array has the same shape as dm_pv_hourly and can be appended to it
-    dm_pv_hourly.add(arr_cap_hourly, dim='Variables', col_label='pow_new-solar-pv', unit='GW')
-    dm_pv_hourly.array[:, :, 0, ...] = 1
-    dm_pv_hourly.operation('pow_ev-charging-profile', '+', 'pow_new-solar-pv', out_col='test', unit='GW')
 
     # Capacity per technology (fuel-based)
     dm_coal = DM_ots_fts['coal-capacity']
@@ -264,13 +262,25 @@ def read_data(data_file, lever_setting):
 
     dm_ccus = DM_ots_fts['carbon-storage-capacity']
 
-    # Aggregated Data Matrix - Non-fuel-based power production
-    # TUTO: hourly profiles read_data output
+    # Hourly data (lever)
+
     dm_ev_hourly = DM_ots_fts['ev-charging-profile']
 
+    # Hourly data (fxa)
+    dm_profile_pv = DM_power['fxa']['pv-profile']
+    dm_profile_onshore = DM_power['fxa']['onshore-wind-profile']
+    dm_profile_offshore = DM_power['fxa']['offshore-wind-profile']
+
+    DM_production_profiles = {
+        'pv-profile':dm_profile_pv,
+        'onshore-wind-profile': dm_profile_onshore,
+        'offshore-wind-profile': dm_profile_offshore
+    }
+
+    # Constants
     cdm_const = DM_power['constant']
 
-    return dm_capacity, dm_ccus, cdm_const, dm_ev_hourly
+    return dm_capacity, dm_ccus, cdm_const, dm_ev_hourly, DM_production_profiles
 
 
 #######################################################################################################################
@@ -519,6 +529,45 @@ def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
     return dm_capacity, dm_fb_capacity, dm_production_np, dm_production_p
 
 #######################################################################################################################
+# CalculationTree - Power - Hourly production
+#######################################################################################################################
+
+    # Tuto: Hourly data computation
+def hourly_production_workflow(dm_production_np, dm_production_p, DM_production_profiles):
+
+    ######################################
+    # CalculationLeafs - Hourly production per technology [GWh]
+    ######################################
+
+    # take this from years_setting
+    baseyear = 2015
+
+    # Extract hourly data (fake pv hourly profile)
+    dm_profile_hourly = DM_production_profiles['pv-profile']
+    dm_profile_hourly.append(DM_production_profiles['offshore-wind-profile'],dim='Variables')
+    dm_profile_hourly.append(DM_production_profiles['onshore-wind-profile'],dim='Variables')
+
+    # Indexes for computation
+    idx_cap = dm_production_p.idx
+    idx_pro = dm_profile_hourly.idx
+
+    # Hourly profile
+    # Warning (1): you need to only multiply 2015 and FTS ('idx_cap[base-year]:')
+    # Warning (2): you need to add 3 new axis to match the dimensions
+    ay_hourly_profile = dm_production_p.array[:, idx_cap[baseyear]:, idx_cap['pow_net-yearly-production'], :,
+                   np.newaxis, np.newaxis, np.newaxis] \
+                     * dm_profile_hourly.array[...]
+
+    # Reshape of the output
+    dm_profile_hourly.array = ay_hourly_profile
+    for key in dm_profile_hourly.units.keys():
+        dm_profile_hourly.units[key] = 'GWh'
+
+    return dm_profile_hourly
+
+
+
+#######################################################################################################################
 # CalculationTree - Power - Building yearly demand
 #######################################################################################################################
 
@@ -575,7 +624,7 @@ def power(lever_setting, years_setting):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     power_data_file = os.path.join(current_file_directory,
                                         '../_database/data/datamatrix/geoscale/power.pickle')
-    dm_capacity, dm_ccus, cdm_const, dm_ev_hourly = read_data(power_data_file,lever_setting)
+    dm_capacity, dm_ccus, cdm_const, dm_ev_hourly, DM_production_profiles = read_data(power_data_file,lever_setting)
     dm_climate = simulate_climate_to_power_input()
     dm_agr_electricity = simulate_agriculture_to_power_input()
     DM_bld = simulate_buildings_to_power_input()
@@ -588,7 +637,10 @@ def power(lever_setting, years_setting):
     dm_climate = dm_climate.filter({'Country': cntr_list})
 
     # To send to TPE (result run)
-    dm_fake_1, dm_fake_2 = yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const)
+    dm_capacity, dm_fb_capacity, dm_production_np, dm_production_p =\
+        yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const)
+    dm_fake_5 = hourly_production_workflow(dm_production_np, dm_production_p, DM_production_profiles)
+
     # TUTO give dm_ev_hourly as input to yearly_demand_workflow
     dm_fake_3, dm_fake_4, dm_fake_5 = yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity,
                                                              dm_agr_electricity, DM_tra, dm_ind_hydrogen,
