@@ -38,54 +38,59 @@ def database_from_csv_to_datamatrix():
     years_all = years_ots + years_fts  # Defines all years
 
 #######################################################################################################################
-# DataFixedAssumptions - Power
+# DataFixedAssumptions - Oil refinery
 #######################################################################################################################
 
+    # Read fixed assumptions to datamatrix
+    df = read_database_fxa('oil-refinery_fixed-assumptions')
+    dm = DataMatrix.create_from_df(df, num_cat=0)
+
+    # Keep only ots and fts years
+    dm = dm.filter(selected_cols={'Years': years_all})
+
+    # Dictionary
+    dm_refinery_ratio = dm.filter({'Variables': ['ory_refinery_country-ratio']})
+
+    # ToDo: check the values as 12% for France is very low, so meaning of this ratio?
+    # ToDo: add calibration factors
+
+    dict_fxa = {
+        'refinery-ratio': dm_refinery_ratio
+    }
+
+#######################################################################################################################
+# DataConstants - Oil refinery
+#######################################################################################################################
+
+    cdm_const = ConstantDataMatrix.extract_constant('interactions_constants', pattern='cp_refinery.*', num_cat=0)
 
 
 #######################################################################################################################
-# DataConstants - Power
+# DataMatrices - Oil refinery Data Matrix
 #######################################################################################################################
 
+    DM_refinery = {
+        'fxa': dict_fxa,
+        'constant': cdm_const
+    }
 
 #######################################################################################################################
-# DataMatrices - Power Data Matrix
+# DataPickle - Oil refinery
 #######################################################################################################################
 
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(current_file_directory, '../_database/data/datamatrix/oil-refinery.pickle')
+    with open(f, 'wb') as handle:
+        pickle.dump(DM_refinery, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-#######################################################################################################################
-# DataPickle - Power
-#######################################################################################################################
-
+    return DM_refinery
 
 # update_interaction_constant_from_file('interactions_constants_local') # uncomment to update constant
-# database_from_csv_to_datamatrix()  # un-comment to update
+# database_from_csv_to_datamatrix()  # un-comment to update pickle
 
 #######################################################################################################################
-# DataSubMatrices - Power
+# DataSubMatrices - Oil refinery
 #######################################################################################################################
-
-def read_data(data_file, lever_setting):
-    with open(data_file, 'rb') as handle:
-        DM_power = pickle.load(handle)
-
-    # FXA data matrix
-    # dm_fxa_caf_food = DM_lifestyles['fxa']['caf_food']
-
-    DM_ots_fts = read_level_data(DM_power, lever_setting)
-
-    # Capacity per technology (fuel-based)
-
-    dm_coal = DM_ots_fts['coal-capacity']
-    dm_capacity = dm_coal.copy()
-
-    # Capacity per technology (non-fuel based)
-
-    dm_pv = DM_ots_fts['pv-capacity']
-    dm_capacity.append(dm_pv, dim='Categories1')
-
-    return dm_capacity, dm_ccus, cdm_const
-
 
 #######################################################################################################################
 # LocalInterfaces - Power
@@ -95,9 +100,69 @@ def simulate_power_to_refinery_input():
     f = os.path.join(current_file_directory, "../_database/data/xls/"
                                              "All-Countries-interface_from-power-to-oil-refinery.xlsx")
     df = pd.read_excel(f, sheet_name="default")
-    dm_climate = DataMatrix.create_from_df(df, num_cat=1)
+    dm_power = DataMatrix.create_from_df(df, num_cat=1)
 
-    return dm_climate
+    return dm_power
+
+#######################################################################################################################
+# LocalInterfaces - Buildings
+#######################################################################################################################
+def simulate_buildings_to_refinery_input():
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(current_file_directory, "../_database/data/xls/"
+                                             "All-Countries-interface_from-buildings-to-oil-refinery.xlsx")
+    df = pd.read_excel(f, sheet_name="default")
+    dm_buildings = DataMatrix.create_from_df(df, num_cat=1)
+
+    return dm_buildings
+
+#######################################################################################################################
+# LocalInterfaces - Transport
+#######################################################################################################################
+def simulate_transport_to_refinery_input():
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(current_file_directory, "../_database/data/xls/"
+                                             "All-Countries-interface_from-transport-to-oil-refinery.xlsx")
+    df = pd.read_excel(f, sheet_name="default")
+    dm_transport = DataMatrix.create_from_df(df, num_cat=1)
+
+    return dm_transport
+
+#######################################################################################################################
+# LocalInterfaces - Industry
+#######################################################################################################################
+def simulate_industry_to_refinery_input():
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(current_file_directory, "../_database/data/xls/"
+                                             "All-Countries-interface_from-industry-to-oil-refinery.xlsx")
+    df = pd.read_excel(f, sheet_name="default")
+    dm_industry = DataMatrix.create_from_df(df, num_cat=1)
+
+    return dm_industry
+
+#######################################################################################################################
+# LocalInterfaces - Ammonia
+#######################################################################################################################
+def simulate_ammonia_to_refinery_input():
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(current_file_directory, "../_database/data/xls/"
+                                             "All-Countries-interface_from-ammonia-to-oil-refinery.xlsx")
+    df = pd.read_excel(f, sheet_name="default")
+    dm_ammonia = DataMatrix.create_from_df(df, num_cat=1)
+
+    return dm_ammonia
+
+#######################################################################################################################
+# LocalInterfaces - Agriculture
+#######################################################################################################################
+def simulate_agriculture_to_refinery_input():
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(current_file_directory, "../_database/data/xls/"
+                                             "All-Countries-interface_from-agriculture-to-oil-refinery.xlsx")
+    df = pd.read_excel(f, sheet_name="default")
+    dm_agriculture = DataMatrix.create_from_df(df, num_cat=1)
+
+    return dm_agriculture
 
 #######################################################################################################################
 # CalculationTree - Module - sub flow
@@ -115,43 +180,26 @@ def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
     dm_capacity.add(ay_gross_yearly_production, dim='Variables', col_label='pow_gross-yearly-production', unit='GWh')
 
 #######################################################################################################################
-# CoreModule - Power
+# CoreModule - Refinery
 #######################################################################################################################
 
-def power(lever_setting, years_setting):
+def refinery(lever_setting, years_setting):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    power_data_file = os.path.join(current_file_directory,
-                                        '../_database/data/datamatrix/geoscale/power.pickle')
-    dm_capacity, dm_ccus, cdm_const = read_data(power_data_file,lever_setting)
-    dm_climate = simulate_climate_to_power_input()
-    dm_agr_electricity = simulate_agriculture_to_power_input()
-    DM_bld = simulate_buildings_to_power_input()
-    dm_ind_electricity, dm_ind_hydrogen = simulate_industry_to_power_input()
-    dm_amm_electricity, dm_amm_hydrogen = simulate_ammonia_to_power_input()
-    DM_tra = simulate_transport_to_power_input()
+    refinery_data_file = os.path.join(current_file_directory,
+                                        '../_database/data/datamatrix/geoscale/oil-refinery.pickle')
+    with open(refinery_data_file, 'rb') as handle:  # read binary (rb)
+        DM_refinery= pickle.load(handle)
 
-    # filter local interface country list
-    cntr_list = dm_capacity.col_labels['Country']
-    dm_climate = dm_climate.filter({'Country': cntr_list})
+    results_run = DM_refinery
 
-    # To send to TPE (result run)
-    dm_fake_1, dm_fake_2 = yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const)
-    dm_fake_3, dm_fake_4, dm_fake_5 = yearly_demand_workflow(DM_bld, dm_ind_electricity,dm_amm_electricity,
-                                                             dm_agr_electricity, DM_tra, dm_ind_hydrogen,
-                                                             dm_amm_hydrogen)# input fonctions
-    # same number of arg than the return function
-
-    # concatenate all results to df
-
-    results_run = dm_fake_1
     return results_run
 
 
 #######################################################################################################################
-# LocalRun - Power
+# LocalRun - Refinery
 #######################################################################################################################
 
-def local_power_run():
+def local_refinery_run():
     # Function to run only transport module without converter and tpe
     years_setting = [1990, 2015, 2050, 5]
     f = open('../config/lever_position.json')
@@ -160,9 +208,9 @@ def local_power_run():
     global_vars = {'geoscale': 'Switzerland'}
     filter_geoscale(global_vars)
 
-    results_run = power(lever_setting, years_setting)
+    results_run = refinery(lever_setting, years_setting)
 
     return results_run
 
 
-results_run = local_power_run()
+results_run = local_refinery_run()
