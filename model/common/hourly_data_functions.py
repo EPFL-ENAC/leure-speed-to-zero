@@ -127,7 +127,7 @@ def hourly_data_reader(file, years_setting, lever=None, dict_ots={}, dict_fts={}
 
     def df_to_dm_hourly_w_lever(df, baseyear, years_fts, lever, dict_ots, dict_fts):
         # Read ots (only baseyear)
-        df_ots = df_new_hourly_cols(df, baseyear, lever)
+        df_ots = df_new_hourly_cols(df, baseyear, lever).copy()
         # Read fts
         i = 0
         for year in years_fts:
