@@ -112,7 +112,16 @@ def simulate_power_to_district_heating_input():
     file_path = os.path.join(current_file_directory, '../_database/data/xls/', file)
     df = pd.read_excel(file_path, sheet_name="default")
     dm_pow = DataMatrix.create_from_df(df, num_cat=0)
-    return dm_pow
+    # Filter heat supply from CHP, sum bio + fossil, rename
+    dm_pow.operation('elc_heat-supply-CHP_bio', '+', 'elc_heat-supply-CHP_fossil',
+                     out_col='dhg_energy-demand_contribution_CHP', unit='TWh', nansum=True)
+    dm_emissions = dm_pow.filter({'Variables': ['elc_CO2-heat_specific']}, inplace=False)
+    dm_pow.filter({'Variables': ['dhg_energy-demand_contribution_CHP']}, inplace=True)
+    DM_pow = {
+        'wf_emissions': dm_emissions,
+        'wf_energy': dm_pow
+    }
+    return DM_pow
 
 
 def simulate_industry_to_district_heating_input():
@@ -122,6 +131,7 @@ def simulate_industry_to_district_heating_input():
     file_path = os.path.join(current_file_directory, '../_database/data/xls/', file)
     df = pd.read_excel(file_path, sheet_name="default")
     dm_ind = DataMatrix.create_from_df(df, num_cat=0)
+    dm_ind.rename_col('ind_supply_heat-waste', 'dhg_energy-demand_contribution_heat-waste', dim='Variables')
 
     return dm_ind
 
@@ -133,19 +143,17 @@ def simulate_buildings_to_district_heating_input():
     file_path = os.path.join(current_file_directory, '../_database/data/xls/', file)
     df = pd.read_excel(file_path)
     dm_bld = DataMatrix.create_from_df(df, num_cat=0)
-    dm_elec = dm_bld.filter_w_regex({'Variables': 'bld_electricity-demand.*'})
-    dm_elec.deepen_twice()
-    dm_heat_supply = dm_bld.filter_w_regex({'Variables': 'bld_district-heating.*'})
-    dm_heat_supply.deepen()
+    # Electricity input is not used
+    # dm_elec = dm_bld.filter_w_regex({'Variables': 'bld_electricity-demand.*'})
+    # dm_elec.deepen_twice()
+    dm_bld.filter_w_regex({'Variables': 'bld_district-heating.*'}, inplace=True)
+    dm_bld.deepen()
 
-    DM_bld = {
-        'electricity-demand': dm_elec,
-        'district-heat-demand': dm_heat_supply
-    }
-    return DM_bld
+    return dm_bld
 
 
-def bld_energy_demand_workflow(dm_dhg, dm_bld, dm_pow, dm_ind):
+def dhg_energy_demand_workflow(dm_dhg, dm_bld, dm_pow, dm_ind):
+
     # technology-fuel-% * efficiency-by-fuel
     dm_dhg.operation('bld_heat-district-efficiency', '*', 'bld_heat-district-technology-fuel',
                      out_col='dhg_energy-need-technology-share', unit='%')
@@ -154,10 +162,11 @@ def bld_energy_demand_workflow(dm_dhg, dm_bld, dm_pow, dm_ind):
     dm_dhg.array[:, :, idx_d['dhg_energy-need-technology-share'], :] \
         = dm_dhg.array[:, :, idx_d['dhg_energy-need-technology-share'], :]\
         / np.nansum(dm_dhg.array[:, :, idx_d['dhg_energy-need-technology-share'], :], axis=-1, keepdims=True)
-    dm_dhg.drop(dim='Variables', col_label=['bld_heat-district-technology-fuel'])
+    del idx_d
 
-    # sum space heating residential + non-residential demand
+    # Sum space heating residential + non-residential demand
     dm_bld.group_all(dim='Categories1')
+    # Compute energy demand by fuel type
     idx_b = dm_bld.idx
     idx_t = dm_dhg.idx
     # note: from GWh to TWh
@@ -167,32 +176,104 @@ def bld_energy_demand_workflow(dm_dhg, dm_bld, dm_pow, dm_ind):
     # !FIXME: we have already multiplied by the efficiency earlier, check if this is correct
     # energy-need-by-fuel * efficiency-by-fuel
     dm_dhg.operation('dhg_energy-need', '*', 'bld_heat-district-efficiency', out_col='dhg_energy-demand-prelim', unit='TWh')
+    dm_dhg.filter({'Variables': ['dhg_energy-demand-prelim']}, inplace=True)
+    del dm_bld, arr_energy_by_tech, idx_b, idx_t
 
-    # Summ all energy need
-    dm_tot_demand = dm_dhg.filter({'Variables': ['dhg_energy-demand-prelim']})
-    dm_tot_demand.group_all(dim='Categories1')
+    # Sum all energy need
+    dm_all = dm_dhg.group_all(dim='Categories1', inplace=False)
 
     # Share of energy need not from waste
-    dm_tot_demand.append(dm_ind, dim='Variables')
-    dm_tot_demand.operation('dhg_energy-demand-prelim', '-', 'ind_supply_heat-waste', out_col='dhg_diff', unit='TWh')
-    dm_tot_demand.operation('dhg_diff', '/', 'dhg_energy-demand-prelim',
-                            out_col='dhg_energy-demand-share_heat-district-addition', unit='%')
-    ## If less than 0, replace with 0
-    var = 'dhg_energy-demand-share_heat-district-addition'
-    idx = dm_tot_demand.idx
-    dm_tot_demand.array[:, :, idx[var]] = np.maximum(dm_tot_demand.array[:, :, idx[var]], 0)
+    # ! FIXME why are we not removing the one from CHP ?
+    dm_all.append(dm_ind, dim='Variables')
+    dm_all.append(dm_pow, dim='Variables')
+    del dm_ind, dm_pow
 
-    # Filter heat supply from CHP, sum bio + fossil, rename
-    dm_CHP = dm_pow.filter({'Variables': ['elc_heat-supply-CHP_bio', 'elc_heat-supply-CHP_fossil']})
-    dm_CHP.deepen()
-    dm_CHP.group_all(dim='Categories1')
-    dm_CHP.rename_col('elc_heat-supply-CHP', 'dhg_energy-demand_contribution_CHP', dim='Variables')
-    del dm_pow
+    # Energy share not from waste: max(0, (preliminary heat demand - waste heat supply)/preliminary heat demand)
+    idx_a = dm_all.idx
+    arr_share_non_waste = np.maximum(0, ((dm_all.array[:, :, idx_a['dhg_energy-demand-prelim']]
+                                         - dm_all.array[:, :, idx_a['dhg_energy-demand_contribution_heat-waste']])
+                                         / dm_all.array[:, :, idx_a['dhg_energy-demand-prelim']]))
+    dm_all.add(arr_share_non_waste, dim='Variables', col_label='dhg_energy-demand-share_heat-district-addition', unit='%')
+    del arr_share_non_waste, idx_a
 
-    # !FIXME: you are here, which coincides with the max-in-args math formula
+    # Multiply preliminary demand by share of energy not from waste
+    idx_t = dm_all.idx
+    idx_g = dm_dhg.idx
+    arr = dm_dhg.array[:, :, idx_g['dhg_energy-demand-prelim'], :] \
+          * dm_all.array[:, :, idx_t['dhg_energy-demand-share_heat-district-addition'], np.newaxis]
+    dm_dhg.add(arr, dim='Variables', col_label='dhg_energy-demand', unit='TWh')
+    dm_dhg.filter({'Variables': ['dhg_energy-demand']}, inplace=True)
+    dm_all.filter({'Variables': ['dhg_energy-demand_contribution_CHP', 'dhg_energy-demand_contribution_heat-waste']}, inplace=True)
+    del arr, idx_g, idx_t
 
-    return
+    # Rename for TPE
+    dm_all.rename_col('dhg_energy-demand_contribution_CHP', 'dhg_energy-demand_heat-co-product_from-power', dim='Variables')
+    dm_all.rename_col('dhg_energy-demand_contribution_heat-waste', 'dhg_energy-demand_heat-co-product_from-industry', dim='Variables')
+    dm_dhg.rename_col('dhg_energy-demand', 'dhg_energy-demand_added-district-heat', dim='Variables')
+    DM_energy_out = {}
+    DM_energy_out['TPE'] = {
+        'heat-co-product': dm_all.copy(),
+        'added-district-heating': dm_dhg.copy()
+    }
+    DM_energy_out['wf_emissions'] = {
+        'heat-co-product': dm_all,
+        'added-district-heat': dm_dhg
+    }
+    return DM_energy_out
 
+
+def dhg_emissions_workflow(DM_energy, dm_CO2_coef, cdm_emission_fact):
+    # cdm_emission_fact: contains emission factor of GHG for various heat sources
+    # dm_CO2_coef: contains CO2 emission factor for CHP/waste from the power module
+    # DM_energy: comes from the energy workflow and contains the district heating by fuel type and the co-generated one
+    #            (i.e. waste and CHP)
+
+    ### ADDED-DISTRICT-HEAT ###
+
+    dm_heat_by_fuel = DM_energy['added-district-heat']
+    cdm_emission_fact = cdm_emission_fact.filter({'Categories2': dm_heat_by_fuel.col_labels['Categories1']})
+    # Put 0 instead of nan in emission factor
+    cdm_emission_fact.array = np.nan_to_num(cdm_emission_fact.array)
+    # Mutiply energy-demand by fuel by emission factor by fuel and GHG
+    idx_h = dm_heat_by_fuel.idx
+    idx_c = cdm_emission_fact.idx
+    arr = dm_heat_by_fuel.array[:, :, idx_h['dhg_energy-demand_added-district-heat'], np.newaxis, :] \
+          * cdm_emission_fact.array[np.newaxis, np.newaxis, idx_c['cp_emission-factor'], :, :]
+    col_labels = {
+        'Country': dm_heat_by_fuel.col_labels['Country'],
+        'Years': dm_heat_by_fuel.col_labels['Years'],
+        'Variables': ['dhg_emissions'],
+        'Categories1': cdm_emission_fact.col_labels['Categories1'],
+        'Categories2': cdm_emission_fact.col_labels['Categories2']
+    }
+    dm_emissions = DataMatrix(col_labels, units={'dhg_emissions': 'Mt'})
+    dm_emissions.array = arr[:, :, np.newaxis, :, :]
+    del cdm_emission_fact, arr, idx_c, idx_h, col_labels, dm_heat_by_fuel
+
+    # Group emissions by GHG + Rename for TPE
+    dm_emissions_by_GHG = dm_emissions.group_all(dim='Categories2', inplace=False)
+    dm_emissions_by_GHG.rename_col('dhg_emissions', 'dhg_emissions_added-district-heat', dim='Variables')
+
+    ### HEAT-CO-PRODUCT ###
+
+    # !FIXME this output should go to Emissions module and TPE module->(group by gas and rename)
+    # ! FIXME compute emissions for waste and CHP
+    # For heat-co-product, i.e. waste and CHP
+    dm_co_product = DM_energy['heat-co-product']
+    dm_co_product.deepen()
+    idx_e = dm_CO2_coef.idx
+    idx_c = dm_co_product.idx
+    arr = dm_co_product.array[:, :, idx_c['dhg_energy-demand_heat-co-product'], :] \
+          * dm_CO2_coef.array[:, :, idx_e['elc_CO2-heat_specific'], np.newaxis]
+    dm_co_product.add(arr, dim='Variables', col_label='dhg_emissions-CO2_heat-co-product', unit='Mt')
+    dm_co_product.filter({'Variables': ['dhg_emissions-CO2_heat-co-product']}, inplace=True)
+
+    DM_emissions_out = {
+        'TPE': {'added-district-heat': dm_emissions_by_GHG, 'heat-co-product': dm_co_product},
+        'emissions': dm_emissions
+    }
+
+    return DM_emissions_out
 
 def district_heating(lever_setting, years_setting, interface=Interface()):
 
@@ -202,9 +283,9 @@ def district_heating(lever_setting, years_setting, interface=Interface()):
     dm_dhg, cdm_const = read_data(district_heating_data_file, lever_setting)
 
     if interface.has_link(from_sector='power', to_sector='district-heating'):
-        dm_pow = interface.get_link(from_sector='power', to_sector='district-heating')
+        DM_pow = interface.get_link(from_sector='power', to_sector='district-heating')
     else:
-        dm_pow = simulate_power_to_district_heating_input()
+        DM_pow = simulate_power_to_district_heating_input()
 
     if interface.has_link(from_sector='industry', to_sector='district-heating'):
         dm_ind = interface.get_link(from_sector='industry', to_sector='district-heating')
@@ -212,11 +293,14 @@ def district_heating(lever_setting, years_setting, interface=Interface()):
         dm_ind = simulate_industry_to_district_heating_input()
 
     if interface.has_link(from_sector='buildings', to_sector='district-heating'):
-        DM_bld = interface.get_link(from_sector='buildings', to_sector='district-heating')
+        dm_bld = interface.get_link(from_sector='buildings', to_sector='district-heating')
     else:
-        DM_bld = simulate_buildings_to_district_heating_input()
+        dm_bld = simulate_buildings_to_district_heating_input()
 
-    bld_energy_demand_workflow(dm_dhg, DM_bld['district-heat-demand'], dm_pow, dm_ind)
+    DM_energy_out = dhg_energy_demand_workflow(dm_dhg, dm_bld, DM_pow['wf_energy'], dm_ind)
+    DM_emissions_out = dhg_emissions_workflow(DM_energy_out['wf_emissions'], DM_pow['wf_emissions'], cdm_const)
+
+    # !FIXME: you are here, you need to do cost and pipe + interfaces
 
     return
 
