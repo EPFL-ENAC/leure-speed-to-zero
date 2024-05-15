@@ -89,6 +89,10 @@ def database_from_csv_to_datamatrix():
     df = read_database_fxa(file, filter_dict={'eucalc-name': 'emission_crop_rice'})
     dm_rice = DataMatrix.create_from_df(df, num_cat=0)
     dict_fxa['emission_crop_rice'] = dm_rice
+    # NITROGEN BALANCE - Emission fertilizer
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'agr_emission_fertilizer'})
+    dm_n_fertilizer = DataMatrix.create_from_df(df, num_cat=0)
+    dict_fxa['agr_emission_fertilizer'] = dm_n_fertilizer
 
 
     # CalibrationFactorsToDatamatrix
@@ -156,6 +160,11 @@ def database_from_csv_to_datamatrix():
     dm_caf_land = DataMatrix.create_from_df(df, num_cat=1)
     dict_fxa['caf_agr_lus_land'] = dm_caf_land
 
+    # Data - Fixed assumptions - Calibration factors - Nitrogen balance
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_crop_emission_N2O-emission_fertilizer.*'})
+    dm_caf_n = DataMatrix.create_from_df(df, num_cat=0)
+    dict_fxa['caf_agr_crop_emission_N2O-emission_fertilizer'] = dm_caf_n
+
     # Create a dictionnay with all the fixed assumptions
     dict_fxa = {
         'caf_agr_domestic-production-liv': dm_caf_liv_dom_prod,
@@ -165,6 +174,7 @@ def database_from_csv_to_datamatrix():
         'caf_agr_domestic-production_food': dm_caf_crop,
         'caf_agr_demand_feed': dm_caf_feed,
         'caf_agr_lus_land': dm_caf_land,
+        'caf_agr_crop_emission_N2O-emission_fertilizer': dm_caf_n,
         'ef_liv_N2O-emission': dm_ef_N2O,
         'ef_liv_CH4-emission_treated': dm_ef_CH4,
         'liv_manure_n-stock': dm_nstock,
@@ -172,7 +182,8 @@ def database_from_csv_to_datamatrix():
         'ef_soil-residues': dm_ef_soil,
         'residues_yield': dm_residues_yield,
         'fibers': dm_fibers,
-        'rice': dm_rice
+        'rice': dm_rice,
+        'agr_emission_fertilizer' : dm_n_fertilizer
     }
 
 
@@ -212,7 +223,7 @@ def database_from_csv_to_datamatrix():
     #edit_database(file,lever,column='eucalc-name',pattern={'bev_ibp_use_oth':'bev-ibp-use-oth', 'biomass-hierarchy_bev':'biomass-hierarchy-bev', 'solid_bioenergy':'solid-bioenergy'},mode='rename')
     #edit_database(file,lever,column='eucalc-name',pattern={'liquid_eth_':'liquid_eth-', 'liquid_oil_':'liquid_oil-', 'lgn_btl_':'lgn-btl-', 'lgn_ezm_':'lgn-ezm-'},mode='rename')
     #edit_database(file,lever,column='eucalc-name',pattern={'biodiesel_tec_':'biodiesel_', 'biogasoline_tec_':'biogasoline_', 'biojetkerosene_tec_':'biojetkerosene_'},mode='rename')
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 1, 1, 1, 1,1], baseyear=baseyear,
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 1, 1, 1, 1, 1], baseyear=baseyear,
                                                                 years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
                                                                 column='eucalc-name',
                                                                 group_list=['.*biomass-hierarchy-bev-ibp-use-oth.*',
@@ -250,12 +261,13 @@ def database_from_csv_to_datamatrix():
     lever = 'climate-smart-crop'
     # edit_database(file,lever,column='eucalc-name',pattern={'meat_':'meat-', 'abp_':'abp-'},mode='rename')
     #edit_database(file,lever,column='eucalc-name',pattern={'_energycrop':'-energycrop'},mode='rename')
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1],
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1],
                                                                 baseyear=baseyear,
                                                                 years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
                                                                 column='eucalc-name',
                                                                 group_list=['climate-smart-crop_losses.*',
-                                                                            'climate-smart-crop_yield.*'])
+                                                                            'climate-smart-crop_yield.*',
+                                                                            'agr_climate-smart-crop_input-use.*'])
 
     # num_cat_list=[1 = nb de cat de losses, 1 = nb de cat yield]
 
@@ -265,7 +277,7 @@ def database_from_csv_to_datamatrix():
     # ConstantsToDatamatrix
     # Data - Constants (use 'xx|xx|xx' to add)
     cdm_const = ConstantDataMatrix.extract_constant('interactions_constants',
-                                                    pattern='cp_ibp_liv_.*_brf_fdk_afat|cp_ibp_liv_.*_brf_fdk_offal|cp_ibp_bev_.*|cp_liquid_tec.*|cp_load_hours|cp_ibp_aps_insect.*|cp_ibp_aps_algae.*|cp_efficiency_liv.*|cp_ibp_processed.*',
+                                                    pattern='cp_ibp_liv_.*_brf_fdk_afat|cp_ibp_liv_.*_brf_fdk_offal|cp_ibp_bev_.*|cp_liquid_tec.*|cp_load_hours|cp_ibp_aps_insect.*|cp_ibp_aps_algae.*|cp_efficiency_liv.*|cp_ibp_processed.*|cp_ef_urea.*|cp_ef_liming',
                                                     num_cat=0)
 
     # Group all datamatrix in a single structure
@@ -372,6 +384,12 @@ def read_data(data_file, lever_setting):
     dm_fibers = DM_agriculture['fxa']['fibers']
     dm_rice = DM_agriculture['fxa']['rice']
 
+    # Sub-matrix for NITROGEN BALANCE
+    dm_input = DM_ots_fts['climate-smart-crop']['agr_climate-smart-crop_input-use']
+    dm_fertilizer_emission = DM_agriculture['fxa']['agr_emission_fertilizer']
+    dm_caf_n = DM_agriculture['fxa']['caf_agr_crop_emission_N2O-emission_fertilizer']
+    dm_fertilizer_emission.append(dm_caf_n, dim='Variables')
+
     # Aggregate datamatrix by theme/flow
     # Aggregated Data Matrix - FOOD DEMAND
     DM_food_demand = {
@@ -441,9 +459,15 @@ def read_data(data_file, lever_setting):
         'rice': dm_rice
     }
 
+    # Aggregated Data Matrix - NITROGEN BALANCE
+    DM_nitrogen = {
+        'input': dm_input,
+        'emissions': dm_fertilizer_emission
+    }
+
     cdm_const = DM_agriculture['constant']
 
-    return DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, cdm_const
+    return DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, cdm_const
 
 # SimulateInteractions
 def simulate_lifestyles_to_agriculture_input():
@@ -1494,7 +1518,7 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
 
     return DM_crop, dm_crop_other
 
-# CalculationLeaf AGRICULTURAL LAND DEMAND ----------------------------------------------------------------------------------
+# CalculationLeaf AGRICULTURAL LAND DEMAND -----------------------------------------------------------------------------
 def land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, dm_ind):
 
     # FIBERS -----------------------------------------------------------------------------------------------------------
@@ -1577,6 +1601,52 @@ def land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, dm_ind):
 
     return DM_land
 
+# CalculationLeaf NITROGEN BALANCE -------------------------------------------------------------------------------------
+def nitrogen_workflow(DM_nitrogen, DM_land, cdm_const):
+
+    # FOR GRAPHS -------------------------------------------------------------------------------------------------------
+
+    # Fertilizer application [t] = agricultural land [ha] * input use per type [t]
+    dm_agricultural_land = DM_land['land'].filter({'Variables': ['cal_agr_lus_land'], 'Categories1': ['agriculture']})
+    dm_agricultural_land = dm_agricultural_land.flatten()
+    idx_land = dm_agricultural_land.idx
+    idx_fert = DM_nitrogen['input'].idx
+    dm_temp = dm_agricultural_land.array[:, :, idx_land['cal_agr_lus_land_agriculture'], np.newaxis] \
+              * DM_nitrogen['input'].array[:, :, idx_fert['agr_climate-smart-crop_input-use'], :]
+    DM_nitrogen['input'].add(dm_temp, dim='Variables', col_label='agr_input-use', unit='t')
+
+    # Mineral fertilizers [t] = sum Fertilizer application [t] (nitrogen + phosphate + potash)
+    dm_mineral_fertilizer = DM_nitrogen['input'].filter({'Variables': ['agr_input-use'],
+                                                         'Categories1': ['nitrogen', 'phosphate', 'potash']})
+    dm_mineral_fertilizer.groupby({'mineral': '.*'}, dim='Categories1', regex=True, inplace=True)
+
+    # NO2 EMISSIONS ----------------------------------------------------------------------------------------------------
+    # Mineral fertilizer emissions [tNO2] = input use nitrogen [tN] * fertilizer emission [N2O/N]
+    dm_nitrogen = DM_nitrogen['input'].filter({'Variables': ['agr_input-use'], 'Categories1': ['nitrogen']})
+    dm_nitrogen = dm_nitrogen.flatten()
+    DM_nitrogen['emissions'].append(dm_nitrogen, dim='Variables')
+    DM_nitrogen['emissions'].operation('agr_input-use_nitrogen', '*', 'fxa_agr_emission_fertilizer',
+                                       out_col='agr_crop_emission_N2O-emission_fertilizer', unit='t')
+
+    # Calibration
+    DM_nitrogen['emissions'].operation('agr_crop_emission_N2O-emission_fertilizer', '*',
+                                       'caf_agr_crop_emission_N2O-emission_fertilizer',
+                                       out_col='agr_crop_emission_N2O-emission', unit='t')
+
+    # CO2 EMISSIONS ----------------------------------------------------------------------------------------------------
+    # Pre processing
+    dm_fertilizer_co = DM_nitrogen['input'].filter({'Variables': ['agr_input-use'], 'Categories1': ['liming', 'urea']})
+    cdm_fertilizer_co = cdm_const.filter({'Variables': ['cp_ef_liming', 'cp_ef_urea']})
+    cdm_fertilizer_co.deepen()
+
+    # For liming & urea: CO2 emissions [MtCO2] =  Fertilizer application[t] * emission factor [MtCO2/t]
+    idx_cdm = cdm_fertilizer_co.idx
+    idx_fert = dm_fertilizer_co.idx
+    dm_temp = dm_fertilizer_co.array[:, :, idx_fert['agr_input-use'], :] \
+              / cdm_fertilizer_co.array[idx_cdm['cp_ef'], :]
+    dm_fertilizer_co.add(dm_temp, dim='Variables', col_label='agr_input-use_emissions-CO2', unit='kcal')
+
+    return DM_nitrogen, dm_fertilizer_co, dm_mineral_fertilizer
 
 # ----------------------------------------------------------------------------------------------------------------------
 # AGRICULTURE ----------------------------------------------------------------------------------------------------------
@@ -1586,7 +1656,7 @@ def agriculture(lever_setting, years_setting):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     agriculture_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/agriculture.pickle')
-    DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, cdm_const = read_data(agriculture_data_file, lever_setting)
+    DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, cdm_const = read_data(agriculture_data_file, lever_setting)
 
     # Simulate data from other modules
     dm_lfs = simulate_lifestyles_to_agriculture_input()
@@ -1612,6 +1682,7 @@ def agriculture(lever_setting, years_setting):
     dm_voil = biomass_allocation_workflow(dm_aps_ibp, dm_oil)
     DM_crop, dm_crop_other = crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, cdm_const)
     DM_land = land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, dm_ind)
+    DM_nitrogen, dm_fertilizer_co, dm_mineral_fertilizer = nitrogen_workflow(DM_nitrogen, DM_land, cdm_const)
 
 
 
