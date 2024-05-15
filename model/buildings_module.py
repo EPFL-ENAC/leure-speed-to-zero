@@ -726,7 +726,6 @@ def bld_appliances_workflow(DM_appliances):
 
 
     DM_appliance_out = {
-        'district-heating': dm_energy,
         'wf_costs': dm_appliance.filter({'Variables': ['bld_appliance-new']}),
         'power': dm_energy_pow
     }
@@ -854,34 +853,6 @@ def bld_light_heat_cool_workflow(DM_light_heat, DM_lfs, DM_clm, baseyear):
     dm_water.array[:, :, idx_c['bld_hot-water-demand'], :, :] = dm_water.array[:, :, idx_c['bld_hot-water-demand'], :, :] \
                                                                 * dm_other.array[:, :, idx['bld_heatcool-efficiency'], :, np.newaxis]
 
-
-
-    ### Prepare district heating output
-    dm_district_heating = dm_other.filter({'Variables': ['bld_residential-cooking-energy-demand'],
-                                           'Categories1': ['electricity']})
-    dm_tmp = dm_water_light.filter({'Variables': ['bld_lighting-demand_non-residential_electricity',
-                                                 'bld_lighting-demand_residential_electricity']})
-    dm_tmp.deepen()
-    dm_district_heating.append(dm_tmp, dim='Variables')
-
-    dm_tmp = dm_cooling.filter({'Variables': ['bld_space-cooling-energy-demand'],
-                                'Categories1': ['electricity']})
-    dm_tmp.switch_categories_order('Categories1', 'Categories2')
-    dm_tmp = dm_tmp.flatten()
-    dm_tmp = dm_tmp.flatten()
-    dm_tmp.deepen()
-    dm_district_heating.append(dm_tmp, dim='Variables')
-
-    dm_tmp = dm_water.filter({'Variables': ['bld_hot-water-demand'],
-                              'Categories1': ['electricity']})
-    dm_tmp.switch_categories_order('Categories1', 'Categories2')
-    # We need both flatten()
-    dm_tmp = dm_tmp.flatten()
-    dm_tmp = dm_tmp.flatten()
-    dm_tmp.deepen()
-    dm_district_heating.append(dm_tmp, dim='Variables')
-    ### End preparing district heating output
-
     ### Prepare wf_emissions output
     dm_cooking = dm_other.filter({'Variables': ['bld_residential-cooking-energy-demand'],
                                   'Categories1': ['gas-bio', 'gas-ff-natural', 'solid-bio', 'solid-ff-coal']})
@@ -912,7 +883,7 @@ def bld_light_heat_cool_workflow(DM_light_heat, DM_lfs, DM_clm, baseyear):
     # (cooking), (space-heating), appliances, hot-water, (lighting), (space-cooling),
     DM_light_heat_out = {
         'wf_fuel_switch': dm_water,
-        'district-heating': dm_district_heating,
+        # 'district-heating': dm_district_heating,
         'wf_emissions_appliances': {'cooking': dm_cooking, 'cooling': dm_cool},
         'power': dm_energy
     }
@@ -1082,7 +1053,7 @@ def bld_emissions_appliances_workflow(DM_cooking_cooling, dm_hot_water, cdm_cons
     return DM_emissions_appliances_out
 
 
-def bld_district_heating_interface(dm_appliances, DM_heat, dm_elec, write_xls=False):
+def bld_district_heating_interface(DM_heat, write_xls=False):
 
     dm_heat_supply = DM_heat['heat-supply']
     # Split heat supply between residential and non-residential
@@ -1094,45 +1065,41 @@ def bld_district_heating_interface(dm_appliances, DM_heat, dm_elec, write_xls=Fa
     # Sum 'constructed', 'renovated', 'unrenovated'
     dm_heat_supply.group_all(dim='Categories2', inplace=True)
 
+    # This section on electricity is not needed because district-heating does not use it
     # Extract heat demand in the form of electricity
-    dm_heat_demand_elec = DM_heat['heat-electricity']
+    # dm_heat_demand_elec = DM_heat['heat-electricity']
     # Group households into residential and others into non-residential
-    dm_heat_demand_elec.groupby({'residential': ['multi-family-households', 'single-family-households'],
-                                 'non-residential': cols_non_residential}, dim='Categories1', inplace=True)
+    # dm_heat_demand_elec.groupby({'residential': ['multi-family-households', 'single-family-households'],
+    #                              'non-residential': cols_non_residential}, dim='Categories1', inplace=True)
     # Drop 'electricity' category
-    dm_heat_demand_elec.group_all(dim='Categories2', inplace=True)
+    # dm_heat_demand_elec.group_all(dim='Categories2', inplace=True)
     # Rename variable to contain 'electricity' in it
-    dm_heat_demand_elec.rename_col('bld_space-heating-energy-demand', 'bld_electricity-demand_space-heating', dim='Variables')
+    # dm_heat_demand_elec.rename_col('bld_space-heating-energy-demand', 'bld_electricity-demand_space-heating', dim='Variables')
 
     # rename electricity demand to have the structure bld_electricity-demand_use_residential or non-residential
-    dm_elec.rename_col_regex('_energy-demand', '', dim='Variables')
-    dm_elec.rename_col_regex('-energy-demand', '', dim='Variables')
-    dm_elec.rename_col_regex('-demand', '', dim='Variables')
-    dm_elec.rename_col_regex('bld_', 'bld_electricity-demand_', dim='Variables')
-    dm_elec.rename_col_regex('residential-cooking', 'cooking_residential', dim='Variables')
-    dm_elec.group_all(dim='Categories1', inplace=True)
-    dm_elec.deepen_twice()
+    # dm_elec.rename_col_regex('_energy-demand', '', dim='Variables')
+    # dm_elec.rename_col_regex('-energy-demand', '', dim='Variables')
+    # dm_elec.rename_col_regex('-demand', '', dim='Variables')
+    # dm_elec.rename_col_regex('bld_', 'bld_electricity-demand_', dim='Variables')
+    # dm_elec.rename_col_regex('residential-cooking', 'cooking_residential', dim='Variables')
+    # dm_elec.group_all(dim='Categories1', inplace=True)
+    # dm_elec.deepen_twice()
 
-    dm_heat_demand_elec.deepen(based_on='Variables')
-    dm_heat_demand_elec.switch_categories_order('Categories1', 'Categories2')
+    # dm_heat_demand_elec.deepen(based_on='Variables')
+    # dm_heat_demand_elec.switch_categories_order('Categories1', 'Categories2')
 
-    dm_elec.append(dm_heat_demand_elec, dim='Categories1')
+    # dm_elec.append(dm_heat_demand_elec, dim='Categories1')
 
-    DM_dhg = {
-        'electricity-demand': dm_elec,
-        'district-heat-demand': dm_heat_supply
-    }
+    dm_dhg = dm_heat_supply
 
     if write_xls:
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
         xls_file = 'All-Countries-interface_from-buildings-to-district-heating.xlsx'
         file_path = os.path.join(current_file_directory, '../_database/data/xls/', xls_file)
-        df = DM_dhg['electricity-demand'].write_df()
-        df2 = DM_dhg['district-heat-demand'].write_df()
-        df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
+        df = dm_dhg.write_df()
         df.to_excel(file_path, index=False)
 
-    return DM_dhg
+    return dm_dhg
 
 
 def buildings(lever_setting, years_setting, interface=Interface()):
@@ -1182,10 +1149,9 @@ def buildings(lever_setting, years_setting, interface=Interface()):
                                                                     cdm_const)
 
     # 'District-heating' module interface
-    DM_dhg = bld_district_heating_interface(DM_appliances_out['district-heating'], DM_energy_out['district-heating'],
-                                            DM_light_heat_out['district-heating'], write_xls=False)
+    dm_dhg = bld_district_heating_interface(DM_energy_out['district-heating'], write_xls=True)
 
-    interface.add_link(from_sector='buildings', to_sector='district-heating', dm=DM_dhg)
+    interface.add_link(from_sector='buildings', to_sector='district-heating', dm=dm_dhg)
 
     dm_power = DM_appliances_out['power']
     dm_power.append(DM_energy_out['power'], dim='Variables')
@@ -1211,8 +1177,8 @@ def buildings_local_run():
     return
 
 
-#database_from_csv_to_datamatrix()
-buildings_local_run()
+# database_from_csv_to_datamatrix()
+# buildings_local_run()
 
 
 
