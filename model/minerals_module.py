@@ -10,7 +10,7 @@ from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database_fxa
 from model.common.interface_class import Interface
-from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm
+from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm, simulate_input
 import pandas as pd
 import pickle
 import os
@@ -211,26 +211,10 @@ def read_data(data_file):
     # return
     return DM_minerals, cdm_constants
 
-def simulate_interfaces():
-    
-    # empty dict
-    DM_interface = {}
+def rename_interfaces(DM_interface):
 
     # files' names
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    f = os.path.join(current_file_directory, "../_database/data/xls")
-    files = np.array(os.listdir(f))
-    files = files[[bool(re.search("minerals", str(i), flags=re.IGNORECASE)) for i in files]]
-    files = files[[not bool(re.search("tpe", str(i), flags=re.IGNORECASE)) for i in files]].tolist()
-    keys = [i.split("from-")[1].split("-to")[0] for i in files]
-
-    # get files
-    for i in range(len(files)):
-        
-        f = os.path.join(current_file_directory, "../_database/data/xls/" + files[i])
-        df = pd.read_excel(f)
-        dm = DataMatrix.create_from_df(df, num_cat=0)
-        DM_interface[keys[i]] = dm
         
     # rename interfaces
     filepath = os.path.join(current_file_directory, '../_database/data/csv/minerals_variables-names.csv')
@@ -248,9 +232,6 @@ def simulate_interfaces():
             if len(old_name)>0:
                 for i in range(len(old_name)):
                     dm_temp.rename_col(col_in = old_name[i], col_out = new_name[i], dim = "Variables")
-    
-    # clean
-    del df, df_names, dm, dm_temp, f, files, i, idx_temp, key, keys, new_name, old_name, filepath
                     
     # return
     return DM_interface
@@ -1818,7 +1799,50 @@ def minerals(years_setting, interface=Interface()):
     cntr_list = DM_minerals["fxa"]["elec_new"].col_labels['Country']
     
     # get interfaces
-    DM_interface = simulate_interfaces()
+    DM_interface = {}
+    
+    if interface.has_link(from_sector='lifestyles', to_sector='minerals'):
+        DM_interface["lifestyles"] = interface.get_link(from_sector='lifestyles', to_sector='minerals')
+    else:
+        DM_interface["lifestyles"] = simulate_input(from_sector="lifestyles", to_sector="minerals")
+        
+    if interface.has_link(from_sector='transport', to_sector='minerals'):
+        DM_interface["transport"] = interface.get_link(from_sector='transport', to_sector='minerals')
+    else:
+        DM_interface["transport"] = simulate_input(from_sector="transport", to_sector="minerals")
+        
+    if interface.has_link(from_sector='agriculture', to_sector='minerals'):
+        DM_interface["agriculture"] = interface.get_link(from_sector='agriculture', to_sector='minerals')
+    else:
+        DM_interface["agriculture"] = simulate_input(from_sector="agriculture", to_sector="minerals")
+        
+    if interface.has_link(from_sector='industry', to_sector='minerals'):
+        DM_interface["industry"] = interface.get_link(from_sector='industry', to_sector='minerals')
+    else:
+        DM_interface["industry"] = simulate_input(from_sector="industry", to_sector="minerals")
+    
+    if interface.has_link(from_sector='storage', to_sector='minerals'):
+        DM_interface["storage"] = interface.get_link(from_sector='storage', to_sector='minerals')
+    else:
+        DM_interface["storage"] = simulate_input(from_sector="storage", to_sector="minerals")
+        
+    if interface.has_link(from_sector='buildings', to_sector='minerals'):
+        DM_interface["buildings"] = interface.get_link(from_sector='buildings', to_sector='minerals')
+    else:
+        DM_interface["buildings"] = simulate_input(from_sector="buildings", to_sector="minerals")
+        
+    if interface.has_link(from_sector='oil-refinery', to_sector='minerals'):
+        DM_interface["oil-refinery"] = interface.get_link(from_sector='oil-refinery', to_sector='minerals')
+    else:
+        DM_interface["oil-refinery"] = simulate_input(from_sector="oil-refinery", to_sector="minerals")
+    
+    if interface.has_link(from_sector='ccus', to_sector='minerals'):
+        DM_interface["ccus"] = interface.get_link(from_sector='ccus', to_sector='minerals')
+    else:
+        DM_interface["ccus"] = simulate_input(from_sector="ccus", to_sector="minerals")
+    
+    # rename interfaces
+    DM_interface = rename_interfaces(DM_interface)
     
     # keep only the countries in cntr_list
     for i in DM_interface.keys():
@@ -1879,4 +1903,3 @@ def local_minerals_run():
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/minerals_module.py"
 # database_from_csv_to_datamatrix()
 # results_run = local_minerals_run()
-# df = results_run["out1"]
