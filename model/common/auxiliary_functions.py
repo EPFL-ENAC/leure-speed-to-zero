@@ -356,3 +356,18 @@ def cdm_to_dm(cdm, countries_list, years_list):
     dm = DataMatrix(col_labels=new_cols, units=cdm.units)
     dm.array = arr_temp
     return dm
+
+def simulate_input(from_sector, to_sector, years_setting = [1990, 2015, 2050, 5]):
+    
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    
+    # get file
+    xls_directory = os.path.join(current_file_directory, "../_database/data/xls")
+    files = np.array(os.listdir(xls_directory))
+    file = files[[bool(re.search(from_sector + "-to-" + to_sector, str(i))) for i in files]].tolist()[0]
+    xls_file_directory = xls_directory +  "/" + file
+    df = pd.read_excel(xls_file_directory)
+    
+    # get dm
+    dm = DataMatrix.create_from_df(df, num_cat=0)
+    return(dm)
