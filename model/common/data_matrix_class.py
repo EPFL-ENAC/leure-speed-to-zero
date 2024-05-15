@@ -457,38 +457,47 @@ class DataMatrix:
 
         return
 
-    def filter(self, selected_cols):
-        # Sort the subset list based on the order of elements in list1
-        sorted_cols = {}
-        for d in self.dim_labels:
-            # if I'm not filtering over this dimension keep all
-            if d not in selected_cols.keys():
-                sorted_cols[d] = self.col_labels[d].copy()
-            # otherwise keep selected cols but ordered as in the original dm
-            else:
-                sorted_cols[d] = sorted(selected_cols[d], key=lambda x: self.col_labels[d].index(x))
-        keep_units = {key: self.units[key] for key in sorted_cols["Variables"]}
-        out = DataMatrix(col_labels=sorted_cols, units=keep_units)
-        # Extract list of indices
-        cols_idx = []
-        for d in self.dim_labels:
-            cols_idx.append([self.idx[xi] for xi in sorted_cols[d]])
-        # Copy filtered array
-        mesh = np.ix_(*cols_idx)
-        out.array = self.array[mesh].copy()
-        # check if out datamatrix is empty
-        if out.array.size == 0:
-            raise ValueError('.filter() return an empty datamatrix')
-        return out
+    def filter(self, selected_cols, inplace=False):
+        # If you need to create a new output:
+        if not inplace:
+            # Sort the subset list based on the order of elements in list1
+            sorted_cols = {}
+            for d in self.dim_labels:
+                # if I'm not filtering over this dimension keep all
+                if d not in selected_cols.keys():
+                    sorted_cols[d] = self.col_labels[d].copy()
+                # otherwise keep selected cols but ordered as in the original dm
+                else:
+                    sorted_cols[d] = sorted(selected_cols[d], key=lambda x: self.col_labels[d].index(x))
+            keep_units = {key: self.units[key] for key in sorted_cols["Variables"]}
+            out = DataMatrix(col_labels=sorted_cols, units=keep_units)
+            # Extract list of indices
+            cols_idx = []
+            for d in self.dim_labels:
+                cols_idx.append([self.idx[xi] for xi in sorted_cols[d]])
+            # Copy filtered array
+            mesh = np.ix_(*cols_idx)
+            out.array = self.array[mesh].copy()
+            # check if out datamatrix is empty
+            if (np.array(out.array.shape) == 0).any():
+                raise ValueError('.filter() return an empty datamatrix across at least one dimension')
+            return out
+        else:
+            for dim, col_to_keep in selected_cols.items():
+                cols_to_drop = list(set(self.col_labels[dim]) - set(col_to_keep))
+                self.drop(dim=dim, col_label=cols_to_drop)
+            if (np.array(self.array.shape) == 0).any():
+                raise ValueError('.filter() return an empty datamatrix across at least one dimension')
+            return
 
-    def filter_w_regex(self, dict_dim_pattern):
+    def filter_w_regex(self, dict_dim_pattern, inplace=False):
         # Return only a portion of the DataMatrix based on a dict_dim_patter
         # E.g. if we wanted to only keep Austria and France, the dict_dim_pattern would be {'Country':'France|Austria'}
         keep = {}
         for d in dict_dim_pattern.keys():
             pattern = re.compile(dict_dim_pattern[d])
             keep[d] = [col for col in self.col_labels[d] if re.match(pattern, col)]
-        dm_keep = self.filter(keep)
+        dm_keep = self.filter(keep, inplace)
         return dm_keep
 
     def rename_col_regex(self, str1, str2, dim):
