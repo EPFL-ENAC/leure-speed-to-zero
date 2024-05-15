@@ -34,10 +34,9 @@ class DataMatrix:
         self.array = None
         self.dim_labels = ["Country", "Years", "Variables"]  # list
         self.col_labels = copy.deepcopy(col_labels)  # dictionary with dim_labels[i] as key
-        if len(self.col_labels) == 4:
-            self.dim_labels = ["Country", "Years", "Variables", "Categories1"]
-        if len(self.col_labels) == 5:
-            self.dim_labels = ["Country", "Years", "Variables", "Categories1", "Categories2"]
+        for i in range(len(self.col_labels)-3):
+            cat_num = str(i + 1)
+            self.dim_labels.append('Categories'+cat_num)
         self.units = copy.deepcopy(units)  # dictionary
         if len(col_labels) > 0:
             self.idx = self.index_all()
@@ -249,7 +248,6 @@ class DataMatrix:
         # It removes the column col_label along dimension dim
         # as well as the data in array associated to it
         # It does not return a new datamatrix
-
         # Get the axis of the dimension
         a = self.dim_labels.index(dim)
         # if col_label it's a string, check for the columns that match the regex pattern
@@ -263,6 +261,10 @@ class DataMatrix:
         # remove the label
         for c in col_label:
             self.col_labels[dim].remove(c)
+            self.idx.pop(c)
+        # Re-assign idx for the dimension
+        for col_i, col in enumerate(self.col_labels[dim]):
+            self.idx[col] = col_i
         # remove the unit
         if dim == "Variables":
             if isinstance(col_label, list):
@@ -270,7 +272,6 @@ class DataMatrix:
                     self.units.pop(c)
             else:
                 self.units.pop(col_label)
-        self.idx = self.index_all()
         return
 
     def lag_variable(self, pattern, shift, subfix):
@@ -460,24 +461,21 @@ class DataMatrix:
         # Sort the subset list based on the order of elements in list1
         sorted_cols = {}
         for d in self.dim_labels:
-            if d in selected_cols.keys():
-                if selected_cols[d] == "all":
-                    sorted_cols[d] = self.col_labels[d].copy()
-                else:
-                    sorted_cols[d] = sorted(selected_cols[d], key=lambda x: self.col_labels[d].index(x))
-            else:
+            # if I'm not filtering over this dimension keep all
+            if d not in selected_cols.keys():
                 sorted_cols[d] = self.col_labels[d].copy()
-        out = DataMatrix(col_labels=sorted_cols)
-        out.dim_labels = self.dim_labels.copy()
+            # otherwise keep selected cols but ordered as in the original dm
+            else:
+                sorted_cols[d] = sorted(selected_cols[d], key=lambda x: self.col_labels[d].index(x))
+        keep_units = {key: self.units[key] for key in sorted_cols["Variables"]}
+        out = DataMatrix(col_labels=sorted_cols, units=keep_units)
         # Extract list of indices
         cols_idx = []
         for d in self.dim_labels:
             cols_idx.append([self.idx[xi] for xi in sorted_cols[d]])
+        # Copy filtered array
         mesh = np.ix_(*cols_idx)
         out.array = self.array[mesh].copy()
-        out.units = {key: self.units[key] for key in sorted_cols["Variables"]}
-        if len(sorted_cols) > 3:
-            out.idx = out.index_all()
         # check if out datamatrix is empty
         if out.array.size == 0:
             raise ValueError('.filter() return an empty datamatrix')
@@ -487,15 +485,10 @@ class DataMatrix:
         # Return only a portion of the DataMatrix based on a dict_dim_patter
         # E.g. if we wanted to only keep Austria and France, the dict_dim_pattern would be {'Country':'France|Austria'}
         keep = {}
-        for d in self.dim_labels:
-            if d in dict_dim_pattern.keys():
-                pattern = re.compile(dict_dim_pattern[d])
-                keep[d] = [col for col in self.col_labels[d] if re.match(pattern, col)]
-            else:
-                keep[d] = 'all'
+        for d in dict_dim_pattern.keys():
+            pattern = re.compile(dict_dim_pattern[d])
+            keep[d] = [col for col in self.col_labels[d] if re.match(pattern, col)]
         dm_keep = self.filter(keep)
-        if dm_keep.array.size == 0:
-            raise ValueError('.filter() return an empty datamatrix')
         return dm_keep
 
     def rename_col_regex(self, str1, str2, dim):
@@ -780,7 +773,6 @@ class DataMatrix:
         last_dim = dm.dim_labels[-1]
         dm.col_labels.pop(last_dim)
         dm.dim_labels = dm.dim_labels[:-1]
-
         if not inplace:
             return dm
         return
