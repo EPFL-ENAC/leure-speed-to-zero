@@ -362,7 +362,7 @@ def simulate_input(from_sector, to_sector):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     
     # get file
-    xls_directory = os.path.join(current_file_directory, "../_database/data/xls")
+    xls_directory = os.path.join(current_file_directory, "../../_database/data/xls")
     files = np.array(os.listdir(xls_directory))
     file = files[[bool(re.search(from_sector + "-to-" + to_sector, str(i))) for i in files]].tolist()[0]
     xls_file_directory = xls_directory +  "/" + file
