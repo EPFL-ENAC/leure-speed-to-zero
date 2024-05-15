@@ -1492,7 +1492,91 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
                  * DM_crop['ef_residues'].array[:, :, idx_ef['ef'], :, :]
     DM_crop['ef_residues'].add(array_temp, dim='Variables', col_label='agr_crop_emission', unit='Mt')
 
-    return DM_crop
+    return DM_crop, dm_crop_other
+
+# CalculationLeaf AGRICULTURAL LAND DEMAND ----------------------------------------------------------------------------------
+def land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, dm_ind):
+
+    # FIBERS -----------------------------------------------------------------------------------------------------------
+    # Converting industry fibers from [kt] to [t]
+    dm_ind_fiber = dm_ind.filter({'Variables': ['ind_dem_natfibers']})
+    DM_land['fibers'].append(dm_ind_fiber, dim='Variables')
+    DM_land['fibers'].add(1000.0, dummy=True, col_label='kt_to_t', dim='Variables', unit='')
+    DM_land['fibers'].operation('ind_dem_natfibers', '*', 'kt_to_t', out_col='ind_dem_natfibers_t', unit='t')
+
+    # Domestic supply fiber crop demand [t] = ind demand natural fibers [t] + domestic supply quantity fibers [t]
+    DM_land['fibers'].operation('ind_dem_natfibers_t', '+', 'fxa_domestic-supply-quantity_fibres-plant-eq',
+                                out_col='agr_domestic-supply-quantity_fibres-plant-eq', unit='t')
+
+    # Domestic production fiber crop [t] = Domestic supply fiber crop demand [t] * Self sufficiency ratio [%]
+    DM_land['fibers'].operation('agr_domestic-supply-quantity_fibres-plant-eq', '*',
+                                'fxa_domestic-self-sufficiency_fibres-plant-eq',
+                                out_col='agr_domestic-production_fibres-plant-eq', unit='t')
+
+    # Fiber cropland demand [ha] = Domestic production fiber crop [t] / Fiber yield [t/ha]
+    dm_fiber_yield = DM_land['yield'].filter({'Categories1': ['fibres-plant-eq']})
+    dm_fiber_yield = dm_fiber_yield.flatten()
+    DM_land['fibers'].append(dm_fiber_yield, dim='Variables')
+    DM_land['fibers'].operation('agr_domestic-production_fibres-plant-eq', '/',
+                                'agr_climate-smart-crop_yield_fibres-plant-eq',
+                                out_col='agr_land_cropland_fibres-plant-eq', unit='ha')
+
+    # LAND DEMAND ------------------------------------------------------------------------------------------------------
+
+    # Categories x11 : cereals, oilcrop, pulse, fruit, veg, starch, sugarcrop, rice , lgn, algae, insect FIXME gas energycrop in Knime but regex issue
+    # Calibrated crop demand (8 categories)
+    dm_crop_afw = DM_crop['crop'].filter({'Variables': ['cal_agr_domestic-production_food']})
+    dm_crop_afw.rename_col('cal_agr_domestic-production_food', 'agr_domestic-production_afw', dim='Variables')
+    # Appending calibrated dom prod afw with lgn, algae, insect
+    dm_crop_afw.append(dm_crop_other, dim='Categories1')
+    # Dropping unused yield categories
+    DM_land['yield'].drop(dim='Categories1', col_label=['gas-energycrop', 'fibres-plant-eq'])
+    # Appending in DM_land
+    DM_land['yield'].append(dm_crop_afw, dim='Variables')
+
+    # Cropland by crop type [ha] = domestic prod afw & losses [kcal] / yields [kcal/ha]
+    DM_land['yield'].operation('agr_domestic-production_afw', '/',
+                               'agr_climate-smart-crop_yield',
+                               out_col='agr_land_cropland', unit='ha')
+
+    # Appending with fiber crop land
+    DM_land['fibers'] = DM_land['fibers'].filter({'Variables': ['agr_land_cropland_fibres-plant-eq']})
+    DM_land['fibers'].deepen()
+    DM_land['yield'].drop(dim='Variables', col_label=['agr_climate-smart-crop_yield', 'agr_domestic-production_afw'])
+    DM_land['yield'].append(DM_land['fibers'], dim='Categories1')
+
+    # Overall cropland [ha] = sum of cropland by type [ha]
+    dm_land = DM_land['yield'].copy()
+    dm_land.groupby({'cropland': '.*'}, dim='Categories1', regex=True, inplace=True)
+    dm_land.rename_col('agr_land_cropland', 'agr_lus_land', dim='Variables')
+
+    # Appending with grassland from feed
+    dm_grassland = DM_livestock['ruminant_density'].filter({'Variables': ['agr_lus_land_grassland']})
+    dm_grassland.deepen()
+    dm_land.append(dm_grassland, dim='Categories1')
+
+    # Calibration cropland & grassland
+    DM_land['land'].append(dm_land, dim='Variables')
+    DM_land['land'].operation('caf_agr_lus_land', '*',
+                              'agr_lus_land',
+                              out_col='cal_agr_lus_land', unit='ha')
+
+    # Overall agricultural land [ha] = overall cropland + grasssland [ha] FIXME find a way to no get rid of cropland & grassland
+    DM_land['land'].groupby({'agriculture': '.*'}, dim='Categories1', regex=True, inplace=True)
+
+    # RICE CH4 EMISSIONS -----------------------------------------------------------------------------------------------
+    # Pre processing
+    dm_rice = DM_land['yield'].filter({'Categories1': ['rice']})
+    dm_rice = dm_rice.flatten()
+    DM_land['rice'].append(dm_rice, dim='Variables')
+
+    # Rice CH4 emissions [tCH4] = cropland for rice [ha] * emissions crop rice [tCH4/ha]
+    DM_land['rice'].operation('fxa_emission_crop_rice', '*',
+                              'agr_land_cropland_rice',
+                              out_col='agr_rice_crop_CH4-emission', unit='t')
+
+    return DM_land
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 # AGRICULTURE ----------------------------------------------------------------------------------------------------------
@@ -1526,53 +1610,9 @@ def agriculture(lever_setting, years_setting):
     DM_manure = livestock_manure_workflow(DM_manure, DM_livestock, cdm_const)
     DM_feed, dm_aps_ibp = feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, cdm_const)
     dm_voil = biomass_allocation_workflow(dm_aps_ibp, dm_oil)
-    DM_crop = crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, cdm_const)
+    DM_crop, dm_crop_other = crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, cdm_const)
+    DM_land = land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, dm_ind)
 
-    # CalculationLeaf AGRICULTURAL LAND DEMAND ----------------------------------------------------------------------------------
-
-    # FIBERS -----------------------------------------------------------------------------------------------------------
-    # Converting industry fibers from [kt] to [t]
-    dm_ind_fiber = dm_ind.filter({'Variables': ['ind_dem_natfibers']})
-    DM_land['fibers'].append(dm_ind_fiber, dim='Variables')
-    DM_land['fibers'].add(1000.0, dummy=True, col_label='kt_to_t', dim='Variables', unit='')
-    DM_land['fibers'].operation('ind_dem_natfibers', '*', 'kt_to_t', out_col='ind_dem_natfibers_t', unit='t')
-
-    # Domestic supply fiber crop demand [t] = ind demand natural fibers [t] + domestic supply quantity fibers [t]
-    DM_land['fibers'].operation('ind_dem_natfibers_t', '+', 'fxa_domestic-supply-quantity_fibres-plant-eq',
-                                out_col='agr_domestic-supply-quantity_fibres-plant-eq', unit='t')
-
-    # Domestic production fiber crop [t] = Domestic supply fiber crop demand [t] * Self sufficiency ratio [%]
-    DM_land['fibers'].operation('agr_domestic-supply-quantity_fibres-plant-eq', '*', 'fxa_domestic-self-sufficiency_fibres-plant-eq',
-                                out_col='agr_domestic-production_fibres-plant-eq', unit='t')
-
-    # Fiber cropland demand [ha] = Domestic production fiber crop [t] / Fiber yield [t/ha]
-    dm_fiber_yield = DM_land['yield'].filter({'Categories1': ['fibres-plant-eq']})
-    dm_fiber_yield = dm_fiber_yield.flatten()
-    DM_land['fibers'].append(dm_fiber_yield, dim='Variables')
-    DM_land['fibers'].operation('agr_domestic-production_fibres-plant-eq', '/',
-                                'agr_climate-smart-crop_yield_fibres-plant-eq',
-                                out_col='agr_land_cropland_fibres-plant-eq', unit='ha')
-
-    # LAND DEMAND ------------------------------------------------------------------------------------------------------
-    # Cropland by crop type [ha] = domestic prod afw & losses [kcal] / yields [kcal/ha]
-    # Categories x11 : cereals, oilcrop, pulse, fruit, veg, starch, sugarcrop, rice , lgn, algae, insect
-
-    # Appending calibrated dom prod afw with lgn, algae, insect
-
-
-    # Appending with fiber crop land
-
-    # Overall cropland [ha] = sum of cropland by type [ha]
-
-
-    # Overall agricultural land [ha] = overall cropland + grasssland [ha]
-
-
-    # RICE CH4 EMISSIONS -----------------------------------------------------------------------------------------------
-    # Rice CH4 emissions [tCH4] = cropland for rice [ha] * emissions crop rice [tCH4/ha]
-
-
-    # CALIBRATION ------------------------------------------------------------------------------------------------------
 
 
     print('hello')
