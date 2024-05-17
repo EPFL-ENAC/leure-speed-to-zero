@@ -1771,7 +1771,7 @@ def variables_for_tpe(DM_interface, DM_minerals, dm_production_sect, dm_fossil, 
     # return
     return df_tpe, df_tpe_relres
 
-def minerals(years_setting, interface=Interface(), calibration = True):
+def minerals(years_setting, interface=Interface(), calibration = False):
     
     # directories
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
