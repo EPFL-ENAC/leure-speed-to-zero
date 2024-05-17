@@ -94,7 +94,7 @@
     {"from":"coal_other","to":"industry_proc","output":"ind_energy-demand_solid-ff-coal[TWh]"},
     {"from":"coal_other","to":"agriculture","output":"agr_energy-demand_solid-ff-coal[TWh]"},
     {"from":"bio_other","to":"buildings","output":"bld_energy-demand_alluses_solid-bio[TWh]"},
-    {"from":"chp_network","to":"buildings","output":"dhg_energy-demand_heat-co-product-from-power[TWh]"},
+    {"from":"chp_network","to":"buildings","output":"dhg_energy-demand_heat-co-product_from-power[TWh]"},
     {"from":"industry_proc","to":"industry","output":"sd_industry[TWh]"},
     {"from":"ammonium","to":"industry","output":"sd_ammonium[TWh]"},
     {"from":"hydrogen","to":"industry","output":"sd_hydrogen[TWh]"},
