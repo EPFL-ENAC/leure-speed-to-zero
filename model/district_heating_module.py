@@ -13,7 +13,7 @@ from model.common.interface_class import Interface
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 
 # Import functions
-from model.common.io_database import read_database, read_database_fxa, edit_database, read_database_w_filter
+from model.common.io_database import read_database, read_database_fxa, read_database_w_filter, update_database_from_db
 from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups
 from model.common.auxiliary_functions import read_level_data
 
@@ -26,6 +26,71 @@ def init_years_lever():
     f = open('../config/lever_position.json')
     lever_setting = json.load(f)[0]
     return years_setting, lever_setting
+
+def dummy_countries_fxa():
+    file = 'district-heating_fixed-assumptions'
+    df_db = read_database_fxa(file, db_format=True)
+    df_db_vd = df_db.loc[df_db['geoscale'] == 'Switzerland']
+    df_db_vd['geoscale'] = 'Vaud'
+    df_db_eu = df_db.loc[df_db['geoscale'] == 'Germany']
+    df_db_eu['geoscale'] = 'EU27'
+    update_database_from_db(file, df_db_vd)
+    update_database_from_db(file, df_db_eu)
+    return
+
+def dummy_countries_power():
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    file = 'EUCalc-interface_from-electricity_supply-to-district-heating.xlsx'
+    file_path = os.path.join(current_file_directory, '../_database/data/xls/', file)
+    df = pd.read_excel(file_path, sheet_name="default")
+    vaud = 1
+    eu27 = 1
+    paris = 1
+    if vaud:
+        df_vd = df.loc[df['Country'] == 'Switzerland']
+        df_vd['Country'] = 'Vaud'
+        df_vd['elc_heat-supply-CHP_bio[TWh]'] = df_vd['elc_heat-supply-CHP_bio[TWh]']*0.1
+        df_vd['elc_heat-supply-CHP_fossil[TWh]'] = df_vd['elc_heat-supply-CHP_bio[TWh]']*0.1
+        df = pd.concat([df, df_vd], axis=0)
+    if eu27:
+        df_eu = df.loc[df['Country'] == 'Germany']
+        df_eu['Country'] = 'EU27'
+        df = pd.concat([df, df_eu], axis=0)
+    if paris:
+        df_p = df.loc[df['Country'] == 'France']
+        df_p['Country'] = 'Paris'
+        df_p['elc_heat-supply-CHP_bio[TWh]'] = df_p['elc_heat-supply-CHP_bio[TWh]']*0.19
+        df_p['elc_heat-supply-CHP_fossil[TWh]'] = df_p['elc_heat-supply-CHP_bio[TWh]']*0.19
+        df = pd.concat([df, df_p], axis=0)
+    file = 'All-Countries-interface_from-power-to-district-heating.xlsx'
+    file_path = os.path.join(current_file_directory, '../_database/data/xls/', file)
+    df.to_excel(file_path, sheet_name="default", index=False)
+    return
+
+def dummy_countries_industry():
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    file = 'EUCalc-interface_from-industry-to-district-heating.xlsx'
+    file_path = os.path.join(current_file_directory, '../_database/data/xls/', file)
+    df = pd.read_excel(file_path, sheet_name="default")
+    vaud = 1
+    eu27 = 1
+    paris = 1
+    if vaud:
+        df_vd = df.loc[df['Country'] == 'Switzerland']
+        df_vd['Country'] = 'Vaud'
+        df = pd.concat([df, df_vd], axis=0)
+    if eu27:
+        df_eu = df.loc[df['Country'] == 'Germany']
+        df_eu['Country'] = 'EU27'
+        df = pd.concat([df, df_eu], axis=0)
+    if paris:
+        df_p = df.loc[df['Country'] == 'France']
+        df_p['Country'] = 'Paris'
+        df = pd.concat([df, df_p], axis=0)
+    file = 'All-Countries-interface_from-industry-to-district-heating.xlsx'
+    file_path = os.path.join(current_file_directory, '../_database/data/xls/', file)
+    df.to_excel(file_path, sheet_name="default", index=False)
+    return
 
 
 def database_from_csv_to_datamatrix():
@@ -94,6 +159,7 @@ def read_data(data_file, lever_setting):
     with open(data_file, 'rb') as handle:
         DM_district_heating = pickle.load(handle)
 
+    dm_rr = DM_district_heating['fxa']
     # Read fts based on lever_setting
     DM_ots_fts = read_level_data(DM_district_heating, lever_setting)
 
@@ -102,7 +168,7 @@ def read_data(data_file, lever_setting):
 
     cdm_const = DM_district_heating['constant']
 
-    return dm, cdm_const
+    return dm, dm_rr, cdm_const
 
 
 def simulate_power_to_district_heating_input():
@@ -209,6 +275,7 @@ def dhg_energy_demand_workflow(dm_dhg, dm_bld, dm_pow, dm_ind):
     # Rename for TPE
     dm_all.rename_col('dhg_energy-demand_contribution_CHP', 'dhg_energy-demand_heat-co-product_from-power', dim='Variables')
     dm_all.rename_col('dhg_energy-demand_contribution_heat-waste', 'dhg_energy-demand_heat-co-product_from-industry', dim='Variables')
+    dm_all.units['dhg_energy-demand_heat-co-product_from-industry'] = 'TWh'
     dm_dhg.rename_col('dhg_energy-demand', 'dhg_energy-demand_added-district-heat', dim='Variables')
     DM_energy_out = {}
     DM_energy_out['TPE'] = {
@@ -219,6 +286,8 @@ def dhg_energy_demand_workflow(dm_dhg, dm_bld, dm_pow, dm_ind):
         'heat-co-product': dm_all,
         'added-district-heat': dm_dhg
     }
+    DM_energy_out['wf_costs'] = dm_dhg.copy()
+
     return DM_energy_out
 
 
@@ -256,8 +325,6 @@ def dhg_emissions_workflow(DM_energy, dm_CO2_coef, cdm_emission_fact):
 
     ### HEAT-CO-PRODUCT ###
 
-    # !FIXME this output should go to Emissions module and TPE module->(group by gas and rename)
-    # ! FIXME compute emissions for waste and CHP
     # For heat-co-product, i.e. waste and CHP
     dm_co_product = DM_energy['heat-co-product']
     dm_co_product.deepen()
@@ -275,12 +342,47 @@ def dhg_emissions_workflow(DM_energy, dm_CO2_coef, cdm_emission_fact):
 
     return DM_emissions_out
 
+
+def dhg_costs_workflow(dm_fuel, DM_rr):
+
+    dm_cap = DM_rr['dhg-capacity']
+    # Capacity factor from daily to yearly
+    dm_cap.array = dm_cap.array * 8760
+    dm_fuel.append(dm_cap, dim='Variables')
+    # capacity [TW] = energy-demand [TWh] /capacity-factor
+    dm_fuel.operation('dhg_energy-demand_added-district-heat', '/', 'bld_district-capacity', out_col='dhg_capacity_dh', unit='TW')
+
+    # capacity[TW] x replacement-rate[%]
+    dm_rr = DM_rr['dhg-replacement-rate']
+    idx_r = dm_rr.idx
+    idx_f = dm_fuel.idx
+    arr = dm_fuel.array[:, :, idx_f['dhg_capacity_dh'], :] \
+          * dm_rr.array[:, :, idx_r['bld_district-fixed-assumptions_replacement-rate'], np.newaxis]
+
+    # ! FIXME: add cost calculation here
+
+    return
+
+
+def dhg_TPE_interface(DM_energy, DM_emissions):
+    # Merge energy output
+    dm_energy = DM_energy['added-district-heating'].flatten()
+    dm_energy.append(DM_energy['heat-co-product'], dim='Variables')
+    # Merge emission output
+    dm_emissions = DM_emissions['added-district-heat'].flatten()
+    dm_emissions.append(DM_emissions['heat-co-product'].flatten(), dim='Variables')
+
+    dm_energy.append(dm_emissions, dim='Variables')
+    df_TPE = dm_energy.write_df()
+    return df_TPE
+
+
 def district_heating(lever_setting, years_setting, interface=Interface()):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     district_heating_data_file = os.path.join(current_file_directory,
                                               '../_database/data/datamatrix/district-heating.pickle')
-    dm_dhg, cdm_const = read_data(district_heating_data_file, lever_setting)
+    dm_dhg, dm_rr, cdm_const = read_data(district_heating_data_file, lever_setting)
 
     if interface.has_link(from_sector='power', to_sector='district-heating'):
         DM_pow = interface.get_link(from_sector='power', to_sector='district-heating')
@@ -297,12 +399,20 @@ def district_heating(lever_setting, years_setting, interface=Interface()):
     else:
         dm_bld = simulate_buildings_to_district_heating_input()
 
+    # Input: raw energy demand by fuel; efficiency by fuel; heat co-generation from waste/CHP
+    # Output: Energy demand district heating by fuel-type + waste/CHP co-generation
     DM_energy_out = dhg_energy_demand_workflow(dm_dhg, dm_bld, DM_pow['wf_energy'], dm_ind)
+    # Input: Energy demand district-heating by fuel + waste/CHP; GHG emission factors; CO2 emission factor for waste/CHP
+    # Output: emissions by GHG for district-heating by fuel, emissions for CO2 for waste and CHP heat
     DM_emissions_out = dhg_emissions_workflow(DM_energy_out['wf_emissions'], DM_pow['wf_emissions'], cdm_const)
+    # Input: district-capacity (by fuel), replacement-rate, energy-demand (by fuel)
+    # Output:
+    dhg_costs_workflow(DM_energy_out['wf_costs'], dm_rr)
+    #!FIXME: some dhg output to TPE are computed during the 'cube' but it is not working,...
+    # ....fix this by computing the variables directly here
+    df_TPE = dhg_TPE_interface(DM_energy_out['TPE'], DM_emissions_out['TPE'])
 
-    # !FIXME: you are here, you need to do cost and pipe + interfaces
-
-    return
+    return df_TPE
 
 
 def district_heating_local_run():
@@ -311,63 +421,9 @@ def district_heating_local_run():
     district_heating(lever_setting, years_setting)
     return
 
-
+# dummy_countries_fxa()
 # database_from_csv_to_datamatrix()
-district_heating_local_run()
+# district_heating_local_run()
 
 
-
-def dummy_countries_power():
-    current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    file = 'EUCalc-interface_from-electricity_supply-to-district-heating.xlsx'
-    file_path = os.path.join(current_file_directory, '../_database/data/xls/', file)
-    df = pd.read_excel(file_path, sheet_name="default")
-    vaud = 1
-    eu27 = 1
-    paris = 1
-    if vaud:
-        df_vd = df.loc[df['Country'] == 'Switzerland']
-        df_vd['Country'] = 'Vaud'
-        df_vd['elc_heat-supply-CHP_bio[TWh]'] = df_vd['elc_heat-supply-CHP_bio[TWh]']*0.1
-        df_vd['elc_heat-supply-CHP_fossil[TWh]'] = df_vd['elc_heat-supply-CHP_bio[TWh]']*0.1
-        df = pd.concat([df, df_vd], axis=0)
-    if eu27:
-        df_eu = df.loc[df['Country'] == 'Germany']
-        df_eu['Country'] = 'EU27'
-        df = pd.concat([df, df_eu], axis=0)
-    if paris:
-        df_p = df.loc[df['Country'] == 'France']
-        df_p['Country'] = 'Paris'
-        df_p['elc_heat-supply-CHP_bio[TWh]'] = df_p['elc_heat-supply-CHP_bio[TWh]']*0.19
-        df_p['elc_heat-supply-CHP_fossil[TWh]'] = df_p['elc_heat-supply-CHP_bio[TWh]']*0.19
-        df = pd.concat([df, df_p], axis=0)
-    file = 'All-Countries-interface_from-power-to-district-heating.xlsx'
-    file_path = os.path.join(current_file_directory, '../_database/data/xls/', file)
-    df.to_excel(file_path, sheet_name="default", index=False)
-    return
-
-def dummy_countries_industry():
-    current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    file = 'EUCalc-interface_from-industry-to-district-heating.xlsx'
-    file_path = os.path.join(current_file_directory, '../_database/data/xls/', file)
-    df = pd.read_excel(file_path, sheet_name="default")
-    vaud = 1
-    eu27 = 1
-    paris = 1
-    if vaud:
-        df_vd = df.loc[df['Country'] == 'Switzerland']
-        df_vd['Country'] = 'Vaud'
-        df = pd.concat([df, df_vd], axis=0)
-    if eu27:
-        df_eu = df.loc[df['Country'] == 'Germany']
-        df_eu['Country'] = 'EU27'
-        df = pd.concat([df, df_eu], axis=0)
-    if paris:
-        df_p = df.loc[df['Country'] == 'France']
-        df_p['Country'] = 'Paris'
-        df = pd.concat([df, df_p], axis=0)
-    file = 'All-Countries-interface_from-industry-to-district-heating.xlsx'
-    file_path = os.path.join(current_file_directory, '../_database/data/xls/', file)
-    df.to_excel(file_path, sheet_name="default", index=False)
-    return
 
