@@ -1701,44 +1701,8 @@ def nitrogen_workflow(DM_nitrogen, DM_land, cdm_const):
 
     return DM_nitrogen, dm_fertilizer_co, dm_mineral_fertilizer
 
-# ----------------------------------------------------------------------------------------------------------------------
-# AGRICULTURE ----------------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------------
-def agriculture(lever_setting, years_setting):
-
-
-    current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    agriculture_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/agriculture.pickle')
-    DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, cdm_const = read_data(agriculture_data_file, lever_setting)
-
-    # Simulate data from other modules
-    dm_lfs = simulate_lifestyles_to_agriculture_input()
-    dm_bld = simulate_buildings_to_agriculture_input()
-    dm_ind = simulate_industry_to_agriculture_input()
-    dm_tra = simulate_transport_to_agriculture_input()
-
-    # Filter by country
-    cntr_list = DM_food_demand['food-net-import-pro'].col_labels['Country']
-    dm_lfs = dm_lfs.filter({'Country': cntr_list})
-    dm_bld = dm_bld.filter({'Country': cntr_list})
-    dm_ind = dm_ind.filter({'Country': cntr_list})
-    dm_tra = dm_tra.filter({'Country': cntr_list})
-
-    # CalculationTree
-
-    dm_lfs, dm_lfs_pro = food_demand_workflow(DM_food_demand, dm_lfs)
-    DM_livestock, dm_liv_ibp, dm_liv_ibp= livestock_workflow(DM_livestock, cdm_const, dm_lfs_pro)
-    DM_alc_bev, dm_bev_ibp_cereal_feed = alcoholic_beverages_workflow(DM_alc_bev, cdm_const, dm_lfs_pro)
-    DM_bioenergy, dm_oil, dm_lgn = bioenergy_workflow(DM_bioenergy, cdm_const, dm_ind, dm_bld, dm_tra)
-    DM_manure = livestock_manure_workflow(DM_manure, DM_livestock, cdm_const)
-    DM_feed, dm_aps_ibp = feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, cdm_const)
-    dm_voil = biomass_allocation_workflow(dm_aps_ibp, dm_oil)
-    DM_crop, dm_crop_other = crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, cdm_const)
-    DM_land = land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, dm_ind)
-    DM_nitrogen, dm_fertilizer_co, dm_mineral_fertilizer = nitrogen_workflow(DM_nitrogen, DM_land, cdm_const)
-
-
-    # CalculationLeaf ENERGY & GHG -------------------------------------------------------------------------------------
+ # CalculationLeaf ENERGY & GHG -------------------------------------------------------------------------------------
+def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_manure, cdm_const):
 
     # ENERGY DEMAND ----------------------------------------------------------------------------------------------------
     # Energy demand from agriculture [ktoe] = energy demand [ktoe/ha] * Agricultural land [ha]
@@ -1747,7 +1711,7 @@ def agriculture(lever_setting, years_setting):
     idx_land = dm_agricultural_land.idx
     idx_energy = DM_energy_ghg['energy_demand'].idx
     array_temp = dm_agricultural_land.array[:, :, idx_land['cal_agr_lus_land_agriculture'], np.newaxis] \
-              * DM_energy_ghg['energy_demand'].array[:, :, idx_energy['agr_climate-smart-crop_energy-demand'], :]
+                 * DM_energy_ghg['energy_demand'].array[:, :, idx_energy['agr_climate-smart-crop_energy-demand'], :]
     DM_energy_ghg['caf_energy_demand'].add(array_temp, dim='Variables', col_label='agr_energy-demand', unit='ktoe')
 
     # Calibration Energy demand
@@ -1755,15 +1719,22 @@ def agriculture(lever_setting, years_setting):
                                                  out_col='cal_agr_energy-demand', unit='ktoe')
 
     # CO2 EMISSIONS ----------------------------------------------------------------------------------------------------
-    #Pre processing : filtering and deepening constants
+    # Pre processing : filtering and deepening constants
     cdm_const.rename_col_regex(str1="liquid_", str2="liquid-", dim="Variables")
     cdm_const.rename_col_regex(str1="gas_", str2="gas-", dim="Variables")
     cdm_const.rename_col_regex(str1="solid_", str2="solid-", dim="Variables")
-    cdm_CO2 = cdm_const.filter({'Variables': ['cp_emission-factor_CO2_bioenergy-gas-biogas', 'cp_emission-factor_CO2_bioenergy-liquid-biodiesels',
-                                              'cp_emission-factor_CO2_bioenergy-liquid-ethanol', 'cp_emission-factor_CO2_bioenergy-liquid-oth',
-                                              'cp_emission-factor_CO2_bioenergy-solid-wood', 'cp_emission-factor_CO2_electricity', 'cp_emission-factor_CO2_gas-ff-natural', 'cp_emission-factor_CO2_heat',
-                                              'cp_emission-factor_CO2_liquid-ff-diesel', 'cp_emission-factor_CO2_liquid-ff-fuel-oil', 'cp_emission-factor_CO2_liquid-ff-gasoline',
-                                              'cp_emission-factor_CO2_liquid-ff-lpg', 'cp_emission-factor_CO2_oth', 'cp_emission-factor_CO2_solid-ff-coal']})
+    cdm_CO2 = cdm_const.filter({'Variables': ['cp_emission-factor_CO2_bioenergy-gas-biogas',
+                                              'cp_emission-factor_CO2_bioenergy-liquid-biodiesels',
+                                              'cp_emission-factor_CO2_bioenergy-liquid-ethanol',
+                                              'cp_emission-factor_CO2_bioenergy-liquid-oth',
+                                              'cp_emission-factor_CO2_bioenergy-solid-wood',
+                                              'cp_emission-factor_CO2_electricity',
+                                              'cp_emission-factor_CO2_gas-ff-natural', 'cp_emission-factor_CO2_heat',
+                                              'cp_emission-factor_CO2_liquid-ff-diesel',
+                                              'cp_emission-factor_CO2_liquid-ff-fuel-oil',
+                                              'cp_emission-factor_CO2_liquid-ff-gasoline',
+                                              'cp_emission-factor_CO2_liquid-ff-lpg', 'cp_emission-factor_CO2_oth',
+                                              'cp_emission-factor_CO2_solid-ff-coal']})
     cdm_CO2.deepen()
 
     # Energy direct emission [MtCO2] = energy demand [ktoe] * fertilizer use [MtCO2/ktoe]
@@ -1771,9 +1742,9 @@ def agriculture(lever_setting, years_setting):
     idx_energy = dm_energy.idx
     idx_cdm = cdm_CO2.idx
     array_temp = dm_energy.array[:, :, idx_energy['cal_agr_energy-demand'], :] \
-                    * cdm_CO2.array[idx_cdm['cp_emission-factor_CO2'], np.newaxis, :]
-    DM_energy_ghg['caf_energy_demand'].add(array_temp, dim='Variables', col_label='agr_input-use_emissions-CO2_temp', unit='Mt')
-
+                 * cdm_CO2.array[idx_cdm['cp_emission-factor_CO2'], np.newaxis, :]
+    DM_energy_ghg['caf_energy_demand'].add(array_temp, dim='Variables', col_label='agr_input-use_emissions-CO2_temp',
+                                           unit='Mt')
 
     # Overall CO2 emission from fuel [Mt] = sum (Energy direct emission [MtCO2])
     dm_CO2 = DM_energy_ghg['caf_energy_demand'].filter({'Variables': ['agr_input-use_emissions-CO2_temp']})
@@ -1793,7 +1764,7 @@ def agriculture(lever_setting, years_setting):
     # Calibration CO2 from fuel, liming, urea emissions FIXME check with gino if it makes sense to change the calibration order from KNIME to put it before summing
     DM_energy_ghg['caf_input'].append(dm_CO2, dim='Variables')
     DM_energy_ghg['caf_input'].operation('agr_input-use_emissions-CO2', '*', 'caf_agr_input-use_emissions-CO2',
-                     out_col='cal_agr_input-use_emissions-CO2', unit='t')
+                                         out_col='cal_agr_input-use_emissions-CO2', unit='t')
 
     # Overall CO2 emission [t] = sum (fuel, liming, urea)
     DM_energy_ghg['caf_input'].groupby({'CO2-emission': '.*'}, dim='Categories1', regex=True, inplace=True)
@@ -1804,7 +1775,8 @@ def agriculture(lever_setting, years_setting):
 
     # CROP RESIDUE EMISSIONS -------------------------------------------------------------------------------------------
     # Unit conversion : N2O, CH4 from crop residues [Mt] => [t]
-    dm_ghg = DM_crop['ef_residues'].filter({'Variables': ['agr_crop_emission'], 'Categories2': ['N2O-emission', 'CH4-emission']})
+    dm_ghg = DM_crop['ef_residues'].filter(
+        {'Variables': ['agr_crop_emission'], 'Categories2': ['N2O-emission', 'CH4-emission']})
     dm_ghg = dm_ghg.flatten()
     dm_ghg.add(1000000.0, dummy=True, col_label='Mt_to_t', dim='Variables', unit='')
     dm_ghg.operation('agr_crop_emission', '*', 'Mt_to_t',
@@ -1852,29 +1824,69 @@ def agriculture(lever_setting, years_setting):
     DM_energy_ghg['GHG'].rename_col('N2O', 'N2O-emission', dim='Categories1')
 
     # Appending crop + fuel + livestock + rice emissions
-    DM_energy_ghg['GHG'].append(dm_ghg, dim='Variables') # N2O, CH4 from crop residues
+    DM_energy_ghg['GHG'].append(dm_ghg, dim='Variables')  # N2O, CH4 from crop residues
     DM_energy_ghg['GHG'].append(dm_N2O_liv, dim='Variables')  # with NO2 from livestock
-    DM_energy_ghg['GHG'].append(dm_CH4_liv, dim='Variables') # CH4 from livestock
-    DM_energy_ghg['GHG'].append(dm_CH4_rice, dim='Variables') # CH4 from rice
-    DM_energy_ghg['GHG'].append(DM_energy_ghg['caf_input'].filter({'Variables': ['cal_agr_input-use_emissions-CO2']}), dim='Variables') # CO2 from fuel, liming, urea
+    DM_energy_ghg['GHG'].append(dm_CH4_liv, dim='Variables')  # CH4 from livestock
+    DM_energy_ghg['GHG'].append(dm_CH4_rice, dim='Variables')  # CH4 from rice
+    DM_energy_ghg['GHG'].append(DM_energy_ghg['caf_input'].filter({'Variables': ['cal_agr_input-use_emissions-CO2']}),
+                                dim='Variables')  # CO2 from fuel, liming, urea
 
-
-    # Summing per GHG
-
+    # Agriculture GHG emissions per GHG [t] =  crop + fuel + livestock + rice emissions per GHG
+    DM_energy_ghg['GHG'].operation('agr_emission_residues', '+', 'cal_agr_liv_N2O-emission',
+                                   out_col='residues_and_N2O_liv', unit='t')
+    DM_energy_ghg['GHG'].operation('residues_and_N2O_liv', '+', 'cal_agr_liv_CH4-emission',
+                                   out_col='residues_and_N2O_liv_and_CH4_liv', unit='t')
+    DM_energy_ghg['GHG'].operation('residues_and_N2O_liv_and_CH4_liv', '+', 'agr_rice_crop',
+                                   out_col='residues_and_N2O_liv_and_CH4_liv_and_rice', unit='t')
+    DM_energy_ghg['GHG'].operation('residues_and_N2O_liv_and_CH4_liv_and_rice', '+', 'cal_agr_input-use_emissions-CO2',
+                                   out_col='agr_emissions', unit='t')
+    # Dropping the intermediate values
+    DM_energy_ghg['GHG'] = DM_energy_ghg['GHG'].filter({'Variables': ['agr_emissions', 'caf_agr_emissions']})
 
     # Calibration
+    DM_energy_ghg['GHG'].operation('agr_emissions', '*', 'caf_agr_emissions',
+                                   out_col='cal_agr_emissions', unit='t')
+    return DM_energy_ghg
 
 
 
-    # Overall N2O emission [t] = sum (livestock, crop, fertilizer emission)
 
-    # CH4 EMISSIONS ----------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+# AGRICULTURE ----------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+def agriculture(lever_setting, years_setting):
 
-    # Unit conversion : CH4 from crop residues [Mt] => [t]
 
-    # Overall CH4 emission [t] = sum (livestock, crop, fertilizer emission)
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    agriculture_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/agriculture.pickle')
+    DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, cdm_const = read_data(agriculture_data_file, lever_setting)
 
-    # CALIBRATION: CO2, N2O, CH4 ---------------------------------------------------------------------------------------
+    # Simulate data from other modules
+    dm_lfs = simulate_lifestyles_to_agriculture_input()
+    dm_bld = simulate_buildings_to_agriculture_input()
+    dm_ind = simulate_industry_to_agriculture_input()
+    dm_tra = simulate_transport_to_agriculture_input()
+
+    # Filter by country
+    cntr_list = DM_food_demand['food-net-import-pro'].col_labels['Country']
+    dm_lfs = dm_lfs.filter({'Country': cntr_list})
+    dm_bld = dm_bld.filter({'Country': cntr_list})
+    dm_ind = dm_ind.filter({'Country': cntr_list})
+    dm_tra = dm_tra.filter({'Country': cntr_list})
+
+    # CalculationTree
+
+    dm_lfs, dm_lfs_pro = food_demand_workflow(DM_food_demand, dm_lfs)
+    DM_livestock, dm_liv_ibp, dm_liv_ibp= livestock_workflow(DM_livestock, cdm_const, dm_lfs_pro)
+    DM_alc_bev, dm_bev_ibp_cereal_feed = alcoholic_beverages_workflow(DM_alc_bev, cdm_const, dm_lfs_pro)
+    DM_bioenergy, dm_oil, dm_lgn = bioenergy_workflow(DM_bioenergy, cdm_const, dm_ind, dm_bld, dm_tra)
+    DM_manure = livestock_manure_workflow(DM_manure, DM_livestock, cdm_const)
+    DM_feed, dm_aps_ibp = feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, cdm_const)
+    dm_voil = biomass_allocation_workflow(dm_aps_ibp, dm_oil)
+    DM_crop, dm_crop_other = crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, cdm_const)
+    DM_land = land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, dm_ind)
+    DM_nitrogen, dm_fertilizer_co, dm_mineral_fertilizer = nitrogen_workflow(DM_nitrogen, DM_land, cdm_const)
+    DM_energy_ghg = energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_manure, cdm_const)
 
 
     print('hello')
