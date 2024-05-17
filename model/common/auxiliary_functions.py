@@ -371,3 +371,137 @@ def simulate_input(from_sector, to_sector):
     # get dm
     dm = DataMatrix.create_from_df(df, num_cat=0)
     return(dm)
+
+def get_mindec(dm, cdm):
+    
+    if len(dm.dim_labels) == 5:
+        # sort
+        dm.sort("Categories1")
+        dm.sort("Categories2")
+        cdm.sort("Categories2")
+        
+        # col names
+        cols = {"Country" : dm.col_labels["Country"],
+                "Years" : dm.col_labels["Years"],
+                "Variables" : ["mineral-decomposition"],
+                "Categories1" : dm.col_labels["Categories1"],
+                "Categories2" : dm.col_labels["Categories2"],
+                "Categories3" : cdm.col_labels["Categories2"]
+                }
+    
+    if len(dm.dim_labels) == 4:
+        # sort
+        dm.sort("Categories1")
+        cdm.sort("Categories2")
+        
+        # col names
+        cols = {"Country" : dm.col_labels["Country"],
+                "Years" : dm.col_labels["Years"],
+                "Variables" : ["mineral-decomposition"],
+                "Categories1" : dm.col_labels["Categories1"],
+                "Categories2" : cdm.col_labels["Categories2"]
+                }
+    
+    # dim labels
+    dim_labels_new = list(cols)
+    
+    # idx
+    values = cols["Country"]
+    idx_new = dict(zip(iter(values), iter(list(range(0,len(values))))))
+    myrange = list(cols)[1:len(list(cols))]
+    for key in myrange:
+        values = cols[key]
+        mydict = dict(zip(iter(values), iter(list(range(0,len(values))))))
+        idx_new.update(mydict)
+    
+    # unit
+    unit = cdm.units
+    key_old = list(unit)[0]
+    unit["mineral-decomposition"] = unit.pop(key_old)
+    value_old = list(unit.values())[0]
+    unit["mineral-decomposition"] = value_old.split("/")[0]
+    
+    # data matrix
+    dm_out = DataMatrix(col_labels=cols, units=unit)
+    dm_out.idx = idx_new
+    dm_out.dim_labels = dim_labels_new
+    
+    # get array
+    if len(dm.dim_labels) == 5:
+        arr = dm.array[...,np.newaxis] * cdm.array[np.newaxis,np.newaxis,:,:,np.newaxis,:]
+    if len(dm.dim_labels) == 4:
+        arr = dm.array[...,np.newaxis] * cdm.array[np.newaxis,np.newaxis,:,:,:]
+    
+    # insert array
+    dm_out.array = arr
+    
+    return dm_out
+
+def calibration(dm, dm_cal, calibration_start_year = 1990, calibration_end_year = 2015, years_setting = [1990, 2015, 2050, 5]):
+
+    # subset based on years of calibration
+    years_sub = np.array(range(calibration_start_year, calibration_end_year + 1, 1)).tolist()
+    dm_sub = dm.filter({"Years" : years_sub})
+    dm_cal_sub = dm_cal.filter({"Years" : years_sub})
+    
+    # get calibration rates = (calib - variable)/variable
+    dm_cal_sub.array = (dm_cal_sub.array - dm_sub.array)/dm_sub.array + 1
+    if len(dm_cal_sub.dim_labels) == 3:
+        for v in  dm_cal_sub.col_labels["Variables"]:
+            dm_cal_sub.units[v] = "%"
+            dm_cal_sub.rename_col(v, "cal_rate_" + v, "Variables")
+    else:
+        variab_name = dm_cal_sub.col_labels["Variables"][0]
+        dm_cal_sub.units[variab_name] = "%"
+        dm_cal_sub.rename_col(variab_name, "cal_rate", "Variables")
+    
+    # adjust missing years in dm_cal_sub
+    
+    # get new years post calibration_end_year
+    years = dm_cal_sub.col_labels["Years"]
+    years_fts = np.array(range(years_setting[1] + years_setting[3], 
+                                    years_setting[2] + years_setting[3], 
+                                    years_setting[3])).tolist()
+    if years_setting[1] in years:
+        years_new_post = years_fts
+    else:
+        years_new_post_temp = np.array(range(years[len(years)-1] + 1, years_setting[1] + 1, 1)).tolist()
+        years_new_post = years_new_post_temp + years_fts
+    
+    # get index of dm_cal_sub
+    idx = dm_cal_sub.idx
+    
+    # for missing years pre calibration_start_year, add them with value 1 (no calibration done)
+    if years_setting[0] not in years:
+        years_new_pre = np.array(range(years_setting[0], calibration_start_year, 1)).tolist()
+        for i in years_new_pre:
+            dm_cal_sub.add(1, dim = "Years", col_label = [i], dummy = True)
+        
+    # for missing years post calibration_end_year, add them with value of last available year
+    for i in years_new_post:
+        if len(dm_cal_sub.dim_labels) == 3:
+            arr_temp = dm_cal_sub.array[:,idx[calibration_end_year],:]
+            arr_temp = arr_temp[:,np.newaxis,:]
+            dm_cal_sub.add(arr_temp, dim = "Years", col_label = [i])
+        if len(dm_cal_sub.dim_labels) == 4:
+            arr_temp = dm_cal_sub.array[:,idx[calibration_end_year],:,:]
+            arr_temp = arr_temp[:,np.newaxis,:,:]
+            dm_cal_sub.add(arr_temp, dim = "Years", col_label = [i])
+        if len(dm_cal_sub.dim_labels) == 5:
+            arr_temp = dm_cal_sub.array[:,idx[calibration_end_year],:,:,:]
+            arr_temp = arr_temp[:,np.newaxis,:,:,:]
+            dm_cal_sub.add(arr_temp, dim = "Years", col_label = [i])
+        if len(dm_cal_sub.dim_labels) == 6:
+            arr_temp = dm_cal_sub.array[:,idx[calibration_end_year],:,:,:,:]
+            arr_temp = arr_temp[:,np.newaxis,:,:,:,:]
+            dm_cal_sub.add(arr_temp, dim = "Years", col_label = [i])
+    
+    # sort years
+    dm_cal_sub.sort("Years")
+    
+    # do the calibration
+    dm_out = dm.copy()
+    dm_out.array = dm.array * dm_cal_sub.array
+    
+    # return
+    return dm_out, dm_cal_sub
