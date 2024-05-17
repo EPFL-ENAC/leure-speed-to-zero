@@ -437,7 +437,12 @@ def get_mindec(dm, cdm):
     
     return dm_out
 
-def calibration(dm, dm_cal, calibration_start_year = 1990, calibration_end_year = 2015, years_setting = [1990, 2015, 2050, 5]):
+def calibration_rates(dm, dm_cal, calibration_start_year = 1990, calibration_end_year = 2015, 
+                      years_setting = [1990, 2015, 2050, 5]):
+    
+    # if dm and dm_cal do not have the same dimension return an error
+    if len(dm.dim_labels) != len(dm_cal.dim_labels):
+        raise ValueError('dm and dm_cal must have the same dimensions')
 
     # subset based on years of calibration
     years_sub = np.array(range(calibration_start_year, calibration_end_year + 1, 1)).tolist()
@@ -499,9 +504,5 @@ def calibration(dm, dm_cal, calibration_start_year = 1990, calibration_end_year 
     # sort years
     dm_cal_sub.sort("Years")
     
-    # do the calibration
-    dm_out = dm.copy()
-    dm_out.array = dm.array * dm_cal_sub.array
-    
     # return
-    return dm_out, dm_cal_sub
+    return dm_cal_sub
