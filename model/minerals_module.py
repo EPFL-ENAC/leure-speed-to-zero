@@ -10,7 +10,7 @@ from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database_fxa
 from model.common.interface_class import Interface
-from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm, simulate_input
+from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm, simulate_input, get_mindec
 import pandas as pd
 import pickle
 import os
@@ -18,54 +18,6 @@ import numpy as np
 import re
 import warnings
 warnings.simplefilter("ignore")
-
-def get_mindec(dm, cdm):
-    
-    # sort
-    dm.sort("Categories1")
-    dm.sort("Categories2")
-    cdm.sort("Categories2")
-    
-    # col names
-    cols = {"Country" : dm.col_labels["Country"],
-            "Years" : dm.col_labels["Years"],
-            "Variables" : ["mineral-decomposition"],
-            "Categories1" : dm.col_labels["Categories1"],
-            "Categories2" : dm.col_labels["Categories2"],
-            "Categories3" : cdm.col_labels["Categories2"]
-            }
-    
-    # dim labels
-    dim_labels_new = list(cols)
-    
-    # idx
-    values = cols["Country"]
-    idx_new = dict(zip(iter(values), iter(list(range(0,len(values))))))
-    myrange = list(cols)[1:len(list(cols))]
-    for key in myrange:
-        values = cols[key]
-        mydict = dict(zip(iter(values), iter(list(range(0,len(values))))))
-        idx_new.update(mydict)
-    
-    # unit
-    unit = cdm.units
-    key_old = list(unit)[0]
-    unit["mineral-decomposition"] = unit.pop(key_old)
-    value_old = list(unit.values())[0]
-    unit["mineral-decomposition"] = value_old.split("/")[0]
-    
-    # data matrix
-    dm_out = DataMatrix(col_labels=cols, units=unit)
-    dm_out.idx = idx_new
-    dm_out.dim_labels = dim_labels_new
-    
-    # get array
-    arr = dm.array[...,np.newaxis] * cdm.array[np.newaxis,np.newaxis,:,:,np.newaxis,:]
-    
-    # insert array
-    dm_out.array = arr
-    
-    return dm_out
 
 def relative_reserve(minerals, dm, reserve_starting_year, mineral_type, range_max):
 
@@ -176,7 +128,6 @@ def database_from_csv_to_datamatrix():
 
     # Load constants
     cdm_const = ConstantDataMatrix.extract_constant('interactions_constants', pattern='cp_ind_material-efficiency.*|cp_min.*', num_cat=0)
-    [not bool(re.search("solar", str(i), flags=re.IGNORECASE)) for i in cdm_const.col_labels['Variables']]
 
     ########
     # SAVE #
