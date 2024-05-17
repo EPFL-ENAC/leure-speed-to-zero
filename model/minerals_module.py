@@ -10,7 +10,7 @@ from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database_fxa
 from model.common.interface_class import Interface
-from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm, simulate_input, get_mindec
+from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm, simulate_input, get_mindec, calibration_rates
 import pandas as pd
 import pickle
 import os
@@ -103,8 +103,8 @@ def database_from_csv_to_datamatrix():
 
     # Read fixed assumptions to datamatrix
     df = read_database_fxa('minerals_fixed-assumptions')
-    dm = DataMatrix.create_from_df(df, num_cat=0) # this is a 3 dimensional arrays for the fixed assumptions in transport
-
+    dm = DataMatrix.create_from_df(df, num_cat=0)
+    
     # Keep only ots and fts years
     dm = dm.filter(selected_cols={'Years': years_all})
     dm.col_labels
@@ -121,6 +121,14 @@ def database_from_csv_to_datamatrix():
         'min_other': dm_min_other,
         'min_proportion': dm_min_proportion
     }
+    
+    ###############
+    # CALIBRATION #
+    ###############
+    
+    # Read calibration
+    df = read_database_fxa('minerals_calibration')
+    dm_cal = DataMatrix.create_from_df(df, num_cat=0)
 
     #############
     # CONSTANTS #
@@ -135,6 +143,7 @@ def database_from_csv_to_datamatrix():
 
     DM_minerals = {
         'fxa': dict_fxa,
+        'cal': dm_cal,
         'constant': cdm_const
     }
     
@@ -1316,6 +1325,31 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     # return
     return dm_mindec, dm_mindec_sect
 
+def mineral_demand_calibration(DM_minerals, dm_mindec):
+    
+    # get calibration series for direct demand
+    dm_cal = DM_minerals["cal"]
+    dm_cal.deepen_twice()
+    dm_cal.rename_col("min", "mineral-decomposition-calib", "Variables")
+    dm_cal.rename_col("calib", "all-sectors", "Categories1")
+
+    # get only direct demand
+    dm_temp = dm_mindec.filter({"Categories2" : ["dir"]})
+    dm_temp = dm_temp.flatten()
+    dm_temp.rename_col_regex(str1 = "dir_", str2 = "", dim = "Categories2")
+
+    # obtain calibration rates
+    dm_mindec_dir_calib_rates = calibration_rates(dm = dm_temp, dm_cal = dm_cal)
+
+    # use the same calibration rates on indirect demand, net exports and direct demand
+    dm_mindec.array = dm_mindec.array * dm_mindec_dir_calib_rates.array[:,:,:,:,np.newaxis,:]
+    
+    # clean
+    del dm_cal, dm_temp
+    
+    # return
+    return dm_mindec, dm_mindec_dir_calib_rates
+    
 def mineral_extraction(DM_minerals, DM_interface, dm_mindec, cdm_constants):
     
     # name of minerals
@@ -1737,11 +1771,12 @@ def variables_for_tpe(DM_interface, DM_minerals, dm_production_sect, dm_fossil, 
     # return
     return df_tpe, df_tpe_relres
 
-def minerals(years_setting, interface=Interface()):
+def minerals(years_setting, interface=Interface(), calibration = True):
     
     # directories
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     minerals_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/minerals.pickle')
+    # minerals_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/minerals.pickle') # for local run
     
     # get data
     DM_minerals, cdm_constants = read_data(minerals_data_file)
@@ -1812,7 +1847,8 @@ def minerals(years_setting, interface=Interface()):
     dm_mindec, dm_mindec_sect = mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, cdm_constants)
     
     # calibration
-    # TBD
+    if calibration is True:
+        dm_mindec, dm_mindec_calib_rates = mineral_demand_calibration(DM_minerals, dm_mindec)
 
     # get mineral extraction
     dm_extraction = mineral_extraction(DM_minerals, DM_interface, dm_mindec, cdm_constants)
