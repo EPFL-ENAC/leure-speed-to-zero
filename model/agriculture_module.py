@@ -693,7 +693,7 @@ def livestock_workflow(DM_livestock, cdm_const, dm_lfs_pro):
     DM_livestock['liv_slaughtered_rate'].operation('agr_liv_population', '/', 'agr_climate-smart-livestock_slaughtered',
                                                    dim="Variables", out_col='agr_liv_population_meat', unit='lsu')
 
-    # Processeing for calibration: Livestock population for meat, eggs and dairy ( meat pop & slaughtered livestock for eggs and dairy)
+    # Processing for calibration: Livestock population for meat, eggs and dairy ( meat pop & slaughtered livestock for eggs and dairy)
     # Filtering eggs, dairy and meat
     dm_liv_slau_egg_dairy = DM_livestock['yield'].filter(
         {'Variables': ['agr_liv_population'], 'Categories1': ['abp-dairy-milk', 'abp-hens-egg']})
@@ -920,7 +920,7 @@ def bioenergy_workflow(DM_bioenergy, cdm_const, dm_ind, dm_bld, dm_tra):
                                                      out_col='agr_bioenergy-capacity_elec-prod', unit='TWh')
 
     # Feedstock requirements [TWh] = Electricity production [TWh] / Efficiency per technology [%]
-    DM_bioenergy['electricity_production'].operation('agr_bioenergy-capacity_elec-prod', '*',
+    DM_bioenergy['electricity_production'].operation('agr_bioenergy-capacity_elec-prod', '/',
                                                      'agr_bioenergy-capacity_efficiency',
                                                      out_col='agr_bioenergy-capacity_fdk-req', unit='TWh')
 
@@ -1170,7 +1170,7 @@ def bioenergy_workflow(DM_bioenergy, cdm_const, dm_ind, dm_bld, dm_tra):
                unit='kcal')
 
     # Cellulosic liquid biofuel per type [kcal] : In KNIME but not computed as not used later
-    return DM_bioenergy, dm_oil, dm_lgn
+    return DM_bioenergy, dm_oil, dm_lgn, dm_eth, dm_biofuel_fdk
 
 # CalculationLeaf LIVESTOCK MANURE MANAGEMENT & GHG EMISSIONS ----------------------------------------------------------
 def livestock_manure_workflow(DM_manure, DM_livestock,  cdm_const):
@@ -1197,6 +1197,9 @@ def livestock_manure_workflow(DM_manure, DM_livestock,  cdm_const):
     # Manure emission [MtN2O] = Manure management practices [MtN] * emission factors per practices [MtN2O/Mt]
     DM_manure['ef_liv_N2O'].operation('agr_liv_n-stock_split', '*', 'fxa_ef_liv_N2O-emission_ef',
                                       out_col='agr_liv_N2O-emission', unit='t')
+
+    dm_temp = DM_manure['ef_liv_N2O'].copy()
+    df_temp = dm_temp.write_df()
 
     # Calibration N2O
     dm_liv_N2O = DM_manure['ef_liv_N2O'].filter({'Variables': ['agr_liv_N2O-emission']})
@@ -1879,7 +1882,7 @@ def agriculture(lever_setting, years_setting):
     dm_lfs, dm_lfs_pro = food_demand_workflow(DM_food_demand, dm_lfs)
     DM_livestock, dm_liv_ibp, dm_liv_ibp= livestock_workflow(DM_livestock, cdm_const, dm_lfs_pro)
     DM_alc_bev, dm_bev_ibp_cereal_feed = alcoholic_beverages_workflow(DM_alc_bev, cdm_const, dm_lfs_pro)
-    DM_bioenergy, dm_oil, dm_lgn = bioenergy_workflow(DM_bioenergy, cdm_const, dm_ind, dm_bld, dm_tra)
+    DM_bioenergy, dm_oil, dm_lgn, dm_eth, dm_biofuel_fdk = bioenergy_workflow(DM_bioenergy, cdm_const, dm_ind, dm_bld, dm_tra)
     DM_manure = livestock_manure_workflow(DM_manure, DM_livestock, cdm_const)
     DM_feed, dm_aps_ibp = feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, cdm_const)
     dm_voil = biomass_allocation_workflow(dm_aps_ibp, dm_oil)
@@ -1887,6 +1890,61 @@ def agriculture(lever_setting, years_setting):
     DM_land = land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, dm_ind)
     DM_nitrogen, dm_fertilizer_co, dm_mineral_fertilizer = nitrogen_workflow(DM_nitrogen, DM_land, cdm_const)
     DM_energy_ghg = energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_manure, cdm_const)
+
+
+    # KNIME CHECK WITH AUSTRIA -----------------------------------------------------------------------------------------
+    # FOOD DEMAND
+    #dm_lfs_pro.datamatrix_plot({'Country': 'Austria', 'Variables': ['agr_domestic_production']})
+
+    # LIVESTOCK
+    #DM_livestock['caf_liv_population'].datamatrix_plot({'Country': 'Austria', 'Variables': ['agr_liv_population']})
+
+    # ALCOHOLIC BEVERAGES
+    #dm_bev_ibp_cereal_feed.datamatrix_plot({'Country': 'Austria', 'Variables': ['agr_use_bev_ibp_cereal_feed']})
+
+    # BIOENERGY
+    #DM_bioenergy['digestor-mix'].datamatrix_plot({'Country': 'Austria', 'Variables': ['agr_bioenergy_biomass-demand_biogas']})
+    #DM_bioenergy['solid-mix'].datamatrix_plot(
+    #    {'Country': 'Austria', 'Variables': ['agr_bioenergy_biomass-demand_solid']})
+    #DM_bioenergy['electricity_production'].datamatrix_plot(
+    #    {'Country': 'Austria', 'Variables': ['agr_bioenergy-capacity_fdk-req']})
+    # Pre processing
+    dm_liquid = dm_oil.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_oil']})
+    dm_liquid.rename_col('agr_bioenergy_biomass-demand_liquid_oil', 'agr_bioenergy_biomass-demand_liquid', dim='Variables')
+    dm_lgn = dm_lgn.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_lgn']})
+    dm_lgn.rename_col('agr_bioenergy_biomass-demand_liquid_lgn', 'agr_bioenergy_biomass-demand_liquid', dim='Variables')
+    dm_eth = dm_eth.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_eth']})
+    dm_eth.rename_col('agr_bioenergy_biomass-demand_liquid_eth', 'agr_bioenergy_biomass-demand_liquid', dim='Variables')
+    dm_liquid.append(dm_eth, dim='Categories1')
+    dm_liquid.append(dm_lgn, dim='Categories1')
+    dm_liquid.datamatrix_plot(
+        {'Country': 'Austria', 'Variables': ['agr_bioenergy_biomass-demand_liquid']})
+
+    dm_biofuel_fdk.datamatrix_plot(
+        {'Country': 'Austria', 'Variables': ['agr_bioenergy_biomass-demand_liquid']})
+    dm_oil.datamatrix_plot(
+        {'Country': 'Austria', 'Variables': ['agr_biomass-hierarchy_biomass-mix_liquid']})
+
+    # MANURE
+    DM_manure['caf_liv_CH4'] = DM_manure['caf_liv_CH4'].flatten()
+    DM_manure['caf_liv_CH4'].datamatrix_plot(
+        {'Country': 'Austria', 'Variables': ['agr_liv_CH4-emission']})
+    DM_manure['caf_liv_N2O'] = DM_manure['caf_liv_N2O'].flatten()
+    DM_manure['caf_liv_N2O'].datamatrix_plot(
+        {'Country': 'Austria', 'Variables': ['agr_liv_N2O-emission']})
+
+    # FEED
+
+    # BIOMASS ALLOCATION
+
+    # CROP
+
+    # LAND
+
+    # NITROGEN
+
+    # ENERGY GHG
+
 
 
     print('hello')
