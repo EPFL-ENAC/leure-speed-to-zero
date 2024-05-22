@@ -509,18 +509,24 @@ def calibration_rates(dm, dm_cal, calibration_start_year = 1990, calibration_end
 
 def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
 
-    if len(dm_activity.col_labels["Variables"])>1:
+    if len(dm_activity.col_labels["Variables"]) > 1:
         raise ValueError("This function works only for one activity at the time")
-    
-    # get some constants
-    activity_last_cat = dm_activity.dim_labels[-1]
-    activity_name = dm_activity.col_labels["Variables"][0]
-    activity_unit = dm_activity.units[activity_name]
+        
+    if len(dm_activity.dim_labels) > 4:
+        raise ValueError("This function currently does not work for dm_activity with more than 1 category")
+    # note: in case of need, to make it work for more than 1 category you should put all constants into dm_activity, possibly by using cdm_to_dm() and then adding one variable at the time as array with the right dimensions
     
     # filter for selected cost_type
     cdm_cost = cdm_cost.filter_w_regex({"Variables" : ".*" + cost_type + ".*|.*evolution-method.*"})
     cdm_cost.rename_col_regex(cost_type + "-", "", dim = "Variables")
     cdm_cost.rename_col('baseyear', 'unit-cost-baseyear', "Variables")
+    
+    # get some constants
+    activity_last_cat = dm_activity.dim_labels[-1]
+    constants_last_cat = cdm_cost.dim_labels[-1]
+    activity_name = dm_activity.col_labels["Variables"][0]
+    activity_unit = dm_activity.units[activity_name]
+    cost_unit_denominator = re.split("/",cdm_cost.units["unit-cost-baseyear"])[1]
     
     # fitler only years >= baseyear
     years = dm_activity.col_labels["Years"]
@@ -529,8 +535,8 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
     dm_activity.filter({"Years" : keep_years}, inplace = True)
     
     # error if unit is not the same
-    if re.split("/",cdm_cost.units["unit-cost-baseyear"])[1] != activity_unit:
-        raise ValueError("The units of the activity differs from the unit of costs, make the unit of activity the same of cost's")
+    if cost_unit_denominator != activity_unit:
+        raise ValueError(f"The unit of the activity is {activity_unit} while the denominator of the unit of costs is {cost_unit_denominator}. Make the unit of the activity as {cost_unit_denominator}.")
     
     ######################
     ##### UNIT COSTS #####
@@ -544,8 +550,8 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
                (cdm_cost.array[idx["evolution-method"],:] == 3)).tolist()
         
     if len(keep_LR) != 0:
-        keep = np.array(cdm_cost.col_labels[activity_last_cat])[keep_LR].tolist()
-        cdm_cost_LR = cdm_cost.filter({activity_last_cat : keep})
+        keep = np.array(cdm_cost.col_labels[constants_last_cat])[keep_LR].tolist()
+        cdm_cost_LR = cdm_cost.filter({constants_last_cat : keep})
         dm_activity_LR = dm_activity.filter({activity_last_cat : keep})
         
         # make activity cumulative
@@ -577,8 +583,8 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
     keep_LE = ((cdm_cost.array[idx["evolution-method"],:] == 1)).tolist()
     
     if len(keep_LE) != 0:
-        keep = np.array(cdm_cost.col_labels[activity_last_cat])[keep_LE].tolist()
-        cdm_cost_LE = cdm_cost.filter({activity_last_cat : keep})
+        keep = np.array(cdm_cost.col_labels[constants_last_cat])[keep_LE].tolist()
+        cdm_cost_LE = cdm_cost.filter({constants_last_cat : keep})
         dm_activity_LE = dm_activity.filter({activity_last_cat : keep})
         
         # unit_cost = d_factor * (years - baseyear) + unit_cost_baseyear
@@ -626,3 +632,4 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
     
     # return
     return dm_cost
+
