@@ -506,3 +506,123 @@ def calibration_rates(dm, dm_cal, calibration_start_year = 1990, calibration_end
     
     # return
     return dm_cal_sub
+
+def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
+
+    if len(dm_activity.col_labels["Variables"])>1:
+        raise ValueError("This function works only for one activity at the time")
+    
+    # get some constants
+    activity_last_cat = dm_activity.dim_labels[-1]
+    activity_name = dm_activity.col_labels["Variables"][0]
+    activity_unit = dm_activity.units[activity_name]
+    
+    # filter for selected cost_type
+    cdm_cost = cdm_cost.filter_w_regex({"Variables" : ".*" + cost_type + ".*|.*evolution-method.*"})
+    cdm_cost.rename_col_regex(cost_type + "-", "", dim = "Variables")
+    cdm_cost.rename_col('baseyear', 'unit-cost-baseyear', "Variables")
+    
+    # fitler only years >= baseyear
+    years = dm_activity.col_labels["Years"]
+    keep_years = [i >= baseyear for i in years]
+    keep_years = np.array(years)[keep_years].tolist()
+    dm_activity.filter({"Years" : keep_years}, inplace = True)
+    
+    # error if unit is not the same
+    if re.split("/",cdm_cost.units["unit-cost-baseyear"])[1] != activity_unit:
+        raise ValueError("The units of the activity differs from the unit of costs, make the unit of activity the same of cost's")
+    
+    ######################
+    ##### UNIT COSTS #####
+    ######################
+    
+    ##### LEARNING RATE METHODOLOGY #####
+    
+    # keep only variables that have evolution-method == 2 or 3
+    idx = cdm_cost.idx
+    keep_LR = ((cdm_cost.array[idx["evolution-method"],:] == 2) | \
+               (cdm_cost.array[idx["evolution-method"],:] == 3)).tolist()
+        
+    if len(keep_LR) != 0:
+        keep = np.array(cdm_cost.col_labels[activity_last_cat])[keep_LR].tolist()
+        cdm_cost_LR = cdm_cost.filter({activity_last_cat : keep})
+        dm_activity_LR = dm_activity.filter({activity_last_cat : keep})
+        
+        # make activity cumulative
+        dm_activity_LR.array = np.cumsum(dm_activity_LR.array, axis = -1)
+        
+        # learning = cumulated activity ^ b_factor
+        idx_cdm = cdm_cost_LR.idx
+        arr_temp = cdm_cost_LR.array[idx_cdm["b-factor"]]
+        arr_temp = dm_activity_LR.array ** arr_temp[np.newaxis,np.newaxis,np.newaxis,:]
+        dm_activity_LR.add(arr_temp, dim = "Variables", col_label = "learning", unit = activity_unit)
+        
+        # a_factor = unit_cost_baseyear / learning
+        idx = dm_activity_LR.idx
+        arr_temp = cdm_cost_LR.array[idx_cdm["unit-cost-baseyear"]]
+        arr_temp = arr_temp[np.newaxis,np.newaxis,:] / dm_activity_LR.array[:,:,idx["learning"],:]
+        dm_activity_LR.add(arr_temp, dim = "Variables", col_label = "a-factor", unit = "num/" + activity_unit)
+        
+        # unit cost = a_factor * learning
+        # !FIXME: THIS IS LIKE THE KNIME, BUT NOT SURE THIS ISCORRECT, AS LIKE THIS UNIT COST = UNIT COST BASEYEAR (TBC WHAT TO DO)
+        dm_activity_LR.operation(col1 = "a-factor", operator = "*", col2 = "learning", dim = "Variables", 
+                                 out_col = "unit-cost", unit = "EUR/" + activity_unit)
+        dm_activity_LR.drop(dim = "Variables", col_label = ['learning', 'a-factor'])
+        dm_cost_LR = dm_activity_LR
+    
+    ##### LINEAR EVOLUTION METHODOLOGY #####
+    
+    # keep only variables that have evolution-method == 1
+    idx = cdm_cost.idx
+    keep_LE = ((cdm_cost.array[idx["evolution-method"],:] == 1)).tolist()
+    
+    if len(keep_LE) != 0:
+        keep = np.array(cdm_cost.col_labels[activity_last_cat])[keep_LE].tolist()
+        cdm_cost_LE = cdm_cost.filter({activity_last_cat : keep})
+        dm_activity_LE = dm_activity.filter({activity_last_cat : keep})
+        
+        # unit_cost = d_factor * (years - baseyear) + unit_cost_baseyear
+        idx_cdm = cdm_cost_LE.idx
+        idx = dm_activity_LE.idx
+        dm_activity_LE.add(1, dim = "Variables", col_label = "ones", unit = "num", dummy = True)
+        arr_temp = np.array(dm_activity_LE.col_labels["Years"])
+        arr_temp = dm_activity_LE.array[:,:,idx["ones"],:] * arr_temp[np.newaxis,:,np.newaxis]
+        dm_activity_LE.add(arr_temp[:,:,np.newaxis,:], dim = "Variables", unit = "num", col_label = "years")
+        idx = dm_activity_LE.idx
+        arr_temp = cdm_cost_LE.array[idx_cdm["d-factor"],:]
+        arr_temp2 = cdm_cost_LE.array[idx_cdm["unit-cost-baseyear"],:]
+        arr_temp = (arr_temp[np.newaxis,np.newaxis,:] * \
+                    (dm_activity_LE.array[:,:,idx["years"],:] - baseyear) + \
+                        arr_temp2[np.newaxis,np.newaxis,:])
+        dm_activity_LE.add(arr_temp[:,:,np.newaxis,:], dim = "Variables", col_label = 
+                           "unit-cost", unit = "EUR/" + activity_unit)
+        dm_activity_LE.drop(dim = "Variables", col_label = ['ones', 'years'])
+        dm_cost_LE = dm_activity_LE
+    
+    ##### PUT TOGETHER #####
+    
+    dm_cost = dm_activity.copy()
+    if len(keep_LE) != 0 and len(keep_LR) != 0:
+        dm_cost_LR.append(dm_cost_LE, activity_last_cat)
+        dm_cost_LR.sort(activity_last_cat)
+        dm_cost_LR.drop("Variables", activity_name)
+        dm_cost.append(dm_cost_LR, dim = "Variables")
+    if len(keep_LR) == 0:
+        dm_cost.append(dm_cost_LE, dim = "Variables")
+    if len(keep_LE) == 0:
+        dm_cost.append(dm_cost_LR, dim = "Variables")
+    
+    #################
+    ##### COSTS #####
+    #################
+    
+    # cost = unit cost * activity * price index / 100 / 1000000
+    idx = dm_cost.idx
+    arr_temp = dm_cost.array[:,:,idx["unit-cost"],:] * dm_cost.array[:,:,idx[activity_name],:] * \
+        dm_price_index.array / 100 / 1000000
+    dm_cost.add(arr_temp, dim = "Variables", col_label = "cost", unit = "MEUR")
+    dm_cost.drop("Variables", activity_name)
+    dm_cost.rename_col_regex(str1 = "cost", str2 = cost_type, dim = "Variables")
+    
+    # return
+    return dm_cost
