@@ -511,10 +511,6 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
 
     if len(dm_activity.col_labels["Variables"]) > 1:
         raise ValueError("This function works only for one activity at the time")
-        
-    if len(dm_activity.dim_labels) > 4:
-        raise ValueError("This function currently does not work for dm_activity with more than 1 category")
-    # note: in case of need, to make it work for more than 1 category you should put all constants into dm_activity, possibly by using cdm_to_dm() and then adding one variable at the time as array with the right dimensions
     
     # filter for selected cost_type
     cdm_cost = cdm_cost.filter_w_regex({"Variables" : ".*" + cost_type + ".*|.*evolution-method.*"})
