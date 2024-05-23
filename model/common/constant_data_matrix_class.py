@@ -402,3 +402,18 @@ class ConstantDataMatrix:
         col_out = [word.replace(str1, str2) for word in col_in]
         self.rename_col(col_in, col_out, dim=dim)
         return
+    
+    def switch_categories_order(self, cat1='Categories1', cat2='Categories2'):
+        if 'Categories' not in cat1 or 'Categories' not in cat2:
+            raise ValueError(' You can only switch the order of two Categories')
+        # Extract axis of cat1, cat2
+        a1 = self.dim_labels.index(cat1)
+        a2 = self.dim_labels.index(cat2)
+        # Switch axis in array
+        self.array = np.moveaxis(self.array, a1, a2)
+        # Switch col_labels
+        col1 = self.col_labels[cat1]
+        col2 = self.col_labels[cat2]
+        self.col_labels[cat1] = col2
+        self.col_labels[cat2] = col1
+        return
