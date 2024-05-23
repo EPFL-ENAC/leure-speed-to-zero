@@ -554,7 +554,7 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
     keep_LR = ((cdm_cost.array[idx["evolution-method"],:] == 2) | \
                (cdm_cost.array[idx["evolution-method"],:] == 3)).tolist()
         
-    if len(keep_LR) != 0:
+    if any(keep_LR):
         keep = np.array(dm_activity.col_labels[activity_last_cat])[keep_LR].tolist()
         dm_activity_LR = dm_activity.filter({activity_last_cat : keep})
         idx_LR = dm_activity_LR.idx
@@ -574,8 +574,7 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
         # !FIXME: THIS IS LIKE THE KNIME, BUT NOT SURE THIS ISCORRECT, AS LIKE THIS UNIT COST = UNIT COST BASEYEAR (TBC WHAT TO DO)
         dm_activity_LR.operation(col1 = "a-factor", operator = "*", col2 = "learning", dim = "Variables", 
                                  out_col = "unit-cost", unit = "EUR/" + activity_unit)
-        dm_activity_LR.drop(dim = "Variables", col_label = ['b-factor', 'unit-cost-baseyear', 
-                                                            'd-factor', 'evolution-method', 'learning', 'a-factor'])
+        dm_activity_LR.filter({"Variables" : ["unit-cost"]}, inplace = True)
         dm_cost_LR = dm_activity_LR
     
     ##### LINEAR EVOLUTION METHODOLOGY #####
@@ -584,7 +583,7 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
     idx = cdm_cost.idx
     keep_LE = ((cdm_cost.array[idx["evolution-method"],:] == 1)).tolist()
     
-    if len(keep_LE) != 0:
+    if any(keep_LE):
         keep = np.array(dm_activity.col_labels[activity_last_cat])[keep_LE].tolist()
         dm_activity_LE = dm_activity.filter({activity_last_cat : keep})
         idx_LE = dm_activity_LE.idx
@@ -607,21 +606,19 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
                 dm_activity_LE.array[:,:,idx_LE["unit-cost-baseyear"],...]
         dm_activity_LE.add(arr_temp[:,:,np.newaxis,...], dim = "Variables", col_label = 
                            "unit-cost", unit = "EUR/" + activity_unit)
-        dm_activity_LE.drop(dim = "Variables", col_label = ['b-factor', 'unit-cost-baseyear', 'd-factor', 'evolution-method', 
-                                                            'ones', 'years'])
+        dm_activity_LE.filter({"Variables" : ["unit-cost"]}, inplace = True)
         dm_cost_LE = dm_activity_LE
     
     ##### PUT TOGETHER #####
     
     dm_cost = dm_activity.filter({"Variables" : [activity_name]})
-    if len(keep_LE) != 0 and len(keep_LR) != 0:
+    if any(keep_LE) and any(keep_LR):
         dm_cost_LR.append(dm_cost_LE, activity_last_cat)
         dm_cost_LR.sort(activity_last_cat)
-        dm_cost_LR.drop("Variables", activity_name)
         dm_cost.append(dm_cost_LR, dim = "Variables")
-    if len(keep_LR) == 0:
+    if not any(keep_LR):
         dm_cost.append(dm_cost_LE, dim = "Variables")
-    if len(keep_LE) == 0:
+    if not any(keep_LE):
         dm_cost.append(dm_cost_LR, dim = "Variables")
     
     #################
