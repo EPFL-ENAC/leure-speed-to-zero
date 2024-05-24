@@ -522,14 +522,11 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
     activity_name = dm_activity.col_labels["Variables"][0]
     activity_unit = dm_activity.units[activity_name]
     cost_unit_denominator = re.split("/",cdm_cost.units["unit-cost-baseyear"])[1]
-    
-    # fitler only years >= baseyear
     years = dm_activity.col_labels["Years"]
-    keep_years = [i >= baseyear for i in years]
-    keep_years = np.array(years)[keep_years].tolist()
-    dm_activity = dm_activity.filter({"Years" : keep_years})
+    years_na = np.array(years)[[i < baseyear for i in years]].tolist()
     
     # include variables in cdm_cost inside dm_activity
+    dm_activity = dm_activity.copy()
     dm_activity.add(1, dim = "Variables", col_label = "ones", dummy = True)
     variables = cdm_cost.col_labels["Variables"]
     idx = dm_activity.idx
@@ -537,6 +534,8 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
     for i in variables:
         arr_temp = (cdm_cost.array[idx_cdm[i]] * dm_activity.array[:,:,idx["ones"],...])
         dm_activity.add(arr_temp[:,:,np.newaxis,...], dim = "Variables", col_label = i)
+        idx_temp = dm_activity.idx
+        dm_activity.array[:,[idx_temp[y] for y in years_na],idx_temp[i],...] = np.nan
     dm_activity.drop(dim="Variables", col_label = "ones")
     
     # error if unit is not the same
