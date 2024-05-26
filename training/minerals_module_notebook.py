@@ -23,7 +23,7 @@ import pandas as pd
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database, read_database_fxa, edit_database, update_database_from_db
-from model.common.auxiliary_functions import compute_stock, read_database_to_ots_fts_dict, filter_geoscale, read_level_data, cdm_to_dm
+from model.common.auxiliary_functions import compute_stock, read_database_to_ots_fts_dict, filter_geoscale, read_level_data, cdm_to_dm, simulate_input, calibration_rates
 import pickle
 import json
 import os
@@ -159,98 +159,108 @@ def relative_reserve(minerals, dm, reserve_starting_year, mineral_type, range_ma
     
     return output
 
-#######################################################################################################
-######################################### LOAD TRANSPORT DATA #########################################
-#######################################################################################################
-
-#############################################
-##### database_from_csv_to_datamatrix() #####
-#############################################
-
-# Description: this chunk of code makes the pickle with all the datamatrixes inside. In transport_module.py is defined as a function
-# without arguments. This function runs the code and saves the pickle (it will not be used as a function later on). 
-# Using a function without arguments is just a way to embed in a function a piece of code that needs to run.
-
-# Read database
-
-# Set years range
-years_setting = [1990, 2015, 2050, 5]
-startyear = years_setting[0]
-baseyear = years_setting[1]
-lastyear = years_setting[2]
-step_fts = years_setting[3]
-years_ots = list(np.linspace(start=startyear, stop=baseyear, num=(baseyear-startyear)+1).astype(int)) # make list with years from 1990 to 2015
-years_fts = list(np.linspace(start=baseyear+step_fts, stop=lastyear, num=int((lastyear-baseyear)/step_fts)).astype(int)) # make list with years from 2020 to 2050 (steps of 5 years)
-years_all = years_ots + years_fts
-
-#####################
-# FIXED ASSUMPTIONS #
-#####################
-
-# Read fixed assumptions to datamatrix
-# edit_database(filename = 'minerals_fixed-assumptions', lever = 'fixed-assumptions', 
-#               column = 'geoscale', pattern = 'Test', mode = 'remove') # had to do this to drop an additional country "Test"
-df = read_database_fxa('minerals_fixed-assumptions')
-dm = DataMatrix.create_from_df(df, num_cat=0) # this is a 3 dimensional arrays for the fixed assumptions in transport
-
-# Keep only ots and fts years
-dm = dm.filter(selected_cols={'Years': years_all})
-dm.col_labels
-
-# make data matrixes with specific data using regular expression (regex)
-dm_elec_new = dm.filter_w_regex({'Variables': 'elc_new_RES.*|elc_new.*|.*solar.*'})
-dm_elec_new.col_labels
-dm_min_other = dm.filter_w_regex({'Variables': 'min_other.*'})
-dm_min_proportion = dm.filter_w_regex({'Variables': 'min_proportion.*'})
-
-# save
-dict_fxa = {
-    'elec_new': dm_elec_new,
-    'min_other': dm_min_other,
-    'min_proportion': dm_min_proportion
-}
-
-#############
-# CONSTANTS #
-#############
-
-# load new constants in the constant dataframe file
-# chunk of code to clean the current version of minerals_constants, save it, and update the interactions_constants with  
-
 # =============================================================================
-# df = read_database(filename = 'minerals_constants', lever = 'none', folderpath="default", db_format=True, level='all')
-# df['eucalc-name'] = [i[0] for i in [i.split('+') for i in df['eucalc-name']]]
-# df['eucalc-name'] = "cp_" + df['eucalc-name']
-# df['string-pivot'] = [i[1] for i in [i.split('+') for i in df['string-pivot']]]
-# # filepath = os.path.join(current_file_directory, '../_database/data/csv/minerals_constants.csv')
-# # df.to_csv(filepath)
-# folderpath = os.path.join(current_file_directory, '../_database/data/csv/')
-# update_database_from_db(filename = 'interactions_constants', db_new = df, folderpath=folderpath)
+# #######################################################################################################
+# ######################################### LOAD TRANSPORT DATA #########################################
+# #######################################################################################################
+# 
+# #############################################
+# ##### database_from_csv_to_datamatrix() #####
+# #############################################
+# 
+# # Description: this chunk of code makes the pickle with all the datamatrixes inside. In transport_module.py is defined as a function
+# # without arguments. This function runs the code and saves the pickle (it will not be used as a function later on). 
+# # Using a function without arguments is just a way to embed in a function a piece of code that needs to run.
+# 
+# # Read database
+# 
+# # Set years range
+# years_setting = [1990, 2015, 2050, 5]
+# startyear = years_setting[0]
+# baseyear = years_setting[1]
+# lastyear = years_setting[2]
+# step_fts = years_setting[3]
+# years_ots = list(np.linspace(start=startyear, stop=baseyear, num=(baseyear-startyear)+1).astype(int)) # make list with years from 1990 to 2015
+# years_fts = list(np.linspace(start=baseyear+step_fts, stop=lastyear, num=int((lastyear-baseyear)/step_fts)).astype(int)) # make list with years from 2020 to 2050 (steps of 5 years)
+# years_all = years_ots + years_fts
+# 
+# #####################
+# # FIXED ASSUMPTIONS #
+# #####################
+# 
+# # Read fixed assumptions to datamatrix
+# # edit_database(filename = 'minerals_fixed-assumptions', lever = 'fixed-assumptions', 
+# #               column = 'geoscale', pattern = 'Test', mode = 'remove') # had to do this to drop an additional country "Test"
+# df = read_database_fxa('minerals_fixed-assumptions')
+# dm = DataMatrix.create_from_df(df, num_cat=0) # this is a 3 dimensional arrays for the fixed assumptions in transport
+# 
+# # Keep only ots and fts years
+# dm = dm.filter(selected_cols={'Years': years_all})
+# dm.col_labels
+# 
+# # make data matrixes with specific data using regular expression (regex)
+# dm_elec_new = dm.filter_w_regex({'Variables': 'elc_new_RES.*|elc_new.*|.*solar.*'})
+# dm_elec_new.col_labels
+# dm_min_other = dm.filter_w_regex({'Variables': 'min_other.*'})
+# dm_min_proportion = dm.filter_w_regex({'Variables': 'min_proportion.*'})
+# 
+# # save
+# dict_fxa = {
+#     'elec_new': dm_elec_new,
+#     'min_other': dm_min_other,
+#     'min_proportion': dm_min_proportion
+# }
+# 
+# ###############
+# # CALIBRATION #
+# ###############
+# 
+# # Read calibration
+# df = read_database_fxa('minerals_calibration')
+# dm_cal = DataMatrix.create_from_df(df, num_cat=0)
+# 
+# #############
+# # CONSTANTS #
+# #############
+# 
+# # load new constants in the constant dataframe file
+# # chunk of code to clean the current version of minerals_constants, save it, and update the interactions_constants with  
+# 
+# # =============================================================================
+# # df = read_database(filename = 'minerals_constants', lever = 'none', folderpath="default", db_format=True, level='all')
+# # df['eucalc-name'] = [i[0] for i in [i.split('+') for i in df['eucalc-name']]]
+# # df['eucalc-name'] = "cp_" + df['eucalc-name']
+# # df['string-pivot'] = [i[1] for i in [i.split('+') for i in df['string-pivot']]]
+# # # filepath = os.path.join(current_file_directory, '../_database/data/csv/minerals_constants.csv')
+# # # df.to_csv(filepath)
+# # folderpath = os.path.join(current_file_directory, '../_database/data/csv/')
+# # update_database_from_db(filename = 'interactions_constants', db_new = df, folderpath=folderpath)
+# # =============================================================================
+# 
+# # Load constants
+# # df = read_database(filename = 'interactions_constants', lever = 'none', folderpath="default", db_format=True, level='all')
+# cdm_const = ConstantDataMatrix.extract_constant('interactions_constants', pattern='cp_ind_material-efficiency.*|cp_min.*', num_cat=0)
+# 
+# ########
+# # SAVE #
+# ########
+# 
+# DM_minerals = {
+#     'fxa': dict_fxa,
+#     'cal': dm_cal,
+#     'constant': cdm_const
+# }
+# 
+# f = os.path.join(current_file_directory, '../_database/data/datamatrix/minerals.pickle')
+# # data_file_path = wd_path + "/_database/data/datamatrix/transport.pickle"
+# with open(f, 'wb') as handle:
+#     pickle.dump(DM_minerals, handle, protocol=pickle.HIGHEST_PROTOCOL)
+#     
+# 
+# del baseyear, cdm_const, df, dict_fxa, dm, dm_elec_new, dm_min_other, dm_min_proportion, DM_minerals, f, handle, lastyear,\
+#     startyear, step_fts, years_all, years_fts, years_ots, years_setting
+# 
 # =============================================================================
-
-# Load constants
-# df = read_database(filename = 'interactions_constants', lever = 'none', folderpath="default", db_format=True, level='all')
-cdm_const = ConstantDataMatrix.extract_constant('interactions_constants', pattern='cp_ind_material-efficiency.*|cp_min.*', num_cat=0)
-[not bool(re.search("solar", str(i), flags=re.IGNORECASE)) for i in cdm_const.col_labels['Variables']]
-
-########
-# SAVE #
-########
-
-DM_minerals = {
-    'fxa': dict_fxa,
-    'constant': cdm_const
-}
-
-f = os.path.join(current_file_directory, '../_database/data/datamatrix/minerals.pickle')
-# data_file_path = wd_path + "/_database/data/datamatrix/transport.pickle"
-with open(f, 'wb') as handle:
-    pickle.dump(DM_minerals, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    
-
-del baseyear, cdm_const, df, dict_fxa, dm, dm_elec_new, dm_min_other, dm_min_proportion, DM_minerals, f, handle, lastyear,\
-    startyear, step_fts, years_all, years_fts, years_ots, years_setting
-
 
 ######################################################################################################
 ######################################## MINERALS CORE MODULE ########################################
@@ -275,16 +285,16 @@ f = os.path.join(current_file_directory, "../_database/data/xls")
 files = np.array(os.listdir(f))
 files = files[[bool(re.search("minerals", str(i), flags=re.IGNORECASE)) for i in files]]
 files = files[[not bool(re.search("tpe", str(i), flags=re.IGNORECASE)) for i in files]].tolist()
-
 keys = [i.split("from-")[1].split("-to")[0] for i in files]
 
-for i in range(len(files)):
-    
-    f = os.path.join(current_file_directory, "../_database/data/xls/" + files[i])
-    df = pd.read_excel(f)
-    dm = DataMatrix.create_from_df(df, num_cat=0)
-    
-    DM_interface[keys[i]] = dm
+DM_interface["ccus"] = simulate_input(from_sector="ccus", to_sector="minerals")
+DM_interface["oil-refinery"] = simulate_input(from_sector="oil-refinery", to_sector="minerals")
+DM_interface["buildings"] = simulate_input(from_sector="buildings", to_sector="minerals")
+DM_interface["storage"] = simulate_input(from_sector="storage", to_sector="minerals")
+DM_interface["industry"] = simulate_input(from_sector="industry", to_sector="minerals")
+DM_interface["lifestyles"] = simulate_input(from_sector="lifestyles", to_sector="minerals")
+DM_interface["transport"] = simulate_input(from_sector="transport", to_sector="minerals")
+DM_interface["agriculture"] = simulate_input(from_sector="agriculture", to_sector="minerals")
 
 # keep only the countries in cntr_list
 for i in keys:
@@ -310,7 +320,7 @@ for key in DM_interface.keys():
                 dm_temp.rename_col(col_in = old_name[i], col_out = new_name[i], dim = "Variables")
 
 # clean
-del df, df_names, dm, dm_temp, f, files, handle, i, idx_temp, key, keys, new_name, old_name, filepath
+del df_names, dm_temp, f, files, handle, i, idx_temp, key, keys, new_name, old_name, filepath
 
 ########################################################
 #################### PRODUCT DEMAND ####################
@@ -319,6 +329,11 @@ del df, df_names, dm, dm_temp, f, files, handle, i, idx_temp, key, keys, new_nam
 # get constants
 cdm_constants = DM_minerals["constant"].copy()
 cdm_constants.rename_col_regex(str1 = "cp_",str2 = "",dim = "Variables")
+
+# variabs = cdm_constants.col_labels["Variables"]
+# idx = cdm_constants.idx
+# df = pd.DataFrame({"variables" : variabs, "values" : cdm_constants.array})
+# df.to_excel("/Users/echiarot/Desktop/minerals_constant.xlsx")
 
 # order:
 # variables for product demand (unit)
@@ -1525,7 +1540,22 @@ del cdm_temp, dm_temp, dm_temp2, idx, idx2
 #################### CALIBRATION ####################
 #####################################################
 
-# TBD
+# get calibration series for direct demand
+dm_cal = DM_minerals["cal"].copy()
+dm_cal.deepen_twice()
+dm_cal.rename_col("min", "mineral-decomposition-calib", "Variables")
+dm_cal.rename_col("calib", "all-sectors", "Categories1")
+
+# get only direct demand
+dm_temp = dm_mindec.filter({"Categories2" : ["dir"]})
+dm_temp = dm_temp.flatten()
+dm_temp.rename_col_regex(str1 = "dir_", str2 = "", dim = "Categories2")
+
+# obtain calibration rates
+dm_mindec_dir_calib_rates = calibration_rates(dm = dm_temp, dm_cal = dm_cal)
+
+# use the same calibration rates on indirect demand, net exports and direct demand
+dm_mindec.array = dm_mindec.array * dm_mindec_dir_calib_rates.array[:,:,:,:,np.newaxis,:]
 
 
 #################################################################
