@@ -477,6 +477,7 @@ def calibration_rates(dm, dm_cal, calibration_start_year = 1990, calibration_end
     idx = dm_cal_sub.idx
     
     # for missing years pre calibration_start_year, add them with value 1 (no calibration done)
+    # TODO!: in KNIME, for the years pre calibration, the calibration rate is the first calibration rate available (not 1), to be decided 
     if years_setting[0] not in years:
         years_new_pre = np.array(range(years_setting[0], calibration_start_year, 1)).tolist()
         for i in years_new_pre:
@@ -570,7 +571,7 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
                                  dim="Variables", out_col='a-factor', unit='num/' + activity_unit, div0="error")
         
         # unit cost = a_factor * learning
-        # !FIXME: THIS IS LIKE THE KNIME, BUT NOT SURE THIS ISCORRECT, AS LIKE THIS UNIT COST = UNIT COST BASEYEAR (TBC WHAT TO DO)
+        # FIXME!: THIS IS LIKE THE KNIME, BUT NOT SURE THIS ISCORRECT, AS LIKE THIS UNIT COST = UNIT COST BASEYEAR (TBC WHAT TO DO)
         dm_activity_LR.operation(col1 = "a-factor", operator = "*", col2 = "learning", dim = "Variables", 
                                  out_col = "unit-cost", unit = "EUR/" + activity_unit)
         dm_activity_LR.filter({"Variables" : ["unit-cost"]}, inplace = True)
