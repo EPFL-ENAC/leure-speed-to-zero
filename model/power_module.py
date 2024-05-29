@@ -129,12 +129,30 @@ def database_from_csv_to_datamatrix():
     dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1, baseyear=baseyear, years=years_all,
                                                        dict_ots=dict_ots, dict_fts=dict_fts)
 
-    # Database - Power - Lever: ev-charging-power
+    # Database - Power - Lever: Vehicle charging profile
     file = 'power_ev-charging-profile'
     lever = 'ev-charging-profile'
     dict_ots, dict_fts = hourly_data_reader(file, years_setting, lever, dict_ots, dict_fts)
 
+    # Database - Power - Lever: Non-residential heating
+    file = 'power_non-residential-heat-profile'
+    lever = 'non-residential-heat-profile'
+    dict_ots, dict_fts = hourly_data_reader(file, years_setting, lever, dict_ots, dict_fts)
 
+    # Database - Power - Lever: Residential heating
+    file = 'power_residential-heat-profile'
+    lever = 'residential-heat-profile'
+    dict_ots, dict_fts = hourly_data_reader(file, years_setting, lever, dict_ots, dict_fts)
+
+    # Database - Power - Lever: Non-residential cooling
+    file = 'power_non-residential-cooling-profile'
+    lever = 'non-residential-cooling-profile'
+    dict_ots, dict_fts = hourly_data_reader(file, years_setting, lever, dict_ots, dict_fts)
+
+    # Database - Power - Lever: Residential cooling
+    file = 'power_residential-cooling-profile'
+    lever = 'residential-cooling-profile'
+    dict_ots, dict_fts = hourly_data_reader(file, years_setting, lever, dict_ots, dict_fts)
 
 #######################################################################################################################
 # DataFixedAssumptions - Power
@@ -148,15 +166,36 @@ def database_from_csv_to_datamatrix():
     file = 'power_wind-onshore-profile'
     dm_profile_onshore = hourly_data_reader(file, years_setting)
 
-    # Database - POnshore wind profile
+    # Database - Onshore wind profile
     file = 'power_wind-offshore-profile'
     dm_profile_offshore = hourly_data_reader(file, years_setting)
 
+    # Database - Train profile
     file = 'power_train-profile'
     dm_pow_train = hourly_data_reader(file, years_setting)
 
+    # Database - Non-residential appliance profile
+    file = 'power_non-residential-appliances-profile'
+    dm_appliances_non_residential = hourly_data_reader(file, years_setting)
+
+    # Database - Residential appliance profile
+    file = 'power_residential-appliances-profile'
+    dm_appliances_residential = hourly_data_reader(file, years_setting)
+
+    # Database - Non-residential hotwater profile
+    file = 'power_non-residential-hotwater-profile'
+    dm_hotwater_non_residential = hourly_data_reader(file, years_setting)
+
+    # Database - Residential hotwater profile
+    file = 'power_residential-hotwater-profile'
+    dm_hotwater_residential = hourly_data_reader(file, years_setting)
+
     dict_fxa = {
-        'train-hourly': dm_pow_train,
+        'train-profile': dm_pow_train,
+        'non-residential-appliances-profile': dm_appliances_non_residential,
+        'residential-appliances-profile': dm_appliances_residential,
+        'non-residential-hotwater-profile': dm_hotwater_non_residential,
+        'residential-hotwater-profile': dm_hotwater_residential,
         'pv-profile': dm_profile_pv,
         'onshore-wind-profile': dm_profile_onshore,
         'offshore-wind-profile': dm_profile_offshore
@@ -264,23 +303,46 @@ def read_data(data_file, lever_setting):
 
     # Hourly data (lever)
 
-    dm_ev_hourly = DM_ots_fts['ev-charging-profile']
+    dm_profile_vehicle = DM_ots_fts['ev-charging-profile']
+    dm_profile_heating_nr = DM_ots_fts['non-residential-heat-profile']
+    dm_profile_heating_r = DM_ots_fts['residential-heat-profile']
+    dm_profile_cooling_nr = DM_ots_fts['non-residential-cooling-profile']
+    dm_profile_cooling_r = DM_ots_fts['residential-cooling-profile']
 
     # Hourly data (fxa)
     dm_profile_pv = DM_power['fxa']['pv-profile']
     dm_profile_onshore = DM_power['fxa']['onshore-wind-profile']
     dm_profile_offshore = DM_power['fxa']['offshore-wind-profile']
 
+    dm_profile_appliances_nr = DM_power['fxa']['non-residential-appliances-profile']
+    dm_profile_appliances_r = DM_power['fxa']['residential-appliances-profile']
+    dm_profile_hotwater_nr = DM_power['fxa']['non-residential-hotwater-profile']
+    dm_profile_hotwater_r = DM_power['fxa']['residential-hotwater-profile']
+    dm_profile_train = DM_power['fxa']['train-profile']
+
     DM_production_profiles = {
         'pv-profile':dm_profile_pv,
         'onshore-wind-profile': dm_profile_onshore,
-        'offshore-wind-profile': dm_profile_offshore
+        'offshore-wind-profile': dm_profile_offshore,
+    }
+
+    DM_demand_profiles = {
+        'non-residential-appliances': dm_profile_appliances_nr,
+        'residential-appliances': dm_profile_appliances_r,
+        'train-profile': dm_profile_train,
+        'ev-charging-profile':  dm_profile_vehicle,
+        'non-residential-hotwater': dm_profile_hotwater_nr,
+        'residential-hotwater': dm_profile_hotwater_r,
+        'non-residential-heat-profile': dm_profile_heating_nr,
+        'residential-heat-profile': dm_profile_heating_r,
+        'non-residential-cooling-profile': dm_profile_cooling_nr,
+        'residential-cooling-profile': dm_profile_cooling_r
     }
 
     # Constants
     cdm_const = DM_power['constant']
 
-    return dm_capacity, dm_ccus, cdm_const, dm_ev_hourly, DM_production_profiles
+    return dm_capacity, dm_ccus, cdm_const, DM_production_profiles, DM_demand_profiles
 
 
 #######################################################################################################################
@@ -330,9 +392,9 @@ def simulate_transport_to_power_input():
     f = os.path.join(current_file_directory, "../_database/data/xls/"
                                              "All-Countries-interface_from-transport-to-power.xlsx")
     df = pd.read_excel(f, sheet_name="default")
-    DM_tra = DataMatrix.create_from_df(df, num_cat=1)
+    dm_tra = DataMatrix.create_from_df(df, num_cat=1)
 
-    return DM_tra
+    return dm_tra
 
 #######################################################################################################################
 # LocalInterfaces - Industry
@@ -536,7 +598,7 @@ def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
 def hourly_production_workflow(dm_production_np, dm_production_p, DM_production_profiles):
 
     ######################################
-    # CalculationLeafs - Hourly production per technology [GWh]
+    # CalculationLeafs - Hourly production per technology (wind & solar)[GWh]
     ######################################
 
     # take this from years_setting
@@ -549,7 +611,6 @@ def hourly_production_workflow(dm_production_np, dm_production_p, DM_production_
 
     # Indexes for computation
     idx_cap = dm_production_p.idx
-    idx_pro = dm_profile_hourly.idx
 
     # Hourly profile
     # Warning (1): you need to only multiply 2015 and FTS ('idx_cap[base-year]:')
@@ -563,16 +624,32 @@ def hourly_production_workflow(dm_production_np, dm_production_p, DM_production_
     for key in dm_profile_hourly.units.keys():
         dm_profile_hourly.units[key] = 'GWh'
 
-    return dm_profile_hourly
+    ######################################
+    # CalculationLeafs - Hourly production (total)[GWh]
+    ######################################
 
+    dm_yearly_production_other = dm_production_np.filter({'Categories1':['total']})
+    ay_hourly_profile_total = np.nansum(dm_profile_hourly.array[...],axis=2)
+    dm_profile_hourly.add(ay_hourly_profile_total,dim='Variables', col_label='pow_total-profile',unit='GWh')
 
+    idx_year = dm_yearly_production_other.idx
+    idx_hourly = dm_profile_hourly.idx
+
+    dm_yearly_production_other.array = dm_yearly_production_other.array/8760
+    ay_total_hourly = dm_yearly_production_other.array[:,idx_year[baseyear]:,idx_year['pow_net-yearly-production'],idx_year['total'],np.newaxis,np.newaxis,np.newaxis]\
+                      +dm_profile_hourly.array[:,:,idx_hourly['pow_total-profile'],...]
+
+    dm_profile_hourly.add(ay_total_hourly,dim='Variables', col_label='pow_total-hourly-production',unit='GWh')
+    dm_hourly_production = dm_profile_hourly.filter({'Variables':['pow_total-hourly-production']})
+
+    return dm_hourly_production
 
 #######################################################################################################################
-# CalculationTree - Power - Building yearly demand
+# CalculationTree - Power - Yearly demand
 #######################################################################################################################
 
-def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_agr_electricity, DM_tra,
-                           dm_ind_hydrogen, dm_amm_hydrogen, dm_ev_hourly):
+def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_agr_electricity, dm_tra,
+                           dm_ind_hydrogen, dm_amm_hydrogen):
 
     #########################################################################
     # CalculationLeafs - Electricity demand - Appliances [GWh]
@@ -584,11 +661,30 @@ def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_ag
     ay_x = np.nansum(dm_bld_appliances.array[...],axis=-1)
     dm_bld_appliances.add(ay_x, dim='Categories2', col_label='total')
 
+    #########################################################################
+    # CalculationLeafs - Electricity demand - Heating & cooling [GWh]
+    #########################################################################
+
+    dm_bld_cooling = DM_bld['cooling']
+    dm_bld_heating = DM_bld['space-heating']
+    # dm_bld_heatpump = DM_bld['heatpump']
+    # TODO: To uncomment when profile is available (Speed-2-Zero)
+
+    #############################################################################
+    # CalculationLeafs - Electricity demand - Transport sectors [GWh] (no-profiles)
+    #############################################################################
+
+    dm_demand_train = dm_tra.filter_w_regex({'Categories1': 'rail'})
+    dm_demand_train = dm_demand_train.flatten()
+
+    dm_demand_road = dm_tra.filter_w_regex({'Categories1': 'road'})
+    dm_demand_road = dm_demand_road.flatten()
+
     #############################################################################
     # CalculationLeafs - Electricity demand - Other sectors [GWh] (no-profiles)
     #############################################################################
 
-    dm_tra_electricity = DM_tra.filter_w_regex({'Categories1': 'other'})
+    dm_tra_electricity = dm_tra.filter_w_regex({'Categories1': 'other'})
     dm_tra_electricity = dm_tra_electricity.flatten()
     dm_demand_other = dm_tra_electricity.copy()
 
@@ -598,13 +694,13 @@ def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_ag
     dm_demand_other.append(dm_amm_electricity, dim='Variables')
 
     ay_total = np.nansum(dm_demand_other.array[...], axis=-1)
-    dm_demand_other.add(ay_total, dim='Variables', col_label='total')
+    dm_demand_other.add(ay_total, dim='Variables', col_label='total-other')
 
     #############################################################################
     # CalculationLeafs - Electricity demand - Hydrogen [GWh]
     #############################################################################
 
-    dm_tra_hydrogen = DM_tra.filter_w_regex({'Categories1': 'hydrogen'})
+    dm_tra_hydrogen = dm_tra.filter_w_regex({'Categories1': 'hydrogen'})
     dm_tra_hydrogen = dm_tra_hydrogen.flatten()
     dm_demand_hydrogen = dm_tra_hydrogen.copy()
 
@@ -612,9 +708,171 @@ def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_ag
     dm_demand_hydrogen.append(dm_ind_hydrogen, dim='Variables')
 
     ay_total = np.nansum(dm_demand_hydrogen.array[...], axis=-1)
-    dm_demand_hydrogen.add(ay_total, dim='Variables', col_label='total')
+    dm_demand_hydrogen.add(ay_total, dim='Variables', col_label='total-hydrogen')
 
-    return dm_bld_appliances, dm_demand_other, dm_demand_hydrogen
+    #############################################################################
+    # CalculationLeafs - Output Matrix Yearly Demand
+    #############################################################################
+
+    DM_yearly_demand = {
+        'appliances-profile': dm_bld_appliances,
+        'other-profile': dm_demand_other,
+        'hydrogen-profile': dm_demand_hydrogen,
+        'train-profile': dm_demand_train,
+        'road-profile': dm_demand_road,
+        'space-cooling': dm_bld_cooling,
+        'space-heating': dm_bld_heating
+    }
+
+    return DM_yearly_demand
+
+
+#######################################################################################################################
+# CalculationTree - Power - Hourly demand
+#######################################################################################################################
+def hourly_demand_workflow(DM_yearly_demand, DM_demand_profiles):
+
+    ######################################
+    # CalculationLeafs - Hourly profiles per sector [GWh]
+    ######################################
+
+    # take this from years_setting
+    baseyear = 2015
+
+    # Extract hourly data (demand profiles)
+    dm_profile_hourly = DM_demand_profiles['non-residential-appliances']
+    dm_profile_hourly.append(DM_demand_profiles['residential-appliances'],dim='Variables')
+    dm_profile_hourly.append(DM_demand_profiles['train-profile'],dim='Variables')
+    dm_profile_hourly.append(DM_demand_profiles['ev-charging-profile'], dim='Variables')
+    dm_profile_hourly.append(DM_demand_profiles['non-residential-hotwater'], dim='Variables')
+    dm_profile_hourly.append(DM_demand_profiles['residential-hotwater'], dim='Variables')
+    dm_profile_hourly.append(DM_demand_profiles['non-residential-heat-profile'], dim='Variables')
+    dm_profile_hourly.append(DM_demand_profiles['residential-heat-profile'], dim='Variables')
+    dm_profile_hourly.append(DM_demand_profiles['non-residential-cooling-profile'], dim='Variables')
+    dm_profile_hourly.append(DM_demand_profiles['residential-cooling-profile'], dim='Variables')
+
+    ######################################
+    # CalculationLeafs - Yearly demand per sector [GWh]
+    ######################################
+
+    # Buildings - Hotwater:
+    dm_yearly_appliances = DM_yearly_demand['appliances-profile']
+    dm_yearly_hotwater = dm_yearly_appliances.filter({'Categories2':['hot-water']})
+    dm_yearly_hotwater.rename_col('hot-water','hotwater',dim='Categories2')
+    dm_yearly_hotwater = dm_yearly_hotwater.flatten()
+    dm_yearly_hotwater = dm_yearly_hotwater.flatten()
+
+    # Buildings - Appliances
+    dm_yearly_appliances.filter({'Categories2':['total']},inplace=True)
+    dm_yearly_appliances.rename_col('total','appliances',dim='Categories2')
+    dm_profile_yearly = dm_yearly_appliances.flatten()
+    dm_profile_yearly = dm_profile_yearly.flatten()
+    dm_profile_yearly.append(dm_yearly_hotwater, dim='Variables')
+
+    # ToDo: Here I am: (2) rename & sort; (3) compute hourly demand (to check)
+    # FixMe: total appliances may double count hot-water
+
+    # Buildings - Cooling
+    dm_yearly_cooling = DM_yearly_demand['space-cooling']
+    dm_yearly_cooling = dm_yearly_cooling.flatten()
+    dm_yearly_cooling = dm_yearly_cooling.flatten()
+    dm_profile_yearly.append(dm_yearly_cooling, dim='Variables')
+
+    # Buildings - Heating
+    dm_yearly_heating = DM_yearly_demand['space-heating']
+    dm_yearly_heating = dm_yearly_heating.flatten()
+    dm_yearly_heating = dm_yearly_heating.flatten()
+    dm_profile_yearly.append(dm_yearly_heating, dim='Variables')
+
+    # Transport - Rail
+    dm_yearly_rail = DM_yearly_demand['train-profile']
+    dm_profile_yearly.append(dm_yearly_rail, dim='Variables')
+
+    # Transport - Electric vehicle
+    dm_yearly_road = DM_yearly_demand['road-profile']
+    dm_profile_yearly.append(dm_yearly_road, dim='Variables')
+
+    ######################################
+    # CalculationLeafs - Hourly demand per sector [GWh]
+    ######################################
+
+    # Sorting
+    dm_profile_yearly.rename_col_regex('bld_power-demand_', 'pow_', dim='Variables')
+    dm_profile_yearly.rename_col_regex('tra_', 'pow_', dim='Variables')
+    dm_profile_hourly.sort(dim='Variables')
+    dm_profile_yearly.sort(dim='Variables')
+
+    # Hourly demand
+    idx_dd = dm_profile_yearly.idx
+    ay_hourly_profile = dm_profile_yearly.array[:, idx_dd[baseyear], :,
+                   np.newaxis, np.newaxis, np.newaxis] \
+                     * dm_profile_hourly.array[...]
+
+    # Reshape of the output
+    dm_profile_hourly.array = ay_hourly_profile
+    for key in dm_profile_hourly.units.keys():
+        dm_profile_hourly.units[key] = 'GWh'
+
+    ######################################
+    # CalculationLeafs - Hourly demand (total)[GWh]
+    ######################################
+
+    # Yearly demand "other" with no profiles
+    dm_yearly_demand_other = DM_yearly_demand['other-profile']
+    dm_yearly_demand_hydrogen = DM_yearly_demand['hydrogen-profile']
+    dm_yearly_demand_other.append(dm_yearly_demand_hydrogen, dim='Variables')
+    dm_yearly_demand_other = dm_yearly_demand_other.filter({'Variables':['total-hydrogen','total-other']})
+    ay_yearly_demand_other = dm_yearly_demand_other.array[...].sum(axis=-1)
+    dm_yearly_demand_other.add(ay_yearly_demand_other, dim='Variables', col_label='grand-total-other')
+
+    # Hourly profiles aggregation
+    ay_hourly_profile_total = np.nansum(dm_profile_hourly.array[...],axis=2)
+    dm_profile_hourly.add(ay_hourly_profile_total,dim='Variables', col_label='pow_total-profile',unit='GWh')
+
+    idx_year = dm_yearly_demand_other.idx
+    idx_hourly = dm_profile_hourly.idx
+
+    dm_yearly_demand_other.array = dm_yearly_demand_other.array/8760
+    ay_total_hourly = dm_yearly_demand_other.array[:,idx_year[baseyear]:,idx_year['grand-total-other'],np.newaxis,np.newaxis,np.newaxis]\
+                      +dm_profile_hourly.array[:,:,idx_hourly['pow_total-profile'],...]
+
+    dm_profile_hourly.add(ay_total_hourly,dim='Variables', col_label='pow_total-hourly-demand',unit='GWh')
+    dm_hourly_demand = dm_profile_hourly.filter({'Variables':['pow_total-hourly-demand']})
+
+    return dm_hourly_demand
+
+
+#######################################################################################################################
+# CalculationTree - Power - Storage
+#######################################################################################################################
+def storage_workflow(dm_hourly_demand, dm_hourly_production):
+
+    ######################################
+    # CalculationLeafs - Hourly equilibrium [GWh]
+    ######################################
+
+    dm_hourly_equilibrium = dm_hourly_demand.copy()
+    dm_hourly_equilibrium.append(dm_hourly_production, dim='Variables')
+    dm_hourly_equilibrium.operation('pow_total-hourly-production', '-' , 'pow_total-hourly-demand',dim="Variables",
+                                    out_col='sto_hourly-equilibrium',unit='GWh')
+    dm_hourly_equilibrium = dm_hourly_equilibrium.filter({'Variables':['sto_hourly-equilibrium']})
+
+    ######################################
+    # CalculationLeafs - Hourly residual demand [GWh]
+    ######################################
+
+    #ToDo: residual and MAx function to see with Paola
+    dm_residual_demand = np.minimum(dm_hourly_equilibrium, 0)
+    dm_hourly_equilibrium.append(dm_residual_demand, dim='Variables')
+
+    ######################################
+    # CalculationLeafs - Hourly residual supply [GWh]
+    ######################################
+
+    dm_residual_supply = np.maximum(dm_hourly_equilibrium, 0)
+
+    return dm_hourly_equilibrium
+
 
 #######################################################################################################################
 # CoreModule - Power
@@ -624,32 +882,51 @@ def power(lever_setting, years_setting):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     power_data_file = os.path.join(current_file_directory,
                                         '../_database/data/datamatrix/geoscale/power.pickle')
-    dm_capacity, dm_ccus, cdm_const, dm_ev_hourly, DM_production_profiles = read_data(power_data_file,lever_setting)
+    dm_capacity, dm_ccus, cdm_const, DM_production_profiles, DM_demand_profiles = read_data(power_data_file,lever_setting)
     dm_climate = simulate_climate_to_power_input()
     dm_agr_electricity = simulate_agriculture_to_power_input()
     DM_bld = simulate_buildings_to_power_input()
     dm_ind_electricity, dm_ind_hydrogen = simulate_industry_to_power_input()
     dm_amm_electricity, dm_amm_hydrogen = simulate_ammonia_to_power_input()
-    DM_tra = simulate_transport_to_power_input()
+    dm_tra = simulate_transport_to_power_input()
 
-    # filter local interface country list
+    #Tuto: filter country in interfaces
+
+    # filter local interface country list (matrix)
     cntr_list = dm_capacity.col_labels['Country']
     dm_climate = dm_climate.filter({'Country': cntr_list})
+    dm_agr_electricity = dm_agr_electricity.filter({'Country': cntr_list})
+    dm_ind_electricity = dm_ind_electricity.filter({'Country': cntr_list})
+    dm_ind_hydrogen = dm_ind_hydrogen.filter({'Country': cntr_list})
+    dm_amm_electricity = dm_amm_electricity.filter({'Country': cntr_list})
+    dm_amm_hydrogen = dm_amm_hydrogen.filter({'Country': cntr_list})
+    dm_tra = dm_tra.filter({'Country': cntr_list})
+
+    # filter local interface country list (dictionary)
+    for key in DM_bld.keys():
+        DM_bld[key] = DM_bld[key].filter({'Country': cntr_list})
 
     # To send to TPE (result run)
     dm_capacity, dm_fb_capacity, dm_production_np, dm_production_p =\
         yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const)
-    dm_fake_5 = hourly_production_workflow(dm_production_np, dm_production_p, DM_production_profiles)
+    dm_hourly_production = hourly_production_workflow(dm_production_np, dm_production_p, DM_production_profiles)
+
+    DM_yearly_demand = \
+        yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_agr_electricity, dm_tra,dm_ind_hydrogen, dm_amm_hydrogen)
+    dm_hourly_demand = hourly_demand_workflow(DM_yearly_demand, DM_demand_profiles)
 
     # TUTO give dm_ev_hourly as input to yearly_demand_workflow
-    dm_fake_3, dm_fake_4, dm_fake_5 = yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity,
-                                                             dm_agr_electricity, DM_tra, dm_ind_hydrogen,
-                                                             dm_amm_hydrogen, dm_ev_hourly)# input fonctions
+    DM_yearly_demand = yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity,
+                                                             dm_agr_electricity, dm_tra, dm_ind_hydrogen,
+                                                             dm_amm_hydrogen)# input fonctions
+
+    dm_hourly_equilibrium = storage_workflow(dm_hourly_demand,dm_hourly_production)
+
     # same number of arg than the return function
 
     # concatenate all results to df
 
-    results_run = dm_fake_1
+    results_run = dm_capacity
     return results_run
 
 
