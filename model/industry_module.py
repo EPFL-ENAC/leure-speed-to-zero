@@ -902,6 +902,9 @@ def energy_demand(cdm_const, DM_material_production):
 
     DM_energy_demand = {"bytechcarr" : dm_energy_demand_bytechcarr, 
                         "feedstock_bytechcarr" : dm_energy_demand_feedstock_bytechcarr}
+    
+    # aggregate energy demand by energy carrier
+    DM_energy_demand["bycarr"] = DM_energy_demand["bytechcarr"].group_all(dim='Categories1', inplace=False)
 
     # clean
     del feedstock, search, cdm_temp, f, names, i, dm_energy_demand_temp, dm_energy_demand, \
@@ -913,9 +916,6 @@ def energy_demand(cdm_const, DM_material_production):
 def calibration_energy_demand(dm_cal, DM_energy_demand):
     
     # this is by material-technology and carrier
-
-    # aggregate energy demand by energy carrier
-    DM_energy_demand["bycarr"] = DM_energy_demand["bytechcarr"].group_all(dim='Categories1', inplace=False)
 
     # get calibration series
     dm_cal_sub = dm_cal.copy()
@@ -1248,6 +1248,9 @@ def carbon_capture(DM_ots_fts, DM_emissions):
     # store
     DM_emissions["combustion_bio_capt_w_cc_neg_bymat"] = dm_emissions_combustion_bio_capt_w_cc_neg_bymat
     DM_emissions["capt_w_cc_bytech"] = dm_emissions_capt_w_cc_bytech
+    
+    # store also bygas (which is used in calibration if it's done)
+    DM_emissions["bygas"] = DM_emissions["bygastech"].group_all("Categories2", inplace = False)
 
     # clean
     del arr_temp, dm_emissions_combustion_bio_capt_w_cc, \
@@ -1263,9 +1266,6 @@ def calibration_emissions(dm_cal, DM_emissions):
     dm_cal_sub = dm_cal.copy()
     dm_cal_sub.filter({"Variables" : ['cal_ind_emissions_CH4', 'cal_ind_emissions_CO2', 'cal_ind_emissions_N2O']}, inplace = True)
     dm_cal_sub.deepen()
-
-    # get aggregate emissions
-    DM_emissions["bygas"] = DM_emissions["bygastech"].group_all("Categories2", inplace = False)
 
     # get calibration rates
     DM_emissions["calib_rates_bygas"] = calibration_rates(dm = DM_emissions["bygas"], dm_cal = dm_cal_sub)
@@ -1529,7 +1529,7 @@ def industry_agriculture_interface(DM_material_production, DM_energy_demand, wri
     dm_indwaste = DM_energy_demand["indwaste"]
     dm_indwaste = dm_indwaste.flatten()
     dm_indwaste.rename_col("energy-demand_solid-waste", "waste", "Variables")
-    DM_energy_demand["bioener_bybiomat"].rename_col("energy-demand-bioenergy", "bioenergy", "Variables")
+    DM_energy_demand["bioener_bybiomat"].rename_col("energy-demand_bioenergy", "bioenergy", "Variables")
     DM_material_production["natfiber"].rename_col('mineral-decomposition', "dem", "Variables")
 
     # dm_agr
@@ -1575,7 +1575,7 @@ def industry_energy_interface(DM_energy_demand, write_xls = False):
     # return
     return dm_elc
 
-def industry_water_inferface(DM_energy_demand, DM_material_production, write_xls = True):
+def industry_water_inferface(DM_energy_demand, DM_material_production, write_xls = False):
     
     # dm_water
     dm_water = DM_energy_demand["bycarr"].filter(
@@ -1600,7 +1600,7 @@ def industry_water_inferface(DM_energy_demand, DM_material_production, write_xls
     # return
     return dm_water
 
-def industry_ccus_interface(DM_emissions, write_xls = True):
+def industry_ccus_interface(DM_emissions, write_xls = False):
     
     # adjust variables' names
     variables = DM_emissions["capt_w_cc_bytech"].col_labels["Categories1"]
@@ -1626,7 +1626,7 @@ def industry_ccus_interface(DM_emissions, write_xls = True):
     # return
     return dm_ccus
     
-def industry_gtap_interface(DM_energy_demand, DM_material_production, write_xls = True):
+def industry_gtap_interface(DM_energy_demand, DM_material_production, write_xls = False):
     
     # adjust variables' names
     dm_temp = DM_energy_demand["bymatcarr"].copy()
@@ -1670,7 +1670,7 @@ def industry_gtap_interface(DM_energy_demand, DM_material_production, write_xls 
     # return
     return dm_gtap
 
-def industry_minerals_interface(DM_material_production, DM_production, DM_ots_fts, write_xls = True):
+def industry_minerals_interface(DM_material_production, DM_production, DM_ots_fts, write_xls = False):
     
     # unit conversions
     dm_timber = DM_material_production["bymat"].filter({"Categories1" : ["timber"]})
@@ -1734,7 +1734,7 @@ def industry_minerals_interface(DM_material_production, DM_production, DM_ots_ft
     # return
     return dm_min
 
-def industry_employment_interface(DM_material_demand, DM_energy_demand, DM_material_production, DM_cost, DM_ots_fts, write_xls = True):
+def industry_employment_interface(DM_material_demand, DM_energy_demand, DM_material_production, DM_cost, DM_ots_fts, write_xls = False):
     
     # dm_emp
     dm_emp = DM_material_demand["appliances"].flatten()
@@ -1765,7 +1765,7 @@ def industry_employment_interface(DM_material_demand, DM_energy_demand, DM_mater
     # return
     return dm_emp
 
-def industry_climate_interface(DM_emissions, write_xls = True):
+def industry_climate_interface(DM_emissions, write_xls = False):
     
     # adjust variables' names
     dm_temp = DM_emissions["bygasmat"].flatten().flatten()
@@ -1792,7 +1792,7 @@ def industry_climate_interface(DM_emissions, write_xls = True):
     # return
     return dm_cli
 
-def industry_airpollution_interface(DM_material_production, DM_energy_demand, write_xls = True):
+def industry_airpollution_interface(DM_material_production, DM_energy_demand, write_xls = False):
     
     # dm_airpoll
     dm_airpoll = DM_material_production["bytech"].flatten()
@@ -1811,7 +1811,7 @@ def industry_airpollution_interface(DM_material_production, DM_energy_demand, wr
     # return
     return dm_airpoll
 
-def industry_district_heating_interface(DM_energy_demand, write_xls = True):
+def industry_district_heating_interface(DM_energy_demand, write_xls = False):
     
     # FIXME!: make dummy values for dh (this is like this also in KNIME, to be seen what to do)
     dm_dh = DM_energy_demand["bycarr"].filter({"Categories1" : ["electricity"]})
@@ -1828,343 +1828,7 @@ def industry_district_heating_interface(DM_energy_demand, write_xls = True):
     # return
     return dm_dh
 
-# def update_interface_with_industry(interface, DM_ots_fts, DM_material_production, DM_energy_demand, DM_emissions, DM_production, DM_material_demand, DM_cost, current_file_directory, write_xls_local = False):
-    
-#     #######################
-#     ##### AGRICULTURE #####
-#     #######################
-
-#     # adjust variables' names
-#     dm_timber = DM_material_production["bymat"].filter({"Categories1" : ["timber"]})
-#     dm_timber = dm_timber.flatten()
-#     dm_timber.rename_col("material-production_timber", "timber", "Variables")
-#     DM_energy_demand["feedstock_bybiomat"].rename_col("energy-demand-feedstock", "biomaterial", "Variables")
-#     dm_indwaste = DM_energy_demand["indwaste"]
-#     dm_indwaste = dm_indwaste.flatten()
-#     dm_indwaste.rename_col("energy-demand_solid-waste", "waste", "Variables")
-#     DM_energy_demand["bioener_bybiomat"].rename_col("energy-demand-bioenergy", "bioenergy", "Variables")
-#     DM_material_production["natfiber"].rename_col('mineral-decomposition', "dem", "Variables")
-
-#     # dm_agr
-#     dm_agr = dm_timber.copy()
-#     dm_agr.append(DM_material_production["bytech"].filter({"Categories1" : ['paper_woodpulp']}).flatten(), "Variables")
-#     dm_agr.append(DM_energy_demand["feedstock_bybiomat"].flatten(), "Variables")
-#     dm_agr.append(dm_indwaste, "Variables")
-#     dm_agr.append(DM_energy_demand["bioener_bybiomat"].flatten(), "Variables")
-#     dm_agr.append(DM_material_production["natfiber"].flatten(), "Variables")
-#     variables = dm_agr.col_labels["Variables"]
-#     for i in variables:
-#         dm_agr.rename_col(i, "ind_" + i, "Variables")
-#     dm_agr.sort("Variables")
-        
-#     # df_agr
-#     if write_xls_local is True:
-#         df_agr = dm_agr.write_df()
-#         df_agr.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-agriculture.xlsx', index=False)
-
-#     # interface_agr
-#     interface.add_link(from_sector = "industry", to_sector = "agriculture", dm = dm_agr)
-
-#     ##################
-#     ##### ENERGY #####
-#     ##################
-
-#     # dm_elc
-#     dm_elc = DM_energy_demand["bycarr"].filter(
-#         {"Categories1" : ['liquid-ff-oil_diesel', 'liquid-ff-oil_fuel-oil', 'electricity',
-#                           'gas-ff-natural', 'hydrogen', 'solid-ff-coal']})
-#     dm_elc.rename_col("energy-demand", "ind_energy-demand", "Variables")
-#     dm_elc = dm_elc.flatten()
-#     variables = dm_elc.col_labels["Variables"]
-#     for i in variables:
-#         dm_elc.rename_col(i, "ind_" + i, "Variables")
-#     dm_elc.sort("Variables")
-
-#     # df_elc
-#     if write_xls_local is True:
-#         dm_elc = dm_elc.write_df()
-#         dm_elc.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-electricity_supply.xlsx', index=False)
-
-#     # interface_elc
-#     interface.add_link(from_sector = "industry", to_sector = "electricity_supply", dm = dm_elc)
-
-#     #################
-#     ##### WATER #####
-#     #################
-
-#     # dm_water
-#     dm_water = DM_energy_demand["bycarr"].filter(
-#         {"Categories1" : ['electricity', 'gas-ff-natural', 'hydrogen', 'liquid-ff-oil', 
-#                           'solid-ff-coal']}).flatten()
-#     dm_water.append(DM_material_production["bytech"].filter(
-#         {"Categories1" : ['aluminium_prim', 'aluminium_sec', 'cement_dry-kiln', 'cement_geopolym', 
-#                           'cement_wet-kiln', 'chem_chem-tech', 'copper_tech', 'glass_glass', 'lime_lime',
-#                           'paper_recycled', 'paper_woodpulp', 'steel_BF-BOF', 'steel_hisarna', 
-#                           'steel_hydrog-DRI', 'steel_scrap-EAF']}).flatten(), "Variables")
-#     variables = dm_water.col_labels["Variables"]
-#     for i in variables:
-#         dm_water.rename_col(i, "ind_" + i, "Variables")
-#     dm_water.sort("Variables")
-
-#     # df_water
-#     if write_xls_local is True:
-#         df_water = dm_water.write_df()
-#         df_water.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-water.xlsx', index=False)
-
-#     # interface_water
-#     interface.add_link(from_sector = "industry", to_sector = "water", dm = dm_water)
-
-#     ################
-#     ##### CCUS #####
-#     ################
-
-#     # adjust variables' names
-#     variables = DM_emissions["capt_w_cc_bytech"].col_labels["Categories1"]
-#     variables_new = [rename_tech_fordeepen(i) for i in variables]
-#     for i in range(len(variables)):
-#         DM_emissions["capt_w_cc_bytech"].rename_col(variables[i], variables_new[i], dim = "Categories1")
-#     DM_emissions["capt_w_cc_bytech"].rename_col('CO2-capt-w-cc','ind_CO2-emissions-CC',"Variables")
-
-#     # dm_ccus
-#     dm_ccus = DM_emissions["capt_w_cc_bytech"].filter(
-#         {"Categories1" : ['aluminium_prim', 'aluminium_sec', 'cement_dry-kiln', 'cement_geopolym', 
-#                           'cement_wet-kiln', 'chem_chem-tech', 'lime_lime',
-#                           'paper_recycled', 'paper_woodpulp', 'steel_BF-BOF', 'steel_hisarna', 
-#                           'steel_hydrog-DRI', 'steel_scrap-EAF']}).flatten()
-#     dm_ccus.sort("Variables")
-
-#     # df_ccus
-#     if write_xls_local is True:
-#         df_ccus = dm_ccus.write_df()
-#         df_ccus.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-ccus.xlsx', index=False)
-
-#     # interface_ccus
-#     interface.add_link(from_sector = "industry", to_sector = "ccus", dm = dm_ccus)
-
-#     ################
-#     ##### GTAP #####
-#     ################
-
-#     # adjust variables' names
-#     dm_temp = DM_energy_demand["bymatcarr"].copy()
-#     dm_temp.rename_col("energy-demand", "l_nrg","Variables")
-#     dm_temp.array = dm_temp.array * 1000
-#     dm_temp.units["l_nrg"] = "GWh"
-#     variables = dm_temp.col_labels["Categories1"]
-#     variables_new = ['al', 'ce', 'ch', 'co', 'fb', 'gl', 'li', 'me', 'oi', 'pa', 'st', 'tx', 'tr', 'ww']
-#     for i in range(len(variables)):
-#         dm_temp.rename_col(variables[i],variables_new[i],"Categories1")
-#     variables = dm_temp.col_labels["Categories2"]
-#     variables_new = ['el','gb','ga','hy','lb','ol','sb','cl','sw']
-#     for i in range(len(variables)):
-#         dm_temp.rename_col(variables[i],variables_new[i],"Categories2")
-
-#     dm_temp2 = DM_material_production["bymat"].filter(
-#         {"Categories1" : ['aluminium', 'cement', 'chem', 'copper','glass', 'lime', 
-#                           'paper', 'steel']})
-#     variables = dm_temp2.col_labels["Categories1"]
-#     variables_new = ['al', 'ce', 'ch', 'co', 'gl', 'li', 'pa', 'st']
-#     for i in range(len(variables)):
-#         dm_temp2.rename_col(variables[i],variables_new[i],"Categories1")
-#     dm_temp2.rename_col("material-production","l_mat","Variables")
-#     dm_temp2.array = dm_temp2.array / 1000
-#     dm_temp2.units["l_mat"] = "Mt"
-
-#     # dm_gtap
-#     dm_gtap = dm_temp.flatten()
-#     dm_gtap = dm_gtap.flatten()
-#     dm_gtap.append(dm_temp2.flatten(), "Variables")
-#     dm_gtap.sort("Variables")
-
-#     # df_gtap
-#     if write_xls_local is True:
-#         df_gtap = dm_gtap.write_df()
-#         df_gtap.columns = df_gtap.columns.str.removesuffix("[Mt]")
-#         df_gtap.columns = df_gtap.columns.str.removesuffix("[GWh]")
-#         df_gtap.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-gtap.xlsx', index=False)
-
-#     # interface_gtap
-#     interface.add_link(from_sector = "industry", to_sector = "gtap", dm = dm_gtap)
-
-#     ####################
-#     ##### MINERALS #####
-#     ####################
-
-#     # unit conversions
-#     dm_timber.array = dm_timber.array / 1000
-#     dm_timber.units["timber"] = "Mt"
-#     dm_glass = DM_material_production["bymat"].filter(
-#         {"Categories1" : ["glass"]})
-#     dm_glass.array = dm_glass.array / 1000
-#     dm_glass.units["material-production"] = "Mt"
-
-#     dm_cement = DM_material_production["bymat"].filter(
-#         {"Categories1" : ['cement']})
-#     dm_cement.array = dm_cement.array / 1000
-#     dm_cement.units["material-production"] = "Mt"
-
-#     # rename
-#     dm_alupack = DM_production["lfs"].filter({"Categories1" : ["aluminium-pack"]})
-#     dm_alupack.rename_col("ind_product-production","ind_prod","Variables")
-#     dm_techdev = DM_ots_fts['technology-development'].filter(
-#         {"Categories1" : ['aluminium-prim', 'aluminium-sec','copper-tech',
-#                           'steel-BF-BOF', 'steel-hisarna', 'steel-hydrog-DRI', 
-#                           'steel-scrap-EAF']})
-#     variables = dm_techdev.col_labels["Categories1"]
-#     variables_new = [rename_tech_fordeepen(i) for i in variables]
-#     for i in range(len(variables)):
-#         dm_techdev.rename_col(variables[i], variables_new[i], dim = "Categories1")
-
-#     # dm_min
-#     dm_min = dm_glass.flatten()
-#     dm_min.append(dm_timber, "Variables")
-#     dm_min.append(DM_material_production["bytech"].filter(
-#         {"Categories1" : ['paper_woodpulp']}).flatten(), "Variables")
-#     dm_min.append(dm_cement.flatten(), "Variables")
-#     variables = dm_min.col_labels["Variables"]
-#     for i in variables:
-#         dm_min.rename_col(i, "ind_" + i, "Variables")
-#     dm_min.append(DM_ots_fts['material-efficiency'].filter(
-#         {"Variables" : ['ind_material-efficiency'],
-#          "Categories1" : ['aluminium','copper','steel']}).flatten(), "Variables")
-#     dm_min.append(DM_ots_fts['material-switch'].filter(
-#         {"Categories1" : ['build-steel-to-timber', 'cars-steel-to-chem', 
-#                           'trucks-steel-to-aluminium', 'trucks-steel-to-chem']}).flatten(), "Variables")
-#     dm_min.append(dm_alupack.flatten(), "Variables")
-#     dm_min.append(dm_techdev.flatten(), "Variables")
-#     dm_min.append(DM_ots_fts["product-net-import"].filter(
-#         {"Variables" : ["ind_product-net-import"],
-#          "Categories1" : ['cars-EV', 'cars-FCV', 'cars-ICE', 'computer', 'dishwasher', 'dryer',
-#                           'freezer', 'fridge','phone','planes','rail','road', 'ships', 'trains',
-#                           'trolley-cables', 'trucks-EV', 'trucks-FCV', 'trucks-ICE', 'tv', 
-#                           'wmachine']}).flatten(), "Variables")
-#     dm_min.append(DM_ots_fts["product-net-import"].filter(
-#         {"Variables" : ['ind_product-net-import_new_dhg'],
-#          "Categories1" : ['pipe']}).flatten(), "Variables")
-#     dm_min.sort("Variables")
-
-#     # df_min
-#     if write_xls_local is True:
-#         df_min = dm_min.write_df()
-#         df_min.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-minerals.xlsx', index=False)
-
-#     # interface_min
-#     interface.add_link(from_sector = "industry", to_sector = "minerals", dm = dm_min)
-
-
-#     ######################
-#     ##### EMPLOYMENT #####
-#     ######################
-
-#     # dm_emp
-#     dm_emp = DM_material_demand["appliances"].flatten()
-#     dm_emp.append(DM_material_demand["transport"].flatten(), "Variables")
-#     dm_emp.append(DM_material_demand["construction"].flatten(), "Variables")
-#     dm_emp.append(DM_energy_demand["bymat"].flatten(), "Variables")
-#     dm_emp.append(DM_energy_demand["bymatcarr"].flatten().flatten(), "Variables")
-#     dm_emp.append(DM_material_production["bymat"].filter(
-#         {"Categories1" : DM_energy_demand["bymat"].col_labels["Categories1"]}).flatten(), "Variables")
-#     dm_emp.append(DM_cost["material-production_capex"].flatten(), "Variables")
-#     dm_emp.append(DM_cost["material-production_opex"].flatten(), "Variables")
-#     dm_emp.append(DM_cost["CO2-capt-w-cc_capex"].flatten(), "Variables")
-#     dm_emp.append(DM_cost["CO2-capt-w-cc_opex"].flatten(), "Variables")
-#     variables = dm_emp.col_labels["Variables"]
-#     for i in variables:
-#         dm_emp.rename_col(i, "ind_" + i, "Variables")
-#     dm_emp.append(DM_ots_fts["material-net-import"].filter(
-#         {"Categories1" : ['aluminium', 'cement', 'chem', 'copper', 'glass', 'lime', 
-#                           'paper', 'steel', 'timber'],}).flatten(), "Variables")
-#     dm_emp.sort("Variables")
-
-#     # df_emp
-#     if write_xls_local is True:
-#         df_emp = dm_emp.write_df()
-#         df_emp.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-employment.xlsx', index=False)
-
-#     # interface_emp
-#     interface.add_link(from_sector = "industry", to_sector = "employment", dm = dm_emp)
-
-
-#     ###################
-#     ##### CLIMATE #####
-#     ###################
-
-#     # adjust variables' names
-#     dm_temp = DM_emissions["bygasmat"].flatten().flatten()
-#     dm_temp.deepen()
-#     dm_temp.rename_col_regex("_","-","Variables")
-#     DM_emissions["combustion_bio_capt_w_cc_neg_bymat"].rename_col("emissions-biogenic-negative","emissions-CO2_biogenic","Variables")
-#     dm_temp1 = DM_emissions["combustion_bio_capt_w_cc_neg_bymat"].flatten()
-#     dm_temp1.rename_col_regex("CO2-capt-w-cc_","","Categories1")
-
-#     # dm_cli
-#     dm_cli = dm_temp.flatten()
-#     dm_cli.append(dm_temp1.flatten(), "Variables")
-#     variables = dm_cli.col_labels["Variables"]
-#     for i in variables:
-#         dm_cli.rename_col(i, "ind_" + i, "Variables")
-#     dm_cli.sort("Variables")
-
-#     # dm_cli
-#     if write_xls_local is True:
-#         df_cli = dm_cli.write_df()
-#         df_cli.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-climate.xlsx', index=False)
-
-#     # interface_cli
-#     interface.add_link(from_sector = "industry", to_sector = "climate", dm = dm_cli)
-
-
-#     #########################
-#     ##### AIR POLLUTION #####
-#     #########################
-
-#     # dm_airpoll
-#     dm_airpoll = DM_material_production["bytech"].flatten()
-#     dm_airpoll.append(DM_energy_demand["bymatcarr"].flatten().flatten(), "Variables")
-#     variables = dm_airpoll.col_labels["Variables"]
-#     for i in variables:
-#         dm_airpoll.rename_col(i, "ind_" + i, "Variables")
-#     dm_airpoll.sort("Variables")
-
-#     # dm_airpoll
-#     if write_xls_local is True:
-#         df_airpoll = dm_airpoll.write_df()
-#         df_airpoll.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-air_pollution.xlsx', index=False)
-
-#     # interface_cli
-#     interface.add_link(from_sector = "industry", to_sector = "air_pollution", dm = dm_airpoll)
-
-
-#     ############################
-#     ##### DISTRICT HEATING #####
-#     ############################
-
-#     # FIXME!: make dummy values for dh (this is like this also in KNIME, to be seen what to do)
-#     dm_dh = DM_energy_demand["bycarr"].filter({"Categories1" : ["electricity"]})
-#     dm_dh = dm_dh.flatten()
-#     dm_dh.add(0, dim = "Variables", col_label = "ind_supply_heat-waste", unit = "TWh/year", dummy = True)
-#     dm_dh.drop("Variables", 'energy-demand_electricity')
-
-#     # dm_dh
-#     if write_xls_local is True:
-#         df_dh = dm_dh.write_df()
-#         df_dh.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-district_heating.xlsx', index=False)
-
-#     # interface_dh
-#     interface.add_link(from_sector = "industry", to_sector = "district_heating", dm = dm_dh)
-
-#     # clean
-#     del dm_agr, dm_airpoll, dm_alupack, dm_ccus, \
-#         dm_cement, dm_cli, DM_cost, dm_dh, dm_elc, DM_emissions, dm_emp, \
-#         DM_energy_demand, dm_glass, dm_gtap, dm_indwaste, \
-#         DM_material_demand, DM_material_production, dm_min, DM_production, dm_techdev, \
-#         dm_temp, dm_temp1, dm_temp2, dm_timber, dm_water, i, variables, variables_new, \
-#         DM_ots_fts
-        
-#     # return
-#     return
-
-def industry(lever_setting, years_setting, interface = Interface(), calibration = True):
+def industry(lever_setting, years_setting, interface = Interface(), calibration = False):
     
     # industry data file
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -2179,7 +1843,7 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
             DM_interface[i] = interface.get_link(from_sector=i, to_sector='industry')
         else:
             DM_interface[i] = simulate_input(from_sector=i, to_sector="industry")
-    del from_sector, i, interface
+    del from_sector, i
     
     # get product demand
     DM_demand = product_demand(DM_interface)
@@ -2250,13 +1914,44 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     df = variables_for_tpe(DM_cost, dm_bld_matswitch_savings_bymat, DM_emissions, DM_material_production, DM_energy_demand)
     
     # interface agriculture
-    dm_agr = industry_agriculture_interface(DM_material_production, DM_energy_demand, write_xls = False)
-    interface.add_link(from_sector='buildings', to_sector='agriculture', dm=dm_agr)
+    dm_agr = industry_agriculture_interface(DM_material_production, DM_energy_demand)
+    interface.add_link(from_sector='industry', to_sector='agriculture', dm=dm_agr)
     
-    # update interface (writes in DM_interface and also in all oither inputs for renaming variables)
-    # update_interface_with_industry(interface, DM_ots_fts, DM_material_production, 
-    #                                    DM_energy_demand, DM_emissions, DM_production, 
-    #                                    DM_material_demand, DM_cost, current_file_directory)
+    # interface energy
+    dm_energy = industry_energy_interface(DM_energy_demand)
+    interface.add_link(from_sector='industry', to_sector='energy', dm=dm_energy)
+    
+    # interface water
+    dm_water = industry_water_inferface(DM_energy_demand, DM_material_production)
+    interface.add_link(from_sector='industry', to_sector='water', dm=dm_water)
+    
+    # interface ccus
+    dm_ccus = industry_ccus_interface(DM_emissions)
+    interface.add_link(from_sector='industry', to_sector='ccus', dm=dm_ccus)
+    
+    # interface gtap
+    dm_gtap = industry_gtap_interface(DM_energy_demand, DM_material_production)
+    interface.add_link(from_sector='industry', to_sector='gtap', dm=dm_gtap)
+    
+    # interface minerals
+    dm_min = industry_minerals_interface(DM_material_production, DM_production, DM_ots_fts)
+    interface.add_link(from_sector='industry', to_sector='minerals', dm=dm_min)
+    
+    # interface employment
+    dm_emp = industry_employment_interface(DM_material_demand, DM_energy_demand, DM_material_production, DM_cost, DM_ots_fts)
+    interface.add_link(from_sector='industry', to_sector='employment', dm=dm_emp)
+    
+    # interface climate
+    dm_cli = industry_climate_interface(DM_emissions)
+    interface.add_link(from_sector='industry', to_sector='climate', dm=dm_cli)
+    
+    # interface air pollution
+    dm_airpoll = industry_airpollution_interface(DM_material_production, DM_energy_demand)
+    interface.add_link(from_sector='industry', to_sector='air-pollution', dm=dm_airpoll)
+    
+    # interface district heating
+    dm_dh = industry_district_heating_interface(DM_energy_demand)
+    interface.add_link(from_sector='industry', to_sector='district-heating', dm=dm_dh)
     
     # return
     return(df)
@@ -2282,8 +1977,8 @@ def local_industry_run():
     # return
     return results_run
 
-# run local
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
-# database_from_csv_to_datamatrix()
-results_run = local_industry_run()
+# # run local
+# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
+# # database_from_csv_to_datamatrix()
+# results_run = local_industry_run()
 
