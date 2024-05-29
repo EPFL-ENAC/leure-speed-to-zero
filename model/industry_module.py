@@ -143,21 +143,25 @@ def sum_over_techs(dm, category_with_techs,
                                            'lime-lime', 'mae-tech', 'ois-tech','textiles-tech', 
                                            'tra-equip-tech', 'wwp-tech']):
 
-    # activity with different techs
-    dm_out = dm.filter({category_with_techs : material_tech_multi})
-    variables_new = [rename_tech_fordeepen(i) for i in material_tech_multi]
-    for i in range(len(material_tech_multi)):
-        dm_out.rename_col(material_tech_multi[i], variables_new[i], category_with_techs)
-    dm_out.deepen(based_on = category_with_techs)
-    category_last = np.array(dm_out.dim_labels)[-1]
-    dm_out.group_all(category_last, inplace = True)
+    if material_tech_multi is not None:
+        # activity with different techs
+        dm_out = dm.filter({category_with_techs : material_tech_multi})
+        variables_new = [rename_tech_fordeepen(i) for i in material_tech_multi]
+        for i in range(len(material_tech_multi)):
+            dm_out.rename_col(material_tech_multi[i], variables_new[i], category_with_techs)
+        dm_out.deepen(based_on = category_with_techs)
+        category_last = np.array(dm_out.dim_labels)[-1]
+        dm_out.group_all(category_last, inplace = True)
     
     # append the other activities
     dm_out_sub = dm.filter({category_with_techs : material_tech_single})
     variables_new = [re.split("-", i)[0] for i in material_tech_single]
     for i in range(len(material_tech_single)):
         dm_out_sub.rename_col(material_tech_single[i], variables_new[i], category_with_techs)
-    dm_out.append(dm_out_sub, category_with_techs)
+    if material_tech_multi is not None:
+        dm_out.append(dm_out_sub, category_with_techs)
+    else:
+        dm_out = dm_out_sub
     dm_out.sort(category_with_techs)
     
     # return
@@ -1069,7 +1073,7 @@ def add_specific_energy_demands(DM_fxa, DM_energy_demand):
 
     # get demand for bioenergy solid, bioenergy gas, bioenergy liquid
     dm_energy_demand_bioener_bybiomat = dm_energy_demand_bycarr.filter({"Categories1" : ['solid-bio', 'gas-bio', 'liquid-bio']})
-    dm_energy_demand_bioener_bybiomat.rename_col("energy-demand","energy-demand-bioenergy","Variables")
+    dm_energy_demand_bioener_bybiomat.rename_col("energy-demand","energy-demand_bioenergy","Variables")
     dm_energy_demand_bioener = dm_energy_demand_bioener_bybiomat.group_all("Categories1", inplace = False)
 
     # get demand by material
@@ -1950,6 +1954,9 @@ def local_industry_run():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     f = open(os.path.join(current_file_directory, '../config/lever_position.json'))
     lever_setting = json.load(f)[0]
+    lever_setting["lever_energy-carrier-mix"] = 3
+    lever_setting["lever_cc"] = 3
+    lever_setting["lever_material-switch"] = 3
     
     # get geoscale
     global_vars = {'geoscale': '.*'}
@@ -1961,8 +1968,8 @@ def local_industry_run():
     # return
     return results_run
 
-# # run local
-# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
+# run local
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
 # database_from_csv_to_datamatrix()
-# results_run = local_industry_run()
-    
+results_run = local_industry_run()
+
