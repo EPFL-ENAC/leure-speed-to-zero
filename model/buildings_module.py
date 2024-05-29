@@ -1094,7 +1094,7 @@ def bld_district_heating_interface(DM_heat, write_xls=False):
 
     if write_xls:
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        xls_file = 'All-Countries-interface_from-buildings-to-district-heating.xlsx'
+        xls_file = 'buildings-to-district-heating.xlsx'
         file_path = os.path.join(current_file_directory, '../_database/data/xls/', xls_file)
         df = dm_dhg.write_df()
         df.to_excel(file_path, index=False)
