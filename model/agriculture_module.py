@@ -52,6 +52,7 @@ def database_from_csv_to_datamatrix():
     file = 'agriculture_fixed-assumptions_pathwaycalc_non_nan'
     lever = 'none'
     #edit_database(file, lever, column='eucalc-name', mode='rename',pattern={'meat_': 'meat-', 'abp_': 'abp-'})
+    # AGRICULTURE ------------------------------------------------------------------------------------------------------
     # LIVESTOCK MANURE - N2O emissions
     df = read_database_fxa(file, filter_dict={'eucalc-name': 'ef_liv_N2O-emission_ef.*'})
     dm_ef_N2O = DataMatrix.create_from_df(df, num_cat=2)
@@ -93,6 +94,12 @@ def database_from_csv_to_datamatrix():
     df = read_database_fxa(file, filter_dict={'eucalc-name': 'agr_emission_fertilizer'})
     dm_n_fertilizer = DataMatrix.create_from_df(df, num_cat=0)
     dict_fxa['agr_emission_fertilizer'] = dm_n_fertilizer
+
+    # LAND USE --------------------------------------------------------------------------------------------------------
+    # LAND ALLOCATION - Total area
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'lus_land_total-area'})
+    dm_land_total = DataMatrix.create_from_df(df, num_cat=0)
+    dict_fxa['lus_land_total-area'] = dm_land_total
 
 
     # CalibrationFactorsToDatamatrix
@@ -212,7 +219,8 @@ def database_from_csv_to_datamatrix():
         'residues_yield': dm_residues_yield,
         'fibers': dm_fibers,
         'rice': dm_rice,
-        'agr_emission_fertilizer' : dm_n_fertilizer
+        'agr_emission_fertilizer' : dm_n_fertilizer,
+        'lus_land_total-area' : dm_land_total
     }
 
 
@@ -299,6 +307,17 @@ def database_from_csv_to_datamatrix():
                                                                             'climate-smart-crop_yield.*',
                                                                             'agr_climate-smart-crop_input-use.*',
                                                                             'agr_climate-smart-crop_energy-demand.*'])
+
+    # Read land management
+    file = 'agriculture_land-management_pathwaycalc'
+    lever = 'land-man'
+    # edit_database(file,lever,column='eucalc-name',pattern={'meat_':'meat-', 'abp_':'abp-'},mode='rename')
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1],
+                                                                baseyear=baseyear,
+                                                                years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
+                                                                column='eucalc-name',
+                                                                group_list=['agr_land-man_use.*',
+                                                                            'agr_land-man_dyn.*'])
 
     # num_cat_list=[1 = nb de cat de losses, 1 = nb de cat yield]
 
@@ -435,6 +454,11 @@ def read_data(data_file, lever_setting):
     # FIXME appending does not work for no apparent reason
     # dm_energy_demand.append(dm_caf_energy_demand, dim='Variables')
 
+    # Sub-matrix for LAND USE
+    dm_land_man_use = DM_ots_fts['land-man']['agr_land-man_use']
+    dm_land_total = DM_agriculture['fxa']['lus_land_total-area']
+    dm_land_man_dyn = DM_ots_fts['land-man']['agr_land-man_dyn']
+
     # Aggregated Data Matrix - ENERGY & GHG EMISSIONS
     DM_energy_ghg = {
         'energy_demand': dm_energy_demand,
@@ -518,9 +542,16 @@ def read_data(data_file, lever_setting):
         'emissions': dm_fertilizer_emission
     }
 
+    # Aggregated Data Matrix - LAND USE
+    DM_land_use = {
+        'land_man_use': dm_land_man_use,
+        'land_total': dm_land_total,
+        'land_man_dyn': dm_land_man_dyn
+    }
+
     cdm_const = DM_agriculture['constant']
 
-    return DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, cdm_const
+    return DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, DM_land_use, cdm_const
 
 # SimulateInteractions
 def simulate_lifestyles_to_agriculture_input():
@@ -1159,7 +1190,7 @@ def bioenergy_workflow(DM_bioenergy, cdm_const, dm_ind, dm_bld, dm_tra):
     dm_temp = dm_biofuel_fdk.array[:, :, idx_lgn_demand['agr_bioenergy_biomass-demand_liquid_lgn'], np.newaxis] * \
               dm_lgn.array[:, :, idx_lgn_mix['agr_biomass-hierarchy_biomass-mix_liquid'], :]
     dm_lgn.add(dm_temp, dim='Variables', col_label='agr_bioenergy_biomass-demand_liquid_lgn',
-               unit='kcal')
+              unit='kcal')
 
     # oil
     idx_oil_mix = dm_oil.idx
@@ -1169,7 +1200,7 @@ def bioenergy_workflow(DM_bioenergy, cdm_const, dm_ind, dm_bld, dm_tra):
     dm_oil.add(dm_temp, dim='Variables', col_label='agr_bioenergy_biomass-demand_liquid_oil',
                unit='kcal')
 
-    # Cellulosic liquid biofuel per type [kcal] : In KNIME but not computed as not used later
+
     return DM_bioenergy, dm_oil, dm_lgn, dm_eth, dm_biofuel_fdk
 
 # CalculationLeaf LIVESTOCK MANURE MANAGEMENT & GHG EMISSIONS ----------------------------------------------------------
@@ -1641,7 +1672,8 @@ def land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, dm_ind):
                               'agr_lus_land',
                               out_col='cal_agr_lus_land', unit='ha')
 
-    # Overall agricultural land [ha] = overall cropland + grasssland [ha] FIXME find a way to no get rid of cropland & grassland
+    # Overall agricultural land [ha] = overall cropland + grasssland [ha]
+    dm_land_use = DM_land['land'].copy() # copu for Land use module
     DM_land['land'].groupby({'agriculture': '.*'}, dim='Categories1', regex=True, inplace=True)
 
     # RICE CH4 EMISSIONS -----------------------------------------------------------------------------------------------
@@ -1655,7 +1687,7 @@ def land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, dm_ind):
                               'agr_land_cropland_rice',
                               out_col='agr_rice_crop_CH4-emission', unit='t')
 
-    return DM_land
+    return DM_land, dm_land_use
 
 # CalculationLeaf NITROGEN BALANCE -------------------------------------------------------------------------------------
 def nitrogen_workflow(DM_nitrogen, DM_land, cdm_const):
@@ -1852,7 +1884,159 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_ma
                                    out_col='cal_agr_emissions', unit='t')
     return DM_energy_ghg
 
+# CalculationLeaf WOOD
+def wood_workflow(DM_bioenergy, dm_lgn, dm_ind):
+    # WOOD FUEL DEMAND  ------------------------------------------------------------------------------------------------
+    # Unit conversion : bioenergy biomass demand [kcal] => [TWh]
+    dm_lgn.add(0.00000000000116222, dummy=True, col_label='kcal_to_TWh', dim='Variables', unit='TWh')
+    dm_lgn.operation('agr_bioenergy_biomass-demand_liquid_lgn', '*', 'kcal_to_TWh',
+                      out_col='agr_bioenergy_biomass-demand_liquid_lgn_TWh', unit='TWh')
 
+    # Pre processing
+    dm_wood = DM_bioenergy['solid-mix'].filter({'Variables': ['agr_bioenergy_biomass-demand_solid'],
+                                                'Categories1': ['fuelwood-and-res']})
+
+    dm_wood_liquid = dm_lgn.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_lgn_TWh'],
+                                    'Categories1': ['lgn-btl-fuelwood-and-res']})
+    dm_wood_liquid.rename_col('lgn-btl-fuelwood-and-res', 'fuelwood-and-res', dim='Categories1')
+    dm_wood.append(dm_wood_liquid, dim='Variables')
+
+    # Wood-fuel demand [TWh] = sum bioenergy demand  for fuelwood (solid & liquid biomass) FIXME only solid in KNIME calculation
+    dm_wood.operation('agr_bioenergy_biomass-demand_solid', '+', 'agr_bioenergy_biomass-demand_liquid_lgn_TWh',
+                      out_col='lus_fst_demand_rwe_wood-fuel', unit='TWh')
+
+    # Processing
+    dm_wood = dm_wood.filter({'Variables': ['lus_fst_demand_rwe_wood-fuel']})
+    dm_wood = dm_wood.flatten()
+    dm_wood.rename_col('lus_fst_demand_rwe_wood-fuel_fuelwood-and-res', 'lus_fst_demand_rwe_wood-fuel_temp',
+                       dim='Variables')
+
+    # Unit conversion : Wood-fuel demand [TWh] => [m3]
+    dm_wood.add(174420.0, dummy=True, col_label='TWh_to_cubic_m', dim='Variables', unit='m3')
+    dm_wood.operation('lus_fst_demand_rwe_wood-fuel_temp', '*', 'TWh_to_cubic_m',
+                      out_col='lus_fst_demand_rwe_wood-fuel', unit='m3')
+    dm_wood = dm_wood.filter({'Variables': ['lus_fst_demand_rwe_wood-fuel']})
+
+    # WOOD PRODUCT CONVERSION ------------------------------------------------------------------------------------------
+    # Timber, Woodpulp & Biomaterial from Industry module : Unit conversion to m3 and renaming
+    # Timber
+    dm_timber = dm_ind.filter({'Variables': ['ind_timber']})
+    dm_timber.rename_col('ind_timber', 'lus_fst_demand_rwe_ind-sawlog_temp', dim='Variables')
+    dm_timber.add(1500.0, dummy=True, col_label='kt_to_cubic_m', dim='Variables', unit='m3')
+    dm_timber.operation('lus_fst_demand_rwe_ind-sawlog_temp', '*', 'kt_to_cubic_m',
+                        out_col='lus_fst_demand_rwe_ind-sawlog', unit='m3')
+    dm_timber = dm_timber.filter({'Variables': ['lus_fst_demand_rwe_ind-sawlog']})
+
+    # Woodpulp
+    dm_woodpulp = dm_ind.filter({'Variables': ['ind_material-production_paper_woodpulp']})
+    dm_woodpulp.rename_col('ind_material-production_paper_woodpulp', 'lus_fst_demand_rwe_pulp_temp', dim='Variables')
+    dm_woodpulp.add(4500000.0, dummy=True, col_label='Mt_to_cubic_m', dim='Variables', unit='m3')
+    dm_woodpulp.operation('lus_fst_demand_rwe_pulp_temp', '*', 'Mt_to_cubic_m',
+                          out_col='lus_fst_demand_rwe_pulp', unit='m3')
+    dm_woodpulp = dm_woodpulp.filter({'Variables': ['lus_fst_demand_rwe_pulp']})
+
+    # Biomaterial
+    dm_biomaterial = dm_ind.filter({'Variables': ['ind_biomaterial_solid-bio']})
+    dm_biomaterial.rename_col('ind_biomaterial_solid-bio', 'lus_fst_demand_rwe_oth-ind-wood_temp', dim='Variables')
+    dm_biomaterial.add(174420.0, dummy=True, col_label='TWh_to_cubic_m', dim='Variables', unit='m3')
+    dm_biomaterial.operation('lus_fst_demand_rwe_oth-ind-wood_temp', '*', 'TWh_to_cubic_m',
+                             out_col='lus_fst_demand_rwe_oth-ind-wood', unit='m3')
+    dm_biomaterial = dm_biomaterial.filter({'Variables': ['lus_fst_demand_rwe_oth-ind-wood']})
+
+    # Appending to dm_wood & deepen
+    dm_wood.append(dm_timber, dim='Variables')
+    dm_wood.append(dm_woodpulp, dim='Variables')
+    dm_wood.append(dm_biomaterial, dim='Variables')
+    dm_wood.deepen()
+
+    # Total wood demand [m3] = Wood-fuel demand + Timber + Woodpulp + Wood for other uses
+    dm_wood.groupby({'total': '.*'}, dim='Categories1', regex=True, inplace=True)
+
+    # Calibration Wood demand
+
+    return dm_wood
+
+def land_allocation_workflow(DM_land_use, dm_land_use):
+    # CalculationLeaf LAND ALLOCATION
+
+    # TOTAL LAND DYNAMICS ----------------------------------------------------------------------------------------------
+    # Appending cropland and grassland to DM_land_use FIXME use calibrated land
+    dm_land_use = dm_land_use.filter({'Variables': ['agr_lus_land']})
+    dm_land_use.rename_col('agr_lus_land', 'agr_land-man_use', dim='Variables')
+    DM_land_use['land_man_use'].append(dm_land_use, dim='Categories1')
+    DM_land_use['land_man_use'].sort(dim='Categories1')
+
+    # Creating a copy for land demand
+    dm_land_demand = DM_land_use['land_man_use'].copy()
+
+    # Land demand [ha] = cropland + grassland + forest + other + settlement + wetland
+    dm_land_demand.groupby({'total-land': '.*'}, dim='Categories1', regex=True, inplace=True)
+    dm_land_demand.rename_col('agr_land-man_use', 'lus_demand', dim='Variables')
+    dm_land_demand = dm_land_demand.flatten()
+
+    # Land dynamics [ha] = total land - land demand
+    DM_land_use['land_total'].append(dm_land_demand, dim='Variables')
+    DM_land_use['land_total'].operation('lus_land_total-area', '-', 'lus_demand_total-land',
+                                        out_col='lus_land_dynamics', unit='ha')
+
+    # ALLOCATION OF AVAILABLE LAND -------------------------------------------------------------------------------------
+
+    # Filtering available and deforested land (If there is not enough land available, we assume deforestation)
+    # Available land [ha] = Land dynamics [ha] >= 0
+    dm_temp = DM_land_use['land_total'].filter({'Variables': ['lus_land_dynamics']})
+    array_land_dynamics = dm_temp.array[:, :, :]
+    array_available_land = np.maximum(array_land_dynamics, 0)
+    DM_land_use['land_total'].add(array_available_land, dim='Variables', col_label='lus_dyn_available-land', unit='ha')
+
+    # Deforestation land [ha] = Land dynamics [ha] < 0
+    dm_temp = DM_land_use['land_total'].filter({'Variables': ['lus_land_dynamics']})
+    array_land_dynamics = dm_temp.array[:, :, :]
+    array_deforestation = -np.maximum(-array_land_dynamics, 0)
+    DM_land_use['land_total'].add(array_deforestation, dim='Variables', col_label='lus_dyn_deforestation', unit='ha')
+
+    # Land allocation [ha] = land available [ha] * Land management (grassland, forest, unmanaged) [%]
+    idx_dyn = DM_land_use['land_man_dyn'].idx
+    idx_land = DM_land_use['land_total'].idx
+    array_temp = DM_land_use['land_man_dyn'].array[:, :, idx_dyn['agr_land-man_dyn'], :] \
+                 * DM_land_use['land_total'].array[:, :, idx_land['lus_dyn_available-land'], np.newaxis]
+    DM_land_use['land_man_dyn'].add(array_temp, dim='Variables', col_label='lus_dyn', unit='ha')
+
+    # LAND DYNAMICS ACCOUNTING FOR ALLOCATED AVAILABLE LAND ------------------------------------------------------------
+
+    # Pre processing land use dynamics
+    DM_land_use['land_man_dyn'].rename_col('unmanaged', 'cropland',
+                                           dim='Categories1')  # (approximation because unmanaged land has negative impacts)
+    DM_land_use['land_man_dyn'].add(0.0, dummy=True, col_label='settlement', dim='Categories1', unit='ha')
+    DM_land_use['land_man_dyn'].add(0.0, dummy=True, col_label='wetland', dim='Categories1', unit='ha')
+    DM_land_use['land_man_dyn'].add(0.0, dummy=True, col_label='other', dim='Categories1', unit='ha')
+    DM_land_use['land_man_dyn'].sort(dim='Categories1')
+
+    # Pre processing deforestation
+    dm_deforestation_temp = DM_land_use['land_total'].filter({'Variables': ['lus_dyn_deforestation']})
+    dm_deforestation_temp.rename_col('lus_dyn_deforestation', 'lus_dyn_deforestation_forest', dim='Variables')
+    dm_deforestation_temp.deepen()
+    dm_deforestation_temp.add(0.0, dummy=True, col_label='cropland', dim='Categories1', unit='ha')
+    dm_deforestation_temp.add(0.0, dummy=True, col_label='grassland', dim='Categories1', unit='ha')
+    dm_deforestation_temp.add(0.0, dummy=True, col_label='settlement', dim='Categories1', unit='ha')
+    dm_deforestation_temp.add(0.0, dummy=True, col_label='wetland', dim='Categories1', unit='ha')
+    dm_deforestation_temp.add(0.0, dummy=True, col_label='other', dim='Categories1', unit='ha')
+    dm_deforestation_temp.sort(dim='Categories1')
+
+    # Appending dms
+    DM_land_use['land_man_use'].append(dm_deforestation_temp, dim='Variables')
+    DM_land_use['land_man_use'].append(DM_land_use['land_man_dyn'].filter({'Variables': ['lus_dyn']}), dim='Variables')
+
+    # Performing operation
+    # Cropland demand [ha] = cropland demand for agriculture + unmanaged land (approximation because unmanaged land has negative impacts)
+    # Grassland demand [ha] = grassland demand for agriculture + land allocated to grassland
+    # Forest demand [ha] = current land use forest + land allocated to forest - deforested land
+    DM_land_use['land_man_use'].operation('agr_land-man_use', '+', 'lus_dyn_deforestation', out_col='lus_land_temp',
+                                          unit='ha')
+    DM_land_use['land_man_use'].operation('lus_land_temp', '+', 'lus_dyn', out_col='lus_land',
+                                          unit='ha')
+    DM_land_use['land_man_use'].drop(dim='Variables', col_label=['lus_land_temp'])
+
+    return DM_land_use
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -1863,7 +2047,7 @@ def agriculture(lever_setting, years_setting):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     agriculture_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/agriculture.pickle')
-    DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, cdm_const = read_data(agriculture_data_file, lever_setting)
+    DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, DM_land_use, cdm_const = read_data(agriculture_data_file, lever_setting)
 
     # Simulate data from other modules
     dm_lfs = simulate_lifestyles_to_agriculture_input()
@@ -1878,7 +2062,7 @@ def agriculture(lever_setting, years_setting):
     dm_ind = dm_ind.filter({'Country': cntr_list})
     dm_tra = dm_tra.filter({'Country': cntr_list})
 
-    # CalculationTree
+    # CalculationTree AGRICULTURE
 
     dm_lfs, dm_lfs_pro = food_demand_workflow(DM_food_demand, dm_lfs)
     DM_livestock, dm_liv_ibp, dm_liv_ibp= livestock_workflow(DM_livestock, cdm_const, dm_lfs_pro)
@@ -1888,12 +2072,32 @@ def agriculture(lever_setting, years_setting):
     DM_feed, dm_aps_ibp, dm_feed_req = feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, cdm_const)
     dm_voil = biomass_allocation_workflow(dm_aps_ibp, dm_oil)
     DM_crop, dm_crop_other, dm_feed_processed, dm_food_processed = crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, cdm_const)
-    DM_land = land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, dm_ind)
+    DM_land, dm_land_use = land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, dm_ind)
     DM_nitrogen, dm_fertilizer_co, dm_mineral_fertilizer = nitrogen_workflow(DM_nitrogen, DM_land, cdm_const)
     DM_energy_ghg = energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_manure, cdm_const)
 
+    # CalculationTree LAND USE
+    dm_wood = wood_workflow(DM_bioenergy, dm_lgn, dm_ind)
+    DM_land_use = land_allocation_workflow(DM_land_use, dm_land_use)
 
-    # KNIME CHECK WITH AUSTRIA -----------------------------------------------------------------------------------------
+    print('hello')
+    return
+
+
+
+def agriculture_local_run():
+    years_setting, lever_setting = init_years_lever()
+    agriculture(lever_setting, years_setting)
+    return
+
+# Creates the pickle, to do only once
+#database_from_csv_to_datamatrix()
+
+# Run the code in local
+agriculture_local_run()
+
+
+# KNIME CHECK WITH AUSTRIA -----------------------------------------------------------------------------------------
     # FOOD DEMAND
     #dm_lfs_pro.datamatrix_plot({'Country': 'Austria', 'Variables': ['agr_domestic_production']})
 
@@ -1910,81 +2114,71 @@ def agriculture(lever_setting, years_setting):
     #DM_bioenergy['electricity_production'].datamatrix_plot(
     #    {'Country': 'Austria', 'Variables': ['agr_bioenergy-capacity_fdk-req']})
     # Pre processing
-    dm_liquid = dm_oil.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_oil']})
-    dm_liquid.rename_col('agr_bioenergy_biomass-demand_liquid_oil', 'agr_bioenergy_biomass-demand_liquid', dim='Variables')
-    dm_lgn = dm_lgn.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_lgn']})
-    dm_lgn.rename_col('agr_bioenergy_biomass-demand_liquid_lgn', 'agr_bioenergy_biomass-demand_liquid', dim='Variables')
-    dm_eth = dm_eth.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_eth']})
-    dm_eth.rename_col('agr_bioenergy_biomass-demand_liquid_eth', 'agr_bioenergy_biomass-demand_liquid', dim='Variables')
-    dm_liquid.append(dm_eth, dim='Categories1')
-    dm_liquid.append(dm_lgn, dim='Categories1')
-    dm_liquid.datamatrix_plot(
-        {'Country': 'Austria', 'Variables': ['agr_bioenergy_biomass-demand_liquid']})
+    #dm_liquid = dm_oil.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_oil']})
+    #dm_liquid.rename_col('agr_bioenergy_biomass-demand_liquid_oil', 'agr_bioenergy_biomass-demand_liquid', dim='Variables')
+    #dm_lgn = dm_lgn.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_lgn']})
+    #dm_lgn.rename_col('agr_bioenergy_biomass-demand_liquid_lgn', 'agr_bioenergy_biomass-demand_liquid', dim='Variables')
+    #dm_eth = dm_eth.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_eth']})
+    #dm_eth.rename_col('agr_bioenergy_biomass-demand_liquid_eth', 'agr_bioenergy_biomass-demand_liquid', dim='Variables')
+    #dm_liquid.append(dm_lgn, dim='Categories1')
+    #dm_liquid.datamatrix_plot(
+    #    {'Country': 'Austria', 'Variables': ['agr_bioenergy_biomass-demand_liquid']})
 
-    dm_biofuel_fdk.datamatrix_plot(
-        {'Country': 'Austria', 'Variables': ['agr_bioenergy_biomass-demand_liquid']})
-    dm_oil.datamatrix_plot(
-        {'Country': 'Austria', 'Variables': ['agr_biomass-hierarchy_biomass-mix_liquid']})
+    #dm_biofuel_fdk.datamatrix_plot(
+    #    {'Country': 'Austria', 'Variables': ['agr_bioenergy_biomass-demand_liquid']})
+    #dm_oil.datamatrix_plot(
+    #    {'Country': 'Austria', 'Variables': ['agr_biomass-hierarchy_biomass-mix_liquid']})
 
     # MANURE
-    DM_manure['caf_liv_CH4'] = DM_manure['caf_liv_CH4'].flatten()
-    DM_manure['caf_liv_CH4'].datamatrix_plot(
-        {'Country': 'Austria', 'Variables': ['agr_liv_CH4-emission']})
-    DM_manure['caf_liv_N2O'] = DM_manure['caf_liv_N2O'].flatten()
-    DM_manure['caf_liv_N2O'].datamatrix_plot(
-        {'Country': 'Austria', 'Variables': ['agr_liv_N2O-emission']})
+    #DM_manure['caf_liv_CH4'] = DM_manure['caf_liv_CH4'].flatten()
+    #DM_manure['caf_liv_CH4'].datamatrix_plot(
+    #    {'Country': 'Austria', 'Variables': ['agr_liv_CH4-emission']})
+    #DM_manure['caf_liv_N2O'] = DM_manure['caf_liv_N2O'].flatten()
+    #DM_manure['caf_liv_N2O'].datamatrix_plot(
+    #    {'Country': 'Austria', 'Variables': ['agr_liv_N2O-emission']})
 
     # FEED
-    DM_feed['caf_agr_demand_feed'].datamatrix_plot(
-        {'Country': 'Austria', 'Variables': ['agr_demand_feed']})
-    dm_feed_req.datamatrix_plot(
-        {'Country': 'Austria', 'Variables': ['agr_feed-requierement']})
+    #DM_feed['caf_agr_demand_feed'].datamatrix_plot(
+    #    {'Country': 'Austria', 'Variables': ['agr_demand_feed']})
+    #dm_feed_req.datamatrix_plot(
+    #    {'Country': 'Austria', 'Variables': ['agr_feed-requierement']})
 
     # BIOMASS ALLOCATION
 
     # CROP
-    DM_crop['crop'].datamatrix_plot(
-        {'Country': 'Austria', 'Variables': ['agr_domestic-production_afw']})
-    dm_feed_processed.datamatrix_plot(
-        {'Country': 'Austria', 'Variables': ['agr_demand_feed_processed']})
-    dm_food_processed.datamatrix_plot(
-        {'Country': 'Austria', 'Variables': ['agr_demand_food_processed']})
-    dm_crop_emissions = DM_crop['ef_residues'].flatten()
-    dm_crop_emissions.datamatrix_plot(
-        {'Country': 'Austria', 'Variables': ['agr_crop_emission']})
+    #DM_crop['crop'].datamatrix_plot(
+    #    {'Country': 'Austria', 'Variables': ['agr_domestic-production_afw']})
+    #dm_feed_processed.datamatrix_plot(
+    #    {'Country': 'Austria', 'Variables': ['agr_demand_feed_processed']})
+    #dm_food_processed.datamatrix_plot(
+    #    {'Country': 'Austria', 'Variables': ['agr_demand_food_processed']})
+    #dm_crop_emissions = DM_crop['ef_residues'].flatten()
+    #dm_crop_emissions.datamatrix_plot(
+    #    {'Country': 'Austria', 'Variables': ['agr_crop_emission']})
 
     # LAND
-    DM_land['yield'].datamatrix_plot(
-        {'Country': 'Austria', 'Variables': ['agr_land_cropland']})
+    #DM_land['yield'].datamatrix_plot(
+    #    {'Country': 'Austria', 'Variables': ['agr_land_cropland']})
 
-    DM_land['land'].datamatrix_plot(
-        {'Country': 'Austria', 'Variables': ['agr_lus_land']})
+    #DM_land['land'].datamatrix_plot(
+    #    {'Country': 'Austria', 'Variables': ['agr_lus_land']})
 
     # NITROGEN
-    DM_nitrogen['emissions'].datamatrix_plot(
-        {'Country': 'Austria', 'Variables': ['agr_crop_emission_N2O-emission_fertilizer']})
-    dm_fertilizer_co.datamatrix_plot(
-        {'Country': 'Austria', 'Variables': ['agr_input-use_emissions-CO2']})
+    #DM_nitrogen['emissions'].datamatrix_plot(
+    #    {'Country': 'Austria', 'Variables': ['agr_crop_emission_N2O-emission_fertilizer']})
+    #dm_fertilizer_co.datamatrix_plot(
+    #    {'Country': 'Austria', 'Variables': ['agr_input-use_emissions-CO2']})
 
 
     # ENERGY GHG
-    DM_energy_ghg['GHG'].datamatrix_plot(
-        {'Country': 'Austria', 'Variables': ['agr_emissions']})
+    #DM_energy_ghg['GHG'].datamatrix_plot(
+    #    {'Country': 'Austria', 'Variables': ['agr_emissions']})
     #dm_CO2.datamatrix_plot(
     #    {'Country': 'Austria', 'Variables': ['agr_input-use_emissions-CO2_temp_fuel']})
 
+    # WOOD
+    #dm_wood.datamatrix_plot({'Country': 'Austria', 'Variables': ['lus_fst_demand_rwe']})
 
-    print('hello')
-    return
-
-
-def agriculture_local_run():
-    years_setting, lever_setting = init_years_lever()
-    agriculture(lever_setting, years_setting)
-    return
-
-# Creates the pickle, to do only once
-#database_from_csv_to_datamatrix()
-
-# Run the code in local
-agriculture_local_run()
+# LAND ALLOCATION
+    #DM_land_use['land_man_use'].datamatrix_plot({'Country': 'Austria', 'Variables': ['lus_land'],
+    #                                             'Categories1': ['grassland', 'cropland', 'forest']})
