@@ -71,7 +71,11 @@
   "lever_coal-capacity":1,
   "lever_nuclear-capacity":1,
   "lever_carbon-storage-capacity":1,
-  "lever_ev-charging-profile": 1
+  "lever_ev-charging-profile": 1,
+  "lever_non-residential-heat-profile": 1,
+  "lever_residential-heat-profile": 1,
+  "lever_non-residential-cooling-profile": 1,
+  "lever_residential-cooling-profile": 1
 } ]
 
 
