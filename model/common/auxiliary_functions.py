@@ -268,11 +268,14 @@ def filter_geoscale(global_vars):
             DM_module_geo = {'fxa': {}, 'fts': {}, 'ots': {}}
 
             for key in DM_module.keys():
-                if key == 'fxa':
-                    for var_name in DM_module[key].keys():
-                        dm = DM_module[key][var_name]
-                        dm_geo = dm.filter_w_regex({'Country': geo_pattern})
-                        DM_module_geo[key][var_name] = dm_geo
+                if key in {'fxa', 'calibration'}:
+                    if isinstance(DM_module[key], dict):
+                        for var_name in DM_module[key].keys():
+                            dm = DM_module[key][var_name]
+                            dm_geo = dm.filter_w_regex({'Country': geo_pattern})
+                            DM_module_geo[key][var_name] = dm_geo
+                    else:
+                        DM_module_geo[key] = DM_module[key].filter_w_regex({'Country': geo_pattern})
                 if key == 'fts':
                     for lever_name in DM_module[key].keys():
                         DM_module_geo[key][lever_name] = {}
@@ -306,7 +309,7 @@ def filter_geoscale(global_vars):
                 if key == 'constant':
                     DM_module_geo[key] = DM_module[key]
                 else:
-                    raise ValueError('pickle can only contain fxa, ots, fts, constant as dictionary key')
+                    raise ValueError('pickle can only contain fxa, ots, fts, constant and calibration as dictionary key')
 
             current_file_directory = os.path.dirname(os.path.abspath(__file__))
             path_geo = os.path.join(current_file_directory, '../../_database/data/datamatrix/geoscale/')
@@ -504,8 +507,8 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
             assert dm_activity.col_labels[dim] == cdm_cost.col_labels[dim]
     
     # filter for selected cost_type
-    cdm_cost = cdm_cost.filter_w_regex({"Variables" : ".*" + cost_type + ".*|.*evolution-method.*"})
-    cdm_cost.rename_col_regex(cost_type + "-", "", dim = "Variables")
+    cdm_cost = cdm_cost.filter_w_regex({"Variables": ".*" + cost_type + ".*|.*evolution-method.*"})
+    cdm_cost.rename_col_regex(cost_type + "-", "", dim="Variables")
     cdm_cost.rename_col('baseyear', 'unit-cost-baseyear', "Variables")
     
     # get some constants
