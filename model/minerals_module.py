@@ -143,7 +143,7 @@ def database_from_csv_to_datamatrix():
 
     DM_minerals = {
         'fxa': dict_fxa,
-        'cal': dm_cal,
+        'calibration': dm_cal,
         'constant': cdm_const
     }
     
@@ -1328,7 +1328,7 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
 def mineral_demand_calibration(DM_minerals, dm_mindec):
     
     # get calibration series for direct demand
-    dm_cal = DM_minerals["cal"]
+    dm_cal = DM_minerals["calibration"]
     dm_cal.deepen_twice()
     dm_cal.rename_col("min", "mineral-decomposition-calib", "Variables")
     dm_cal.rename_col("calib", "all-sectors", "Categories1")
