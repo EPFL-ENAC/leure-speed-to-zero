@@ -1561,9 +1561,9 @@ def industry_energy_interface(DM_energy_demand, write_xls = False):
                           'gas-ff-natural', 'hydrogen', 'solid-ff-coal']})
     dm_elc.rename_col("energy-demand", "ind_energy-demand", "Variables")
     dm_elc = dm_elc.flatten()
-    variables = dm_elc.col_labels["Variables"]
-    for i in variables:
-        dm_elc.rename_col(i, "ind_" + i, "Variables")
+    # variables = dm_elc.col_labels["Variables"]
+    # for i in variables:
+    #     dm_elc.rename_col(i, "ind_" + i, "Variables")
     dm_elc.sort("Variables")
 
     # df_elc
@@ -1802,7 +1802,7 @@ def industry_airpollution_interface(DM_material_production, DM_energy_demand, wr
         dm_airpoll.rename_col(i, "ind_" + i, "Variables")
     dm_airpoll.sort("Variables")
 
-    # dm_airpoll
+    # write
     if write_xls is True:
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
         df_airpoll = dm_airpoll.write_df()
@@ -1981,4 +1981,3 @@ def local_industry_run():
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
 # # database_from_csv_to_datamatrix()
 # results_run = local_industry_run()
-
