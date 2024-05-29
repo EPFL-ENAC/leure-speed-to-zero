@@ -268,7 +268,7 @@ def filter_geoscale(global_vars):
             DM_module_geo = {'fxa': {}, 'fts': {}, 'ots': {}}
 
             for key in DM_module.keys():
-                if key in {'fxa', 'calibration'}:
+                if key in ['fxa', 'calibration']:
                     if isinstance(DM_module[key], dict):
                         for var_name in DM_module[key].keys():
                             dm = DM_module[key][var_name]
@@ -276,7 +276,7 @@ def filter_geoscale(global_vars):
                             DM_module_geo[key][var_name] = dm_geo
                     else:
                         DM_module_geo[key] = DM_module[key].filter_w_regex({'Country': geo_pattern})
-                if key == 'fts':
+                elif key == 'fts':
                     for lever_name in DM_module[key].keys():
                         DM_module_geo[key][lever_name] = {}
                         # If you have lever_value,
@@ -292,7 +292,7 @@ def filter_geoscale(global_vars):
                                     dm = DM_module[key][lever_name][group][level_val]
                                     dm_geo = dm.filter_w_regex({'Country': geo_pattern})
                                     DM_module_geo[key][lever_name][group][level_val] = dm_geo
-                if key == 'ots':
+                elif key == 'ots':
                     for lever_name in DM_module[key].keys():
                         # if there are groups
                         if isinstance(DM_module[key][lever_name], dict):
@@ -306,10 +306,11 @@ def filter_geoscale(global_vars):
                             dm = DM_module[key][lever_name]
                             dm_geo = dm.filter_w_regex({'Country': geo_pattern})
                             DM_module_geo[key][lever_name] = dm_geo
-                if key == 'constant':
+                elif key == 'constant':
                     DM_module_geo[key] = DM_module[key]
                 else:
-                    raise ValueError('pickle can only contain fxa, ots, fts, constant and calibration as dictionary key')
+                    raise ValueError(f'pickle can only contain fxa, ots, fts, constant and calibration '
+                                     f'as dictionary key, error in file {file}, for key {key}')
 
             current_file_directory = os.path.dirname(os.path.abspath(__file__))
             path_geo = os.path.join(current_file_directory, '../../_database/data/datamatrix/geoscale/')
