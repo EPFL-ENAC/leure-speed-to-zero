@@ -147,21 +147,25 @@ def sum_over_techs(dm, category_with_techs,
                                            'lime-lime', 'mae-tech', 'ois-tech','textiles-tech', 
                                            'tra-equip-tech', 'wwp-tech']):
 
-    # activity with different techs
-    dm_out = dm.filter({category_with_techs : material_tech_multi})
-    variables_new = [rename_tech_fordeepen(i) for i in material_tech_multi]
-    for i in range(len(material_tech_multi)):
-        dm_out.rename_col(material_tech_multi[i], variables_new[i], category_with_techs)
-    dm_out.deepen(based_on = category_with_techs)
-    category_last = np.array(dm_out.dim_labels)[-1]
-    dm_out.group_all(category_last, inplace = True)
+    if material_tech_multi is not None:
+        # activity with different techs
+        dm_out = dm.filter({category_with_techs : material_tech_multi})
+        variables_new = [rename_tech_fordeepen(i) for i in material_tech_multi]
+        for i in range(len(material_tech_multi)):
+            dm_out.rename_col(material_tech_multi[i], variables_new[i], category_with_techs)
+        dm_out.deepen(based_on = category_with_techs)
+        category_last = np.array(dm_out.dim_labels)[-1]
+        dm_out.group_all(category_last, inplace = True)
     
     # append the other activities
     dm_out_sub = dm.filter({category_with_techs : material_tech_single})
     variables_new = [re.split("-", i)[0] for i in material_tech_single]
     for i in range(len(material_tech_single)):
         dm_out_sub.rename_col(material_tech_single[i], variables_new[i], category_with_techs)
-    dm_out.append(dm_out_sub, category_with_techs)
+    if material_tech_multi is not None:
+        dm_out.append(dm_out_sub, category_with_techs)
+    else:
+        dm_out = dm_out_sub
     dm_out.sort(category_with_techs)
     
     # return
@@ -466,7 +470,7 @@ def sum_over_techs(dm, category_with_techs,
 #     'fxa': dict_fxa,
 #     'fts': dict_fts,
 #     'ots': dict_ots,
-#     'cal': dm_cal,
+#     'calibration': dm_cal,
 #     "constant" : cdm_const
 # }
 
@@ -493,9 +497,9 @@ industry_data_file = os.path.join(current_file_directory, '../_database/data/dat
 # lever setting
 f = open(os.path.join(current_file_directory, '../config/lever_position.json'))
 lever_setting = json.load(f)[0]
-# lever_setting["lever_energy-carrier-mix"] = 3
-# lever_setting["lever_cc"] = 3
-# lever_setting["lever_material-switch"] = 3
+lever_setting["lever_energy-carrier-mix"] = 3
+lever_setting["lever_cc"] = 3
+lever_setting["lever_material-switch"] = 3
 
 # load dm
 with open(industry_data_file, 'rb') as handle:
@@ -508,7 +512,7 @@ DM_fxa = DM_industry['fxa']
 DM_ots_fts = read_level_data(DM_industry, lever_setting)
 
 # get calibration
-dm_cal = DM_industry['cal']
+dm_cal = DM_industry['calibration']
 
 # get constants
 cdm_const = DM_industry['constant']
@@ -1567,6 +1571,11 @@ dm_material_techshare_sub = DM_material_production["bytech"].filter({"Categories
 dm_material_techshare_sub.array = dm_material_techshare_sub.array * 1000
 dm_material_techshare_sub.units["material-production"] = "kt"
 
+# dm_activity = dm_material_techshare_sub
+# cdm_cost = cdm_cost_sub
+# cost_type = "capex"
+# baseyear = 2015
+
 # get costs
 dm_material_techshare_sub_capex = cost(dm_activity = dm_material_techshare_sub, cdm_cost = cdm_cost_sub, 
                                        dm_price_index = dm_price_index, cost_type = "capex")
@@ -1595,6 +1604,12 @@ dm_emissions_capt_w_cc_sub.units["CO2-capt-w-cc"] = "t"
 # get costs
 dm_emissions_capt_w_cc_sub_capex = cost(dm_activity = dm_emissions_capt_w_cc_sub, cdm_cost = cdm_cost_sub, 
                                               dm_price_index = dm_price_index, cost_type = "capex")
+
+# df = dm_material_techshare_sub_capex.write_df()
+# import plotly.io as pio
+# pio.renderers.default='browser'
+# dm_activity.datamatrix_plot({"Variables" : "d-factor"})
+
 dm_emissions_capt_w_cc_sub_opex = cost(dm_activity = dm_emissions_capt_w_cc_sub, cdm_cost = cdm_cost_sub, 
                                              dm_price_index = dm_price_index, cost_type = "opex")
 
