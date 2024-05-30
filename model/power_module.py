@@ -629,7 +629,7 @@ def hourly_production_workflow(dm_production_np, dm_production_p, DM_production_
     ######################################
 
     dm_yearly_production_other = dm_production_np.filter({'Categories1':['total']})
-    ay_hourly_profile_total = np.nansum(dm_profile_hourly.array[...],axis=2)
+    ay_hourly_profile_total = np.sum(dm_profile_hourly.array[...],axis=2)
     dm_profile_hourly.add(ay_hourly_profile_total,dim='Variables', col_label='pow_total-profile',unit='GWh')
 
     idx_year = dm_yearly_production_other.idx
@@ -826,7 +826,7 @@ def hourly_demand_workflow(DM_yearly_demand, DM_demand_profiles):
     dm_yearly_demand_other.add(ay_yearly_demand_other, dim='Variables', col_label='grand-total-other')
 
     # Hourly profiles aggregation
-    ay_hourly_profile_total = np.nansum(dm_profile_hourly.array[...],axis=2)
+    ay_hourly_profile_total = np.sum(dm_profile_hourly.array[...],axis=2)
     dm_profile_hourly.add(ay_hourly_profile_total,dim='Variables', col_label='pow_total-profile',unit='GWh')
 
     idx_year = dm_yearly_demand_other.idx
@@ -861,15 +861,19 @@ def storage_workflow(dm_hourly_demand, dm_hourly_production):
     # CalculationLeafs - Hourly residual demand [GWh]
     ######################################
 
-    #ToDo: residual and MAx function to see with Paola
-    dm_residual_demand = np.minimum(dm_hourly_equilibrium, 0)
-    dm_hourly_equilibrium.append(dm_residual_demand, dim='Variables')
+    ay_residual_demand = -np.where(np.isnan(dm_hourly_equilibrium.array), dm_hourly_equilibrium.array,
+             np.fmin(dm_hourly_equilibrium.array, 0))
 
     ######################################
     # CalculationLeafs - Hourly residual supply [GWh]
     ######################################
+    idx_he = dm_hourly_equilibrium.idx
 
-    dm_residual_supply = np.maximum(dm_hourly_equilibrium, 0)
+    ay_residual_supply = np.where(np.isnan(dm_hourly_equilibrium.array), dm_hourly_equilibrium.array,
+                                 np.fmax(dm_hourly_equilibrium.array, 0))
+    dm_hourly_equilibrium.array[:,:,idx_he['sto_hourly-equilibrium'],np.newaxis,...] = ay_residual_supply
+    dm_hourly_equilibrium.rename_col('sto_hourly-equilibrium','sto_residual-supply', dim='Variables')
+    dm_hourly_equilibrium.add(ay_residual_demand, dim='Variables', col_label='sto_residual-demand', unit='GWh')
 
     return dm_hourly_equilibrium
 
