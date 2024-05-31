@@ -30,7 +30,7 @@ import copy
 
 class DataMatrix:
 
-    def __init__(self, col_labels={}, units={}):
+    def __init__(self, col_labels={}, units={}, idx={}):
         self.array = None
         self.dim_labels = ["Country", "Years", "Variables"]  # list
         self.col_labels = copy.deepcopy(col_labels)  # dictionary with dim_labels[i] as key
@@ -38,7 +38,7 @@ class DataMatrix:
             cat_num = str(i + 1)
             self.dim_labels.append('Categories'+cat_num)
         self.units = copy.deepcopy(units)  # dictionary
-        if len(col_labels) > 0:
+        if len(col_labels) > 0 and len(idx) == 0:
             self.idx = self.index_all()
 
     def __repr__(self):
@@ -186,6 +186,59 @@ class DataMatrix:
         dm.extract_structure(df, num_cat)
         dm.read_data(df, num_cat)
         return dm
+
+    @classmethod
+    def based_on(cls, array, format, change={}, units={}):
+        # Creates a datamatrix given an array and a datamatrix (based_on) from which to take the structure
+        # If the structure differ, you can define in a dictionary (change) with the dimension that differ,
+        # for example:
+        # dm_new = DataMatrix.based_on(arr, dm_ref, {'Variables': ['new_var1', new_var2'], 'Categories2': None},
+        #                              units = {'new_var1': 'TWh', 'new_var2': 'GWh'})
+        dm = format
+        #col_labels = copy.deepcopy(dm.col_labels)
+        col_labels = {}
+        for key, value in dm.col_labels.items():
+            col_labels[key] = value.copy()
+        dim_labels = dm.dim_labels.copy()
+        new_units = dm.units.copy()
+        idx = dm.idx.copy()
+        for dim in change:
+            if dim in col_labels:
+                new_labels = change[dim]
+                # Either drop the dimension
+                if new_labels is None:
+                    dim_labels.remove(dim)
+                    for col in col_labels[dim]:
+                        idx.pop(col)
+                    col_labels.pop(dim)
+                # Or modify the dimension
+                else:
+                    if isinstance(new_labels, list):
+                        for col in col_labels[dim]:
+                            idx.pop(col)
+                        col_labels[dim] = new_labels
+                        for (i, new_col) in enumerate(new_labels):
+                            idx[new_col] = i
+                        if dim == 'Variables':
+                            new_units = [units[new_col] for new_col in new_labels]
+                    else:
+                        raise ValueError(f'The argument change can only be a list or None')
+            else:
+                num_cat = dim[-1]  # extract the categorie number that they want to add
+                current_cat = dim_labels[-1][-1]
+                if int(num_cat) != int(current_cat) + 1:
+                    raise ValueError(f'You can add Categories{int(current_cat) + 1} not {dim}')
+                dim_labels.append(dim)
+                col_labels[dim] = change[dim]
+                for (i, new_col) in enumerate(change[dim]):
+                    idx[new_col] = i
+        dm_new = DataMatrix(col_labels, new_units, idx)
+        dm_new.array = array
+        for i, dim in enumerate(dim_labels):
+            if len(col_labels[dim]) != array.shape[i]:
+                raise ValueError(f'Mismatch between array shape and col_labels for dim={dim}')
+
+        return dm_new
 
     def read_data_0cat(self, df):
         # use read_data instead
