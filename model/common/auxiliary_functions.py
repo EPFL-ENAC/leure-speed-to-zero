@@ -516,23 +516,23 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
     activity_last_cat = dm_activity.dim_labels[-1]
     activity_name = dm_activity.col_labels["Variables"][0]
     activity_unit = dm_activity.units[activity_name]
-    cost_unit_denominator = re.split("/",cdm_cost.units["unit-cost-baseyear"])[1]
+    cost_unit_denominator = re.split("/", cdm_cost.units["unit-cost-baseyear"])[1]
     years = dm_activity.col_labels["Years"]
     years_na = np.array(years)[[i < baseyear for i in years]].tolist()
     
     # include variables in cdm_cost inside dm_activity
     dm_activity = dm_activity.copy()
-    dm_activity.add(1, dim = "Variables", col_label = "ones", dummy = True)
+    dm_activity.add(1, dim="Variables", col_label="ones", dummy=True)
     variables = cdm_cost.col_labels["Variables"]
     idx = dm_activity.idx
     idx_cdm = cdm_cost.idx
     # !FIXME: adjust keep_LE to work with constant instead of dm_activity
-    arr_temp = (cdm_cost.array[idx_cdm['d-factor']] * dm_activity.array[:,:,idx["ones"],...])
-    dm_activity.add(arr_temp[:,:,np.newaxis,...], dim = "Variables", col_label = 'd-factor')
+    arr_temp = (cdm_cost.array[idx_cdm['d-factor']] * dm_activity.array[:, :, idx["ones"], ...])
+    dm_activity.add(arr_temp[:, :, np.newaxis, ...], dim="Variables", col_label='d-factor')
     idx_temp = dm_activity.idx
-    dm_activity.array[:,[idx_temp[y] for y in years_na],idx_temp['d-factor'],...] = np.nan
+    dm_activity.array[:, [idx_temp[y] for y in years_na], idx_temp['d-factor'], ...] = np.nan
 
-    dm_activity.drop(dim="Variables", col_label = "ones")
+    dm_activity.drop(dim="Variables", col_label="ones")
     
     # error if unit is not the same
     if cost_unit_denominator != activity_unit:
@@ -546,8 +546,8 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
     
     # keep only variables that have evolution-method == 2 or 3
     idx = cdm_cost.idx
-    keep_LR = ((cdm_cost.array[idx["evolution-method"],:] == 2) | \
-               (cdm_cost.array[idx["evolution-method"],:] == 3)).tolist()
+    keep_LR = ((cdm_cost.array[idx["evolution-method"], :] == 2) | \
+               (cdm_cost.array[idx["evolution-method"], :] == 3)).tolist()
         
     if any(keep_LR):
         keep = np.array(dm_activity.col_labels[activity_last_cat])[keep_LR].tolist()
@@ -563,7 +563,7 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
         # learning = cumulated activity ^ b_factor
         arr_temp = (dm_activity_LR.array[:, :, idx_a_LR[activity_name], ...]\
                    ** cdm_cost_LR.array[np.newaxis, np.newaxis, idx_c_LR["b-factor"], ...])
-        dm_activity_LR.add(arr_temp, dim = "Variables", col_label = "learning", unit=activity_unit)
+        dm_activity_LR.add(arr_temp, dim="Variables", col_label="learning", unit=activity_unit)
 
         # a_factor = unit_cost_baseyear / learning
         arr_temp = cdm_cost_LR.array[np.newaxis, np.newaxis, idx_c_LR["unit-cost-baseyear"], ...] \
@@ -610,11 +610,11 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
     if any(keep_LE) and any(keep_LR):
         dm_cost_LR.append(dm_cost_LE, activity_last_cat)
         dm_cost_LR.sort(activity_last_cat)
-        dm_cost.append(dm_cost_LR, dim = "Variables")
+        dm_cost.append(dm_cost_LR, dim="Variables")
     if not any(keep_LR):
-        dm_cost.append(dm_cost_LE, dim = "Variables")
+        dm_cost.append(dm_cost_LE, dim="Variables")
     if not any(keep_LE):
-        dm_cost.append(dm_cost_LR, dim = "Variables")
+        dm_cost.append(dm_cost_LR, dim="Variables")
     
     #################
     ##### COSTS #####
