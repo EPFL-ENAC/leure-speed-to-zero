@@ -378,13 +378,11 @@ def bld_floor_area_workflow(DM_floor_area, dm_lfs, baseyear):
     dm_surface.add(arr_surf_renovated, dim='Variables', col_label='bld_renovated-surface-area', unit='Mm2')
     dm_surface.add(arr_surf_constructed, dim='Variables', col_label='bld_constructed-surface-area', unit='Mm2')
     # Save area constructed in output for industry
-    ref_cols = dm_floor_area.col_labels
-    col_labels = {'Country': ref_cols['Country'], 'Years': ref_cols['Years'],
-                  'Variables': ['bld_floor-area-constructed'], 'Categories1': ref_cols['Categories1']}
-    dm_constructed = DataMatrix(col_labels, units={'bld_constructed-area': 'Mm2'})
-    dm_constructed.array = arr_constructed[:, :, np.newaxis, :]
+    dm_constructed = DataMatrix.based_on(arr_constructed[:, :, np.newaxis, ...], format=dm_floor_area,
+                                         change={'Variables': ['bld_floor-area-constructed']},
+                                         units={'bld_floor-area-constructed': 'Mm2'})
 
-    del arr_surf_constructed, arr_constructed, arr_demolition, arr_renovated, arr_surf_renovated, ref_cols, col_labels
+    del arr_surf_constructed, arr_constructed, arr_demolition, arr_renovated, arr_surf_renovated
 
     ### END OF MATERIALS
     # Save renovated area for Costs
@@ -1149,8 +1147,7 @@ def buildings(lever_setting, years_setting, interface=Interface()):
                                                                     cdm_const)
 
     # 'District-heating' module interface
-    dm_dhg = bld_district_heating_interface(DM_energy_out['district-heating'], write_xls=True)
-
+    dm_dhg = bld_district_heating_interface(DM_energy_out['district-heating'], write_xls=False)
     interface.add_link(from_sector='buildings', to_sector='district-heating', dm=dm_dhg)
 
     dm_power = DM_appliances_out['power']
