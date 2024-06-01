@@ -40,6 +40,8 @@ class DataMatrix:
         self.units = copy.deepcopy(units)  # dictionary
         if len(col_labels) > 0 and len(idx) == 0:
             self.idx = self.index_all()
+        elif len(idx)>0:
+            self.idx = idx
 
     def __repr__(self):
         
@@ -220,7 +222,7 @@ class DataMatrix:
                         for (i, new_col) in enumerate(new_labels):
                             idx[new_col] = i
                         if dim == 'Variables':
-                            new_units = [units[new_col] for new_col in new_labels]
+                            new_units = units
                     else:
                         raise ValueError(f'The argument change can only be a list or None')
             else:

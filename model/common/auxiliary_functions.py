@@ -498,7 +498,7 @@ def calibration_rates(dm, dm_cal, calibration_start_year = 1990, calibration_end
     # return
     return dm_cal_sub
 
-def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
+def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015, unit_cost=True):
 
     if len(dm_activity.col_labels["Variables"]) > 1:
         raise ValueError("This function works only for one activity at the time")
@@ -626,10 +626,12 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015):
     arr_temp = np.moveaxis(arr_temp, 0, -1)
     arr_temp = dm_price_index.array[:, 0, 0] * arr_temp
     arr_temp = np.moveaxis(arr_temp, -1, 0)
-    dm_cost.add(arr_temp, dim="Variables", col_label="cost", unit="MEUR")
-    dm_cost.drop("Variables", activity_name)
-    dm_cost.rename_col_regex(str1="cost", str2=cost_type, dim="Variables")
-    
-    # return
-    return dm_cost
-
+    if unit_cost:
+        dm_cost.add(arr_temp, dim="Variables", col_label=cost_type, unit="MEUR")
+        dm_cost.drop("Variables", activity_name)
+        # return
+        return dm_cost
+    else:
+        dm_out = DataMatrix.based_on(arr_temp[:, :, np.newaxis, ...], format=dm_cost,
+                                     change={'Variables': [cost_type]}, units={cost_type: 'MEUR'})
+        return dm_out
