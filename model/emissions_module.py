@@ -75,7 +75,6 @@ def database_from_csv_to_datamatrix():
     
     # TODO: note that ems-after-2050 is used only in the more complex computation of CO2e, which is currently not done
     # here, but it's done in KNIME. We will use it when we'll implement this more complex computation also in python.
-    # For the moment I exclude ots and fts in the pickle
 
     dict_ots = {}
     dict_fts = {}
@@ -93,7 +92,7 @@ def database_from_csv_to_datamatrix():
     years_all = years_ots + years_fts
     
     # get file
-    file = 'emissions_post-2050-emissions'
+    file = 'climate_post-2050-emissions'
     lever = "ems-after-2050"
     dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=0, baseyear=baseyear,
                                                         years=years_all, dict_ots=dict_ots, dict_fts=dict_fts)
@@ -113,28 +112,6 @@ def database_from_csv_to_datamatrix():
         dm_temp.add(arr_temp, "Country", "EU27")
         dm_temp.add(arr_temp, "Country", "Vaud")
         dm_temp.sort("Country")
-        
-    ##### climate impact space cooling #####
-    
-    # Set years range
-    years_setting = [1990, 2015, 2050, 5]
-    startyear = years_setting[0]
-    baseyear = years_setting[1]
-    lastyear = years_setting[2]
-    step_fts = years_setting[3]
-    years_ots = list(np.linspace(start=startyear, stop=baseyear, num=(baseyear-startyear)+1).astype(int)) # make list with years from 1990 to 2015
-    years_fts = list(np.linspace(start=baseyear+step_fts, stop=lastyear, num=int((lastyear-baseyear)/step_fts)).astype(int)) # make list with years from 2020 to 2050 (steps of 5 years)
-    years_all = years_ots + years_fts
-    
-    # get file
-    file = 'emissions_temperature-eu29'
-    lever = "temp"
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[0, 0], baseyear=baseyear,
-                                                                years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
-                                                                column='eucalc-name', group_list=[
-                                                                            'bld_climate-impact-space',
-                                                                            'bld_climate-impact_average'
-                                                                            ])
     
 
     ################
@@ -142,9 +119,9 @@ def database_from_csv_to_datamatrix():
     ################
 
     DM_emissions = {
-        'fxa': dict_fxa,
-        'fts': dict_fts,
-        'ots': dict_ots,
+        'fxa': dict_fxa
+        # 'fts': dict_fts,
+        # 'ots': dict_ots,
     }
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -168,8 +145,8 @@ def read_data(data_file, lever_setting):
     # get fxa
     DM_fxa = DM_emissions['fxa']
         
-    # Get ots fts based on lever_setting (excluded for the moment)
-    DM_ots_fts = read_level_data(DM_emissions, lever_setting)
+    # # Get ots fts based on lever_setting (excluded for the moment)
+    # DM_ots_fts = read_level_data(DM_emissions, lever_setting)
 
     # # get calibration
     # dm_cal = DM_emissions['calibration']
@@ -178,7 +155,7 @@ def read_data(data_file, lever_setting):
     del handle, DM_emissions, data_file
     
     # return
-    return DM_fxa, DM_ots_fts
+    return DM_fxa
 
 def emissions_equivalent(DM_interface, DM_fxa):
     
@@ -372,26 +349,12 @@ def variables_for_tpe(dm_ems):
         
     return dm_tpe
 
-def emissions_buildings_interface(DM_ots_fts, write_xls = False):
-    
-    dm_bld = DM_ots_fts["temp"]["bld_climate-impact-space"]
-    dm_bld.append(DM_ots_fts["temp"]["bld_climate-impact_average"], "Variables")
-        
-    # df_bld
-    if write_xls is True:
-        current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        df_bld = dm_bld.write_df()
-        df_bld.to_excel(current_file_directory + "/../_database/data/xls/" + 'emissions-to-buildings.xlsx', index=False)
-
-    # return
-    return dm_bld
-
 def emissions(lever_setting, years_setting, interface = Interface(), calibration = False):
     
     # emissions data file
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     emissions_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/emissions.pickle')
-    DM_fxa, DM_ots_fts = read_data(emissions_data_file, lever_setting)
+    DM_fxa = read_data(emissions_data_file, lever_setting)
     
     # get / simulate interfaces
     DM_interface = {}
@@ -415,10 +378,6 @@ def emissions(lever_setting, years_setting, interface = Interface(), calibration
     dm_tpe = variables_for_tpe(dm_ems)
     results_run = dm_tpe.write_df()
     
-    # interface buildings
-    dm_bld = emissions_buildings_interface(DM_ots_fts)
-    interface.add_link(from_sector='emissions', to_sector='buildings', dm=dm_bld)
-    
     # return
     return results_run
 
@@ -429,8 +388,6 @@ def local_emissions_run():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     f = open(os.path.join(current_file_directory, '../config/lever_position.json'))
     lever_setting = json.load(f)[0]
-    lever_setting["lever_ems-after-2050"] = 4
-    # TODO: comment out the line above when you are done
     
     # get geoscale
     global_vars = {'geoscale': '.*'}
@@ -442,8 +399,8 @@ def local_emissions_run():
     # return
     return results_run
 
-# run local
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/emissions_module.py"
-database_from_csv_to_datamatrix()
-results_run = local_emissions_run()
+# # run local
+# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/emissions_module.py"
+# # database_from_csv_to_datamatrix()
+# results_run = local_emissions_run()
 
