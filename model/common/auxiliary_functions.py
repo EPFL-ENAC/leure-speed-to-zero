@@ -378,9 +378,39 @@ def simulate_input(from_sector, to_sector):
     dm = DataMatrix.create_from_df(df, num_cat=0)
     return(dm)
 
-def get_mindec(dm, cdm):
+def material_decomposition(dm, cdm):
+    
+    # raise error
+    if len(dm.dim_labels) <= 3:
+        raise ValueError("This function works only for dm with categories")
+    if len(dm.dim_labels) >= 5:
+        raise ValueError("This function works only for dm with maximum 2 categories")
+    
+    # get col names
+    if len(dm.dim_labels) == 4:
+        
+        # raise error
+        if dm.col_labels["Categories1"] != cdm.col_labels["Categories1"]:
+            raise ValueError("Put product in the same category for both dm and cdm")
+        
+        # sort
+        dm.sort("Categories1")
+        cdm.sort("Categories2")
+        
+        # col names
+        cols = {"Country" : dm.col_labels["Country"],
+                "Years" : dm.col_labels["Years"],
+                "Variables" : ["material-decomposition"],
+                "Categories1" : dm.col_labels["Categories1"],
+                "Categories2" : cdm.col_labels["Categories2"]
+                }
     
     if len(dm.dim_labels) == 5:
+        
+        # raise error
+        if dm.col_labels["Categories2"] != cdm.col_labels["Categories2"]:
+            raise ValueError("Put product in the same category for both dm and cdm")
+        
         # sort
         dm.sort("Categories1")
         dm.sort("Categories2")
@@ -389,23 +419,10 @@ def get_mindec(dm, cdm):
         # col names
         cols = {"Country" : dm.col_labels["Country"],
                 "Years" : dm.col_labels["Years"],
-                "Variables" : ["mineral-decomposition"],
+                "Variables" : ["material-decomposition"],
                 "Categories1" : dm.col_labels["Categories1"],
                 "Categories2" : dm.col_labels["Categories2"],
                 "Categories3" : cdm.col_labels["Categories2"]
-                }
-    
-    if len(dm.dim_labels) == 4:
-        # sort
-        dm.sort("Categories1")
-        cdm.sort("Categories2")
-        
-        # col names
-        cols = {"Country" : dm.col_labels["Country"],
-                "Years" : dm.col_labels["Years"],
-                "Variables" : ["mineral-decomposition"],
-                "Categories1" : dm.col_labels["Categories1"],
-                "Categories2" : cdm.col_labels["Categories2"]
                 }
     
     # dim labels
@@ -423,9 +440,9 @@ def get_mindec(dm, cdm):
     # unit
     unit = cdm.units
     key_old = list(unit)[0]
-    unit["mineral-decomposition"] = unit.pop(key_old)
+    unit["material-decomposition"] = unit.pop(key_old)
     value_old = list(unit.values())[0]
-    unit["mineral-decomposition"] = value_old.split("/")[0]
+    unit["material-decomposition"] = value_old.split("/")[0]
     
     # data matrix
     dm_out = DataMatrix(col_labels=cols, units=unit)
@@ -635,3 +652,76 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015, unit
         dm_out = DataMatrix.based_on(arr_temp[:, :, np.newaxis, ...], format=dm_cost,
                                      change={'Variables': [cost_type]}, units={cost_type: 'MEUR'})
         return dm_out
+
+def material_switch(dm, dm_ots_fts, cdm_const, material_in, material_out, product, 
+                    switch_percentage_prefix, switch_ratio_prefix, dict_for_output = None):
+    
+    # this function does a material switch between materials
+    # dm contains the data on the products' material decomposition (obtained with the function material_decomposition())
+    # dm_ots_fts contains the lever data with the material switch percentages
+    # cdm_const constains all the constants
+    # material_in is the material that will be switched from
+    # material_out is the material that will be swiched to
+    # product is the product for which we are doing the material switch
+    # switch_percentage_prefix is the prefix for the product in the dm_ots_fts
+    # switch_ratio_prefix is the prefix for the material switch ratio in cdm_const
+    # dict_for_output is an optional dictionary where the function saves variables that will be used for material switch impact in emissions in industry
+    # note that this function overwrites directly into the dm.
+    
+    # get constants
+    material_in_to_out = [material_in + "-to-" + i for i in material_out]
+    product_category = dm.dim_labels[-2]
+    material_category = dm.dim_labels[-1]
+
+    # if one of the materials out is not in data, create it
+    idx_matindata = [i in dm.col_labels[material_category] for i in material_out]
+    if not all(idx_matindata):
+        dm.add(np.nan, dim = material_category, col_label = np.array(material_out)[[not i for i in idx_matindata]].tolist(), dummy = True)
+        dm.sort(material_category)
+    
+    # get material in and material out
+    dm_temp = dm.filter({product_category : [product]})
+    dm_temp = dm_temp.filter({material_category : [material_in] + material_out})
+    
+    # get switch percentages
+    dm_temp2 = dm_ots_fts.filter({product_category : [switch_percentage_prefix + i for i in material_in_to_out]})
+    
+    # get switch ratios
+    dm_temp3 = cdm_const.filter({"Variables" : [switch_ratio_prefix + i for i in material_in_to_out]})
+    
+    # get materials out
+    idx = dm.idx
+    idx_temp = dm_temp.idx
+    idx_temp2 = dm_temp2.idx
+    idx_temp3 = dm_temp3.idx
+    for i in range(len(material_out)):
+        
+        # get material in-to-out
+        arr_temp = dm_temp.array[:,:,:,:,idx_temp[material_in]] * \
+            dm_temp2.array[:,:,:,idx_temp2[switch_percentage_prefix + material_in_to_out[i]],np.newaxis]
+        dm_temp.add(arr_temp, dim = material_category, col_label = material_in_to_out[i])
+        dm_temp.add(arr_temp * -1, dim = material_category, col_label = material_in_to_out[i] + "_minus")
+        
+        # get material in-to-out-times-switch-ratio
+        arr_temp = dm_temp.array[:,:,:,:,idx_temp[material_in_to_out[i]]] * \
+            dm_temp3.array[idx_temp3[switch_ratio_prefix + material_in_to_out[i]]]
+        dm_temp.add(arr_temp, dim = material_category, col_label = material_in_to_out[i] + "_times_ratio")
+        
+        # get material out
+        if idx_matindata[i]:
+            dm_temp4 = dm_temp.filter({material_category : [material_out[i], material_in_to_out[i] + "_times_ratio"]})
+            dm.array[:,:,:,idx[product],idx[material_out[i]]] = np.nansum(dm_temp4.array[:,:,0,:,:], axis = -1)
+        else:
+            dm_temp4 = dm_temp.filter({material_category : [material_in_to_out[i] + "_times_ratio"]})
+            dm.array[:,:,:,idx[product],idx[material_out[i]]] = dm_temp4.array[:,:,0,0,:]
+        
+    # get material in and write
+    dm_temp4 = dm_temp.filter({material_category : [material_in] + [i + "_minus" for i in material_in_to_out]})
+    dm.array[:,:,:,idx[product],idx[material_in]] = np.nansum(dm_temp4.array[:,:,0,:,:], axis = -1)
+    
+    # get material in-to-out and write
+    if dict_for_output is not None:
+        dict_for_output[product + "_" + material_in_to_out[0]] = dm_temp.filter({material_category : material_in_to_out})
+        
+    return
+
