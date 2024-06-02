@@ -10,10 +10,11 @@ import os  # operating system (e.g., look for workspace)
 from model.common.data_matrix_class import DataMatrix  # Class for the model inputs
 from model.common.constant_data_matrix_class import ConstantDataMatrix  # Class for the constant inputs
 from model.common.auxiliary_functions import read_level_data
+from model.common.interface_class import Interface
 
 # ImportFunctions
 from model.common.io_database import read_database, read_database_fxa  # read functions for levers & fixed assumptions
-from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups
+from model.common.auxiliary_functions import filter_geoscale, read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups
 
 
 # filtering the constants & read csv and prepares it for the pickle format
@@ -31,36 +32,31 @@ def init_years_lever():
 
 # Setting up the database in the module
 def database_from_csv_to_datamatrix():
-    years_setting = [1990, 2015, 2050, 5]  # Set the timestep for historical years & scenarios
-    startyear: int = years_setting[0]  # Start year is argument [0], i.e., 1990
-    baseyear: int = years_setting[1]  # Base/Reference year is argument [1], i.e., 2015
-    lastyear: int = years_setting[2]  # End/Last year is argument [2], i.e., 2050
-    step_fts = years_setting[3]  # Timestep for scenario is argument [3], i.e., 5 years
-    years_ots = list(
-        np.linspace(start=startyear, stop=baseyear, num=(baseyear - startyear) + 1).astype(int))
-    # Defines the part of dataset that is historical years
-    years_fts = list(
-        np.linspace(start=baseyear + step_fts, stop=lastyear, num=int((lastyear - baseyear) / step_fts)).astype(int))
-    # Defines the part of dataset that is scenario
-    years_all = years_ots + years_fts  # Defines all years
+    
+    # Set years range
+    years_setting = [1990, 2015, 2100, 1]
+    startyear = years_setting[0]
+    baseyear = years_setting[1]
+    lastyear = years_setting[2]
+    step_fts = years_setting[3]
+    years_ots = list(np.linspace(start=startyear, stop=baseyear, num=(baseyear-startyear)+1).astype(int)) 
+    years_fts = list(np.linspace(start=baseyear+step_fts, stop=lastyear, num=int((lastyear-baseyear)/step_fts)).astype(int))
+    years_all = years_ots + years_fts
 
     # Initiate the dictionary for ots & fts
     dict_ots = {}
     dict_fts = {}
 
     # Data - Lever - Climate temperature
-    file = 'climate_temperature'  # File name to read
-    lever = 'temp'  # Lever name to match the JSON?
+    file = 'climate_temperature-eu29'
+    lever = "temp"
 
     # Creates the datamatrix for lifestyles population
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 0, 1, 0], baseyear=baseyear,
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[0, 0], baseyear=baseyear,
                                                                 years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
                                                                 column='eucalc-name', group_list=[
-                                                                            'clm_climate-impact-space',
-                                                                            'clm_climate-impact_average',
-                                                                            'clm_capacity-factor',
-                                                                            'clm_temp_global'
-                                                                            ])
+                                                                            'bld_climate-impact-space',
+                                                                            'bld_climate-impact_average'])
 
     #  Create the data matrix for lifestyles
     DM_climate = {
@@ -77,37 +73,16 @@ def database_from_csv_to_datamatrix():
 
     return DM_climate
 
-# Update/Create the Pickle
-# database_from_csv_to_datamatrix()  # un-comment to update
-
-    #  Reading the Pickle
 def read_data(data_file, lever_setting):
-    with open(data_file, 'rb') as handle:  # read binary (rb)
+    
+    # load dm
+    with open(data_file, 'rb') as handle:
         DM_climate = pickle.load(handle)
 
-    DM_ots_fts = read_level_data(DM_climate,
-                                 lever_setting)  # creates the datamatrix according to the lever setting?
+    # get lever
+    DM_ots_fts = read_level_data(DM_climate, lever_setting)
 
-    # Extract sub-data-matrices according to the flow (parallel)
-    # TPE sub-matrix (global temperature)
-    dm_temperature_global = DM_ots_fts['temp']['clm_temp_global']
-    dm_temperature_average = DM_ots_fts['temp']['clm_climate-impact_average']
-    #dm_space_heating = DM_ots_fts['temp']['clm_climate-impact-space-heating']
-    #dm_space_cooling = DM_ots_fts['temp']['clm_climate-impact-space-cooling']
-    # FIXME: split heating and colling or send all as dm_building
-    dm_space_buildings = DM_ots_fts['temp']['clm_climate-impact-space']
-    dm_energy = DM_ots_fts['temp']['clm_capacity-factor']
-
-    # Aggregated Data Matrix - Appliances
-
-    DM_climate_impact = {
-        'global-temp': dm_temperature_global,
-        'climate-impact': dm_temperature_average,
-        'heating-cooling': dm_space_buildings,
-        'capacity-factor': dm_energy
-    }
-
-    return DM_climate_impact
+    return DM_ots_fts
 
 def sum_emissions_by_gas(DM_interface):
     
@@ -222,46 +197,59 @@ def sum_emissions_by_gas(DM_interface):
     
     return dm_emi
 
-def climate_workflow(DM_climate_impact):
+def climate_buildings_interface(DM_ots_fts, write_xls = False):
+    
+    # append
+    dm_bld = DM_ots_fts["temp"]["bld_climate-impact-space"]
+    dm_bld.append(DM_ots_fts["temp"]["bld_climate-impact_average"], "Variables")
+        
+    # df_bld
+    if write_xls is True:
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        df_bld = dm_bld.write_df()
+        df_bld.to_excel(current_file_directory + "/../_database/data/xls/" + 'climate-to-buildings.xlsx', index=False)
 
-    # Global temperature
-    dm_temperature_global = DM_climate_impact['global-temp']
-    dm_temperature_average = DM_climate_impact['climate-impact']
-    dm_space_buildings = DM_climate_impact['heating-cooling']
-    dm_energy = DM_climate_impact[ 'capacity-factor']
-
-    return dm_temperature_global, dm_temperature_average, dm_space_buildings, dm_energy
+    # return
+    return dm_bld
 
 # CORE module
-def climate(lever_setting, years_setting):
+def climate(lever_setting, years_setting, interface = Interface(), calibration = False):
+    
+    # climate data file
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    climate_data_file = os.path.join(current_file_directory,
-                                        '../_database/data/datamatrix/geoscale/climate.pickle')
-    DM_climate_impact = read_data(climate_data_file, lever_setting)
+    climate_data_file = os.path.join(current_file_directory,'../_database/data/datamatrix/geoscale/climate.pickle')
+    DM_ots_fts = read_data(climate_data_file, lever_setting)
+    
+    # interface buildings
+    dm_bld = climate_buildings_interface(DM_ots_fts)
+    interface.add_link(from_sector='climate', to_sector='buildings', dm=dm_bld)
 
-    # To send to TPE (result run)
-    dm_temperature_global = climate_workflow(DM_climate_impact)
+    # TODO: interface water when water is ready
 
-    # To send to buildings (result run)
-    dm_space_buildings = climate_workflow(DM_climate_impact)
-
-    # To send to energy (result run)
-    dm_energy = climate_workflow(DM_climate_impact)
-
-    # TODO: To send to water when water will be done
-
-    # concatenate all results to df
-
-    results_run = dm_temperature_global
+    results_run = {}
     return results_run
 
 
 # Local run of lifestyles
 def local_climate_run():
+    
     # Initiate the year & lever setting
     years_setting, lever_setting = init_years_lever()
     climate(lever_setting, years_setting)
 
-    return
+    # get geoscale
+    global_vars = {'geoscale': '.*'}
+    filter_geoscale(global_vars)
 
-local_climate_run()  # to un-comment to run in local
+    # run
+    results_run = climate(lever_setting, years_setting)
+
+    return results_run
+
+# # local
+# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/climate_module.py"
+# # database_from_csv_to_datamatrix()
+# results_run = local_climate_run()
+
+
+
