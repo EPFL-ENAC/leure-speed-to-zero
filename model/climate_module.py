@@ -48,7 +48,7 @@ def database_from_csv_to_datamatrix():
     dict_fts = {}
 
     # Data - Lever - Climate temperature
-    file = 'climate_temperature-eu29'
+    file = 'climate_temperature'
     lever = "temp"
 
     # Creates the datamatrix for lifestyles population
