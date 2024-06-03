@@ -10,13 +10,16 @@ from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database, read_database_fxa, edit_database
 from model.common.interface_class import Interface
-from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm, read_database_to_ots_fts_dict, read_level_data, simulate_input, material_decomposition, calibration_rates, cost, material_switch
+from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm, read_database_to_ots_fts_dict, read_level_data
+from model.common.auxiliary_functions import simulate_input, material_decomposition, calibration_rates, cost
+from model.common.auxiliary_functions import material_switch
 import pickle
 import json
 import os
 import numpy as np
 import re
 import warnings
+import time
 warnings.simplefilter("ignore")
     
 def energy_switch(dm_energy_demand, dm_energy_carrier_mix, carrier_in, carrier_out, dm_energy_carrier_mix_prefix):
@@ -466,7 +469,7 @@ def apply_material_decomposition(DM_production, CDM_const):
     cdm_temp = CDM_const["material-decomposition"].filter_w_regex({"Variables":".*pipe.*"})
     # cdm_temp.rename_col_regex(str1 = "_dhg_",str2 = "-dhg-",dim = "Variables")
     cdm_temp.deepen_twice()
-    dm_bld_pipe_matdec = material_decomposition(dm = dm_temp, cdm = cdm_temp)
+    dm_bld_pipe_matdec = material_decomposition(dm=dm_temp, cdm=cdm_temp)
 
     # floor
     dm_temp = DM_production["bld-floor"]
@@ -474,14 +477,13 @@ def apply_material_decomposition(DM_production, CDM_const):
     # cdm_temp.rename_col_regex(str1 = "_new_",str2 = "-new-",dim = "Variables")
     # cdm_temp.rename_col_regex(str1 = "_reno_",str2 = "-reno-",dim = "Variables")
     cdm_temp.deepen_twice()
-    dm_bld_floor_matdec = material_decomposition(dm = dm_temp, cdm = cdm_temp)
+    dm_bld_floor_matdec = material_decomposition(dm = dm_temp, cdm=cdm_temp)
 
     # domestic appliance
     dm_temp = DM_production["bld-domapp"]
     cdm_temp = CDM_const["material-decomposition"].filter_w_regex({"Variables":".*computer.*|.*dishwasher.*|.*dryer.*|.*freezer.*|.*fridge.*|.*phone.*|.*tv.*|.*wmachine.*"})
     cdm_temp.deepen_twice()
-    dm_bld_domapp_matdec = material_decomposition(dm = dm_temp, cdm = cdm_temp)
-
+    dm_bld_domapp_matdec = material_decomposition(dm=dm_temp, cdm=cdm_temp)
     #####################
     ##### TRANSPORT #####
     #####################
@@ -490,13 +492,13 @@ def apply_material_decomposition(DM_production, CDM_const):
     dm_temp = DM_production["tra-infra"]
     cdm_temp = CDM_const["material-decomposition"].filter_w_regex({"Variables":".*rail.*|.*road.*|.*cable.*"})
     cdm_temp.deepen_twice()
-    dm_tra_infra_matdec = material_decomposition(dm = dm_temp, cdm = cdm_temp)
+    dm_tra_infra_matdec = material_decomposition(dm=dm_temp, cdm=cdm_temp)
 
     # veh
     dm_temp = DM_production["tra-veh"]
     cdm_temp = CDM_const["material-decomposition"].filter_w_regex({"Variables":".*car.*|.*truck.*|.*plane.*|.*ship.*|.*train.*"})
     cdm_temp.deepen_twice()
-    dm_tra_veh_matdec = material_decomposition(dm = dm_temp, cdm = cdm_temp)
+    dm_tra_veh_matdec = material_decomposition(dm=dm_temp, cdm=cdm_temp)
 
     ######################
     ##### LIFESTYLES #####
@@ -505,32 +507,32 @@ def apply_material_decomposition(DM_production, CDM_const):
     # lfs
     dm_temp = DM_production["lfs"].copy()
     cdm_temp = CDM_const["material-decomposition"].filter_w_regex({"Variables":".*pack.*|.*print.*|.*san.*"})
-    dm_temp.drop(dim = "Categories1", col_label = ['aluminium-pack']) # note: this should be 100% aluminium, to be seen if they get it back later
+    dm_temp.drop(dim="Categories1", col_label=['aluminium-pack']) # note: this should be 100% aluminium, to be seen if they get it back later
     cdm_temp.deepen_twice()
-    dm_lfs_matdec = material_decomposition(dm = dm_temp, cdm = cdm_temp)
+    dm_lfs_matdec = material_decomposition(dm=dm_temp, cdm=cdm_temp)
 
     ########################
     ##### PUT TOGETHER #####
     ########################
 
     dm_matdec = dm_bld_pipe_matdec
-    dm_matdec.append(dm_bld_floor_matdec, dim = "Categories1")
-    dm_matdec.append(dm_bld_domapp_matdec, dim = "Categories1")
-    dm_matdec.append(dm_tra_infra_matdec, dim = "Categories1")
-    dm_matdec.append(dm_tra_veh_matdec, dim = "Categories1")
-    dm_matdec.append(dm_lfs_matdec, dim = "Categories1")
+    dm_matdec.append(dm_bld_floor_matdec, dim="Categories1")
+    dm_matdec.append(dm_bld_domapp_matdec, dim="Categories1")
+    dm_matdec.append(dm_tra_infra_matdec, dim="Categories1")
+    dm_matdec.append(dm_tra_veh_matdec, dim="Categories1")
+    dm_matdec.append(dm_lfs_matdec, dim="Categories1")
 
     # TODO!: check if it's fine to call this material demand, as it's obtained from production variables
     DM_material_demand = {"material-demand" : dm_matdec}
-    DM_material_demand["material-demand"].drop("Categories2", ["ammonia","other"])
+    DM_material_demand["material-demand"].drop("Categories2", ["ammonia", "other"])
 
     # get material demand for appliances
     DM_material_demand["appliances"] = \
         DM_material_demand["material-demand"].filter(
-            {"Categories1" : ["computer","dishwasher","dryer",
-                              "freezer","fridge","tv"]}).group_all("Categories1", 
-                                                                   inplace = False)
-    DM_material_demand["appliances"].rename_col("material-decomposition","material-demand_appliances","Variables")
+            {"Categories1" : ["computer", "dishwasher", "dryer",
+                              "freezer", "fridge", "tv"]}).group_all("Categories1",
+                                                                   inplace=False)
+    DM_material_demand["appliances"].rename_col("material-decomposition", "material-demand_appliances", "Variables")
 
     # get material demand for transport
     DM_material_demand["transport"] = \
@@ -543,10 +545,10 @@ def apply_material_decomposition(DM_production, CDM_const):
     # get material demand for construction
     DM_material_demand["construction"] = \
         DM_material_demand["material-demand"].filter(
-            {"Categories1" : ['floor-area-new-non-residential', 'floor-area-new-residential',
+            {"Categories1": ['floor-area-new-non-residential', 'floor-area-new-residential',
                               'floor-area-reno-non-residential', 'floor-area-reno-residential',
                               'rail', 'road', 'trolley-cables']}).group_all("Categories1", inplace = False)
-    DM_material_demand["construction"].rename_col("material-decomposition","material-demand_construction","Variables")
+    DM_material_demand["construction"].rename_col("material-decomposition", "material-demand_construction", "Variables")
 
     # clean
     del dm_temp, cdm_temp, dm_bld_pipe_matdec, dm_bld_floor_matdec, dm_bld_domapp_matdec, \
@@ -1712,15 +1714,6 @@ def industry_district_heating_interface(DM_energy_demand, write_xls = False):
     # return
     return dm_dh
 
-def simulate_agriculture_to_industry_input():
-    # !FIXME: dm_agriculture (previously DM_demand['agr'] does not appear to be used anywhere
-    dm_agriculture = simulate_input(from_sector='agriculture', to_sector='industry')
-
-    dm_agriculture.rename_col_regex(str1 = "agr_", str2 = "agr_product-demand_", dim = "Variables")
-    dm_agriculture.deepen()
-
-    return dm_agriculture
-
 def simulate_transport_to_industry_input():
     dm_transport = simulate_input(from_sector='transport', to_sector='industry')
 
@@ -1795,12 +1788,6 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     industry_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/industry.pickle')
     DM_fxa, DM_ots_fts, dm_cal, CDM_const = read_data(industry_data_file, lever_setting)
-    
-    # get / simulate interfaces
-    if interface.has_link(from_sector='agriculture', to_sector='industry'):
-        dm_agriculture = interface.get_link(from_sector='agriculture', to_sector='industry')
-    else:
-        dm_agriculture = simulate_agriculture_to_industry_input()
 
     if interface.has_link(from_sector='transport', to_sector='industry'):
         DM_transport = interface.get_link(from_sector='transport', to_sector='industry')
