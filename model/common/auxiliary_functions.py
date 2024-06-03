@@ -376,89 +376,43 @@ def simulate_input(from_sector, to_sector):
     
     # get dm
     dm = DataMatrix.create_from_df(df, num_cat=0)
-    return(dm)
+    return dm
+
 
 def material_decomposition(dm, cdm):
-    
+    num_dim = len(dm.dim_labels)
     # raise error
-    if len(dm.dim_labels) <= 3:
-        raise ValueError("This function works only for dm with categories")
-    if len(dm.dim_labels) >= 5:
-        raise ValueError("This function works only for dm with maximum 2 categories")
-    
-    # get col names
-    if len(dm.dim_labels) == 4:
-        
-        # raise error
-        if dm.col_labels["Categories1"] != cdm.col_labels["Categories1"]:
-            raise ValueError("Put product in the same category for both dm and cdm")
-        
-        # sort
-        dm.sort("Categories1")
-        cdm.sort("Categories2")
-        
-        # col names
-        cols = {"Country" : dm.col_labels["Country"],
-                "Years" : dm.col_labels["Years"],
-                "Variables" : ["material-decomposition"],
-                "Categories1" : dm.col_labels["Categories1"],
-                "Categories2" : cdm.col_labels["Categories2"]
-                }
-    
-    if len(dm.dim_labels) == 5:
-        
-        # raise error
-        if dm.col_labels["Categories2"] != cdm.col_labels["Categories2"]:
-            raise ValueError("Put product in the same category for both dm and cdm")
-        
-        # sort
-        dm.sort("Categories1")
-        dm.sort("Categories2")
-        cdm.sort("Categories2")
-        
-        # col names
-        cols = {"Country" : dm.col_labels["Country"],
-                "Years" : dm.col_labels["Years"],
-                "Variables" : ["material-decomposition"],
-                "Categories1" : dm.col_labels["Categories1"],
-                "Categories2" : dm.col_labels["Categories2"],
-                "Categories3" : cdm.col_labels["Categories2"]
-                }
-    
-    # dim labels
-    dim_labels_new = list(cols)
-    
-    # idx
-    values = cols["Country"]
-    idx_new = dict(zip(iter(values), iter(list(range(0,len(values))))))
-    myrange = list(cols)[1:len(list(cols))]
-    for key in myrange:
-        values = cols[key]
-        mydict = dict(zip(iter(values), iter(list(range(0,len(values))))))
-        idx_new.update(mydict)
-    
+    if num_dim <= 3 or num_dim >= 5:
+        raise ValueError("This function works only for dm with categories (max 2)")
+
     # unit
     unit = cdm.units
     key_old = list(unit)[0]
     unit["material-decomposition"] = unit.pop(key_old)
     value_old = list(unit.values())[0]
     unit["material-decomposition"] = value_old.split("/")[0]
-    
-    # data matrix
-    dm_out = DataMatrix(col_labels=cols, units=unit)
-    dm_out.idx = idx_new
-    dm_out.dim_labels = dim_labels_new
-    
-    # get array
-    if len(dm.dim_labels) == 5:
-        arr = dm.array[...,np.newaxis] * cdm.array[np.newaxis,np.newaxis,:,:,np.newaxis,:]
-    if len(dm.dim_labels) == 4:
-        arr = dm.array[...,np.newaxis] * cdm.array[np.newaxis,np.newaxis,:,:,:]
-    
-    # insert array
-    dm_out.array = arr
-    
+
+    # get col names
+    if num_dim == 4:
+        # raise error
+        if dm.col_labels["Categories1"] != cdm.col_labels["Categories1"]:
+            raise ValueError("Put product in the same category for both dm and cdm")
+
+        arr = dm.array[..., np.newaxis] * cdm.array[np.newaxis, np.newaxis, :, :, :]
+        dm_out = DataMatrix.based_on(arr, format=dm, units=unit,
+                                     change={'Variables': ['material-decomposition'], 'Categories2': cdm.col_labels['Categories2']})
+
+    if num_dim == 5:
+        # raise error
+        if dm.col_labels["Categories2"] != cdm.col_labels["Categories2"]:
+            raise ValueError("Put product in the same category for both dm and cdm")
+
+        arr = dm.array[..., np.newaxis] * cdm.array[np.newaxis, np.newaxis, :, :, np.newaxis, :]
+        dm_out = DataMatrix.based_on(arr, format=dm, units=unit,
+                                     change={'Variables': ['material-decomposition'], 'Categories3': cdm.col_labels['Categories2']})
+
     return dm_out
+
 
 def calibration_rates(dm, dm_cal, calibration_start_year = 1990, calibration_end_year = 2015,
                       years_setting=[1990, 2015, 2050, 5]):
