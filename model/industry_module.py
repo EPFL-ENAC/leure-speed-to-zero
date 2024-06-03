@@ -362,11 +362,11 @@ def product_production(DM_buildings, DM_transport, dm_lifestyles, dm_imp):
     # production [%] = 1 - net import
     dm_prod = dm_imp.copy()
     idx = dm_prod.idx
-    arr_temp = dm_prod.array[:,:,idx["ind_product-net-import"],:]
+    arr_temp = dm_prod.array[:, :, idx["ind_product-net-import"], :]
     arr_temp[arr_temp > 1] = 1
     arr_temp = 1 - arr_temp
-    dm_prod.array[:,:,idx["ind_product-net-import"],:] = arr_temp
-    dm_prod.rename_col(col_in = "ind_product-net-import", col_out = "ind_product-production", dim = "Variables")
+    dm_prod.array[:, :, idx["ind_product-net-import"], :] = arr_temp
+    dm_prod.rename_col(col_in="ind_product-net-import", col_out="ind_product-production", dim="Variables")
     # TODO: the operations above are done only with product net import, so to increase the speed we could build a lever called product-production and load it, to be done later
 
     #####################
@@ -409,8 +409,8 @@ def product_production(DM_buildings, DM_transport, dm_lifestyles, dm_imp):
     #####################
 
     # get production for transport
-    dm_prod_tra_infra = dm_prod.filter({"Categories1" : ['rail','road','trolley-cables']})
-    dm_prod_tra_veh = dm_prod.filter({"Categories1" : ['cars-EV', 'cars-FCV', 'cars-ICE',
+    dm_prod_tra_infra = dm_prod.filter({"Categories1": ['rail', 'road', 'trolley-cables']})
+    dm_prod_tra_veh = dm_prod.filter({"Categories1": ['cars-EV', 'cars-FCV', 'cars-ICE',
                                                        'planes', 'ships', 'trains',
                                                        'trucks-EV', 'trucks-FCV', 'trucks-ICE']})
 
@@ -537,10 +537,10 @@ def apply_material_decomposition(DM_production, CDM_const):
     # get material demand for transport
     DM_material_demand["transport"] = \
         DM_material_demand["material-demand"].filter(
-            {"Categories1" : ['cars-EV', 'cars-FCV', 'cars-ICE',
+            {"Categories1": ['cars-EV', 'cars-FCV', 'cars-ICE',
                               'trucks-EV', 'trucks-FCV', 'trucks-ICE',
-                              'planes', 'ships', 'trains']}).group_all("Categories1", inplace = False)
-    DM_material_demand["transport"].rename_col("material-decomposition","material-demand_transport","Variables")
+                              'planes', 'ships', 'trains']}).group_all("Categories1", inplace=False)
+    DM_material_demand["transport"].rename_col("material-decomposition", "material-demand_transport", "Variables")
 
     # get material demand for construction
     DM_material_demand["construction"] = \
@@ -570,15 +570,15 @@ def apply_material_switch(DM_material_demand, DM_ots_fts, CDM_const, DM_input_ma
     ##### TRANSPORT #####
     #####################
 
-    material_switch(dm = DM_material_demand["material-demand"], dm_ots_fts = DM_ots_fts["material-switch"], 
-                    cdm_const = CDM_const["material-switch"], material_in = "steel", material_out = ["chem","aluminium"], 
-                    product = "cars-ICE", switch_percentage_prefix = "cars-", 
-                    switch_ratio_prefix = "tec_material-switch-ratios_")
+    material_switch(dm = DM_material_demand["material-demand"], dm_ots_fts=DM_ots_fts["material-switch"],
+                    cdm_const=CDM_const["material-switch"], material_in="steel", material_out=["chem", "aluminium"],
+                    product="cars-ICE", switch_percentage_prefix="cars-",
+                    switch_ratio_prefix="tec_material-switch-ratios_")
 
-    material_switch(dm = DM_material_demand["material-demand"], dm_ots_fts = DM_ots_fts["material-switch"], 
-                    cdm_const = CDM_const["material-switch"], material_in = "steel", material_out = ["chem","aluminium"], 
-                    product = "trucks-ICE", switch_percentage_prefix = "trucks-", 
-                    switch_ratio_prefix = "tec_material-switch-ratios_")
+    material_switch(dm=DM_material_demand["material-demand"], dm_ots_fts=DM_ots_fts["material-switch"],
+                    cdm_const=CDM_const["material-switch"], material_in="steel", material_out=["chem", "aluminium"],
+                    product="trucks-ICE", switch_percentage_prefix="trucks-",
+                    switch_ratio_prefix="tec_material-switch-ratios_")
 
     #####################
     ##### BUILDINGS #####
@@ -1936,4 +1936,4 @@ def local_industry_run():
 # run local
 #__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
 # database_from_csv_to_datamatrix()
-# results_run = local_industry_run()
+results_run = local_industry_run()
