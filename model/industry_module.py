@@ -315,93 +315,6 @@ def read_data(data_file, lever_setting):
     # return
     return DM_fxa, DM_ots_fts, dm_cal, CMD_const
 
-def product_demand(DM_interface):
-    
-    #####################
-    ##### BUILDINGS #####
-    #####################
-
-    dm_demand_bld = DM_interface["buildings"]
-
-    # rename
-    dm_demand_bld.rename_col_regex(str1 = "bld_", str2 = "bld_product-demand_", dim = "Variables")
-    dm_demand_bld.rename_col_regex(str1 = "_new_",str2 = "-new-",dim = "Variables")
-    dm_demand_bld.rename_col_regex(str1 = "_reno_",str2 = "-reno-",dim = "Variables")
-    dm_demand_bld.rename_col_regex(str1 = "-new-dhg_pipe",str2 = "_new-dhg-pipe",dim = "Variables")
-
-    # deepen
-    dm_demand_bld.deepen()
-
-    # pipes
-    dm_demand_bld_pipe = dm_demand_bld.filter_w_regex({"Categories1" : ".*pipe"})
-    dm_demand_bld_pipe.units["bld_product-demand"] = "km"
-
-    # floor
-    dm_demand_bld_floor = dm_demand_bld.filter_w_regex({"Categories1" : ".*floor"})
-    dm_demand_bld_floor.units["bld_product-demand"] = "m2"
-
-    # domestic appliances
-    dm_demand_bld_domapp = dm_demand_bld.filter({"Categories1" : ['computer', 'dishwasher', 'dryer', 
-                                                                  'freezer', 'fridge', 'phone',
-                                                                  'tv', 'wmachine']})
-    dm_demand_bld_domapp.units["bld_product-demand"] = "num"
-
-    #####################
-    ##### TRANSPORT #####
-    #####################
-
-    dm_demand_tra = DM_interface["transport"]
-
-    # rename
-    dm_demand_tra.rename_col_regex(str1 = "tra_", str2 = "tra_product-demand_", dim = "Variables")
-
-    # deepen
-    dm_demand_tra.deepen()
-
-    # infra
-    dm_demand_tra_infra = dm_demand_tra.filter({"Categories1" : ['rail','road','trolley-cables']})
-    dm_demand_tra_infra.units["tra_product-demand"] = "km"
-
-    # vehicules
-    dm_demand_tra_veh = dm_demand_tra.filter({"Categories1" : ['cars-EV', 'cars-FCV', 'cars-ICE',
-                                                       'planes', 'ships', 'trains',
-                                                       'trucks-EV', 'trucks-FCV', 'trucks-ICE']})
-    dm_demand_tra_veh.units["tra_product-demand"] = "num"
-
-    ######################
-    ##### LIFESTYLES #####
-    ######################
-
-    dm_demand_lfs = DM_interface["lifestyles"]
-    dm_demand_lfs.rename_col_regex(str1 = "lfs_", str2 = "lfs_product-demand_", dim = "Variables")
-    dm_demand_lfs.deepen()
-
-    #######################
-    ##### AGRICULTURE #####
-    #######################
-
-    dm_demand_agr = DM_interface["agriculture"]
-    dm_demand_agr.rename_col_regex(str1 = "agr_", str2 = "agr_product-demand_", dim = "Variables")
-    dm_demand_agr.deepen()
-
-    ########################
-    ##### PUT TOGETHER #####
-    ########################
-
-    DM_demand = {"bld-pipe" : dm_demand_bld_pipe,
-                 "bld-floor" : dm_demand_bld_floor,
-                 "bld-domapp" : dm_demand_bld_domapp,
-                 "tra-infra" : dm_demand_tra_infra,
-                 "tra-veh" : dm_demand_tra_veh,
-                 "lfs" : dm_demand_lfs,
-                 "agr" : dm_demand_agr}
-    
-    # clean
-    del dm_demand_agr, dm_demand_bld, dm_demand_bld_domapp, dm_demand_bld_floor, dm_demand_bld_pipe, \
-        dm_demand_lfs, dm_demand_tra, dm_demand_tra_infra, dm_demand_tra_veh
-        
-    # return
-    return DM_demand
 
 # =============================================================================
 # def product_import(DM_ots_fts):
@@ -441,7 +354,7 @@ def product_demand(DM_interface):
 #     return dm_imp
 # =============================================================================
 
-def product_production(DM_demand, dm_imp):
+def product_production(DM_buildings, DM_transport, dm_lifestyles, dm_imp):
     
     # production [%] = 1 - net import
     dm_prod = dm_imp.copy()
@@ -465,9 +378,9 @@ def product_production(DM_demand, dm_imp):
                                                           'tv', 'wmachine']})
 
     # get demand for buildings
-    dm_demand_bld_pipe = DM_demand["bld-pipe"]
-    dm_demand_bld_floor = DM_demand["bld-floor"]
-    dm_demand_bld_domapp = DM_demand["bld-domapp"]
+    dm_demand_bld_pipe = DM_buildings["bld-pipe"]
+    dm_demand_bld_floor = DM_buildings["bld-floor"]
+    dm_demand_bld_domapp = DM_buildings["bld-domapp"]
 
     # production (units) = demand * production [%]
 
@@ -499,8 +412,8 @@ def product_production(DM_demand, dm_imp):
                                                        'trucks-EV', 'trucks-FCV', 'trucks-ICE']})
 
     # get demand for transport
-    dm_demand_tra_infra = DM_demand["tra-infra"]
-    dm_demand_tra_veh = DM_demand["tra-veh"]
+    dm_demand_tra_infra = DM_transport["tra-infra"]
+    dm_demand_tra_veh = DM_transport["tra-veh"]
 
     # production (units) = demand * production [%]
 
@@ -518,32 +431,24 @@ def product_production(DM_demand, dm_imp):
     ######################
 
     # get production for lifestyles
-    dm_prod_lfs = dm_prod.filter({"Categories1" : ['aluminium-pack', 'glass-pack', 'paper-pack', 
+    dm_prod_lfs = dm_prod.filter({"Categories1": ['aluminium-pack', 'glass-pack', 'paper-pack',
                                                    'paper-print', 'paper-san', 'plast-pack']})
 
-    # get demand for transport
-    dm_demand_lfs = DM_demand["lfs"]
 
     # production (units) = demand * production [%]
-    dm_prod_lfs.array = dm_prod_lfs.array * dm_demand_lfs.array
-    dm_prod_lfs.units["ind_product-production"] = dm_demand_lfs.units["lfs_product-demand"]
+    dm_prod_lfs.array = dm_prod_lfs.array * dm_lifestyles.array
+    dm_prod_lfs.units["ind_product-production"] = dm_lifestyles.units["lfs_product-demand"]
 
     ########################
     ##### PUT TOGETHER #####
     ########################
 
-    DM_production = {"bld-pipe" : dm_prod_bld_pipe,
-                     "bld-floor" : dm_prod_bld_floor,
-                     "bld-domapp" : dm_prod_bld_domapp,
-                     "tra-infra" : dm_prod_tra_infra,
-                     "tra-veh" : dm_prod_tra_veh,
-                     "lfs" : dm_prod_lfs}
-    
-    # clean
-    del arr_temp, dm_demand_bld_domapp, dm_demand_bld_floor, dm_demand_bld_pipe, \
-        dm_demand_lfs, dm_demand_tra_infra, dm_demand_tra_veh, dm_prod, idx, \
-        dm_prod_bld_pipe, dm_prod_bld_floor, dm_prod_bld_domapp, dm_prod_tra_infra, \
-        dm_prod_tra_veh, dm_prod_lfs, dm_imp
+    DM_production = {"bld-pipe": dm_prod_bld_pipe,
+                     "bld-floor": dm_prod_bld_floor,
+                     "bld-domapp": dm_prod_bld_domapp,
+                     "tra-infra": dm_prod_tra_infra,
+                     "tra-veh": dm_prod_tra_veh,
+                     "lfs": dm_prod_lfs}
         
     # return
     return DM_production
@@ -1807,6 +1712,83 @@ def industry_district_heating_interface(DM_energy_demand, write_xls = False):
     # return
     return dm_dh
 
+def simulate_agriculture_to_industry_input():
+    # !FIXME: dm_agriculture (previously DM_demand['agr'] does not appear to be used anywhere
+    dm_agriculture = simulate_input(from_sector='agriculture', to_sector='industry')
+
+    dm_agriculture.rename_col_regex(str1 = "agr_", str2 = "agr_product-demand_", dim = "Variables")
+    dm_agriculture.deepen()
+
+    return dm_agriculture
+
+def simulate_transport_to_industry_input():
+    dm_transport = simulate_input(from_sector='transport', to_sector='industry')
+
+    # rename
+    dm_transport.rename_col_regex(str1 = "tra_", str2 = "tra_product-demand_", dim = "Variables")
+
+    # deepen
+    dm_transport.deepen()
+
+    # infra
+    dm_demand_tra_infra = dm_transport.filter({"Categories1" : ['rail','road','trolley-cables']})
+    dm_demand_tra_infra.units["tra_product-demand"] = "km"
+
+    # vehicules
+    dm_demand_tra_veh = dm_transport.filter({"Categories1" : ['cars-EV', 'cars-FCV', 'cars-ICE',
+                                                       'planes', 'ships', 'trains',
+                                                       'trucks-EV', 'trucks-FCV', 'trucks-ICE']})
+    dm_demand_tra_veh.units["tra_product-demand"] = "num"
+
+    DM_transport = {
+        "tra-infra": dm_demand_tra_infra,
+        "tra-veh": dm_demand_tra_veh
+    }
+
+    return DM_transport
+
+def simulate_lifestyles_to_industry_input():
+    dm_lifestyles = simulate_input(from_sector='lifestyles', to_sector='industry')
+
+    dm_lifestyles.rename_col_regex(str1="lfs_", str2="lfs_product-demand_", dim="Variables")
+    dm_lifestyles.deepen()
+
+    return dm_lifestyles
+
+def simulate_buildings_to_industry_input():
+    dm_buildings = simulate_input(from_sector='buildings', to_sector='industry')
+
+    # rename
+    dm_buildings.rename_col_regex(str1 = "bld_", str2 = "bld_product-demand_", dim = "Variables")
+    dm_buildings.rename_col_regex(str1 = "_new_",str2 = "-new-",dim = "Variables")
+    dm_buildings.rename_col_regex(str1 = "_reno_",str2 = "-reno-",dim = "Variables")
+    dm_buildings.rename_col_regex(str1 = "-new-dhg_pipe",str2 = "_new-dhg-pipe",dim = "Variables")
+
+    # deepen
+    dm_buildings.deepen()
+
+    # pipes
+    dm_demand_bld_pipe = dm_buildings.filter_w_regex({"Categories1" : ".*pipe"})
+    dm_demand_bld_pipe.units["bld_product-demand"] = "km"
+
+    # floor
+    dm_demand_bld_floor = dm_buildings.filter_w_regex({"Categories1" : ".*floor"})
+    dm_demand_bld_floor.units["bld_product-demand"] = "m2"
+
+    # domestic appliances
+    dm_demand_bld_domapp = dm_buildings.filter({"Categories1" : ['computer', 'dishwasher', 'dryer',
+                                                                  'freezer', 'fridge', 'phone',
+                                                                  'tv', 'wmachine']})
+    dm_demand_bld_domapp.units["bld_product-demand"] = "num"
+
+    DM_buildings = {
+        "bld-pipe" : dm_demand_bld_pipe,
+        "bld-floor" : dm_demand_bld_floor,
+        "bld-domapp" : dm_demand_bld_domapp
+    }
+
+    return DM_buildings
+
 def industry(lever_setting, years_setting, interface = Interface(), calibration = False):
     
     # industry data file
@@ -1815,23 +1797,31 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     DM_fxa, DM_ots_fts, dm_cal, CDM_const = read_data(industry_data_file, lever_setting)
     
     # get / simulate interfaces
-    DM_interface = {}
-    from_sector = ['agriculture', 'transport', 'lifestyles', 'buildings']
-    for i in from_sector:
-        if interface.has_link(from_sector = i, to_sector = 'industry'):
-            DM_interface[i] = interface.get_link(from_sector=i, to_sector='industry')
-        else:
-            DM_interface[i] = simulate_input(from_sector=i, to_sector="industry")
-    del from_sector, i
-    
-    # get product demand
-    DM_demand = product_demand(DM_interface)
-    
+    if interface.has_link(from_sector='agriculture', to_sector='industry'):
+        dm_agriculture = interface.get_link(from_sector='agriculture', to_sector='industry')
+    else:
+        dm_agriculture = simulate_agriculture_to_industry_input()
+
+    if interface.has_link(from_sector='transport', to_sector='industry'):
+        DM_transport = interface.get_link(from_sector='transport', to_sector='industry')
+    else:
+        DM_transport = simulate_transport_to_industry_input()
+
+    if interface.has_link(from_sector='lifestyles', to_sector='industry'):
+        dm_lifestyles = interface.get_link(from_sector='lifestyles', to_sector='industry')
+    else:
+        dm_lifestyles = simulate_lifestyles_to_industry_input()
+
+    if interface.has_link(from_sector='buildings', to_sector='industry'):
+        DM_buildings = interface.get_link(from_sector='buildings', to_sector='industry')
+    else:
+        DM_buildings = simulate_buildings_to_industry_input()
+
     # get product import
     dm_imp = DM_ots_fts["product-net-import"]
     
     # get product production
-    DM_production = product_production(DM_demand, dm_imp)
+    DM_production = product_production(DM_buildings, DM_transport, dm_lifestyles, dm_imp)
     
     # get material demand
     DM_material_demand = apply_material_decomposition(DM_production, CDM_const)
@@ -1933,7 +1923,7 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     interface.add_link(from_sector='industry', to_sector='district-heating', dm=dm_dh)
     
     # return
-    return(df)
+    return df
     
 def local_industry_run():
     
@@ -1957,6 +1947,6 @@ def local_industry_run():
     return results_run
 
 # run local
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
-database_from_csv_to_datamatrix()
-results_run = local_industry_run()
+#__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
+# database_from_csv_to_datamatrix()
+# results_run = local_industry_run()
