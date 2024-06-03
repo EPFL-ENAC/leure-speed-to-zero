@@ -8,9 +8,9 @@ Created on Sun May 26 14:29:08 2024
 
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
-from model.common.io_database import read_database, read_database_fxa
+from model.common.io_database import read_database, read_database_fxa, edit_database
 from model.common.interface_class import Interface
-from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm, read_database_to_ots_fts_dict, read_level_data, simulate_input, get_mindec, calibration_rates, cost
+from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm, read_database_to_ots_fts_dict, read_level_data, simulate_input, material_decomposition, calibration_rates, cost, material_switch
 import pickle
 import json
 import os
@@ -18,108 +18,60 @@ import numpy as np
 import re
 import warnings
 warnings.simplefilter("ignore")
-
-def material_switch(dm, dm_ots_fts, cdm_const, material_in, material_out, product, switch_percentage_prefix, switch_ratio_prefix, dict_for_output = None):
     
-    # note that this function overwrites directly into the dm. dm should be set as dm_matdec
-    # dict_for_output is a dictionary where the function saves variables that will be used later for material switch impact in emissions
-    
-    # get name of materials in-to-out
-    material_in_to_out = [material_in + "-to-" + i for i in material_out]
-    
-    # if one of the materials out is not in data, create it
-    idx_matindata = [i in dm.col_labels["Categories2"] for i in material_out]
-    if not all(idx_matindata):
-        dm.add(np.nan, dim = "Categories2", col_label = np.array(material_out)[[not i for i in idx_matindata]].tolist(), dummy = True)
-        dm.sort("Categories2")
-    
-    # get material in and material out
-    dm_temp = dm.filter({"Categories1" : [product]})
-    dm_temp = dm_temp.filter({"Categories2" : [material_in] + material_out})
-    
-    # get switch percentages
-    dm_temp2 = dm_ots_fts.filter({"Categories1" : [switch_percentage_prefix + i for i in material_in_to_out]})
-    
-    # get switch ratios
-    dm_temp3 = cdm_const.filter({"Variables" : [switch_ratio_prefix + i for i in material_in_to_out]})
-    
-    # get materials out
-    idx = dm.idx
-    idx_temp = dm_temp.idx
-    idx_temp2 = dm_temp2.idx
-    idx_temp3 = dm_temp3.idx
-    for i in range(len(material_out)):
-        
-        # get material in-to-out
-        arr_temp = dm_temp.array[:,:,:,:,idx_temp[material_in]] * \
-            dm_temp2.array[:,:,:,idx_temp2[switch_percentage_prefix + material_in_to_out[i]],np.newaxis]
-        dm_temp.add(arr_temp, dim = "Categories2", col_label = material_in_to_out[i])
-        dm_temp.add(arr_temp * -1, dim = "Categories2", col_label = material_in_to_out[i] + "_minus")
-        
-        # get material in-to-out-times-switch-ratio
-        arr_temp = dm_temp.array[:,:,:,:,idx_temp[material_in_to_out[i]]] * \
-            dm_temp3.array[idx_temp3[switch_ratio_prefix + material_in_to_out[i]]]
-        dm_temp.add(arr_temp, dim = "Categories2", col_label = material_in_to_out[i] + "_times_ratio")
-        
-        # get material out
-        if idx_matindata[i]:
-            dm_temp4 = dm_temp.filter({"Categories2" : [material_out[i], material_in_to_out[i] + "_times_ratio"]})
-            dm.array[:,:,:,idx[product],idx[material_out[i]]] = np.nansum(dm_temp4.array[:,:,0,:,:], axis = -1)
-        else:
-            dm_temp4 = dm_temp.filter({"Categories2" : [material_in_to_out[i] + "_times_ratio"]})
-            dm.array[:,:,:,idx[product],idx[material_out[i]]] = dm_temp4.array[:,:,0,0,:]
-        
-    # get material in and write
-    dm_temp4 = dm_temp.filter({"Categories2" : [material_in] + [i + "_minus" for i in material_in_to_out]})
-    dm.array[:,:,:,idx[product],idx[material_in]] = np.nansum(dm_temp4.array[:,:,0,:,:], axis = -1)
-    
-    # get material in-to-out and write
-    if dict_for_output is not None:
-        dict_for_output[product + "_" + material_in_to_out[0]] = dm_temp.filter({"Categories2" : material_in_to_out})
-
 def energy_switch(dm_energy_demand, dm_energy_carrier_mix, carrier_in, carrier_out, dm_energy_carrier_mix_prefix):
     
+    # this function does the energy switch
+    # dm_energy_demand is the dm with technologies (cat1) and energy carriers (cat2)
+    # dm_energy_carrier_mix is the dm with technologies (cat1) and % for the switches (cat2)
+    # carrier_in is the carrier that gets switched
+    # carrier_out is the carrier that is switched to
+    # dm_energy_carrier_mix_prefix is the prefix for the energy switch in dm_energy_carrier_mix
+    
+    # get categories
+    carriers_category = dm_energy_demand.dim_labels[-1]
+    
     # get carriers
-    carrier_all = dm_energy_demand.col_labels["Categories2"]
+    carrier_all = dm_energy_demand.col_labels[carriers_category]
     carrier_in_exclude = np.array(carrier_all)[[i not in carrier_in for i in carrier_all]].tolist()
     
     # for all material-technologies, get energy demand for all carriers but carrier out and excluded ones
-    dm_temp1 = dm_energy_demand.filter_w_regex({"Categories2" : "^((?!" + "|".join(carrier_in_exclude) + ").)*$"})
+    dm_temp1 = dm_energy_demand.filter_w_regex({carriers_category : "^((?!" + "|".join(carrier_in_exclude) + ").)*$"})
     
     # get percentages of energy switched to carrier out for each of material-technology
-    dm_temp2 = dm_energy_carrier_mix.filter_w_regex({"Categories2" : ".*" + dm_energy_carrier_mix_prefix})
+    dm_temp2 = dm_energy_carrier_mix.filter_w_regex({carriers_category : ".*" + dm_energy_carrier_mix_prefix})
     
     # for all material-technologies, get additional demand for carrier out for each energy carrier
-    names = dm_temp1.col_labels["Categories2"]
+    names = dm_temp1.col_labels[carriers_category]
     for i in names:
-        dm_temp1.rename_col(i, i + "_total", "Categories2")
+        dm_temp1.rename_col(i, i + "_total", carriers_category)
     dm_temp1.deepen()
-    dm_temp1.add(dm_temp1.array, dim = "Categories3", col_label = dm_energy_carrier_mix_prefix)
+    dm_temp1.add(dm_temp1.array, dim = dm_temp1.dim_labels[-1], col_label = dm_energy_carrier_mix_prefix)
     idx_temp1 = dm_temp1.idx
     dm_temp1.array[...,idx_temp1[dm_energy_carrier_mix_prefix]] = \
         dm_temp1.array[...,idx_temp1[dm_energy_carrier_mix_prefix]] * dm_temp2.array
     
     # get total carrier out switched
-    dm_temp3 = dm_temp1.group_all(dim='Categories2', inplace = False)
-    dm_temp3.drop("Categories2", "total")
+    dm_temp3 = dm_temp1.group_all(dim=carriers_category, inplace = False)
+    dm_temp3.drop(carriers_category, "total")
     
     # sum this additional demand for carrier out due to switch to carrier-out demand
-    dm_temp3.append(dm_energy_demand.filter({"Categories2" : [carrier_out]}), "Categories2")
+    dm_temp3.append(dm_energy_demand.filter({carriers_category : [carrier_out]}), carriers_category)
     idx = dm_energy_demand.idx
     dm_energy_demand.array[:,:,:,:,idx[carrier_out]] = np.nansum(dm_temp3.array, axis = -1)
     
     # for each energy carrier, subtract additional demand for carrier out due to switch
     dm_temp1.array[...,idx_temp1[dm_energy_carrier_mix_prefix]] = \
         dm_temp1.array[...,idx_temp1[dm_energy_carrier_mix_prefix]] * -1 # this is to do minus with np.nansum
-    dm_temp1.add(np.nansum(dm_temp1.array, axis = -1, keepdims=True), dim = "Categories3", col_label = "final")
-    dm_temp1.drop("Categories3", ['total', dm_energy_carrier_mix_prefix])
+    dm_temp1.add(np.nansum(dm_temp1.array, axis = -1, keepdims=True), dim = dm_temp1.dim_labels[-1], col_label = "final")
+    dm_temp1.drop(dm_temp1.dim_labels[-1], ['total', dm_energy_carrier_mix_prefix])
     dm_temp1 = dm_temp1.flatten()
-    dm_temp1.rename_col_regex(str1 = "_final", str2 = "", dim = "Categories2")
-    drops = dm_temp1.col_labels["Categories2"]
-    dm_energy_demand.drop("Categories2", drops)
-    dm_energy_demand.append(dm_temp1, "Categories2")
-    dm_energy_demand.sort("Categories2")
-    
+    dm_temp1.rename_col_regex(str1 = "_final", str2 = "", dim = carriers_category)
+    drops = dm_temp1.col_labels[carriers_category]
+    dm_energy_demand.drop(carriers_category, drops)
+    dm_energy_demand.append(dm_temp1, carriers_category)
+    dm_energy_demand.sort(carriers_category)
+
 def rename_tech(word):
     last = "-".join([word.split("_")[-2], word.split("_")[-1]])
     first = "_".join(word.split("_")[0:-2])
@@ -226,7 +178,7 @@ def database_from_csv_to_datamatrix():
     lever = "material-efficiency"
     dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1, baseyear=baseyear,
                                                         years=years_all, dict_ots=dict_ots, dict_fts=dict_fts)
-
+    
     # technology share, technology development and carbon capture (CC)
     levers = ["technology-share", "technology-development", "cc"]
     for lever in levers:
@@ -262,12 +214,21 @@ def database_from_csv_to_datamatrix():
     lever = "material-net-import"
     dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1, baseyear=baseyear,
                                                         years=years_all, dict_ots=dict_ots, dict_fts=dict_fts)
+    
 
     # product net import
     file = 'industry_product-net-import'
     lever = "product-net-import"
+    df_ots, df_fts = read_database(file, lever, level='all')
+    df_ots.columns = df_ots.columns.str.replace('_new_','-new-')
+    df_ots.columns = df_ots.columns.str.replace('_reno_','-reno-')
+    df_ots.columns = df_ots.columns.str.replace('-new-dhg_pipe','_new-dhg-pipe')
+    df_fts.columns = df_fts.columns.str.replace('_new_','-new-')
+    df_fts.columns = df_fts.columns.str.replace('_reno_','-reno-')
+    df_fts.columns = df_fts.columns.str.replace('-new-dhg_pipe','_new-dhg-pipe')
     dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1, baseyear=baseyear,
-                                                        years=years_all, dict_ots=dict_ots, dict_fts=dict_fts)
+                                                        years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
+                                                        df_ots=df_ots, df_fts=df_fts)
 
     # energy carrier mix import
     file = 'industry_energy-carrier-mix'
@@ -286,8 +247,24 @@ def database_from_csv_to_datamatrix():
     #####################
     ##### CONSTANTS #####
     #####################
-
+    
+    # get constants
     cdm_const = ConstantDataMatrix.extract_constant('interactions_constants', pattern='cp_tec_|cp_cost-ind', num_cat=0)
+    
+    # rename
+    cdm_const.rename_col_regex(str1 = "_dhg_",str2 = "-dhg-",dim = "Variables")
+    cdm_const.rename_col_regex(str1 = "_new_",str2 = "-new-",dim = "Variables")
+    cdm_const.rename_col_regex(str1 = "_reno_",str2 = "-reno-",dim = "Variables")
+    cdm_const.rename_col_regex(str1 = "cp_",str2 = "",dim = "Variables")
+    
+    # subset
+    dict_const = {}
+    dict_const["material-switch"] = cdm_const.filter_w_regex({"Variables" : ".*switch.*"})
+    dict_const["cost"] = cdm_const.filter_w_regex({"Variables" : ".*cost.*"})
+    dict_const["material-decomposition"] = cdm_const.filter_w_regex({"Variables" : ".*tec.*"}).\
+        filter_w_regex({"Variables" : "^((?!energy|emission|cost|switch).)*$"})
+    dict_const["energy"] = cdm_const.filter_w_regex({"Variables" : ".*energy.*"})
+    dict_const["emission-factor"] = cdm_const.filter_w_regex({"Variables" : ".*emission.*"})
 
     ################
     ##### SAVE #####
@@ -298,7 +275,7 @@ def database_from_csv_to_datamatrix():
         'fts': dict_fts,
         'ots': dict_ots,
         'calibration': dm_cal,
-        "constant" : cdm_const
+        "constant" : dict_const
     }
 
 
@@ -330,14 +307,13 @@ def read_data(data_file, lever_setting):
     dm_cal = DM_industry['calibration']
 
     # get constants
-    cdm_const = DM_industry['constant']
-    cdm_const.rename_col_regex(str1 = "cp_",str2 = "",dim = "Variables")
+    CMD_const = DM_industry['constant']
 
     # clean
     del handle, DM_industry, data_file, lever_setting
     
     # return
-    return DM_fxa, DM_ots_fts, dm_cal, cdm_const
+    return DM_fxa, DM_ots_fts, dm_cal, CMD_const
 
 def product_demand(DM_interface):
     
@@ -427,41 +403,43 @@ def product_demand(DM_interface):
     # return
     return DM_demand
 
-def product_import(DM_ots_fts):
-    
-    # get product net imports
-    dm_imp = DM_ots_fts["product-net-import"].copy()
-
-    # fix floor area new and reno
-    dm_temp = dm_imp.filter({"Variables" : ['ind_product-net-import_floor-area_new', 
-                                            'ind_product-net-import_floor-area_reno']})
-    dm_temp = dm_temp.filter({"Categories1" : ['residential',"non-residential"]})
-    dm_temp = dm_temp.flatten()
-    dm_temp.rename_col_regex(str1 = "_new_",str2 = "-new-",dim = "Variables")
-    dm_temp.rename_col_regex(str1 = "_reno_",str2 = "-reno-",dim = "Variables")
-    dm_temp.deepen()
-
-    # fix pipes
-    dm_temp2 = dm_imp.filter({"Variables" : ['ind_product-net-import_new_dhg']})
-    dm_temp2 = dm_temp2.filter({"Categories1" : ["pipe"]})
-    dm_temp2  = dm_temp2 .flatten()
-    dm_temp2.rename_col_regex(str1 = "_new_",str2 = "_new-",dim = "Variables")
-    dm_temp2.rename_col_regex(str1 = "_pipe",str2 = "-pipe",dim = "Variables")
-    dm_temp2.deepen()
-
-    # put back in
-    dm_imp.drop(dim = "Variables", col_label = ['ind_product-net-import_floor-area_new', 
-                                                'ind_product-net-import_floor-area_reno',
-                                                'ind_product-net-import_new_dhg'])
-    dm_imp.drop(dim = "Categories1", col_label = ['residential','non-residential','pipe'])
-    dm_imp.append(dm_temp, dim = "Categories1")
-    dm_imp.append(dm_temp2, dim = "Categories1")
-    
-    # clean
-    del dm_temp, dm_temp2
-    
-    # return
-    return dm_imp
+# =============================================================================
+# def product_import(DM_ots_fts):
+#     
+#     # get product net imports
+#     dm_imp = DM_ots_fts["product-net-import"].copy()
+# 
+#     # fix floor area new and reno
+#     dm_temp = dm_imp.filter({"Variables" : ['ind_product-net-import_floor-area_new', 
+#                                             'ind_product-net-import_floor-area_reno']})
+#     dm_temp = dm_temp.filter({"Categories1" : ['residential',"non-residential"]})
+#     dm_temp = dm_temp.flatten()
+#     dm_temp.rename_col_regex(str1 = "_new_",str2 = "-new-",dim = "Variables")
+#     dm_temp.rename_col_regex(str1 = "_reno_",str2 = "-reno-",dim = "Variables")
+#     dm_temp.deepen()
+# 
+#     # fix pipes
+#     dm_temp2 = dm_imp.filter({"Variables" : ['ind_product-net-import_new_dhg']})
+#     dm_temp2 = dm_temp2.filter({"Categories1" : ["pipe"]})
+#     dm_temp2  = dm_temp2 .flatten()
+#     dm_temp2.rename_col_regex(str1 = "_new_",str2 = "_new-",dim = "Variables")
+#     dm_temp2.rename_col_regex(str1 = "_pipe",str2 = "-pipe",dim = "Variables")
+#     dm_temp2.deepen()
+# 
+#     # put back in
+#     dm_imp.drop(dim = "Variables", col_label = ['ind_product-net-import_floor-area_new', 
+#                                                 'ind_product-net-import_floor-area_reno',
+#                                                 'ind_product-net-import_new_dhg'])
+#     dm_imp.drop(dim = "Categories1", col_label = ['residential','non-residential','pipe'])
+#     dm_imp.append(dm_temp, dim = "Categories1")
+#     dm_imp.append(dm_temp2, dim = "Categories1")
+#     
+#     # clean
+#     del dm_temp, dm_temp2
+#     
+#     # return
+#     return dm_imp
+# =============================================================================
 
 def product_production(DM_demand, dm_imp):
     
@@ -473,6 +451,7 @@ def product_production(DM_demand, dm_imp):
     arr_temp = 1 - arr_temp
     dm_prod.array[:,:,idx["ind_product-net-import"],:] = arr_temp
     dm_prod.rename_col(col_in = "ind_product-net-import", col_out = "ind_product-production", dim = "Variables")
+    # TODO: the operations above are done only with product net import, so to increase the speed we could build a lever called product-production and load it, to be done later
 
     #####################
     ##### BUILDINGS #####
@@ -569,7 +548,7 @@ def product_production(DM_demand, dm_imp):
     # return
     return DM_production
 
-def material_decomposition(DM_production, cdm_const):
+def apply_material_decomposition(DM_production, CDM_const):
     
     # material production [t] = product production [unit] * material decomposition coefficient [t/unit]
 
@@ -579,24 +558,24 @@ def material_decomposition(DM_production, cdm_const):
 
     # pipe
     dm_temp = DM_production["bld-pipe"]
-    cdm_temp = cdm_const.filter_w_regex({"Variables":".*pipe.*"})
-    cdm_temp.rename_col_regex(str1 = "_dhg_",str2 = "-dhg-",dim = "Variables")
+    cdm_temp = CDM_const["material-decomposition"].filter_w_regex({"Variables":".*pipe.*"})
+    # cdm_temp.rename_col_regex(str1 = "_dhg_",str2 = "-dhg-",dim = "Variables")
     cdm_temp.deepen_twice()
-    dm_bld_pipe_matdec = get_mindec(dm = dm_temp, cdm = cdm_temp)
+    dm_bld_pipe_matdec = material_decomposition(dm = dm_temp, cdm = cdm_temp)
 
     # floor
     dm_temp = DM_production["bld-floor"]
-    cdm_temp = cdm_const.filter_w_regex({"Variables":".*floor.*"})
-    cdm_temp.rename_col_regex(str1 = "_new_",str2 = "-new-",dim = "Variables")
-    cdm_temp.rename_col_regex(str1 = "_reno_",str2 = "-reno-",dim = "Variables")
+    cdm_temp = CDM_const["material-decomposition"].filter_w_regex({"Variables":".*floor.*"})
+    # cdm_temp.rename_col_regex(str1 = "_new_",str2 = "-new-",dim = "Variables")
+    # cdm_temp.rename_col_regex(str1 = "_reno_",str2 = "-reno-",dim = "Variables")
     cdm_temp.deepen_twice()
-    dm_bld_floor_matdec = get_mindec(dm = dm_temp, cdm = cdm_temp)
+    dm_bld_floor_matdec = material_decomposition(dm = dm_temp, cdm = cdm_temp)
 
     # domestic appliance
     dm_temp = DM_production["bld-domapp"]
-    cdm_temp = cdm_const.filter_w_regex({"Variables":".*computer.*|.*dishwasher.*|.*dryer.*|.*freezer.*|.*fridge.*|.*phone.*|.*tv.*|.*wmachine.*"})
+    cdm_temp = CDM_const["material-decomposition"].filter_w_regex({"Variables":".*computer.*|.*dishwasher.*|.*dryer.*|.*freezer.*|.*fridge.*|.*phone.*|.*tv.*|.*wmachine.*"})
     cdm_temp.deepen_twice()
-    dm_bld_domapp_matdec = get_mindec(dm = dm_temp, cdm = cdm_temp)
+    dm_bld_domapp_matdec = material_decomposition(dm = dm_temp, cdm = cdm_temp)
 
     #####################
     ##### TRANSPORT #####
@@ -604,15 +583,15 @@ def material_decomposition(DM_production, cdm_const):
 
     # infra
     dm_temp = DM_production["tra-infra"]
-    cdm_temp = cdm_const.filter_w_regex({"Variables":".*rail.*|.*road.*|.*cable.*"})
+    cdm_temp = CDM_const["material-decomposition"].filter_w_regex({"Variables":".*rail.*|.*road.*|.*cable.*"})
     cdm_temp.deepen_twice()
-    dm_tra_infra_matdec = get_mindec(dm = dm_temp, cdm = cdm_temp)
+    dm_tra_infra_matdec = material_decomposition(dm = dm_temp, cdm = cdm_temp)
 
     # veh
     dm_temp = DM_production["tra-veh"]
-    cdm_temp = cdm_const.filter_w_regex({"Variables":".*car.*|.*truck.*|.*plane.*|.*ship.*|.*train.*"})
+    cdm_temp = CDM_const["material-decomposition"].filter_w_regex({"Variables":".*car.*|.*truck.*|.*plane.*|.*ship.*|.*train.*"})
     cdm_temp.deepen_twice()
-    dm_tra_veh_matdec = get_mindec(dm = dm_temp, cdm = cdm_temp)
+    dm_tra_veh_matdec = material_decomposition(dm = dm_temp, cdm = cdm_temp)
 
     ######################
     ##### LIFESTYLES #####
@@ -620,10 +599,10 @@ def material_decomposition(DM_production, cdm_const):
 
     # lfs
     dm_temp = DM_production["lfs"].copy()
-    cdm_temp = cdm_const.filter_w_regex({"Variables":".*pack.*|.*print.*|.*san.*"})
+    cdm_temp = CDM_const["material-decomposition"].filter_w_regex({"Variables":".*pack.*|.*print.*|.*san.*"})
     dm_temp.drop(dim = "Categories1", col_label = ['aluminium-pack']) # note: this should be 100% aluminium, to be seen if they get it back later
     cdm_temp.deepen_twice()
-    dm_lfs_matdec = get_mindec(dm = dm_temp, cdm = cdm_temp)
+    dm_lfs_matdec = material_decomposition(dm = dm_temp, cdm = cdm_temp)
 
     ########################
     ##### PUT TOGETHER #####
@@ -646,7 +625,7 @@ def material_decomposition(DM_production, cdm_const):
             {"Categories1" : ["computer","dishwasher","dryer",
                               "freezer","fridge","tv"]}).group_all("Categories1", 
                                                                    inplace = False)
-    DM_material_demand["appliances"].rename_col("mineral-decomposition","material-demand_appliances","Variables")
+    DM_material_demand["appliances"].rename_col("material-decomposition","material-demand_appliances","Variables")
 
     # get material demand for transport
     DM_material_demand["transport"] = \
@@ -654,7 +633,7 @@ def material_decomposition(DM_production, cdm_const):
             {"Categories1" : ['cars-EV', 'cars-FCV', 'cars-ICE',
                               'trucks-EV', 'trucks-FCV', 'trucks-ICE',
                               'planes', 'ships', 'trains']}).group_all("Categories1", inplace = False)
-    DM_material_demand["transport"].rename_col("mineral-decomposition","material-demand_transport","Variables")
+    DM_material_demand["transport"].rename_col("material-decomposition","material-demand_transport","Variables")
 
     # get material demand for construction
     DM_material_demand["construction"] = \
@@ -662,7 +641,7 @@ def material_decomposition(DM_production, cdm_const):
             {"Categories1" : ['floor-area-new-non-residential', 'floor-area-new-residential',
                               'floor-area-reno-non-residential', 'floor-area-reno-residential',
                               'rail', 'road', 'trolley-cables']}).group_all("Categories1", inplace = False)
-    DM_material_demand["construction"].rename_col("mineral-decomposition","material-demand_construction","Variables")
+    DM_material_demand["construction"].rename_col("material-decomposition","material-demand_construction","Variables")
 
     # clean
     del dm_temp, cdm_temp, dm_bld_pipe_matdec, dm_bld_floor_matdec, dm_bld_domapp_matdec, \
@@ -671,7 +650,7 @@ def material_decomposition(DM_production, cdm_const):
     # return
     return DM_material_demand
 
-def apply_material_switch(DM_material_demand, DM_ots_fts, cdm_const, DM_input_matswitchimpact):
+def apply_material_switch(DM_material_demand, DM_ots_fts, CDM_const, DM_input_matswitchimpact):
     
     # material in-to-out [t] = material in [t] * in-to-out [%]
     # material in [t] = material in [t] - material in-to-out [t]
@@ -685,14 +664,14 @@ def apply_material_switch(DM_material_demand, DM_ots_fts, cdm_const, DM_input_ma
     #####################
 
     material_switch(dm = DM_material_demand["material-demand"], dm_ots_fts = DM_ots_fts["material-switch"], 
-                          cdm_const = cdm_const, material_in = "steel", material_out = ["chem","aluminium"], 
-                          product = "cars-ICE", switch_percentage_prefix = "cars-", 
-                          switch_ratio_prefix = "tec_material-switch-ratios_")
+                    cdm_const = CDM_const["material-switch"], material_in = "steel", material_out = ["chem","aluminium"], 
+                    product = "cars-ICE", switch_percentage_prefix = "cars-", 
+                    switch_ratio_prefix = "tec_material-switch-ratios_")
 
     material_switch(dm = DM_material_demand["material-demand"], dm_ots_fts = DM_ots_fts["material-switch"], 
-                          cdm_const = cdm_const, material_in = "steel", material_out = ["chem","aluminium"], 
-                          product = "trucks-ICE", switch_percentage_prefix = "trucks-", 
-                          switch_ratio_prefix = "tec_material-switch-ratios_")
+                    cdm_const = CDM_const["material-switch"], material_in = "steel", material_out = ["chem","aluminium"], 
+                    product = "trucks-ICE", switch_percentage_prefix = "trucks-", 
+                    switch_ratio_prefix = "tec_material-switch-ratios_")
 
     #####################
     ##### BUILDINGS #####
@@ -701,36 +680,36 @@ def apply_material_switch(DM_material_demand, DM_ots_fts, cdm_const, DM_input_ma
     # new buildings: switch to renewable materials (steel and cement to timber in new residential and non-residential)
 
     material_switch(dm = DM_material_demand["material-demand"], dm_ots_fts = DM_ots_fts["material-switch"], 
-                          cdm_const = cdm_const, material_in = "steel", material_out = ["timber"], 
-                          product = 'floor-area-new-residential', switch_percentage_prefix = "build-", 
-                          switch_ratio_prefix = "tec_material-switch-ratios_", dict_for_output = DM_input_matswitchimpact)
+                    cdm_const = CDM_const["material-switch"], material_in = "steel", material_out = ["timber"], 
+                    product = 'floor-area-new-residential', switch_percentage_prefix = "build-", 
+                    switch_ratio_prefix = "tec_material-switch-ratios_", dict_for_output = DM_input_matswitchimpact)
 
     material_switch(dm = DM_material_demand["material-demand"], dm_ots_fts = DM_ots_fts["material-switch"], 
-                          cdm_const = cdm_const, material_in = "cement", material_out = ["timber"], 
-                          product = 'floor-area-new-residential', switch_percentage_prefix = "build-", 
-                          switch_ratio_prefix = "tec_material-switch-ratios_", dict_for_output = DM_input_matswitchimpact)
+                    cdm_const = CDM_const["material-switch"], material_in = "cement", material_out = ["timber"], 
+                    product = 'floor-area-new-residential', switch_percentage_prefix = "build-", 
+                    switch_ratio_prefix = "tec_material-switch-ratios_", dict_for_output = DM_input_matswitchimpact)
 
     material_switch(dm = DM_material_demand["material-demand"], dm_ots_fts = DM_ots_fts["material-switch"], 
-                          cdm_const = cdm_const, material_in = "steel", material_out = ["timber"], 
-                          product = 'floor-area-new-non-residential', switch_percentage_prefix = "build-", 
-                          switch_ratio_prefix = "tec_material-switch-ratios_", dict_for_output = DM_input_matswitchimpact)
+                    cdm_const = CDM_const["material-switch"], material_in = "steel", material_out = ["timber"], 
+                    product = 'floor-area-new-non-residential', switch_percentage_prefix = "build-", 
+                    switch_ratio_prefix = "tec_material-switch-ratios_", dict_for_output = DM_input_matswitchimpact)
 
     material_switch(dm = DM_material_demand["material-demand"], dm_ots_fts = DM_ots_fts["material-switch"], 
-                          cdm_const = cdm_const, material_in = "cement", material_out = ["timber"], 
-                          product = 'floor-area-new-non-residential', switch_percentage_prefix = "build-", 
-                          switch_ratio_prefix = "tec_material-switch-ratios_", dict_for_output = DM_input_matswitchimpact)
+                    cdm_const = CDM_const["material-switch"], material_in = "cement", material_out = ["timber"], 
+                    product = 'floor-area-new-non-residential', switch_percentage_prefix = "build-", 
+                    switch_ratio_prefix = "tec_material-switch-ratios_", dict_for_output = DM_input_matswitchimpact)
 
     # renovated buildings: switch to insulated surfaces (chemicals to paper and natural fibers in renovated residential and non-residential)
 
     material_switch(dm = DM_material_demand["material-demand"], dm_ots_fts = DM_ots_fts["material-switch"], 
-                          cdm_const = cdm_const, material_in = "chem", material_out = ["paper","natfibers"], 
-                          product = "floor-area-reno-residential", switch_percentage_prefix = "reno-", 
-                          switch_ratio_prefix = "tec_material-switch-ratios_")
+                    cdm_const = CDM_const["material-switch"], material_in = "chem", material_out = ["paper","natfibers"], 
+                    product = "floor-area-reno-residential", switch_percentage_prefix = "reno-", 
+                    switch_ratio_prefix = "tec_material-switch-ratios_")
 
     material_switch(dm = DM_material_demand["material-demand"], dm_ots_fts = DM_ots_fts["material-switch"], 
-                          cdm_const = cdm_const, material_in = "chem", material_out = ["paper","natfibers"], 
-                          product = "floor-area-reno-non-residential", switch_percentage_prefix = "reno-", 
-                          switch_ratio_prefix = "tec_material-switch-ratios_")
+                    cdm_const = CDM_const["material-switch"], material_in = "chem", material_out = ["paper","natfibers"], 
+                    product = "floor-area-reno-non-residential", switch_percentage_prefix = "reno-", 
+                    switch_ratio_prefix = "tec_material-switch-ratios_")
     
     # clean
     del idx
@@ -746,7 +725,7 @@ def material_production(DM_fxa, DM_ots_fts, DM_material_demand):
     # get aggregate demand
     dm_matdec_agg = DM_material_demand["material-demand"].group_all(dim='Categories1', inplace=False)
     dm_matdec_agg.array = dm_matdec_agg.array * 0.001
-    dm_matdec_agg.units["mineral-decomposition"] = "kt"
+    dm_matdec_agg.units["material-decomposition"] = "kt"
     # note: here "other" will be different as in knime they filtered out all "other" but for glass_pack_other
 
     # subset aggregate demand for the materials we keep
@@ -777,7 +756,7 @@ def material_production(DM_fxa, DM_ots_fts, DM_material_demand):
     # get material production
     dm_material_production_bymat = dm_matdec_agg.copy()
     dm_material_production_bymat.array = dm_matdec_agg.array * dm_temp.array
-    dm_material_production_bymat.rename_col(col_in = 'mineral-decomposition', col_out = 'material-production', dim = "Variables")
+    dm_material_production_bymat.rename_col(col_in = 'material-decomposition', col_out = 'material-production', dim = "Variables")
 
     # include other industries from fxa
     dm_temp = DM_fxa["prod"].copy()
@@ -859,7 +838,7 @@ def material_production_by_technology(DM_ots_fts, DM_material_production):
     # return
     return
 
-def energy_demand(cdm_const, DM_material_production):
+def energy_demand(DM_material_production, CDM_const):
     
     # this is by material-technology and carrier
 
@@ -871,7 +850,7 @@ def energy_demand(cdm_const, DM_material_production):
 
         # get constants for energy demand for material production by technology
         search = "tec_energy_specific-" + f
-        cdm_temp = cdm_const.filter_w_regex({"Variables" : ".*" + search + ".*"})
+        cdm_temp = CDM_const["energy"].filter_w_regex({"Variables" : ".*" + search + ".*"})
         cdm_temp.rename_col_regex(str1 = search + "_", str2 = "", dim = "Variables")
         cdm_temp.deepen()
         cdm_temp.rename_col_regex("_", "-", dim = "Variables")
@@ -948,7 +927,7 @@ def calibration_energy_demand(dm_cal, DM_energy_demand):
     # do calibration
     DM_energy_demand["bycarr"].array = DM_energy_demand["bycarr"].array * dm_energy_demand_calib_rates_bycarr.array
 
-    # do calibratio for each technology (by applying aggregate calibration rates)
+    # do calibration for each technology (by applying aggregate calibration rates)
     DM_energy_demand["bytechcarr"].array = DM_energy_demand["bytechcarr"].array * dm_energy_demand_calib_rates_bycarr.array[:,:,:,np.newaxis,:]
 
     # clean
@@ -1000,8 +979,8 @@ def apply_energy_switch(DM_ots_fts, DM_energy_demand):
     carrier_in.remove("electricity")
     carrier_in.remove("hydrogen")
     energy_switch(dm_energy_demand = DM_energy_demand["bytechcarr"], dm_energy_carrier_mix = dm_temp, 
-                        carrier_in = carrier_in, carrier_out = "electricity", 
-                        dm_energy_carrier_mix_prefix = "to-electricity")
+                  carrier_in = carrier_in, carrier_out = "electricity", 
+                  dm_energy_carrier_mix_prefix = "to-electricity")
 
     ####################
     ##### HYDROGEN #####
@@ -1011,8 +990,8 @@ def apply_energy_switch(DM_ots_fts, DM_energy_demand):
     carrier_in.remove("electricity")
     carrier_in.remove("hydrogen")
     energy_switch(dm_energy_demand = DM_energy_demand["bytechcarr"], dm_energy_carrier_mix = dm_temp, 
-                        carrier_in = carrier_in, carrier_out = "hydrogen", 
-                        dm_energy_carrier_mix_prefix = "to-hydrogen")
+                  carrier_in = carrier_in, carrier_out = "hydrogen", 
+                  dm_energy_carrier_mix_prefix = "to-hydrogen")
 
     ###############
     ##### GAS #####
@@ -1111,11 +1090,11 @@ def add_specific_energy_demands(DM_fxa, DM_energy_demand):
     # return
     return
 
-def emissions(cdm_const, DM_energy_demand, DM_material_production):
+def emissions(CDM_const, DM_energy_demand, DM_material_production):
     
     # get emission factors
-    cdm_temp1 = cdm_const.filter_w_regex({"Variables":".*emission-factor-process.*"})
-    cdm_temp2 = cdm_const.filter_w_regex({"Variables":".*emission-factor_.*"})
+    cdm_temp1 = CDM_const["emission-factor"].filter_w_regex({"Variables":".*emission-factor-process.*"})
+    cdm_temp2 = CDM_const["emission-factor"].filter_w_regex({"Variables":".*emission-factor_.*"})
 
     # rename emission factors process
     variables = cdm_temp1.col_labels["Variables"]
@@ -1299,7 +1278,7 @@ def material_switch_impact_for_buildings(DM_input_matswitchimpact, DM_energy_dem
     dm_matswitchimpact_bld.switch_categories_order("Categories1", "Categories2")
     dm_matswitchimpact_bld.group_all("Categories2", inplace = True)
     dm_matswitchimpact_bld.array = dm_matswitchimpact_bld.array / 1000
-    dm_matswitchimpact_bld.units["mineral-decomposition"] = "kt"
+    dm_matswitchimpact_bld.units["material-decomposition"] = "kt"
     dm_matswitchimpact_bld.rename_col("steel-to-timber", "steel", "Categories1")
     dm_matswitchimpact_bld.rename_col("cement-to-timber", "cement", "Categories1")
 
@@ -1312,9 +1291,9 @@ def material_switch_impact_for_buildings(DM_input_matswitchimpact, DM_energy_dem
 
     # get energy savings due to cement and steel switches to timber (TWh)
     dm_temp.append(dm_matswitchimpact_bld, "Variables")
-    dm_temp.operation("energy-demand-specific", "*", "mineral-decomposition", dim="Variables", 
+    dm_temp.operation("energy-demand-specific", "*", "material-decomposition", dim="Variables", 
                       out_col='energy-savings', unit='TWh')
-    dm_temp.drop(dim = "Variables", col_label = ['energy-demand-specific', 'mineral-decomposition'])
+    dm_temp.drop(dim = "Variables", col_label = ['energy-demand-specific', 'material-decomposition'])
 
     # get emissions for cement and steel produced (Kt)
     dm_temp1 = DM_emissions["bygasmat"].filter({"Categories2" : ["cement","steel"]})
@@ -1332,9 +1311,9 @@ def material_switch_impact_for_buildings(DM_input_matswitchimpact, DM_energy_dem
 
     # get emissions savings for cement and steel switches to timber (Kt)
     dm_temp1.append(dm_matswitchimpact_bld, "Variables")
-    dm_temp1.operation("emissions-specific", "*", "mineral-decomposition", dim="Variables", 
+    dm_temp1.operation("emissions-specific", "*", "material-decomposition", dim="Variables", 
                        out_col='emissions-savings', unit='Kt')
-    dm_temp1.drop(dim = "Variables", col_label = ['emissions-specific', 'mineral-decomposition'])
+    dm_temp1.drop(dim = "Variables", col_label = ['emissions-specific', 'material-decomposition'])
 
     # put together
     dm_bld_matswitch_savings_bymat = dm_temp
@@ -1346,10 +1325,10 @@ def material_switch_impact_for_buildings(DM_input_matswitchimpact, DM_energy_dem
     # return
     return dm_bld_matswitch_savings_bymat
 
-def compute_costs(cdm_const, DM_fxa, DM_material_production, DM_emissions):
+def compute_costs(CDM_const, DM_fxa, DM_material_production, DM_emissions):
     
     # get unit costs constants
-    cdm_cost = cdm_const.filter_w_regex({"Variables" : ".*cost-ind.*$"})
+    cdm_cost = CDM_const["cost"].filter_w_regex({"Variables" : ".*cost-ind.*$"})
     cdm_cost.rename_col_regex("_productive-assets", "", dim = "Variables")
     cdm_cost.rename_col_regex("cost-ind_", "", dim = "Variables")
     variables = cdm_cost.col_labels["Variables"]
@@ -1530,7 +1509,7 @@ def industry_agriculture_interface(DM_material_production, DM_energy_demand, wri
     dm_indwaste = dm_indwaste.flatten()
     dm_indwaste.rename_col("energy-demand_solid-waste", "waste", "Variables")
     DM_energy_demand["bioener_bybiomat"].rename_col("energy-demand_bioenergy", "bioenergy", "Variables")
-    DM_material_production["natfiber"].rename_col('mineral-decomposition', "dem", "Variables")
+    DM_material_production["natfiber"].rename_col('material-decomposition', "dem", "Variables")
 
     # dm_agr
     dm_agr = dm_timber.copy()
@@ -1721,8 +1700,8 @@ def industry_minerals_interface(DM_material_production, DM_production, DM_ots_ft
                           'trolley-cables', 'trucks-EV', 'trucks-FCV', 'trucks-ICE', 'tv', 
                           'wmachine']}).flatten(), "Variables")
     dm_min.append(DM_ots_fts["product-net-import"].filter(
-        {"Variables" : ['ind_product-net-import_new_dhg'],
-         "Categories1" : ['pipe']}).flatten(), "Variables")
+        {"Variables" : ['ind_product-net-import'],
+         "Categories1" : ['new-dhg-pipe']}).flatten(), "Variables")
     dm_min.sort("Variables")
 
     # df_min
@@ -1833,7 +1812,7 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     # industry data file
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     industry_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/industry.pickle')
-    DM_fxa, DM_ots_fts, dm_cal, cdm_const = read_data(industry_data_file, lever_setting)
+    DM_fxa, DM_ots_fts, dm_cal, CDM_const = read_data(industry_data_file, lever_setting)
     
     # get / simulate interfaces
     DM_interface = {}
@@ -1849,19 +1828,19 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     DM_demand = product_demand(DM_interface)
     
     # get product import
-    dm_imp = product_import(DM_ots_fts)
+    dm_imp = DM_ots_fts["product-net-import"]
     
     # get product production
     DM_production = product_production(DM_demand, dm_imp)
     
     # get material demand
-    DM_material_demand = material_decomposition(DM_production, cdm_const)
+    DM_material_demand = apply_material_decomposition(DM_production, CDM_const)
     
     # create dict to save material switch that will be used later for environmental impact
     DM_input_matswitchimpact = {}
     
     # do material switch (writes in DM_material_demand and DM_input_matswitchimpact)
-    apply_material_switch(DM_material_demand, DM_ots_fts, cdm_const, DM_input_matswitchimpact)
+    apply_material_switch(DM_material_demand, DM_ots_fts, CDM_const, DM_input_matswitchimpact)
     
     # get material production
     DM_material_production = material_production(DM_fxa, DM_ots_fts, DM_material_demand)
@@ -1874,7 +1853,7 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     material_production_by_technology(DM_ots_fts, DM_material_production)
     
     # get energy demand for material production
-    DM_energy_demand = energy_demand(cdm_const, DM_material_production)
+    DM_energy_demand = energy_demand(DM_material_production, CDM_const)
     
     # calibrate energy demand for material production (writes in DM_energy_demand)
     if calibration is True:
@@ -1890,7 +1869,7 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     add_specific_energy_demands(DM_fxa, DM_energy_demand)
     
     # get emissions
-    DM_emissions = emissions(cdm_const, DM_energy_demand, DM_material_production)
+    DM_emissions = emissions(CDM_const, DM_energy_demand, DM_material_production)
     
     # compute captured carbon (writes in DM_emissions)
     carbon_capture(DM_ots_fts, DM_emissions)
@@ -1908,7 +1887,7 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
                                              DM_material_production, DM_emissions)
         
     # get costs (capex and opex) for material production and carbon catpure
-    DM_cost = compute_costs(cdm_const, DM_fxa, DM_material_production, DM_emissions)
+    DM_cost = compute_costs(CDM_const, DM_fxa, DM_material_production, DM_emissions)
     
     # get variables for tpe (also writes in DM_cost, dm_bld_matswitch_savings_bymat, DM_emissions and DM_material_production for renaming)
     df = variables_for_tpe(DM_cost, dm_bld_matswitch_savings_bymat, DM_emissions, DM_material_production, DM_energy_demand)
@@ -1977,7 +1956,7 @@ def local_industry_run():
     # return
     return results_run
 
-# # run local
-# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
-# # database_from_csv_to_datamatrix()
-# results_run = local_industry_run()
+# run local
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
+database_from_csv_to_datamatrix()
+results_run = local_industry_run()
