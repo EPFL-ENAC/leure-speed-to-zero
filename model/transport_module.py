@@ -623,6 +623,8 @@ def passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const, years_sett
 
     dm_tot_energy = rename_and_group(dm_energy_new_cat, grouping, dict2, grouped_var='tra_passenger_total-energy')
 
+    dm_biogas = dm_tot_energy.filter({'Categories1': ['biogas']})
+
     # Compute emission by fuel
     # Filter fuels for which we have emissions
     cdm_const.drop(col_label='marinefueloil', dim='Categories2')
@@ -702,6 +704,7 @@ def passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const, years_sett
     DM_passenger_out['mode'] = dm_mode
     DM_passenger_out['tech'] = dm_tech
     DM_passenger_out['fuel'] = dm_fuel
+    DM_passenger_out['agriculture'] = dm_biogas
 
     return DM_passenger_out
 
@@ -849,6 +852,8 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
     dm_total_energy = rename_and_group(dm_energy_new_cat, grouping, dict2, grouped_var='tra_freight_total-energy')
     dm_total_energy.rename_col('ICE', 'marinefueloil', dim='Categories1')
 
+    dm_biogas = dm_total_energy.filter({'Categories1': ['biogas']})
+
     # Compute emission by fuel
     # Filter fuels for which we have emissions
     dm_energy_em = dm_total_energy.filter({'Categories1': cdm_const.col_labels['Categories2']})
@@ -909,6 +914,7 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
     DM_freight_out['mode'] = dm_mode
     DM_freight_out['tech'] = dm_tech
     DM_freight_out['energy'] = dm_energy
+    DM_freight_out['agriculture'] = dm_biogas
 
     return DM_freight_out
 
@@ -958,10 +964,19 @@ def transport(lever_setting, years_setting, interface=Interface()):
     results_run = df
 
     # Power-module
-    #dm_electricity = DM_passenger_out['power']
-    #dm_electricity.array = dm_electricity.array + DM_freight_out['power'].array
-    #df = dm_electricity.write_df()
+    dm_power = DM_passenger_out['power']
+    dm_power.array = dm_power.array + DM_freight_out['power'].array
+    interface.add_link(from_sector='transport', to_sector='power', dm=dm_power)
+    #df = dm_power.write_df()
     #df.to_excel('transport-to-power.xlsx', index=False)
+
+    # Agriculture-module
+    # !FIXME: of all of the bio-energy demand, only the biogas one is accounted for in Agriculture
+    dm_agriculture = DM_freight_out['agriculture']
+    dm_agriculture.array = dm_agriculture.array + DM_passenger_out['agriculture'].array
+    dm_agriculture.rename_col('tra_freight_total-energy', 'tra_bioenergy', dim='Variables')
+    dm_agriculture.rename_col('biogas', 'gas', dim='Categories1')
+    interface.add_link(from_sector='agriculture', to_sector='power', dm=dm_agriculture)
 
     return results_run
 
@@ -980,5 +995,4 @@ def local_transport_run():
     return results_run
 
 #database_from_csv_to_datamatrix()
-
 #results_run = local_transport_run()
