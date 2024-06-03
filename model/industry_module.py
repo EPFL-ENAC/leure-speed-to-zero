@@ -12,7 +12,7 @@ from model.common.io_database import read_database, read_database_fxa, edit_data
 from model.common.interface_class import Interface
 from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm, read_database_to_ots_fts_dict, read_level_data
 from model.common.auxiliary_functions import simulate_input, material_decomposition, calibration_rates, cost
-from model.common.auxiliary_functions import material_switch
+from model.common.auxiliary_functions import material_switch, energy_switch
 import pickle
 import json
 import os
@@ -21,59 +21,6 @@ import re
 import warnings
 import time
 warnings.simplefilter("ignore")
-    
-def energy_switch(dm_energy_demand, dm_energy_carrier_mix, carrier_in, carrier_out, dm_energy_carrier_mix_prefix):
-    
-    # this function does the energy switch
-    # dm_energy_demand is the dm with technologies (cat1) and energy carriers (cat2)
-    # dm_energy_carrier_mix is the dm with technologies (cat1) and % for the switches (cat2)
-    # carrier_in is the carrier that gets switched
-    # carrier_out is the carrier that is switched to
-    # dm_energy_carrier_mix_prefix is the prefix for the energy switch in dm_energy_carrier_mix
-    
-    # get categories
-    carriers_category = dm_energy_demand.dim_labels[-1]
-    
-    # get carriers
-    carrier_all = dm_energy_demand.col_labels[carriers_category]
-    carrier_in_exclude = np.array(carrier_all)[[i not in carrier_in for i in carrier_all]].tolist()
-    
-    # for all material-technologies, get energy demand for all carriers but carrier out and excluded ones
-    dm_temp1 = dm_energy_demand.filter_w_regex({carriers_category : "^((?!" + "|".join(carrier_in_exclude) + ").)*$"})
-    
-    # get percentages of energy switched to carrier out for each of material-technology
-    dm_temp2 = dm_energy_carrier_mix.filter_w_regex({carriers_category : ".*" + dm_energy_carrier_mix_prefix})
-    
-    # for all material-technologies, get additional demand for carrier out for each energy carrier
-    names = dm_temp1.col_labels[carriers_category]
-    for i in names:
-        dm_temp1.rename_col(i, i + "_total", carriers_category)
-    dm_temp1.deepen()
-    dm_temp1.add(dm_temp1.array, dim = dm_temp1.dim_labels[-1], col_label = dm_energy_carrier_mix_prefix)
-    idx_temp1 = dm_temp1.idx
-    dm_temp1.array[...,idx_temp1[dm_energy_carrier_mix_prefix]] = \
-        dm_temp1.array[...,idx_temp1[dm_energy_carrier_mix_prefix]] * dm_temp2.array
-    
-    # get total carrier out switched
-    dm_temp3 = dm_temp1.group_all(dim=carriers_category, inplace = False)
-    dm_temp3.drop(carriers_category, "total")
-    
-    # sum this additional demand for carrier out due to switch to carrier-out demand
-    dm_temp3.append(dm_energy_demand.filter({carriers_category : [carrier_out]}), carriers_category)
-    idx = dm_energy_demand.idx
-    dm_energy_demand.array[:,:,:,:,idx[carrier_out]] = np.nansum(dm_temp3.array, axis = -1)
-    
-    # for each energy carrier, subtract additional demand for carrier out due to switch
-    dm_temp1.array[...,idx_temp1[dm_energy_carrier_mix_prefix]] = \
-        dm_temp1.array[...,idx_temp1[dm_energy_carrier_mix_prefix]] * -1 # this is to do minus with np.nansum
-    dm_temp1.add(np.nansum(dm_temp1.array, axis = -1, keepdims=True), dim = dm_temp1.dim_labels[-1], col_label = "final")
-    dm_temp1.drop(dm_temp1.dim_labels[-1], ['total', dm_energy_carrier_mix_prefix])
-    dm_temp1 = dm_temp1.flatten()
-    dm_temp1.rename_col_regex(str1 = "_final", str2 = "", dim = carriers_category)
-    drops = dm_temp1.col_labels[carriers_category]
-    dm_energy_demand.drop(carriers_category, drops)
-    dm_energy_demand.append(dm_temp1, carriers_category)
-    dm_energy_demand.sort(carriers_category)
 
 def rename_tech_fordeepen(word):
     
