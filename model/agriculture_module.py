@@ -312,12 +312,13 @@ def database_from_csv_to_datamatrix():
     file = 'agriculture_land-management_pathwaycalc'
     lever = 'land-man'
     # edit_database(file,lever,column='eucalc-name',pattern={'meat_':'meat-', 'abp_':'abp-'},mode='rename')
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1],
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1],
                                                                 baseyear=baseyear,
                                                                 years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
                                                                 column='eucalc-name',
                                                                 group_list=['agr_land-man_use.*',
-                                                                            'agr_land-man_dyn.*'])
+                                                                            'agr_land-man_dyn.*',
+                                                                            'agr_land-man_gap.*'])
 
     # num_cat_list=[1 = nb de cat de losses, 1 = nb de cat yield]
 
@@ -458,6 +459,7 @@ def read_data(data_file, lever_setting):
     dm_land_man_use = DM_ots_fts['land-man']['agr_land-man_use']
     dm_land_total = DM_agriculture['fxa']['lus_land_total-area']
     dm_land_man_dyn = DM_ots_fts['land-man']['agr_land-man_dyn']
+    dm_land_man_gap = DM_ots_fts['land-man']['agr_land-man_gap']
 
     # Aggregated Data Matrix - ENERGY & GHG EMISSIONS
     DM_energy_ghg = {
@@ -546,7 +548,8 @@ def read_data(data_file, lever_setting):
     DM_land_use = {
         'land_man_use': dm_land_man_use,
         'land_total': dm_land_total,
-        'land_man_dyn': dm_land_man_dyn
+        'land_man_dyn': dm_land_man_dyn,
+        'land_man_gap': dm_land_man_gap
     }
 
     cdm_const = DM_agriculture['constant']
@@ -2036,6 +2039,11 @@ def land_allocation_workflow(DM_land_use, dm_land_use):
                                           unit='ha')
     DM_land_use['land_man_use'].drop(dim='Variables', col_label=['lus_land_temp'])
 
+    #dm_temp = DM_land_use['land_man_use'].filter({'Variables': ['lus_land']})
+    #dm_temp = DM_land_use['land_man_use'].copy()
+    #df_temp = dm_temp.write_df()
+    #print(df_temp.head(50))
+
     return DM_land_use
 
 
@@ -2079,6 +2087,98 @@ def agriculture(lever_setting, years_setting):
     # CalculationTree LAND USE
     dm_wood = wood_workflow(DM_bioenergy, dm_lgn, dm_ind)
     DM_land_use = land_allocation_workflow(DM_land_use, dm_land_use)
+
+    # CalculationLeaf LAND USE MATRIX
+
+    # LAND USE INITIAL AREA --------------------------------------------------------------------------------------------
+
+    # Land initial area per land type [ha] = lus_land from previous year
+    dm_temp = DM_land_use['land_man_use'].filter({'Variables': ['lus_land']})
+    array_temp = dm_temp.array
+    array_initial_area = np.zeros_like(array_temp)
+    array_initial_area[1:] = array_temp[:-1]
+    DM_land_use['land_man_gap'].add(array_temp, dim='Variables', col_label='lus_land_initial-area', unit='ha')
+
+    # Land initial area UNFCCC [ha] = land initial area per land type [ha] + land gap per land type [ha]
+    # Fills the gap between FAO and UNFCCC data
+    DM_land_use['land_man_gap'].operation('lus_land_initial-area', '+', 'agr_land-man_gap',
+                                          out_col='lus_land_initial-area_unfccc', unit='ha')
+
+    # OTS COMPUTATIONS -------------------------------------------------------------------------------------------------
+    # Appending dm
+    dm_temp = DM_land_use['land_man_use'].filter({'Variables': ['lus_land']})
+    DM_land_use['land_man_gap'].append(dm_temp, dim='Variables')
+
+    # Land difference [ha] = Land demand - Land initial area UNFCCC [ha]
+    # For: other, settlement, wetland, cropland, grassland, forest
+    DM_land_use['land_man_gap'].operation('lus_land', '-', 'lus_land_initial-area_unfccc',
+                                          out_col='lus_land_diff', unit='ha')
+
+    # Filtering between land to crop from other lands (diff>0) and excess land available for other land type (diff<0)
+    # Land to-crop [ha] = Land difference [ha] >= 0
+    dm_temp = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_diff']})
+    array_temp = dm_temp.array[:, :, :, :]
+    array_land_to_crop = np.maximum(array_temp, 0)
+    DM_land_use['land_man_gap'].add(array_land_to_crop, dim='Variables', col_label='lus_land_to-crop', unit='ha')
+
+    # Land excess [ha] = Land difference [ha] < 0
+    dm_temp = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_diff']})
+    array_temp = dm_temp.array[:, :, :, :]
+    array_land_excess = -np.maximum(-array_temp, 0)
+    DM_land_use['land_man_gap'].add(array_land_excess, dim='Variables', col_label='lus_land_excess', unit='ha')
+
+    # LAND MATRIX ------------------------------------------------------------------------------------------------------
+    # Creating a blank land use matrix (cat1 = TO, cat2 = FROM) (per year & per country)
+    # cat1 = cat2 : cropland, grassland, forest, settlement, wetland, other, total
+    dm_to_copy = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_diff']})
+
+    # Create datamatrix by depth
+    col_labels = {
+        'Country': dm_to_copy.col_labels['Country'].copy(),
+        'Years': dm_to_copy.col_labels['Years'].copy(),
+        'Variables': ['matrix'],
+        'Categories1': dm_to_copy.col_labels['Categories1'].copy(),
+        'Categories2': dm_to_copy.col_labels['Categories1'].copy()
+    }
+    dm_matrix = DataMatrix(col_labels, units={'matrix': 'ha'})
+
+    # Adding dummy categories 1 'total_to-crop' & categories 2 'total_excess'
+    #dm_matrix.add(0.0, dummy=True, col_label='total_to-crop', dim='Categories1', unit='ha')
+    #dm_matrix.add(0.0, dummy=True, col_label='total_excess', dim='Categories2', unit='ha')
+
+    # Fill cat1 = TO 'total' with the land to crop (land type to "create")
+    #dm_land_to_crop = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_to-crop']})
+    #dm_matrix.append(dm_land_to_crop, dim='Categories1')
+
+    # Fill cat2 = FROM 'total' with the land excess (land type to "change")
+
+    # (no need) When the 'total' = 0 (aka there is no land demand or excess), fill the relevant columns/rows with zeros
+    # be careful with diagonal (make sure that cropland does not crop from cropland)
+
+    # Solve the values of the matrix so that the sum of the rows/columns are equal to 'total'
+
+    # Check that net change = 0
+
+    # Multiply land to-crop (demand) with the land use matrix (for each land type)
+
+    # FTS ITERATIONS ---------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     print('hello')
     return
