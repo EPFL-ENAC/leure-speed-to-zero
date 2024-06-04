@@ -293,7 +293,7 @@ class DataMatrix:
             if col not in list(self.idx.keys()):
                 self.idx[col] = i_v[col]
             else:
-                raise ValueError("You are trying to append data under the label " + col_label + " which already exists")
+                raise ValueError(f"You are trying to append data under the label {col_label} which already exists")
         if dim == 'Variables':
             for i, col in enumerate(col_label):
                 self.units[col] = unit[i]
@@ -575,8 +575,8 @@ class DataMatrix:
         # The pre-requisite is that all other dimensions match
         dim_lab = self.dim_labels.copy()
         dim_lab.remove(dim)
-        if 'Variables' in dim_lab:
-            dim_lab.remove("Variables")
+        #if 'Variables' in dim_lab:
+        #    dim_lab.remove("Variables")
         for d in dim_lab:
             if self.col_labels[d] != data2.col_labels[d]:
                 self.sort(dim=d)
