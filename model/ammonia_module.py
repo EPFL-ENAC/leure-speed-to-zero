@@ -1091,10 +1091,10 @@ def local_ammonia_run():
     # return
     return results_run
 
-# run local
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/ammonia_module.py"
-# database_from_csv_to_datamatrix()
-start = time.time()
-results_run = local_ammonia_run()
-end = time.time()
-print(end-start)
+# # run local
+# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/ammonia_module.py"
+# # database_from_csv_to_datamatrix()
+# start = time.time()
+# results_run = local_ammonia_run()
+# end = time.time()
+# print(end-start)
