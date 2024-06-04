@@ -217,7 +217,6 @@ def simulate_industry_to_district_heating_input():
     file_path = os.path.join(current_file_directory, '../_database/data/xls/', file)
     df = pd.read_excel(file_path, sheet_name="default")
     dm_ind = DataMatrix.create_from_df(df, num_cat=0)
-    dm_ind.rename_col('ind_supply_heat-waste', 'dhg_energy-demand_contribution_heat-waste', dim='Variables')
 
     return dm_ind
 
@@ -482,9 +481,9 @@ def district_heating_local_run():
     district_heating(lever_setting, years_setting)
     return
 
-# dummy_countries_fxa()
-# database_from_csv_to_datamatrix()
-# district_heating_local_run()
+dummy_countries_fxa()
+database_from_csv_to_datamatrix()
+district_heating_local_run()
 
 
 
