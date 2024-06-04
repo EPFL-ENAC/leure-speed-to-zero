@@ -107,8 +107,7 @@ def database_from_csv_to_datamatrix():
     dm_ind = dm_ind.filter(selected_cols={'Years': years_all})
 
     # save
-    dm_liquid = dm_ind.filter({"Variables" : ['amm_liquid-ff-oil_diesel', 'amm_liquid-ff-oil_fuel-oil', 
-                                          'ind_liquid-ff-oil_diesel', 'ind_liquid-ff-oil_fuel-oil']})
+    dm_liquid = dm_ind.filter({"Variables" : ['ind_liquid-ff-oil_diesel', 'ind_liquid-ff-oil_fuel-oil']})
     dm_prod = dm_ind.filter({"Variables" : ['ind_prod_fbt', 'ind_prod_mae', 'ind_prod_ois', 'ind_prod_textiles', 
                                         'ind_prod_tra-equip', 'ind_prod_wwp']})
     dict_fxa = {
@@ -169,6 +168,12 @@ def database_from_csv_to_datamatrix():
         dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1, baseyear=baseyear,
                                                             years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
                                                             df_ots=df_ots, df_fts=df_fts)
+        
+        # drop ammonia
+        dict_ots[lever].drop("Categories1", ['ammonia-amm-tech'])
+        for i in range(1, 5):
+            dict_fts[lever][i].drop("Categories1", ['ammonia-amm-tech'])
+        
 
     # material net import
     file = 'industry_material-net-import'
@@ -204,6 +209,7 @@ def database_from_csv_to_datamatrix():
         dm_temp.rename_col(i, "energy-mix_" + i, "Variables")
     dm_temp.deepen(based_on="Variables")
     dm_temp.switch_categories_order(cat1='Categories1', cat2='Categories2')
+    dm_temp.drop("Categories1", ["ammonia-amm-tech"])
     for i in range(1, 5):
         dm_temp = dict_fts['energy-carrier-mix'][i]
         dm_temp.rename_col_regex(str1 = "ind_energy-carrier-mix_", str2 = "", dim = "Variables")
@@ -213,6 +219,7 @@ def database_from_csv_to_datamatrix():
             dm_temp.rename_col(n, "energy-mix_" + n, "Variables")
         dm_temp.deepen(based_on="Variables")
         dm_temp.switch_categories_order(cat1='Categories1', cat2='Categories2')
+        dm_temp.drop("Categories1", ["ammonia-amm-tech"])
     
 
     #######################
@@ -286,6 +293,7 @@ def database_from_csv_to_datamatrix():
     cdm_temp.rename_col_regex(str1 = "tec_energy_specific-excl-feedstock_", str2 = "", dim = "Variables")
     cdm_temp.deepen()
     cdm_temp.rename_col_regex("_", "-", dim = "Variables")
+    cdm_temp.drop("Variables", 'ammonia-amm-tech')
     dict_const["energy_excl-feedstock"]  = cdm_temp
     
     # energy demand feedstock
@@ -293,6 +301,7 @@ def database_from_csv_to_datamatrix():
     cdm_temp.rename_col_regex(str1 = "tec_energy_specific-feedstock_", str2 = "", dim = "Variables")
     cdm_temp.deepen()
     cdm_temp.rename_col_regex("_", "-", dim = "Variables")
+    cdm_temp.drop("Variables", 'ammonia-amm-tech')
     dict_const["energy_feedstock"]  = cdm_temp
     
     # emission factor process
@@ -302,12 +311,15 @@ def database_from_csv_to_datamatrix():
     for i in range(len(variables)):
         cdm_temp1.rename_col(variables[i], variables_new[i], "Variables")
     cdm_temp1.deepen_twice()
+    cdm_temp1.drop(dim = "Categories2", col_label = ['ammonia-amm-tech'])
     dict_const["emission-factor-process"] = cdm_temp1
     
     # emission factor
     cdm_temp2 = cdm_const.filter_w_regex({"Variables":".*emission-factor_.*"})
     cdm_temp2.deepen_twice()
+    cdm_temp2.drop(dim = "Categories2", col_label = ['gas-synfuel', 'liquid-synfuel'])
     dict_const["emission-factor"] = cdm_temp2
+
 
     ################
     ##### SAVE #####
@@ -712,7 +724,6 @@ def material_production_by_technology(DM_ots_fts, DM_material_production):
 
     # get tech share
     dm_temp = DM_ots_fts['technology-share'].copy()
-    dm_temp.drop(dim = "Categories1", col_label = ['ammonia-amm-tech']) # drop ammonia
 
     # create dm_material_production_bytech
     dm_material_production_bytech = DM_material_production["bymat"].copy()
@@ -758,7 +769,6 @@ def energy_demand(DM_material_production, CDM_const):
 
         # get constants for energy demand for material production by technology
         cdm_temp = CDM_const["energy_" + f]
-        cdm_temp.drop(dim = "Variables", col_label = ['ammonia-amm-tech'])
         
         # create dm for energy demand for material production by technology
         names = cdm_temp.col_labels["Variables"]
@@ -847,7 +857,6 @@ def technology_development(DM_ots_fts, DM_energy_demand):
 
     # get technology development
     dm_temp = DM_ots_fts['technology-development'].copy()
-    dm_temp.drop(dim = "Categories1", col_label = ['ammonia-amm-tech']) # drop ammonia
 
     # get energy demand after technology development
     DM_energy_demand["bytechcarr"].array = DM_energy_demand["bytechcarr"].array * (1 - dm_temp.array[...,np.newaxis])
@@ -866,7 +875,6 @@ def apply_energy_switch(DM_ots_fts, DM_energy_demand):
 
     # get energy mix
     dm_temp = DM_ots_fts['energy-carrier-mix'].copy()
-    dm_temp.drop(dim = "Categories1", col_label = ['ammonia-amm-tech'])
 
     #######################
     ##### ELECTRICITY #####
@@ -993,10 +1001,6 @@ def emissions(CDM_const, DM_energy_demand, DM_material_production):
     cdm_temp1 = CDM_const["emission-factor-process"]
     cdm_temp2 = CDM_const["emission-factor"]
 
-    # drop synfuel (as for now we do not have demand) and ammonia
-    cdm_temp1.drop(dim = "Categories2", col_label = ['ammonia-amm-tech'])
-    cdm_temp2.drop(dim = "Categories2", col_label = ['gas-synfuel', 'liquid-synfuel'])
-
     # emissions = energy demand * emission factor
 
     # combustion
@@ -1056,7 +1060,6 @@ def carbon_capture(DM_ots_fts, DM_emissions):
     
     # get carbon capture
     dm_temp = DM_ots_fts['cc'].copy()
-    dm_temp.drop("Categories1", ["ammonia-amm-tech"])
 
     # subtract carbon captured to total CO2 emissions per technology
     idx = DM_emissions["bygastech"].idx
