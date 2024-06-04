@@ -1690,7 +1690,7 @@ def industry_district_heating_interface(DM_energy_demand, write_xls = False):
     # FIXME!: make dummy values for dh (this is like this also in KNIME, to be seen what to do)
     dm_dh = DM_energy_demand["bycarr"].filter({"Categories1" : ["electricity"]})
     dm_dh = dm_dh.flatten()
-    dm_dh.add(0, dim = "Variables", col_label = "ind_supply_heat-waste", unit = "TWh/year", dummy = True)
+    dm_dh.add(0, dim = "Variables", col_label = "dhg_energy-demand_contribution_heat-waste", unit = "TWh/year", dummy = True)
     dm_dh.drop("Variables", 'energy-demand_electricity')
 
     # dm_dh
@@ -1877,17 +1877,17 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     # dm_gtap = industry_gtap_interface(DM_energy_demand, DM_material_production)
     # interface.add_link(from_sector='industry', to_sector='gtap', dm=dm_gtap)
     
-    # interface minerals
-    dm_min = industry_minerals_interface(DM_material_production, DM_production, DM_ots_fts)
-    interface.add_link(from_sector='industry', to_sector='minerals', dm=dm_min)
+    # # interface minerals
+    # dm_min = industry_minerals_interface(DM_material_production, DM_production, DM_ots_fts)
+    # interface.add_link(from_sector='industry', to_sector='minerals', dm=dm_min)
     
     # # interface employment
     # dm_emp = industry_employment_interface(DM_material_demand, DM_energy_demand, DM_material_production, DM_cost, DM_ots_fts)
     # interface.add_link(from_sector='industry', to_sector='employment', dm=dm_emp)
     
-    # interface climate
-    dm_cli = industry_climate_interface(DM_emissions)
-    interface.add_link(from_sector='industry', to_sector='climate', dm=dm_cli)
+    # # interface climate
+    # dm_cli = industry_climate_interface(DM_emissions)
+    # interface.add_link(from_sector='industry', to_sector='climate', dm=dm_cli)
     
     # # interface air pollution
     # dm_airpoll = industry_airpollution_interface(DM_material_production, DM_energy_demand)
