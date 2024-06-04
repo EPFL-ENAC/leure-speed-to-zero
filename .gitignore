@@ -1,8 +1,9 @@
 # discard the data
+_database/data/*
+_database/data/*.zip
 _database/data/csv/*
 _database/data/datamatrix/*
 _database/data/xls/*
-_database/data/*
 !_database/data/csv/interactions_constants.csv
 
 # discard .idea pycharm folder
