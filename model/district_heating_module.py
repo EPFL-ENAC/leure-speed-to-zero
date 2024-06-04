@@ -15,7 +15,7 @@ from model.common.constant_data_matrix_class import ConstantDataMatrix
 # Import functions
 from model.common.io_database import read_database, read_database_fxa, read_database_w_filter, update_database_from_db
 from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups
-from model.common.auxiliary_functions import read_level_data
+from model.common.auxiliary_functions import read_level_data, cost
 
 warnings.simplefilter("ignore")
 
@@ -134,15 +134,31 @@ def database_from_csv_to_datamatrix():
     dm_dhg_replacement = DataMatrix.create_from_df(df, num_cat=0)
     dict_fxa['dhg-replacement-rate'] = dm_dhg_replacement
 
+    df = read_database_fxa('costs_fixed-assumptions')
+    dm_cost = DataMatrix.create_from_df(df, num_cat=0)
+    dict_fxa['cost'] = dm_cost
+
     cdm_const = ConstantDataMatrix.extract_constant('interactions_constants', pattern='cp_emission-factor_.*',
                                                     num_cat=2)
+
+    cdm_cost = ConstantDataMatrix.extract_constant('interactions_constants', pattern='cp_cost-bld_', num_cat=0)
+    cdm_cost = cdm_cost.filter_w_regex({'Variables': '.*_dh_.*'})
+    cdm_cost.rename_col_regex('_shared-infrastructures', '', dim='Variables')
+    cdm_cost.rename_col_regex('_dh', '', dim='Variables')
+    cdm_cost.rename_col_regex('cp_cost-bld_', '', dim='Variables')
+    cdm_cost.rename_col_regex('-woodlogs', '', dim='Variables')
+
+    dict_const = {
+        'emission-factor': cdm_const,
+        'cost': cdm_cost
+    }
 
     # group all datamatrix in a single structure
     DM_district_heating = {
         'fxa': dict_fxa,
         'fts': dict_fts,
         'ots': dict_ots,
-        'constant': cdm_const
+        'constant': dict_const
     }
 
     # write datamatrix to pickle
@@ -159,16 +175,20 @@ def read_data(data_file, lever_setting):
     with open(data_file, 'rb') as handle:
         DM_district_heating = pickle.load(handle)
 
-    dm_rr = DM_district_heating['fxa']
+    dm_rr = DM_district_heating['fxa']['dhg-replacement-rate']
+    dm_capacity = DM_district_heating['fxa']['dhg-capacity']
+    dm_price = DM_district_heating['fxa']['cost']
+
     # Read fts based on lever_setting
     DM_ots_fts = read_level_data(DM_district_heating, lever_setting)
 
-    dm = DM_ots_fts['heatcool-efficiency']
-    dm.append(DM_ots_fts['heatcool-technology-fuel']['bld_heat-district-technology'], dim='Variables')
+    dm_dhg = DM_ots_fts['heatcool-efficiency']
+    dm_dhg.append(DM_ots_fts['heatcool-technology-fuel']['bld_heat-district-technology'], dim='Variables')
 
-    cdm_const = DM_district_heating['constant']
+    cdm_emission = DM_district_heating['constant']['emission-factor']
+    cdm_cost = DM_district_heating['constant']['cost']
 
-    return dm, dm_rr, cdm_const
+    return dm_dhg, dm_rr, dm_capacity, dm_price, cdm_emission, cdm_cost
 
 
 def simulate_power_to_district_heating_input():
@@ -197,7 +217,6 @@ def simulate_industry_to_district_heating_input():
     file_path = os.path.join(current_file_directory, '../_database/data/xls/', file)
     df = pd.read_excel(file_path, sheet_name="default")
     dm_ind = DataMatrix.create_from_df(df, num_cat=0)
-    dm_ind.rename_col('ind_supply_heat-waste', 'dhg_energy-demand_contribution_heat-waste', dim='Variables')
 
     return dm_ind
 
@@ -239,6 +258,7 @@ def dhg_energy_demand_workflow(dm_dhg, dm_bld, dm_pow, dm_ind):
     arr_energy_by_tech = dm_dhg.array[:, :, idx_t['dhg_energy-need-technology-share'], :] \
                          * dm_bld.array[:, :, idx_b['bld_district-heating-space-heating-supply'], np.newaxis]/1000
     dm_dhg.add(arr_energy_by_tech, dim='Variables', col_label='dhg_energy-need', unit='TWh')
+
     # !FIXME: we have already multiplied by the efficiency earlier, check if this is correct
     # energy-need-by-fuel * efficiency-by-fuel
     dm_dhg.operation('dhg_energy-need', '*', 'bld_heat-district-efficiency', out_col='dhg_energy-demand-prelim', unit='TWh')
@@ -308,6 +328,7 @@ def dhg_emissions_workflow(DM_energy, dm_CO2_coef, cdm_emission_fact):
     idx_c = cdm_emission_fact.idx
     arr = dm_heat_by_fuel.array[:, :, idx_h['dhg_energy-demand_added-district-heat'], np.newaxis, :] \
           * cdm_emission_fact.array[np.newaxis, np.newaxis, idx_c['cp_emission-factor'], :, :]
+
     col_labels = {
         'Country': dm_heat_by_fuel.col_labels['Country'],
         'Years': dm_heat_by_fuel.col_labels['Years'],
@@ -317,6 +338,7 @@ def dhg_emissions_workflow(DM_energy, dm_CO2_coef, cdm_emission_fact):
     }
     dm_emissions = DataMatrix(col_labels, units={'dhg_emissions': 'Mt'})
     dm_emissions.array = arr[:, :, np.newaxis, :, :]
+
     del cdm_emission_fact, arr, idx_c, idx_h, col_labels, dm_heat_by_fuel
 
     # Group emissions by GHG + Rename for TPE
@@ -343,25 +365,62 @@ def dhg_emissions_workflow(DM_energy, dm_CO2_coef, cdm_emission_fact):
     return DM_emissions_out
 
 
-def dhg_costs_workflow(dm_fuel, DM_rr):
+def dhg_costs_workflow(dm_fuel, dm_cap, dm_rr, dm_price, cdm_cost, baseyear):
 
-    dm_cap = DM_rr['dhg-capacity']
     # Capacity factor from daily to yearly
     dm_cap.array = dm_cap.array * 8760
     dm_fuel.append(dm_cap, dim='Variables')
     # capacity [TW] = energy-demand [TWh] /capacity-factor
     dm_fuel.operation('dhg_energy-demand_added-district-heat', '/', 'bld_district-capacity', out_col='dhg_capacity_dh', unit='TW')
 
-    # capacity[TW] x replacement-rate[%]
-    dm_rr = DM_rr['dhg-replacement-rate']
+    # capacity[TW] = capacity[TW] x replacement-rate[%]
     idx_r = dm_rr.idx
     idx_f = dm_fuel.idx
-    arr = dm_fuel.array[:, :, idx_f['dhg_capacity_dh'], :] \
-          * dm_rr.array[:, :, idx_r['bld_district-fixed-assumptions_replacement-rate'], np.newaxis]
+    # Update capacity value by accounty for replacement rate
+    dm_fuel.array[:, :, idx_f['dhg_capacity_dh'], :] = dm_fuel.array[:, :, idx_f['dhg_capacity_dh'], :] \
+                                                       * dm_rr.array[:, :, idx_r['bld_district-fixed-assumptions_replacement-rate'], np.newaxis]
+    dm_activity = dm_fuel.filter({'Variables': ['dhg_capacity_dh']})
 
     # ! FIXME: add cost calculation here
+    cdm_pipe_cost = cdm_cost.filter_w_regex({'Variables': '.*pipes'})
+    cdm_pipe_cost.deepen()
+    cdm_cost.drop(dim='Variables', col_label='.*pipes')
+    cdm_cost.deepen()
+    cdm_cost = cdm_cost.filter({'Categories1': dm_activity.col_labels['Categories1']})
 
-    return
+    # Change cost units from EUR/kW to EUR/TW
+    idx = cdm_cost.idx
+    cdm_cost.array[idx['capex-baseyear'], :] = cdm_cost.array[idx['capex-baseyear'], :]*1000
+    cdm_cost.units['capex-baseyear'] = 'EUR/TW'
+
+    dm_capex_heat = cost(dm_activity=dm_activity, dm_price_index=dm_price, cdm_cost=cdm_cost, cost_type='capex',
+                         baseyear=baseyear, unit_cost=False)
+
+    # Pipes cost
+    # pipes [km] = energy [TWh] * 118300
+    # new pipes [km] = pipes [km] * 0.0125
+    dm_energy = dm_fuel.filter({'Variables': ['dhg_energy-demand_added-district-heat']})
+    dm_energy.group_all(dim='Categories1')
+    dm_energy.array = dm_energy.array * 118300 * 0.0125
+    dm_energy.rename_col('dhg_energy-demand_added-district-heat', 'bld_new_dh_pipes', dim='Variables')
+    dm_energy.units['bld_new_dh_pipes'] = 'km'
+    dm_pipes = dm_energy
+    dm_pipes.deepen()
+
+    dm_capex_pipe = cost(dm_activity=dm_pipes, dm_price_index=dm_price, cdm_cost=cdm_pipe_cost, cost_type='capex',
+                         baseyear=baseyear, unit_cost=False)
+
+    # Rename for employment
+    dm_capex_pipe.rename_col('capex', 'bld_capex_construction', dim='Variables')
+    dm_capex_heat.rename_col('capex', 'bld_capex_district-heat-generation-plants', dim='Variables')
+    dm_capex_pipe.append(dm_pipes, dim='Variables')
+    dm_capex_pipe.rename_col('bld_new_dh', 'bld_new_district-heat-generation-plants', dim='Variables')
+
+    DM_cost_out = {
+        'employment': {'cost-capacity': dm_capex_heat, 'pipe': dm_capex_pipe},
+        'industry': dm_pipes
+    }
+    return DM_cost_out
 
 
 def dhg_TPE_interface(DM_energy, DM_emissions):
@@ -382,7 +441,7 @@ def district_heating(lever_setting, years_setting, interface=Interface()):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     district_heating_data_file = os.path.join(current_file_directory,
                                               '../_database/data/datamatrix/district-heating.pickle')
-    dm_dhg, dm_rr, cdm_const = read_data(district_heating_data_file, lever_setting)
+    dm_dhg, dm_rr, dm_capacity, dm_price, cdm_emission, cdm_cost = read_data(district_heating_data_file, lever_setting)
 
     if interface.has_link(from_sector='power', to_sector='district-heating'):
         DM_pow = interface.get_link(from_sector='power', to_sector='district-heating')
@@ -404,10 +463,11 @@ def district_heating(lever_setting, years_setting, interface=Interface()):
     DM_energy_out = dhg_energy_demand_workflow(dm_dhg, dm_bld, DM_pow['wf_energy'], dm_ind)
     # Input: Energy demand district-heating by fuel + waste/CHP; GHG emission factors; CO2 emission factor for waste/CHP
     # Output: emissions by GHG for district-heating by fuel, emissions for CO2 for waste and CHP heat
-    DM_emissions_out = dhg_emissions_workflow(DM_energy_out['wf_emissions'], DM_pow['wf_emissions'], cdm_const)
+    DM_emissions_out = dhg_emissions_workflow(DM_energy_out['wf_emissions'], DM_pow['wf_emissions'], cdm_emission)
     # Input: district-capacity (by fuel), replacement-rate, energy-demand (by fuel)
     # Output:
-    dhg_costs_workflow(DM_energy_out['wf_costs'], dm_rr)
+    baseyear = years_setting[1]
+    DM_cost_out = dhg_costs_workflow(DM_energy_out['wf_costs'], dm_capacity, dm_rr, dm_price, cdm_cost, baseyear)
     #!FIXME: some dhg output to TPE are computed during the 'cube' but it is not working,...
     # ....fix this by computing the variables directly here
     df_TPE = dhg_TPE_interface(DM_energy_out['TPE'], DM_emissions_out['TPE'])
@@ -421,9 +481,10 @@ def district_heating_local_run():
     district_heating(lever_setting, years_setting)
     return
 
-# dummy_countries_fxa()
-# database_from_csv_to_datamatrix()
-# district_heating_local_run()
+dummy_countries_fxa()
+database_from_csv_to_datamatrix()
+district_heating_local_run()
+
 
 
 

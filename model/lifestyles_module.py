@@ -173,10 +173,6 @@ def database_from_csv_to_datamatrix():
     return
 
 
-# Update/Create the Pickle
-#database_from_csv_to_datamatrix()  # un-comment to update
-
-
 #  Reading the Pickle
 def read_data(data_file, lever_setting):
     with open(data_file, 'rb') as handle:  # read binary (rb)
@@ -215,10 +211,15 @@ def read_data(data_file, lever_setting):
 
     # Buildings
     dm_population = DM_ots_fts['pop']['lfs_population_']
-    dm_heat_behaviour = DM_ots_fts['heatcool-behaviour']
-    dm_cool_fraction = DM_ots_fts['floor-area-fraction']
-    dm_floor_intensity = DM_ots_fts['floor-intensity']
-
+    dm_lighting = DM_ots_fts['floor-intensity'].filter({'Variables': ['lighting']})
+    dm_unchanged = DM_ots_fts['heatcool-behaviour']
+    dm_unchanged.append(dm_lighting, dim='Variables')
+    dm_intensity = DM_ots_fts['floor-intensity'].filter({'Variables': ['lfs_floor-intensity_space-cap']})
+    dm_building = DM_ots_fts['floor-area-fraction']
+    dm_building.append(dm_fxa_caf_intensity, dim='Variables')
+    dm_building.append(dm_intensity, dim='Variables')
+    dm_building.append(dm_population, dim='Variables')
+    del dm_lighting, dm_intensity
 
 
     # Aggregate datamatrix by theme/flow
@@ -258,11 +259,8 @@ def read_data(data_file, lever_setting):
     }
 
     DM_building = {
-        'population': dm_population,
-        'heat_behaviour': dm_heat_behaviour,
-        'floor-area-fraction': dm_cool_fraction,
-        'floor-intensity': dm_floor_intensity,
-        'intensity-caf': dm_fxa_caf_intensity
+        'building': dm_building,
+        'unchanged': dm_unchanged
     }
 
     cdm_const = DM_lifestyles['constant']
@@ -327,35 +325,37 @@ def appliances_workflow(DM_appliance, cdm_const):
     # Total households
     dm_household = DM_appliance['household-size']
     dm_population = DM_appliance['population']
-    idx = dm_population.idx
-    ay_total_household = dm_population.array[:, :, idx['lfs_population_total']] / dm_household.array[:, :, 0]
-    dm_household.add(ay_total_household, dim='Variables', col_label='lfs_households', unit='#')
+    dm_household.append(dm_population, dim='Variables')
+    dm_household.operation('lfs_population_total', '/', 'household-size', out_col='lfs_households', unit='#')
 
     # Appliances per households
-    dm_appliance_own = DM_appliance['appliance-own']
-    idx_appown = dm_appliance_own.idx
-    idx_hsl = dm_household.idx
-    ay_appliance_household = dm_household.array[:, :, idx_hsl['household-size'], np.newaxis] * dm_appliance_own.array[:,
-                                                                                               :, idx_appown[
-                                                                                                      'lfs_appliance-own'],
-                                                                                               :]
-    dm_appliance_own.add(ay_appliance_household, dim='Variables', col_label='lfs_households-appliance-ownership',
+    # Group appliances data
+    dm_appliance = DM_appliance['appliance-own']
+    dm_appliance.append(DM_appliance['appliance-use'], dim='Variables')
+    dm_appliance.append(DM_appliance['product-substitution-rate'], dim='Variables')
+
+    idx_a = dm_appliance.idx
+    idx_h = dm_household.idx
+    ay_appliance_household = dm_household.array[:, :, idx_h['lfs_households'], np.newaxis] \
+                             * dm_appliance.array[:, :, idx_a['lfs_appliance-own'], :]
+    dm_appliance.add(ay_appliance_household, dim='Variables', col_label='lfs_households-appliance-ownership',
                          unit='#')
 
     # Phone use
-    dm_appliance_use = DM_appliance['appliance-use']
     idx_const = cdm_const.idx
-    idx = dm_appliance_use.idx
-    dm_appliance_use.array[:, :, idx['lfs_appliance-use'], idx['phone']] = \
-        dm_appliance_use.array[:, :, idx['lfs_appliance-use'], idx['phone']] \
+    idx_a = dm_appliance.idx
+    dm_appliance.array[:, :, idx_a['lfs_appliance-use'], idx_a['phone']] = \
+        dm_appliance.array[:, :, idx_a['lfs_appliance-use'], idx_a['phone']] \
         * cdm_const.array[idx_const['cp_appliances_charging-time-share']]
 
     # Use of appliances [hours]
-    dm_appliance_use.append(dm_appliance_own, dim='Variables')
-    dm_appliance_use.operation('lfs_appliance-use', '*', 'lfs_households-appliance-ownership',
-                               dim="Variables", out_col='lfs_total-appliance-use', unit='h')
+    dm_appliance.operation('lfs_appliance-use', '*', 'lfs_households-appliance-ownership',
+                            dim="Variables", out_col='lfs_total-appliance-use', unit='h')
 
-    return dm_household  # TODO:Dummy to update when connecting TPE
+    DM_appliance_out = {
+        'buildings': dm_appliance.filter({'Variables': ['lfs_total-appliance-use', 'lfs_product-substitution-rate', 'lfs_appliance-own']})
+    }
+    return DM_appliance_out  # TODO:Dummy to update when connecting TPE
 
 # Calculation tree - Transport (Functions)
 
@@ -424,58 +424,44 @@ def industry_workflow(DM_industry, cdm_const):
     dm_packaging = DM_industry['paperpack']
     idx_pop = dm_population.idx
     idx_pak = dm_packaging.idx
-    ay_packaging = dm_population.array[:, :, idx_pop['lfs_population_total'], np.newaxis] * \
-                          dm_packaging.array[:, :, idx_pak['lfs_paperpack'], :]
-    dm_packaging.add(ay_packaging, dim='Variables', col_label='lfs', unit='t/cap')
+    ay_packaging = dm_population.array[:, :, idx_pop['lfs_population_total'], np.newaxis] *\
+                   dm_packaging.array[:, :, idx_pak['lfs_paperpack'], :]
+    dm_packaging.add(ay_packaging, dim='Variables', col_label='lfs_product-demand', unit='t')
 
     # Aluminium conversion
     idx_const = cdm_const.idx
     idx = dm_packaging.idx
-    dm_packaging.array[:, :, idx['lfs_paperpack'], idx['aluminium-pack']] = \
-        dm_packaging.array[:, :, idx['lfs_paperpack'], idx['aluminium-pack']] \
+    dm_packaging.array[:, :, idx['lfs_product-demand'], idx['aluminium-pack']] = \
+        dm_packaging.array[:, :, idx['lfs_product-demand'], idx['aluminium-pack']] \
         * cdm_const.array[idx_const['cp_packaging_aluminium-factor']]
+
+    dm_packaging.filter({'Variables': ['lfs_product-demand']}, inplace=True)
 
     return dm_packaging
 
 # Calculation tree - Building (Functions)
 def building_workflow(DM_building):
-    # Total Floor Area
-    dm_population = DM_building['population']
-    dm_intensity = DM_building['floor-intensity']
-    idx_pop = dm_population.idx
-    idx_int = dm_intensity.idx
-    ay_floor_total= dm_population.array[:, :, idx_pop['lfs_population_total']] \
-                    * dm_intensity.array[:,:,idx_int['lfs_floor-intensity_space-cap']]/1000
-    dm_intensity.add(ay_floor_total, dim='Variables', col_label='lfs_floor-space_total',
-                         unit='km2')
 
-    # Calibration - Space area demand
-    dm_fxa_caf_intensity = DM_building['intensity-caf']
-    dm_cool_fraction = DM_building['floor-area-fraction']
-    dm_intensity.append(dm_cool_fraction, dim='Variables')
-    #dm_calibration = dm_intensity.filter({'Variables': ['lfs_floor-space_total','lfs_floor-area-fraction_perc']})
-    idx_fxa = dm_fxa_caf_intensity.idx
-    idx_int = dm_intensity.idx
-    #ay_floor_cal = dm_calibration.array[:, :, :] \
-                     #* dm_fxa_caf_intensity.array[:, :, idx_fxa['caf_lfs_floor-space'],np.newaxis]
-    #dm_intensity.add(ay_floor_cal, dim='Variables', col_label='lfs_floor-space_total', unit='km2')
-    dm_intensity.array[:,:,idx_int['lfs_floor-space_total']]=dm_intensity.array[:, :, idx_int['lfs_floor-space_total']] \
-                     * dm_fxa_caf_intensity.array[:, :, idx_fxa['caf_lfs_floor-space']]
-    #dm_intensity.array[:, :, idx_int['lfs_floor-area-fraction_perc']] = dm_intensity.array[:, :,
-                                                               #  idx_int['lfs_floor-area-fraction_perc']] \
-                                                               #  * dm_fxa_caf_intensity.array[:, :,
-                                                                #   idx_fxa['caf_lfs_floor-space']]
-    # FIXME: KNIME tree split but seems unrelevant
-    # Cooled Area
+    dm_building = DM_building['building']
 
-    # ay_cool_floor = dm_intensity.array[:,:,idx_int['lfs_floor-space_total']] \
-                   #  * idx_int['lfs_floor-area-fraction_perc']
-    # dm_intensity.add(ay_cool_floor, dim='Variables', col_label='lfs_floor-space_total',
-                     # unit='km2')
-    dm_intensity.operation('lfs_floor-area-fraction_perc', '*', 'lfs_floor-space_total',
-                                    dim="Variables", out_col='lfs_floor-space_cool', unit='km2')
 
-    return dm_intensity
+    # Compute floor area
+    dm_building.operation('lfs_population_total', '*', 'lfs_floor-intensity_space-cap', unit='1000m2', out_col='lfs_floor-space_total')
+    idx = dm_building.idx
+    dm_building.array[:, :, idx['lfs_floor-space_total']] = dm_building.array[:, :, idx['lfs_floor-space_total']]/1000
+    # Calibration of Space area
+    dm_building.array[:, :, idx['lfs_floor-space_total']] = dm_building.array[:, :, idx['lfs_floor-space_total']] \
+                                                            * dm_building.array[:, :, idx['caf_lfs_floor-space']]
+
+    dm_building.operation('lfs_floor-area-fraction_perc', '*', 'lfs_floor-space_total',
+                           dim="Variables", out_col='lfs_floor-space_cool', unit='1000m2')
+
+    DM_building_out = {
+        'floor': dm_building.filter({'Variables': ['lfs_floor-space_total', 'lfs_floor-space_cool']}),
+        'other': DM_building['unchanged']  # These variables go straight to building without being modified in lifestyle
+    }
+
+    return DM_building_out
 
 # CORE module
 def lifestyles(lever_setting, years_setting, interface=Interface()):
@@ -486,10 +472,10 @@ def lifestyles(lever_setting, years_setting, interface=Interface()):
 
     # To send to TPE (result run)
     dm_diet_split = food_workflow(DM_food, cdm_const)
-    dm_household = appliances_workflow(DM_appliance, cdm_const)
+    DM_appliance_out = appliances_workflow(DM_appliance, cdm_const)
     DM_transport_out = transport_workflow(DM_transport)
-    dm_packaging = industry_workflow(DM_industry, cdm_const)
-    dm_intensity = building_workflow(DM_building)
+    dm_industry_out = industry_workflow(DM_industry, cdm_const)
+    DM_building_out = building_workflow(DM_building)
     dm_diet = dm_diet_split.filter({'Variables': ['cal_diet']})
     dm_diet.rename_col('cal_diet', 'lfs_diet', dim="Variables")
 
@@ -500,6 +486,9 @@ def lifestyles(lever_setting, years_setting, interface=Interface()):
 
     interface.add_link(from_sector='lifestyles', to_sector='agriculture', dm=dm_diet)
     interface.add_link(from_sector='lifestyles', to_sector='transport', dm=DM_transport_out['transport'])
+    DM_building_out['appliance'] = DM_appliance_out['buildings']
+    interface.add_link(from_sector='lifestyles', to_sector='buildings', dm=DM_building_out)
+    interface.add_link(from_sector='lifestyles', to_sector='industry', dm=dm_industry_out)
 
     return results_run
 
@@ -515,7 +504,8 @@ def local_lifestyles_run():
     lifestyles(lever_setting, years_setting)
     return
 
+# Update/Create the Pickle
+# database_from_csv_to_datamatrix()  # un-comment to update
+# local_lifestyles_run()  # to un-comment to run in local
 
-#local_lifestyles_run()  # to un-comment to run in local
-
-#TODO: (1) Interface; (2) Transport sub flow
+#TODO: (1) Industry interface

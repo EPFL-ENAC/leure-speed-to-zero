@@ -1,4 +1,6 @@
 # discard the data
+_database/data/*
+_database/data/*.zip
 _database/data/csv/*
 _database/data/datamatrix/*
 _database/data/xls/*
