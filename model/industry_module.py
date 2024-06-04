@@ -24,8 +24,8 @@ warnings.simplefilter("ignore")
 
 def rename_tech_fordeepen(word):
     
-    # this function renames tech to get material_tech, to the aggregate
-    # one example is turning steel-BF-BOF into steel_BF-BOF and steel-hydrog-DRI into steel_hydrog-DRI to then get steel
+    # this function renames tech to get material_tech, to then aggregate
+    # one example is turning steel-BF-BOF into steel_BF-BOF and steel-hydrog-DRI into steel_hydrog-DRI to then aggregate and get steel
     
     first = word.split("-")[0]
     last = word.split("-")[1:]
@@ -1921,12 +1921,12 @@ def local_industry_run():
     # return
     return results_run
 
-# # run local
-# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
-# # database_from_csv_to_datamatrix()
-# start = time.time()
-# results_run = local_industry_run()
-# end = time.time()
-# print(end-start)
+# run local
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
+database_from_csv_to_datamatrix()
+start = time.time()
+results_run = local_industry_run()
+end = time.time()
+print(end-start)
 
 
