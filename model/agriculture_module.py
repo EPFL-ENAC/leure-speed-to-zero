@@ -5,6 +5,7 @@ from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database, read_database_fxa, edit_database
 from model.common.auxiliary_functions import compute_stock, read_database_to_ots_fts_dict, filter_geoscale, read_database_to_ots_fts_dict_w_groups
 from model.common.auxiliary_functions import read_level_data
+from scipy.optimize import linprog
 import pickle
 import json
 import os
@@ -311,14 +312,15 @@ def database_from_csv_to_datamatrix():
     # Read land management
     file = 'agriculture_land-management_pathwaycalc'
     lever = 'land-man'
-    # edit_database(file,lever,column='eucalc-name',pattern={'meat_':'meat-', 'abp_':'abp-'},mode='rename')
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1],
+    #edit_database(file,lever,column='eucalc-name',pattern={'_rem_':'_', '_to_':'_'},mode='rename')
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 1],
                                                                 baseyear=baseyear,
                                                                 years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
                                                                 column='eucalc-name',
                                                                 group_list=['agr_land-man_use.*',
                                                                             'agr_land-man_dyn.*',
-                                                                            'agr_land-man_gap.*'])
+                                                                            'agr_land-man_gap.*',
+                                                                            'agr_land-man_matrix.*'])
 
     # num_cat_list=[1 = nb de cat de losses, 1 = nb de cat yield]
 
@@ -338,6 +340,9 @@ def database_from_csv_to_datamatrix():
         'fts': dict_fts,
         'ots': dict_ots
     }
+
+    # Dropping variable that creates a problem (we only need the structure of the matrix 6x6)
+    DM_agriculture['ots']['land-man']['agr_land-man_matrix'].drop(dim='Variables', col_label=['agr_land-man_matrix'])
 
     # write datamatrix to pickle
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -460,6 +465,11 @@ def read_data(data_file, lever_setting):
     dm_land_total = DM_agriculture['fxa']['lus_land_total-area']
     dm_land_man_dyn = DM_ots_fts['land-man']['agr_land-man_dyn']
     dm_land_man_gap = DM_ots_fts['land-man']['agr_land-man_gap']
+    dm_land_man_matrix = DM_ots_fts['land-man']['agr_land-man_matrix']
+    dm_land_man_matrix.rename_col_regex(str1="agr_land-man_matrix", str2="agr_matrix", dim="Variables")
+    #dm_land_man_matrix = dm_land_man_matrix.flatten()
+    dm_land_man_matrix.deepen(based_on='Variables')
+
 
     # Aggregated Data Matrix - ENERGY & GHG EMISSIONS
     DM_energy_ghg = {
@@ -549,7 +559,8 @@ def read_data(data_file, lever_setting):
         'land_man_use': dm_land_man_use,
         'land_total': dm_land_total,
         'land_man_dyn': dm_land_man_dyn,
-        'land_man_gap': dm_land_man_gap
+        'land_man_gap': dm_land_man_gap,
+        'land_matrix': dm_land_man_matrix
     }
 
     cdm_const = DM_agriculture['constant']
@@ -2114,70 +2125,104 @@ def agriculture(lever_setting, years_setting):
     DM_land_use['land_man_gap'].operation('lus_land', '-', 'lus_land_initial-area_unfccc',
                                           out_col='lus_land_diff', unit='ha')
 
+    # Sum (Land difference [ha])
+    dm_land_total = DM_land_use['land_man_gap'].groupby({'total': '.*'}, dim='Categories1', regex=True, inplace=False)
+    DM_land_use['land_man_gap'].append(dm_land_total, dim='Categories1')
+
+    # Assigning Sum (Land difference [ha]) to forests (by default) to have a land change sum of 0
+    dm_temp = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_diff']})
+    dm_temp.operation('forest', '-', 'total',
+                                       dim="Categories1", out_col='forest_new', unit='ha')
+
+    # Clean the dm to only keep the correct Categories, rename and append to relevant dm
+    dm_temp.drop(dim='Categories1', col_label=['forest', 'total'])
+    dm_temp.rename_col('forest_new', 'forest', dim='Categories1')
+    dm_temp.rename_col('lus_land_diff', 'lus_land_diff_adjusted', dim='Variables')
+    DM_land_use['land_man_gap'].drop(dim='Categories1', col_label=['total'])
+    DM_land_use['land_man_gap'].append(dm_temp, dim='Variables')
+
     # Filtering between land to crop from other lands (diff>0) and excess land available for other land type (diff<0)
     # Land to-crop [ha] = Land difference [ha] >= 0
-    dm_temp = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_diff']})
+    dm_temp = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_diff_adjusted']})
     array_temp = dm_temp.array[:, :, :, :]
     array_land_to_crop = np.maximum(array_temp, 0)
     DM_land_use['land_man_gap'].add(array_land_to_crop, dim='Variables', col_label='lus_land_to-crop', unit='ha')
 
-    # Land excess [ha] = Land difference [ha] < 0
-    dm_temp = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_diff']})
+    # Land excess [ha] = Land difference [ha] < 0 (& changing the sign)
+    dm_temp = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_diff_adjusted']})
     array_temp = dm_temp.array[:, :, :, :]
-    array_land_excess = -np.maximum(-array_temp, 0)
+    array_land_excess = np.maximum(-array_temp, 0)
     DM_land_use['land_man_gap'].add(array_land_excess, dim='Variables', col_label='lus_land_excess', unit='ha')
 
     # LAND MATRIX ------------------------------------------------------------------------------------------------------
+
     # Creating a blank land use matrix (cat1 = TO, cat2 = FROM) (per year & per country)
     # cat1 = cat2 : cropland, grassland, forest, settlement, wetland, other, total
-    dm_to_copy = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_diff']})
-
-    # Create datamatrix by depth
-    col_labels = {
-        'Country': dm_to_copy.col_labels['Country'].copy(),
-        'Years': dm_to_copy.col_labels['Years'].copy(),
-        'Variables': ['matrix'],
-        'Categories1': dm_to_copy.col_labels['Categories1'].copy(),
-        'Categories2': dm_to_copy.col_labels['Categories1'].copy()
-    }
-    dm_matrix = DataMatrix(col_labels, units={'matrix': 'ha'})
+    # Creating a NaN array of dimension [32, 33, 1, 6, 6]
+    array_temp = np.full((32,33,1,6,6),np.nan)
+    # Adding it to the dm with the relevant structure
+    DM_land_use['land_matrix'].add(array_temp, dim='Variables', col_label='matrix', unit='ha')
+    # Dropping the unuesed variables (we only take the dm for its structure)
+    DM_land_use['land_matrix'].drop(dim='Variables', col_label=['agr_matrix'])
 
     # Adding dummy categories 1 'total_to-crop' & categories 2 'total_excess'
-    #dm_matrix.add(0.0, dummy=True, col_label='total_to-crop', dim='Categories1', unit='ha')
-    #dm_matrix.add(0.0, dummy=True, col_label='total_excess', dim='Categories2', unit='ha')
+    # Add a new cat1 = 'total_to-crop' with the land to crop (land type to "create")
+    dm_land_to_crop = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_to-crop']})
 
-    # Fill cat1 = TO 'total' with the land to crop (land type to "create")
-    #dm_land_to_crop = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_to-crop']})
-    #dm_matrix.append(dm_land_to_crop, dim='Categories1')
+    # Add a new cat2 = 'total_excess' with the land excess (land type to "change")
+    dm_land_excess = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_excess']})
 
-    # Fill cat2 = FROM 'total' with the land excess (land type to "change")
 
-    # (no need) When the 'total' = 0 (aka there is no land demand or excess), fill the relevant columns/rows with zeros
-    # be careful with diagonal (make sure that cropland does not crop from cropland)
+    # Solve the values of the matrix so that the sum of the rows/columns are equal to 'total_to-crop/excess'
 
-    # Solve the values of the matrix so that the sum of the rows/columns are equal to 'total'
+    # Defining arrays to solve
+    dm_matrix = DM_land_use['land_matrix'].filter({'Variables': ['matrix']})
+    arr_to_solve = dm_matrix.array
+    arr_to_crop = dm_land_to_crop.array
+    arr_excess = dm_land_excess.array
+
+    # Number of variables (elements in arr_tol_solve, for 1 Country, Year & Variable at the time)
+    n_vars = arr_to_solve[0,0,0,:,:].size
+
+    # Coefficients matrix for the linear system
+    # We need 12 equations: 6 for rows and 6 for columns
+    A_eq = np.zeros((12, n_vars))
+
+    # Row constraints
+    for i in range(6):
+        A_eq[i, i * 6:(i + 1) * 6] = 1
+
+    # Column constraints
+    for j in range(6):
+        A_eq[6 + j, j::6] = 1
+
+    # Since we are dealing with a linear system without a specific objective function, we can use linprog with zero cost function
+    c = np.zeros(n_vars)
+
+    # Loop over the first three dimensions and solve the linear system for each 6x6 sub-matrix
+    for i in range(arr_to_crop.shape[0]):
+        for j in range(arr_to_crop.shape[1]):
+            for k in range(arr_to_crop.shape[2]):
+                # Right-hand side for the current sub-matrix
+                b_eq = np.concatenate((arr_to_crop[i, j, k, :], arr_excess[i, j, k, :]))
+
+                # Solve the system using linprog
+                res = linprog(c, A_eq=A_eq, b_eq=b_eq, bounds=(0, None), method='highs')
+
+                # Check if the solver found a solution
+                if res.success:
+                    arr_to_solve[i, j, k, :, :] = res.x.reshape(6, 6)
+                else:
+                    print(f"No solution found for sub-matrix at index ({i}, {j}, {k})")
+
+    # Adding the array to relevant dm
+    DM_land_use['land_matrix'].add(arr_to_solve, col_label='land_use_change', dim='Variables')
 
     # Check that net change = 0
 
     # Multiply land to-crop (demand) with the land use matrix (for each land type)
 
     # FTS ITERATIONS ---------------------------------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     print('hello')
