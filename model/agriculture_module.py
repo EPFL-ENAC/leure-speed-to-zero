@@ -56,6 +56,7 @@ def database_from_csv_to_datamatrix():
     #edit_database(file, lever, column='eucalc-name', mode='rename',pattern={'meat_': 'meat-', 'abp_': 'abp-'})
     #edit_database(file, lever, column='eucalc-name', mode='rename',pattern={'_rem_': '_', '_to_': '_', 'land-man_ef': 'fxa_land-man_ef'})
     #edit_database(file, lever, column='eucalc-name', mode='rename',pattern={'land-man_soil-type': 'fxa_land-man_soil-type'})
+    #edit_database(file, lever, column='eucalc-name', mode='rename',pattern={'_def_': '_def-', '_gstock_': '_gstock-', '_nat-losses_': '_nat-losses-'})
     # AGRICULTURE ------------------------------------------------------------------------------------------------------
     # LIVESTOCK MANURE - N2O emissions
     df = read_database_fxa(file, filter_dict={'eucalc-name': 'ef_liv_N2O-emission_ef.*'})
@@ -113,6 +114,18 @@ def database_from_csv_to_datamatrix():
     df = read_database_fxa(file, filter_dict={'eucalc-name': 'land-man_soil-type'})
     dm_soil = DataMatrix.create_from_df(df, num_cat=0)
     dict_fxa['land-man_soil-type'] = dm_soil
+    # AGROFORESTRY CROP - emission factors
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'agr_climate-smart-crop_ef_agroforestry'})
+    dm_crop_ef_agroforestry = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['agr_climate-smart-crop_ef_agroforestry'] = dm_crop_ef_agroforestry
+    # AGROFORESTRY livestock - emission factors
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'agr_climate-smart-livestock_ef_agroforestry'})
+    dm_livestock_ef_agroforestry = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['agr_climate-smart-livestock_ef_agroforestry'] = dm_livestock_ef_agroforestry
+    # AGROFORESTRY Forestry - natural losses & others
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'agr_climate-smart-forestry'})
+    dm_agroforestry = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['agr_climate-smart-forestry'] = dm_agroforestry
 
 
 
@@ -210,6 +223,7 @@ def database_from_csv_to_datamatrix():
     dm_caf_input = DataMatrix.create_from_df(df, num_cat=1)
     dict_fxa['caf_agr_input-use_emissions-CO2'] = dm_caf_input
 
+
     # Create a dictionnay with all the fixed assumptions
     dict_fxa = {
         'caf_agr_domestic-production-liv': dm_caf_liv_dom_prod,
@@ -236,7 +250,10 @@ def database_from_csv_to_datamatrix():
         'agr_emission_fertilizer' : dm_n_fertilizer,
         'lus_land_total-area' : dm_land_total,
         'land-man_ef' : dm_ef_biomass,
-        'land-man_soil-type' : dm_soil
+        'land-man_soil-type' : dm_soil,
+        'agr_climate-smart-crop_ef_agroforestry' : dm_crop_ef_agroforestry,
+        'agr_climate-smart-livestock_ef_agroforestry': dm_livestock_ef_agroforestry,
+        'agr_climate-smart-forestry' : dm_agroforestry
     }
 
 
@@ -261,13 +278,13 @@ def database_from_csv_to_datamatrix():
     lever = 'climate-smart-livestock'
     #edit_database(file,lever,column='eucalc-name',pattern={'_CH4-emission':''},mode='rename')
     #edit_database(file,lever,column='eucalc-name',pattern={'ration_crop_':'ration_crop-', 'ration_liv_':'ration_liv-'},mode='rename')
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 0, 1, 2, 1], baseyear=baseyear,
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 0, 1, 2, 1, 1], baseyear=baseyear,
                                                                 years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
                                                                 column='eucalc-name',
                                                                 group_list=['climate-smart-livestock_losses.*', 'climate-smart-livestock_yield.*',
                                                                             'climate-smart-livestock_slaughtered.*', 'climate-smart-livestock_density',
                                                                             'climate-smart-livestock_enteric.*', 'climate-smart-livestock_manure.*',
-                                                                            'climate-smart-livestock_ration.*'])
+                                                                            'climate-smart-livestock_ration.*', 'agr_climate-smart-livestock_ef_agroforestry.*'])
 
     # Read biomass hierarchy
     file = 'agriculture_biomass-use-hierarchy_pathwaycalc'
@@ -500,6 +517,11 @@ def read_data(data_file, lever_setting):
     dm_soil_type.deepen(based_on='Variables')
     dm_soil_type.deepen(based_on='Variables')
 
+    # Sub-matrix for LAND USE - Agroforestry
+    dm_agroforestry_crop = DM_agriculture['fxa']['agr_climate-smart-crop_ef_agroforestry']
+    dm_agroforestry_liv = DM_agriculture['fxa']['agr_climate-smart-livestock_ef_agroforestry']
+    dm_forestry = DM_agriculture['fxa']['agr_climate-smart-forestry']
+
     # Aggregated Data Matrix - ENERGY & GHG EMISSIONS
     DM_energy_ghg = {
         'energy_demand': dm_energy_demand,
@@ -591,7 +613,10 @@ def read_data(data_file, lever_setting):
         'land_man_gap': dm_land_man_gap,
         'land_matrix': dm_land_man_matrix,
         'land_c-stock' : dm_c_stock,
-        'land_soil-type' : dm_soil_type
+        'land_soil-type' : dm_soil_type,
+        'crop_ef_agroforestry': dm_agroforestry_crop,
+        'liv_ef_agroforestry': dm_agroforestry_liv,
+        'forestry': dm_forestry
     }
 
     cdm_const = DM_agriculture['constant']
@@ -2335,6 +2360,82 @@ def land_carbon_dynamics_workflow(DM_land_use):
                                           unit='t')
     return DM_land_use
 
+# CalculationLeaf FORESTRY
+def forestry_workflow(DM_land_use, dm_wood, dm_land_use):
+
+    # AGROFORESTRY CARBON STOCK ----------------------------------------------------------------------------------------
+
+    # (KNIME : previous step to compute carbon emissions factor cropland/grassland [tC/ha])
+
+    # Pre processing FIXME use calibrated land
+    dm_crop_land_agr = dm_land_use.filter({'Variables': ['agr_lus_land'], 'Categories1': ['cropland']})
+    dm_grass_land_agr = dm_land_use.filter({'Variables': ['agr_lus_land'], 'Categories1': ['grassland']})
+    dm_crop_land_agr = dm_crop_land_agr.flatten()
+    dm_grass_land_agr = dm_grass_land_agr.flatten()
+
+    # C-stock from agroforestry cropland [tC] = carbon emissions factor cropland [tC/ha] * cropland for agriculture [ha]
+    idx_land = dm_crop_land_agr.idx
+    idx_ef = DM_land_use['crop_ef_agroforestry'].idx
+    array_temp = dm_crop_land_agr.array[:, :, :, np.newaxis] \
+                 * DM_land_use['crop_ef_agroforestry'].array[:, :, :, :]
+    DM_land_use['crop_ef_agroforestry'].add(array_temp, dim='Variables',
+                                            col_label='lus_land_lulucf_agroforestry_cropland', unit='tC')
+
+    # C-stock from agroforestry grassland [tC] = carbon emissions factor grassland [tC/ha] * grassland for agriculture [ha]
+    idx_land = dm_grass_land_agr.idx
+    idx_ef = DM_land_use['liv_ef_agroforestry'].idx
+    array_temp = dm_crop_land_agr.array[:, :, :, np.newaxis] \
+                 * DM_land_use['liv_ef_agroforestry'].array[:, :, :, :]
+    DM_land_use['liv_ef_agroforestry'].add(array_temp, dim='Variables',
+                                           col_label='lus_land_lulucf_agroforestry_grassland', unit='tC')
+
+    # CLIMATE SMART FORESTRY -------------------------------------------------------------------------------------------
+
+    # Pre processing
+    dm_forest = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land'], 'Categories1': ['forest']})
+    dm_forest = dm_forest.flatten()
+    DM_land_use['forestry'] = DM_land_use['forestry'].flatten()
+    DM_land_use['forestry'].append(dm_forest, dim='Variables')
+
+    # Incremental biomass gain from forestry [m3] = biomass yield from managed agroforestry [m3/ha] * Forest land [ha]
+    DM_land_use['forestry'].operation('lus_land_forest', '*', 'fxa_agr_climate-smart-forestry_csf-man',
+                                      out_col='lus_climate-smart-forestry_biomass_csf-inc', unit='m3')
+
+    # Incremental CO2 capture from forestry [Mt] = Incremental biomass gain from forestry [m3] * CO2 capture factor [Mt/m3]
+    DM_land_use['forestry'].add(-0.0000009, dummy=True, col_label='CO2_capture_factor', dim='Variables', unit='Mt/m3')
+    DM_land_use['forestry'].operation('CO2_capture_factor', '*', 'lus_climate-smart-forestry_biomass_csf-inc',
+                                      out_col='lus_climate-smart-forestry_biomass_csf-inc_CO2-capture', unit='Mt')
+
+    # Gross biomass gain from forest growth [m3] = Forest incremental growth [m3/ha] * Forest land [ha]
+    DM_land_use['forestry'].operation('lus_land_forest', '*', 'fxa_agr_climate-smart-forestry_g-inc',
+                                      out_col='lus_forestry_biomass_gross-increment', unit='m3')
+
+    # Gross biomass forest available for wood supply [m3] = Gross biomass gain from forest growth [m3]
+    #                                                       * share of forest wood available for wood supply [%]
+    DM_land_use['forestry'].operation('lus_forestry_biomass_gross-increment', '*',
+                                      'fxa_agr_climate-smart-forestry_faws-share',
+                                      out_col='lus_forestry_biomass_faws_gross-increment', unit='m3')
+
+    # Harvested biomass forest available for wood supply [m3] = Gross biomass forest available for wood supply [m3]
+    #                                                           * harvesting rate [%]
+    DM_land_use['forestry'].operation('lus_forestry_biomass_faws_gross-increment', '*',
+                                      'fxa_agr_climate-smart-forestry_h-rate',
+                                      out_col='lus_forestry_biomass_faws_harvested', unit='m3')
+
+    # FORESTRY SELF-SUFFICIENCY ----------------------------------------------------------------------------------------
+
+    # Pre processing total wood demand
+    dm_wood = dm_wood.flatten()
+    DM_land_use['forestry'].append(dm_wood, dim='Variables')
+
+    # Wood trade balance [m3] = Harvested biomass forest available for wood supply [m3] -  Total wood demand [m3]
+    DM_land_use['forestry'].operation('lus_forestry_biomass_faws_harvested', '-',
+                                      'lus_fst_demand_rwe_total', out_col='', unit='m3')
+
+    # (KNIME filtering exports/imports but does not seem to be used after)
+
+    return DM_land_use
+
 # ----------------------------------------------------------------------------------------------------------------------
 # AGRICULTURE ----------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
@@ -2392,6 +2493,11 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     DM_land_use = land_allocation_workflow(DM_land_use, dm_land_use)
     DM_land_use = land_matrix_workflow(DM_land_use)
     DM_land_use = land_carbon_dynamics_workflow(DM_land_use)
+    DM_land_use = forestry_workflow(DM_land_use, dm_wood, dm_land_use)
+
+
+
+    # CalculationLEaf Deforestation patterns (does not appear to be used after)
 
 
 
