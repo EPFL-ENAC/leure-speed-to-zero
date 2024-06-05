@@ -167,17 +167,21 @@ def simulate_agriculture_to_refinery_input():
 #######################################################################################################################
 # CalculationTree - Module - sub flow
 #######################################################################################################################
-def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
+def fuel_production_workflow(DM_refinery, DM_fuel_demand):
 
     ######################################
-    # CalculationLeafs - Gross electricity production [GWh]
+    # CalculationLeafs - Energy demand per fuel [GWh]
     ######################################
-    # Tuto: Tree parallel (array)
+
+
+    DM_refinery_out = DM_refinery
     idx_cap = dm_capacity.idx
     idx_clm = dm_climate.idx
     ay_gross_yearly_production = dm_capacity.array[:,:,idx_cap['pow_existing-capacity'],:] \
                                  * dm_climate.array[:,:,idx_clm['clm_capacity-factor'],:]*8760
     dm_capacity.add(ay_gross_yearly_production, dim='Variables', col_label='pow_gross-yearly-production', unit='GWh')
+
+    return DM_refinery_out
 
 #######################################################################################################################
 # CoreModule - Refinery
@@ -190,7 +194,50 @@ def refinery(lever_setting, years_setting):
     with open(refinery_data_file, 'rb') as handle:  # read binary (rb)
         DM_refinery= pickle.load(handle)
 
-    results_run = DM_refinery
+    ######################################
+    # CalculationLeafs - Country filter setting (based on fxa, because their is no read data function / no levers)
+    ######################################
+
+    dm_fxa = DM_refinery['fxa']['refinery-ratio']
+    cntr_list = dm_fxa.col_labels['Country']
+
+    ######################################
+    # CalculationLeafs - Data input (other modules) & filter the country
+    ######################################
+
+    dm_power = simulate_power_to_refinery_input()
+    dm_power = dm_power.filter({'Country': cntr_list})
+    dm_buildings = simulate_buildings_to_refinery_input()
+    dm_buildings = dm_buildings.filter({'Country': cntr_list})
+    dm_transport = simulate_transport_to_refinery_input()
+    dm_transport = dm_transport.filter({'Country': cntr_list})
+    dm_industry = simulate_industry_to_refinery_input()
+    dm_industry = dm_industry.filter({'Country': cntr_list})
+    dm_ammonia = simulate_ammonia_to_refinery_input()
+    dm_ammonia = dm_ammonia.filter({'Country': cntr_list})
+    dm_agriculture = simulate_agriculture_to_refinery_input()
+    dm_agriculture = dm_agriculture.filter({'Country': cntr_list})
+
+    DM_fuel_demand = {
+        'power': dm_power,
+        'buildings': dm_buildings,
+        'transport': dm_transport,
+        'industry': dm_industry,
+        'ammonia': dm_ammonia,
+        'agriculture': dm_agriculture
+    }
+
+    ######################################
+    # CalculationLeafs - Fuel production function
+    ######################################
+
+    DM_refinery_out = fuel_production_workflow(DM_refinery, DM_fuel_demand)
+
+    ######################################
+    # CalculationLeafs - Module output
+    ######################################
+
+    results_run = DM_refinery_out
 
     return results_run
 
