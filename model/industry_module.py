@@ -1416,7 +1416,7 @@ def industry_power_interface(DM_energy_demand, write_xls = False):
     if write_xls is True:
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
         dm_elc = dm_elc.write_df()
-        dm_elc.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-electricity_supply.xlsx', index=False)
+        dm_elc.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-power.xlsx', index=False)
         
     # return
     return dm_elc
@@ -1435,7 +1435,7 @@ def industry_refinery_interface(DM_energy_demand, write_xls = False):
     if write_xls is True:
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
         dm_ref = dm_ref.write_df()
-        dm_ref.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-electricity_supply.xlsx', index=False)
+        dm_ref.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-refinery.xlsx', index=False)
         
     # return
     return dm_ref
@@ -1876,7 +1876,7 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     dm_agr = industry_agriculture_interface(DM_material_production, DM_energy_demand)
     interface.add_link(from_sector='industry', to_sector='agriculture', dm=dm_agr)
     
-    # interface energy
+    # interface power
     dm_power = industry_power_interface(DM_energy_demand)
     interface.add_link(from_sector='industry', to_sector='power', dm=dm_power)
     
