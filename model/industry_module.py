@@ -1403,17 +1403,13 @@ def industry_agriculture_interface(DM_material_production, DM_energy_demand, wri
     # return
     return dm_agr
 
-def industry_energy_interface(DM_energy_demand, write_xls = False):
+def industry_power_interface(DM_energy_demand, write_xls = False):
     
     # dm_elc
     dm_elc = DM_energy_demand["bycarr"].filter(
-        {"Categories1" : ['liquid-ff-oil_diesel', 'liquid-ff-oil_fuel-oil', 'electricity',
-                          'gas-ff-natural', 'hydrogen', 'solid-ff-coal']})
+        {"Categories1" : ['electricity','hydrogen']})
     dm_elc.rename_col("energy-demand", "ind_energy-demand", "Variables")
     dm_elc = dm_elc.flatten()
-    # variables = dm_elc.col_labels["Variables"]
-    # for i in variables:
-    #     dm_elc.rename_col(i, "ind_" + i, "Variables")
     dm_elc.sort("Variables")
 
     # df_elc
@@ -1424,6 +1420,25 @@ def industry_energy_interface(DM_energy_demand, write_xls = False):
         
     # return
     return dm_elc
+
+def industry_refinery_interface(DM_energy_demand, write_xls = False):
+    
+    # dm_elc
+    dm_ref = DM_energy_demand["bycarr"].filter(
+        {"Categories1" : ['liquid-ff-oil_diesel', 'liquid-ff-oil_fuel-oil',
+                          'gas-ff-natural', 'solid-ff-coal']})
+    dm_ref.rename_col("energy-demand", "ind_energy-demand", "Variables")
+    dm_ref = dm_ref.flatten()
+    dm_ref.sort("Variables")
+
+    # df_elc
+    if write_xls is True:
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        dm_ref = dm_ref.write_df()
+        dm_ref.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-electricity_supply.xlsx', index=False)
+        
+    # return
+    return dm_ref
 
 def industry_water_inferface(DM_energy_demand, DM_material_production, write_xls = False):
     
@@ -1639,7 +1654,7 @@ def industry_employment_interface(DM_material_demand, DM_energy_demand, DM_mater
     # return
     return dm_emp
 
-def industry_climate_interface(DM_emissions, write_xls = False):
+def industry_emissions_interface(DM_emissions, write_xls = False):
     
     # adjust variables' names
     dm_temp = DM_emissions["bygasmat"].flatten().flatten()
@@ -1649,22 +1664,22 @@ def industry_climate_interface(DM_emissions, write_xls = False):
     dm_temp1 = DM_emissions["combustion_bio_capt_w_cc_neg_bymat"].flatten()
     dm_temp1.rename_col_regex("CO2-capt-w-cc_","","Categories1")
 
-    # dm_cli
-    dm_cli = dm_temp.flatten()
-    dm_cli.append(dm_temp1.flatten(), "Variables")
-    variables = dm_cli.col_labels["Variables"]
+    # dm_ems
+    dm_ems = dm_temp.flatten()
+    dm_ems.append(dm_temp1.flatten(), "Variables")
+    variables = dm_ems.col_labels["Variables"]
     for i in variables:
-        dm_cli.rename_col(i, "ind_" + i, "Variables")
-    dm_cli.sort("Variables")
+        dm_ems.rename_col(i, "ind_" + i, "Variables")
+    dm_ems.sort("Variables")
 
     # dm_cli
     if write_xls is True:
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        df_cli = dm_cli.write_df()
-        df_cli.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-climate.xlsx', index=False)
+        dm_ems = dm_ems.write_df()
+        dm_ems.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-emissions.xlsx', index=False)
 
     # return
-    return dm_cli
+    return dm_ems
 
 def industry_airpollution_interface(DM_material_production, DM_energy_demand, write_xls = False):
     
@@ -1862,8 +1877,20 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     interface.add_link(from_sector='industry', to_sector='agriculture', dm=dm_agr)
     
     # interface energy
-    dm_energy = industry_energy_interface(DM_energy_demand)
-    interface.add_link(from_sector='industry', to_sector='energy', dm=dm_energy)
+    dm_power = industry_power_interface(DM_energy_demand)
+    interface.add_link(from_sector='industry', to_sector='power', dm=dm_power)
+    
+    # interface refinery
+    dm_refinery = industry_refinery_interface(DM_energy_demand)
+    interface.add_link(from_sector='industry', to_sector='refinery', dm=dm_refinery)
+    
+    # interface district heating
+    dm_dh = industry_district_heating_interface(DM_energy_demand)
+    interface.add_link(from_sector='industry', to_sector='district-heating', dm=dm_dh)
+    
+    # interface emissions
+    dm_ems = industry_emissions_interface(DM_emissions)
+    interface.add_link(from_sector='industry', to_sector='emissions', dm=dm_ems)
     
     # # interface water
     # dm_water = industry_water_inferface(DM_energy_demand, DM_material_production)
@@ -1885,17 +1912,9 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     # dm_emp = industry_employment_interface(DM_material_demand, DM_energy_demand, DM_material_production, DM_cost, DM_ots_fts)
     # interface.add_link(from_sector='industry', to_sector='employment', dm=dm_emp)
     
-    # # interface climate
-    # dm_cli = industry_climate_interface(DM_emissions)
-    # interface.add_link(from_sector='industry', to_sector='climate', dm=dm_cli)
-    
     # # interface air pollution
     # dm_airpoll = industry_airpollution_interface(DM_material_production, DM_energy_demand)
     # interface.add_link(from_sector='industry', to_sector='air-pollution', dm=dm_airpoll)
-    
-    # interface district heating
-    dm_dh = industry_district_heating_interface(DM_energy_demand)
-    interface.add_link(from_sector='industry', to_sector='district-heating', dm=dm_dh)
     
     # return
     return df
