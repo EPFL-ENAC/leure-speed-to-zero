@@ -2,7 +2,7 @@
 from model.transport_module import transport
 from model.lifestyles_module import lifestyles
 from model.buildings_module import buildings
-from model.minerals_module import minerals
+# from model.minerals_module import minerals
 from model.common.interface_class import Interface
 from model.district_heating_module import district_heating
 
@@ -23,11 +23,11 @@ def runner(lever_setting, global_vars, output_nodes, logger):
     TPE = {}
     interface = Interface()
 
-    TPE['lifestyles'] = lifestyles(lever_setting, years_setting, interface)
+    # TPE['lifestyles'] = lifestyles(lever_setting, years_setting, interface)
     TPE['transport'] = transport(lever_setting, years_setting, interface)
     TPE['buildings'] = buildings(lever_setting, years_setting, interface)
-    TPE['district-heating'] = district_heating(lever_setting, years_setting, interface)
-    TPE['minerals'] = minerals(years_setting, interface)
+    # TPE['district-heating'] = district_heating(lever_setting, years_setting, interface)
+    # TPE['minerals'] = minerals(years_setting, interface)
 
     logger.info('Execution time: {0:.3g} s'.format(time.time() - start_time))
 

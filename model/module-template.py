@@ -185,7 +185,10 @@ def power(lever_setting, years_setting, interface=Interface()):
         DM_bld = interface.get_link(from_sector='buildings', to_sector='power')
     else:
         DM_bld = simulate_buildings_to_power_input()
-    dm_ind_electricity, dm_ind_hydrogen = simulate_industry_to_power_input()
+
+
+    DM_ind = simulate_industry_to_power_input()
+
     dm_amm_electricity, dm_amm_hydrogen = simulate_ammonia_to_power_input()
     DM_tra = simulate_transport_to_power_input()
 
