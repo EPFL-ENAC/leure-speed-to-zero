@@ -1,10 +1,10 @@
 version: '3.9'
 services:
   knime2python:
-    image: ghcr.io/2050calculators/PathwayCalc-knime2python:${IMAGE_VERSION:-latest}
+    image: ghcr.io/2050calculators/pathway-calc-knime2python:${IMAGE_VERSION:-latest}
     build: !reset null
     restart: always
   transition-pathway-explorer:
-    image: ghcr.io/2050calculators/PathwayCalc-transition-pathway-explorer:${IMAGE_VERSION:-latest}
+    image: ghcr.io/2050calculators/pathway-calc-transition-pathway-explorer:${IMAGE_VERSION:-latest}
     build: !reset null
     restart: always
