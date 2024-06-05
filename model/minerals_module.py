@@ -10,7 +10,8 @@ from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database_fxa
 from model.common.interface_class import Interface
-from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm, simulate_input, get_mindec, calibration_rates
+from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm, simulate_input, calibration_rates
+from model.common.auxiliary_functions import material_switch, material_decomposition
 import pandas as pd
 import pickle
 import os
@@ -114,6 +115,24 @@ def database_from_csv_to_datamatrix():
     dm_elec_new.col_labels
     dm_min_other = dm.filter_w_regex({'Variables': 'min_other.*'})
     dm_min_proportion = dm.filter_w_regex({'Variables': 'min_proportion.*'})
+    
+    # modify elec_new
+    
+    # rename
+    dm_elec_new.rename_col_regex("_tech", "", dim = "Variables")
+    dm_elec_new.rename_col_regex("_new_RES", "", dim = "Variables")
+    dm_elec_new.rename_col_regex("_new_fossil", "", dim = "Variables")
+    dm_elec_new.rename_col_regex("elc_", "elc_energy-", dim = "Variables")
+    # !FIXME: at the moment we do not have ots for oil and coal
+
+    # make all zeroes for oil and coal ots for the moment
+    c , y = len(dm_elec_new.col_labels["Country"]), len(dm_elec_new.col_labels["Years"])
+    arr_temp = np.zeros((c, y))
+    dm_elec_new.add(arr_temp, dim = "Variables", col_label = "elc_energy-coal", unit="GW")
+    dm_elec_new.add(arr_temp, dim = "Variables", col_label = "elc_energy-oil", unit="GW")
+
+    # deepen
+    dm_elec_new.deepen()
 
     # save
     dict_fxa = {
@@ -136,7 +155,148 @@ def database_from_csv_to_datamatrix():
 
     # Load constants
     cdm_const = ConstantDataMatrix.extract_constant('interactions_constants', pattern='cp_ind_material-efficiency.*|cp_min.*', num_cat=0)
-
+    cdm_const.rename_col_regex("cp_", "", "Variables")
+    
+    # split
+    dict_const = {}
+    
+    # batteries vehicles
+    cdm_temp = cdm_const.filter_w_regex({"Variables": ".*batveh.*"})
+    cdm_temp.deepen()
+    dict_const["batveh"] = cdm_temp
+    
+    # trade
+    cdm_temp = cdm_const.filter_w_regex({"Variables":".*trade*"})
+    # cdm_temp = cdm_to_dm(cdm_temp, countries_list, years_list)
+    cdm_temp.deepen_twice()
+    cdm_temp.rename_col(col_in = "min_trade", col_out = "product-demand-split-share", dim = "Variables")
+    dict_const["trade"] = cdm_temp
+    
+    # batteries
+    cdm_temp = cdm_const.filter_w_regex({"Variables":".*battery*"})
+    cdm_temp = cdm_temp.filter_w_regex({"Variables":"^((?!trade|energytech).)*$"})
+    cdm_temp.deepen_twice()
+    dict_const["battery"] = cdm_temp
+    
+    # LDV
+    cdm_temp = cdm_const.filter_w_regex({"Variables":".*LDV*"})
+    cdm_temp = cdm_temp.filter_w_regex({"Variables":"^((?!batveh).)*$"})
+    cdm_temp.deepen_twice()
+    dict_const["LDV"] = cdm_temp
+    
+    # HDV
+    cdm_temp = cdm_const.filter_w_regex({"Variables":".*HDV*"})
+    cdm_temp = cdm_temp.filter_w_regex({"Variables":"^((?!batveh).)*$"})
+    cdm_temp.deepen_twice()
+    dict_const["HDV"] = cdm_temp
+    
+    # other transport
+    tra_oth = ['2W-EV','2W-FCEV','2W-ICE','2W-PHEV','bus-EV','bus-FCEV','bus-ICE','bus-PHEV',
+               'other-planes', 'other-ships', 'other-subways', 'other-trains']
+    find = [".*" + i + ".*" for i in tra_oth]
+    cdm_temp = cdm_const.filter_w_regex({"Variables": "|".join(find)})
+    cdm_temp = cdm_temp.filter_w_regex({"Variables":"^((?!batveh).)*$"})
+    cdm_temp.deepen_twice()
+    dict_const["tra-other"] = cdm_temp
+    
+    # infrastructure
+    cdm_temp = cdm_const.filter_w_regex({"Variables":".*infra*"})
+    cdm_temp.rename_col_regex(str1 = "infra_", str2 = "infra-", dim = "Variables")
+    cdm_temp.deepen_twice()
+    dict_const["infra"] = cdm_temp
+    
+    # domestic appliances
+    cdm_temp = cdm_const.filter_w_regex({"Variables":".*appliance*"})
+    cdm_temp = cdm_temp.filter_w_regex({"Variables":"^((?!min_other).)*$"})
+    cdm_temp.rename_col_regex(str1 = "appliance", str2 = "dom-appliance", dim = "Variables")
+    cdm_temp.deepen_twice()
+    dict_const["domapp"] = cdm_temp
+    
+    # domestic appliances other
+    cdm_temp = cdm_const.filter_w_regex({"Variables":".*min_other_dom*"})
+    cdm_temp.rename_col_regex(str1 = "other_dom-appliances", str2 = "other-dom-appliance", dim = "Variables")
+    cdm_temp.deepen_twice()
+    cdm_temp.sort("Categories2")
+    dict_const["domapp-other"] = cdm_temp
+    
+    # electronics
+    cdm_temp = cdm_const.filter_w_regex({"Variables":".*electr*"})
+    cdm_temp = cdm_temp.filter_w_regex({"Variables":"^((?!trade|batveh|battery).)*$"})
+    cdm_temp.rename_col_regex(str1 = "electronics_", str2 = "electronics-", dim = "Variables")
+    cdm_temp.deepen_twice()
+    dict_const["electronics"] = cdm_temp
+    
+    # buildings
+    cdm_temp = cdm_const.filter_w_regex({"Variables":".*building*"})
+    cdm_temp.rename_col_regex(str1 = "building_", str2 = "floor-area-", dim = "Variables")
+    cdm_temp.rename_col_regex(str1 = "new_", str2 = "new-", dim = "Variables")
+    cdm_temp.rename_col_regex(str1 = "reno_", str2 = "reno-", dim = "Variables")
+    cdm_temp.deepen_twice()
+    cdm_temp.sort("Categories1")
+    dict_const["buildings"] = cdm_temp
+    
+    # energy
+    cdm_temp = cdm_const.filter_w_regex({"Variables":".*energy*"})
+    cdm_temp = cdm_temp.filter_w_regex({"Variables":"^((?!trade|battery).)*$"})
+    cdm_temp.deepen_twice()
+    dict_const["energy"] = cdm_temp
+    
+    # share pv
+    cdm_temp = cdm_const.filter_w_regex({"Variables":".*min_share_pv_*"})
+    cdm_temp.rename_col_regex(str1 = "pv_", str2 = "pv-", dim = "Variables")
+    dict_const["pv-share"] = cdm_temp
+    
+    # wire copper
+    cdm_temp = cdm_const.filter_w_regex({"Variables":".*wire_copper*"})
+    dict_const["wire-copper"] = cdm_temp
+    
+    # unaccounted minerals
+    minerals_sub1 = ["aluminium","copper","lead","steel"]
+    minerals_sub2 = ["graphite","lithium","manganese","nickel"]
+    cdm_temp = cdm_const.filter_w_regex({"Variables":".*other*"})
+    cdm_temp = cdm_temp.filter_w_regex({"Variables":"^((?!vehicle|appliance).)*$"})
+    cdm_temp.deepen_twice()
+    cdm_temp1 = cdm_temp.filter({"Categories2" : minerals_sub1})
+    dict_const["minerals-unaccounted-sub1"] = cdm_temp1
+    cdm_temp2 = cdm_temp.filter({"Categories2" : minerals_sub2})
+    dict_const["minerals-unaccounted-sub2"] = cdm_temp2
+    # dm_temp = cdm_to_dm(cdm_temp, countries_list = dm_other_mindec.col_labels["Country"], 
+    #                     years_list = dm_other_mindec.col_labels["Years"])
+    
+    # switches
+    conversions_old = ["min_industry_aluminium_lithium", "min_industry_steel_nickel", "min_industry_steel_manganese",
+                       "min_industry_steel_graphite","min_industry_glass_lithium", "min_industry_aluminium_manganese"]
+    cdm_temp = cdm_const.filter({"Variables":conversions_old})
+    conversions = ["min_aluminium-lithium", "min_steel-nickel", "min_steel-manganese",
+                    "min_steel-graphite","min_glass-lithium", "min_aluminium-manganese"]
+    # conversions = ["min_material-switch-ratios_aluminium-to-lithium", "min_material-switch-ratios_steel-to-nickel", 
+    #                "min_material-switch-ratios_steel-to-manganese", "min_material-switch-ratios_steel-to-graphite",
+    #                "min_material-switch-ratios_glass-to-lithium", "min_material-switch-ratios_aluminium-to-manganese"]
+    for i in range(len(conversions)):
+        cdm_temp.rename_col(col_in = conversions_old[i], col_out = conversions[i], dim = "Variables")
+    cdm_temp.deepen()
+    dict_const["material-switch"] = cdm_temp
+    
+    # efficiency
+    cdm_temp = cdm_const.filter_w_regex({"Variables":".*eff*"})
+    dict_const["efficiency"] = cdm_temp
+    
+    # factors for primary production
+    cdm_temp = cdm_const.filter_w_regex({"Variables":".*recy*"})
+    cdm_temp.sort("Variables")
+    dict_const["factor-primary"] = cdm_temp
+    
+    # factors extraction
+    cdm_temp = cdm_const.filter_w_regex({"Variables":".*param*"})
+    dict_const["factor-extraction"] = cdm_temp
+    
+    # reserves
+    cdm_temp = cdm_const.filter_w_regex({"Variables" : ".*reserve.*"})
+    # dm_reserves = cdm_to_dm(cdm_reserves, countries_list = dm_extraction.col_labels["Country"], 
+    #                         years_list = dm_extraction.col_labels["Years"])
+    dict_const["reserves"] = cdm_temp
+    
+    
     ########
     # SAVE #
     ########
@@ -144,7 +304,7 @@ def database_from_csv_to_datamatrix():
     DM_minerals = {
         'fxa': dict_fxa,
         'calibration': dm_cal,
-        'constant': cdm_const
+        'constant': dict_const
     }
     
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -165,11 +325,10 @@ def read_data(data_file):
         DM_minerals = pickle.load(handle)
         
     # get constants
-    cdm_constants = DM_minerals["constant"].copy()
-    cdm_constants.rename_col_regex(str1 = "cp_",str2 = "",dim = "Variables")
+    CDM_const = DM_minerals["constant"].copy()
         
     # return
-    return DM_minerals, cdm_constants
+    return DM_minerals, CDM_const
 
 def rename_interfaces(DM_interface):
 
@@ -196,7 +355,7 @@ def rename_interfaces(DM_interface):
     # return
     return DM_interface
     
-def product_demand(DM_minerals, DM_interface, cdm_constants):
+def product_demand(DM_minerals, DM_interface, CDM_const):
 
     # get fxa
     DM_fxa = DM_minerals['fxa']
@@ -223,7 +382,6 @@ def product_demand(DM_minerals, DM_interface, cdm_constants):
                'HDVL-ICE','HDVL-PHEV','HDVM-EV','HDVM-FCEV','HDVM-ICE','HDVM-PHEV','LDV-EV','LDV-FCEV','LDV-ICE','LDV-PHEV',
                '2W-EV','2W-FCEV','2W-ICE','2W-PHEV','bus-EV','bus-FCEV','bus-ICE','bus-PHEV',
                'other-planes', 'other-ships', 'other-subways', 'other-trains']
-
     find = ["tra_" + i for i in tra_veh]
     dm_tra_veh = dm_tra.filter(selected_cols = {"Variables":find})
     dm_tra_veh.deepen()
@@ -266,8 +424,7 @@ def product_demand(DM_minerals, DM_interface, cdm_constants):
     # get demand for batteries from transport and electronics
 
     # get kWh from constants
-    cdm_temp = cdm_constants.filter_w_regex({"Variables": ".*batveh.*"})
-    cdm_temp.deepen()
+    cdm_temp = CDM_const["batveh"]
 
     # get transport and electronics variables which correspond to the constants
 
@@ -393,21 +550,7 @@ def product_demand(DM_minerals, DM_interface, cdm_constants):
 
     # get ots, which are in fxa
 
-    dm_energy_ots = DM_fxa["elec_new"].copy()
-    dm_energy_ots.rename_col_regex("_tech", "", dim = "Variables")
-    dm_energy_ots.rename_col_regex("_new_RES", "", dim = "Variables")
-    dm_energy_ots.rename_col_regex("_new_fossil", "", dim = "Variables")
-    dm_energy_ots.rename_col_regex("elc_", "elc_energy-", dim = "Variables")
-    # !FIXME: at the moment we do not have ots for oil and coal
-
-    # make all zeroes for oil and coal ots for the moment
-    c , y = len(dm_energy_ots.col_labels["Country"]), len(dm_energy_ots.col_labels["Years"])
-    arr_temp = np.zeros((c, y))
-    dm_energy_ots.add(arr_temp, dim = "Variables", col_label = "elc_energy-coal", unit="GW")
-    dm_energy_ots.add(arr_temp, dim = "Variables", col_label = "elc_energy-oil", unit="GW")
-
-    # deepen
-    dm_energy_ots.deepen()
+    dm_energy_ots = DM_fxa["elec_new"]
 
     # sort
     dm_energy_fts.sort(dim = "Categories1")
@@ -420,7 +563,7 @@ def product_demand(DM_minerals, DM_interface, cdm_constants):
     dm_energy.drop(dim = "Variables", col_label = ['elc'])
 
     # clean
-    del arr_temp, c, dm_energy_fts, dm_energy_ots, find, y
+    del arr_temp, dm_energy_fts, dm_energy_ots, find
 
     ########################
     ##### PUT TOGETHER #####
@@ -470,7 +613,7 @@ def product_import(DM_interface):
     # return
     return dm_import
 
-def product_demand_split(DM_demand, dm_import, cdm_constants):
+def product_demand_split(DM_demand, dm_import, CDM_const):
     
     ###################################
     ##### SHARE OF PRODUCT DEMAND #####
@@ -496,17 +639,13 @@ def product_demand_split(DM_demand, dm_import, cdm_constants):
     # product direct demand
     idx = dm_demand_split_share.idx
     arr_temp = dm_demand_split_share.array[:,:,:,:,idx["indir"]]-dm_demand_split_share.array[:,:,:,:,idx["indir"]]+1
-    dm_demand_split_share.add(arr_temp, dim = "Categories2", col_label = "dir", unit = "%")
+    dm_demand_split_share.add(arr_temp, dim = "Categories2", col_label = "dir")
 
     # add to dm_trade the share for other products from constants
     countries_list = dm_demand_split_share.col_labels["Country"]
     years_list = dm_demand_split_share.col_labels["Years"]
-    cdm_temp = cdm_constants.filter_w_regex({"Variables":".*trade*"})
+    cdm_temp = CDM_const["trade"]
     cdm_temp = cdm_to_dm(cdm_temp, countries_list, years_list)
-
-    # deepen
-    cdm_temp.deepen_twice()
-    cdm_temp.rename_col(col_in = "min_trade", col_out = "product-demand-split-share", dim = "Variables")
 
     # append
     dm_demand_split_share.append(cdm_temp, dim = "Categories1")
@@ -551,7 +690,7 @@ def product_demand_split(DM_demand, dm_import, cdm_constants):
     # return
     return DM_demand_split
 
-def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, cdm_constants):
+def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, CDM_const):
     
     # name of minerals
     minerals = ['aluminium','copper','graphite','lead','lithium','manganese','nickel','steel']
@@ -569,12 +708,10 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     dm_temp = DM_demand_split["batteries"]
 
     # get constants for mineral decomposition
-    cdm_temp = cdm_constants.filter_w_regex({"Variables":".*battery*"})
-    cdm_temp = cdm_temp.filter_w_regex({"Variables":"^((?!trade|energytech).)*$"})
-    cdm_temp.deepen_twice()
+    cdm_temp = CDM_const["battery"]
 
     # get minderal decomposition
-    dm_battery_mindec = get_mindec(dm_temp, cdm_temp)
+    dm_battery_mindec = material_decomposition(dm = dm_temp, cdm = cdm_temp)
 
     # clean
     del dm_temp, cdm_temp
@@ -595,12 +732,10 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     dm_temp = dm_temp.filter_w_regex({"Categories1":".*LDV*"})
 
     # get constants for mineral decomposition
-    cdm_temp = cdm_constants.filter_w_regex({"Variables":".*LDV*"})
-    cdm_temp = cdm_temp.filter_w_regex({"Variables":"^((?!batveh).)*$"})
-    cdm_temp.deepen_twice()
+    cdm_temp = CDM_const["LDV"]
 
     # get minderal decomposition
-    dm_veh_ldv_mindec = get_mindec(dm_temp, cdm_temp)
+    dm_veh_ldv_mindec = material_decomposition(dm_temp, cdm_temp)
 
     # get sum across vehicles
     arr_temp = np.nansum(dm_veh_ldv_mindec.array, axis=-3, keepdims = True)
@@ -609,6 +744,25 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
 
     # get mineral switch parameter
     dm_temp = dm_ind.filter_w_regex({"Variables":".*switch-cars*"})
+    
+    # # FIXME: for the material switch, here in minerals they just use switch percentages, 
+    # # but then they do not apply the ratio that says how much material is lost in the process (which is from constants).
+    # # This is a bit weird, as these ratios are loaded in constants (but for the one material-to-other), 
+    # # but then are not used. For the moment I keep this as it's in KNIME (no constant ratio applied)
+    # # In case we want to change this later, here below is the code that makes it work with
+    # # the function material_switch():
+    # dm_temp.rename_col("ind_material-switch-cars-steel-other","ind_material-switch_cars-steel-to-other","Variables")
+    # dm_temp.deepen()
+    # CDM_const["material-switch"].add(1, dim = "Variables", col_label = "min_material-switch-ratios_steel-to-other", 
+    #                                  unit = "%", dummy = True)
+    # dm_veh_ldv_mindec_sub = dm_veh_ldv_mindec.flatten().flatten()
+    # dm_veh_ldv_mindec_sub.deepen()
+    # dm_veh_ldv_mindec_sub = dm_veh_ldv_mindec_sub.filter({"Categories1" : ['LDV_dir', 'LDV_exp']})
+    # material_switch(dm = dm_veh_ldv_mindec_sub, dm_ots_fts = dm_temp,
+    #                 cdm_const = CDM_const["material-switch"], material_in="steel", material_out=["other"],
+    #                 product="LDV_dir", switch_percentage_prefix="cars-",
+    #                 switch_ratio_prefix="min_material-switch-ratios_")
+    
 
     # set variables with mineral that is switched
     mineral_in = "steel"
@@ -651,12 +805,10 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     dm_temp = dm_temp.filter_w_regex({"Categories1":".*HDV*"})
 
     # get constants for mineral decomposition
-    cdm_temp = cdm_constants.filter_w_regex({"Variables":".*HDV*"})
-    cdm_temp = cdm_temp.filter_w_regex({"Variables":"^((?!batveh).)*$"})
-    cdm_temp.deepen_twice()
+    cdm_temp = CDM_const["HDV"]
 
     # get minderal decomposition
-    dm_veh_hdv_mindec = get_mindec(dm_temp, cdm_temp)
+    dm_veh_hdv_mindec = material_decomposition(dm_temp, cdm_temp)
 
     # get sum across vehicles
     arr_temp = np.nansum(dm_veh_hdv_mindec.array, axis=-3, keepdims = True)
@@ -732,13 +884,10 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     dm_temp = dm_temp.filter({"Categories1":tra_oth})
 
     # get constants for mineral decomposition
-    find = [".*" + i + ".*" for i in tra_oth]
-    cdm_temp = cdm_constants.filter_w_regex({"Variables": "|".join(find)})
-    cdm_temp = cdm_temp.filter_w_regex({"Variables":"^((?!batveh).)*$"})
-    cdm_temp.deepen_twice()
+    cdm_temp = CDM_const["tra-other"]
 
     # get minderal decomposition
-    dm_veh_oth_mindec = get_mindec(dm_temp, cdm_temp)
+    dm_veh_oth_mindec = material_decomposition(dm_temp, cdm_temp)
 
     # get sum across vehicles
     arr_temp = np.nansum(dm_veh_oth_mindec.array, axis=-3, keepdims = True)
@@ -746,7 +895,7 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     dm_veh_oth_mindec.drop(dim = "Categories1", col_label = tra_oth)
 
     # clean
-    del dm_temp, cdm_temp, arr_temp, find
+    del dm_temp, cdm_temp, arr_temp
 
 
     ###########################
@@ -796,12 +945,10 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     dm_temp = DM_demand_split["infrastructure"]
 
     # get constants for mineral decomposition
-    cdm_temp = cdm_constants.filter_w_regex({"Variables":".*infra*"})
-    cdm_temp.rename_col_regex(str1 = "infra_", str2 = "infra-", dim = "Variables")
-    cdm_temp.deepen_twice()
+    cdm_temp = CDM_const["infra"]
 
     # get minderal decomposition
-    dm_infra_mindec = get_mindec(dm_temp, cdm_temp)
+    dm_infra_mindec = material_decomposition(dm_temp, cdm_temp)
 
     # get sum across infra
     arr_temp = np.nansum(dm_infra_mindec.array, axis=-3, keepdims = True)
@@ -824,13 +971,10 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     dm_temp = DM_demand_split["dom-appliance"]
 
     # get constants for mineral decomposition
-    cdm_temp = cdm_constants.filter_w_regex({"Variables":".*appliance*"})
-    cdm_temp = cdm_temp.filter_w_regex({"Variables":"^((?!min_other).)*$"})
-    cdm_temp.rename_col_regex(str1 = "appliance", str2 = "dom-appliance", dim = "Variables")
-    cdm_temp.deepen_twice()
+    cdm_temp = CDM_const["domapp"]
 
     # get minderal decomposition
-    dm_domapp_mindec = get_mindec(dm_temp, cdm_temp)
+    dm_domapp_mindec = material_decomposition(dm_temp, cdm_temp)
 
     # get sum across dom appliance
     arr_temp = np.nansum(dm_domapp_mindec.array, axis=-3, keepdims = True)
@@ -838,10 +982,7 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     dm_domapp_mindec.drop(dim = "Categories1", col_label = domapp)
 
     # get factor for materials coming from unaccounted appliances
-    cdm_temp = cdm_constants.filter_w_regex({"Variables":".*min_other_dom*"})
-    cdm_temp.rename_col_regex(str1 = "other_dom-appliances", str2 = "other-dom-appliance", dim = "Variables")
-    cdm_temp.deepen_twice()
-    cdm_temp.sort("Categories2")
+    cdm_temp = CDM_const["domapp-other"]
 
     # divide mineral split by this factor (to get mineral + extra mineral from unaccounted sectors)
     dm_domapp_mindec.array = dm_domapp_mindec.array / cdm_temp.array[np.newaxis,np.newaxis,np.newaxis,...]
@@ -868,13 +1009,10 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     dm_temp = DM_demand_split["electronics"]
 
     # get constants for mineral decomposition
-    cdm_temp = cdm_constants.filter_w_regex({"Variables":".*electr*"})
-    cdm_temp = cdm_temp.filter_w_regex({"Variables":"^((?!trade|batveh|battery).)*$"})
-    cdm_temp.rename_col_regex(str1 = "electronics_", str2 = "electronics-", dim = "Variables")
-    cdm_temp.deepen_twice()
+    cdm_temp = CDM_const["electronics"]
 
     # get minderal decomposition
-    dm_electr_cotvph_mindec = get_mindec(dm_temp, cdm_temp)
+    dm_electr_cotvph_mindec = material_decomposition(dm_temp, cdm_temp)
 
     # get batteries for electronics
     dm_electr_batt_mindec = dm_battery_mindec.filter({"Categories1" : ['electronics-battery']})
@@ -934,14 +1072,10 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
         dm_temp.add(np.nan, dim = "Categories2", col_label = variable, dummy = True)
 
     # get constants for mineral decomposition
-    cdm_temp = cdm_constants.filter_w_regex({"Variables":".*building*"})
-    cdm_temp.rename_col_regex(str1 = "building_", str2 = "building-", dim = "Variables")
-    cdm_temp.rename_col_regex(str1 = "new_", str2 = "new-", dim = "Variables")
-    cdm_temp.rename_col_regex(str1 = "reno_", str2 = "reno-", dim = "Variables")
-    cdm_temp.deepen_twice()
+    cdm_temp = CDM_const["buildings"]
 
     # get mineral decomposition
-    dm_constr_mindec = get_mindec(dm_temp, cdm_temp)
+    dm_constr_mindec = material_decomposition(dm_temp, cdm_temp)
 
     # get sum across buildings
     arr_temp = np.nansum(dm_constr_mindec.array, axis=-3, keepdims = True)
@@ -995,13 +1129,10 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     dm_temp = DM_demand_split["energy"].copy()
 
     # get constants for mineral decomposition
-    cdm_temp = cdm_constants.filter_w_regex({"Variables":".*energy*"})
-    cdm_temp = cdm_temp.filter_w_regex({"Variables":"^((?!trade|battery).)*$"})
-    cdm_temp.deepen_twice()
+    cdm_temp = CDM_const["energy"]
 
     # get constants for thin film
-    cdm_temp2 = cdm_constants.filter_w_regex({"Variables":".*min_share_pv_*"})
-    cdm_temp2.rename_col_regex(str1 = "pv_", str2 = "pv-", dim = "Variables")
+    cdm_temp2 = CDM_const["pv-share"]
 
     # get indir, exp and dir for energy-pv-csi (by multipilication with the thin film and csi factors)
     idx = dm_temp.idx
@@ -1018,7 +1149,7 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     energy = energy + ['energy-pv-csi','energy-pv-thinfilm']
 
     # get mineral decomposition
-    dm_energy_tech_mindec = get_mindec(dm_temp, cdm_temp)
+    dm_energy_tech_mindec = material_decomposition(dm_temp, cdm_temp)
 
     # get batteries for energy
     dm_energy_batt_mindec = dm_battery_mindec.filter({"Categories1" : ['energy-battery']})
@@ -1048,7 +1179,7 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
 
     # get electricity demand total (GWh) and constant for amount of copper in wires (kg/GWh)
     dm_temp = dm_str.filter({"Variables":["elc_electricity-demand_total"]})
-    cdm_temp = cdm_constants.filter_w_regex({"Variables":".*wire_copper*"})
+    cdm_temp = CDM_const["wire-copper"]
 
     # multiply direct demand times amount of copper in wires to get amount of copper in wires (kg)
     arr_temp = dm_temp.array * cdm_temp.array
@@ -1117,10 +1248,7 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     dm_other_mindec = dm_other_mindec.filter({"Categories2" : ["dir"]})
 
     # get constants
-    cdm_temp = cdm_constants.filter_w_regex({"Variables":".*other*"})
-    cdm_temp = cdm_temp.filter_w_regex({"Variables":"^((?!vehicle|appliance).)*$"})
-    cdm_temp.deepen_twice()
-    cdm_temp = cdm_temp.filter({"Categories2" : minerals_sub1})
+    cdm_temp = CDM_const["minerals-unaccounted-sub1"]
 
     # expand constants
     dm_temp = cdm_to_dm(cdm_temp, countries_list = dm_other_mindec.col_labels["Country"], 
@@ -1154,23 +1282,19 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     # create dm for industry: take direct demand for steel and aluminium and convert from kg to mt
     dm_industry_mindec = dm_mindec_temp.copy()
     dm_industry_mindec.array = dm_industry_mindec.array * 0.000000001
-    dm_industry_mindec.units['mineral-decomposition'] = "Mt"
+    dm_industry_mindec.units['material-decomposition'] = "Mt"
 
     # take glass
     dm_temp2 = dm_ind.filter({"Variables" : ["ind_material-production_glass"]})
     dm_industry_mindec.add(dm_temp2.array[:,:,np.newaxis,np.newaxis,np.newaxis,:], dim = "Categories3", col_label = "glass")
 
     # get constants for switches
-    conversions_old = ["min_industry_aluminium_lithium", "min_industry_steel_nickel", "min_industry_steel_manganese",
-                       "min_industry_steel_graphite","min_industry_glass_lithium", "min_industry_aluminium_manganese"]
-    cdm_temp = cdm_constants.filter({"Variables":conversions_old})
-    conversions = ["min_aluminium-lithium", "min_steel-nickel", "min_steel-manganese",
-                   "min_steel-graphite","min_glass-lithium", "min_aluminium-manganese"]
-    for i in range(len(conversions)):
-        cdm_temp.rename_col(col_in = conversions_old[i], col_out = conversions[i], dim = "Variables")
-    cdm_temp.deepen()
+    cdm_temp = CDM_const["material-switch"]
 
-    # multiply direct demand by these switch factors
+    # multiply direct demand by these "switch factors"
+    # FIXME: in theory these are not switch factors (which are a lever coming from industry)
+    # but are recovery factors (which are usually applied after switch factors). For the moment
+    # I leave it like this (as it is in KNIME), to be checked later.
     idx_dm = dm_industry_mindec.idx
     idx_cdm = cdm_temp.idx
     col1 = ["aluminium","aluminium","steel","steel","steel","glass"]
@@ -1184,7 +1308,7 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
 
     # transform in kg
     dm_industry_mindec.array = dm_industry_mindec.array * 1000000000
-    dm_industry_mindec.units['mineral-decomposition'] = "kg"
+    dm_industry_mindec.units['material-decomposition'] = "kg"
 
     # sum over end point minerals
     dm_temp = dm_industry_mindec.filter({"Categories3" : ["aluminium-lithium", "glass-lithium"]})
@@ -1221,10 +1345,7 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     # multiply these total with factors for other unaccounted sectos 
 
     # get constants
-    cdm_temp = cdm_constants.filter_w_regex({"Variables":".*other*"})
-    cdm_temp = cdm_temp.filter_w_regex({"Variables":"^((?!vehicle|appliance).)*$"})
-    cdm_temp.deepen_twice()
-    cdm_temp = cdm_temp.filter({"Categories2" : minerals_sub2})
+    cdm_temp = CDM_const["minerals-unaccounted-sub2"]
     dm_temp = cdm_to_dm(cdm_temp, countries_list = dm_other_mindec.col_labels["Country"], 
                         years_list = dm_other_mindec.col_labels["Years"])
 
@@ -1258,7 +1379,7 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     dm_mindec.drop(dim = "Categories1", col_label = "other")
 
     # clean
-    del cdm_temp, dm_temp, arr_temp, col1, col2, conversions, conversions_old, dm_temp2, drop, i, idx,\
+    del cdm_temp, dm_temp, arr_temp, col1, col2, dm_temp2, drop, i, idx,\
         idx_cdm, idx_dm, minerals_sub1, minerals_sub2, dm_mindec_temp
     
     ########################
@@ -1288,11 +1409,11 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     # make percentages
     # note: I have to to this here as these percenteges are done on dm_mindec before computing effifiency (not clear why)
     dm_mindec_sect.array = dm_mindec_sect.array / dm_mindec.array
-    dm_mindec_sect.units['mineral-decomposition'] = "%"
+    dm_mindec_sect.units['material-decomposition'] = "%"
 
     # make nan for indir (as at the moment percentages are not done for indir)
     idx = dm_mindec_sect.idx
-    dm_mindec_sect.array[:,:,idx["mineral-decomposition"],:,idx["indir"],:] = np.nan
+    dm_mindec_sect.array[:,:,idx["material-decomposition"],:,idx["indir"],:] = np.nan
 
     # clean
     del idx, mykey
@@ -1302,7 +1423,7 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     ################################################
 
     # get material-efficiency from constant and industry
-    cdm_temp = cdm_constants.filter_w_regex({"Variables":".*eff*"})
+    cdm_temp = CDM_const["efficiency"]
     dm_temp = dm_ind.filter_w_regex({"Variables":".*eff*"})
 
     # expand constants and add
@@ -1330,7 +1451,7 @@ def mineral_demand_calibration(DM_minerals, dm_mindec):
     # get calibration series for direct demand
     dm_cal = DM_minerals["calibration"]
     dm_cal.deepen_twice()
-    dm_cal.rename_col("min", "mineral-decomposition-calib", "Variables")
+    dm_cal.rename_col("min", "material-decomposition-calib", "Variables")
     dm_cal.rename_col("calib", "all-sectors", "Categories1")
 
     # get only direct demand
@@ -1350,7 +1471,7 @@ def mineral_demand_calibration(DM_minerals, dm_mindec):
     # return
     return dm_mindec, dm_mindec_dir_calib_rates
     
-def mineral_extraction(DM_minerals, DM_interface, dm_mindec, cdm_constants):
+def mineral_extraction(DM_minerals, DM_interface, dm_mindec, CDM_const):
     
     # name of minerals
     minerals = ['aluminium','copper','graphite','lead','lithium','manganese','nickel','steel']
@@ -1432,7 +1553,7 @@ def mineral_extraction(DM_minerals, DM_interface, dm_mindec, cdm_constants):
     dm_production = dm_production.flatten()
     dm_production = dm_production.flatten()
     dm_production = dm_production.flatten()
-    dm_production.rename_col_regex(str1 = "mineral-decomposition_all-sectors_mineral-production-", str2 = "", dim = "Variables")
+    dm_production.rename_col_regex(str1 = "material-decomposition_all-sectors_mineral-production-", str2 = "", dim = "Variables")
     dm_production.deepen()
 
     # fix dimensions of dm_proportion
@@ -1456,8 +1577,7 @@ def mineral_extraction(DM_minerals, DM_interface, dm_mindec, cdm_constants):
     dm_primsec.units["abroad"] = "kg"
 
     # get factor to keep only primary
-    cdm_temp = cdm_constants.filter_w_regex({"Variables":".*recy*"})
-    cdm_temp.sort("Variables")
+    cdm_temp = CDM_const["factor-primary"]
 
     # apply factor to keep only primary
     dm_extraction = dm_primsec.copy()
@@ -1480,7 +1600,7 @@ def mineral_extraction(DM_minerals, DM_interface, dm_mindec, cdm_constants):
         dm_extraction.units[i] = "kg"
 
     # multiply by extraction parameters
-    cdm_temp = cdm_constants.filter_w_regex({"Variables":".*param*"})
+    cdm_temp = CDM_const["factor-extraction"]
     dm_extraction.array = dm_extraction.array * cdm_temp.array[np.newaxis,np.newaxis,:]
 
     # rename aluminium to bauxite and steel to iron
@@ -1500,7 +1620,7 @@ def mineral_extraction(DM_minerals, DM_interface, dm_mindec, cdm_constants):
     # return
     return dm_extraction
     
-def mineral_reserves(DM_minerals, DM_interface, dm_mindec, dm_mindec_sect, dm_extraction, cdm_constants):
+def mineral_reserves(DM_minerals, DM_interface, dm_mindec, dm_mindec_sect, dm_extraction, CDM_const):
     
     # name of minerals
     minerals = ['bauxite', 'copper', 'graphite', "iron", 'lead', 'lithium', 'manganese', 'nickel', 'phosphate', 'potash']
@@ -1513,7 +1633,7 @@ def mineral_reserves(DM_minerals, DM_interface, dm_mindec, dm_mindec_sect, dm_ex
     ###############################################################
 
     # get reserves
-    cdm_reserves = cdm_constants.filter_w_regex({"Variables" : ".*reserve.*"})
+    cdm_reserves = CDM_const["reserves"]
     dm_reserves = cdm_to_dm(cdm_reserves, countries_list = dm_extraction.col_labels["Country"], 
                             years_list = dm_extraction.col_labels["Years"])
 
@@ -1532,7 +1652,7 @@ def mineral_reserves(DM_minerals, DM_interface, dm_mindec, dm_mindec_sect, dm_ex
     ########################
 
     # demand for oil, gas and coal
-    dm_fossil = DM_interface["oil-refinery"].copy()
+    dm_fossil = DM_interface["refinery"].copy()
     dm_fossil.rename_col_regex(str1 = "fos_primary-demand_", str2 = "min_energy_", dim = "Variables")
     idx = dm_fossil.idx
     dm_fossil.array[...,idx["min_energy_coal"]] = dm_fossil.array[...,idx["min_energy_coal"]] * 0.123
@@ -1610,17 +1730,17 @@ def mineral_reserves(DM_minerals, DM_interface, dm_mindec, dm_mindec_sect, dm_ex
     # return
     return dict_relres_fossil, dict_relres_minerals, dm_fossil
 
-def mineral_production_bysector(dm_mindec, dm_mindec_sect, cdm_constants):
+def mineral_production_bysector(dm_mindec, dm_mindec_sect, CDM_const):
     
     # apply extraction parameter to total indir, exp and dir
     # note: not clear why this is applied now directly here, as before we applied after all the modifications in industry, etc ...
-    cdm_temp = cdm_constants.filter_w_regex({"Variables":".*param*"})
+    cdm_temp = CDM_const["factor-extraction"]
     dm_mindec.array = dm_mindec.array * cdm_temp.array
     # note: here we apply the parameter to dm_mindec directly as for tpe we need the indir after multiplication
 
     # multiply exp and dir by sectoral percentages to get sectoral exp and dir (indir will be nan)
     dm_mindec_sect.array = dm_mindec.array * dm_mindec_sect.array
-    dm_mindec_sect.units['mineral-decomposition'] = "kg"
+    dm_mindec_sect.units['material-decomposition'] = "kg"
 
     # !FIXME: in the knime this is dir - exp.
 
@@ -1715,7 +1835,7 @@ def variables_for_tpe(DM_interface, DM_minerals, dm_production_sect, dm_fossil, 
 
     # minerals from all sectors
     dm_temp = dm_production_sect.copy()
-    dm_temp.rename_col(col_in = 'mineral-decomposition', col_out = "min", dim = "Variables")
+    dm_temp.rename_col(col_in = 'material-decomposition', col_out = "min", dim = "Variables")
     dm_temp.rename_col(col_in = 'construction', col_out = "building", dim = "Categories1")
     dm_temp = dm_temp.flatten()
     dm_temp = dm_temp.flatten()
@@ -1734,7 +1854,7 @@ def variables_for_tpe(DM_interface, DM_minerals, dm_production_sect, dm_fossil, 
     dm_temp.rename_col(col_in = 'aluminium', col_out = "bauxite", dim = "Categories3")
     dm_temp.rename_col(col_in = 'steel', col_out = "iron", dim = "Categories3")
     dm_temp.sort("Categories3")
-    dm_temp.rename_col(col_in = 'mineral-decomposition', col_out = "min", dim = "Variables")
+    dm_temp.rename_col(col_in = 'material-decomposition', col_out = "min", dim = "Variables")
     dm_temp.rename_col(col_in = 'indir', col_out = "indirect", dim = "Categories2")
     dm_temp.array = dm_temp.array * 0.000000001
     dm_temp.units["min"] = "Mt"
@@ -1771,15 +1891,62 @@ def variables_for_tpe(DM_interface, DM_minerals, dm_production_sect, dm_fossil, 
     # return
     return df_tpe, df_tpe_relres
 
-def minerals(years_setting, interface=Interface(), calibration = False):
+def simulate_lifestyles_to_minerals_input():
+    
+    dm = simulate_input(from_sector="lifestyles", to_sector="minerals")
+    
+    return dm
+
+def simulate_transport_to_minerals_input():
+    
+    dm_tra = simulate_input(from_sector="transport", to_sector="minerals")
+    
+    return dm_tra
+
+def simulate_agriculture_to_minerals_input():
+    
+    dm = simulate_input(from_sector="agriculture", to_sector="minerals")
+    
+    return dm
+
+def simulate_industry_to_minerals_input():
+    
+    dm = simulate_input(from_sector="industry", to_sector="minerals")
+    
+    return dm
+
+def simulate_storage_to_minerals_input():
+    
+    dm = simulate_input(from_sector="storage", to_sector="minerals")
+    
+    return dm
+
+def simulate_buildings_to_minerals_input():
+    
+    dm = simulate_input(from_sector="buildings", to_sector="minerals")
+    
+    return dm
+
+def simulate_refinery_to_minerals_input():
+    
+    dm = simulate_input(from_sector="refinery", to_sector="minerals")
+    
+    return dm
+
+def simulate_ccus_to_minerals_input():
+    
+    dm = simulate_input(from_sector="ccus", to_sector="minerals")
+    
+    return dm
+
+def minerals(interface=Interface(), calibration = False):
     
     # directories
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     minerals_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/minerals.pickle')
-    # minerals_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/minerals.pickle') # for local run
     
     # get data
-    DM_minerals, cdm_constants = read_data(minerals_data_file)
+    DM_minerals, CDM_const = read_data(minerals_data_file)
     
     # get countries
     cntr_list = DM_minerals["fxa"]["elec_new"].col_labels['Country']
@@ -1790,42 +1957,42 @@ def minerals(years_setting, interface=Interface(), calibration = False):
     if interface.has_link(from_sector='lifestyles', to_sector='minerals'):
         DM_interface["lifestyles"] = interface.get_link(from_sector='lifestyles', to_sector='minerals')
     else:
-        DM_interface["lifestyles"] = simulate_input(from_sector="lifestyles", to_sector="minerals")
+        DM_interface["lifestyles"] = simulate_lifestyles_to_minerals_input()
         
     if interface.has_link(from_sector='transport', to_sector='minerals'):
         DM_interface["transport"] = interface.get_link(from_sector='transport', to_sector='minerals')
     else:
-        DM_interface["transport"] = simulate_input(from_sector="transport", to_sector="minerals")
+        DM_interface["transport"] = simulate_transport_to_minerals_input()
         
     if interface.has_link(from_sector='agriculture', to_sector='minerals'):
         DM_interface["agriculture"] = interface.get_link(from_sector='agriculture', to_sector='minerals')
     else:
-        DM_interface["agriculture"] = simulate_input(from_sector="agriculture", to_sector="minerals")
+        DM_interface["agriculture"] = simulate_agriculture_to_minerals_input()
         
     if interface.has_link(from_sector='industry', to_sector='minerals'):
         DM_interface["industry"] = interface.get_link(from_sector='industry', to_sector='minerals')
     else:
-        DM_interface["industry"] = simulate_input(from_sector="industry", to_sector="minerals")
+        DM_interface["industry"] = simulate_industry_to_minerals_input()
     
     if interface.has_link(from_sector='storage', to_sector='minerals'):
         DM_interface["storage"] = interface.get_link(from_sector='storage', to_sector='minerals')
     else:
-        DM_interface["storage"] = simulate_input(from_sector="storage", to_sector="minerals")
+        DM_interface["storage"] = simulate_storage_to_minerals_input()
         
     if interface.has_link(from_sector='buildings', to_sector='minerals'):
         DM_interface["buildings"] = interface.get_link(from_sector='buildings', to_sector='minerals')
     else:
-        DM_interface["buildings"] = simulate_input(from_sector="buildings", to_sector="minerals")
+        DM_interface["buildings"] = simulate_buildings_to_minerals_input()
         
-    if interface.has_link(from_sector='oil-refinery', to_sector='minerals'):
-        DM_interface["oil-refinery"] = interface.get_link(from_sector='oil-refinery', to_sector='minerals')
+    if interface.has_link(from_sector='refinery', to_sector='minerals'):
+        DM_interface["refinery"] = interface.get_link(from_sector='refinery', to_sector='minerals')
     else:
-        DM_interface["oil-refinery"] = simulate_input(from_sector="oil-refinery", to_sector="minerals")
+        DM_interface["refinery"] = simulate_refinery_to_minerals_input()
     
     if interface.has_link(from_sector='ccus', to_sector='minerals'):
         DM_interface["ccus"] = interface.get_link(from_sector='ccus', to_sector='minerals')
     else:
-        DM_interface["ccus"] = simulate_input(from_sector="ccus", to_sector="minerals")
+        DM_interface["ccus"] = simulate_ccus_to_minerals_input()
     
     # rename interfaces
     DM_interface = rename_interfaces(DM_interface)
@@ -1835,30 +2002,30 @@ def minerals(years_setting, interface=Interface(), calibration = False):
         DM_interface[i] = DM_interface[i].filter({'Country': cntr_list})
         
     # get product demand
-    DM_demand = product_demand(DM_minerals, DM_interface, cdm_constants)
+    DM_demand = product_demand(DM_minerals, DM_interface, CDM_const)
     
     # get product import
     dm_import = product_import(DM_interface)
     
     # get product demand split
-    DM_demand_split = product_demand_split(DM_demand, dm_import, cdm_constants)
+    DM_demand_split = product_demand_split(DM_demand, dm_import, CDM_const)
     
     # get mineral demand split
-    dm_mindec, dm_mindec_sect = mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, cdm_constants)
+    dm_mindec, dm_mindec_sect = mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, CDM_const)
     
     # calibration
     if calibration is True:
         dm_mindec, dm_mindec_calib_rates = mineral_demand_calibration(DM_minerals, dm_mindec)
 
     # get mineral extraction
-    dm_extraction = mineral_extraction(DM_minerals, DM_interface, dm_mindec, cdm_constants)
+    dm_extraction = mineral_extraction(DM_minerals, DM_interface, dm_mindec, CDM_const)
     
     # get mineral reserves
     dict_relres_fossil, dict_relres_minerals, dm_fossil = mineral_reserves(DM_minerals, DM_interface, dm_mindec, 
-                                                                           dm_mindec_sect, dm_extraction, cdm_constants)
+                                                                           dm_mindec_sect, dm_extraction, CDM_const)
     
     # get mineral production by sector
-    dm_production_sect = mineral_production_bysector(dm_mindec, dm_mindec_sect, cdm_constants)
+    dm_production_sect = mineral_production_bysector(dm_mindec, dm_mindec_sect, CDM_const)
     
     # get variables for TPE
     df_tpe, df_tpe_relres = variables_for_tpe(DM_interface, DM_minerals, dm_production_sect, dm_fossil, dm_mindec, dm_extraction, 
@@ -1872,15 +2039,12 @@ def minerals(years_setting, interface=Interface(), calibration = False):
 
 def local_minerals_run():
     
-    # set years
-    years_setting = [1990, 2015, 2050, 5]
-    
     # geoscale
     global_vars = {'geoscale': '.*'}
     filter_geoscale(global_vars)
     
     # run
-    results_run = minerals(years_setting)
+    results_run = minerals()
     
     # return
     return results_run
@@ -1888,5 +2052,9 @@ def local_minerals_run():
 
 # # run local
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/minerals_module.py"
-# database_from_csv_to_datamatrix()
+# # database_from_csv_to_datamatrix()
+# import time
+# start = time.time()
 # results_run = local_minerals_run()
+# end = time.time()
+# print(end-start)
