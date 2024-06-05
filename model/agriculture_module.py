@@ -2180,9 +2180,35 @@ def land_matrix_workflow(DM_land_use):
                     print(f"No solution found for sub-matrix at index ({i}, {j}, {k})")
 
     # Adding the array to relevant dm
-    DM_land_use['land_matrix'].add(arr_to_solve, col_label='land_use_change', dim='Variables')
+    DM_land_use['land_matrix'].add(arr_to_solve, col_label='land_use_change_without_rem', dim='Variables')
 
     # (Check that net change = 0 ?)
+
+    # LAND USE CHANGE MATRIX - INCLUDING LAND REMAINING LAND -----------------------------------------------------------
+
+    # Land use remaining same land use [ha] = (if land diff > 0) land initial area [ha] FIXME check logic with Gino
+    #                                       = (else if land diff > 0) land demand [ha]
+    # In other terms : (if land demand > initial area) = land initial area [ha]
+    #                  (else if land demand < initial area) = land demand [ha]
+
+    variable_names = ['lus_land', 'lus_land_initial-area_unfccc']
+    dm_temp = DM_land_use['land_man_gap'].filter({'Variables': variable_names})
+    index_lus_land = variable_names.index('lus_land')
+    index_lus_land_initial_area_unfccc = variable_names.index('lus_land_initial-area_unfccc')
+    arr_land = dm_temp.array
+    arr_remaining = np.minimum(arr_land[:, :, index_lus_land, :], arr_land[:, :, index_lus_land_initial_area_unfccc, :])
+    DM_land_use['land_man_gap'].add(arr_remaining, col_label='land_remaining_land', dim='Variables')
+
+    # Transforming the remaining in land to the relevant format (from 1 cat to 2 cat with values = diagonal and 0 otherwise)
+    arr_temp = np.zeros((32, 33, 6, 6))
+    for cat in range(arr_remaining.shape[2]):
+        arr_temp[:, :, cat, cat] = arr_remaining[:, :, cat]
+    DM_land_use['land_matrix'].add(arr_temp, col_label='land_remaining_land_matrix', dim='Variables')
+
+    # Land use change matrix [ha] = Land remaining land matrix [ha] + land use change matrix without remaining [ha]
+    DM_land_use['land_matrix'].operation('land_use_change_without_rem', '+', 'land_remaining_land_matrix',
+               dim="Variables", out_col='land_use_change', unit='ha')
+
 
     return DM_land_use
 
@@ -2242,6 +2268,27 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     dm_wood = wood_workflow(DM_bioenergy, dm_lgn, dm_ind)
     DM_land_use = land_allocation_workflow(DM_land_use, dm_land_use)
     DM_land_use = land_matrix_workflow(DM_land_use)
+
+    # CalculationLeaf CARBON DYNAMICS
+
+    # SOIL CARBON STOCK ------------------------------------------------------------------------------------------------
+
+    # Mineral soil [ha] = Land use matrix [ha] * mineral content per soil type [%]
+
+    # Organic soil [ha] = Land use matrix [ha] * organic content per soil type [%]
+
+    # Soil mineral carbon stock per land use [tC] = Mineral soil [ha] * Mineral soil emission factor [tC/ha]
+
+    # Soil organic carbon stock per land use [tC] = Organic soil [ha] * Organic soil emission factor [tC/ha]
+
+    # BIOMASS CARBON STOCK ---------------------------------------------------------------------------------------------
+
+    # Biomass carbon stock per land use [tC] =  Biomass carbon stock loss or gain [tC/ha] * Land use matrix [ha]
+
+    # CARBON STOCK FROM CONVERTED LAND ---------------------------------------------------------------------------------
+
+
+    # UNIT CONVERSION FROM tC to tCO2 ----------------------------------------------------------------------------------
 
 
 
