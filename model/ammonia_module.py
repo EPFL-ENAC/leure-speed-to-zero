@@ -894,7 +894,7 @@ def ammonia_refinery_interface(DM_energy_demand, write_xls = False):
     dm_ref = DM_energy_demand["bycarr"].filter(
         {"Categories1" : ['liquid-ff-oil_diesel', 'liquid-ff-oil_fuel-oil',
                           'gas-ff-natural', 'solid-ff-coal']})
-    dm_ref.rename_col("energy-demand", "ind_energy-demand", "Variables")
+    dm_ref.rename_col("energy-demand", "amm_energy-demand", "Variables")
     dm_ref = dm_ref.flatten()
     dm_ref.sort("Variables")
 
@@ -1071,6 +1071,8 @@ def ammonia(lever_setting, years_setting, interface = Interface(), calibration =
     
     # interface refinery
     dm_refinery = ammonia_refinery_interface(DM_energy_demand)
+    # df = dm_refinery.write_df()
+    # df.to_excel('All-Countries-interface_from-ammonia-to-oil-refinery.xlsx', index=False)
     interface.add_link(from_sector='ammonia', to_sector='refinery', dm=dm_refinery)
     
     # # interface water
