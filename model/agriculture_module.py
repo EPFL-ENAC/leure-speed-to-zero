@@ -54,6 +54,9 @@ def database_from_csv_to_datamatrix():
     file = 'agriculture_fixed-assumptions_pathwaycalc_non_nan'
     lever = 'none'
     #edit_database(file, lever, column='eucalc-name', mode='rename',pattern={'meat_': 'meat-', 'abp_': 'abp-'})
+    #edit_database(file, lever, column='eucalc-name', mode='rename',pattern={'_rem_': '_', '_to_': '_', 'land-man_ef': 'fxa_land-man_ef'})
+    #edit_database(file, lever, column='eucalc-name', mode='rename',pattern={'land-man_soil-type': 'fxa_land-man_soil-type'})
+    #edit_database(file, lever, column='eucalc-name', mode='rename',pattern={'_def_': '_def-', '_gstock_': '_gstock-', '_nat-losses_': '_nat-losses-'})
     # AGRICULTURE ------------------------------------------------------------------------------------------------------
     # LIVESTOCK MANURE - N2O emissions
     df = read_database_fxa(file, filter_dict={'eucalc-name': 'ef_liv_N2O-emission_ef.*'})
@@ -97,11 +100,33 @@ def database_from_csv_to_datamatrix():
     dm_n_fertilizer = DataMatrix.create_from_df(df, num_cat=0)
     dict_fxa['agr_emission_fertilizer'] = dm_n_fertilizer
 
+
     # LAND USE --------------------------------------------------------------------------------------------------------
     # LAND ALLOCATION - Total area
     df = read_database_fxa(file, filter_dict={'eucalc-name': 'lus_land_total-area'})
     dm_land_total = DataMatrix.create_from_df(df, num_cat=0)
     dict_fxa['lus_land_total-area'] = dm_land_total
+    # CARBON STOCK - c-stock biomass & soil
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'land-man_ef'})
+    dm_ef_biomass = DataMatrix.create_from_df(df, num_cat=0)
+    dict_fxa['land-man_ef'] = dm_ef_biomass
+    # CARBON STOCK - soil type
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'land-man_soil-type'})
+    dm_soil = DataMatrix.create_from_df(df, num_cat=0)
+    dict_fxa['land-man_soil-type'] = dm_soil
+    # AGROFORESTRY CROP - emission factors
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'agr_climate-smart-crop_ef_agroforestry'})
+    dm_crop_ef_agroforestry = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['agr_climate-smart-crop_ef_agroforestry'] = dm_crop_ef_agroforestry
+    # AGROFORESTRY livestock - emission factors
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'agr_climate-smart-livestock_ef_agroforestry'})
+    dm_livestock_ef_agroforestry = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['agr_climate-smart-livestock_ef_agroforestry'] = dm_livestock_ef_agroforestry
+    # AGROFORESTRY Forestry - natural losses & others
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'agr_climate-smart-forestry'})
+    dm_agroforestry = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['agr_climate-smart-forestry'] = dm_agroforestry
+
 
 
     # CalibrationFactorsToDatamatrix
@@ -198,6 +223,7 @@ def database_from_csv_to_datamatrix():
     dm_caf_input = DataMatrix.create_from_df(df, num_cat=1)
     dict_fxa['caf_agr_input-use_emissions-CO2'] = dm_caf_input
 
+
     # Create a dictionnay with all the fixed assumptions
     dict_fxa = {
         'caf_agr_domestic-production-liv': dm_caf_liv_dom_prod,
@@ -222,7 +248,12 @@ def database_from_csv_to_datamatrix():
         'fibers': dm_fibers,
         'rice': dm_rice,
         'agr_emission_fertilizer' : dm_n_fertilizer,
-        'lus_land_total-area' : dm_land_total
+        'lus_land_total-area' : dm_land_total,
+        'land-man_ef' : dm_ef_biomass,
+        'land-man_soil-type' : dm_soil,
+        'agr_climate-smart-crop_ef_agroforestry' : dm_crop_ef_agroforestry,
+        'agr_climate-smart-livestock_ef_agroforestry': dm_livestock_ef_agroforestry,
+        'agr_climate-smart-forestry' : dm_agroforestry
     }
 
 
@@ -247,13 +278,13 @@ def database_from_csv_to_datamatrix():
     lever = 'climate-smart-livestock'
     #edit_database(file,lever,column='eucalc-name',pattern={'_CH4-emission':''},mode='rename')
     #edit_database(file,lever,column='eucalc-name',pattern={'ration_crop_':'ration_crop-', 'ration_liv_':'ration_liv-'},mode='rename')
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 0, 1, 2, 1], baseyear=baseyear,
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 0, 1, 2, 1, 1], baseyear=baseyear,
                                                                 years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
                                                                 column='eucalc-name',
                                                                 group_list=['climate-smart-livestock_losses.*', 'climate-smart-livestock_yield.*',
                                                                             'climate-smart-livestock_slaughtered.*', 'climate-smart-livestock_density',
                                                                             'climate-smart-livestock_enteric.*', 'climate-smart-livestock_manure.*',
-                                                                            'climate-smart-livestock_ration.*'])
+                                                                            'climate-smart-livestock_ration.*', 'agr_climate-smart-livestock_ef_agroforestry.*'])
 
     # Read biomass hierarchy
     file = 'agriculture_biomass-use-hierarchy_pathwaycalc'
@@ -461,16 +492,35 @@ def read_data(data_file, lever_setting):
     # FIXME appending does not work for no apparent reason
     # dm_energy_demand.append(dm_caf_energy_demand, dim='Variables')
 
-    # Sub-matrix for LAND USE
+    # Sub-matrix for LAND USE - Land allocation
     dm_land_man_use = DM_ots_fts['land-man']['agr_land-man_use']
     dm_land_total = DM_agriculture['fxa']['lus_land_total-area']
     dm_land_man_dyn = DM_ots_fts['land-man']['agr_land-man_dyn']
+
+    # Sub-matrix for LAND USE - Land matrix
     dm_land_man_gap = DM_ots_fts['land-man']['agr_land-man_gap']
     dm_land_man_matrix = DM_ots_fts['land-man']['agr_land-man_matrix']
     dm_land_man_matrix.rename_col_regex(str1="agr_land-man_matrix", str2="agr_matrix", dim="Variables")
     #dm_land_man_matrix = dm_land_man_matrix.flatten()
     dm_land_man_matrix.deepen(based_on='Variables')
 
+    # Sub-matrix for LAND USE - Carbon dynamics
+    dm_c_stock = DM_agriculture['fxa']['land-man_ef']
+    dm_c_stock.rename_col_regex(str1="c-stock_", str2="", dim="Variables")
+    dm_c_stock.rename_col_regex(str1="ef_", str2="ef_c-stock_", dim="Variables")
+    dm_c_stock.rename_col_regex(str1="soil_", str2="soil-", dim="Variables")
+    dm_c_stock.rename_col_regex(str1="biomass_", str2="biomass-", dim="Variables")
+    dm_c_stock.deepen(based_on='Variables')
+    dm_c_stock.deepen(based_on='Variables')
+    dm_c_stock.deepen(based_on='Variables')
+    dm_soil_type = DM_agriculture['fxa']['land-man_soil-type']
+    dm_soil_type.deepen(based_on='Variables')
+    dm_soil_type.deepen(based_on='Variables')
+
+    # Sub-matrix for LAND USE - Agroforestry
+    dm_agroforestry_crop = DM_agriculture['fxa']['agr_climate-smart-crop_ef_agroforestry']
+    dm_agroforestry_liv = DM_agriculture['fxa']['agr_climate-smart-livestock_ef_agroforestry']
+    dm_forestry = DM_agriculture['fxa']['agr_climate-smart-forestry']
 
     # Aggregated Data Matrix - ENERGY & GHG EMISSIONS
     DM_energy_ghg = {
@@ -561,7 +611,12 @@ def read_data(data_file, lever_setting):
         'land_total': dm_land_total,
         'land_man_dyn': dm_land_man_dyn,
         'land_man_gap': dm_land_man_gap,
-        'land_matrix': dm_land_man_matrix
+        'land_matrix': dm_land_man_matrix,
+        'land_c-stock' : dm_c_stock,
+        'land_soil-type' : dm_soil_type,
+        'crop_ef_agroforestry': dm_agroforestry_crop,
+        'liv_ef_agroforestry': dm_agroforestry_liv,
+        'forestry': dm_forestry
     }
 
     cdm_const = DM_agriculture['constant']
@@ -2207,8 +2262,177 @@ def land_matrix_workflow(DM_land_use):
 
     # Land use change matrix [ha] = Land remaining land matrix [ha] + land use change matrix without remaining [ha]
     DM_land_use['land_matrix'].operation('land_use_change_without_rem', '+', 'land_remaining_land_matrix',
-               dim="Variables", out_col='land_use_change', unit='ha')
+               dim="Variables", out_col='lus_land_matrix', unit='ha')
 
+
+    return DM_land_use
+
+# CalculationLeaf CARBON DYNAMICS
+def land_carbon_dynamics_workflow(DM_land_use):
+
+    # SOIL CARBON STOCK ------------------------------------------------------------------------------------------------
+
+    # Mineral soil [ha] = Land use matrix [ha] * mineral content per soil type [%]
+    dm_land_matrix = DM_land_use['land_matrix'].filter({'Variables': ['lus_land_matrix']})
+    DM_land_use['land_soil-type'].append(dm_land_matrix, dim='Variables')
+    DM_land_use['land_soil-type'].operation('lus_land_matrix', '*', 'fxa_land-man_soil-type_mineral',
+                                            out_col='lus_land_matrix_mineral', unit='ha')
+
+    # Organic soil [ha] = Land use matrix [ha] * organic content per soil type [%]
+    DM_land_use['land_soil-type'].operation('lus_land_matrix', '*', 'fxa_land-man_soil-type_organic',
+                                            out_col='lus_land_matrix_organic', unit='ha')
+
+    # C stock soil pre processing
+    dm_soil_c_stock = DM_land_use['land_c-stock'].filter({'Categories1': ['soil-mineral', 'soil-organic']})
+    dm_soil_c_stock = dm_soil_c_stock.flatten()
+    dm_soil_c_stock = dm_soil_c_stock.flatten()
+    dm_soil_c_stock = dm_soil_c_stock.flatten()
+    dm_soil_c_stock.deepen(based_on='Variables')
+    dm_soil_c_stock.deepen(based_on='Variables')
+    DM_land_use['land_soil-type'].append(dm_soil_c_stock, dim='Variables')
+
+    # Soil mineral carbon stock per land use [tC] = Mineral soil [ha] * Mineral soil emission factor [tC/ha]
+    DM_land_use['land_soil-type'].operation('lus_land_matrix_organic', '*', 'fxa_land-man_ef_c-stock_soil-mineral',
+                                            out_col='lus_land_c-stock_mineral-soil', unit='tC')
+
+    # Soil organic carbon stock per land use [tC] = Organic soil [ha] * Organic soil emission factor [tC/ha]
+    DM_land_use['land_soil-type'].operation('lus_land_matrix_organic', '*', 'fxa_land-man_ef_c-stock_soil-organic',
+                                            out_col='lus_land_c-stock_organic-soil', unit='tC')
+
+    # Total soil carbon [tC] = sum soil carbon (mineral, organic)
+    DM_land_use['land_soil-type'].operation('lus_land_c-stock_organic-soil', '+', 'lus_land_c-stock_mineral-soil',
+                                            out_col='lus_land_c-stock_total-soil', unit='tC')
+
+    # BIOMASS CARBON STOCK ---------------------------------------------------------------------------------------------
+
+    # C stock biomass pre processing
+    dm_biomass_c_stock = DM_land_use['land_c-stock'].filter_w_regex(
+        {'Categories1': 'biomass-.*', 'Variables': 'fxa_land-man_ef_c-stock'})
+    dm_biomass_c_stock = dm_biomass_c_stock.flatten()
+    dm_biomass_c_stock = dm_biomass_c_stock.flatten()
+    dm_biomass_c_stock = dm_biomass_c_stock.flatten()
+    dm_biomass_c_stock.deepen(based_on='Variables')
+    dm_biomass_c_stock.deepen(based_on='Variables')
+    DM_land_use['land_matrix'].append(dm_biomass_c_stock, dim='Variables')
+
+    # Biomass carbon stock per loss/gain/deadwood land use [tC] =  Biomass carbon stock loss/gain/deadwood [tC/ha] * Land use matrix [ha]
+    DM_land_use['land_matrix'].operation('lus_land_matrix', '*', 'fxa_land-man_ef_c-stock_biomass-dead-wood',
+                                         out_col='lus_land_c-stock_biomass-dead-wood', unit='tC')
+    DM_land_use['land_matrix'].operation('lus_land_matrix', '*', 'fxa_land-man_ef_c-stock_biomass-gain',
+                                         out_col='lus_land_c-stock_biomass-gain', unit='tC')
+    DM_land_use['land_matrix'].operation('lus_land_matrix', '*', 'fxa_land-man_ef_c-stock_biomass-loss',
+                                         out_col='lus_land_c-stock_biomass-loss', unit='tC')
+
+    # Total biomass carbon stock [tC] = sum biomass carbon stock (gain, loss, deadwood)
+    DM_land_use['land_matrix'].operation('lus_land_c-stock_biomass-dead-wood', '+', 'lus_land_c-stock_biomass-gain',
+                                         out_col='lus_land_c-stock_biomass-dead-wood-and-gain', unit='tC')
+    DM_land_use['land_matrix'].operation('lus_land_c-stock_biomass-dead-wood-and-gain', '+',
+                                         'lus_land_c-stock_biomass-loss',
+                                         out_col='lus_land_c-stock_biomass-total', unit='tC')
+
+    # CARBON STOCK FROM LAND USE CHANGE ---------------------------------------------------------------------------------
+
+    # Carbon stock [tC] = sum (soil + biomass carbon stock)
+    DM_land_use['land_matrix'].append(
+        DM_land_use['land_soil-type'].filter({'Variables': ['lus_land_c-stock_total-soil']}), dim='Variables')
+    DM_land_use['land_matrix'].operation('lus_land_c-stock_total-soil', '+',
+                                         'lus_land_c-stock_biomass-total',
+                                         out_col='lus_land_lulucf', unit='tC')
+
+    # Total carbon stock from land converted/remaining to XXX [tC] = sum(Carbon stock [tC] from land converted/remaining to XXX)
+    # (sum along the rows (cat2) of the sub matrix 6x6 for each country, year)
+    dm_total_c_stock = DM_land_use['land_matrix'].filter({'Variables': ['lus_land_lulucf']})
+    dm_total_c_stock.groupby({'total': '.*'}, dim='Categories2', regex=True, inplace=True)
+
+    # Processing and adding to DM_land_use['land_man_gap'] because correct categories
+    array_temp = dm_total_c_stock.array
+    arr_transformed = np.squeeze(array_temp,
+                                 axis=-1)  # removing singleton dimension of last axis ('total from groupby')
+    DM_land_use['land_man_gap'].add(arr_transformed, col_label='lus_land_lulucf_to_tC', dim='Variables')
+
+    # UNIT CONVERSION FROM tC to tCO2 ----------------------------------------------------------------------------------
+
+    # Add dummy column
+    DM_land_use['land_man_gap'].add(-3.667, dummy=True, col_label='tC_to_tCO2', dim='Variables', unit='t')
+
+    # Unit conversion : tC stocked/emitted => tCO2 emitted/stocked
+    DM_land_use['land_man_gap'].operation('lus_land_lulucf_to_tC', '*', 'tC_to_tCO2', out_col='lus_land_lulucf_to',
+                                          unit='t')
+    return DM_land_use
+
+# CalculationLeaf FORESTRY
+def forestry_workflow(DM_land_use, dm_wood, dm_land_use):
+
+    # AGROFORESTRY CARBON STOCK ----------------------------------------------------------------------------------------
+
+    # (KNIME : previous step to compute carbon emissions factor cropland/grassland [tC/ha])
+
+    # Pre processing FIXME use calibrated land
+    dm_crop_land_agr = dm_land_use.filter({'Variables': ['agr_lus_land'], 'Categories1': ['cropland']})
+    dm_grass_land_agr = dm_land_use.filter({'Variables': ['agr_lus_land'], 'Categories1': ['grassland']})
+    dm_crop_land_agr = dm_crop_land_agr.flatten()
+    dm_grass_land_agr = dm_grass_land_agr.flatten()
+
+    # C-stock from agroforestry cropland [tC] = carbon emissions factor cropland [tC/ha] * cropland for agriculture [ha]
+    idx_land = dm_crop_land_agr.idx
+    idx_ef = DM_land_use['crop_ef_agroforestry'].idx
+    array_temp = dm_crop_land_agr.array[:, :, :, np.newaxis] \
+                 * DM_land_use['crop_ef_agroforestry'].array[:, :, :, :]
+    DM_land_use['crop_ef_agroforestry'].add(array_temp, dim='Variables',
+                                            col_label='lus_land_lulucf_agroforestry_cropland', unit='tC')
+
+    # C-stock from agroforestry grassland [tC] = carbon emissions factor grassland [tC/ha] * grassland for agriculture [ha]
+    idx_land = dm_grass_land_agr.idx
+    idx_ef = DM_land_use['liv_ef_agroforestry'].idx
+    array_temp = dm_crop_land_agr.array[:, :, :, np.newaxis] \
+                 * DM_land_use['liv_ef_agroforestry'].array[:, :, :, :]
+    DM_land_use['liv_ef_agroforestry'].add(array_temp, dim='Variables',
+                                           col_label='lus_land_lulucf_agroforestry_grassland', unit='tC')
+
+    # CLIMATE SMART FORESTRY -------------------------------------------------------------------------------------------
+
+    # Pre processing
+    dm_forest = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land'], 'Categories1': ['forest']})
+    dm_forest = dm_forest.flatten()
+    DM_land_use['forestry'] = DM_land_use['forestry'].flatten()
+    DM_land_use['forestry'].append(dm_forest, dim='Variables')
+
+    # Incremental biomass gain from forestry [m3] = biomass yield from managed agroforestry [m3/ha] * Forest land [ha]
+    DM_land_use['forestry'].operation('lus_land_forest', '*', 'fxa_agr_climate-smart-forestry_csf-man',
+                                      out_col='lus_climate-smart-forestry_biomass_csf-inc', unit='m3')
+
+    # Incremental CO2 capture from forestry [Mt] = Incremental biomass gain from forestry [m3] * CO2 capture factor [Mt/m3]
+    DM_land_use['forestry'].add(-0.0000009, dummy=True, col_label='CO2_capture_factor', dim='Variables', unit='Mt/m3')
+    DM_land_use['forestry'].operation('CO2_capture_factor', '*', 'lus_climate-smart-forestry_biomass_csf-inc',
+                                      out_col='lus_climate-smart-forestry_biomass_csf-inc_CO2-capture', unit='Mt')
+
+    # Gross biomass gain from forest growth [m3] = Forest incremental growth [m3/ha] * Forest land [ha]
+    DM_land_use['forestry'].operation('lus_land_forest', '*', 'fxa_agr_climate-smart-forestry_g-inc',
+                                      out_col='lus_forestry_biomass_gross-increment', unit='m3')
+
+    # Gross biomass forest available for wood supply [m3] = Gross biomass gain from forest growth [m3]
+    #                                                       * share of forest wood available for wood supply [%]
+    DM_land_use['forestry'].operation('lus_forestry_biomass_gross-increment', '*',
+                                      'fxa_agr_climate-smart-forestry_faws-share',
+                                      out_col='lus_forestry_biomass_faws_gross-increment', unit='m3')
+
+    # Harvested biomass forest available for wood supply [m3] = Gross biomass forest available for wood supply [m3]
+    #                                                           * harvesting rate [%]
+    DM_land_use['forestry'].operation('lus_forestry_biomass_faws_gross-increment', '*',
+                                      'fxa_agr_climate-smart-forestry_h-rate',
+                                      out_col='lus_forestry_biomass_faws_harvested', unit='m3')
+
+    # FORESTRY SELF-SUFFICIENCY ----------------------------------------------------------------------------------------
+
+    # Pre processing total wood demand
+    dm_wood = dm_wood.flatten()
+    DM_land_use['forestry'].append(dm_wood, dim='Variables')
+
+    # Wood trade balance [m3] = Harvested biomass forest available for wood supply [m3] -  Total wood demand [m3]
+    DM_land_use['forestry'].operation('lus_forestry_biomass_faws_harvested', '-',
+                                      'lus_fst_demand_rwe_total', out_col='', unit='m3')
+
+    # (KNIME filtering exports/imports but does not seem to be used after)
 
     return DM_land_use
 
@@ -2268,27 +2492,12 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     dm_wood = wood_workflow(DM_bioenergy, dm_lgn, dm_ind)
     DM_land_use = land_allocation_workflow(DM_land_use, dm_land_use)
     DM_land_use = land_matrix_workflow(DM_land_use)
-
-    # CalculationLeaf CARBON DYNAMICS
-
-    # SOIL CARBON STOCK ------------------------------------------------------------------------------------------------
-
-    # Mineral soil [ha] = Land use matrix [ha] * mineral content per soil type [%]
-
-    # Organic soil [ha] = Land use matrix [ha] * organic content per soil type [%]
-
-    # Soil mineral carbon stock per land use [tC] = Mineral soil [ha] * Mineral soil emission factor [tC/ha]
-
-    # Soil organic carbon stock per land use [tC] = Organic soil [ha] * Organic soil emission factor [tC/ha]
-
-    # BIOMASS CARBON STOCK ---------------------------------------------------------------------------------------------
-
-    # Biomass carbon stock per land use [tC] =  Biomass carbon stock loss or gain [tC/ha] * Land use matrix [ha]
-
-    # CARBON STOCK FROM CONVERTED LAND ---------------------------------------------------------------------------------
+    DM_land_use = land_carbon_dynamics_workflow(DM_land_use)
+    DM_land_use = forestry_workflow(DM_land_use, dm_wood, dm_land_use)
 
 
-    # UNIT CONVERSION FROM tC to tCO2 ----------------------------------------------------------------------------------
+
+    # CalculationLEaf Deforestation patterns (does not appear to be used after)
 
 
 
