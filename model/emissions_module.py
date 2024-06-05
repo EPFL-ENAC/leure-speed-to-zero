@@ -159,6 +159,8 @@ def read_data(data_file, lever_setting):
 
 def emissions_equivalent(DM_interface, DM_fxa):
     
+    # TODO: note that this currently works with dms all flattened (no categories), later on after all modules are finalized we can think of making it work with categories, and avoid deepen done in variables for TPE
+    
     # drop variables that are already aggregated
     # TODO: in DM_interface["power"] I have dropped "elc_emissions-CO2_fossil_total" to avoid to double counting in the overall sum, to be reported in the known issues
     DM_interface["power"].drop("Variables", ['elc_stored-CO2_RES_bio_gas', 'elc_stored-CO2_RES_bio_mass',
