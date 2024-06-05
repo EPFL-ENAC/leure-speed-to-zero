@@ -975,7 +975,7 @@ def add_specific_energy_demands(DM_fxa, DM_energy_demand):
     dm_temp.units['ind_liquid-ff-oil_fuel-oil'] = "TWh"
     dm_temp.deepen_twice()
     dm_temp = dm_temp.flatten()
-    dm_temp.rename_col_regex("ind_","energy-demand","Variables")
+    dm_temp.rename_col_regex("ind","energy-demand","Variables")
     dm_energy_demand_bycarr.append(dm_temp, "Categories1")
 
     # put in DM
@@ -1921,12 +1921,12 @@ def local_industry_run():
     # return
     return results_run
 
-# # run local
-# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
-# # database_from_csv_to_datamatrix()
-# start = time.time()
-# results_run = local_industry_run()
-# end = time.time()
-# print(end-start)
+# run local
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
+# database_from_csv_to_datamatrix()
+start = time.time()
+results_run = local_industry_run()
+end = time.time()
+print(end-start)
 
 
