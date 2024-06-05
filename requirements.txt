@@ -47,3 +47,4 @@ scipy==1.11.4
 setuptools==65.5.1
 simplejson==3.19.2
 six==1.16.0
+gunicorn
