@@ -816,8 +816,10 @@ def livestock_workflow(DM_livestock, cdm_const, dm_lfs_pro):
     dm_total_afat.groupby({'afat': '.*'}, dim='Categories1', regex=True, inplace=True)
 
     # Append Totals offal with total afat and rename variable
+    dm_liv_ibp.rename_col('agr_ibp_offal','agr_ibp',"Variables")
+    dm_total_afat.rename_col('agr_ibp_afat','agr_ibp',"Variables")
     dm_liv_ibp.append(dm_total_afat, dim='Categories1')
-    dm_liv_ibp.rename_col('agr_ibp_offal', 'agr_ibp_total', dim='Variables')
+    dm_liv_ibp.rename_col('agr_ibp', 'agr_ibp_total', dim='Variables')
 
     # Filter Processed offal/afats afw (not calibrated), rename and append with dm_liv_ibp
     dm_processed_offal_afat = DM_livestock['losses'].filter({'Variables': ['agr_domestic_production_liv_afw'],
