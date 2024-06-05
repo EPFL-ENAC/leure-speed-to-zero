@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1](https://github.com/2050Calculators/PathwayCalc/compare/v1.0.0...v1.0.1) (2024-06-05)
+
+
+### Bug Fixes
+
+* add geoscale empty directory ([b675424](https://github.com/2050Calculators/PathwayCalc/commit/b6754249a7a59f17900950b2fe1fbdd2a587db91))
+* correct context for new image knime2python ([4367eda](https://github.com/2050Calculators/PathwayCalc/commit/4367eda5bc349fd4ec82ff2cf5dd30f44eec1307))
+
 ## 1.0.0 (2024-06-05)
 
 
