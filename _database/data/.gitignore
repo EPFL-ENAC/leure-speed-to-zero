@@ -1,0 +1,4 @@
+# discard the data
+csv/*
+datamatrix/geoscale/*
+!csv/interactions_constants.csv
