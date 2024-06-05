@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/2050Calculators/PathwayCalc/compare/v1.0.2...v1.0.3) (2024-06-05)
+
+
+### Bug Fixes
+
+* new image name in lowercase ([c0e4cd8](https://github.com/2050Calculators/PathwayCalc/commit/c0e4cd8e728f9f2bff433d60f43c61820f7becb8))
+
 ## [1.0.2](https://github.com/2050Calculators/PathwayCalc/compare/v1.0.1...v1.0.2) (2024-06-05)
 
 
