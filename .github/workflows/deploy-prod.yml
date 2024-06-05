@@ -12,8 +12,8 @@ jobs:
         fail-fast: false
         matrix:
           include:
-            - Dockerfile: ./knime2python/Dockerfile
-              context: ./knime2python
+            - Dockerfile: ./Dockerfile
+              context: ./
               image: ghcr.io/2050calculators/paris-tool-knime2python
             - Dockerfile: ./transition-pathway-explorer/Dockerfile
               context: ./transition-pathway-explorer
