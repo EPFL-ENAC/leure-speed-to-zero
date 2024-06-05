@@ -959,6 +959,44 @@ def tra_industry_interface(dm_freight_new_veh, dm_passenger_new_veh):
     }
     return DM_industry
 
+def prepare_TPE_output(DM_passenger_out, DM_freight_out):
+
+    dm_keep_mode = DM_passenger_out['mode'].filter({'Variables': ['tra_passenger_transport-demand-by-mode',
+                                                                  'tra_passenger_energy-demand-by-mode',
+                                                                  'tra_passenger_emissions-by-mode_CO2']})
+
+    dm_keep_tech = DM_passenger_out['tech'].filter({'Variables': ['tra_passenger_technology-share-fleet']})
+
+    dm_keep_fuel = DM_passenger_out['fuel']
+
+    # Turn datamatrix to dataframe (because converter and TPE work with dataframes)
+    df = dm_keep_mode.write_df()
+    df2 = dm_keep_tech.write_df()
+    df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
+    df3 = dm_keep_fuel.write_df()
+    df = pd.concat([df, df3.drop(columns=['Country', 'Years'])], axis=1)
+
+    # Dummy variable
+    dm_energy_tot = DM_passenger_out['mode'].filter({'Variables': ['tra_passenger_energy-demand-by-mode']})
+    dm_energy_tot.group_all(dim='Categories1')
+    dm_energy_freight = DM_freight_out['energy'].copy()
+    dm_energy_freight.group_all(dim='Categories2')
+    dm_energy_freight.group_all(dim='Categories1')
+    dm_energy_tot.append(dm_energy_freight, dim='Variables')
+    dm_energy_tot.operation('tra_passenger_energy-demand-by-mode', '+', 'tra_freight_energy-demand',
+                            out_col='tra_energy-demand_total', unit='TWh')
+    dm_energy_tot.filter({'Variables': ['tra_energy-demand_total']}, inplace=True)
+    df4 = dm_energy_tot.write_df()
+    df = pd.concat([df, df4.drop(columns=['Country', 'Years'])], axis=1)
+
+    return df
+
+
+def tra_oilrefinery_interface():
+
+
+    return
+
 def transport(lever_setting, years_setting, interface=Interface()):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -982,32 +1020,7 @@ def transport(lever_setting, years_setting, interface=Interface()):
     cdm_const_freight = cdm_const.copy()
     DM_freight_out = freight_fleet_energy(DM_freight, DM_other, cdm_const_freight, years_setting)
 
-    dm_keep_mode = DM_passenger_out['mode'].filter({'Variables': ['tra_passenger_transport-demand-by-mode',
-                                                      'tra_passenger_energy-demand-by-mode',
-                                                      'tra_passenger_emissions-by-mode_CO2']})
-
-    dm_keep_tech = DM_passenger_out['tech'].filter({'Variables': ['tra_passenger_technology-share-fleet']})
-
-    dm_keep_fuel = DM_passenger_out['fuel']
-
-    # Turn datamatrix to dataframe (because converter and TPE work with dataframes)
-    df = dm_keep_mode.write_df()
-    df2 = dm_keep_tech.write_df()
-    df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
-    df3 = dm_keep_fuel.write_df()
-    df = pd.concat([df, df3.drop(columns=['Country', 'Years'])], axis=1)
-
-    # Dummy variable
-    #dm_energy_tot = DM_passenger_out['mode'].filter({'Variables': ['tra_passenger_energy-demand-by-mode']})
-    #dm_energy_tot.group_all(dim='Categories1')
-    #dm_energy_freight = DM_freight_out['mode'].filter({'Variables': ['tra_freight_energy-demand-by-mode']})
-    #dm_energy_freight.group_all(dim='Categories1')
-    #dm_energy_tot.append(dm_energy_freight, dim='Variables')
-    # dm_energy_tot.groupby({'tra_energy-demand_total': ['tr']})
-    # !FIXME: update this with actual total energy demand
-    df['tra_energy-demand_total[TWh]'] = 1
-
-    results_run = df
+    results_run = prepare_TPE_output(DM_passenger_out, DM_freight_out)
 
     # Power-module
     dm_power = DM_passenger_out['power']
@@ -1015,6 +1028,9 @@ def transport(lever_setting, years_setting, interface=Interface()):
     interface.add_link(from_sector='transport', to_sector='power', dm=dm_power)
     # df = dm_power.write_df()
     # df.to_excel('transport-to-power.xlsx', index=False)
+
+    # Storage-module
+    # dm_refinery = tra_oilrefinery_interface(DM_passenger_out['tech'].filter({'Variables':['tra_passenger_energy-demand']}), DM_freight_out)
 
     # Agriculture-module
     # !FIXME: of all of the bio-energy demand, only the biogas one is accounted for in Agriculture
@@ -1029,7 +1045,7 @@ def transport(lever_setting, years_setting, interface=Interface()):
     DM_industry = tra_industry_interface(dm_freight_new_veh, dm_passenger_new_veh)
     # !FIXME: add km infrastructure data, using compute_stock with tot_km and renovation rate as input.
     #  data for ch ok, data for eu, backcalculation? dummy based on swiss pop?
-    #interface.add_link(from_sector='transport', to_sector='industry', dm=DM_industry)
+    # interface.add_link(from_sector='transport', to_sector='industry', dm=DM_industry)
 
     return results_run
 
@@ -1048,4 +1064,4 @@ def local_transport_run():
     return results_run
 
 # database_from_csv_to_datamatrix()
-# results_run = local_transport_run()
+results_run = local_transport_run()
