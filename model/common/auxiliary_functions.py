@@ -380,9 +380,10 @@ def simulate_input(from_sector, to_sector):
 
 
 def material_decomposition(dm, cdm):
+    
     num_dim = len(dm.dim_labels)
     # raise error
-    if num_dim <= 3 or num_dim >= 5:
+    if num_dim <= 3 or num_dim > 5:
         raise ValueError("This function works only for dm with categories (max 2)")
 
     # unit
@@ -394,18 +395,18 @@ def material_decomposition(dm, cdm):
 
     # get col names
     if num_dim == 4:
-        # raise error
-        if dm.col_labels["Categories1"] != cdm.col_labels["Categories1"]:
-            raise ValueError("Put product in the same category for both dm and cdm")
+        # # raise error
+        # if dm.col_labels["Categories1"] != cdm.col_labels["Categories1"]:
+        #     raise ValueError("Put product in the same category for both dm and cdm")
 
         arr = dm.array[..., np.newaxis] * cdm.array[np.newaxis, np.newaxis, :, :, :]
         dm_out = DataMatrix.based_on(arr, format=dm, units=unit,
                                      change={'Variables': ['material-decomposition'], 'Categories2': cdm.col_labels['Categories2']})
 
     if num_dim == 5:
-        # raise error
-        if dm.col_labels["Categories2"] != cdm.col_labels["Categories2"]:
-            raise ValueError("Put product in the same category for both dm and cdm")
+        # # raise error
+        # if dm.col_labels["Categories2"] != cdm.col_labels["Categories2"]:
+        #     raise ValueError("Put product in the same category for both dm and cdm")
 
         arr = dm.array[..., np.newaxis] * cdm.array[np.newaxis, np.newaxis, :, :, np.newaxis, :]
         dm_out = DataMatrix.based_on(arr, format=dm, units=unit,
@@ -613,7 +614,7 @@ def material_switch(dm, dm_ots_fts, cdm_const, material_in, material_out, produc
     # this function does a material switch between materials
     # dm contains the data on the products' material decomposition (obtained with the function material_decomposition())
     # dm_ots_fts contains the lever data with the material switch percentages
-    # cdm_const constains all the constants
+    # cdm_const constains the constants for the switch ratios
     # material_in is the material that will be switched from
     # material_out is the material that will be swiched to
     # product is the product for which we are doing the material switch
@@ -621,6 +622,9 @@ def material_switch(dm, dm_ots_fts, cdm_const, material_in, material_out, produc
     # switch_ratio_prefix is the prefix for the material switch ratio in cdm_const
     # dict_for_output is an optional dictionary where the function saves variables that will be used for material switch impact in emissions in industry
     # note that this function overwrites directly into the dm.
+    
+    if len(dm.dim_labels) == 3 | len(dm.dim_labels) == 6:
+        raise ValueError("At the moment this function works only for dms with products in Category1 and materials in Category2")
     
     # get constants
     material_in_to_out = [material_in + "-to-" + i for i in material_out]
