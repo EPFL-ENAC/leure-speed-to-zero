@@ -1,0 +1,45 @@
+version: "3"
+#container-name: patex
+services:
+  webtool:
+    image: climact/${APP_PROJECT}_webtool:${VERSION:-latest} #"$webtool_tag" if you want to use argument (export model_tag=climact/webtool_tag:vXX)
+    ports:
+      - "3000:3000"
+    environment:
+      APP_ENV: ${APP_ENV}
+      APP_PROJECT: ${APP_PROJECT}
+    depends_on:
+      - api_db
+      - api_model
+
+  api_model:
+    image: climact/${APP_PROJECT}_model:${VERSION:-latest} #use "$model_tag" #
+    ports:
+      - "5000:5000" # Expose API to the world (needs to match API config)
+    command:
+      - "-w 2"
+    depends_on:
+      - db
+
+  api_db:
+    image: climact/${APP_PROJECT}_db:${VERSION:-latest} #"$db_tag" #
+    ports:
+      - "5001:5001" # Expose API to the world (needs to match API config)
+    command:
+      - "-w 2"
+    depends_on:
+      - db
+
+  db:
+    #platform: linux/x86_64
+    image: mysql:5.7
+    restart: always
+    ports:
+      - "3306:3306"
+    volumes:
+      # - /home/ec2-user/eucalc/knime2python/db/data:/var/lib/mysql
+      - ./docker/db/init:/docker-entrypoint-initdb.d/:ro
+    environment:
+      MYSQL_ROOT_PASSWORD: 7VupwgCxBQVZ # Needs to match API config
+      MYSQL_DATABASE: patex-db # Needs to match API config
+    command: [--max-allowed-packet=67108864] # Increase max allowed packet size allowed to be stored

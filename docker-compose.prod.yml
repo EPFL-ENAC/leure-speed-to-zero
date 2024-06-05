@@ -1,0 +1,10 @@
+version: '3.9'
+services:
+  knime2python:
+    image: ghcr.io/2050calculators/paris-tool-knime2python:${IMAGE_VERSION:-latest}
+    build: !reset null
+    restart: always
+  transition-pathway-explorer:
+    image: ghcr.io/2050calculators/paris-tool-transition-pathway-explorer:${IMAGE_VERSION:-latest}
+    build: !reset null
+    restart: always
