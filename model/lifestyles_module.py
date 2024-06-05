@@ -16,6 +16,8 @@ from model.common.io_database import read_database, read_database_fxa  # read fu
 from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups
 from model.common.auxiliary_functions import read_level_data, filter_geoscale
 
+import time
+
 # filtering the constants & read csv and prepares it for the pickle format
 
 # Lever setting for local purpose
@@ -280,44 +282,58 @@ def food_workflow(DM_food, cdm_const):
     dm_diet_requirement.operation('lfs_kcal-req_req', '-', 'lfs_energy-intake_total',
                                   dim="Variables", out_col='lfs_healthy-gap', unit='kcal/cap/day')
 
+    dm_population = DM_food['population']
+    idx_p = dm_population.idx
     # [TUTORIAL] Consumer diet (operation with matrices with different structure/array specs)
     dm_diet_share = DM_food['diet-share']
     idx = dm_diet_requirement.idx
     ay_diet_consumers = dm_diet_share.array[:, :, 0, :] * dm_diet_requirement.array[:, :, idx['lfs_healthy-gap'],
                                                           np.newaxis]
     dm_diet_share.add(ay_diet_consumers, dim='Variables', col_label='lfs_consumers-diet', unit='kcal/cap/day')
+    idx_d = dm_diet_share.idx
+    # Calculate ay_total_diet
+    ay_total_diet = dm_diet_share.array[:, :, idx_d['lfs_consumers-diet'], :] * \
+                    dm_population.array[:, :, idx_p['lfs_population_total'], np.newaxis] * 365
+    start = time.time()
+    dm_diet_tmp = DataMatrix.based_on(ay_total_diet[:, :, np.newaxis, :], dm_diet_share,
+                                      change={'Variables': ['lfs_diet_raw']}, units={'lfs_diet_raw': 'kcal'})
 
     # Total Consumers food wastes
-    dm_population = DM_food['population']
     dm_diet_fwaste = DM_food['diet-fwaste']
     idx = dm_population.idx
     idx_const = cdm_const.idx
     ay_total_fwaste = dm_diet_fwaste.array[:, :, 0, :] * dm_population.array[:, :, idx['lfs_population_total'],
                                                          np.newaxis] \
                       * cdm_const.array[idx_const['cp_time_days-per-year']]
-    dm_diet_fwaste.add(ay_total_fwaste, dim='Variables', col_label='lfs_food-wastes', unit='kcal')
+    dm_diet_fwaste.add(ay_total_fwaste, dim='Variables', col_label='lfs_food-wastes_raw', unit='kcal')
 
     # Total Consumers food supply (Total food intake)
     ay_total_food = dm_diet_split.array[:, :, 0, :] * dm_population.array[:, :, idx['lfs_population_total'], np.newaxis] \
                     * cdm_const.array[idx_const['cp_time_days-per-year']]
-    dm_diet_split.add(ay_total_food, dim='Variables', col_label='lfs_diet', unit='kcal')
+    dm_diet_food = DataMatrix.based_on(ay_total_food[:, :, np.newaxis, :], dm_diet_split,
+                                       change={'Variables': ['lfs_diet_raw']}, units={'lfs_diet_raw': 'kcal'})
+    # Calibration factors
+    dm_fxa_caf_food = DM_food['food-caf']
+    # Add dummy caf for afats and rice
+    dm_fxa_caf_food.add(1, dummy=True, col_label=['afats', 'rice'], dim='Categories1')
 
     # Calibration - Food supply
-    dm_fxa_caf_food = DM_food['food-caf']
-    dm_diet_split.append(dm_diet_share, dim='Categories1')
-    dm_diet_split.drop(dim='Categories1', col_label=['rice', 'afats'])
-    dm_diet_split.append(dm_fxa_caf_food, dim='Variables')
-    dm_diet_split.operation('lfs_diet', '*', 'caf_lfs_diet',
-                            dim="Variables", out_col='cal_diet', unit='kcal')
+    dm_diet_food.append(dm_diet_tmp, dim='Categories1')
+    dm_diet_food.append(dm_fxa_caf_food, dim='Variables')
+    dm_diet_food.operation('lfs_diet_raw', '*', 'caf_lfs_diet',
+                            dim="Variables", out_col='lfs_diet', unit='kcal')
+    dm_diet_food.filter({'Variables': ['lfs_diet']}, inplace=True)
 
     # Calibration - Food wastes
-    dm_diet_fwaste.drop(dim='Categories1', col_label=['rice', 'afats'])
     dm_diet_fwaste.append(dm_fxa_caf_food, dim='Variables')
-    dm_diet_fwaste.operation('lfs_food-wastes', '*', 'caf_lfs_food-wastes',
-                             dim="Variables", out_col='cal_food-wastes', unit='kcal')
+    dm_diet_fwaste.operation('lfs_food-wastes_raw', '*', 'caf_lfs_food-wastes',
+                             dim="Variables", out_col='lfs_food-wastes', unit='kcal')
+    dm_diet_fwaste.filter({'Variables': ['lfs_food-wastes']}, inplace=True)
 
     # Data to return to the TPE
-    return dm_diet_split
+    dm_diet_food.append(dm_diet_fwaste, dim='Variables')
+
+    return dm_diet_food
 
 
 # Calculation tree - Appliances (Functions)
@@ -471,20 +487,17 @@ def lifestyles(lever_setting, years_setting, interface=Interface()):
     DM_food, DM_appliance, DM_transport, DM_industry, DM_building, cdm_const = read_data(lifestyles_data_file, lever_setting)
 
     # To send to TPE (result run)
-    dm_diet_split = food_workflow(DM_food, cdm_const)
+    dm_agriculture_out = food_workflow(DM_food, cdm_const)
     DM_appliance_out = appliances_workflow(DM_appliance, cdm_const)
     DM_transport_out = transport_workflow(DM_transport)
     dm_industry_out = industry_workflow(DM_industry, cdm_const)
     DM_building_out = building_workflow(DM_building)
-    dm_diet = dm_diet_split.filter({'Variables': ['cal_diet']})
-    dm_diet.rename_col('cal_diet', 'lfs_diet', dim="Variables")
-
-    df_diet = dm_diet.write_df()
 
     # concatenate all results to df
-    results_run = df_diet
+    results_run = dm_agriculture_out.write_df()
 
-    interface.add_link(from_sector='lifestyles', to_sector='agriculture', dm=dm_diet)
+    # !FIXME: currently agriculture renames all of the lifestyles categories, we should rather keep lifestyles categories and rework agriculture
+    #interface.add_link(from_sector='lifestyles', to_sector='agriculture', dm=dm_agriculture_out)
     interface.add_link(from_sector='lifestyles', to_sector='transport', dm=DM_transport_out['transport'])
     DM_building_out['appliance'] = DM_appliance_out['buildings']
     interface.add_link(from_sector='lifestyles', to_sector='buildings', dm=DM_building_out)
