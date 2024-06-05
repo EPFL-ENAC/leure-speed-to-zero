@@ -33,15 +33,27 @@ class DataMatrix:
     def __init__(self, col_labels={}, units={}, idx={}):
         self.array = None
         self.dim_labels = ["Country", "Years", "Variables"]  # list
-        self.col_labels = copy.deepcopy(col_labels)  # dictionary with dim_labels[i] as key
-        for i in range(len(self.col_labels)-3):
+        self.col_labels = {}
+        self.units = {}
+
+        for i in range(len(col_labels)-3):
             cat_num = str(i + 1)
             self.dim_labels.append('Categories'+cat_num)
-        self.units = copy.deepcopy(units)  # dictionary
+
+        for k, v in col_labels.items():
+            self.col_labels[k] = v.copy()  # dictionary with dim_labels[i] as key
+
+        for k, v in units.items():
+            self.units[k] = v  # dictionary
+
         if len(col_labels) > 0 and len(idx) == 0:
             self.idx = self.index_all()
-        elif len(idx)>0:
-            self.idx = idx
+
+        elif len(idx) > 0:
+            self.idx = {}
+            for k, v in idx.items():
+                self.idx[k] = v
+        return
 
     def __repr__(self):
         
@@ -747,15 +759,8 @@ class DataMatrix:
         return dm_new
 
     def copy(self):
-        array = self.array.copy()
-        col_labels = self.col_labels.copy()  # dictionary with dim_labels[i] as key
-        units = self.units.copy()
-        dim_labels = self.dim_labels.copy()
-        idx = self.idx.copy()
-        dm = DataMatrix(col_labels=col_labels, units=units)
-        dm.dim_labels = dim_labels
-        dm.idx = idx
-        dm.array = array
+        dm = DataMatrix(col_labels=self.col_labels, units=self.units, idx=self.idx)
+        dm.array = self.array.copy()
         return dm
 
     def switch_categories_order(self, cat1='Categories1', cat2='Categories2'):
