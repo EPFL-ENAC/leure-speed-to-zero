@@ -3,6 +3,7 @@ import pandas as pd
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database, read_database_fxa, edit_database
+from model.common.interface_class import Interface
 from model.common.auxiliary_functions import compute_stock, read_database_to_ots_fts_dict, filter_geoscale, read_database_to_ots_fts_dict_w_groups
 from model.common.auxiliary_functions import read_level_data
 from scipy.optimize import linprog
@@ -2064,7 +2065,7 @@ def land_allocation_workflow(DM_land_use, dm_land_use):
 # ----------------------------------------------------------------------------------------------------------------------
 # AGRICULTURE ----------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
-def agriculture(lever_setting, years_setting):
+def agriculture(lever_setting, years_setting, interface = Interface()):
 
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -2072,10 +2073,25 @@ def agriculture(lever_setting, years_setting):
     DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, DM_land_use, cdm_const = read_data(agriculture_data_file, lever_setting)
 
     # Simulate data from other modules
-    dm_lfs = simulate_lifestyles_to_agriculture_input()
-    dm_bld = simulate_buildings_to_agriculture_input()
-    dm_ind = simulate_industry_to_agriculture_input()
-    dm_tra = simulate_transport_to_agriculture_input()
+    if interface.has_link(from_sector='lifestyles', to_sector='agriculture'):
+        dm_lfs = interface.get_link(from_sector='lifestyles', to_sector='agriculture')
+    else:
+        dm_lfs = simulate_lifestyles_to_agriculture_input()
+        
+    if interface.has_link(from_sector='buildings', to_sector='agriculture'):
+        dm_bld = interface.get_link(from_sector='buildings', to_sector='agriculture')
+    else:
+        dm_bld = simulate_buildings_to_agriculture_input()
+        
+    if interface.has_link(from_sector='industry', to_sector='agriculture'):
+        dm_ind = interface.get_link(from_sector='industry', to_sector='agriculture')
+    else:
+        dm_ind = simulate_industry_to_agriculture_input()
+        
+    if interface.has_link(from_sector='transport', to_sector='agriculture'):
+        dm_tra = interface.get_link(from_sector='transport', to_sector='agriculture')
+    else:
+        dm_tra = simulate_transport_to_agriculture_input()
 
     # Filter by country
     cntr_list = DM_food_demand['food-net-import-pro'].col_labels['Country']
