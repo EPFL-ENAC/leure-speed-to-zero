@@ -10,7 +10,7 @@ from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database, read_database_fxa
 from model.common.interface_class import Interface
-from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm, read_database_to_ots_fts_dict, read_level_data, simulate_input, get_mindec, calibration_rates, cost, read_database_to_ots_fts_dict_w_groups
+from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm, read_database_to_ots_fts_dict, read_level_data, simulate_input, calibration_rates, cost, read_database_to_ots_fts_dict_w_groups
 import pickle
 import json
 import os
@@ -160,8 +160,8 @@ def read_data(data_file, lever_setting):
 def emissions_equivalent(DM_interface, DM_fxa):
     
     # drop variables that are already aggregated
-    # TODO: in DM_interface["electricity"] I have dropped "elc_emissions-CO2_fossil_total" to avoid to double counting in the overall sum, to be reported in the known issues
-    DM_interface["electricity"].drop("Variables", ['elc_stored-CO2_RES_bio_gas', 'elc_stored-CO2_RES_bio_mass',
+    # TODO: in DM_interface["power"] I have dropped "elc_emissions-CO2_fossil_total" to avoid to double counting in the overall sum, to be reported in the known issues
+    DM_interface["power"].drop("Variables", ['elc_stored-CO2_RES_bio_gas', 'elc_stored-CO2_RES_bio_mass',
                                                    'elc_emissions-CO2_fossil_total'])
     DM_interface["transport"].drop("Variables", ['tra_passenger_CH4-emissions', 'tra_passenger_CO2-emissions', 
                                                  'tra_passenger_N2O-emissions', 'tra_freight_CH4-emissions', 
@@ -170,7 +170,7 @@ def emissions_equivalent(DM_interface, DM_fxa):
     
     # put together
     dm_ems = DM_interface["buildings"].copy()
-    keys = ["district-heating","electricity","land-use","biodiversity",
+    keys = ["district-heating","power","land-use","biodiversity",
             "industry", "ammonia", "refinery", "agriculture", "transport"]
     for key in keys:
         dm_ems.append(DM_interface[key], "Variables")
@@ -349,6 +349,67 @@ def variables_for_tpe(dm_ems):
         
     return dm_tpe
 
+def simulate_buildings_to_emissions_input():
+    
+    dm = simulate_input(from_sector="buildings", to_sector="emissions")
+    
+    return dm
+
+def simulate_district_heating_to_emissions_input():
+    
+    dm = simulate_input(from_sector="district-heating", to_sector="emissions")
+    
+    return dm
+
+def simulate_power_to_emissions_input():
+    
+    dm = simulate_input(from_sector="power", to_sector="emissions")
+    
+    return dm
+
+def simulate_refinery_to_emissions_input():
+    
+    dm = simulate_input(from_sector="refinery", to_sector="emissions")
+    
+    return dm
+
+def simulate_agriculture_to_emissions_input():
+    
+    dm = simulate_input(from_sector="agriculture", to_sector="emissions")
+    
+    return dm
+
+def simulate_land_use_to_emissions_input():
+    
+    dm = simulate_input(from_sector="land-use", to_sector="emissions")
+    
+    return dm
+
+def simulate_biodiversity_to_emissions_input():
+    
+    dm = simulate_input(from_sector="biodiversity", to_sector="emissions")
+    
+    return dm
+
+def simulate_industry_to_emissions_input():
+    
+    dm = simulate_input(from_sector="industry", to_sector="emissions")
+    
+    return dm
+
+def simulate_ammonia_to_emissions_input():
+    
+    dm = simulate_input(from_sector="ammonia", to_sector="emissions")
+    
+    return dm
+
+def simulate_transport_to_emissions_input():
+    
+    dm = simulate_input(from_sector="transport", to_sector="emissions")
+    
+    return dm
+
+
 def emissions(lever_setting, years_setting, interface = Interface(), calibration = False):
     
     # emissions data file
@@ -358,17 +419,56 @@ def emissions(lever_setting, years_setting, interface = Interface(), calibration
     
     # get / simulate interfaces
     DM_interface = {}
-    from_sector = ["buildings","district-heating","electricity","land-use","biodiversity",
-                   "industry", "ammonia", "refinery", "agriculture", "transport"]
-    for i in from_sector:
-        if interface.has_link(from_sector = i, to_sector = 'emissions'):
-            DM_interface[i] = interface.get_link(from_sector=i, to_sector='emissions')
-        else:
-            DM_interface[i] = simulate_input(from_sector=i, to_sector="emissions")
-    del from_sector, i
+        
+    if interface.has_link(from_sector = "buildings", to_sector = 'emissions'):
+        DM_interface["buildings"] = interface.get_link(from_sector="buildings", to_sector='emissions')
+    else:
+        DM_interface["buildings"] = simulate_buildings_to_emissions_input()
+        
+    if interface.has_link(from_sector = "district-heating", to_sector = 'emissions'):
+        DM_interface["district-heating"] = interface.get_link(from_sector="district-heating", to_sector='emissions')
+    else:
+        DM_interface["district-heating"] = simulate_district_heating_to_emissions_input()
     
-    # # sum by gas
-    # dm_ems = sum_emissions_by_gas(DM_interface)
+    if interface.has_link(from_sector = "power", to_sector = 'emissions'):
+        DM_interface["power"] = interface.get_link(from_sector="power", to_sector='emissions')
+    else:
+        DM_interface["power"] = simulate_power_to_emissions_input()
+        
+    if interface.has_link(from_sector = "refinery", to_sector = 'emissions'):
+        DM_interface["refinery"] = interface.get_link(from_sector="refinery", to_sector='emissions')
+    else:
+        DM_interface["refinery"] = simulate_refinery_to_emissions_input()
+    
+    if interface.has_link(from_sector = "agriculture", to_sector = 'emissions'):
+        DM_interface["agriculture"] = interface.get_link(from_sector="agriculture", to_sector='emissions')
+    else:
+        DM_interface["agriculture"] = simulate_agriculture_to_emissions_input()
+    
+    if interface.has_link(from_sector = "land-use", to_sector = 'emissions'):
+        DM_interface["land-use"] = interface.get_link(from_sector="land-use", to_sector='emissions')
+    else:
+        DM_interface["land-use"] = simulate_land_use_to_emissions_input()
+        
+    if interface.has_link(from_sector = "biodiversity", to_sector = 'biodiversity'):
+        DM_interface["biodiversity"] = interface.get_link(from_sector="biodiversity", to_sector='emissions')
+    else:
+        DM_interface["biodiversity"] = simulate_biodiversity_to_emissions_input()
+    
+    if interface.has_link(from_sector = "industry", to_sector = 'emissions'):
+        DM_interface["industry"] = interface.get_link(from_sector="industry", to_sector='emissions')
+    else:
+        DM_interface["industry"] = simulate_industry_to_emissions_input()
+    
+    if interface.has_link(from_sector = "ammonia", to_sector = 'emissions'):
+        DM_interface["ammonia"] = interface.get_link(from_sector="ammonia", to_sector='emissions')
+    else:
+        DM_interface["ammonia"] = simulate_ammonia_to_emissions_input()
+        
+    if interface.has_link(from_sector = "transport", to_sector = 'emissions'):
+        DM_interface["transport"] = interface.get_link(from_sector="transport", to_sector='emissions')
+    else:
+        DM_interface["transport"] = simulate_transport_to_emissions_input()
     
     # get emissions for gas equivalent
     dm_ems = emissions_equivalent(DM_interface, DM_fxa)
@@ -399,8 +499,12 @@ def local_emissions_run():
     # return
     return results_run
 
-# # run local
-# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/emissions_module.py"
-# # database_from_csv_to_datamatrix()
-# results_run = local_emissions_run()
+# run local
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/emissions_module.py"
+# database_from_csv_to_datamatrix()
+import time
+start = time.time()
+results_run = local_emissions_run()
+end = time.time()
+print(end-start)
 
