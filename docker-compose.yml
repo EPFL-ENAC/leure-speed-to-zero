@@ -34,7 +34,7 @@ services:
   knime2python:
     image: knime2python
     build:
-      context: ./knime2python
+      context: ./
     labels:
       - "traefik.http.routers.knime2python.priority=1001"
       - "traefik.http.routers.knime2python.tls=true"
@@ -48,9 +48,7 @@ services:
     expose:
       - 5000
     volumes:
-      - eucalc:/app/database
-      - ./knime2python/config:/eucalc/config
-      - ./knime2python/_interactions:/eucalc/_interactions
+      - ./:/eucalc/
   transition-pathway-explorer:
     image: transition-pathway-explorer
     build: ./transition-pathway-explorer
