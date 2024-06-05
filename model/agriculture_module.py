@@ -2063,6 +2063,128 @@ def land_allocation_workflow(DM_land_use, dm_land_use):
 
     return DM_land_use
 
+# CalculationLeaf LAND USE MATRIX
+def land_matrix_workflow(DM_land_use):
+
+    # LAND USE INITIAL AREA --------------------------------------------------------------------------------------------
+
+    # Land initial area per land type [ha] = lus_land from previous year
+    dm_temp = DM_land_use['land_man_use'].filter({'Variables': ['lus_land']})
+    array_temp = dm_temp.array
+    array_initial_area = np.zeros_like(array_temp)
+    array_initial_area[1:] = array_temp[:-1]
+    DM_land_use['land_man_gap'].add(array_temp, dim='Variables', col_label='lus_land_initial-area', unit='ha')
+
+    # Land initial area UNFCCC [ha] = land initial area per land type [ha] + land gap per land type [ha]
+    # Fills the gap between FAO and UNFCCC data
+    DM_land_use['land_man_gap'].operation('lus_land_initial-area', '+', 'agr_land-man_gap',
+                                          out_col='lus_land_initial-area_unfccc', unit='ha')
+
+    # LAND TO-CROP & LAND EXCESS ---------------------------------------------------------------------------------------
+    # Appending dm
+    dm_temp = DM_land_use['land_man_use'].filter({'Variables': ['lus_land']})
+    DM_land_use['land_man_gap'].append(dm_temp, dim='Variables')
+
+    # Land difference [ha] = Land demand - Land initial area UNFCCC [ha]
+    # For: other, settlement, wetland, cropland, grassland, forest
+    DM_land_use['land_man_gap'].operation('lus_land', '-', 'lus_land_initial-area_unfccc',
+                                          out_col='lus_land_diff', unit='ha')
+
+    # Sum (Land difference [ha])
+    dm_land_total = DM_land_use['land_man_gap'].groupby({'total': '.*'}, dim='Categories1', regex=True, inplace=False)
+    DM_land_use['land_man_gap'].append(dm_land_total, dim='Categories1')
+
+    # Assigning Sum (Land difference [ha]) to forests (by default) to have a land change sum of 0
+    dm_temp = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_diff']})
+    dm_temp.operation('forest', '-', 'total',
+                      dim="Categories1", out_col='forest_new', unit='ha')
+
+    # Clean the dm to only keep the correct Categories, rename and append to relevant dm
+    dm_temp.drop(dim='Categories1', col_label=['forest', 'total'])
+    dm_temp.rename_col('forest_new', 'forest', dim='Categories1')
+    dm_temp.rename_col('lus_land_diff', 'lus_land_diff_adjusted', dim='Variables')
+    DM_land_use['land_man_gap'].drop(dim='Categories1', col_label=['total'])
+    DM_land_use['land_man_gap'].append(dm_temp, dim='Variables')
+
+    # Filtering between land to crop from other lands (diff>0) and excess land available for other land type (diff<0)
+    # Land to-crop [ha] = Land difference [ha] >= 0
+    dm_temp = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_diff_adjusted']})
+    array_temp = dm_temp.array[:, :, :, :]
+    array_land_to_crop = np.maximum(array_temp, 0)
+    DM_land_use['land_man_gap'].add(array_land_to_crop, dim='Variables', col_label='lus_land_to-crop', unit='ha')
+
+    # Land excess [ha] = Land difference [ha] < 0 (& changing the sign)
+    dm_temp = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_diff_adjusted']})
+    array_temp = dm_temp.array[:, :, :, :]
+    array_land_excess = np.maximum(-array_temp, 0)
+    DM_land_use['land_man_gap'].add(array_land_excess, dim='Variables', col_label='lus_land_excess', unit='ha')
+
+    # LAND USE CHANGE MATRIX -------------------------------------------------------------------------------------------
+
+    # Creating a blank land use matrix (cat1 = TO, cat2 = FROM) (per year & per country)
+    # cat1 = cat2 : cropland, grassland, forest, settlement, wetland, other, total
+    # Creating a NaN array of dimension [32, 33, 1, 6, 6]
+    array_temp = np.full((32, 33, 1, 6, 6), np.nan)
+    # Adding it to the dm with the relevant structure
+    DM_land_use['land_matrix'].add(array_temp, dim='Variables', col_label='matrix', unit='ha')
+    # Dropping the unuesed variables (we only take the dm for its structure)
+    DM_land_use['land_matrix'].drop(dim='Variables', col_label=['agr_matrix'])
+
+    # Adding dummy categories 1 'total_to-crop' & categories 2 'total_excess'
+    # Add a new cat1 = 'total_to-crop' with the land to crop (land type to "create")
+    dm_land_to_crop = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_to-crop']})
+
+    # Add a new cat2 = 'total_excess' with the land excess (land type to "change")
+    dm_land_excess = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_excess']})
+
+    # Solve the values of the matrix so that the sum of the rows/columns are equal to 'total_to-crop/excess'
+
+    # Defining arrays to solve
+    dm_matrix = DM_land_use['land_matrix'].filter({'Variables': ['matrix']})
+    arr_to_solve = dm_matrix.array
+    arr_to_crop = dm_land_to_crop.array
+    arr_excess = dm_land_excess.array
+
+    # Number of variables (elements in arr_tol_solve, for 1 Country, Year & Variable at the time)
+    n_vars = arr_to_solve[0, 0, 0, :, :].size
+
+    # Coefficients matrix for the linear system
+    # We need 12 equations: 6 for rows and 6 for columns
+    A_eq = np.zeros((12, n_vars))
+
+    # Row constraints
+    for i in range(6):
+        A_eq[i, i * 6:(i + 1) * 6] = 1
+
+    # Column constraints
+    for j in range(6):
+        A_eq[6 + j, j::6] = 1
+
+    # Since we are dealing with a linear system without a specific objective function, we can use linprog with zero cost function
+    c = np.zeros(n_vars)
+
+    # Loop over the first three dimensions and solve the linear system for each 6x6 sub-matrix
+    for i in range(arr_to_crop.shape[0]):
+        for j in range(arr_to_crop.shape[1]):
+            for k in range(arr_to_crop.shape[2]):
+                # Right-hand side for the current sub-matrix
+                b_eq = np.concatenate((arr_to_crop[i, j, k, :], arr_excess[i, j, k, :]))
+
+                # Solve the system using linprog
+                res = linprog(c, A_eq=A_eq, b_eq=b_eq, bounds=(0, None), method='highs')
+
+                # Check if the solver found a solution
+                if res.success:
+                    arr_to_solve[i, j, k, :, :] = res.x.reshape(6, 6)
+                else:
+                    print(f"No solution found for sub-matrix at index ({i}, {j}, {k})")
+
+    # Adding the array to relevant dm
+    DM_land_use['land_matrix'].add(arr_to_solve, col_label='land_use_change', dim='Variables')
+
+    # (Check that net change = 0 ?)
+
+    return DM_land_use
 
 # ----------------------------------------------------------------------------------------------------------------------
 # AGRICULTURE ----------------------------------------------------------------------------------------------------------
@@ -2119,131 +2241,9 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     # CalculationTree LAND USE
     dm_wood = wood_workflow(DM_bioenergy, dm_lgn, dm_ind)
     DM_land_use = land_allocation_workflow(DM_land_use, dm_land_use)
-
-    # CalculationLeaf LAND USE MATRIX
-
-    # LAND USE INITIAL AREA --------------------------------------------------------------------------------------------
-
-    # Land initial area per land type [ha] = lus_land from previous year
-    dm_temp = DM_land_use['land_man_use'].filter({'Variables': ['lus_land']})
-    array_temp = dm_temp.array
-    array_initial_area = np.zeros_like(array_temp)
-    array_initial_area[1:] = array_temp[:-1]
-    DM_land_use['land_man_gap'].add(array_temp, dim='Variables', col_label='lus_land_initial-area', unit='ha')
-
-    # Land initial area UNFCCC [ha] = land initial area per land type [ha] + land gap per land type [ha]
-    # Fills the gap between FAO and UNFCCC data
-    DM_land_use['land_man_gap'].operation('lus_land_initial-area', '+', 'agr_land-man_gap',
-                                          out_col='lus_land_initial-area_unfccc', unit='ha')
-
-    # OTS COMPUTATIONS -------------------------------------------------------------------------------------------------
-    # Appending dm
-    dm_temp = DM_land_use['land_man_use'].filter({'Variables': ['lus_land']})
-    DM_land_use['land_man_gap'].append(dm_temp, dim='Variables')
-
-    # Land difference [ha] = Land demand - Land initial area UNFCCC [ha]
-    # For: other, settlement, wetland, cropland, grassland, forest
-    DM_land_use['land_man_gap'].operation('lus_land', '-', 'lus_land_initial-area_unfccc',
-                                          out_col='lus_land_diff', unit='ha')
-
-    # Sum (Land difference [ha])
-    dm_land_total = DM_land_use['land_man_gap'].groupby({'total': '.*'}, dim='Categories1', regex=True, inplace=False)
-    DM_land_use['land_man_gap'].append(dm_land_total, dim='Categories1')
-
-    # Assigning Sum (Land difference [ha]) to forests (by default) to have a land change sum of 0
-    dm_temp = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_diff']})
-    dm_temp.operation('forest', '-', 'total',
-                                       dim="Categories1", out_col='forest_new', unit='ha')
-
-    # Clean the dm to only keep the correct Categories, rename and append to relevant dm
-    dm_temp.drop(dim='Categories1', col_label=['forest', 'total'])
-    dm_temp.rename_col('forest_new', 'forest', dim='Categories1')
-    dm_temp.rename_col('lus_land_diff', 'lus_land_diff_adjusted', dim='Variables')
-    DM_land_use['land_man_gap'].drop(dim='Categories1', col_label=['total'])
-    DM_land_use['land_man_gap'].append(dm_temp, dim='Variables')
-
-    # Filtering between land to crop from other lands (diff>0) and excess land available for other land type (diff<0)
-    # Land to-crop [ha] = Land difference [ha] >= 0
-    dm_temp = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_diff_adjusted']})
-    array_temp = dm_temp.array[:, :, :, :]
-    array_land_to_crop = np.maximum(array_temp, 0)
-    DM_land_use['land_man_gap'].add(array_land_to_crop, dim='Variables', col_label='lus_land_to-crop', unit='ha')
-
-    # Land excess [ha] = Land difference [ha] < 0 (& changing the sign)
-    dm_temp = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_diff_adjusted']})
-    array_temp = dm_temp.array[:, :, :, :]
-    array_land_excess = np.maximum(-array_temp, 0)
-    DM_land_use['land_man_gap'].add(array_land_excess, dim='Variables', col_label='lus_land_excess', unit='ha')
-
-    # LAND MATRIX ------------------------------------------------------------------------------------------------------
-
-    # Creating a blank land use matrix (cat1 = TO, cat2 = FROM) (per year & per country)
-    # cat1 = cat2 : cropland, grassland, forest, settlement, wetland, other, total
-    # Creating a NaN array of dimension [32, 33, 1, 6, 6]
-    array_temp = np.full((32,33,1,6,6),np.nan)
-    # Adding it to the dm with the relevant structure
-    DM_land_use['land_matrix'].add(array_temp, dim='Variables', col_label='matrix', unit='ha')
-    # Dropping the unuesed variables (we only take the dm for its structure)
-    DM_land_use['land_matrix'].drop(dim='Variables', col_label=['agr_matrix'])
-
-    # Adding dummy categories 1 'total_to-crop' & categories 2 'total_excess'
-    # Add a new cat1 = 'total_to-crop' with the land to crop (land type to "create")
-    dm_land_to_crop = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_to-crop']})
-
-    # Add a new cat2 = 'total_excess' with the land excess (land type to "change")
-    dm_land_excess = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_excess']})
+    DM_land_use = land_matrix_workflow(DM_land_use)
 
 
-    # Solve the values of the matrix so that the sum of the rows/columns are equal to 'total_to-crop/excess'
-
-    # Defining arrays to solve
-    dm_matrix = DM_land_use['land_matrix'].filter({'Variables': ['matrix']})
-    arr_to_solve = dm_matrix.array
-    arr_to_crop = dm_land_to_crop.array
-    arr_excess = dm_land_excess.array
-
-    # Number of variables (elements in arr_tol_solve, for 1 Country, Year & Variable at the time)
-    n_vars = arr_to_solve[0,0,0,:,:].size
-
-    # Coefficients matrix for the linear system
-    # We need 12 equations: 6 for rows and 6 for columns
-    A_eq = np.zeros((12, n_vars))
-
-    # Row constraints
-    for i in range(6):
-        A_eq[i, i * 6:(i + 1) * 6] = 1
-
-    # Column constraints
-    for j in range(6):
-        A_eq[6 + j, j::6] = 1
-
-    # Since we are dealing with a linear system without a specific objective function, we can use linprog with zero cost function
-    c = np.zeros(n_vars)
-
-    # Loop over the first three dimensions and solve the linear system for each 6x6 sub-matrix
-    for i in range(arr_to_crop.shape[0]):
-        for j in range(arr_to_crop.shape[1]):
-            for k in range(arr_to_crop.shape[2]):
-                # Right-hand side for the current sub-matrix
-                b_eq = np.concatenate((arr_to_crop[i, j, k, :], arr_excess[i, j, k, :]))
-
-                # Solve the system using linprog
-                res = linprog(c, A_eq=A_eq, b_eq=b_eq, bounds=(0, None), method='highs')
-
-                # Check if the solver found a solution
-                if res.success:
-                    arr_to_solve[i, j, k, :, :] = res.x.reshape(6, 6)
-                else:
-                    print(f"No solution found for sub-matrix at index ({i}, {j}, {k})")
-
-    # Adding the array to relevant dm
-    DM_land_use['land_matrix'].add(arr_to_solve, col_label='land_use_change', dim='Variables')
-
-    # Check that net change = 0
-
-    # Multiply land to-crop (demand) with the land use matrix (for each land type)
-
-    # FTS ITERATIONS ---------------------------------------------------------------------------------------------------
 
 
     print('hello')
