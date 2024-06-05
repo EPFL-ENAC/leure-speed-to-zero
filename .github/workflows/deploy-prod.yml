@@ -14,10 +14,10 @@ jobs:
           include:
             - Dockerfile: ./Dockerfile
               context: ./
-              image: ghcr.io/2050calculators/paris-tool-knime2python
+              image: ghcr.io/2050calculators/PathwayCalc-knime2python
             - Dockerfile: ./transition-pathway-explorer/Dockerfile
               context: ./transition-pathway-explorer
-              image: ghcr.io/2050calculators/paris-tool-transition-pathway-explorer
+              image: ghcr.io/2050calculators/PathwayCalc-transition-pathway-explorer
       permissions:
         contents: read
         packages: write
