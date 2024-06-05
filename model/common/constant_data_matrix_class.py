@@ -417,3 +417,41 @@ class ConstantDataMatrix:
         self.col_labels[cat1] = col2
         self.col_labels[cat2] = col1
         return
+    
+    def add(self, new_array, dim, col_label, unit=None, dummy=False):
+        # Adds the numpy array new_array to the datamatrix over dimension dim.
+        # The label associated with the array is in defined by the string col_label
+        # The unit is needed as a string (e.g. 'km') only if dim = 'Variables'
+        # It does not return a new datamatrix
+        # You can also use to add 'dummy' dimension to a datamatrix,
+        # usually before appending it to another that has more categories
+        self_shape = self.array.shape
+        a = self.dim_labels.index(dim)
+        new_shape = list(self_shape)
+        if isinstance(col_label, str):
+            # if I'm adding only one column
+            col_label = [col_label]
+            unit = [unit]
+        new_shape[a] = len(col_label)
+        new_shape = tuple(new_shape)
+        # If it is adding a new array of constant value (e.g. nan) to have a dummy dimension:
+        if isinstance(new_array, (float, int)) and dummy is True:
+            new_array = new_array * np.ones(new_shape)
+        elif len(col_label) == 1 and new_array.shape != new_shape:
+            new_array = new_array[..., np.newaxis]
+            new_array = np.moveaxis(new_array, -1, a)
+        # Else check that the new array dimension is correct
+        if new_array.shape != new_shape and dummy is False:
+            raise AttributeError(f'The new_array should have dimension {new_shape} instead of {new_array.shape}, '
+                                 f'unless you want to add dummy dimensions, then you should add dummy = True and new_array should be a float')
+        for col in col_label:
+            self.col_labels[dim].append(col)
+            i_v = self.single_index(col, dim)
+            if col not in list(self.idx.keys()):
+                self.idx[col] = i_v[col]
+            else:
+                raise ValueError(f"You are trying to append data under the label {col_label} which already exists")
+        if dim == 'Variables':
+            for i, col in enumerate(col_label):
+                self.units[col] = unit[i]
+        self.array = np.concatenate((self.array, new_array), axis=a)
