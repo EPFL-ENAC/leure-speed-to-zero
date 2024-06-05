@@ -598,7 +598,7 @@ def add_specific_energy_demands(DM_fxa, DM_energy_demand):
     dm_temp.units['ind_liquid-ff-oil_fuel-oil'] = "TWh"
     dm_temp.deepen_twice()
     dm_temp = dm_temp.flatten()
-    dm_temp.rename_col_regex("ind_","energy-demand","Variables")
+    dm_temp.rename_col_regex("ind","energy-demand","Variables")
     dm_energy_demand_bycarr.append(dm_temp, "Categories1")
 
     # put in DM
@@ -870,13 +870,12 @@ def variables_for_tpe(DM_cost, DM_emissions, DM_material_production, DM_energy_d
     # return
     return df_tpe
 
-def ammonia_energy_interface(DM_energy_demand, write_xls = False):
+def ammonia_power_interface(DM_energy_demand, write_xls = False):
     
     # dm_elc
     dm_elc = DM_energy_demand["bycarr"].filter(
-        {"Categories1" : ['liquid-ff-oil_diesel', 'liquid-ff-oil_fuel-oil', 'electricity',
-                          'gas-ff-natural', 'hydrogen', 'solid-ff-coal']})
-    dm_elc.rename_col("energy-demand", "amm_energy-demand", "Variables")
+        {"Categories1" : ['electricity','hydrogen']})
+    dm_elc.rename_col("energy-demand", "ind_energy-demand", "Variables")
     dm_elc = dm_elc.flatten()
     dm_elc.sort("Variables")
 
@@ -884,10 +883,29 @@ def ammonia_energy_interface(DM_energy_demand, write_xls = False):
     if write_xls is True:
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
         dm_elc = dm_elc.write_df()
-        dm_elc.to_excel(current_file_directory + "/../_database/data/xls/" + 'ammonia-to-energy.xlsx', index=False)
+        dm_elc.to_excel(current_file_directory + "/../_database/data/xls/" + 'ammonia-to-power.xlsx', index=False)
         
     # return
     return dm_elc
+
+def ammonia_refinery_interface(DM_energy_demand, write_xls = False):
+    
+    # dm_elc
+    dm_ref = DM_energy_demand["bycarr"].filter(
+        {"Categories1" : ['liquid-ff-oil_diesel', 'liquid-ff-oil_fuel-oil',
+                          'gas-ff-natural', 'solid-ff-coal']})
+    dm_ref.rename_col("energy-demand", "ind_energy-demand", "Variables")
+    dm_ref = dm_ref.flatten()
+    dm_ref.sort("Variables")
+
+    # df_elc
+    if write_xls is True:
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        dm_ref = dm_ref.write_df()
+        dm_ref.to_excel(current_file_directory + "/../_database/data/xls/" + 'ammonia-to-refinery.xlsx', index=False)
+        
+    # return
+    return dm_ref
 
 def ammonia_water_inferface(DM_energy_demand, DM_material_production, write_xls = False):
     
@@ -933,7 +951,7 @@ def ammonia_ccus_interface(DM_emissions, write_xls = False):
     # return
     return dm_ccus
 
-def ammonia_climate_interface(DM_emissions, write_xls = False):
+def ammonia_emissions_interface(DM_emissions, write_xls = False):
     
     # adjust variables' names
     dm_temp = DM_emissions["bygasmat"].flatten().flatten()
@@ -941,20 +959,20 @@ def ammonia_climate_interface(DM_emissions, write_xls = False):
     dm_temp.rename_col_regex("_","-","Variables")
 
     # dm_cli
-    dm_cli = dm_temp.flatten()
-    variables = dm_cli.col_labels["Variables"]
+    dm_ems = dm_temp.flatten()
+    variables = dm_ems.col_labels["Variables"]
     for i in variables:
-        dm_cli.rename_col(i, "amm_" + i, "Variables")
-    dm_cli.sort("Variables")
+        dm_ems.rename_col(i, "amm_" + i, "Variables")
+    dm_ems.sort("Variables")
 
     # write
     if write_xls is True:
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        df_cli = dm_cli.write_df()
-        df_cli.to_excel(current_file_directory + "/../_database/data/xls/" + 'ammonia-to-climate.xlsx', index=False)
+        dm_ems = dm_ems.write_df()
+        dm_ems.to_excel(current_file_directory + "/../_database/data/xls/" + 'ammonia-to-emissions.xlsx', index=False)
 
     # return
-    return dm_cli
+    return dm_ems
 
 def ammonia_airpollution_interface(DM_material_production, DM_energy_demand, write_xls = False):
     
@@ -1047,9 +1065,13 @@ def ammonia(lever_setting, years_setting, interface = Interface(), calibration =
     # get variables for tpe (also writes in DM_cost, DM_emissions and DM_material_production for renaming)
     df = variables_for_tpe(DM_cost, DM_emissions, DM_material_production, DM_energy_demand)
     
-    # interface energy
-    dm_energy = ammonia_energy_interface(DM_energy_demand)
-    interface.add_link(from_sector='ammonia', to_sector='energy', dm=dm_energy)
+    # interface power
+    dm_power = ammonia_power_interface(DM_energy_demand)
+    interface.add_link(from_sector='ammonia', to_sector='power', dm=dm_power)
+    
+    # interface refinery
+    dm_refinery = ammonia_refinery_interface(DM_energy_demand)
+    interface.add_link(from_sector='ammonia', to_sector='refinery', dm=dm_refinery)
     
     # # interface water
     # dm_water = ammonia_water_inferface(DM_energy_demand, DM_material_production)
@@ -1060,8 +1082,8 @@ def ammonia(lever_setting, years_setting, interface = Interface(), calibration =
     # interface.add_link(from_sector='ammonia', to_sector='ccus', dm=dm_ccus)
     
     # interface climate
-    dm_cli = ammonia_climate_interface(DM_emissions)
-    interface.add_link(from_sector='ammonia', to_sector='climate', dm=dm_cli)
+    dm_ems = ammonia_emissions_interface(DM_emissions)
+    interface.add_link(from_sector='ammonia', to_sector='emissions', dm=dm_ems)
     
     # # interface air pollution
     # dm_airpoll = ammonia_airpollution_interface(DM_material_production, DM_energy_demand)
