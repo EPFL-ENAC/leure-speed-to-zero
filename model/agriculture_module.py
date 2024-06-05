@@ -635,6 +635,7 @@ def simulate_lifestyles_to_agriculture_input():
         dm_lfs.rename_col(cat, new_cat, dim='Categories1')
 
     return dm_lfs
+
 def simulate_buildings_to_agriculture_input():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     f = os.path.join(current_file_directory, "../_database/data/xls/All-Countries-interface_from-buildings-to-agriculture_renamed.xlsx")
@@ -643,6 +644,7 @@ def simulate_buildings_to_agriculture_input():
     dm_bld = DataMatrix.create_from_df(df, num_cat=1)
 
     return dm_bld
+
 def simulate_industry_to_agriculture_input():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     f = os.path.join(current_file_directory, "../_database/data/xls/All-Countries-interface_from-industry-to-agriculture.xlsx")
@@ -650,6 +652,7 @@ def simulate_industry_to_agriculture_input():
     dm_ind = DataMatrix.create_from_df(df, num_cat=0)
 
     return dm_ind
+
 def simulate_transport_to_agriculture_input():
     # Read input from lifestyle : food waste & diet
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -2239,7 +2242,8 @@ def agriculture_local_run():
 #database_from_csv_to_datamatrix()
 
 # Run the code in local
-agriculture_local_run()
+results_run = agriculture_local_run()
+
 
 
 # KNIME CHECK WITH AUSTRIA -----------------------------------------------------------------------------------------
