@@ -123,7 +123,7 @@ def database_from_csv_to_datamatrix():
     dm_elec_new.rename_col_regex("_new_RES", "", dim = "Variables")
     dm_elec_new.rename_col_regex("_new_fossil", "", dim = "Variables")
     dm_elec_new.rename_col_regex("elc_", "elc_energy-", dim = "Variables")
-    # !FIXME: at the moment we do not have ots for oil and coal
+    # FIXME: at the moment we do not have ots for oil and coal
 
     # make all zeroes for oil and coal ots for the moment
     c , y = len(dm_elec_new.col_labels["Country"]), len(dm_elec_new.col_labels["Years"])
@@ -1484,13 +1484,13 @@ def mineral_extraction(DM_minerals, DM_interface, dm_mindec, CDM_const):
     ##### MINERAL PRODUCTION (KG) #####
     ###################################
 
-    # !FIXME: in the knime this is dir - exp.
+    # NOTE: in the knime this is dir - exp, here we fixed it to dir + exp.
 
     # mineral production at home
     dm_production = dm_mindec.copy()
     idx = dm_production.idx
     dm_production.array[...,idx["exp"]] = np.nan_to_num(dm_production.array[...,idx["exp"]])
-    dm_production.operation('dir', "-", 'exp', dim = "Categories2", out_col="mineral-production-home", div0="error")
+    dm_production.operation('dir', "+", 'exp', dim = "Categories2", out_col="mineral-production-home", div0="error")
 
     # mineral production abroad
     idx = dm_mindec.idx
@@ -1742,14 +1742,14 @@ def mineral_production_bysector(dm_mindec, dm_mindec_sect, CDM_const):
     dm_mindec_sect.array = dm_mindec.array * dm_mindec_sect.array
     dm_mindec_sect.units['material-decomposition'] = "kg"
 
-    # !FIXME: in the knime this is dir - exp.
+    # NOTE: in the knime this is dir - exp, here we fixed it to dir + exp.
 
     # mineral production by sector
     dm_production_sect = dm_mindec_sect.copy()
     idx = dm_production_sect.idx
 
     dm_production_sect.array[:,:,:,:,idx["exp"],:] = np.nan_to_num(dm_production_sect.array[:,:,:,:,idx["exp"],:])
-    dm_production_sect.operation('dir', "-", 'exp', dim = "Categories2", out_col="mineral-production", div0="error")
+    dm_production_sect.operation('dir', "+", 'exp', dim = "Categories2", out_col="mineral-production", div0="error")
     dm_production_sect.drop(dim = "Categories2", col_label = ['dir', 'exp', 'indir'])
     dm_production_sect.rename_col(col_in = "aluminium", col_out = "bauxite", dim = "Categories3")
     dm_production_sect.rename_col(col_in = "steel", col_out = "iron", dim = "Categories3")
@@ -2050,11 +2050,11 @@ def local_minerals_run():
     return results_run
 
 
-# # run local
-# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/minerals_module.py"
-# # database_from_csv_to_datamatrix()
-# import time
-# start = time.time()
-# results_run = local_minerals_run()
-# end = time.time()
-# print(end-start)
+# run local
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/minerals_module.py"
+# database_from_csv_to_datamatrix()
+import time
+start = time.time()
+results_run = local_minerals_run()
+end = time.time()
+print(end-start)
