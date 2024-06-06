@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.4](https://github.com/2050Calculators/PathwayCalc/compare/v1.0.3...v1.0.4) (2024-06-06)
+
+
+### Bug Fixes
+
+* **docker-compose:** add traefik ([d913088](https://github.com/2050Calculators/PathwayCalc/commit/d913088535df4d6d843849ed8a756414f88d3c01))
+
 ## [1.0.3](https://github.com/2050Calculators/PathwayCalc/compare/v1.0.2...v1.0.3) (2024-06-05)
 
 
