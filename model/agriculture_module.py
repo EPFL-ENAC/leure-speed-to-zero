@@ -362,7 +362,7 @@ def database_from_csv_to_datamatrix():
     # ConstantsToDatamatrix
     # Data - Constants (use 'xx|xx|xx' to add)
     cdm_const = ConstantDataMatrix.extract_constant('interactions_constants_pathwaycalc',
-                                                    pattern='cp_ibp_liv_.*_brf_fdk_afat|cp_ibp_liv_.*_brf_fdk_offal|cp_ibp_bev_.*|cp_liquid_tec.*|cp_load_hours|cp_ibp_aps_insect.*|cp_ibp_aps_algae.*|cp_efficiency_liv.*|cp_ibp_processed.*|cp_ef_urea.*|cp_ef_liming|cp_emission-factor_CO2.*',
+                                                    pattern='cp_ibp_liv_.*_brf_fdk_afat|cp_ibp_liv_.*_brf_fdk_offal|cp_ibp_bev_.*|cp_liquid_tec.*|cp_load_hours|cp_ibp_aps_insect.*|cp_ibp_aps_algae.*|cp_efficiency_liv.*|cp_ibp_processed.*|cp_ef_urea.*|cp_ef_liming|cp_emission-factor_CO2.*|cp_fst_ef_emissions-CH4_burnt|cp_fst_ef_emissions-CO2_burnt|cp_fst_ef_emissions-N2O_burnt',
                                                     num_cat=0)
 
     # Group all datamatrix in a single structure
@@ -2436,6 +2436,61 @@ def forestry_workflow(DM_land_use, dm_wood, dm_land_use):
 
     return DM_land_use
 
+# CalculationLeaf BIOMASS EMISSIONS
+def forestry_biomass_emissions_workflow(DM_land_use, cdm_const):
+
+    # FORESTRY LOSSES --------------------------------------------------------------------------------------------------
+
+    # Total yield forestry biomass losses from natural causes [m3/ha] = sum (yield losses from natural causes [m3/ha])
+    DM_land_use['forestry'].groupby({'yield_nat-losses_total': 'fxa_agr_climate-smart-forestry_nat-losses.*'},
+                                    dim='Variables', regex=True, inplace=True)
+
+    # Total forestry biomass loss from natural causes [m3] = Forest land [ha] *
+    #                                                   Total yield forestry biomass losses from natural causes [m3/ha]
+
+    DM_land_use['forestry'].operation('lus_land_forest', '*',
+                                      'yield_nat-losses_total', out_col='lus_forestry_biomass_loss', unit='m3')
+
+    # Total forestry biomass loss (fuel & burnt) [m3] = Total forestry biomass loss from natural causes [m3]
+    #                                                   * yield forestry biomass loss from deforestation [%]
+    DM_land_use['forestry'].operation('lus_forestry_biomass_loss', '*', 'fxa_agr_climate-smart-forestry_def-wood-fuel',
+                                      out_col='lus_forestry_biomass_loss_def-wood-fuel', unit='m3')
+    DM_land_use['forestry'].operation('lus_forestry_biomass_loss', '*', 'fxa_agr_climate-smart-forestry_def-burnt',
+                                      out_col='lus_forestry_biomass_loss_def-burnt', unit='m3')
+
+    # BURNT BIOMASS EMISSIONS ------------------------------------------------------------------------------------------
+
+    # Filtering constants
+    cdm_burnt = cdm_const.filter({'Variables': ['cp_fst_ef_emissions-N2O_burnt', 'cp_fst_ef_emissions-CH4_burnt',
+                                                'cp_fst_ef_emissions-CO2_burnt'], 'units': ['t/m3']})
+
+    # GHG emissions from burnt forest biomass [t] = Total forestry biomass loss burnt [m3]
+    #                                               * emission factor burnt biomass [t/m3]
+    # CH4
+    idx_cdm = cdm_burnt.idx
+    idx_forestry = DM_land_use['forestry'].idx
+    array_temp = DM_land_use['forestry'].array[:, :, idx_forestry['lus_forestry_biomass_loss_def-burnt']] \
+                 * cdm_burnt.array[idx_cdm['cp_fst_ef_emissions-CH4_burnt']]
+    DM_land_use['forestry'].add(array_temp, dim='Variables',
+                                col_label='lus_emissions_emissions-CO2_forest_to_land_biomass_emissions-CH4', unit='t')
+    # N2O
+    idx_cdm = cdm_burnt.idx
+    idx_forestry = DM_land_use['forestry'].idx
+    array_temp = DM_land_use['forestry'].array[:, :, idx_forestry['lus_forestry_biomass_loss_def-burnt']] \
+                 * cdm_burnt.array[idx_cdm['cp_fst_ef_emissions-N2O_burnt']]
+    DM_land_use['forestry'].add(array_temp, dim='Variables',
+                                col_label='lus_emissions_emissions-CO2_forest_to_land_biomass_emissions-N2O', unit='t')
+
+    # CO2
+    idx_cdm = cdm_burnt.idx
+    idx_forestry = DM_land_use['forestry'].idx
+    array_temp = DM_land_use['forestry'].array[:, :, idx_forestry['lus_forestry_biomass_loss_def-burnt']] \
+                 * cdm_burnt.array[idx_cdm['cp_fst_ef_emissions-CO2_burnt']]
+    DM_land_use['forestry'].add(array_temp, dim='Variables',
+                                col_label='lus_emissions_emissions-CO2_forest_to_land_biomass_emissions-CO2', unit='t')
+    return DM_land_use
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 # AGRICULTURE ----------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
@@ -2494,10 +2549,9 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     DM_land_use = land_matrix_workflow(DM_land_use)
     DM_land_use = land_carbon_dynamics_workflow(DM_land_use)
     DM_land_use = forestry_workflow(DM_land_use, dm_wood, dm_land_use)
+    DM_land_use = forestry_biomass_emissions_workflow(DM_land_use, cdm_const)
 
-
-
-    # CalculationLEaf Deforestation patterns (does not appear to be used after)
+    # CalculationLeaf Deforestation patterns (does not appear to be used after)
 
 
 
