@@ -26,7 +26,7 @@ def runner(lever_setting, global_vars, output_nodes, logger):
     # TPE['lifestyles'] = lifestyles(lever_setting, years_setting, interface)
     TPE['transport'] = transport(lever_setting, years_setting, interface)
     TPE['buildings'] = buildings(lever_setting, years_setting, interface)
-    # TPE['district-heating'] = district_heating(lever_setting, years_setting, interface)
+    TPE['district-heating'] = district_heating(lever_setting, years_setting, interface)
     # TPE['minerals'] = minerals(years_setting, interface)
 
     logger.info('Execution time: {0:.3g} s'.format(time.time() - start_time))

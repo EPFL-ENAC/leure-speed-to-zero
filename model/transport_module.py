@@ -623,6 +623,8 @@ def passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const, years_sett
 
     dm_tot_energy = rename_and_group(dm_energy_new_cat, grouping, dict2, grouped_var='tra_passenger_total-energy')
 
+    DM_passenger_out['oil-refinery'] = dm_tot_energy.filter({'Categories1': ['gasoline', 'diesel', 'gas', 'kerosene']})
+
     dm_biogas = dm_tot_energy.filter({'Categories1': ['biogas']})
 
     # Compute emission by fuel
@@ -852,6 +854,9 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
     dm_total_energy = rename_and_group(dm_energy_new_cat, grouping, dict2, grouped_var='tra_freight_total-energy')
     dm_total_energy.rename_col('ICE', 'marinefueloil', dim='Categories1')
 
+    # Prepare output to refinery:
+    DM_freight_out['oil-refinery'] = dm_total_energy.filter({'Categories1': ['gasoline', 'diesel', 'marinefueloil', 'gas', 'kerosene']})
+
     dm_biogas = dm_total_energy.filter({'Categories1': ['biogas']})
 
     # Compute emission by fuel
@@ -941,8 +946,7 @@ def tra_industry_interface(dm_freight_new_veh, dm_passenger_new_veh):
     dm_passenger_new_veh.filter({'Categories1': ['aviation', 'marine', 'rail']}, inplace=True)  # keep only rail, aviation, marine
     dm_product_demand = dm_passenger_new_veh
     dm_product_demand.append(dm_freight_new_veh, dim='Variables')  # merge passenger and freight
-    dm_product_demand.operation('tra_passenger_new-vehicles', '+', 'tra_freight_new-vehicles', out_col='tra_product-demand', unit='number', dim='Variables')
-    dm_product_demand.filter({'Variables': ['tra_product-demand']}, inplace=True)
+    dm_product_demand.groupby({'tra_product-demand': '.*'}, dim='Variables', regex=True, inplace=True)
     # Rename aviation, marine, rail to planes, ships, trains
     dm_product_demand.rename_col('aviation', 'planes', dim='Categories1')
     dm_product_demand.rename_col('marine', 'ships', dim='Categories1')
@@ -954,10 +958,54 @@ def tra_industry_interface(dm_freight_new_veh, dm_passenger_new_veh):
 
     dm_product_demand.sort(dim='Categories1')
 
+    # ! FIXME add infrastructure in km
     DM_industry = {
         'tra-veh': dm_product_demand
     }
     return DM_industry
+
+
+def tra_minerals_interface(dm_freight_new_veh, dm_passenger_new_veh, DM_industry):
+
+    # Group technologies as PHEV, ICE, EV and FCEV
+    dm_freight_new_veh.groupby({'PHEV': 'PHEV.*', 'ICE': 'ICE.*', 'EV': 'BEV|CEV'}, regex=True, inplace=True, dim='Categories2')
+    # note that mt is later dropped
+    dm_passenger_new_veh.groupby({'PHEV': 'PHEV.*', 'ICE': 'ICE.*', 'EV': 'BEV|CEV|mt'}, regex=True, inplace=True, dim='Categories2')
+    # keep only certain vehicles
+    keep_veh = 'HDV.*|2W|LDV|bus'
+    dm_keep_new_veh = dm_passenger_new_veh.filter_w_regex({'Categories1': keep_veh})
+    dm_keep_new_veh.rename_col('tra_passenger_new-vehicles', 'tra_product-demand', dim='Variables')
+    dm_keep_freight_new_veh = dm_freight_new_veh.filter_w_regex({'Categories1': keep_veh})
+    dm_keep_freight_new_veh.rename_col('tra_freight_new-vehicles', 'tra_product-demand', dim='Variables')
+    # join passenger and freight
+    dm_keep_new_veh.append(dm_keep_freight_new_veh, dim='Categories1')
+    # flatten to obtain e.g. LDV-EV or HDVL-FCEV
+    dm_keep_new_veh = dm_keep_new_veh.flatten()
+    dm_keep_new_veh.rename_col_regex('_', '-', 'Categories1')
+
+    dm_other = DM_industry['tra-veh'].filter({'Categories1': ['planes', 'ships', 'trains']})
+    dm_other.groupby({'other-planes': ['planes'], 'other-ships': ['ships'], 'other-trains': ['trains']}, dim='Categories1', inplace=True)
+
+    dm_keep_new_veh.append(dm_other, dim='Categories1')
+
+    DM_minerals = {
+        'tra_veh': dm_keep_new_veh
+    }
+
+    return DM_minerals
+
+def tra_oilrefinery_interface(dm_pass_energy, dm_freight_energy):
+
+    dm_pass_energy.add(0, dummy=True, col_label='marinefueloil', dim='Categories1')
+    dm_pass_energy.append(dm_freight_energy, dim='Variables')
+    dm_tot_energy = dm_pass_energy.groupby({'tra_energy-demand': '.*'}, dim='Variables', inplace=False, regex=True)
+    dict_rename = {'diesel': 'liquid-ff-diesel', 'marinefueloil': 'liquid-ff-fuel-oil', 'gasoline': 'liquid-ff-gasoline',
+                   'gas': 'gas-ff-natural', 'kerosene': 'liquid-ff-kerosene'}
+    for str_old, str_new in dict_rename.items():
+        dm_tot_energy.rename_col(str_old, str_new, dim='Categories1')
+
+    return dm_tot_energy
+
 
 def prepare_TPE_output(DM_passenger_out, DM_freight_out):
 
@@ -990,12 +1038,6 @@ def prepare_TPE_output(DM_passenger_out, DM_freight_out):
     df = pd.concat([df, df4.drop(columns=['Country', 'Years'])], axis=1)
 
     return df
-
-
-def tra_oilrefinery_interface():
-
-
-    return
 
 def transport(lever_setting, years_setting, interface=Interface()):
 
@@ -1030,7 +1072,8 @@ def transport(lever_setting, years_setting, interface=Interface()):
     # df.to_excel('transport-to-power.xlsx', index=False)
 
     # Storage-module
-    # dm_refinery = tra_oilrefinery_interface(DM_passenger_out['tech'].filter({'Variables':['tra_passenger_energy-demand']}), DM_freight_out)
+    dm_oil_refinery = tra_oilrefinery_interface(DM_passenger_out['oil-refinery'], DM_freight_out['oil-refinery'])
+    interface.add_link(from_sector='transport', to_sector='oil-refinery', dm=dm_oil_refinery)
 
     # Agriculture-module
     # !FIXME: of all of the bio-energy demand, only the biogas one is accounted for in Agriculture
@@ -1042,10 +1085,13 @@ def transport(lever_setting, years_setting, interface=Interface()):
 
     dm_freight_new_veh = DM_freight_out['tech'].filter({'Variables': ['tra_freight_new-vehicles']})
     dm_passenger_new_veh = DM_passenger_out['tech'].filter({'Variables': ['tra_passenger_new-vehicles']})
-    DM_industry = tra_industry_interface(dm_freight_new_veh, dm_passenger_new_veh)
+    DM_industry = tra_industry_interface(dm_freight_new_veh.copy(), dm_passenger_new_veh.copy())
+    DM_minerals = tra_minerals_interface(dm_freight_new_veh, dm_passenger_new_veh, DM_industry)
     # !FIXME: add km infrastructure data, using compute_stock with tot_km and renovation rate as input.
     #  data for ch ok, data for eu, backcalculation? dummy based on swiss pop?
     # interface.add_link(from_sector='transport', to_sector='industry', dm=DM_industry)
+    # interface.add_link(from_sector='transport', to_sector='minerals', dm=DM_industry)
+
 
     return results_run
 
@@ -1064,4 +1110,4 @@ def local_transport_run():
     return results_run
 
 # database_from_csv_to_datamatrix()
-results_run = local_transport_run()
+# results_run = local_transport_run()
