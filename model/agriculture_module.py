@@ -2573,10 +2573,9 @@ def agriculture_local_run():
 
 
 # Creates the pickle, to do only once
-database_from_csv_to_datamatrix()
+# database_from_csv_to_datamatrix()
 
 # Run the code in local
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/minerals_module.py"
 results_run = agriculture_local_run()
 
 
