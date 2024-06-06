@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.5](https://github.com/2050Calculators/PathwayCalc/compare/v1.0.4...v1.0.5) (2024-06-06)
+
+
+### Bug Fixes
+
+* to test docker ([4058ccd](https://github.com/2050Calculators/PathwayCalc/commit/4058ccd190e43fd567b447ef0eddccdf34b44830))
+
 ## [1.0.4](https://github.com/2050Calculators/PathwayCalc/compare/v1.0.3...v1.0.4) (2024-06-06)
 
 
