@@ -2543,6 +2543,20 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     DM_nitrogen, dm_fertilizer_co, dm_mineral_fertilizer = nitrogen_workflow(DM_nitrogen, DM_land, cdm_const)
     DM_energy_ghg = energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_manure, cdm_const)
 
+
+    #interface.add_link(from_sector='agriculture', to_sector='land-use', dm=DM_bioenergy + dm_lgn + dm_land_use)
+
+    print('hello')
+    return
+
+def land_use():
+
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    landuse_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/landuse.pickle')
+    DM_land_use = read_data(landuse_data_file, lever_setting)
+
+    dm_ind = simulate_industry_to_land_use_interface()
+
     # CalculationTree LAND USE
     dm_wood = wood_workflow(DM_bioenergy, dm_lgn, dm_ind)
     DM_land_use = land_allocation_workflow(DM_land_use, dm_land_use)
@@ -2555,22 +2569,22 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
 
 
 
-
-    print('hello')
-    return
-
-
-
 def agriculture_local_run():
     years_setting, lever_setting = init_years_lever()
     agriculture(lever_setting, years_setting)
     return
 
+def land_use_local_run():
+    years_setting, lever_setting = init_years_lever()
+    global_vars = {'geoscale': '.*'}
+    filter_geoscale(global_vars)
+    agriculture(lever_setting, years_setting)
+    return
 # Creates the pickle, to do only once
 #database_from_csv_to_datamatrix()
 
 # Run the code in local
-results_run = agriculture_local_run()
+# results_run = agriculture_local_run()
 
 
 
