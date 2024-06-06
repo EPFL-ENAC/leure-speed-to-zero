@@ -988,7 +988,7 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     dm_domapp_mindec.array = dm_domapp_mindec.array / cdm_temp.array[np.newaxis,np.newaxis,np.newaxis,...]
 
     # get aluminium packages (t) and add it to aluminium from dom appliance (only for dir)
-    dm_temp = dm_ind.filter({"Variables":["ind_product_aluminium-pack"]})
+    dm_temp = dm_ind.filter({"Variables":["ind_product-production_aluminium-pack"]})
     dm_temp.array = dm_temp.array * 1000 # make kg
     idx = dm_domapp_mindec.idx
     dm_domapp_mindec.array[:,:,:,:,idx["dir"],idx["aluminium"]] = dm_domapp_mindec.array[:,:,:,:,idx["dir"],idx["aluminium"]] + \
@@ -1912,6 +1912,12 @@ def simulate_agriculture_to_minerals_input():
 def simulate_industry_to_minerals_input():
     
     dm = simulate_input(from_sector="industry", to_sector="minerals")
+    
+    # # import
+    # dm_imp = dm.filter_w_regex({"Variables" : ".*product-net-import.*"})
+    
+    # rename alu pack
+    dm.rename_col("ind_prod_aluminium-pack","ind_product-production_aluminium-pack","Variables")
     
     return dm
 
