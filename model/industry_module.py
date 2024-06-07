@@ -1425,11 +1425,11 @@ def industry_refinery_interface(DM_energy_demand, write_xls = False):
     
     # dm_elc
     dm_ref = DM_energy_demand["bycarr"].filter(
-        {"Categories1" : ['liquid-ff-oil_diesel', 'liquid-ff-oil_fuel-oil',
+        {"Categories1": ['liquid-ff-oil_diesel', 'liquid-ff-oil_fuel-oil',
                           'gas-ff-natural', 'solid-ff-coal']})
     dm_ref.rename_col("energy-demand", "ind_energy-demand", "Variables")
-    dm_ref = dm_ref.flatten()
-    dm_ref.sort("Variables")
+    dm_ref.rename_col_regex('liquid-ff-oil_', '', dim='Categories1')
+    dm_ref.sort("Categories1")
 
     # df_elc
     if write_xls is True:
@@ -1882,7 +1882,7 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     
     # interface refinery
     dm_refinery = industry_refinery_interface(DM_energy_demand)
-    interface.add_link(from_sector='industry', to_sector='refinery', dm=dm_refinery)
+    interface.add_link(from_sector='industry', to_sector='oil-refinery', dm=dm_refinery)
     
     # interface district heating
     dm_dh = industry_district_heating_interface(DM_energy_demand)
@@ -1941,7 +1941,7 @@ def local_industry_run():
     return results_run
 
 # run local
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
+# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
 # database_from_csv_to_datamatrix()
 start = time.time()
 results_run = local_industry_run()
