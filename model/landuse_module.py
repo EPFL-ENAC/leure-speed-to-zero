@@ -110,7 +110,7 @@ def database_from_csv_to_datamatrix():
     
     # get constants
     cdm_const = ConstantDataMatrix.extract_constant('interactions_constants_pathwaycalc',
-                                                    pattern='cp_ibp_liv_.*_brf_fdk_afat|cp_ibp_liv_.*_brf_fdk_offal|cp_ibp_bev_.*|cp_liquid_tec.*|cp_load_hours|cp_ibp_aps_insect.*|cp_ibp_aps_algae.*|cp_efficiency_liv.*|cp_ibp_processed.*|cp_ef_urea.*|cp_ef_liming|cp_emission-factor_CO2.*|cp_fst_ef_emissions-CH4_burnt|cp_fst_ef_emissions-CO2_burnt|cp_fst_ef_emissions-N2O_burnt',
+                                                    pattern='cp_emission-factor_CO2.*|cp_fst_ef_emissions-CH4_burnt|cp_fst_ef_emissions-CO2_burnt|cp_fst_ef_emissions-N2O_burnt',
                                                     num_cat=0)
 
 
@@ -126,6 +126,8 @@ def database_from_csv_to_datamatrix():
         "constant" : cdm_const
     }
 
+    # Dropping variable that creates a problem (we only need the structure of the matrix 6x6)
+    DM_landuse['ots']['land-man']['agr_land-man_matrix'].drop(dim='Variables', col_label=['agr_land-man_matrix'])
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     f = os.path.join(current_file_directory, '../_database/data/datamatrix/landuse.pickle')
@@ -188,13 +190,13 @@ def read_data(data_file, lever_setting):
         'forestry': dm_forestry
     }
 
-    cdm_const = DM_land_use['constant']
+    cdm_const = DM_landuse['constant']
     
     # return
     return DM_ots_fts, DM_land_use, cdm_const
 
 # CalculationLeaf WOOD
-def wood_workflow(DM_bioenergy, dm_lgn, dm_ind):
+def wood_workflow(dm_wood, dm_lgn, dm_ind):
     # WOOD FUEL DEMAND  ------------------------------------------------------------------------------------------------
     # Unit conversion : bioenergy biomass demand [kcal] => [TWh]
     dm_lgn.add(0.00000000000116222, dummy=True, col_label='kcal_to_TWh', dim='Variables', unit='TWh')
@@ -202,8 +204,8 @@ def wood_workflow(DM_bioenergy, dm_lgn, dm_ind):
                       out_col='agr_bioenergy_biomass-demand_liquid_lgn_TWh', unit='TWh')
 
     # Pre processing
-    dm_wood = DM_bioenergy['solid-mix'].filter({'Variables': ['agr_bioenergy_biomass-demand_solid'],
-                                                'Categories1': ['fuelwood-and-res']})
+    #dm_wood = DM_bioenergy.filter({'Variables': ['agr_bioenergy_biomass-demand_solid'],
+    #                                            'Categories1': ['fuelwood-and-res']})
 
     dm_wood_liquid = dm_lgn.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_lgn_TWh'],
                                     'Categories1': ['lgn-btl-fuelwood-and-res']})
@@ -733,14 +735,15 @@ def simulate_industry_to_landuse_input():
 def simulate_agriculture_to_landuse_input():
     
     dm_lus = simulate_input(from_sector='agriculture', to_sector='landuse')
+
+    dm_wood = dm_lus.filter({'Variables': ['agr_bioenergy_biomass-demand_solid_fuelwood-and-res']})
+    dm_wood.deepen()
+    dm_lgn = dm_lus.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_lgn_lgn-btl-fuelwood-and-res']})
+    dm_lgn.deepen()
+    dm_land_use = dm_lus.filter_w_regex({'Variables': 'agr_lus_land.*'})
+    dm_land_use.deepen()
     
-    
-    variables = list()
-    DM_bioenergy = dm_lus.filter({"Variables" : variables})
-    dm_lgn = {}
-    dm_land_use = {}
-    
-    return DM_bioenergy, dm_lgn, dm_land_use
+    return dm_wood, dm_lgn, dm_land_use
 
 def land_use(lever_setting, years_setting, interface = Interface(), calibration = False):
 
@@ -778,8 +781,8 @@ def local_land_use_run():
     return
 
 # run local
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/landuse_module.py"
-# database_from_csv_to_datamatrix()
+#__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/landuse_module.py"
+#database_from_csv_to_datamatrix()
 start = time.time()
 results_run = local_land_use_run()
 end = time.time()
