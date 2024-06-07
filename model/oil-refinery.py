@@ -135,7 +135,7 @@ def simulate_industry_to_refinery_input():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     f = os.path.join(current_file_directory, "../_database/data/xls/"
                                              "All-Countries-interface_from-industry-to-oil-refinery.xlsx")
-    df = pd.read_excel(f, sheet_name="default")
+    df = pd.read_excel(f)
     dm_industry = DataMatrix.create_from_df(df, num_cat=1)
 
     return dm_industry
@@ -147,7 +147,7 @@ def simulate_ammonia_to_refinery_input():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     f = os.path.join(current_file_directory, "../_database/data/xls/"
                                              "All-Countries-interface_from-ammonia-to-oil-refinery.xlsx")
-    df = pd.read_excel(f, sheet_name="default")
+    df = pd.read_excel(f)
     dm_ammonia = DataMatrix.create_from_df(df, num_cat=1)
 
     return dm_ammonia
@@ -173,14 +173,125 @@ def fuel_production_workflow(DM_refinery, DM_fuel_demand):
     # CalculationLeafs - Energy demand per fuel [GWh]
     ######################################
 
+    # Uniforming the matrices (energy carriers)
+    dm_power = DM_fuel_demand['power']
+    dm_power.add(0, dummy=True, col_label=['diesel', 'gasoline', 'kerosene'],
+                 dim='Categories1', unit=['TWh', 'TWh', 'TWh'])
+    dm_buildings = DM_fuel_demand['buildings']
+    dm_buildings.add(0, dummy=True, col_label=['nuclear','diesel', 'gasoline', 'kerosene'],
+                 dim='Categories1', unit=['TWh', 'TWh', 'TWh', 'TWh'])
+    dm_transport = DM_fuel_demand['transport']
+    dm_transport.add(0, dummy=True, col_label=['coal', 'nuclear'],
+                 dim='Categories1', unit=['TWh', 'TWh'])
+    dm_industry = DM_fuel_demand['industry']
+    dm_industry.add(0, dummy=True, col_label=['nuclear', 'gasoline', 'kerosene'],
+                 dim='Categories1', unit=['TWh', 'TWh', 'TWh'])
+    dm_ammonia = DM_fuel_demand['ammonia']
+    dm_ammonia.add(0, dummy=True, col_label=['nuclear', 'gasoline', 'kerosene'],
+                    dim='Categories1', unit=['TWh', 'TWh', 'TWh'])
+    dm_agriculture = DM_fuel_demand['agriculture']
+    dm_agriculture.add(0, dummy=True, col_label=['nuclear','kerosene'],
+                    dim='Categories1', unit=['TWh', 'TWh'])
+
+    # ToDo: to remove when energy carriers will be uniform
+    dm_hydrogen = dm_power.filter({'Categories1': ['hydrogen']})
+
+    dm_power.rename_col('oil', 'fuel-oil', dim='Categories1')
+    dm_power = dm_power.filter({'Categories1': ['coal','gas','nuclear','fuel-oil','diesel','gasoline','kerosene']})
+    dm_power.array = dm_power.array / 1000
+    for var in dm_power.col_labels['Variables']:
+        dm_power.units[var] = 'TWh'
+
+
+    dm_buildings.rename_col('gas-ff-natural', 'gas', dim='Categories1')
+    dm_buildings.rename_col('liquid-ff-heatingoil', 'fuel-oil', dim='Categories1')
+    dm_buildings.rename_col('solid-ff-coal', 'coal', dim='Categories1')
+    dm_buildings.array = dm_buildings.array / 1000
+    for var in dm_buildings.col_labels['Variables']:
+        dm_buildings.units[var] = 'TWh'
+
+    dm_transport.rename_col('gas-ff-natural', 'gas', dim='Categories1')
+    dm_transport.rename_col('liquid-ff-fuel-oil', 'fuel-oil', dim='Categories1')
+    dm_transport.rename_col('liquid-ff-kerosene', 'kerosene', dim='Categories1')
+    dm_transport.rename_col('liquid-ff-diesel', 'diesel', dim='Categories1')
+    dm_transport.rename_col('liquid-ff-gasoline', 'gasoline', dim='Categories1')
+
+    dm_industry.rename_col('gas-ff-natural', 'gas', dim='Categories1')
+    dm_industry.rename_col('solid-ff-coal', 'coal', dim='Categories1')
+    dm_ammonia.rename_col('gas-ff-natural', 'gas', dim='Categories1')
+    dm_ammonia.rename_col('solid-ff-coal', 'coal', dim='Categories1')
+
+    dm_agriculture.rename_col('gas-ff-natural', 'gas', dim='Categories1')
+    dm_agriculture.rename_col('liquid-ff-oil', 'fuel-oil', dim='Categories1')
+    dm_agriculture.rename_col('solid-ff-coal', 'coal', dim='Categories1')
+    dm_agriculture.rename_col('liquid-ff-diesel', 'diesel', dim='Categories1')
+    dm_agriculture.rename_col('liquid-ff-gasoline', 'gasoline', dim='Categories1')
+
+    # Build the matrix for operation
+    dm_fuel_demand = dm_power.copy()
+    dm_fuel_demand.append(dm_buildings, dim='Variables')
+    dm_fuel_demand.append(dm_transport, dim='Variables')
+    dm_fuel_demand.append(dm_industry, dim='Variables')
+    dm_fuel_demand.append(dm_ammonia, dim='Variables')
+    dm_fuel_demand.append(dm_agriculture, dim='Variables')
+
+    ######################################
+    # CalculationLeafs - Gas demand for Hydrogen production [GWh]
+    ######################################
+
+    dm_cp = DM_refinery['constant']
+    idx_cst = dm_cp.idx
+    ay_hydrogen_to_gas = \
+        dm_hydrogen.array[...] \
+        * dm_cp.array[idx_cst['cp_refinery-yield_hydrogen-to-gas']]
+
+    dm_demand_gas = dm_fuel_demand.filter({'Categories1': ['gas']})
+    dm_demand_gas.add(ay_hydrogen_to_gas, dim='Variables', col_label='hyd_energy-demand')
+
+    ######################################
+    # CalculationLeafs - Oil demand for oil-based fuel production [GWh]
+    ######################################
+
+    # Total per fuel
+    # dm_total_fuel_demand = dm_fuel_demand.groupby({'ori_energy-demand': '.*'}, dim='Variables', regex=True, inplace=False)
+    #dm_fuel_demand.append(dm_total_fuel_demand, dim='Variables')
+
+    # Oil equivalent [GWh]
+    dm_oil = dm_fuel_demand.filter({'Categories1': ['diesel','fuel-oil','gasoline','kerosene']})
+    dm_cp = DM_refinery['constant']
+    dm_cp = dm_cp.filter({'Variables': ['cp_refinery-yield_diesel','cp_refinery-yield_fuel-oil',
+                                          'cp_refinery-yield_gasoline','cp_refinery-yield_kerosene']})
+    dm_cp.deepen(based_on='Variables')
+    ay_oil_equivalent = dm_oil.array[...] \
+                          * dm_cp.array[np.newaxis,np.newaxis,:, :]
+    dm_oil_equivalent = DataMatrix.based_on(ay_oil_equivalent,dm_oil)
+
+    # Refinery self-consumption [GWh]
+    dm_cp = DM_refinery['constant']
+    dm_self_consumption = dm_cp.filter({'Variables': ['cp_refinery-efficiency_energy-use']})
+    ay_oil_equivalent = dm_oil_equivalent.array[...] \
+                        / (1 - (dm_self_consumption.array[np.newaxis, np.newaxis, np.newaxis, :]))
+    dm_oil_equivalent_gross = DataMatrix.based_on(ay_oil_equivalent, dm_oil)
+
+    # Refinery losses [GWh]
+    dm_cp = DM_refinery['constant']
+    dm_loss = dm_cp.filter({'Variables': ['cp_refinery-efficiency_loss']})
+    ay_oil_equivalent_net = dm_oil_equivalent_gross.array[...] \
+                        /(1 - dm_loss.array[np.newaxis, np.newaxis, np.newaxis, :])
+    dm_demand_oil = DataMatrix.based_on(ay_oil_equivalent_net, dm_oil)
+
+    ######################################
+    # CalculationLeafs - Fossil fuels emissions [GWh]
+    ######################################
+
+    dm_demand_coal = dm_fuel_demand.filter({'Categories1': ['coal']})
+    dm_fossil_demand = dm_demand_coal.copy()
+    dm_fossil_demand.append(dm_demand_oil, dim='Categories1')
+    dm_fossil_demand.append(dm_demand_gas, dim='Categories1')
+
+
 
     DM_refinery_out = DM_refinery
-    idx_cap = dm_capacity.idx
-    idx_clm = dm_climate.idx
-    ay_gross_yearly_production = dm_capacity.array[:,:,idx_cap['pow_existing-capacity'],:] \
-                                 * dm_climate.array[:,:,idx_clm['clm_capacity-factor'],:]*8760
-    dm_capacity.add(ay_gross_yearly_production, dim='Variables', col_label='pow_gross-yearly-production', unit='GWh')
-
     return DM_refinery_out
 
 #######################################################################################################################
