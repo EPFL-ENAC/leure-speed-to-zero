@@ -238,9 +238,9 @@ class DataMatrix:
                     else:
                         raise ValueError(f'The argument change can only be a list or None')
             else:
-                num_cat = dim[-1]  # extract the categorie number that they want to add
-                current_cat = dim_labels[-1][-1]
-                if int(num_cat) != int(current_cat) + 1:
+                num_cat = int(dim[-1])  # extract the categorie number that they want to add
+                current_cat = len(dim_labels) - 3
+                if num_cat != current_cat + 1:
                     raise ValueError(f'You can add Categories{int(current_cat) + 1} not {dim}')
                 dim_labels.append(dim)
                 col_labels[dim] = change[dim]
