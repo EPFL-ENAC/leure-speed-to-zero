@@ -180,31 +180,6 @@ class ConstantDataMatrix:
                 idx[c] = ci
         return idx
 
-    def drop(self, dim, col_label):
-        # Get the axis of the dimension
-        a = self.dim_labels.index(dim)
-        # if col_label it's a string, check for the columns that match the regex pattern
-        if isinstance(col_label, str):
-            tmp = [c for c in self.col_labels[dim] if re.match(col_label, c)]
-            col_label = tmp
-        # remove the data from the matrix
-        idx = self.single_index(col_label, dim)  # get index of col_label
-        i_val = list(idx.values())
-        self.array = np.delete(self.array, i_val, axis=a)  # remove array
-        # remove the label
-        for c in col_label:
-            self.col_labels[dim].remove(c)
-        # remove the unit
-        if dim == "Variables":
-            if isinstance(col_label, list):
-                for c in col_label:
-                    self.units.pop(c)
-            else:
-                self.units.pop(col_label)
-        self.idx = self.index_all()
-
-        return
-
     def single_index(self, var_names, dim):
         idx_dict = {}
         # If var_names is a list of variable names do a for loop
@@ -455,3 +430,36 @@ class ConstantDataMatrix:
             for i, col in enumerate(col_label):
                 self.units[col] = unit[i]
         self.array = np.concatenate((self.array, new_array), axis=a)
+
+        return
+
+
+    def drop(self, dim, col_label):
+        # It removes the column col_label along dimension dim
+        # as well as the data in array associated to it
+        # It does not return a new datamatrix
+        # Get the axis of the dimension
+        a = self.dim_labels.index(dim)
+        # if col_label it's a string, check for the columns that match the regex pattern
+        if isinstance(col_label, str):
+            tmp = [c for c in self.col_labels[dim] if re.match(col_label, c)]
+            col_label = tmp
+        # remove the data from the matrix
+        idx = self.single_index(col_label, dim)  # get index of col_label
+        i_val = list(idx.values())
+        self.array = np.delete(self.array, i_val, axis=a)  # remove array
+        # remove the label
+        for c in col_label:
+            self.col_labels[dim].remove(c)
+            self.idx.pop(c)
+        # Re-assign idx for the dimension
+        for col_i, col in enumerate(self.col_labels[dim]):
+            self.idx[col] = col_i
+        # remove the unit
+        if dim == "Variables":
+            if isinstance(col_label, list):
+                for c in col_label:
+                    self.units.pop(c)
+            else:
+                self.units.pop(col_label)
+        return
