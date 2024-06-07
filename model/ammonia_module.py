@@ -892,11 +892,11 @@ def ammonia_refinery_interface(DM_energy_demand, write_xls = False):
     
     # dm_elc
     dm_ref = DM_energy_demand["bycarr"].filter(
-        {"Categories1" : ['liquid-ff-oil_diesel', 'liquid-ff-oil_fuel-oil',
-                          'gas-ff-natural', 'solid-ff-coal']})
+        {"Categories1": ['liquid-ff-oil_diesel', 'liquid-ff-oil_fuel-oil',
+                        'gas-ff-natural', 'solid-ff-coal']})
     dm_ref.rename_col("energy-demand", "amm_energy-demand", "Variables")
-    dm_ref = dm_ref.flatten()
-    dm_ref.sort("Variables")
+    dm_ref.rename_col_regex('liquid-ff-oil_', '', dim='Categories1')
+    dm_ref.sort("Categories1")
 
     # df_elc
     if write_xls is True:
