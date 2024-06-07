@@ -924,7 +924,7 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
     return DM_freight_out
 
 
-def tra_industry_interface(dm_freight_new_veh, dm_passenger_new_veh):
+def tra_industry_interface(dm_freight_new_veh, dm_passenger_new_veh, dm_infrastructure):
     # Filter cars only and rename technology as ICE, FCV and EV
     dm_cars = dm_passenger_new_veh.filter({'Categories1': ['LDV']})
     dm_cars.group_all(dim='Categories1', inplace=True)
@@ -960,12 +960,13 @@ def tra_industry_interface(dm_freight_new_veh, dm_passenger_new_veh):
 
     # ! FIXME add infrastructure in km
     DM_industry = {
-        'tra-veh': dm_product_demand
+        'tra-veh': dm_product_demand,
+        'tra-infra': dm_infrastructure
     }
     return DM_industry
 
 
-def tra_minerals_interface(dm_freight_new_veh, dm_passenger_new_veh, DM_industry):
+def tra_minerals_interface(dm_freight_new_veh, dm_passenger_new_veh, DM_industry, dm_infrastructure, write_df):
 
     # Group technologies as PHEV, ICE, EV and FCEV
     dm_freight_new_veh.groupby({'PHEV': 'PHEV.*', 'ICE': 'ICE.*', 'EV': 'BEV|CEV'}, regex=True, inplace=True, dim='Categories2')
@@ -987,10 +988,18 @@ def tra_minerals_interface(dm_freight_new_veh, dm_passenger_new_veh, DM_industry
     dm_other.groupby({'other-planes': ['planes'], 'other-ships': ['ships'], 'other-trains': ['trains']}, dim='Categories1', inplace=True)
 
     dm_keep_new_veh.append(dm_other, dim='Categories1')
+    dm_keep_new_veh.rename_col('tra_product-demand', 'product-demand', dim='Variables')
 
     DM_minerals = {
-        'tra_veh': dm_keep_new_veh
+        'tra_veh': dm_keep_new_veh,
+        'tra_infra': dm_infrastructure
     }
+
+    if write_df:
+        df1 = DM_minerals['tra_veh'].write_df()
+        df2 = DM_minerals['tra_infra'].write_df()
+        df = pd.concat([df1, df2.drop(columns=['Country', 'Years'])], axis=1)
+        df.to_excel('../_database/data/xls/All-Countries-interface_from-transport-to-minerals.xlsx', index=False)
 
     return DM_minerals
 
@@ -1039,6 +1048,43 @@ def prepare_TPE_output(DM_passenger_out, DM_freight_out):
 
     return df
 
+
+# !FIXME: infrastructure dummy not OK, find real tot infrastructure data and real renewal-rates or new-infrastructure
+def dummy_tra_infrastructure_workflow(dm_pop):
+
+    # Industry and Minerals need the new infrastructure in km for rails, roads, and trolley-cables
+    # In order to compute the new infrastructure we need the tot infrastructure and a renewal-rate
+    # tot_infrastructure = Looking at Swiss data it looks like there are around 10 m of road per capita
+    # (Longueurs des routes nationales, cantonales et des autres routes ouvertes aux véhicules à moteur selon le canton)
+    # and 0.6 m of rail per capita and 0.0017 of trolley-bus, I'm using this approximation for all countries
+    # for the renewal rate eucalc was using 5%, which correspond to a resurfacing every 20 years. I use this for road
+    # for rails I use 2.5% (40 years lifetime). For the wires I have no idea,
+    # I'm going with 25 that seem to be the rewiring span of electrical cables (rr = 4%)
+    # I'm using the stock function to compute the new km and the 'waste' km
+
+    ay_infra_road = dm_pop.array * 10 / 1000  # road infrastructure in km
+    ay_infra_rail = dm_pop.array * 0.6 / 1000  # rail infrastructure in km
+    ay_infra_trolleybus = dm_pop.array * 0.0017 / 1000  # rail infrastructure in km
+
+    ay_tot = np.concatenate((ay_infra_rail, ay_infra_road, ay_infra_trolleybus), axis=-1)
+
+    dm_infra = DataMatrix.based_on(ay_tot[:, :, np.newaxis, :], format=dm_pop,
+                                   change={'Variables': ['tra_tot-infrastructure'],
+                                           'Categories1': ['infra-rail', 'infra-road', 'infra-trolley-cables']},
+                                   units={'tra_tot-infrastructure': 'km'})
+    # Add dummy renewal rates
+    dm_infra.add(0, dummy=True, dim='Variables', col_label='tra_renewal-rate')
+    idx = dm_infra.idx
+    dm_infra.array[:, :, idx['tra_renewal-rate'], idx['infra-road']] = 0.05
+    dm_infra.array[:, :, idx['tra_renewal-rate'], idx['infra-rail']] = 0.025
+    dm_infra.array[:, :, idx['tra_renewal-rate'], idx['infra-trolley-cables']] = 0.04
+
+    compute_stock(dm_infra, 'tra_renewal-rate', 'tra_tot-infrastructure',
+                  waste_col='tra_infrastructure_waste', new_col='tra_new_infrastructure')
+
+    return dm_infra.filter({'Variables': ['tra_new_infrastructure']})
+
+
 def transport(lever_setting, years_setting, interface=Interface()):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -1085,13 +1131,13 @@ def transport(lever_setting, years_setting, interface=Interface()):
 
     dm_freight_new_veh = DM_freight_out['tech'].filter({'Variables': ['tra_freight_new-vehicles']})
     dm_passenger_new_veh = DM_passenger_out['tech'].filter({'Variables': ['tra_passenger_new-vehicles']})
-    DM_industry = tra_industry_interface(dm_freight_new_veh.copy(), dm_passenger_new_veh.copy())
-    DM_minerals = tra_minerals_interface(dm_freight_new_veh, dm_passenger_new_veh, DM_industry)
+    dm_infrastructure = dummy_tra_infrastructure_workflow(DM_lfs['lfs_pop'])
+    DM_industry = tra_industry_interface(dm_freight_new_veh.copy(), dm_passenger_new_veh.copy(), dm_infrastructure)
+    DM_minerals = tra_minerals_interface(dm_freight_new_veh, dm_passenger_new_veh, DM_industry, dm_infrastructure, write_df=False)
     # !FIXME: add km infrastructure data, using compute_stock with tot_km and renovation rate as input.
     #  data for ch ok, data for eu, backcalculation? dummy based on swiss pop?
-    # interface.add_link(from_sector='transport', to_sector='industry', dm=DM_industry)
-    # interface.add_link(from_sector='transport', to_sector='minerals', dm=DM_industry)
-
+    interface.add_link(from_sector='transport', to_sector='industry', dm=DM_industry)
+    interface.add_link(from_sector='transport', to_sector='minerals', dm=DM_minerals)
 
     return results_run
 
