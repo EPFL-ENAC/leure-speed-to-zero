@@ -305,6 +305,7 @@ def fuel_production_workflow(DM_refinery, DM_fuel_demand):
     }
     return DM_refinery_out
 
+    # ToDo (1) Hydrogen; (2) Balance; (3) Costs; (4) CCUS
 #######################################################################################################################
 # CoreModule - Refinery
 #######################################################################################################################
@@ -362,7 +363,6 @@ def refinery(lever_setting, years_setting):
     results_run = DM_refinery_out
 
     return results_run
-
 
 #######################################################################################################################
 # LocalRun - Refinery
