@@ -246,7 +246,7 @@ def fuel_production_workflow(DM_refinery, DM_fuel_demand):
         * dm_cp.array[idx_cst['cp_refinery-yield_hydrogen-to-gas']]
 
     dm_demand_gas = dm_fuel_demand.filter({'Categories1': ['gas']})
-    dm_demand_gas.add(ay_hydrogen_to_gas, dim='Variables', col_label='hyd_energy-demand')
+    #dm_demand_gas.add(ay_hydrogen_to_gas, dim='Variables', col_label='hyd_energy-demand')
 
     ######################################
     # CalculationLeafs - Oil demand for oil-based fuel production [GWh]
@@ -284,14 +284,25 @@ def fuel_production_workflow(DM_refinery, DM_fuel_demand):
     # CalculationLeafs - Fossil fuels emissions [GWh]
     ######################################
 
+    # Energy demand
     dm_demand_coal = dm_fuel_demand.filter({'Categories1': ['coal']})
     dm_fossil_demand = dm_demand_coal.copy()
     dm_fossil_demand.append(dm_demand_oil, dim='Categories1')
     dm_fossil_demand.append(dm_demand_gas, dim='Categories1')
 
+    # Emission factors
+    dm_factors = DM_refinery['constant'].filter_w_regex({'Variables': 'cp_refinery-emission-factor.*'})
+    dm_factors.deepen(based_on='Variables')
 
+    # Emissions
+    ay_fossil_emissions = dm_fossil_demand.array[...] \
+                            / dm_factors.array[np.newaxis, np.newaxis, :, :]
+    dm_fossil_emissions = DataMatrix.based_on(ay_fossil_emissions, dm_fossil_demand)
 
-    DM_refinery_out = DM_refinery
+    DM_refinery_out = {
+        'fossil-demand': dm_fossil_demand,
+        'fossil-emissions': dm_fossil_emissions
+    }
     return DM_refinery_out
 
 #######################################################################################################################
