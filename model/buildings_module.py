@@ -711,21 +711,15 @@ def bld_appliances_workflow(DM_appliances):
     # Energy demand
     dm_appliance.operation('lfs_total-appliance-use', '*', 'bld_appliance-efficiency', out_col='bld_energy-demand_appliances', unit='KWh')
     # Total energy demand
-    arr_energy_tot = np.nansum(dm_appliance.array, axis=-1)
-    ref_col = dm_appliance.col_labels
-    col_labels = {'Country': ref_col['Country'], 'Years': ref_col['Years'], 'Variables': ['bld_energy-demand_residential_appliances']}
-    dm_energy = DataMatrix(col_labels, units={'bld_energy-demand_residential_appliances': 'KWh'})
-    dm_energy.array = arr_energy_tot
-
-    dm_energy_pow = dm_energy.copy()
-    dm_energy_pow.array = dm_energy_pow.array/1000
-    dm_energy_pow.units['bld_energy-demand_residential_appliances'] = 'GWh'
-    dm_energy_pow.rename_col_regex('bld_energy-demand', 'bld_power-demand', dim='Variables')
-
+    dm_energy = dm_appliance.filter({'Variables': ['bld_energy-demand_appliances']})
+    dm_energy.group_all(dim='Categories1')
+    dm_energy.rename_col('bld_energy-demand_appliances', 'bld_power-demand_residential_appliances', dim='Variables')
+    dm_energy.array = dm_energy.array/1000
+    dm_energy.units['bld_power-demand_residential_appliances'] = 'GWh'
 
     DM_appliance_out = {
         'wf_costs': dm_appliance.filter({'Variables': ['bld_appliance-new']}),
-        'power': dm_energy_pow
+        'power': dm_energy
     }
 
     return DM_appliance_out
@@ -1036,17 +1030,15 @@ def bld_emissions_appliances_workflow(DM_cooking_cooling, dm_hot_water, cdm_cons
             arr_CO2_nonres = arr_CO2_nonres + np.nansum(DM_emissions[key].array[:, :, idx[new_var], :, idx['non-residential']], axis=-1)
 
     # Gather tot 'appliances' (incl. hot water) emissions by residential and not residential in new datamatrix
-    new_cols = {
-        'Country': dm_tmp.col_labels['Country'],
-        'Years': dm_tmp.col_labels['Years'],
-        'Variables': ['bld_CO2-emissions_appliances'],
-        'Categories1': ['non-residential', 'residential']
-    }
-    dm_emissions_appliances = DataMatrix(new_cols, units={'bld_emissions-CO2_appliances': 'Mt'})
-    dm_emissions_appliances.array = np.concatenate((arr_CO2_nonres[..., np.newaxis, np.newaxis],
-                                                   arr_CO2_res[..., np.newaxis, np.newaxis]), axis=-1)
+    ay_em_appliances = np.concatenate((arr_CO2_nonres[..., np.newaxis, np.newaxis],
+                                       arr_CO2_res[..., np.newaxis, np.newaxis]), axis=-1)
+    dm_format = dm_cooking.group_all(dim='Categories2', inplace=False)
+    dm_em_appliances = DataMatrix.based_on(ay_em_appliances, format=dm_format,
+                                           change={'Variables': ['bld_CO2-emissions_appliances'],
+                                                   'Categories1': ['non-residential', 'residential']},
+                                           units={'bld_CO2-emissions_appliances': 'Mt'})
 
-    DM_emissions_appliances_out = {'emissions': dm_emissions_appliances}
+    DM_emissions_appliances_out = {'emissions': dm_em_appliances}
 
     return DM_emissions_appliances_out
 
@@ -1099,6 +1091,52 @@ def bld_district_heating_interface(DM_heat, write_xls=False):
 
     return dm_dhg
 
+def bld_power_interface(dm_appliances, dm_energy, dm_fuel, dm_light_heat):
+
+    dm_light_heat.append(dm_appliances, dim='Variables')  # append appliances
+    dm_light_heat.append(dm_fuel, dim='Variables')  # append hot-water
+    dm_light_heat.deepen_twice()
+
+    # space-cooling to separate dm
+    dm_cooling = dm_light_heat.filter({'Categories2': ['space-cooling']})
+    dm_light_heat.drop(col_label='space-cooling', dim='Categories2')
+
+    # split space-heating and heatpumps
+    dm_energy.deepen_twice()
+    dm_heating = dm_energy.filter({'Categories2': ['space-heating']})
+    dm_heatpumps = dm_energy.filter({'Categories2': ['heatpumps']})
+
+    DM_pow = {
+        'appliance': dm_light_heat,
+        'space-heating': dm_heating,
+        'heatpump': dm_heatpumps,
+        'cooling': dm_cooling
+    }
+    return DM_pow
+
+def bld_emissions_interface(dm_appliances, DM_energy):
+
+    dm_emissions_bld = DM_energy['heat-emissions-by-bld']
+    dm_emissions_bld.rename_col('bld_CO2-emissions', 'bld_emissions-CO2', dim='Variables')
+
+    dm_emissions_fuel = DM_energy['heat-emissions-by-fuel']
+    dm_emissions_fuel.rename_col('bld_CO2-emissions', 'bld_emissions-CO2', dim='Variables')
+
+    dm_appliances.rename_col('bld_CO2-emissions_appliances', 'bld_residential-emissions-CO2', dim='Variables')
+
+    # ! FIXME: emission interface to be changed so that the following is not needed
+    dm_appliances.rename_col('non-residential', 'non_appliances', dim='Categories1')
+    dm_appliances.rename_col('residential', 'appliances', dim='Categories1')
+
+    dm_emissions_bld = dm_emissions_bld.flatten()
+    dm_emissions_fuel = dm_emissions_fuel.flatten()
+    dm_appliances = dm_appliances.flatten()
+
+    dm_emissions_bld.append(dm_emissions_fuel, dim='Variables')
+    dm_emissions_bld.append(dm_appliances, dim='Variables')
+
+    return dm_emissions_bld
+
 
 def buildings(lever_setting, years_setting, interface=Interface()):
 
@@ -1149,6 +1187,15 @@ def buildings(lever_setting, years_setting, interface=Interface()):
     # 'District-heating' module interface
     dm_dhg = bld_district_heating_interface(DM_energy_out['district-heating'], write_xls=False)
     interface.add_link(from_sector='buildings', to_sector='district-heating', dm=dm_dhg)
+
+    DM_pow = bld_power_interface(DM_appliances_out['power'], DM_energy_out['power'], DM_fuel_switch_out['power'], DM_light_heat_out['power'])
+    interface.add_link(from_sector='buildings', to_sector='power', dm=DM_pow)
+
+    dm_emissions = bld_emissions_interface(DM_emissions_appliances_out['emissions'], DM_energy_out['emissions'])
+    interface.add_link(from_sector='buildings', to_sector='emissions', dm=dm_emissions)
+
+    # !FIXME do interface buildings to industry
+    # !FIXME do interface buildings to agriculture
 
     dm_power = DM_appliances_out['power']
     dm_power.append(DM_energy_out['power'], dim='Variables')
