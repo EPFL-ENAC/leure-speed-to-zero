@@ -196,7 +196,7 @@ def database_from_csv_to_datamatrix():
 
     # other transport
     tra_oth = ['2W-EV', '2W-FCEV', '2W-ICE', '2W-PHEV', 'bus-EV', 'bus-FCEV', 'bus-ICE', 'bus-PHEV',
-               'other-planes', 'other-ships', 'other-subways', 'other-trains']
+               'other-planes', 'other-ships', 'other-trains']
     find = [".*" + i + ".*" for i in tra_oth]
     cdm_temp = cdm_const.filter_w_regex({"Variables": "|".join(find)})
     cdm_temp = cdm_temp.filter_w_regex({"Variables": "^((?!batveh).)*$"})
@@ -358,37 +358,14 @@ def rename_interfaces(DM_interface):
     return DM_interface
 
 
-def product_demand(DM_minerals, DM_interface, CDM_const):
+def product_demand(DM_minerals, dm_bld, dm_str, DM_tra, CDM_const):
     # get fxa
     DM_fxa = DM_minerals['fxa']
 
     # get datamatrixes
-    dm_tra = DM_interface["transport"]
-    dm_bld = DM_interface["buildings"]
-    dm_str = DM_interface["storage"]
+    dm_tra_veh = DM_tra['tra_veh']
+    dm_infra = DM_tra['tra_infra']
 
-    #####################
-    ##### TRANSPORT #####
-    #####################
-
-    # make 2020 as mean of before and after for subways, planes, ships, trains
-    idx = dm_tra.idx
-    variabs = ["tra_other-subways", "tra_other-planes", "tra_other-ships", "tra_other-trains"]
-    for i in variabs:
-        dm_tra.array[:, idx[2020], idx[i]] = (dm_tra.array[:, idx[2015], idx[i]] + \
-                                              dm_tra.array[:, idx[2025], idx[i]]) / 2
-    del idx, variabs
-
-    # demand for vehicles [num]
-    tra_veh = ['HDVH-EV', 'HDVH-FCEV', 'HDVH-ICE', 'HDVH-PHEV', 'HDVL-EV', 'HDVL-FCEV',
-               'HDVL-ICE', 'HDVL-PHEV', 'HDVM-EV', 'HDVM-FCEV', 'HDVM-ICE', 'HDVM-PHEV', 'LDV-EV', 'LDV-FCEV',
-               'LDV-ICE', 'LDV-PHEV',
-               '2W-EV', '2W-FCEV', '2W-ICE', '2W-PHEV', 'bus-EV', 'bus-FCEV', 'bus-ICE', 'bus-PHEV',
-               'other-planes', 'other-ships', 'other-subways', 'other-trains']
-    find = ["tra_" + i for i in tra_veh]
-    dm_tra_veh = dm_tra.filter(selected_cols={"Variables": find})
-    dm_tra_veh.deepen()
-    dm_tra_veh.rename_col(col_in="tra", col_out="product-demand", dim="Variables")
     # note that in dm_tra_veh.idx now product-demand appears as last, but this is fine as the order of idx is not important, what's important
     # is the value of the key
 
@@ -427,72 +404,44 @@ def product_demand(DM_minerals, DM_interface, CDM_const):
     # get kWh from constants
     cdm_temp = CDM_const["batveh"]
 
-    # get transport and electronics variables which correspond to the constants
+    # Compute battery kwh for electronics
+    cdm_electronics = cdm_temp.filter_w_regex({'Categories1': 'electronics.*'})
+    dm_electr_battery = dm_electr.filter({'Categories1': cdm_electronics.col_labels['Categories1']})
+    ay_battery_electronics = dm_electr_battery.array * cdm_electronics.array[np.newaxis, np.newaxis, ...]
+    dm_electr_battery = DataMatrix.based_on(ay_battery_electronics, format=dm_electr_battery,
+                                            change={'Variables': ['product-demand']}, units={'product-demand': 'kWh'})
+    # sum all categories together
+    dm_electr_battery.groupby({'electronics-battery': '.*'}, dim='Categories1', regex=True, inplace=True)
+    del cdm_electronics, ay_battery_electronics
 
-    cdm_variabs = cdm_temp.col_labels["Categories1"]
-    dm_tra_veh_variabs = dm_tra_veh.col_labels["Categories1"]
-    dm_electr_variabs = dm_electr.col_labels["Categories1"]
+    # Compute battery kwh for electronics
+    cdm_temp.drop(col_label='electronics', dim='Categories1')
+    dm_veh_battery = dm_tra_veh.filter({'Categories1': cdm_temp.col_labels['Categories1']})
+    ay_battery_veh = dm_veh_battery.array * cdm_temp.array[np.newaxis, np.newaxis, ...]
+    dm_veh_battery = DataMatrix.based_on(ay_battery_veh, format=dm_veh_battery,
+                                         change={'Variables': ['product-demand']}, units={'product-demand': 'kWh'})
+    # sum all categories together
+    dm_veh_battery.groupby({'transport-battery': '.*'}, dim='Categories1', regex=True, inplace=True)
+    del ay_battery_veh, cdm_temp
 
-    dm_tra_veh_variabs = np.array(dm_tra_veh_variabs)[[i in cdm_variabs for i in dm_tra_veh_variabs]].tolist()
-    dm_electr_variabs = np.array(dm_electr_variabs)[[i in cdm_variabs for i in dm_electr_variabs]].tolist()
+    # join transport batteries and electronics batteries
+    dm_battery.append(dm_veh_battery, dim='Categories1')
+    dm_battery.append(dm_electr_battery, dim='Categories1')
 
-    # put them together
-    dm_temp = dm_tra_veh.filter({"Categories1": dm_tra_veh_variabs})
-    dm_temp2 = dm_electr.filter({"Categories1": dm_electr_variabs})
-
-    dm_temp.append(dm_temp2, dim="Categories1")
-
-    # sort
-    dm_temp.sort(dim="Categories1")
-    cdm_temp.sort(dim="Categories1")
-
-    # multiply demand of product (item) and kWh
-    arr_temp = dm_temp.array * cdm_temp.array[np.newaxis, np.newaxis, ...]
-    dm_temp.add(arr_temp, dim="Variables", col_label="battery_demand", unit="kWh")
-
-    # split between transport and electronics
-    dm_temp_tra = dm_temp.filter({"Categories1": dm_tra_veh_variabs})
-    dm_temp_tra = dm_temp_tra.filter({"Variables": ["battery_demand"]})
-
-    dm_temp_electr = dm_temp.filter({"Categories1": dm_electr_variabs})
-    dm_temp_electr = dm_temp_electr.filter({"Variables": ["battery_demand"]})
-
-    # sum and put in dm_battery
-    arr_temp = np.nansum(dm_temp_tra.array, axis=-1, keepdims=True)
-    dm_battery.add(arr_temp, dim="Categories1", col_label="transport-battery")
-
-    arr_temp = np.nansum(dm_temp_electr.array, axis=-1, keepdims=True)
-    dm_battery.add(arr_temp, dim="Categories1", col_label="electronics-battery")
-
-    # sort
-    dm_battery.sort(dim="Categories1")
-
-    # clean
-    del arr_temp, cdm_temp, cdm_variabs, dm_electr_variabs, dm_temp, dm_temp2, dm_temp_electr, dm_temp_tra, \
-        dm_tra_veh_variabs, i
 
     ##########################
     ##### INFRASTRUCTURE #####
     ##########################
 
-    # demand for infrastructure [km]
-    tra_inf = ['infra-rail', 'infra-road', 'infra-trolley-cables']
-    find = ["tra_" + i for i in tra_inf]
-    dm_infra = dm_tra.filter(selected_cols={"Variables": find})
-
     # get infra in bld
-    bld_infra = ['infra-pipe']
-    find = ["bld_" + i for i in bld_infra]
-    dm_infra_temp = dm_bld.filter({"Variables": find})
-    dm_infra_temp.rename_col_regex(str1="bld", str2="tra", dim="Variables")
+    # !FIXME: move this to buildings
+    dm_infra_temp = dm_bld.filter({"Variables": ['bld_infra-pipe']})
+    dm_infra_temp.rename_col_regex(str1="bld", str2="product-demand", dim="Variables")
+    dm_infra_temp.deepen()
+    dm_infra.rename_col_regex('tra_new_infrastructure', 'product-demand', dim='Variables')
 
     # append
-    dm_infra.append(dm_infra_temp, dim="Variables")
-
-    # deepen
-    dm_infra.deepen()
-    dm_infra.rename_col(col_in="tra", col_out="product-demand", dim="Variables")
-
+    dm_infra.append(dm_infra_temp, dim="Categories1")
     del dm_infra_temp
 
     ##############################
@@ -579,28 +528,24 @@ def product_demand(DM_minerals, DM_interface, CDM_const):
                  "construction": dm_constr,
                  "energy": dm_energy}
 
-    # clean
-    del dm_tra_veh, dm_electr, dm_battery, dm_infra, dm_domapp, dm_constr, dm_energy
-
     # return
     return DM_demand
 
 
-def product_import(DM_interface):
-    # get datamatrixes
-    dm_ind = DM_interface["industry"]
+def product_import(dm_ind):
 
     # get imports and rename
     dm_import = dm_ind.filter_w_regex({"Variables": ".*import.*"})
     dm_import.rename_col_regex(str1="_product-net-import", str2="", dim="Variables")
 
     # add net imports for categories of vehicles we do not have
-    variabs = ["LDV-ICE", "HDVL-ICE", "other-trains", "LDV-ICE", "LDV-ICE", "LDV-ICE", "LDV-ICE", "HDVL-ICE",
+    # !FIXME: this categories correspondance is very odd
+    variabs = ["LDV-ICE", "HDVL-ICE", "LDV-ICE", "LDV-ICE", "LDV-ICE", "LDV-ICE", "HDVL-ICE",
                "HDVL-ICE",
                "HDVL-ICE", "HDVL-ICE", "HDVL-ICE", "HDVL-ICE", "HDVL-ICE", "HDVL-ICE", "HDVL-ICE", "HDVL-ICE",
                "HDVL-ICE", "HDVL-ICE"]
     variabs = ["ind_" + i for i in variabs]
-    variabs_new = ["LDV-PHEV", "HDVL-PHEV", "other-subways", "2W-EV", "2W-ICE", "2W-FCEV", "2W-PHEV", "bus-EV",
+    variabs_new = ["LDV-PHEV", "HDVL-PHEV", "2W-EV", "2W-ICE", "2W-FCEV", "2W-PHEV", "bus-EV",
                    "bus-ICE",
                    "bus-FCEV", "bus-PHEV", "HDVM-EV", "HDVM-ICE", "HDVM-FCEV", "HDVM-PHEV", "HDVH-EV", "HDVH-ICE",
                    "HDVH-FCEV", "HDVH-PHEV"]
@@ -629,16 +574,15 @@ def product_demand_split(DM_demand, dm_import, CDM_const):
     dm_demand_split_share = dm_import.copy()
 
     # product indirect demand
-    name_old = dm_demand_split_share.col_labels["Variables"]
-    name_new = [i + "_indir" for i in name_old]
-    for i in range(len(name_old)):
-        dm_demand_split_share.rename_col(col_in=name_old[i], col_out=name_new[i], dim="Variables")
-
-    # deepen
-    dm_demand_split_share.deepen_twice()
+    dm_demand_split_share.deepen()
     dm_demand_split_share.rename_col(col_in="ind", col_out="product-demand-split-share", dim="Variables")
+    # Add a category 'indir'
+    dm_demand_split_share.array = dm_demand_split_share.array[..., np.newaxis]
+    dm_demand_split_share.idx['indir'] = 0
+    dm_demand_split_share.col_labels['Categories2'] = ['indir']
+    dm_demand_split_share.dim_labels.append('Categories2')
 
-    # product net export
+    # product net export = - indir
     arr_temp = -dm_demand_split_share.array
     dm_demand_split_share.add(arr_temp, dim="Categories2", col_label="exp", unit="%")
 
@@ -662,7 +606,7 @@ def product_demand_split(DM_demand, dm_import, CDM_const):
     # note: careful that here sorts first the variables with cap letters
 
     # clean
-    del arr_temp, cdm_temp, i, idx, name_new, name_old
+    del arr_temp, cdm_temp, idx
 
     #################
     ##### UNITS #####
@@ -682,7 +626,7 @@ def product_demand_split(DM_demand, dm_import, CDM_const):
 
         # add split in unit as a variable
         dm_demand_split_temp.add(arr_temp, dim="Variables",
-                                 col_label="product-demand-split-unit", unit=dm_demand_temp.units["product-demand"])
+                                 col_label="product-demand-split-unit", unit=dm_demand_temp.units['product-demand'])
 
         # drop product demand split share
         dm_demand_split_temp.drop(dim="Variables", col_label=["product-demand-split-share"])
@@ -886,7 +830,7 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
 
     # get other vehicles
     tra_oth = ['2W-EV', '2W-FCEV', '2W-ICE', '2W-PHEV', 'bus-EV', 'bus-FCEV', 'bus-ICE', 'bus-PHEV',
-               'other-planes', 'other-ships', 'other-subways', 'other-trains']
+               'other-planes', 'other-ships', 'other-trains']
 
     # get product demand split unit
     dm_temp = DM_demand_split["vehicles"]
@@ -1933,9 +1877,23 @@ def simulate_lifestyles_to_minerals_input():
 
 
 def simulate_transport_to_minerals_input():
-    dm_tra = simulate_input(from_sector="transport", to_sector="minerals")
 
-    return dm_tra
+    f = "../_database/data/xls/All-Countries-interface_from-transport-to-minerals.xlsx"
+    df = pd.read_excel(f)
+    dm_tra = DataMatrix.create_from_df(df, num_cat=0)
+
+    # demand for infrastructure [km]
+    dm_tra_infra = dm_tra.filter_w_regex({"Variables": 'tra_new_infrastructure'})
+    dm_tra_infra.deepen()
+
+    dm_tra_veh = dm_tra.filter_w_regex({'Variables': 'product-demand'})
+    dm_tra_veh.deepen()
+
+    DM_tra = {
+        'tra_infra': dm_tra_infra,
+        'tra_veh': dm_tra_veh
+    }
+    return DM_tra
 
 
 def simulate_agriculture_to_minerals_input():
@@ -2000,9 +1958,21 @@ def minerals(interface=Interface(), calibration=False):
         DM_interface["lifestyles"] = simulate_lifestyles_to_minerals_input()
 
     if interface.has_link(from_sector='transport', to_sector='minerals'):
-        DM_interface["transport"] = interface.get_link(from_sector='transport', to_sector='minerals')
+        DM_tra = interface.get_link(from_sector='transport', to_sector='minerals')
     else:
-        DM_interface["transport"] = simulate_transport_to_minerals_input()
+        DM_tra = simulate_transport_to_minerals_input()
+        for i in DM_tra.keys():
+            DM_tra[i] = DM_tra[i].filter({'Country': cntr_list})
+
+    # ! FIXME computing 2020 as an average
+    # make 2020 as mean of before and after for subways, planes, ships, trains
+    dm_tra_veh = DM_tra['tra_veh']
+    idx = dm_tra_veh.idx
+    cat = ["other-planes", "other-ships", "other-trains"]
+    for i in cat:
+        dm_tra_veh.array[:, idx[2020], :, idx[i]] = (dm_tra_veh.array[:, idx[2015], :, idx[i]] + \
+                                                     dm_tra_veh.array[:, idx[2025], :, idx[i]]) / 2
+    del idx, cat
 
     if interface.has_link(from_sector='agriculture', to_sector='minerals'):
         DM_interface["agriculture"] = interface.get_link(from_sector='agriculture', to_sector='minerals')
@@ -2042,10 +2012,10 @@ def minerals(interface=Interface(), calibration=False):
         DM_interface[i] = DM_interface[i].filter({'Country': cntr_list})
 
     # get product demand
-    DM_demand = product_demand(DM_minerals, DM_interface, CDM_const)
+    DM_demand = product_demand(DM_minerals, DM_interface['buildings'], DM_interface['storage'], DM_tra, CDM_const)
 
     # get product import
-    dm_import = product_import(DM_interface)
+    dm_import = product_import(DM_interface['industry'])
 
     # get product demand split
     DM_demand_split = product_demand_split(DM_demand, dm_import, CDM_const)
