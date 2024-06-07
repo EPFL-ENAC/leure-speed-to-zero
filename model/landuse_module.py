@@ -267,8 +267,9 @@ def wood_workflow(dm_wood, dm_lgn, dm_ind):
 
     return dm_wood
 
+# CalculationLeaf LAND ALLOCATION
 def land_allocation_workflow(DM_land_use, dm_land_use):
-    # CalculationLeaf LAND ALLOCATION
+
 
     # TOTAL LAND DYNAMICS ----------------------------------------------------------------------------------------------
     # Appending cropland and grassland to DM_land_use FIXME use calibrated land
@@ -787,3 +788,21 @@ start = time.time()
 results_run = local_land_use_run()
 end = time.time()
 print(end-start)
+
+# WOOD
+    #dm_wood.datamatrix_plot({'Country': 'Austria', 'Variables': ['lus_fst_demand_rwe']})
+
+# LAND ALLOCATION
+    #DM_land_use['land_man_use'].datamatrix_plot({'Country': 'Austria', 'Variables': ['lus_land'],
+    #                                             'Categories1': ['grassland', 'cropland', 'forest']})
+
+
+# LAND MATRIX
+    #DM_land_use['land_man_gap'].datamatrix_plot({'Country': 'Austria', 'Variables': ['lus_land_initial-area_unfccc']})
+
+# FORESTRY
+    #DM_land_use['forestry'].datamatrix_plot({'Country': 'Austria', 'Variables': ['lus_forestry_biomass_faws_harvested']})
+
+# BIOMASS EMISSIONS
+    #DM_land_use['forestry'].datamatrix_plot({'Country': 'Austria', 'Variables': ['lus_emissions_emissions-CO2_forest_to_land_biomass_emissions-N2O',
+# 'lus_emissions_emissions-CO2_forest_to_land_biomass_emissions-CO2', 'lus_emissions_emissions-CO2_forest_to_land_biomass_emissions-CH4']})
