@@ -1210,13 +1210,13 @@ def bld_minerals_interface(DM_industry, write_xls):
         'bld-electr': dm_electronics
     }
 
-    return DM_industry
+    return DM_minerals
 
 
 def buildings(lever_setting, years_setting, interface=Interface()):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    buildings_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/buildings.pickle')
+    buildings_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/buildings.pickle')
     # Read data into workflow datamatrix dictionaries
     DM_floor_area, DM_energy, DM_appliances, DM_costs, DM_light_heat, DM_fuel_switch, cdm_const = read_data(buildings_data_file, lever_setting)
 
