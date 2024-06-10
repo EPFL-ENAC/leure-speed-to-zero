@@ -447,7 +447,7 @@ def district_heating(lever_setting, years_setting, interface=Interface()):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     district_heating_data_file = os.path.join(current_file_directory,
-                                              '../_database/data/datamatrix/district-heating.pickle')
+                                              '../_database/data/datamatrix/geoscale/district-heating.pickle')
     dm_dhg, dm_rr, dm_capacity, dm_price, cdm_emission, cdm_cost = read_data(district_heating_data_file, lever_setting)
     cntr_list = dm_capacity.col_labels['Country']
 
