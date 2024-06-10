@@ -1045,7 +1045,7 @@ def bld_emissions_appliances_workflow(DM_cooking_cooling, dm_hot_water, cdm_cons
     return DM_emissions_appliances_out
 
 
-def bld_district_heating_interface(DM_heat, write_xls=False):
+def bld_district_heating_interface(DM_heat, dm_pipe, write_xls=False):
 
     dm_heat_supply = DM_heat['heat-supply']
     # Split heat supply between residential and non-residential
@@ -1083,15 +1083,25 @@ def bld_district_heating_interface(DM_heat, write_xls=False):
     # dm_elec.append(dm_heat_demand_elec, dim='Categories1')
 
     dm_dhg = dm_heat_supply
+    # Pipe
+    dm_pipe.rename_col('bld_district-heating_new-pipe-need', 'bld_new_dh_pipes', dim='Variables')
+    dm_pipe.deepen()
+
+    DM_dhg = {
+        'heat': dm_dhg,
+        'pipe': dm_pipe
+    }
 
     if write_xls:
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        xls_file = 'buildings-to-district-heating.xlsx'
+        xls_file = 'All-Countries-interface_from-buildings-to-district-heating.xlsx'
         file_path = os.path.join(current_file_directory, '../_database/data/xls/', xls_file)
         df = dm_dhg.write_df()
+        df_pipe = dm_pipe.write_df()
+        df = pd.concat([df, df_pipe.drop(columns=['Country', 'Years'])], axis=1)
         df.to_excel(file_path, index=False)
 
-    return dm_dhg
+    return DM_dhg
 
 def bld_power_interface(dm_appliances, dm_energy, dm_fuel, dm_light_heat):
 
@@ -1186,7 +1196,6 @@ def bld_minerals_interface(DM_industry, write_xls):
     cols_out = ['dom-appliance-dishwasher', 'dom-appliance-dryer', 'dom-appliance-freezer', 'dom-appliance-fridge',
                 'dom-appliance-wmachine', 'electronics-computer', 'electronics-phone', 'electronics-tv']
     dm_appliances.rename_col(cols_in, cols_out, dim='Categories1')
-    dm_appliances.rename_col('bld_product-demand', 'product-demand', dim='Variables')
     dm_electronics = dm_appliances.filter_w_regex({'Categories1': 'electronics.*'}, inplace=False)
     dm_appliances.filter_w_regex({'Categories1': 'dom-appliance.*'}, inplace=True)
 
@@ -1250,9 +1259,16 @@ def buildings(lever_setting, years_setting, interface=Interface()):
                                                                     DM_fuel_switch_out['wf_emissions_appliances'],
                                                                     cdm_const)
 
+    # TPE
+    df = DM_energy_out['TPE']['floor-area_energy-demand'].write_df()
+    df2 = DM_energy_out['TPE']['floor-area'].write_df()
+    df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
+
+    results_run = df
+
     # 'District-heating' module interface
-    dm_dhg = bld_district_heating_interface(DM_energy_out['district-heating'], write_xls=False)
-    interface.add_link(from_sector='buildings', to_sector='district-heating', dm=dm_dhg)
+    DM_dhg = bld_district_heating_interface(DM_energy_out['district-heating'], DM_costs_out['industry'].copy(), write_xls=True)
+    interface.add_link(from_sector='buildings', to_sector='district-heating', dm=DM_dhg)
 
     DM_pow = bld_power_interface(DM_appliances_out['power'], DM_energy_out['power'], DM_fuel_switch_out['power'], DM_light_heat_out['power'])
     interface.add_link(from_sector='buildings', to_sector='power', dm=DM_pow)
@@ -1263,24 +1279,10 @@ def buildings(lever_setting, years_setting, interface=Interface()):
     DM_industry = bld_industry_interface(DM_floor_out['industry'], DM_appliances_out['industry'], DM_costs_out['industry'])
     interface.add_link(from_sector='buildings', to_sector='industry', dm=DM_industry)
 
-    DM_minerals = bld_minerals_interface(DM_industry)
+    DM_minerals = bld_minerals_interface(DM_industry, write_xls=False)
     interface.add_link(from_sector='buildings', to_sector='minerals', dm=DM_minerals)
     # !FIXME do interface buildings to minerals
     # !FIXME do interface buildings to agriculture
-
-    dm_power = DM_appliances_out['power']
-    dm_power.append(DM_energy_out['power'], dim='Variables')
-    dm_power.append(DM_fuel_switch_out['power'], dim='Variables')
-    dm_power.append(DM_light_heat_out['power'], dim='Variables')
-
-    #df = dm_power.write_df()
-    #df.to_excel('buildings-to-power.xlsx')
-
-    df = DM_energy_out['TPE']['floor-area_energy-demand'].write_df()
-    df2 = DM_energy_out['TPE']['floor-area'].write_df()
-    df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
-
-    results_run = df
 
     return results_run
 
