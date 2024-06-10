@@ -502,11 +502,11 @@ def local_emissions_run():
     return results_run
 
 # run local
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/emissions_module.py"
+#__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/emissions_module.py"
 # database_from_csv_to_datamatrix()
-import time
-start = time.time()
-results_run = local_emissions_run()
-end = time.time()
-print(end-start)
+# import time
+# start = time.time()
+# #results_run = local_emissions_run()
+# end = time.time()
+#print(end-start)
 

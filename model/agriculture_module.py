@@ -2046,7 +2046,7 @@ def agriculture_local_run():
 # database_from_csv_to_datamatrix()
 
 # Run the code in local
-results_run = agriculture_local_run()
+# results_run = agriculture_local_run()
 
 
 

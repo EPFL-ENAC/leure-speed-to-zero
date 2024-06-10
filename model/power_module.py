@@ -365,7 +365,7 @@ def simulate_buildings_to_power_input():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     f = os.path.join(current_file_directory, "../_database/data/xls/"
                                              "All-Countries-interface_from-buildings-to-power.xlsx")
-    df = pd.read_excel(f, sheet_name="default")
+    df = pd.read_excel(f)
     dm = DataMatrix.create_from_df(df, num_cat=2)
 
     # Space heating flow:
@@ -382,7 +382,6 @@ def simulate_buildings_to_power_input():
     }
 
     return DM_bld
-
 #######################################################################################################################
 # LocalInterfaces - Transport
 #######################################################################################################################
@@ -951,5 +950,5 @@ def local_power_run():
 
     return results_run
 
-
-results_run = local_power_run()
+# database_from_csv_to_datamatrix()
+# results_run = local_power_run()
