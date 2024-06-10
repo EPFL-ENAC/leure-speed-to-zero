@@ -7,6 +7,7 @@ import pickle  # read/write the data in pickle
 import json  # read the lever setting
 import os  # operating system (e.g., look for workspace)
 import pandas as pd
+import time
 
 # Import Class
 from model.common.data_matrix_class import DataMatrix  # Class for the model inputs
@@ -18,6 +19,7 @@ from model.common.io_database import read_database, read_database_fxa  # read fu
 from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups,\
     update_interaction_constant_from_file
 from model.common.hourly_data_functions import hourly_data_reader
+from model.common.interface_class import Interface
 
 #######################################################################################################################
 # ModelSetting - Power
@@ -410,7 +412,12 @@ def simulate_industry_to_power_input():
     dm_ind_electricity = dm.filter_w_regex({'Variables': 'ind_energy-demand_electricity'})
     dm_ind_hydrogen = dm.filter_w_regex({'Variables': 'ind_energy-demand_hydrogen'})
 
-    return dm_ind_electricity, dm_ind_hydrogen
+    DM_industry = {
+        'electricity': dm_ind_electricity,
+        'hydrogen': dm_ind_hydrogen
+    }
+
+    return DM_industry
 
 #######################################################################################################################
 # LocalInterfaces - Ammonia
@@ -427,7 +434,11 @@ def simulate_ammonia_to_power_input():
     dm_amm_electricity = dm.filter_w_regex({'Variables': 'amm_energy-demand_electricity'})
     dm_amm_hydrogen = dm.filter_w_regex({'Variables': 'amm_energy-demand_hydrogen'})
 
-    return dm_amm_electricity, dm_amm_hydrogen
+    DM_ammonia = {
+        'electricity': dm_amm_electricity,
+        'hydrogen': dm_amm_hydrogen
+    }
+    return DM_ammonia
 
 #######################################################################################################################
 # LocalInterfaces - Agriculture
@@ -881,55 +892,79 @@ def storage_workflow(dm_hourly_demand, dm_hourly_production):
 # CoreModule - Power
 #######################################################################################################################
 
-def power(lever_setting, years_setting):
+def power(lever_setting, years_setting, interface=Interface()):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
+
     power_data_file = os.path.join(current_file_directory,
                                         '../_database/data/datamatrix/geoscale/power.pickle')
-    dm_capacity, dm_ccus, cdm_const, DM_production_profiles, DM_demand_profiles = read_data(power_data_file,lever_setting)
-    dm_climate = simulate_climate_to_power_input()
-    dm_agr_electricity = simulate_agriculture_to_power_input()
-    DM_bld = simulate_buildings_to_power_input()
-    dm_ind_electricity, dm_ind_hydrogen = simulate_industry_to_power_input()
-    dm_amm_electricity, dm_amm_hydrogen = simulate_ammonia_to_power_input()
-    dm_tra = simulate_transport_to_power_input()
+    dm_capacity, dm_ccus, cdm_const, DM_production_profiles, DM_demand_profiles = read_data(power_data_file, lever_setting)
+
+    cntr_list = dm_capacity.col_labels['Country']
+
+    if interface.has_link(from_sector='climate', to_sector='power'):
+        dm_climate = interface.get_link(from_sector='climate', to_sector='power')
+    else:
+        dm_climate = simulate_climate_to_power_input()
+        dm_climate.filter({'Country': cntr_list}, inplace=True)
+
+    if interface.has_link(from_sector='agriculture', to_sector='power'):
+        dm_agr_electricity = interface.get_link(from_sector='agriculture', to_sector='power')
+    else:
+        dm_agr_electricity = simulate_agriculture_to_power_input()
+        dm_agr_electricity.filter({'Country': cntr_list}, inplace=True)
+
+    if interface.has_link(from_sector='buildings', to_sector='power'):
+        DM_bld = interface.get_link(from_sector='buildings', to_sector='power')
+    else:
+        DM_bld = simulate_buildings_to_power_input()
+        for key in DM_bld.keys():
+            DM_bld[key].filter({'Country': cntr_list}, inplace=True)
+
+    if interface.has_link(from_sector='industry', to_sector='power'):
+        DM_industry = interface.get_link(from_sector='industry', to_sector='power')
+    else:
+        DM_industry = simulate_industry_to_power_input()
+        for key in DM_industry.keys():
+            DM_industry[key].filter({'Country': cntr_list}, inplace=True)
+
+    if interface.has_link(from_sector='ammonia', to_sector='power'):
+        DM_ammonia = interface.get_link(from_sector='ammonia', to_sector='power')
+    else:
+        DM_ammonia = simulate_ammonia_to_power_input()
+        for key in DM_ammonia.keys():
+            DM_ammonia[key].filter({'Country': cntr_list}, inplace=True)
+
+    if interface.has_link(from_sector='transport', to_sector='power'):
+        dm_tra = interface.get_link(from_sector='ammonia', to_sector='power')
+    else:
+        dm_tra = simulate_transport_to_power_input()
+        dm_tra.filter({'Country': cntr_list}, inplace=True)
 
     #Tuto: filter country in interfaces
-
-    # filter local interface country list (matrix)
-    cntr_list = dm_capacity.col_labels['Country']
-    dm_climate = dm_climate.filter({'Country': cntr_list})
-    dm_agr_electricity = dm_agr_electricity.filter({'Country': cntr_list})
-    dm_ind_electricity = dm_ind_electricity.filter({'Country': cntr_list})
-    dm_ind_hydrogen = dm_ind_hydrogen.filter({'Country': cntr_list})
-    dm_amm_electricity = dm_amm_electricity.filter({'Country': cntr_list})
-    dm_amm_hydrogen = dm_amm_hydrogen.filter({'Country': cntr_list})
-    dm_tra = dm_tra.filter({'Country': cntr_list})
 
     # filter local interface country list (dictionary)
     for key in DM_bld.keys():
         DM_bld[key] = DM_bld[key].filter({'Country': cntr_list})
 
+    start1 = time.time()
     # To send to TPE (result run)
     dm_capacity, dm_fb_capacity, dm_production_np, dm_production_p =\
         yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const)
     dm_hourly_production = hourly_production_workflow(dm_production_np, dm_production_p, DM_production_profiles)
 
-    DM_yearly_demand = \
-        yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_agr_electricity, dm_tra,dm_ind_hydrogen, dm_amm_hydrogen)
+    # TUTO give dm_ev_hourly as input to yearly_demand_workflow
+    DM_yearly_demand = yearly_demand_workflow(DM_bld, DM_industry['electricity'], DM_ammonia['electricity'],
+                                              dm_agr_electricity, dm_tra, DM_industry['hydrogen'], DM_ammonia['hydrogen'])
+
     dm_hourly_demand = hourly_demand_workflow(DM_yearly_demand, DM_demand_profiles)
 
-    # TUTO give dm_ev_hourly as input to yearly_demand_workflow
-    DM_yearly_demand = yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity,
-                                                             dm_agr_electricity, dm_tra, dm_ind_hydrogen,
-                                                             dm_amm_hydrogen)# input fonctions
-
-    dm_hourly_equilibrium = storage_workflow(dm_hourly_demand,dm_hourly_production)
+    dm_hourly_equilibrium = storage_workflow(dm_hourly_demand, dm_hourly_production)
 
     # same number of arg than the return function
 
     # concatenate all results to df
-
     results_run = dm_capacity
+
     return results_run
 
 
@@ -947,6 +982,7 @@ def local_power_run():
     filter_geoscale(global_vars)
 
     results_run = power(lever_setting, years_setting)
+
 
     return results_run
 
