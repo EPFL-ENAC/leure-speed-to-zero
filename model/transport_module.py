@@ -948,9 +948,8 @@ def tra_industry_interface(dm_freight_new_veh, dm_passenger_new_veh, dm_infrastr
     dm_product_demand.append(dm_freight_new_veh, dim='Variables')  # merge passenger and freight
     dm_product_demand.groupby({'tra_product-demand': '.*'}, dim='Variables', regex=True, inplace=True)
     # Rename aviation, marine, rail to planes, ships, trains
-    dm_product_demand.rename_col('aviation', 'planes', dim='Categories1')
-    dm_product_demand.rename_col('marine', 'ships', dim='Categories1')
-    dm_product_demand.rename_col('rail', 'trains', dim='Categories1')
+    dm_product_demand.rename_col(['aviation', 'marine', 'rail'], ['planes', 'ships', 'trains'], dim='Categories1')
+
 
     # Append cars and trucks
     dm_product_demand.append(dm_cars, dim='Categories1')
@@ -958,10 +957,14 @@ def tra_industry_interface(dm_freight_new_veh, dm_passenger_new_veh, dm_infrastr
 
     dm_product_demand.sort(dim='Categories1')
 
+    dm_infra_ind = dm_infrastructure.copy()
+    dm_infra_ind.rename_col_regex('infra-', '', dim='Categories1')
+    dm_infra_ind.rename_col('tra_new_infrastructure', 'tra_product-demand', dim='Variables')
+
     # ! FIXME add infrastructure in km
     DM_industry = {
         'tra-veh': dm_product_demand,
-        'tra-infra': dm_infrastructure
+        'tra-infra': dm_infra_ind
     }
     return DM_industry
 
