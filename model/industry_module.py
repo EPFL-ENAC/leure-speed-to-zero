@@ -1588,6 +1588,7 @@ def industry_minerals_interface(DM_material_production, DM_production, DM_ots_ft
     dm_min.append(DM_ots_fts["product-net-import"].filter(
         {"Variables" : ['ind_product-net-import'],
          "Categories1" : ['new-dhg-pipe']}).flatten(), "Variables")
+    dm_min.rename_col("ind_product-net-import_new-dhg-pipe", "ind_product-net-import_infra-pipe", "Variables")
     dm_min.sort("Variables")
 
     # df_min
@@ -1948,11 +1949,11 @@ def local_industry_run():
     return results_run
 
 # run local
-# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
 # database_from_csv_to_datamatrix()
-# start = time.time()
-# results_run = local_industry_run()
-# end = time.time()
-# print(end-start)
+start = time.time()
+results_run = local_industry_run()
+end = time.time()
+print(end-start)
 
 
