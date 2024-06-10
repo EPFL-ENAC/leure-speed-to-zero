@@ -1267,7 +1267,7 @@ def buildings(lever_setting, years_setting, interface=Interface()):
     results_run = df
 
     # 'District-heating' module interface
-    DM_dhg = bld_district_heating_interface(DM_energy_out['district-heating'], DM_costs_out['industry'].copy(), write_xls=True)
+    DM_dhg = bld_district_heating_interface(DM_energy_out['district-heating'], DM_costs_out['industry'].copy(), write_xls=False)
     interface.add_link(from_sector='buildings', to_sector='district-heating', dm=DM_dhg)
 
     DM_pow = bld_power_interface(DM_appliances_out['power'], DM_energy_out['power'], DM_fuel_switch_out['power'], DM_light_heat_out['power'])
@@ -1281,7 +1281,7 @@ def buildings(lever_setting, years_setting, interface=Interface()):
 
     DM_minerals = bld_minerals_interface(DM_industry, write_xls=False)
     interface.add_link(from_sector='buildings', to_sector='minerals', dm=DM_minerals)
-    # !FIXME do interface buildings to minerals
+
     # !FIXME do interface buildings to agriculture
 
     return results_run
