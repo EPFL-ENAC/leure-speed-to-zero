@@ -1836,7 +1836,8 @@ def simulate_lifestyles_to_minerals_input():
 
 def simulate_transport_to_minerals_input():
 
-    f = "../_database/data/xls/All-Countries-interface_from-transport-to-minerals.xlsx"
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(current_file_directory, "../_database/data/xls/All-Countries-interface_from-transport-to-minerals.xlsx")
     df = pd.read_excel(f)
     dm_tra = DataMatrix.create_from_df(df, num_cat=0)
 
