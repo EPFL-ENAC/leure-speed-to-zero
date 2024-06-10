@@ -1792,20 +1792,27 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     industry_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/industry.pickle')
     DM_fxa, DM_ots_fts, dm_cal, CDM_const = read_data(industry_data_file, lever_setting)
 
+    cntr_list = dm_cal.col_labels['Country']
+
     if interface.has_link(from_sector='transport', to_sector='industry'):
         DM_transport = interface.get_link(from_sector='transport', to_sector='industry')
     else:
         DM_transport = simulate_transport_to_industry_input()
+        for key in DM_transport.keys():
+            DM_transport[key].filter({'Country': cntr_list}, inplace=True)
 
     if interface.has_link(from_sector='lifestyles', to_sector='industry'):
         dm_lifestyles = interface.get_link(from_sector='lifestyles', to_sector='industry')
     else:
         dm_lifestyles = simulate_lifestyles_to_industry_input()
+        dm_lifestyles.filter({'Country': cntr_list}, inplace=True)
 
     if interface.has_link(from_sector='buildings', to_sector='industry'):
         DM_buildings = interface.get_link(from_sector='buildings', to_sector='industry')
     else:
         DM_buildings = simulate_buildings_to_industry_input()
+        for key in DM_buildings.keys():
+            DM_buildings[key].filter({'Country': cntr_list}, inplace=True)
 
     # get product import
     dm_imp = DM_ots_fts["product-net-import"]
@@ -1943,9 +1950,9 @@ def local_industry_run():
 # run local
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
 # database_from_csv_to_datamatrix()
-start = time.time()
-results_run = local_industry_run()
-end = time.time()
-print(end-start)
+# start = time.time()
+# results_run = local_industry_run()
+# end = time.time()
+# print(end-start)
 
 
