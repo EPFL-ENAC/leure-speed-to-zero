@@ -358,7 +358,7 @@ def rename_interfaces(DM_interface):
     return DM_interface
 
 
-def product_demand(DM_minerals, dm_bld, dm_str, DM_tra, CDM_const):
+def product_demand(DM_minerals, DM_buildings, dm_str, DM_tra, CDM_const):
     # get fxa
     DM_fxa = DM_minerals['fxa']
 
@@ -366,21 +366,13 @@ def product_demand(DM_minerals, dm_bld, dm_str, DM_tra, CDM_const):
     dm_tra_veh = DM_tra['tra_veh']
     dm_infra = DM_tra['tra_infra']
 
+    dm_infra_temp = DM_buildings['bld-pipe']
+    dm_constr = DM_buildings['bld-floor']
+    dm_domapp = DM_buildings['bld-appliance']
+    dm_electr = DM_buildings['bld-electr']
+
     # note that in dm_tra_veh.idx now product-demand appears as last, but this is fine as the order of idx is not important, what's important
     # is the value of the key
-
-    #######################
-    ##### ELECTRONICS #####
-    #######################
-
-    # filter
-    electr = ['electronics-computer', 'electronics-phone', 'electronics-tv']
-    find = ["bld_" + i for i in electr]
-    dm_electr = dm_bld.filter(selected_cols={"Variables": find})
-
-    # deepen
-    dm_electr.deepen()
-    dm_electr.rename_col(col_in="bld", col_out="product-demand", dim="Variables")
 
     #####################
     ##### BATTERIES #####
@@ -433,44 +425,10 @@ def product_demand(DM_minerals, dm_bld, dm_str, DM_tra, CDM_const):
     ##### INFRASTRUCTURE #####
     ##########################
 
-    # get infra in bld
-    # !FIXME: move this to buildings
-    dm_infra_temp = dm_bld.filter({"Variables": ['bld_infra-pipe']})
-    dm_infra_temp.rename_col_regex(str1="bld", str2="product-demand", dim="Variables")
-    dm_infra_temp.deepen()
     dm_infra.rename_col_regex('tra_new_infrastructure', 'product-demand', dim='Variables')
-
     # append
     dm_infra.append(dm_infra_temp, dim="Categories1")
-    del dm_infra_temp
 
-    ##############################
-    ##### DOMESTIC APPLIANCE #####
-    ##############################
-
-    # get domestic appliances in bld
-    domapp = ['dom-appliance-dishwasher', 'dom-appliance-dryer', 'dom-appliance-freezer',
-              'dom-appliance-fridge', 'dom-appliance-wmachine', ]
-    find = ["bld_" + i for i in domapp]
-    dm_domapp = dm_bld.filter({"Variables": find})
-
-    # deepen
-    dm_domapp.deepen()
-    dm_domapp.rename_col(col_in="bld", col_out="product-demand", dim="Variables")
-
-    ########################
-    ##### CONSTRUCTION #####
-    ########################
-
-    # get floor area
-    constr = ['floor-area-new-non-residential', 'floor-area-new-residential',
-              'floor-area-reno-non-residential', 'floor-area-reno-residential']
-    find = ["bld_" + i for i in constr]
-    dm_constr = dm_bld.filter({"Variables": find})
-
-    # deepen
-    dm_constr.deepen()
-    dm_constr.rename_col(col_in="bld", col_out="product-demand", dim="Variables")
 
     ##################
     ##### ENERGY #####
@@ -1921,9 +1879,84 @@ def simulate_storage_to_minerals_input():
 
 
 def simulate_buildings_to_minerals_input():
+
     dm = simulate_input(from_sector="buildings", to_sector="minerals")
 
-    return dm
+    dict_rename = {
+        'bld_appliance-new_comp': 'bld_electronics-computer',
+        'bld_appliance-new_dishwasher': 'bld_dom-appliance-dishwasher',
+        'bld_appliance-new_dryer': 'bld_dom-appliance-dryer',
+        'bld_appliance-new_freezer': 'bld_dom-appliance-freezer',
+        'bld_appliance-new_fridge': 'bld_dom-appliance-fridge',
+        'bld_appliance-new_phone': 'bld_electronics-phone',
+        'bld_appliance-new_tv': 'bld_electronics-tv',
+        'bld_appliance-new_wmachine': 'bld_dom-appliance-wmachine',
+        'bld_district-heating_new-pipe-need': 'bld_infra-pipe',
+        'bld_floor-area_new_non-residential': 'bld_floor-area-new-non-residential',
+        'bld_floor-area_new_residential': 'bld_floor-area-new-residential',
+        'bld_floor-area_reno_non-residential': 'bld_floor-area-reno-non-residential',
+        'bld_floor-area_reno_residential': 'bld_floor-area-reno-residential'
+    }
+
+    for k, v in dict_rename.items():
+        dm.rename_col(k, v, dim='Variables')
+
+    ##############################
+    ##### DOMESTIC APPLIANCE #####
+    ##############################
+
+    # get domestic appliances in bld
+    domapp = ['dom-appliance-dishwasher', 'dom-appliance-dryer', 'dom-appliance-freezer',
+              'dom-appliance-fridge', 'dom-appliance-wmachine', ]
+    find = ["bld_" + i for i in domapp]
+    dm_domapp = dm.filter({"Variables": find})
+
+    # deepen
+    dm_domapp.deepen()
+    dm_domapp.rename_col(col_in="bld", col_out="product-demand", dim="Variables")
+
+    #######################
+    ##### ELECTRONICS #####
+    #######################
+
+    # filter
+    electr = ['electronics-computer', 'electronics-phone', 'electronics-tv']
+    find = ["bld_" + i for i in electr]
+    dm_electr = dm.filter(selected_cols={"Variables": find})
+
+    # deepen
+    dm_electr.deepen()
+    dm_electr.rename_col(col_in="bld", col_out="product-demand", dim="Variables")
+
+    # get infra in bld
+    # !FIXME: move this to buildings
+    dm_infra_temp = dm.filter({"Variables": ['bld_infra-pipe']})
+    dm_infra_temp.rename_col_regex(str1="bld", str2="product-demand", dim="Variables")
+    dm_infra_temp.deepen()
+
+
+    ########################
+    ##### CONSTRUCTION #####
+    ########################
+
+    # get floor area
+    constr = ['floor-area-new-non-residential', 'floor-area-new-residential',
+              'floor-area-reno-non-residential', 'floor-area-reno-residential']
+    find = ["bld_" + i for i in constr]
+    dm_constr = dm.filter({"Variables": find})
+
+    # deepen
+    dm_constr.deepen()
+    dm_constr.rename_col(col_in="bld", col_out="product-demand", dim="Variables")
+
+    DM_buildings = {
+        'bld-pipe': dm_infra_temp,
+        'bld-floor': dm_constr,
+        'bld-appliance': dm_domapp,
+        'bld-electr': dm_electr
+    }
+
+    return DM_buildings
 
 
 def simulate_refinery_to_minerals_input():
@@ -1939,6 +1972,7 @@ def simulate_ccus_to_minerals_input():
 
 
 def minerals(interface=Interface(), calibration=False):
+
     # directories
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     minerals_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/minerals.pickle')
@@ -1990,9 +2024,11 @@ def minerals(interface=Interface(), calibration=False):
         DM_interface["storage"] = simulate_storage_to_minerals_input()
 
     if interface.has_link(from_sector='buildings', to_sector='minerals'):
-        DM_interface["buildings"] = interface.get_link(from_sector='buildings', to_sector='minerals')
+        DM_buildings = interface.get_link(from_sector='buildings', to_sector='minerals')
     else:
-        DM_interface["buildings"] = simulate_buildings_to_minerals_input()
+        DM_buildings = simulate_buildings_to_minerals_input()
+        for i in DM_buildings.keys():
+            DM_buildings[i] = DM_buildings[i].filter({'Country': cntr_list})
 
     if interface.has_link(from_sector='refinery', to_sector='minerals'):
         DM_interface["refinery"] = interface.get_link(from_sector='refinery', to_sector='minerals')
@@ -2012,7 +2048,7 @@ def minerals(interface=Interface(), calibration=False):
         DM_interface[i] = DM_interface[i].filter({'Country': cntr_list})
 
     # get product demand
-    DM_demand = product_demand(DM_minerals, DM_interface['buildings'], DM_interface['storage'], DM_tra, CDM_const)
+    DM_demand = product_demand(DM_minerals, DM_buildings, DM_interface['storage'], DM_tra, CDM_const)
 
     # get product import
     dm_import = product_import(DM_interface['industry'])
@@ -2045,6 +2081,7 @@ def minerals(interface=Interface(), calibration=False):
     # return
     # results_run = {"out1": df_tpe, "out2": "calibration_tbd", "out3" : df_tpe_relres}
     results_run = df_tpe
+
     return results_run
 
 
@@ -2063,9 +2100,9 @@ def local_minerals_run():
 # run local
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/minerals_module.py"
 # database_from_csv_to_datamatrix()
-import time
+# import time
 
-start = time.time()
-results_run = local_minerals_run()
-end = time.time()
-print(end - start)
+# start = time.time()
+# results_run = local_minerals_run()
+# end = time.time()
+# print(end - start)

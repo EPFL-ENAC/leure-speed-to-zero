@@ -719,7 +719,8 @@ def bld_appliances_workflow(DM_appliances):
 
     DM_appliance_out = {
         'wf_costs': dm_appliance.filter({'Variables': ['bld_appliance-new']}),
-        'power': dm_energy
+        'power': dm_energy,
+        'industry': dm_appliance.filter({'Variables': ['bld_appliance-new']})
     }
 
     return DM_appliance_out
@@ -774,6 +775,7 @@ def bld_costs_workflow(DM_costs, dm_district_heat_supply, dm_new_appliance, dm_f
         'cost-renovation_depth': dm_cost_renov_by_depth,
         'cost-appliances': dm_new_appliance.filter({'Variables': ['bld_appliances_costs']})
     }
+    DM_costs_out['industry'] = dm_other.filter({'Variables': ['bld_district-heating_new-pipe-need']})
 
     return DM_costs_out
 
@@ -1138,6 +1140,70 @@ def bld_emissions_interface(dm_appliances, DM_energy):
     return dm_emissions_bld
 
 
+def bld_industry_interface(DM_floor, dm_appliances, dm_pipes):
+    # Renovated wall + new floor area constructed
+    groupby_dict = {'floor-area-reno-residential': ['single-family-households', 'multi-family-households'],
+                    'floor-area-reno-non-residential': ['education', 'health', 'hotels', 'offices', 'other', 'trade']}
+    dm_reno = DM_floor['renovated-wall'].group_all(dim='Categories2', inplace=False)
+    dm_reno.groupby(groupby_dict, dim='Categories1', inplace=True, regex=False)
+    dm_reno.rename_col('bld_renovated-surface-area', 'bld_product-demand', dim='Variables')
+
+    groupby_dict = {'floor-area-new-residential': ['single-family-households', 'multi-family-households'],
+                    'floor-area-new-non-residential': ['education', 'health', 'hotels', 'offices', 'other', 'trade']}
+    dm_constructed = DM_floor['constructed-area']
+    dm_constructed.groupby(groupby_dict, dim='Categories1', inplace=True, regex=False)
+    dm_constructed.rename_col('bld_floor-area-constructed', 'bld_product-demand', dim='Variables')
+
+    dm_constructed.append(dm_reno, dim='Categories1')
+
+    # Pipes
+    dm_pipes.rename_col('bld_district-heating_new-pipe-need', 'bld_product-demand_new-dhg-pipe', dim='Variables')
+    dm_pipes.deepen()
+
+    # Appliances
+    dm_appliances.rename_col('bld_appliance-new', 'bld_product-demand', dim='Variables')
+    dm_appliances.rename_col('comp', 'computer', dim='Categories1')
+
+    DM_industry = {
+        'bld-pipe': dm_pipes,
+        'bld-floor': dm_constructed,
+        'bld-domapp': dm_appliances
+    }
+
+    return DM_industry
+
+
+def bld_minerals_interface(DM_industry, write_xls):
+    # Pipe
+    dm_pipe = DM_industry['bld-pipe']
+    dm_pipe.rename_col('bld_product-demand', 'product-demand', dim='Variables')
+    dm_pipe.rename_col('new-dhg-pipe', 'infra-pipe', dim='Categories1')
+
+    # Appliances
+    dm_appliances = DM_industry['bld-domapp']
+    dm_appliances.rename_col('bld_product-demand', 'product-demand', dim='Variables')
+    cols_in = ['dishwasher', 'dryer', 'freezer', 'fridge', 'wmachine', 'computer', 'phone', 'tv']
+    cols_out = ['dom-appliance-dishwasher', 'dom-appliance-dryer', 'dom-appliance-freezer', 'dom-appliance-fridge',
+                'dom-appliance-wmachine', 'electronics-computer', 'electronics-phone', 'electronics-tv']
+    dm_appliances.rename_col(cols_in, cols_out, dim='Categories1')
+    dm_appliances.rename_col('bld_product-demand', 'product-demand', dim='Variables')
+    dm_electronics = dm_appliances.filter_w_regex({'Categories1': 'electronics.*'}, inplace=False)
+    dm_appliances.filter_w_regex({'Categories1': 'dom-appliance.*'}, inplace=True)
+
+    # Floor
+    dm_floor = DM_industry['bld-floor']
+    dm_floor.rename_col('bld_product-demand', 'product-demand', dim='Variables')
+
+    DM_minerals = {
+        'bld-pipe': dm_pipe,
+        'bld-floor': dm_floor,
+        'bld-appliance': dm_appliances,
+        'bld-electr': dm_electronics
+    }
+
+    return DM_industry
+
+
 def buildings(lever_setting, years_setting, interface=Interface()):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -1194,7 +1260,12 @@ def buildings(lever_setting, years_setting, interface=Interface()):
     dm_emissions = bld_emissions_interface(DM_emissions_appliances_out['emissions'], DM_energy_out['emissions'])
     interface.add_link(from_sector='buildings', to_sector='emissions', dm=dm_emissions)
 
-    # !FIXME do interface buildings to industry
+    DM_industry = bld_industry_interface(DM_floor_out['industry'], DM_appliances_out['industry'], DM_costs_out['industry'])
+    interface.add_link(from_sector='buildings', to_sector='industry', dm=DM_industry)
+
+    DM_minerals = bld_minerals_interface(DM_industry)
+    interface.add_link(from_sector='buildings', to_sector='minerals', dm=DM_minerals)
+    # !FIXME do interface buildings to minerals
     # !FIXME do interface buildings to agriculture
 
     dm_power = DM_appliances_out['power']
