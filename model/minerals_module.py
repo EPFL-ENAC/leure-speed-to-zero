@@ -332,32 +332,6 @@ def read_data(data_file):
     # return
     return DM_minerals, CDM_const
 
-
-def rename_interfaces(DM_interface):
-    # files' names
-    current_file_directory = os.path.dirname(os.path.abspath(__file__))
-
-    # rename interfaces
-    filepath = os.path.join(current_file_directory, '../_database/data/csv/minerals_variables-names.csv')
-    df_names = pd.read_csv(filepath, sep=",")
-
-    for key in DM_interface.keys():
-
-        if key in df_names["module_input"].values:
-
-            dm_temp = DM_interface[key]  # puntator
-            idx_temp = df_names["old_name"].isin(dm_temp.col_labels["Variables"])
-            old_name = df_names.loc[idx_temp, "old_name"].values.tolist()
-            new_name = df_names.loc[idx_temp, "new_name"].values.tolist()
-
-            if len(old_name) > 0:
-                for i in range(len(old_name)):
-                    dm_temp.rename_col(col_in=old_name[i], col_out=new_name[i], dim="Variables")
-
-    # return
-    return DM_interface
-
-
 def product_demand(DM_minerals, DM_buildings, dm_str, DM_tra, CDM_const):
     # get fxa
     DM_fxa = DM_minerals['fxa']
@@ -1867,14 +1841,68 @@ def simulate_industry_to_minerals_input():
     # # import
     # dm_imp = dm.filter_w_regex({"Variables" : ".*product-net-import.*"})
 
+    # rename
+    dict_rename = {
+        "ind_prod_aluminium-pack" : "ind_product-production_aluminium-pack",
+        "ind_material-switch_cars-steel-to-chem" : "ind_material-switch-cars-steel-other",
+        "ind_material-switch_trucks-steel-to-chem"	: "ind_material-switch-trucks-steel-other",
+        "ind_material-switch_trucks-steel-to-aluminium"	 : "ind_material-switch-trucks-steel-aluminium",
+        "ind_material-switch_build-steel-to-timber" : "ind_material-switch-build-steel-to-timber",
+        "ind_product-net-import_cars-EV" : "ind_product-net-import_LDV-EV",
+        "ind_product-net-import_cars-FCV" : "ind_product-net-import_LDV-FCEV",
+        "ind_product-net-import_cars-ICE" : "ind_product-net-import_LDV-ICE",
+        "ind_product-net-import_computer" : "ind_product-net-import_electronics-computer",
+        "ind_product-net-import_dishwasher" : "ind_product-net-import_dom-appliance-dishwasher",
+        "ind_product-net-import_dryer" : "ind_product-net-import_dom-appliance-dryer",
+        "ind_product-net-import_freezer" : "ind_product-net-import_dom-appliance-freezer",
+        "ind_product-net-import_fridge" : "ind_product-net-import_dom-appliance-fridge",
+        "ind_product-net-import_new_dhg_pipe" : "ind_product-net-import_infra-pipe",
+        "ind_product-net-import_phone" : "ind_product-net-import_electronics-phone",
+        "ind_product-net-import_planes" : "ind_product-net-import_other-planes",
+        "ind_product-net-import_rail" : "ind_product-net-import_infra-rail",
+        "ind_product-net-import_road" : "ind_product-net-import_infra-road",
+        "ind_product-net-import_ships" : "ind_product-net-import_other-ships",
+        "ind_product-net-import_trains" : "ind_product-net-import_other-trains",
+        "ind_product-net-import_trolley-cables" : "ind_product-net-import_infra-trolley-cables",
+        "ind_product-net-import_trucks-EV" : "ind_product-net-import_HDVL-EV",
+        "ind_product-net-import_trucks-FCV" : "ind_product-net-import_HDVL-FCEV",
+        "ind_product-net-import_trucks-ICE" : "ind_product-net-import_HDVL-ICE",
+        "ind_product-net-import_tv" : "ind_product-net-import_electronics-tv",
+        "ind_product-net-import_wmachine" : "ind_product-net-import_dom-appliance-wmachine"
+    }
+
+    for k, v in dict_rename.items():
+        dm.rename_col(k, v, dim='Variables')
+
     # rename alu pack
-    dm.rename_col("ind_prod_aluminium-pack", "ind_product-production_aluminium-pack", "Variables")
+    # dm.rename_col("ind_prod_aluminium-pack", "ind_product-production_aluminium-pack", "Variables")
 
     return dm
 
 
 def simulate_storage_to_minerals_input():
+    
     dm = simulate_input(from_sector="storage", to_sector="minerals")
+    
+    # rename
+    dict_rename = {
+        "str_new-capacity_battery" : "str_energy-battery",
+        "elc_new-capacity_RES_other_geothermal" : "elc_energy-geo",
+        "elc_new-capacity_RES_other_hydroelectric" : "elc_energy-hydro",
+        "elc_new-capacity_RES_other_marine" : "elc_energy-marine",
+        "elc_new-capacity_RES_solar_Pvroof" : "elc_energy-pvroof",
+        "elc_new-capacity_RES_solar_Pvutility" : "elc_energy-pvutility",
+        "elc_new-capacity_RES_solar_csp" : "elc_energy-csp",
+        "elc_new-capacity_RES_wind_offshore" : "elc_energy-off-wind",
+        "elc_new-capacity_RES_wind_onshore" : "elc_energy-on-wind",
+        "elc_new-capacity_fossil_coal" : "elc_energy-coal",
+        "elc_new-capacity_fossil_gas" : "elc_energy-gas",
+        "elc_new-capacity_fossil_oil" : "elc_energy-oil",
+        "elc_new-capacity_nuclear" : "elc_energy-nuclear"
+    }
+
+    for k, v in dict_rename.items():
+        dm.rename_col(k, v, dim='Variables')
 
     return dm
 
@@ -2041,9 +2069,6 @@ def minerals(interface=Interface(), calibration=False):
     else:
         DM_interface["ccus"] = simulate_ccus_to_minerals_input()
 
-    # rename interfaces
-    DM_interface = rename_interfaces(DM_interface)
-
     # keep only the countries in cntr_list
     for i in DM_interface.keys():
         DM_interface[i] = DM_interface[i].filter({'Country': cntr_list})
@@ -2098,9 +2123,9 @@ def local_minerals_run():
     return results_run
 
 
-# run local
+# # run local
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/minerals_module.py"
-# database_from_csv_to_datamatrix()
+# # database_from_csv_to_datamatrix()
 # import time
 
 # start = time.time()
