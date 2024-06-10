@@ -232,10 +232,17 @@ def simulate_buildings_to_district_heating_input():
     # Electricity input is not used
     # dm_elec = dm_bld.filter_w_regex({'Variables': 'bld_electricity-demand.*'})
     # dm_elec.deepen_twice()
-    dm_bld.filter_w_regex({'Variables': 'bld_district-heating.*'}, inplace=True)
-    dm_bld.deepen()
+    dm_dhg = dm_bld.filter_w_regex({'Variables': 'bld_district-heating.*'}, inplace=False)
+    dm_dhg.deepen()
+    dm_pipe = dm_bld.filter({'Variables': ['bld_new_dh_pipes']})
+    dm_pipe.deepen()
 
-    return dm_bld
+    DM_bld = {
+        'heat': dm_dhg,
+        'pipe': dm_pipe
+    }
+
+    return DM_bld
 
 
 def dhg_energy_demand_workflow(dm_dhg, dm_bld, dm_pow, dm_ind):
@@ -366,7 +373,7 @@ def dhg_emissions_workflow(DM_energy, dm_CO2_coef, cdm_emission_fact):
     return DM_emissions_out
 
 
-def dhg_costs_workflow(dm_fuel, dm_cap, dm_rr, dm_price, cdm_cost, baseyear):
+def dhg_costs_workflow(dm_fuel, dm_pipes, dm_cap, dm_rr, dm_price, cdm_cost, baseyear):
 
     # Capacity factor from daily to yearly
     dm_cap.array = dm_cap.array * 8760
@@ -400,13 +407,13 @@ def dhg_costs_workflow(dm_fuel, dm_cap, dm_rr, dm_price, cdm_cost, baseyear):
     # Pipes cost
     # pipes [km] = energy [TWh] * 118300
     # new pipes [km] = pipes [km] * 0.0125
-    dm_energy = dm_fuel.filter({'Variables': ['dhg_energy-demand_added-district-heat']})
-    dm_energy.group_all(dim='Categories1')
-    dm_energy.array = dm_energy.array * 118300 * 0.0125
-    dm_energy.rename_col('dhg_energy-demand_added-district-heat', 'bld_new_dh_pipes', dim='Variables')
-    dm_energy.units['bld_new_dh_pipes'] = 'km'
-    dm_pipes = dm_energy
-    dm_pipes.deepen()
+    # dm_energy = dm_fuel.filter({'Variables': ['dhg_energy-demand_added-district-heat']})
+    # dm_energy.group_all(dim='Categories1')
+    # dm_energy.array = dm_energy.array * 118300 * 0.0125
+    # dm_energy.rename_col('dhg_energy-demand_added-district-heat', 'bld_new_dh_pipes', dim='Variables')
+    # dm_energy.units['bld_new_dh_pipes'] = 'km'
+    # dm_pipes = dm_energy
+    # dm_pipes.deepen()
 
     dm_capex_pipe = cost(dm_activity=dm_pipes, dm_price_index=dm_price, cdm_cost=cdm_pipe_cost, cost_type='capex',
                          baseyear=baseyear, unit_cost=False)
@@ -419,7 +426,6 @@ def dhg_costs_workflow(dm_fuel, dm_cap, dm_rr, dm_price, cdm_cost, baseyear):
 
     DM_cost_out = {
         'employment': {'cost-capacity': dm_capex_heat, 'pipe': dm_capex_pipe},
-        'industry': dm_pipes
     }
     return DM_cost_out
 
@@ -443,32 +449,38 @@ def district_heating(lever_setting, years_setting, interface=Interface()):
     district_heating_data_file = os.path.join(current_file_directory,
                                               '../_database/data/datamatrix/district-heating.pickle')
     dm_dhg, dm_rr, dm_capacity, dm_price, cdm_emission, cdm_cost = read_data(district_heating_data_file, lever_setting)
+    cntr_list = dm_capacity.col_labels['Country']
 
     if interface.has_link(from_sector='power', to_sector='district-heating'):
         DM_pow = interface.get_link(from_sector='power', to_sector='district-heating')
     else:
         DM_pow = simulate_power_to_district_heating_input()
+        for key in DM_pow.keys():
+            DM_pow[key].filter({'Country': cntr_list}, inplace=True)
 
     if interface.has_link(from_sector='industry', to_sector='district-heating'):
         dm_ind = interface.get_link(from_sector='industry', to_sector='district-heating')
     else:
         dm_ind = simulate_industry_to_district_heating_input()
+        dm_ind.filter({'Country': cntr_list}, inplace=True)
 
     if interface.has_link(from_sector='buildings', to_sector='district-heating'):
-        dm_bld = interface.get_link(from_sector='buildings', to_sector='district-heating')
+        DM_bld = interface.get_link(from_sector='buildings', to_sector='district-heating')
     else:
-        dm_bld = simulate_buildings_to_district_heating_input()
+        DM_bld = simulate_buildings_to_district_heating_input()
+        for key in DM_bld.keys():
+            DM_bld[key].filter({'Country': cntr_list}, inplace=True)
 
     # Input: raw energy demand by fuel; efficiency by fuel; heat co-generation from waste/CHP
     # Output: Energy demand district heating by fuel-type + waste/CHP co-generation
-    DM_energy_out = dhg_energy_demand_workflow(dm_dhg, dm_bld, DM_pow['wf_energy'], dm_ind)
+    DM_energy_out = dhg_energy_demand_workflow(dm_dhg, DM_bld['heat'], DM_pow['wf_energy'], dm_ind)
     # Input: Energy demand district-heating by fuel + waste/CHP; GHG emission factors; CO2 emission factor for waste/CHP
     # Output: emissions by GHG for district-heating by fuel, emissions for CO2 for waste and CHP heat
     DM_emissions_out = dhg_emissions_workflow(DM_energy_out['wf_emissions'], DM_pow['wf_emissions'], cdm_emission)
     # Input: district-capacity (by fuel), replacement-rate, energy-demand (by fuel)
     # Output:
     baseyear = years_setting[1]
-    DM_cost_out = dhg_costs_workflow(DM_energy_out['wf_costs'], dm_capacity, dm_rr, dm_price, cdm_cost, baseyear)
+    DM_cost_out = dhg_costs_workflow(DM_energy_out['wf_costs'], DM_bld['pipe'], dm_capacity, dm_rr, dm_price, cdm_cost, baseyear)
     #!FIXME: some dhg output to TPE are computed during the 'cube' but it is not working,...
     # ....fix this by computing the variables directly here
     df_TPE = dhg_TPE_interface(DM_energy_out['TPE'], DM_emissions_out['TPE'])
