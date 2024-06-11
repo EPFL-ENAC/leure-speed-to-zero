@@ -1013,6 +1013,8 @@ def ammonia(lever_setting, years_setting, interface = Interface(), calibration =
     if interface.has_link(from_sector='agriculture', to_sector='ammonia'):
         dm_agriculture = interface.get_link(from_sector='agriculture', to_sector='ammonia')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing agriculture to ammonia interface')
         dm_agriculture = simulate_agriculture_to_ammonia_input()
     
     # get product import of fertilizer
