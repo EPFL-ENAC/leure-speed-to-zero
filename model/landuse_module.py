@@ -74,7 +74,7 @@ def database_from_csv_to_datamatrix():
     dict_fxa['agr_climate-smart-livestock_ef_agroforestry'] = dm_livestock_ef_agroforestry
     # AGROFORESTRY Forestry - natural losses & others
     df = read_database_fxa(file, filter_dict={'eucalc-name': 'agr_climate-smart-forestry'})
-    dm_agroforestry = DataMatrix.create_from_df(df, num_cat=1)
+    dm_agroforestry = DataMatrix.create_from_df(df, num_cat=0)
     dict_fxa['agr_climate-smart-forestry'] = dm_agroforestry
 
     ##################
@@ -96,7 +96,8 @@ def database_from_csv_to_datamatrix():
                                                                             'agr_land-man_dyn.*',
                                                                             'agr_land-man_gap.*',
                                                                             'agr_land-man_matrix.*'])
-    
+
+
 
     #######################
     ##### CALIBRATION #####
@@ -137,8 +138,37 @@ def database_from_csv_to_datamatrix():
         "constant" : dict_const
     }
 
+    # Levers pre-processing --------------------------------------------------------------------------------------------
+
     # Dropping variable that creates a problem (we only need the structure of the matrix 6x6)
     DM_landuse['ots']['land-man']['agr_land-man_matrix'].drop(dim='Variables', col_label=['agr_land-man_matrix'])
+
+    # Land matrix OTS
+    DM_landuse['ots']['land-man']['agr_land-man_matrix'].rename_col_regex(str1="agr_land-man_matrix", str2="agr_matrix",
+                                                                          dim="Variables")
+    DM_landuse['ots']['land-man']['agr_land-man_matrix'].deepen(based_on='Variables')
+    # Land matrix FTS
+    for i in range(1,4):
+        # Renaming
+        DM_landuse['fts']['land-man']['agr_land-man_matrix'][i].rename_col_regex(str1="agr_land-man_matrix",
+                                                                              str2="agr_matrix", dim="Variables")
+        # Deepening
+        DM_landuse['fts']['land-man']['agr_land-man_matrix'][i].deepen(based_on='Variables')
+
+    # FXA pre-processing -----------------------------------------------------------------------------------------------
+
+    # Land c-stock
+    DM_landuse['fxa']['land-man_ef'].rename_col_regex(str1="c-stock_", str2="", dim="Variables")
+    DM_landuse['fxa']['land-man_ef'].rename_col_regex(str1="ef_", str2="ef_c-stock_", dim="Variables")
+    DM_landuse['fxa']['land-man_ef'].rename_col_regex(str1="soil_", str2="soil-", dim="Variables")
+    DM_landuse['fxa']['land-man_ef'].rename_col_regex(str1="biomass_", str2="biomass-", dim="Variables")
+    DM_landuse['fxa']['land-man_ef'].deepen(based_on='Variables')
+    DM_landuse['fxa']['land-man_ef'].deepen(based_on='Variables')
+    DM_landuse['fxa']['land-man_ef'].deepen(based_on='Variables')
+
+    # Land soil type
+    DM_landuse['fxa']['land-man_soil-type'].deepen(based_on='Variables')
+    DM_landuse['fxa']['land-man_soil-type'].deepen(based_on='Variables')
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     f = os.path.join(current_file_directory, '../_database/data/datamatrix/landuse.pickle')
@@ -165,22 +195,10 @@ def read_data(data_file, lever_setting):
     # Sub-matrix for LAND USE - Land matrix
     dm_land_man_gap = DM_ots_fts['land-man']['agr_land-man_gap']
     dm_land_man_matrix = DM_ots_fts['land-man']['agr_land-man_matrix']
-    dm_land_man_matrix.rename_col_regex(str1="agr_land-man_matrix", str2="agr_matrix", dim="Variables")
-    #dm_land_man_matrix = dm_land_man_matrix.flatten()
-    dm_land_man_matrix.deepen(based_on='Variables')
 
     # Sub-matrix for LAND USE - Carbon dynamics
     dm_c_stock = DM_landuse['fxa']['land-man_ef']
-    dm_c_stock.rename_col_regex(str1="c-stock_", str2="", dim="Variables")
-    dm_c_stock.rename_col_regex(str1="ef_", str2="ef_c-stock_", dim="Variables")
-    dm_c_stock.rename_col_regex(str1="soil_", str2="soil-", dim="Variables")
-    dm_c_stock.rename_col_regex(str1="biomass_", str2="biomass-", dim="Variables")
-    dm_c_stock.deepen(based_on='Variables')
-    dm_c_stock.deepen(based_on='Variables')
-    dm_c_stock.deepen(based_on='Variables')
     dm_soil_type = DM_landuse['fxa']['land-man_soil-type']
-    dm_soil_type.deepen(based_on='Variables')
-    dm_soil_type.deepen(based_on='Variables')
 
     # Sub-matrix for LAND USE - Agroforestry
     dm_agroforestry_crop = DM_landuse['fxa']['agr_climate-smart-crop_ef_agroforestry']
@@ -642,7 +660,7 @@ def forestry_workflow(DM_land_use, dm_wood, dm_land_use):
     # Pre processing
     dm_forest = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land'], 'Categories1': ['forest']})
     dm_forest = dm_forest.flatten()
-    DM_land_use['forestry'] = DM_land_use['forestry'].flatten()
+    #DM_land_use['forestry'] = DM_land_use['forestry'].flatten()
     DM_land_use['forestry'].append(dm_forest, dim='Variables')
 
     # Incremental biomass gain from forestry [m3] = biomass yield from managed agroforestry [m3/ha] * Forest land [ha]
@@ -793,7 +811,7 @@ def local_land_use_run():
 
 # run local
 #__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/landuse_module.py"
-#database_from_csv_to_datamatrix()
+database_from_csv_to_datamatrix()
 start = time.time()
 results_run = local_land_use_run()
 end = time.time()
