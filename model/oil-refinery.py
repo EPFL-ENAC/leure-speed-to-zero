@@ -305,7 +305,13 @@ def fuel_production_workflow(DM_refinery, DM_fuel_demand):
     }
     return DM_refinery_out
 
-    # ToDo (1) Hydrogen; (2) Balance; (3) Costs; (4) CCUS
+    # TODO: (1) Hydrogen; (2) Balance; (3) Costs; (4) CCUS
+
+def variables_to_tpe():
+    
+    
+    return 
+
 #######################################################################################################################
 # CoreModule - Refinery
 #######################################################################################################################
