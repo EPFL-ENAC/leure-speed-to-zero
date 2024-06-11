@@ -28,6 +28,7 @@ def init_years_lever():
     lever_setting = json.load(f)[0]
     return years_setting, lever_setting
 
+# DatabaseToDatamatrix
 def database_from_csv_to_datamatrix():
     
     # Read database
@@ -45,7 +46,8 @@ def database_from_csv_to_datamatrix():
     #############################
     ##### FIXED ASSUMPTIONS #####
     #############################
-    
+    # FixedAssumptionsToDatamatrix
+
     dict_fxa = {}
     file = 'agriculture_fixed-assumptions_pathwaycalc_non_nan'
     
@@ -78,7 +80,7 @@ def database_from_csv_to_datamatrix():
     ##################
     ##### LEVERS #####
     ##################
-
+    # LeversToDatamatrix
     dict_ots = {}
     dict_fts = {}
     
@@ -107,12 +109,21 @@ def database_from_csv_to_datamatrix():
     #####################
     ##### CONSTANTS #####
     #####################
-    
+    # ConstantsToDatamatrix
+
     # get constants
     cdm_const = ConstantDataMatrix.extract_constant('interactions_constants_pathwaycalc',
                                                     pattern='cp_emission-factor_CO2.*|cp_fst_ef_emissions-CH4_burnt|cp_fst_ef_emissions-CO2_burnt|cp_fst_ef_emissions-N2O_burnt',
                                                     num_cat=0)
 
+    # Constant pre-processing ------------------------------------------------------------------------------------------
+    # Creating a dictionnay with contants
+    dict_const = {}
+
+    # Constants for burnt biomass
+    cdm_burnt = cdm_const.filter({'Variables': ['cp_fst_ef_emissions-N2O_burnt', 'cp_fst_ef_emissions-CH4_burnt',
+                                                'cp_fst_ef_emissions-CO2_burnt'], 'units': ['t/m3']})
+    dict_const['cdm_burnt'] = cdm_burnt
 
     ################
     ##### SAVE #####
@@ -123,7 +134,7 @@ def database_from_csv_to_datamatrix():
         'fts': dict_fts,
         'ots': dict_ots,
         # 'calibration': dm_cal,
-        "constant" : cdm_const
+        "constant" : dict_const
     }
 
     # Dropping variable that creates a problem (we only need the structure of the matrix 6x6)
@@ -190,10 +201,10 @@ def read_data(data_file, lever_setting):
         'forestry': dm_forestry
     }
 
-    cdm_const = DM_landuse['constant']
+    CDM_const = DM_landuse['constant']
     
     # return
-    return DM_ots_fts, DM_land_use, cdm_const
+    return DM_ots_fts, DM_land_use, CDM_const
 
 # CalculationLeaf WOOD
 def wood_workflow(dm_wood, dm_lgn, dm_ind):
@@ -674,7 +685,7 @@ def forestry_workflow(DM_land_use, dm_wood, dm_land_use):
     return DM_land_use
 
 # CalculationLeaf BIOMASS EMISSIONS
-def forestry_biomass_emissions_workflow(DM_land_use, cdm_const):
+def forestry_biomass_emissions_workflow(DM_land_use, CDM_const):
 
     # FORESTRY LOSSES --------------------------------------------------------------------------------------------------
 
@@ -697,9 +708,8 @@ def forestry_biomass_emissions_workflow(DM_land_use, cdm_const):
 
     # BURNT BIOMASS EMISSIONS ------------------------------------------------------------------------------------------
 
-    # Filtering constants
-    cdm_burnt = cdm_const.filter({'Variables': ['cp_fst_ef_emissions-N2O_burnt', 'cp_fst_ef_emissions-CH4_burnt',
-                                                'cp_fst_ef_emissions-CO2_burnt'], 'units': ['t/m3']})
+    # Constants FIXME constant
+    cdm_burnt = CDM_const['cdm_burnt']
 
     # GHG emissions from burnt forest biomass [t] = Total forestry biomass loss burnt [m3]
     #                                               * emission factor burnt biomass [t/m3]
@@ -750,7 +760,7 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     landuse_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/landuse.pickle')
-    DM_ots_fts, DM_land_use, cdm_const = read_data(landuse_data_file, lever_setting)
+    DM_ots_fts, DM_land_use, CDM_const = read_data(landuse_data_file, lever_setting)
 
     if interface.has_link(from_sector='industry', to_sector='agriculture'):
         dm_ind = interface.get_link(from_sector='industry', to_sector='agriculture')
@@ -768,7 +778,7 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
     DM_land_use = land_matrix_workflow(DM_land_use)
     DM_land_use = land_carbon_dynamics_workflow(DM_land_use)
     DM_land_use = forestry_workflow(DM_land_use, dm_wood, dm_land_use)
-    DM_land_use = forestry_biomass_emissions_workflow(DM_land_use, cdm_const)
+    DM_land_use = forestry_biomass_emissions_workflow(DM_land_use, CDM_const)
 
     # CalculationLeaf Deforestation patterns (does not appear to be used after)
 
