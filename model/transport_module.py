@@ -984,7 +984,7 @@ def tra_industry_interface(dm_freight_new_veh, dm_passenger_new_veh, dm_infrastr
     return DM_industry
 
 
-def tra_minerals_interface(dm_freight_new_veh, dm_passenger_new_veh, DM_industry, dm_infrastructure, write_df):
+def tra_minerals_interface(dm_freight_new_veh, dm_passenger_new_veh, DM_industry, dm_infrastructure, write_xls=False):
 
     # Group technologies as PHEV, ICE, EV and FCEV
     dm_freight_new_veh.groupby({'PHEV': 'PHEV.*', 'ICE': 'ICE.*', 'EV': 'BEV|CEV'}, regex=True, inplace=True, dim='Categories2')
@@ -1013,7 +1013,7 @@ def tra_minerals_interface(dm_freight_new_veh, dm_passenger_new_veh, DM_industry
         'tra_infra': dm_infrastructure
     }
 
-    if write_df:
+    if write_xls:
         df1 = DM_minerals['tra_veh'].write_df()
         df2 = DM_minerals['tra_infra'].write_df()
         df = pd.concat([df1, df2.drop(columns=['Country', 'Years'])], axis=1)
@@ -1103,7 +1103,7 @@ def dummy_tra_infrastructure_workflow(dm_pop):
     return dm_infra.filter({'Variables': ['tra_new_infrastructure']})
 
 
-def tra_emissions_interface(dm_pass_emissions, dm_freight_emissions):
+def tra_emissions_interface(dm_pass_emissions, dm_freight_emissions, write_xls=False):
 
     dm_pass_emissions.rename_col('tra_passenger_emissions', 'tra_emissions_passenger', dim='Variables')
     dm_pass_emissions = dm_pass_emissions.flatten().flatten()
@@ -1111,6 +1111,10 @@ def tra_emissions_interface(dm_pass_emissions, dm_freight_emissions):
     dm_freight_emissions = dm_freight_emissions.flatten().flatten()
 
     dm_pass_emissions.append(dm_freight_emissions, dim='Variables')
+
+    if write_xls:
+        df = dm_pass_emissions.write_df()
+        df.to_excel('../_database/data/xls/All-Countries-interface_from-transport-to-emissions.xlsx', index=False)
 
     return dm_pass_emissions
 
@@ -1165,14 +1169,14 @@ def transport(lever_setting, years_setting, interface=Interface()):
     dm_passenger_new_veh = DM_passenger_out['tech'].filter({'Variables': ['tra_passenger_new-vehicles']})
     dm_infrastructure = dummy_tra_infrastructure_workflow(DM_lfs['lfs_pop'])
     DM_industry = tra_industry_interface(dm_freight_new_veh.copy(), dm_passenger_new_veh.copy(), dm_infrastructure)
-    DM_minerals = tra_minerals_interface(dm_freight_new_veh, dm_passenger_new_veh, DM_industry, dm_infrastructure, write_df=False)
+    DM_minerals = tra_minerals_interface(dm_freight_new_veh, dm_passenger_new_veh, DM_industry, dm_infrastructure, write_xls=False)
     # !FIXME: add km infrastructure data, using compute_stock with tot_km and renovation rate as input.
     #  data for ch ok, data for eu, backcalculation? dummy based on swiss pop?
     interface.add_link(from_sector='transport', to_sector='industry', dm=DM_industry)
     interface.add_link(from_sector='transport', to_sector='minerals', dm=DM_minerals)
 
     # Emissions
-    dm_emissions = tra_emissions_interface(DM_passenger_out['emissions'], DM_freight_out['emissions'])
+    dm_emissions = tra_emissions_interface(DM_passenger_out['emissions'], DM_freight_out['emissions'], write_xls=False)
     interface.add_link(from_sector='transport', to_sector='emissions', dm=dm_emissions)
     return results_run
 
