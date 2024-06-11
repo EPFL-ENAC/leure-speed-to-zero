@@ -332,7 +332,7 @@ def read_data(data_file):
     # return
     return DM_minerals, CDM_const
 
-def product_demand(DM_minerals, DM_buildings, dm_str, DM_tra, CDM_const):
+def product_demand(DM_minerals, DM_buildings, DM_str, DM_tra, CDM_const):
     # get fxa
     DM_fxa = DM_minerals['fxa']
 
@@ -355,7 +355,7 @@ def product_demand(DM_minerals, DM_buildings, dm_str, DM_tra, CDM_const):
     # this is demand for installed capacity of batteries, expressed in kWh
 
     # get demand for batteries from energy sector
-    dm_battery = dm_str.filter_w_regex({"Variables": ".*battery.*"})
+    dm_battery = DM_str["battery"].copy()
 
     # convert from GW to kWh
     dm_battery.array = dm_battery.array * 1000000
@@ -410,23 +410,13 @@ def product_demand(DM_minerals, DM_buildings, dm_str, DM_tra, CDM_const):
 
     # this is the demand for energy that comes from different energy sources, expressed in GW (power)
 
-    # get fts, which are in dm_str
-
-    energy = ['energy-coal', 'energy-csp', 'energy-gas', 'energy-geo', 'energy-hydro',
-              'energy-marine', 'energy-nuclear', 'energy-off-wind', 'energy-oil',
-              'energy-on-wind', 'energy-pvroof', 'energy-pvutility']
-    find = ["elc_" + i for i in energy]
-    dm_energy_fts = dm_str.filter({"Variables": find})
+    # get fts
+    dm_energy_fts = DM_str["energy"].copy()
 
     # add pvroof and pvutility
     dm_energy_fts.operation('elc_energy-pvroof', "+", 'elc_energy-pvutility', dim="Variables", out_col="elc_pv",
                             unit="GW", div0="error")
     dm_energy_fts.drop(dim="Variables", col_label=['elc_energy-pvroof', 'elc_energy-pvutility'])
-
-    # new variables
-    energy = ['energy-coal', 'energy-csp', 'energy-gas', 'energy-geo', 'energy-hydro',
-              'energy-marine', 'energy-nuclear', 'energy-off-wind', 'energy-oil',
-              'energy-on-wind', 'energy-pv']
 
     # deepen
     dm_energy_fts.deepen()
@@ -446,7 +436,7 @@ def product_demand(DM_minerals, DM_buildings, dm_str, DM_tra, CDM_const):
     dm_energy.drop(dim="Variables", col_label=['elc'])
 
     # clean
-    del arr_temp, dm_energy_fts, dm_energy_ots, find
+    del arr_temp, dm_energy_fts, dm_energy_ots
 
     ########################
     ##### PUT TOGETHER #####
@@ -573,14 +563,12 @@ def product_demand_split(DM_demand, dm_import, CDM_const):
     return DM_demand_split
 
 
-def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, CDM_const, DM_ind):
+def mineral_demand_split(DM_minerals, DM_demand, DM_demand_split, CDM_const, DM_ind, DM_str):
     # name of minerals
     minerals = ['aluminium', 'copper', 'graphite', 'lead', 'lithium', 'manganese', 'nickel', 'steel']
 
     # get data
     DM_fxa = DM_minerals['fxa']
-    # dm_ind = DM_interface["industry"]
-    dm_str = DM_interface["storage"]
 
     #####################
     ##### BATTERIES #####
@@ -1062,7 +1050,7 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     # not that here for example Austria 2020 for dir_energy_aluminium differs slightly from KNIME, supposedly for rounding differences (numbers are generally fine)
 
     # get electricity demand total (GWh) and constant for amount of copper in wires (kg/GWh)
-    dm_temp = dm_str.filter({"Variables": ["elc_electricity-demand_total"]})
+    dm_temp = DM_str["electricity-demand"]
     cdm_temp = CDM_const["wire-copper"]
 
     # multiply direct demand times amount of copper in wires to get amount of copper in wires (kg)
@@ -1310,7 +1298,7 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
 
     # get material-efficiency from constant and industry
     cdm_temp = CDM_const["efficiency"]
-    dm_temp = DM_ind["material-efficiency"]
+    dm_temp = DM_ind["material-efficiency"].copy()
 
     # expand constants and add
     dm_temp2 = cdm_to_dm(cdm_temp, countries_list=dm_temp.col_labels["Country"], years_list=dm_temp.col_labels["Years"])
@@ -1395,7 +1383,7 @@ def mineral_extraction(DM_minerals, DM_ind, dm_mindec, CDM_const):
 
     # get variables
     dm_proportion = DM_fxa["min_proportion"].copy()
-    dm_temp = DM_ind["technology-development"]
+    dm_temp = DM_ind["technology-development"].copy()
 
     # adjust steel eaf for scraps
     idx1 = dm_proportion.idx
@@ -1904,7 +1892,7 @@ def simulate_industry_to_minerals_input():
     dm_temp.sort("Variables")
     DM_ind["product-net-import"] = dm_temp
 
-    return dm, DM_ind
+    return DM_ind
 
 
 def simulate_storage_to_minerals_input():
@@ -1930,8 +1918,23 @@ def simulate_storage_to_minerals_input():
 
     for k, v in dict_rename.items():
         dm.rename_col(k, v, dim='Variables')
+        
+    DM_str = {}
+    
+    # battery
+    DM_str["battery"] = dm.filter_w_regex({"Variables" : ".*battery.*"})
+    
+    # energy
+    energy = ['energy-coal', 'energy-csp', 'energy-gas', 'energy-geo', 'energy-hydro',
+              'energy-marine', 'energy-nuclear', 'energy-off-wind', 'energy-oil',
+              'energy-on-wind', 'energy-pvroof', 'energy-pvutility']
+    find = ["elc_" + i for i in energy]
+    DM_str["energy"] = dm.filter({"Variables": find})
+    
+    # electricity
+    DM_str["electricity-demand"] = dm.filter({"Variables" : ["elc_electricity-demand_total"]})
 
-    return dm
+    return DM_str
 
 
 def simulate_buildings_to_minerals_input():
@@ -2070,14 +2073,18 @@ def minerals(interface=Interface(), calibration=False):
         DM_interface["agriculture"] = simulate_agriculture_to_minerals_input()
 
     if interface.has_link(from_sector='industry', to_sector='minerals'):
-        DM_interface["industry"] = interface.get_link(from_sector='industry', to_sector='minerals')
+        DM_ind = interface.get_link(from_sector='industry', to_sector='minerals')
     else:
-        DM_interface["industry"], DM_ind = simulate_industry_to_minerals_input()
+        DM_ind = simulate_industry_to_minerals_input()
+        for i in DM_ind.keys():
+            DM_ind[i] = DM_ind[i].filter({'Country': cntr_list})
 
     if interface.has_link(from_sector='storage', to_sector='minerals'):
-        DM_interface["storage"] = interface.get_link(from_sector='storage', to_sector='minerals')
+        DM_str = interface.get_link(from_sector='storage', to_sector='minerals')
     else:
-        DM_interface["storage"] = simulate_storage_to_minerals_input()
+        DM_str = simulate_storage_to_minerals_input()
+        for i in DM_str.keys():
+            DM_str[i] = DM_str[i].filter({'Country': cntr_list})
 
     if interface.has_link(from_sector='buildings', to_sector='minerals'):
         DM_buildings = interface.get_link(from_sector='buildings', to_sector='minerals')
@@ -2101,7 +2108,7 @@ def minerals(interface=Interface(), calibration=False):
         DM_interface[i] = DM_interface[i].filter({'Country': cntr_list})
 
     # get product demand
-    DM_demand = product_demand(DM_minerals, DM_buildings, DM_interface['storage'], DM_tra, CDM_const)
+    DM_demand = product_demand(DM_minerals, DM_buildings, DM_str, DM_tra, CDM_const)
 
     # get product import
     dm_import = product_import(DM_ind)
@@ -2110,7 +2117,7 @@ def minerals(interface=Interface(), calibration=False):
     DM_demand_split = product_demand_split(DM_demand, dm_import, CDM_const)
 
     # get mineral demand split
-    dm_mindec, dm_mindec_sect = mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, CDM_const, DM_ind)
+    dm_mindec, dm_mindec_sect = mineral_demand_split(DM_minerals, DM_demand, DM_demand_split, CDM_const, DM_ind, DM_str)
 
     # calibration
     if calibration is True:
