@@ -464,10 +464,10 @@ def product_demand(DM_minerals, DM_buildings, dm_str, DM_tra, CDM_const):
     return DM_demand
 
 
-def product_import(dm_ind):
+def product_import(DM_ind):
 
     # get imports and rename
-    dm_import = dm_ind.filter_w_regex({"Variables": ".*import.*"})
+    dm_import = DM_ind["product-net-import"]
     dm_import.rename_col_regex(str1="_product-net-import", str2="", dim="Variables")
 
     # add net imports for categories of vehicles we do not have
@@ -573,13 +573,13 @@ def product_demand_split(DM_demand, dm_import, CDM_const):
     return DM_demand_split
 
 
-def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, CDM_const):
+def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, CDM_const, DM_ind):
     # name of minerals
     minerals = ['aluminium', 'copper', 'graphite', 'lead', 'lithium', 'manganese', 'nickel', 'steel']
 
     # get data
     DM_fxa = DM_minerals['fxa']
-    dm_ind = DM_interface["industry"]
+    # dm_ind = DM_interface["industry"]
     dm_str = DM_interface["storage"]
 
     #####################
@@ -626,7 +626,8 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     dm_veh_ldv_mindec.drop(dim="Categories1", col_label=tra_ldv)
 
     # get mineral switch parameter
-    dm_temp = dm_ind.filter_w_regex({"Variables": ".*switch-cars*"})
+    dm_temp = DM_ind["material-switch"]
+    dm_temp = dm_temp.filter_w_regex({"Variables": ".*switch-cars*"})
 
     # # FIXME: for the material switch, here in minerals they just use switch percentages, 
     # # but then they do not apply the ratio that says how much material is lost in the process (which is from constants).
@@ -700,8 +701,9 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     # do the switch steel to other and steel to aluminium
 
     # get mineral switch parameter
-    dm_temp = dm_ind.filter_w_regex({"Variables": ".*switch-trucks-steel-other*"})
-    dm_temp_alu = dm_ind.filter_w_regex({"Variables": ".*switch-trucks-steel-aluminium*"})
+    dm_temp = DM_ind["material-switch"]
+    dm_temp_alu = dm_temp.filter_w_regex({"Variables": ".*switch-trucks-steel-aluminium*"})
+    dm_temp = dm_temp.filter_w_regex({"Variables": ".*switch-trucks-steel-other*"})
 
     # set variables with mineral that is switched
     mineral_in = "steel"
@@ -869,7 +871,7 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     dm_domapp_mindec.array = dm_domapp_mindec.array / cdm_temp.array[np.newaxis, np.newaxis, np.newaxis, ...]
 
     # get aluminium packages (t) and add it to aluminium from dom appliance (only for dir)
-    dm_temp = dm_ind.filter({"Variables": ["ind_product-production_aluminium-pack"]})
+    dm_temp = DM_ind["aluminium-pack"]
     dm_temp.array = dm_temp.array * 1000  # make kg
     idx = dm_domapp_mindec.idx
     dm_domapp_mindec.array[:, :, :, :, idx["dir"], idx["aluminium"]] = dm_domapp_mindec.array[:, :, :, :, idx["dir"],
@@ -963,7 +965,8 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     dm_constr_mindec.drop(dim="Categories1", col_label=constr)
 
     # get mineral switch parameter
-    dm_temp = dm_ind.filter_w_regex({"Variables": ".*switch-build*"})
+    dm_temp = DM_ind["material-switch"]
+    dm_temp = dm_temp.filter_w_regex({"Variables": ".*switch-build*"})
 
     # set variables with mineral that is switched
     mineral_in = "steel"
@@ -1164,7 +1167,7 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
     dm_industry_mindec.units['material-decomposition'] = "Mt"
 
     # take glass
-    dm_temp2 = dm_ind.filter({"Variables": ["ind_material-production_glass"]})
+    dm_temp2 = DM_ind["material-production"].filter({"Variables": ["ind_material-production_glass"]})
     dm_industry_mindec.add(dm_temp2.array[:, :, np.newaxis, np.newaxis, np.newaxis, :], dim="Categories3",
                            col_label="glass")
 
@@ -1307,13 +1310,13 @@ def mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, 
 
     # get material-efficiency from constant and industry
     cdm_temp = CDM_const["efficiency"]
-    dm_temp = dm_ind.filter_w_regex({"Variables": ".*eff*"})
+    dm_temp = DM_ind["material-efficiency"]
 
     # expand constants and add
     dm_temp2 = cdm_to_dm(cdm_temp, countries_list=dm_temp.col_labels["Country"], years_list=dm_temp.col_labels["Years"])
-    dm_temp.append(dm_temp2, dim="Variables")
-    dm_temp.deepen()
-
+    dm_temp2.deepen()
+    dm_temp.append(dm_temp2, dim="Categories1")
+    
     # do 1 - ind efficiency and substitute back in
     dm_temp.array = 1 - dm_temp.array
 
@@ -1356,13 +1359,13 @@ def mineral_demand_calibration(DM_minerals, dm_mindec):
     return dm_mindec, dm_mindec_dir_calib_rates
 
 
-def mineral_extraction(DM_minerals, DM_interface, dm_mindec, CDM_const):
+def mineral_extraction(DM_minerals, DM_ind, dm_mindec, CDM_const):
     # name of minerals
     minerals = ['aluminium', 'copper', 'graphite', 'lead', 'lithium', 'manganese', 'nickel', 'steel']
 
     # get data
     DM_fxa = DM_minerals['fxa']
-    dm_ind = DM_interface["industry"]
+    # dm_ind = DM_interface["industry"]
 
     ###################################
     ##### MINERAL PRODUCTION (KG) #####
@@ -1392,11 +1395,7 @@ def mineral_extraction(DM_minerals, DM_interface, dm_mindec, CDM_const):
 
     # get variables
     dm_proportion = DM_fxa["min_proportion"].copy()
-    dm_temp = dm_ind.filter_w_regex({"Variables": ".*technology.*"})
-    dm_temp.rename_col_regex(str1="technology-development", str2="proportion", dim="Variables")
-    dm_temp.rename_col_regex(str1="copper_tech", str2="copper_secondary", dim="Variables")
-    dm_temp.rename_col_regex(str1="_prim", str2="_primary", dim="Variables")
-    dm_temp.rename_col_regex(str1="aluminium_sec", str2="aluminium_secondary", dim="Variables")
+    dm_temp = DM_ind["technology-development"]
 
     # adjust steel eaf for scraps
     idx1 = dm_proportion.idx
@@ -1669,13 +1668,13 @@ def mineral_production_bysector(dm_mindec, dm_mindec_sect, CDM_const):
 
 
 def variables_for_tpe(DM_interface, DM_minerals, dm_production_sect, dm_fossil, dm_mindec, dm_extraction,
-                      dict_relres_fossil, dict_relres_minerals):
+                      dict_relres_fossil, dict_relres_minerals, DM_ind):
     # get data
     DM_fxa = DM_minerals['fxa']
     dm_min_other = DM_fxa["min_other"]
     dm_agr = DM_interface["agriculture"]
     dm_ccus = DM_interface["ccus"]
-    dm_ind = DM_interface["industry"]
+    # dm_ind = DM_interface["industry"]
 
     ###########################
     ##### EXTRA MATERIALS #####
@@ -1689,8 +1688,7 @@ def variables_for_tpe(DM_interface, DM_minerals, dm_production_sect, dm_fossil, 
     dm_extramaterials = dm_temp.filter({"Variables": ['bioenergy_wood']})
 
     # from industry
-    dm_temp = dm_ind.filter({"Variables": ["ind_material-production_glass", 'ind_timber',
-                                           'ind_material-production_cement', 'ind_material-production_paper_woodpulp']})
+    dm_temp = DM_ind["material-production"]
     idx = dm_temp.idx
 
     # glass sand
@@ -1699,9 +1697,9 @@ def variables_for_tpe(DM_interface, DM_minerals, dm_production_sect, dm_fossil, 
     dm_temp.rename_col(col_in="ind_material-production_glass", col_out="glass_sand", dim="Variables")
 
     # timber
-    dm_temp.array[..., idx["ind_timber"]] = dm_temp.array[..., idx["ind_timber"]] * 0.001
-    dm_temp.units["ind_timber"] = "Mt"
-    dm_temp.rename_col(col_in="ind_timber", col_out="construction_wood", dim="Variables")
+    dm_temp.array[..., idx["ind_material-production_timber"]] = dm_temp.array[..., idx["ind_material-production_timber"]] * 0.001
+    dm_temp.units["ind_material-production_timber"] = "Mt"
+    dm_temp.rename_col(col_in="ind_material-production_timber", col_out="construction_wood", dim="Variables")
 
     # cement sand
     dm_temp.array[..., idx["ind_material-production_cement"]] = dm_temp.array[..., idx[
@@ -1868,16 +1866,45 @@ def simulate_industry_to_minerals_input():
         "ind_product-net-import_trucks-FCV" : "ind_product-net-import_HDVL-FCEV",
         "ind_product-net-import_trucks-ICE" : "ind_product-net-import_HDVL-ICE",
         "ind_product-net-import_tv" : "ind_product-net-import_electronics-tv",
-        "ind_product-net-import_wmachine" : "ind_product-net-import_dom-appliance-wmachine"
+        "ind_product-net-import_wmachine" : "ind_product-net-import_dom-appliance-wmachine",
+        "ind_timber" : "ind_material-production_timber"
     }
 
     for k, v in dict_rename.items():
         dm.rename_col(k, v, dim='Variables')
 
-    # rename alu pack
-    # dm.rename_col("ind_prod_aluminium-pack", "ind_product-production_aluminium-pack", "Variables")
+    DM_ind = {}
+    
+    # aluminium
+    DM_ind["aluminium-pack"] = dm.filter({"Variables" : ["ind_product-production_aluminium-pack"]})
+    
+    # material production
+    DM_ind["material-production"] = dm.filter({"Variables" : 
+                                               ['ind_material-production_cement', 'ind_material-production_glass', 
+                                                'ind_material-production_paper_woodpulp', 'ind_material-production_timber']})
+    
+    # technology development
+    dm_temp = dm.filter_w_regex({"Variables" : ".*technology.*"})
+    dm_temp.rename_col_regex(str1="technology-development", str2="proportion", dim="Variables")
+    dm_temp.rename_col_regex(str1="copper_tech", str2="copper_secondary", dim="Variables")
+    dm_temp.rename_col_regex(str1="_prim", str2="_primary", dim="Variables")
+    dm_temp.rename_col_regex(str1="aluminium_sec", str2="aluminium_secondary", dim="Variables")
+    DM_ind["technology-development"] = dm_temp
+    
+    # material efficiency
+    dm_temp = dm.filter_w_regex({"Variables": ".*eff*"})
+    dm_temp.deepen()
+    DM_ind["material-efficiency"] = dm_temp
+    
+    # material switch
+    DM_ind["material-switch"] = dm.filter_w_regex({"Variables": ".*switch*"})
+    
+    # product net import
+    dm_temp = dm.filter_w_regex({"Variables": ".*product-net-import*"})
+    dm_temp.sort("Variables")
+    DM_ind["product-net-import"] = dm_temp
 
-    return dm
+    return dm, DM_ind
 
 
 def simulate_storage_to_minerals_input():
@@ -2045,7 +2072,7 @@ def minerals(interface=Interface(), calibration=False):
     if interface.has_link(from_sector='industry', to_sector='minerals'):
         DM_interface["industry"] = interface.get_link(from_sector='industry', to_sector='minerals')
     else:
-        DM_interface["industry"] = simulate_industry_to_minerals_input()
+        DM_interface["industry"], DM_ind = simulate_industry_to_minerals_input()
 
     if interface.has_link(from_sector='storage', to_sector='minerals'):
         DM_interface["storage"] = interface.get_link(from_sector='storage', to_sector='minerals')
@@ -2077,20 +2104,20 @@ def minerals(interface=Interface(), calibration=False):
     DM_demand = product_demand(DM_minerals, DM_buildings, DM_interface['storage'], DM_tra, CDM_const)
 
     # get product import
-    dm_import = product_import(DM_interface['industry'])
+    dm_import = product_import(DM_ind)
 
     # get product demand split
     DM_demand_split = product_demand_split(DM_demand, dm_import, CDM_const)
 
     # get mineral demand split
-    dm_mindec, dm_mindec_sect = mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, CDM_const)
+    dm_mindec, dm_mindec_sect = mineral_demand_split(DM_minerals, DM_interface, DM_demand, DM_demand_split, CDM_const, DM_ind)
 
     # calibration
     if calibration is True:
         dm_mindec, dm_mindec_calib_rates = mineral_demand_calibration(DM_minerals, dm_mindec)
 
     # get mineral extraction
-    dm_extraction = mineral_extraction(DM_minerals, DM_interface, dm_mindec, CDM_const)
+    dm_extraction = mineral_extraction(DM_minerals, DM_ind, dm_mindec, CDM_const)
 
     # get mineral reserves
     dict_relres_fossil, dict_relres_minerals, dm_fossil = mineral_reserves(DM_minerals, DM_interface, dm_mindec,
@@ -2102,7 +2129,7 @@ def minerals(interface=Interface(), calibration=False):
     # get variables for TPE
     df_tpe, df_tpe_relres = variables_for_tpe(DM_interface, DM_minerals, dm_production_sect, dm_fossil, dm_mindec,
                                               dm_extraction,
-                                              dict_relres_fossil, dict_relres_minerals)
+                                              dict_relres_fossil, dict_relres_minerals, DM_ind)
 
     # return
     # results_run = {"out1": df_tpe, "out2": "calibration_tbd", "out3" : df_tpe_relres}
@@ -2123,12 +2150,13 @@ def local_minerals_run():
     return results_run
 
 
-# # run local
-# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/minerals_module.py"
-# # database_from_csv_to_datamatrix()
-# import time
+# run local
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/minerals_module.py"
+# database_from_csv_to_datamatrix()
+import time
+start = time.time()
+results_run = local_minerals_run()
+end = time.time()
+print(end - start)
 
-# start = time.time()
-# results_run = local_minerals_run()
-# end = time.time()
-# print(end - start)
+
