@@ -283,10 +283,6 @@ def emissions_equivalent(DM_interface, DM_fxa):
     # TODO: in DM_interface["power"] I have dropped "elc_emissions-CO2_fossil_total" to avoid to double counting in the overall sum, to be reported in the known issues
     DM_interface["power"].drop("Variables", ['elc_stored-CO2_RES_bio_gas', 'elc_stored-CO2_RES_bio_mass',
                                                    'elc_emissions-CO2_fossil_total'])
-    DM_interface["transport"].drop("Variables", ['tra_passenger_CH4-emissions', 'tra_passenger_CO2-emissions', 
-                                                 'tra_passenger_N2O-emissions', 'tra_freight_CH4-emissions', 
-                                                 'tra_freight_CO2-emissions', 'tra_freight_N2O-emissions',
-                                                 'tra_CH4-emissions', 'tra_CO2-emissions', 'tra_N2O-emissions'])
     
     # put together
     dm_ems = DM_interface["buildings"].copy()
@@ -294,10 +290,10 @@ def emissions_equivalent(DM_interface, DM_fxa):
             "industry", "ammonia", "refinery", "agriculture", "transport"]
     for key in keys:
         dm_ems.append(DM_interface[key], "Variables")
-        
+
     # put in the uncaptured emissions
     dm_ems.append(DM_fxa["uncaptured-emissions"], "Variables")
-    
+
     # linear interpolation for nans
     idx = dm_ems.idx
     countries = dm_ems.col_labels["Country"]
@@ -334,11 +330,8 @@ def emissions_equivalent(DM_interface, DM_fxa):
         del dm_ems_so2
         
     # sum to get total CO2e
-    dm_ems.add(np.nansum(dm_ems.array, axis = -1, keepdims=True), "Variables", "clm_total_CO2e_ems","Mt")
-        
-    del arr_temp, c, countries, dm_ems_ch4, dm_ems_co2, dm_ems_n2o, GWP_CH4, GWP_N2O, \
-        GWP_SO2, idx, key, keys, nan_idx, nans_pos, nonnan, nonnan_pos, v, variables
-        
+    dm_ems.add(np.nansum(dm_ems.array, axis = -1, keepdims=True), "Variables", "clm_total_CO2e_ems", "Mt")
+
     return dm_ems
 
 def variables_for_tpe(dm_ems):
@@ -432,15 +425,11 @@ def variables_for_tpe(dm_ems):
     
     # transport
     dm_tra = dm_ems.filter_w_regex({"Variables" : ".*tra_emissions.*"})
-    dm_tra.deepen_twice()
-    dm_tra.deepen(based_on="Variables")
-    dm_tra.group_all("Categories3")
-    dm_tra.rename_col("tra", "tra_emissions-CO2e","Variables")
-    dm_tra = dm_tra.flatten().flatten()
-    dm_tra.drop("Variables", ['tra_emissions-CO2e_freight_2W', 'tra_emissions-CO2e_freight_LDV', 
-                              'tra_emissions-CO2e_freight_bus', 'tra_emissions-CO2e_freight_metro-tram',
-                              'tra_emissions-CO2e_passenger_HDV', 'tra_emissions-CO2e_passenger_IWW',
-                              'tra_emissions-CO2e_passenger_marine'])
+    dm_tra.deepen()
+    dm_tra.group_all(dim='Categories1')
+    dm_tra.rename_col_regex('emissions', 'emissions-CO2e', dim='Variables')
+    dm_tra.groupby({'tra_emissions-CO2e_freight_HDV': '.*HDV.*'}, dim='Variables', regex=True, inplace=True)
+
     dm_tpe.append(dm_tra, "Variables")
     
     # building
@@ -463,9 +452,6 @@ def variables_for_tpe(dm_ems):
     dm_tpe.append(dm_tot, "Variables")
     
     dm_tpe.sort("Variables")
-    
-    del dm_agr, dm_amm, dm_bld, dm_dhg, dm_elc, dm_ems, dm_fos, dm_ind, dm_lus, \
-        dm_temp, dm_tot, dm_tra, i
         
     return dm_tpe
 
