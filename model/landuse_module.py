@@ -616,7 +616,7 @@ def land_carbon_dynamics_workflow(DM_land_use):
                                  axis=-1)  # removing singleton dimension of last axis ('total from groupby')
     DM_land_use['land_man_gap'].add(arr_transformed, col_label='lus_land_lulucf_to_tC', dim='Variables')
 
-    # UNIT CONVERSION FROM tC to tCO2 ----------------------------------------------------------------------------------
+    # UNIT CONVERSION FROM tC to MtCO2 ----------------------------------------------------------------------------------
 
     # Add dummy column
     DM_land_use['land_man_gap'].add(-3.667, dummy=True, col_label='tC_to_tCO2', dim='Variables', unit='t')
@@ -624,6 +624,12 @@ def land_carbon_dynamics_workflow(DM_land_use):
     # Unit conversion : tC stocked/emitted => tCO2 emitted/stocked
     DM_land_use['land_man_gap'].operation('lus_land_lulucf_to_tC', '*', 'tC_to_tCO2', out_col='lus_land_lulucf_to',
                                           unit='t')
+
+    # Unit conversion : tCO2 emitted/stocked => MtCO2 emitted/stocked
+    DM_land_use['land_man_gap'].add(0.000001, dummy=True, col_label='t_to_Mt', dim='Variables', unit='t')
+    DM_land_use['land_man_gap'].operation('lus_land_lulucf_to', '*', 't_to_Mt', out_col='lus_emissions-CO2_land_to',
+                                          unit='Mt')
+
     return DM_land_use
 
 # CalculationLeaf FORESTRY
@@ -774,6 +780,25 @@ def simulate_agriculture_to_landuse_input():
     
     return dm_wood, dm_lgn, dm_land_use
 
+
+def landuse_climate_interface(DM_land_use, write_xls=False):
+
+    dm_climate = {}
+
+    if write_xls is True:
+        # Emission from converted land
+        # (WARNING : this version accounts for the land rem within the land converted which differs from Knime)
+        dm_climate = DM_land_use['land_man_gap'].filter({'Variables': ['lus_emissions-CO2_land_to']})
+        dm_climate = dm_climate.flatten()
+
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        dm_climate = dm_climate.write_df()
+        dm_climate.to_excel(
+            current_file_directory + "/../_database/data/xls/" + 'All-Countries_interface_from-landuse-to-climate.xlsx',
+            index=False)
+
+    return dm_climate
+
 def land_use(lever_setting, years_setting, interface = Interface(), calibration = False):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -798,7 +823,11 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
     DM_land_use = forestry_workflow(DM_land_use, dm_wood, dm_land_use)
     DM_land_use = forestry_biomass_emissions_workflow(DM_land_use, CDM_const)
 
-    # CalculationLeaf Deforestation patterns (does not appear to be used after)
+    # INTERFACES OUT ---------------------------------------------------------------------------------------------------
+
+    # Interface to Climate
+    dm_climate = landuse_climate_interface(DM_land_use, write_xls=False)
+    interface.add_link(from_sector='landuse', to_sector='climate', dm=dm_climate)
 
     return
 
@@ -811,7 +840,7 @@ def local_land_use_run():
 
 # run local
 #__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/landuse_module.py"
-database_from_csv_to_datamatrix()
+#database_from_csv_to_datamatrix()
 start = time.time()
 results_run = local_land_use_run()
 end = time.time()

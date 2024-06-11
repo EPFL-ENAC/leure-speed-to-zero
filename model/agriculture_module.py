@@ -341,28 +341,13 @@ def database_from_csv_to_datamatrix():
                                                                             'agr_climate-smart-crop_input-use.*',
                                                                             'agr_climate-smart-crop_energy-demand.*'])
 
-    # Read land management
-    file = 'agriculture_land-management_pathwaycalc'
-    lever = 'land-man'
-    #edit_database(file,lever,column='eucalc-name',pattern={'_rem_':'_', '_to_':'_'},mode='rename')
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 1],
-                                                                baseyear=baseyear,
-                                                                years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
-                                                                column='eucalc-name',
-                                                                group_list=['agr_land-man_use.*',
-                                                                            'agr_land-man_dyn.*',
-                                                                            'agr_land-man_gap.*',
-                                                                            'agr_land-man_matrix.*'])
-
-    # num_cat_list=[1 = nb de cat de losses, 1 = nb de cat yield]
-
     #####################
     ###### CONSTANTS #######
     #####################
     # ConstantsToDatamatrix
     # Data - Read Constants (use 'xx|xx|xx' to add)
     cdm_const = ConstantDataMatrix.extract_constant('interactions_constants_pathwaycalc',
-                                                    pattern='cp_ibp_liv_.*_brf_fdk_afat|cp_ibp_liv_.*_brf_fdk_offal|cp_ibp_bev_.*|cp_liquid_tec.*|cp_load_hours|cp_ibp_aps_insect.*|cp_ibp_aps_algae.*|cp_efficiency_liv.*|cp_ibp_processed.*|cp_ef_urea.*|cp_ef_liming|cp_emission-factor_CO2.*|cp_fst_ef_emissions-CH4_burnt|cp_fst_ef_emissions-CO2_burnt|cp_fst_ef_emissions-N2O_burnt',
+                                                    pattern='cp_ibp_liv_.*_brf_fdk_afat|cp_ibp_liv_.*_brf_fdk_offal|cp_ibp_bev_.*|cp_liquid_tec.*|cp_load_hours|cp_ibp_aps_insect.*|cp_ibp_aps_algae.*|cp_efficiency_liv.*|cp_ibp_processed.*|cp_ef_urea.*|cp_ef_liming|cp_emission-factor_CO2.*',
                                                     num_cat=0)
 
 
@@ -479,8 +464,27 @@ def database_from_csv_to_datamatrix():
         'ots': dict_ots
     }
 
-    # Dropping variable that creates a problem (we only need the structure of the matrix 6x6)
-    DM_agriculture['ots']['land-man']['agr_land-man_matrix'].drop(dim='Variables', col_label=['agr_land-man_matrix'])
+    # Levers pre-processing --------------------------------------------------------------------------------------------
+
+
+    # FXA pre-processing -----------------------------------------------------------------------------------------------
+
+    # Emssion factors residues residues
+    DM_agriculture['fxa']['ef_soil-residues'].add(0.0, dummy=True, col_label='CH4-emission', dim='Categories1', unit='Mt')
+    DM_agriculture['fxa']['ef_soil-residues'].sort(dim='Categories1')
+    DM_agriculture['fxa']['ef_burnt-residues'].append(DM_agriculture['fxa']['ef_soil-residues'], dim='Variables')
+    DM_agriculture['fxa']['ef_burnt-residues'] = DM_agriculture['fxa']['ef_burnt-residues'].flatten()  # extra steps to have correct deepening
+    DM_agriculture['fxa']['ef_burnt-residues'].rename_col_regex(str1="residues_", str2="residues-", dim="Variables")
+    DM_agriculture['fxa']['ef_burnt-residues'].rename_col_regex(str1="fxa_", str2="", dim="Variables")
+    DM_agriculture['fxa']['ef_burnt-residues'].deepen()
+    DM_agriculture['fxa']['ef_burnt-residues'].rename_col_regex(str1="residues-", str2="residues_", dim="Categories1")
+    DM_agriculture['fxa']['ef_burnt-residues'].deepen()
+
+    # caf GHG emissions
+    DM_agriculture['fxa']['caf_agr_emission_CH4'].append(DM_agriculture['fxa']['caf_agr_emission_N2O'], dim='Variables')
+    DM_agriculture['fxa']['caf_agr_emission_CH4'].append(DM_agriculture['fxa']['caf_agr_emission_CO2'], dim='Variables')
+    DM_agriculture['fxa']['caf_agr_emission_CH4'].rename_col_regex(str1='caf_agr_emissions-', str2='caf_agr_emissions_', dim='Variables')
+    DM_agriculture['fxa']['caf_agr_emission_CH4'].deepen()
 
     # write datamatrix to pickle
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -505,10 +509,7 @@ def read_data(data_file, lever_setting):
     dm_fxa_caf_liv_CH4 = DM_agriculture['fxa']['caf_agr_liv_CH4-emission']
     dm_fxa_caf_liv_N2O = DM_agriculture['fxa']['caf_agr_liv_N2O-emission']
     dm_fxa_caf_demand_feed = DM_agriculture['fxa']['caf_agr_demand_feed']
-    #dm_fxa_caf_liv_CH4.rename_col_regex(str1="caf_agr_liv_CH4-emission_", str2="", dim="Variables")
-    #dm_fxa_caf_liv_N2O.rename_col_regex(str1="caf_agr_liv_N2O-emission_", str2="", dim="Variables")
     dm_fxa_ef_liv_N2O = DM_agriculture['fxa']['ef_liv_N2O-emission']
-    #dm_fxa_ef_liv_N2O.rename_col_regex(str1="fxa_ef_liv_N2O-emission_", str2="", dim="Variables")
     dm_fxa_ef_liv_CH4_treated = DM_agriculture['fxa']['ef_liv_CH4-emission_treated']
     dm_fxa_liv_nstock = DM_agriculture['fxa']['liv_manure_n-stock']
 
@@ -521,7 +522,6 @@ def read_data(data_file, lever_setting):
     dm_livestock_yield = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_yield']
     dm_livestock_slaughtered = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_slaughtered']
     dm_livestock_density = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_density']
-
 
     # Sub-matrix for ALCOHOLIC BEVERAGES
     dm_alc_bev = DM_ots_fts['biomass-hierarchy']['biomass-hierarchy-bev-ibp-use-oth']
@@ -544,33 +544,22 @@ def read_data(data_file, lever_setting):
     # Sub-matrix for LIVESTOCK MANURE MANGEMENT & GHG EMISSIONS
     dm_livestock_enteric_emissions = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_enteric']
     dm_livestock_manure = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_manure']
-    dm_livestock_manure.rename_col_regex(str1="agr_climate-smart-livestock_manure_", str2="", dim="Variables")
 
     # Sub-matrix for FEED
     dm_ration = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_ration']
     dm_alt_protein = DM_ots_fts['alt-protein']['agr_alt-protein']
 
     # Sub-matrix for CROP
-    dm_ef_residues = DM_agriculture['fxa']['ef_burnt-residues']
-    dm_food_net_import_crop = DM_ots_fts['food-net-import'].filter_w_regex({'Categories1': 'crop-.*', 'Variables': 'agr_food-net-import'})
+    dm_food_net_import_crop = DM_ots_fts['food-net-import'].filter_w_regex({'Categories1': 'crop-.*', 'Variables': 'agr_food-net-import'}) # filtered here on purpose and not in the pickle (other parts of the datamatrix are used)
     dm_food_net_import_crop.rename_col_regex(str1="crop-", str2="", dim="Categories1")
     dm_crop = DM_ots_fts['climate-smart-crop']['climate-smart-crop_losses']
     dm_food_net_import_crop.drop(dim='Categories1', col_label=['stm'])
     dm_crop.append(dm_food_net_import_crop, dim='Variables')
     dm_residues_yield = DM_agriculture['fxa']['residues_yield']
     dm_hierarchy_residues_cereals = DM_ots_fts['biomass-hierarchy']['biomass-hierarchy_crop_cereal']
-    dm_ef_soil_residues = DM_agriculture['fxa']['ef_soil-residues']
     dm_caf_crop = DM_agriculture['fxa']['caf_agr_domestic-production_food']
     dm_crop.append(dm_caf_crop, dim='Variables')
-    dm_ef_soil_residues.add(0.0, dummy=True, col_label='CH4-emission', dim='Categories1', unit='Mt')
-    dm_ef_soil_residues.sort(dim='Categories1')
-    dm_ef_residues.append(dm_ef_soil_residues, dim='Variables')
-    dm_ef_residues = dm_ef_residues.flatten() # extra steps to have correct deepening
-    dm_ef_residues.rename_col_regex(str1="residues_", str2="residues-", dim="Variables")
-    dm_ef_residues.rename_col_regex(str1="fxa_", str2="", dim="Variables")
-    dm_ef_residues.deepen()
-    dm_ef_residues.rename_col_regex(str1="residues-", str2="residues_", dim="Categories1")
-    dm_ef_residues.deepen()
+    dm_ef_residues = DM_agriculture['fxa']['ef_burnt-residues']
 
     # Sub-matrix for LAND
     dm_caf_land = DM_agriculture['fxa']['caf_agr_lus_land']
@@ -588,45 +577,7 @@ def read_data(data_file, lever_setting):
     dm_caf_energy_demand = DM_agriculture['fxa']['caf_agr_energy-demand']
     dm_energy_demand = DM_ots_fts['climate-smart-crop']['agr_climate-smart-crop_energy-demand']
     dm_caf_GHG = DM_agriculture['fxa']['caf_agr_emission_CH4']
-    dm_caf_N2O = DM_agriculture['fxa']['caf_agr_emission_N2O']
-    dm_caf_CO2 = DM_agriculture['fxa']['caf_agr_emission_CO2']
-    dm_caf_GHG.append(dm_caf_N2O, dim='Variables')
-    dm_caf_GHG.append(dm_caf_CO2, dim='Variables')
-    dm_caf_GHG.rename_col_regex(str1='caf_agr_emissions-', str2='caf_agr_emissions_', dim='Variables')
-    dm_caf_GHG.deepen()
     dm_caf_input = DM_agriculture['fxa']['caf_input']
-    # FIXME appending does not work for no apparent reason
-    # dm_energy_demand.append(dm_caf_energy_demand, dim='Variables')
-
-    # Sub-matrix for LAND USE - Land allocation
-    dm_land_man_use = DM_ots_fts['land-man']['agr_land-man_use']
-    dm_land_total = DM_agriculture['fxa']['lus_land_total-area']
-    dm_land_man_dyn = DM_ots_fts['land-man']['agr_land-man_dyn']
-
-    # Sub-matrix for LAND USE - Land matrix
-    dm_land_man_gap = DM_ots_fts['land-man']['agr_land-man_gap']
-    dm_land_man_matrix = DM_ots_fts['land-man']['agr_land-man_matrix']
-    dm_land_man_matrix.rename_col_regex(str1="agr_land-man_matrix", str2="agr_matrix", dim="Variables")
-    #dm_land_man_matrix = dm_land_man_matrix.flatten()
-    dm_land_man_matrix.deepen(based_on='Variables')
-
-    # Sub-matrix for LAND USE - Carbon dynamics
-    dm_c_stock = DM_agriculture['fxa']['land-man_ef']
-    dm_c_stock.rename_col_regex(str1="c-stock_", str2="", dim="Variables")
-    dm_c_stock.rename_col_regex(str1="ef_", str2="ef_c-stock_", dim="Variables")
-    dm_c_stock.rename_col_regex(str1="soil_", str2="soil-", dim="Variables")
-    dm_c_stock.rename_col_regex(str1="biomass_", str2="biomass-", dim="Variables")
-    dm_c_stock.deepen(based_on='Variables')
-    dm_c_stock.deepen(based_on='Variables')
-    dm_c_stock.deepen(based_on='Variables')
-    dm_soil_type = DM_agriculture['fxa']['land-man_soil-type']
-    dm_soil_type.deepen(based_on='Variables')
-    dm_soil_type.deepen(based_on='Variables')
-
-    # Sub-matrix for LAND USE - Agroforestry
-    dm_agroforestry_crop = DM_agriculture['fxa']['agr_climate-smart-crop_ef_agroforestry']
-    dm_agroforestry_liv = DM_agriculture['fxa']['agr_climate-smart-livestock_ef_agroforestry']
-    dm_forestry = DM_agriculture['fxa']['agr_climate-smart-forestry']
 
     # Aggregated Data Matrix - ENERGY & GHG EMISSIONS
     DM_energy_ghg = {
@@ -711,23 +662,10 @@ def read_data(data_file, lever_setting):
         'emissions': dm_fertilizer_emission
     }
 
-    # Aggregated Data Matrix - LAND USE
-    DM_land_use = {
-        'land_man_use': dm_land_man_use,
-        'land_total': dm_land_total,
-        'land_man_dyn': dm_land_man_dyn,
-        'land_man_gap': dm_land_man_gap,
-        'land_matrix': dm_land_man_matrix,
-        'land_c-stock' : dm_c_stock,
-        'land_soil-type' : dm_soil_type,
-        'crop_ef_agroforestry': dm_agroforestry_crop,
-        'liv_ef_agroforestry': dm_agroforestry_liv,
-        'forestry': dm_forestry
-    }
 
     CDM_const = DM_agriculture['constant']
 
-    return DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, DM_land_use, CDM_const
+    return DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, CDM_const
 
 # SimulateInteractions
 def simulate_lifestyles_to_agriculture_input():
@@ -2046,7 +1984,7 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     agriculture_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/agriculture.pickle')
-    DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, DM_land_use, CDM_const = read_data(agriculture_data_file, lever_setting)
+    DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, CDM_const = read_data(agriculture_data_file, lever_setting)
 
     # Simulate data from other modules
     if interface.has_link(from_sector='lifestyles', to_sector='agriculture'):
@@ -2090,11 +2028,32 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     DM_nitrogen, dm_fertilizer_co, dm_mineral_fertilizer = nitrogen_workflow(DM_nitrogen, DM_land, CDM_const)
     DM_energy_ghg = energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_manure, CDM_const)
 
-    # interface land use
+    # INTERFACES OUT ---------------------------------------------------------------------------------------------------
+
+    # interface to Land use
     dm_lus = agriculture_landuse_interface(DM_bioenergy, dm_lgn, dm_land_use)
     interface.add_link(from_sector='agriculture', to_sector='landuse', dm=dm_lus)
 
-    print('hello')
+    # interface to Climate emissions
+
+    # accounting for all CH4, N2O, CO2 emissions from agriculture
+
+    # Unit conversion : [t] => [Mt]
+
+    # interface to Amonia
+
+    # interface to Water
+
+    # interface to Storage
+
+    # interface to Air pollution
+
+    # interface to Employement
+
+    # interface to GTAP
+
+    # interface to Minerals
+
     return
 
 def agriculture_local_run():
@@ -2107,7 +2066,10 @@ def agriculture_local_run():
 #database_from_csv_to_datamatrix()
 
 # Run the code in local
+start = time.time()
 results_run = agriculture_local_run()
+end = time.time()
+print(end-start)
 
 
 
