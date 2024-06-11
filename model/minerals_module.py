@@ -1528,8 +1528,7 @@ def mineral_reserves(DM_minerals, DM_interface, dm_mindec, dm_mindec_sect, dm_ex
     # scale reserves by population share to make it country level
     dm_lfs = DM_interface["lifestyles"].copy()
     idx_lfs = dm_lfs.idx
-    arr_temp = dm_lfs.array[..., idx_lfs['lfs_pop_population']] / dm_lfs.array[
-        ..., idx_lfs['lfs_macro-scenarii_iiasa-ssp2']]
+    arr_temp = dm_lfs.array[..., idx_lfs['lfs_population_total']] / dm_lfs.array[..., idx_lfs['lfs_macro-scenarii_iiasa-ssp2']]
     dm_reserves.array = dm_reserves.array * arr_temp[..., np.newaxis]
 
     # clean
