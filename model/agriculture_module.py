@@ -360,15 +360,121 @@ def database_from_csv_to_datamatrix():
     ###### CONSTANTS #######
     #####################
     # ConstantsToDatamatrix
-    # Data - Constants (use 'xx|xx|xx' to add)
+    # Data - Read Constants (use 'xx|xx|xx' to add)
     cdm_const = ConstantDataMatrix.extract_constant('interactions_constants_pathwaycalc',
                                                     pattern='cp_ibp_liv_.*_brf_fdk_afat|cp_ibp_liv_.*_brf_fdk_offal|cp_ibp_bev_.*|cp_liquid_tec.*|cp_load_hours|cp_ibp_aps_insect.*|cp_ibp_aps_algae.*|cp_efficiency_liv.*|cp_ibp_processed.*|cp_ef_urea.*|cp_ef_liming|cp_emission-factor_CO2.*|cp_fst_ef_emissions-CH4_burnt|cp_fst_ef_emissions-CO2_burnt|cp_fst_ef_emissions-N2O_burnt',
                                                     num_cat=0)
 
-    # Group all datamatrix in a single structure
+
+    # Constant pre-processing ------------------------------------------------------------------------------------------
+    # Creating a dictionnay with contants
+    dict_const = {}
+
+    # Filter ibp constants for offal
+    cdm_cp_ibp_offal = cdm_const.filter_w_regex({'Variables': 'cp_ibp_liv_.*_brf_fdk_offal'})
+    cdm_cp_ibp_offal.rename_col_regex('_brf_fdk_offal', '', dim='Variables')
+    cdm_cp_ibp_offal.rename_col_regex('liv_', 'liv_meat-', dim='Variables')
+    cdm_cp_ibp_offal.deepen(based_on='Variables')  # Creating categories
+    dict_const['cdm_cp_ibp_offal'] = cdm_cp_ibp_offal
+
+    # Filter ibp constants for afat
+    cdm_cp_ibp_afat = cdm_const.filter_w_regex({'Variables': 'cp_ibp_liv_.*_brf_fdk_afat'})
+    cdm_cp_ibp_afat.rename_col_regex('_brf_fdk_afat', '', dim='Variables')
+    cdm_cp_ibp_afat.rename_col_regex('liv_', 'liv_meat-', dim='Variables')
+    cdm_cp_ibp_afat.deepen(based_on='Variables')  # Creating categories
+    dict_const['cdm_cp_ibp_afat'] = cdm_cp_ibp_afat
+
+    # Filtering relevant constants and sorting according to bev type (beer, wine, bev-alc, bev-fer)
+    cdm_cp_ibp_bev_beer = cdm_const.filter_w_regex({'Variables': 'cp_ibp_bev_beer.*'})
+    dict_const['cdm_cp_ibp_bev_beer'] = cdm_cp_ibp_bev_beer
+    cdm_cp_ibp_bev_wine = cdm_const.filter_w_regex({'Variables': 'cp_ibp_bev_wine.*'})
+    dict_const['cdm_cp_ibp_bev_wine'] = cdm_cp_ibp_bev_wine
+    cdm_cp_ibp_bev_alc = cdm_const.filter_w_regex({'Variables': 'cp_ibp_bev_bev-alc.*'})
+    dict_const['cdm_cp_ibp_bev_alc'] = cdm_cp_ibp_bev_alc
+    cdm_cp_ibp_bev_fer = cdm_const.filter_w_regex({'Variables': 'cp_ibp_bev_bev-fer.*'})
+    dict_const['cdm_cp_ibp_bev_fer'] = cdm_cp_ibp_bev_fer
+
+    # Constants for biofuels
+    cdm_biodiesel = cdm_const.filter_w_regex(({'Variables': 'cp_liquid_tec_biodiesel'}))
+    cdm_biodiesel.rename_col_regex(str1="_fdk_oil", str2="", dim="Variables")
+    cdm_biodiesel.rename_col_regex(str1="_fdk_lgn", str2="", dim="Variables")
+    cdm_biodiesel.deepen()
+    dict_const['cdm_biodiesel'] = cdm_biodiesel
+    cdm_biogasoline = cdm_const.filter_w_regex(({'Variables': 'cp_liquid_tec_biogasoline'}))
+    cdm_biogasoline.rename_col_regex(str1="_fdk_eth", str2="", dim="Variables")
+    cdm_biogasoline.rename_col_regex(str1="_fdk_lgn", str2="", dim="Variables")
+    cdm_biogasoline.deepen()
+    dict_const['cdm_biogasoline'] = cdm_biogasoline
+    cdm_biojetkerosene = cdm_const.filter_w_regex(({'Variables': 'cp_liquid_tec_biojetkerosene'}))
+    cdm_biojetkerosene.rename_col_regex(str1="_fdk_oil", str2="", dim="Variables")
+    cdm_biojetkerosene.rename_col_regex(str1="_fdk_lgn", str2="", dim="Variables")
+    cdm_biojetkerosene.deepen()
+    dict_const['cdm_biojetkerosene'] = cdm_biojetkerosene
+
+    # Filter protein conversion efficiency constant
+    cdm_cp_efficiency = cdm_const.filter_w_regex({'Variables': 'cp_efficiency_liv.*'})
+    cdm_cp_efficiency.rename_col_regex('meat_', 'meat-', dim='Variables')
+    cdm_cp_efficiency.rename_col_regex('abp_', 'abp-', dim='Variables')
+    cdm_cp_efficiency.deepen(based_on='Variables')  # Creating categories
+    dict_const['cdm_cp_efficiency'] = cdm_cp_efficiency
+
+    # Constants for APS byproducts
+    cdm_aps_ibp = cdm_const.filter_w_regex({'Variables': 'cp_ibp_aps.*'})
+    cdm_aps_ibp.drop(dim='Variables', col_label=['cp_ibp_aps_insect_brf_fdk_manure'])
+    cdm_aps_ibp.rename_col_regex('brf_', '', dim='Variables')
+    cdm_aps_ibp.rename_col_regex('crop_algae', 'crop', dim='Variables')
+    cdm_aps_ibp.rename_col_regex('crop_insect', 'crop', dim='Variables')
+    cdm_aps_ibp.rename_col_regex('fdk_', 'fdk-', dim='Variables')
+    cdm_aps_ibp.rename_col_regex('algae_', 'algae-', dim='Variables')  # Extra steps to have the correct cat order
+    cdm_aps_ibp.rename_col_regex('insect_', 'insect-', dim='Variables')
+    cdm_aps_ibp.deepen(based_on='Variables')  # Creating categories
+    cdm_aps_ibp.rename_col_regex('algae-', 'algae_', dim='Categories1')  # Extra steps to have the correct cat order
+    cdm_aps_ibp.rename_col_regex('insect-', 'insect_', dim='Categories1')
+    cdm_aps_ibp.deepen(based_on='Categories1')
+    dict_const['cdm_aps_ibp'] = cdm_aps_ibp
+
+    # Feed yield
+    cdm_feed_yield = cdm_const.filter_w_regex({'Variables': 'cp_ibp_processed'})
+    cdm_feed_yield.rename_col_regex(str1="_to_", str2="-to-", dim="Variables")
+    cdm_feed_yield.deepen()
+    cdm_food_yield = cdm_feed_yield.filter({'Categories1': ['sweet-to-sugarcrop']})
+    cdm_feed_yield.drop(dim='Categories1', col_label=['sweet-to-sugarcrop'])
+    dict_const['cdm_food_yield'] = cdm_food_yield
+    dict_const['cdm_feed_yield'] = cdm_feed_yield
+
+    # Fertilizer
+    cdm_fertilizer_co = cdm_const.filter({'Variables': ['cp_ef_liming', 'cp_ef_urea']})
+    cdm_fertilizer_co.deepen()
+    dict_const['cdm_fertilizer_co'] = cdm_fertilizer_co
+
+    # CO2 emissions factor bioenergy
+    cdm_const.rename_col_regex(str1="liquid_", str2="liquid-", dim="Variables")
+    cdm_const.rename_col_regex(str1="gas_", str2="gas-", dim="Variables")
+    cdm_const.rename_col_regex(str1="solid_", str2="solid-", dim="Variables")
+    cdm_CO2 = cdm_const.filter({'Variables': ['cp_emission-factor_CO2_bioenergy-gas-biogas',
+                                              'cp_emission-factor_CO2_bioenergy-liquid-biodiesels',
+                                              'cp_emission-factor_CO2_bioenergy-liquid-ethanol',
+                                              'cp_emission-factor_CO2_bioenergy-liquid-oth',
+                                              'cp_emission-factor_CO2_bioenergy-solid-wood',
+                                              'cp_emission-factor_CO2_electricity',
+                                              'cp_emission-factor_CO2_gas-ff-natural', 'cp_emission-factor_CO2_heat',
+                                              'cp_emission-factor_CO2_liquid-ff-diesel',
+                                              'cp_emission-factor_CO2_liquid-ff-fuel-oil',
+                                              'cp_emission-factor_CO2_liquid-ff-gasoline',
+                                              'cp_emission-factor_CO2_liquid-ff-lpg', 'cp_emission-factor_CO2_oth',
+                                              'cp_emission-factor_CO2_solid-ff-coal'],
+                                'units': ['MtCO2/ktoe']})
+    cdm_CO2.deepen()
+    dict_const['cdm_CO2'] = cdm_CO2
+
+    # Eectricity
+    cdm_load = cdm_const.filter({'Variables': ['cp_load_hours-per-year-twh']})
+    dict_const['cdm_load'] = cdm_load
+
+    # Group all datamatrix in a single structure -----------------------------------------------------------------------
     DM_agriculture = {
         'fxa': dict_fxa,
-        'constant': cdm_const,
+        'constant': dict_const,
         'fts': dict_fts,
         'ots': dict_ots
     }
@@ -619,9 +725,9 @@ def read_data(data_file, lever_setting):
         'forestry': dm_forestry
     }
 
-    cdm_const = DM_agriculture['constant']
+    CDM_const = DM_agriculture['constant']
 
-    return DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, DM_land_use, cdm_const
+    return DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, DM_land_use, CDM_const
 
 # SimulateInteractions
 def simulate_lifestyles_to_agriculture_input():
@@ -756,7 +862,7 @@ def food_demand_workflow(DM_food_demand, dm_lfs):
     return dm_lfs, dm_lfs_pro
 
 # CalculationLeaf ANIMAL SOURCED FOOD DEMAND TO LIVESTOCK POPULATION AND LIVESTOCK PRODUCTS ----------------------------
-def livestock_workflow(DM_livestock, cdm_const, dm_lfs_pro):
+def livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro):
 
     # Filter dm_lfs_pro to only have livestock products
     dm_lfs_pro_liv = dm_lfs_pro.filter_w_regex({'Categories1': 'pro-liv.*', 'Variables': 'agr_domestic_production'})
@@ -829,16 +935,11 @@ def livestock_workflow(DM_livestock, cdm_const, dm_lfs_pro):
 
     # LIVESTOCK BYPRODUCTS
     # Filter ibp constants for offal
-    cdm_cp_ibp_offal = cdm_const.filter_w_regex({'Variables': 'cp_ibp_liv_.*_brf_fdk_offal'})
-    cdm_cp_ibp_offal.rename_col_regex('_brf_fdk_offal', '', dim='Variables')
-    cdm_cp_ibp_offal.rename_col_regex('liv_', 'liv_meat-', dim='Variables')
-    cdm_cp_ibp_offal.deepen(based_on='Variables')  # Creating categories
+    cdm_cp_ibp_offal = CDM_const['cdm_cp_ibp_offal']
+
 
     # Filter ibp constants for afat
-    cdm_cp_ibp_afat = cdm_const.filter_w_regex({'Variables': 'cp_ibp_liv_.*_brf_fdk_afat'})
-    cdm_cp_ibp_afat.rename_col_regex('_brf_fdk_afat', '', dim='Variables')
-    cdm_cp_ibp_afat.rename_col_regex('liv_', 'liv_meat-', dim='Variables')
-    cdm_cp_ibp_afat.deepen(based_on='Variables')  # Creating categories
+    cdm_cp_ibp_afat = CDM_const['cdm_cp_ibp_afat']
 
     # Filter cal_agr_liv_population for meat
     cal_liv_population_meat = DM_livestock['caf_liv_population'].filter_w_regex(
@@ -894,7 +995,7 @@ def livestock_workflow(DM_livestock, cdm_const, dm_lfs_pro):
     return DM_livestock, dm_liv_ibp, dm_liv_ibp
 
 # CalculationLeaf ALCOHOLIC BEVERAGES INDUSTRY -------------------------------------------------------------------------
-def alcoholic_beverages_workflow(DM_alc_bev, cdm_const, dm_lfs_pro):
+def alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro):
     # From FOOD DEMAND filtering domestic production bev and renaming
     # Beer
     dm_bev_beer = dm_lfs_pro.filter_w_regex({'Categories1': 'pro-bev-beer.*', 'Variables': 'agr_domestic_production'})
@@ -913,11 +1014,11 @@ def alcoholic_beverages_workflow(DM_alc_bev, cdm_const, dm_lfs_pro):
     dm_bev_wine.rename_col_regex(str1="pro-bev-", str2="", dim="Categories1")
     dm_bev_wine = dm_bev_wine.flatten()
 
-    # From CDM_CONSTANT filtering relevant constants and sorting according to bev type (beer, wine, bev-alc, bev-fer)
-    cdm_cp_ibp_bev_beer = cdm_const.filter_w_regex({'Variables': 'cp_ibp_bev_beer.*'})
-    cdm_cp_ibp_bev_wine = cdm_const.filter_w_regex({'Variables': 'cp_ibp_bev_wine.*'})
-    cdm_cp_ibp_bev_alc = cdm_const.filter_w_regex({'Variables': 'cp_ibp_bev_bev-alc.*'})
-    cdm_cp_ibp_bev_fer = cdm_const.filter_w_regex({'Variables': 'cp_ibp_bev_bev-fer.*'})
+    # Constants and sorting according to bev type (beer, wine, bev-alc, bev-fer)
+    cdm_cp_ibp_bev_beer = CDM_const['cdm_cp_ibp_bev_beer']
+    cdm_cp_ibp_bev_wine = CDM_const['cdm_cp_ibp_bev_wine']
+    cdm_cp_ibp_bev_alc = CDM_const['cdm_cp_ibp_bev_alc']
+    cdm_cp_ibp_bev_fer = CDM_const['cdm_cp_ibp_bev_fer']
 
     # Byproducts per bev type [kcal] = agr_domestic_production bev [kcal] * yields [%]
     # Beer - Feedstock Yeast
@@ -1009,14 +1110,17 @@ def alcoholic_beverages_workflow(DM_alc_bev, cdm_const, dm_lfs_pro):
     return DM_alc_bev, dm_bev_ibp_cereal_feed
 
 # CalculationLeaf BIOENERGY CAPACITY ----------------------------------------------------------------------------------
-def bioenergy_workflow(DM_bioenergy, cdm_const, dm_ind, dm_bld, dm_tra):
+def bioenergy_workflow(DM_bioenergy, CDM_const, dm_ind, dm_bld, dm_tra):
+
+    # Constant
+    cdm_load = CDM_const['cdm_load']
 
     # Electricity production
     # Bioenergy capacity [TWh] = bioenergy capacity [GW] * load hours per year [h] (accounting for unit change)
     idx_bio_cap_elec = DM_bioenergy['electricity_production'].idx
-    idx_const = cdm_const.idx
+    idx_const = cdm_load.idx
     dm_bio_cap = DM_bioenergy['electricity_production'].array[:, :, idx_bio_cap_elec['agr_bioenergy-capacity_elec'], :] \
-                 * cdm_const.array[idx_const['cp_load_hours-per-year-twh']]
+                 * cdm_load.array[idx_const['cp_load_hours-per-year-twh']]
     DM_bioenergy['electricity_production'].add(dm_bio_cap, dim='Variables', col_label='agr_bioenergy-capacity_lfe',
                                                unit='TWh')
 
@@ -1152,19 +1256,10 @@ def bioenergy_workflow(DM_bioenergy, cdm_const, dm_ind, dm_bld, dm_tra):
 
     # Liquid biofuel feedtsock requirements [kcal] = Liquid biofuel per type [TWh] * share per technology [kcal/TWh]
 
-    # Constant pre-processing
-    cdm_biodiesel = cdm_const.filter_w_regex(({'Variables': 'cp_liquid_tec_biodiesel'}))
-    cdm_biodiesel.rename_col_regex(str1="_fdk_oil", str2="", dim="Variables")
-    cdm_biodiesel.rename_col_regex(str1="_fdk_lgn", str2="", dim="Variables")
-    cdm_biodiesel.deepen()
-    cdm_biogasoline = cdm_const.filter_w_regex(({'Variables': 'cp_liquid_tec_biogasoline'}))
-    cdm_biogasoline.rename_col_regex(str1="_fdk_eth", str2="", dim="Variables")
-    cdm_biogasoline.rename_col_regex(str1="_fdk_lgn", str2="", dim="Variables")
-    cdm_biogasoline.deepen()
-    cdm_biojetkerosene = cdm_const.filter_w_regex(({'Variables': 'cp_liquid_tec_biojetkerosene'}))
-    cdm_biojetkerosene.rename_col_regex(str1="_fdk_oil", str2="", dim="Variables")
-    cdm_biojetkerosene.rename_col_regex(str1="_fdk_lgn", str2="", dim="Variables")
-    cdm_biojetkerosene.deepen()
+    # Constant pre processing
+    cdm_biodiesel = CDM_const['cdm_biodiesel']
+    cdm_biogasoline = CDM_const['cdm_biogasoline']
+    cdm_biojetkerosene =CDM_const['cdm_biojetkerosene']
 
     # Biodiesel
     idx_cdm = cdm_biodiesel.idx
@@ -1345,14 +1440,11 @@ def livestock_manure_workflow(DM_manure, DM_livestock,  cdm_const):
     return DM_manure
 
 # CalculationLeaf FEED -------------------------------------------------------------------------------------------------
-def feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, cdm_const):
+def feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, CDM_const):
 
     # FEED REQUIREMENTS
     # Filter protein conversion efficiency constant
-    cdm_cp_efficiency = cdm_const.filter_w_regex({'Variables': 'cp_efficiency_liv.*'})
-    cdm_cp_efficiency.rename_col_regex('meat_', 'meat-', dim='Variables')
-    cdm_cp_efficiency.rename_col_regex('abp_', 'abp-', dim='Variables')
-    cdm_cp_efficiency.deepen(based_on='Variables')  # Creating categories
+    cdm_cp_efficiency = CDM_const['cdm_cp_efficiency']
 
     # Pre processing domestic ASF prod accounting for waste [kcal]
     dm_feed_req = DM_livestock['losses'].filter({'Variables': ['agr_domestic_production_liv_afw']})
@@ -1390,19 +1482,7 @@ def feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, cdm_const):
     dm_aps.append(dm_insect, dim='Categories1')
 
     # Filter APS byproduct ration constant
-    cdm_aps_ibp = cdm_const.filter_w_regex({'Variables': 'cp_ibp_aps.*'})
-    cdm_aps_ibp.drop(dim='Variables', col_label=['cp_ibp_aps_insect_brf_fdk_manure'])
-    cdm_aps_ibp.rename_col_regex('brf_', '', dim='Variables')
-    cdm_aps_ibp.rename_col_regex('crop_algae', 'crop', dim='Variables')
-    cdm_aps_ibp.rename_col_regex('crop_insect', 'crop', dim='Variables')
-    cdm_aps_ibp.rename_col_regex('fdk_', 'fdk-', dim='Variables')
-    cdm_aps_ibp.rename_col_regex('algae_', 'algae-', dim='Variables')  # Extra steps to have the correct cat order
-    cdm_aps_ibp.rename_col_regex('insect_', 'insect-', dim='Variables')
-    cdm_aps_ibp.deepen(based_on='Variables')  # Creating categories
-    cdm_aps_ibp.rename_col_regex('algae-', 'algae_', dim='Categories1')  # Extra steps to have the correct cat order
-    cdm_aps_ibp.rename_col_regex('insect-', 'insect_', dim='Categories1')
-    cdm_aps_ibp.deepen(based_on='Categories1')
-
+    cdm_aps_ibp = CDM_const['cdm_aps_ibp']
 
     # APS byproducts [kcal] = APS production [kcal] * byproduct ratio [%]
     idx_cdm = cdm_aps_ibp.idx
@@ -1471,18 +1551,15 @@ def biomass_allocation_workflow(dm_aps_ibp, dm_oil):
     return dm_voil
 
  # CalculationLeaf CROP PRODUCTION ----------------------------------------------------------------------------------
-def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, cdm_const):
+def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const):
 
     # DOMESTIC PRODUCTION ACCOUNTING FOR LOSSES ------------------------------------------------------------------------
 
     # ( Domestic production processed voil [kcal])
 
     # Constant pre-processing
-    cdm_feed_yield = cdm_const.filter_w_regex({'Variables': 'cp_ibp_processed'})
-    cdm_feed_yield.rename_col_regex(str1="_to_", str2="-to-", dim="Variables")
-    cdm_feed_yield.deepen()
-    cdm_food_yield = cdm_feed_yield.filter({'Categories1': ['sweet-to-sugarcrop']})
-    cdm_feed_yield.drop(dim='Categories1', col_label=['sweet-to-sugarcrop'])
+    cdm_feed_yield = CDM_const['cdm_feed_yield']
+    cdm_food_yield = CDM_const['cdm_food_yield']
 
     # Processed Feed pre-processing FIXME change to calibrated feed demand
     dm_feed_processed = DM_feed['caf_agr_demand_feed'].filter_w_regex(
@@ -1765,7 +1842,7 @@ def land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, dm_ind):
     return DM_land, dm_land_use
 
 # CalculationLeaf NITROGEN BALANCE -------------------------------------------------------------------------------------
-def nitrogen_workflow(DM_nitrogen, DM_land, cdm_const):
+def nitrogen_workflow(DM_nitrogen, DM_land, CDM_const):
 
     # FOR GRAPHS -------------------------------------------------------------------------------------------------------
 
@@ -1799,8 +1876,8 @@ def nitrogen_workflow(DM_nitrogen, DM_land, cdm_const):
     # CO2 EMISSIONS ----------------------------------------------------------------------------------------------------
     # Pre processing
     dm_fertilizer_co = DM_nitrogen['input'].filter({'Variables': ['agr_input-use'], 'Categories1': ['liming', 'urea']})
-    cdm_fertilizer_co = cdm_const.filter({'Variables': ['cp_ef_liming', 'cp_ef_urea']})
-    cdm_fertilizer_co.deepen()
+    cdm_fertilizer_co = CDM_const['cdm_fertilizer_co']
+
 
     # For liming & urea: CO2 emissions [MtCO2] =  Fertilizer application[t] * emission factor [MtCO2/t]
     idx_cdm = cdm_fertilizer_co.idx
@@ -1812,7 +1889,7 @@ def nitrogen_workflow(DM_nitrogen, DM_land, cdm_const):
     return DM_nitrogen, dm_fertilizer_co, dm_mineral_fertilizer
 
  # CalculationLeaf ENERGY & GHG -------------------------------------------------------------------------------------
-def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_manure, cdm_const):
+def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_manure, CDM_const):
 
     # ENERGY DEMAND ----------------------------------------------------------------------------------------------------
     # Energy demand from agriculture [ktoe] = energy demand [ktoe/ha] * Agricultural land [ha] FIXME replace with calibration land
@@ -1830,23 +1907,7 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_ma
 
     # CO2 EMISSIONS ----------------------------------------------------------------------------------------------------
     # Pre processing : filtering and deepening constants
-    cdm_const.rename_col_regex(str1="liquid_", str2="liquid-", dim="Variables")
-    cdm_const.rename_col_regex(str1="gas_", str2="gas-", dim="Variables")
-    cdm_const.rename_col_regex(str1="solid_", str2="solid-", dim="Variables")
-    cdm_CO2 = cdm_const.filter({'Variables': ['cp_emission-factor_CO2_bioenergy-gas-biogas',
-                                              'cp_emission-factor_CO2_bioenergy-liquid-biodiesels',
-                                              'cp_emission-factor_CO2_bioenergy-liquid-ethanol',
-                                              'cp_emission-factor_CO2_bioenergy-liquid-oth',
-                                              'cp_emission-factor_CO2_bioenergy-solid-wood',
-                                              'cp_emission-factor_CO2_electricity',
-                                              'cp_emission-factor_CO2_gas-ff-natural', 'cp_emission-factor_CO2_heat',
-                                              'cp_emission-factor_CO2_liquid-ff-diesel',
-                                              'cp_emission-factor_CO2_liquid-ff-fuel-oil',
-                                              'cp_emission-factor_CO2_liquid-ff-gasoline',
-                                              'cp_emission-factor_CO2_liquid-ff-lpg', 'cp_emission-factor_CO2_oth',
-                                              'cp_emission-factor_CO2_solid-ff-coal'],
-                                'units': ['MtCO2/ktoe']})
-    cdm_CO2.deepen()
+    cdm_CO2 = CDM_const['cdm_CO2']
 
     # Energy direct emission [MtCO2] = energy demand [ktoe] * fertilizer use [MtCO2/ktoe] FIXME replace with calibrated energy demand
     dm_energy = DM_energy_ghg['caf_energy_demand']
@@ -1985,7 +2046,7 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     agriculture_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/agriculture.pickle')
-    DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, DM_land_use, cdm_const = read_data(agriculture_data_file, lever_setting)
+    DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, DM_land_use, CDM_const = read_data(agriculture_data_file, lever_setting)
 
     # Simulate data from other modules
     if interface.has_link(from_sector='lifestyles', to_sector='agriculture'):
@@ -2018,16 +2079,16 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     # CalculationTree AGRICULTURE
 
     dm_lfs, dm_lfs_pro = food_demand_workflow(DM_food_demand, dm_lfs)
-    DM_livestock, dm_liv_ibp, dm_liv_ibp= livestock_workflow(DM_livestock, cdm_const, dm_lfs_pro)
-    DM_alc_bev, dm_bev_ibp_cereal_feed = alcoholic_beverages_workflow(DM_alc_bev, cdm_const, dm_lfs_pro)
-    DM_bioenergy, dm_oil, dm_lgn, dm_eth, dm_biofuel_fdk = bioenergy_workflow(DM_bioenergy, cdm_const, dm_ind, dm_bld, dm_tra)
-    DM_manure = livestock_manure_workflow(DM_manure, DM_livestock, cdm_const)
-    DM_feed, dm_aps_ibp, dm_feed_req = feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, cdm_const)
+    DM_livestock, dm_liv_ibp, dm_liv_ibp= livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro)
+    DM_alc_bev, dm_bev_ibp_cereal_feed = alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro)
+    DM_bioenergy, dm_oil, dm_lgn, dm_eth, dm_biofuel_fdk = bioenergy_workflow(DM_bioenergy, CDM_const, dm_ind, dm_bld, dm_tra)
+    DM_manure = livestock_manure_workflow(DM_manure, DM_livestock, CDM_const)
+    DM_feed, dm_aps_ibp, dm_feed_req = feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, CDM_const)
     dm_voil = biomass_allocation_workflow(dm_aps_ibp, dm_oil)
-    DM_crop, dm_crop_other, dm_feed_processed, dm_food_processed = crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, cdm_const)
+    DM_crop, dm_crop_other, dm_feed_processed, dm_food_processed = crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const)
     DM_land, dm_land_use = land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, dm_ind)
-    DM_nitrogen, dm_fertilizer_co, dm_mineral_fertilizer = nitrogen_workflow(DM_nitrogen, DM_land, cdm_const)
-    DM_energy_ghg = energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_manure, cdm_const)
+    DM_nitrogen, dm_fertilizer_co, dm_mineral_fertilizer = nitrogen_workflow(DM_nitrogen, DM_land, CDM_const)
+    DM_energy_ghg = energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_manure, CDM_const)
 
     # interface land use
     dm_lus = agriculture_landuse_interface(DM_bioenergy, dm_lgn, dm_land_use)
@@ -2043,10 +2104,10 @@ def agriculture_local_run():
 
 
 # Creates the pickle, to do only once
-# database_from_csv_to_datamatrix()
+#database_from_csv_to_datamatrix()
 
 # Run the code in local
-# results_run = agriculture_local_run()
+results_run = agriculture_local_run()
 
 
 

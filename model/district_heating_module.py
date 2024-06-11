@@ -454,6 +454,8 @@ def district_heating(lever_setting, years_setting, interface=Interface()):
     if interface.has_link(from_sector='power', to_sector='district-heating'):
         DM_pow = interface.get_link(from_sector='power', to_sector='district-heating')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing power to district-heating interface')
         DM_pow = simulate_power_to_district_heating_input()
         for key in DM_pow.keys():
             DM_pow[key].filter({'Country': cntr_list}, inplace=True)
@@ -461,12 +463,16 @@ def district_heating(lever_setting, years_setting, interface=Interface()):
     if interface.has_link(from_sector='industry', to_sector='district-heating'):
         dm_ind = interface.get_link(from_sector='industry', to_sector='district-heating')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing industry to district-heating interface')
         dm_ind = simulate_industry_to_district_heating_input()
         dm_ind.filter({'Country': cntr_list}, inplace=True)
 
     if interface.has_link(from_sector='buildings', to_sector='district-heating'):
         DM_bld = interface.get_link(from_sector='buildings', to_sector='district-heating')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing buildings to district-heating interface')
         DM_bld = simulate_buildings_to_district_heating_input()
         for key in DM_bld.keys():
             DM_bld[key].filter({'Country': cntr_list}, inplace=True)
