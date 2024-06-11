@@ -503,6 +503,10 @@ def lifestyles(lever_setting, years_setting, interface=Interface()):
     interface.add_link(from_sector='lifestyles', to_sector='buildings', dm=DM_building_out)
     interface.add_link(from_sector='lifestyles', to_sector='industry', dm=dm_industry_out)
 
+    dm_minerals = DM_industry['macro']
+    dm_minerals.append(DM_industry['population'], dim='Variables')
+    interface.add_link(from_sector='lifestyles', to_sector='minerals', dm=dm_minerals)
+
     return results_run
 
 
@@ -511,7 +515,7 @@ def local_lifestyles_run():
     # Initiate the year & lever setting
     years_setting, lever_setting = init_years_lever()
 
-    global_vars = {'geoscale': 'France|Switzerland'}
+    global_vars = {'geoscale': '.*'}
     filter_geoscale(global_vars)
 
     lifestyles(lever_setting, years_setting)
