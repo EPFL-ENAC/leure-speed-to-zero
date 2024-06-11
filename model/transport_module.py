@@ -602,7 +602,7 @@ def passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const, years_sett
     dm_electricity.units['tra_power-demand'] = 'GWh'
 
     DM_passenger_out = {
-        'power': dm_electricity,
+        'power': {'electricity': dm_electricity.flatten()},
     }
     # end energy output
 
@@ -622,6 +622,13 @@ def passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const, years_sett
              'gasolineefuel': 'egasoline', 'gasefuel': 'egas', 'elec': 'electricity'}
 
     dm_tot_energy = rename_and_group(dm_energy_new_cat, grouping, dict2, grouped_var='tra_passenger_total-energy')
+
+    # Power output
+    dm_pow_hydrogen = dm_tot_energy.filter({'Categories1': ['hydrogen']})
+    dm_pow_hydrogen.rename_col('tra_passenger_total-energy', 'tra_power-demand', dim='Variables')
+    dm_pow_hydrogen.array = dm_pow_hydrogen.array/1000
+    dm_pow_hydrogen.units['tra_power-demand'] = 'GWh'
+    DM_passenger_out['power']['hydrogen'] = dm_pow_hydrogen.flatten()
 
     DM_passenger_out['oil-refinery'] = dm_tot_energy.filter({'Categories1': ['gasoline', 'diesel', 'gas', 'kerosene']})
 
@@ -831,7 +838,7 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
     dm_electricity.units['tra_power-demand'] = 'GWh'
 
     DM_freight_out = {
-        'power': dm_electricity,
+        'power': {'electricity': dm_electricity.flatten()},
     }
     ## end
 
@@ -854,6 +861,13 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
 
     dm_total_energy = rename_and_group(dm_energy_new_cat, grouping, dict2, grouped_var='tra_freight_total-energy')
     dm_total_energy.rename_col('ICE', 'marinefueloil', dim='Categories1')
+
+    # Output to power:
+    dm_pow_hydrogen = dm_total_energy.filter({'Categories1': ['hydrogen']})
+    dm_pow_hydrogen.rename_col('tra_freight_total-energy', 'tra_power-demand', dim='Variables')
+    dm_pow_hydrogen.array = dm_pow_hydrogen.array/1000
+    dm_pow_hydrogen.units['tra_power-demand'] = 'GWh'
+    DM_freight_out['power']['hydrogen'] = dm_pow_hydrogen.flatten()
 
     # Prepare output to refinery:
     DM_freight_out['oil-refinery'] = dm_total_energy.filter({'Categories1': ['gasoline', 'diesel', 'marinefueloil', 'gas', 'kerosene']})
@@ -1127,9 +1141,10 @@ def transport(lever_setting, years_setting, interface=Interface()):
     results_run = prepare_TPE_output(DM_passenger_out, DM_freight_out)
 
     # Power-module
-    dm_power = DM_passenger_out['power']
-    dm_power.array = dm_power.array + DM_freight_out['power'].array
-    interface.add_link(from_sector='transport', to_sector='power', dm=dm_power)
+    DM_power = DM_passenger_out['power']
+    DM_power['hydrogen'].array = DM_power['hydrogen'].array + DM_freight_out['power']['hydrogen'].array
+    DM_power['electricity'].array = DM_power['electricity'].array + DM_freight_out['power']['electricity'].array
+    interface.add_link(from_sector='transport', to_sector='power', dm=DM_power)
     # df = dm_power.write_df()
     # df.to_excel('transport-to-power.xlsx', index=False)
 

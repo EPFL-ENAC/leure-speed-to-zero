@@ -875,9 +875,16 @@ def ammonia_power_interface(DM_energy_demand, write_xls = False):
     # dm_elc
     dm_elc = DM_energy_demand["bycarr"].filter(
         {"Categories1" : ['electricity','hydrogen']})
-    dm_elc.rename_col("energy-demand", "ind_energy-demand", "Variables")
+    dm_elc.rename_col("energy-demand", "amm_energy-demand", "Variables")
     dm_elc = dm_elc.flatten()
-    dm_elc.sort("Variables")
+
+    dm_amm_electricity = dm_elc.filter({'Variables': ['amm_energy-demand_electricity']})
+    dm_amm_hydrogen = dm_elc.filter({'Variables': ['amm_energy-demand_hydrogen']})
+
+    DM_power = {
+        'electricity': dm_amm_electricity,
+        'hydrogen': dm_amm_hydrogen
+    }
 
     # df_elc
     if write_xls is True:
@@ -886,7 +893,7 @@ def ammonia_power_interface(DM_energy_demand, write_xls = False):
         dm_elc.to_excel(current_file_directory + "/../_database/data/xls/" + 'ammonia-to-power.xlsx', index=False)
         
     # return
-    return dm_elc
+    return DM_power
 
 def ammonia_refinery_interface(DM_energy_demand, write_xls = False):
     
@@ -1068,8 +1075,8 @@ def ammonia(lever_setting, years_setting, interface = Interface(), calibration =
     df = variables_for_tpe(DM_cost, DM_emissions, DM_material_production, DM_energy_demand)
     
     # interface power
-    dm_power = ammonia_power_interface(DM_energy_demand)
-    interface.add_link(from_sector='ammonia', to_sector='power', dm=dm_power)
+    DM_power = ammonia_power_interface(DM_energy_demand)
+    interface.add_link(from_sector='ammonia', to_sector='power', dm=DM_power)
     
     # interface refinery
     dm_refinery = ammonia_refinery_interface(DM_energy_demand)
