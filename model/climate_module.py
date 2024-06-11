@@ -52,11 +52,13 @@ def database_from_csv_to_datamatrix():
     lever = "temp"
 
     # Creates the datamatrix for lifestyles population
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 0], baseyear=baseyear,
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 0, 0, 0], baseyear=baseyear,
                                                                 years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
                                                                 column='eucalc-name', group_list=[
                                                                             'bld_climate-impact-space',
-                                                                            'bld_climate-impact_average'])
+                                                                            'bld_climate-impact_average',
+                                                                            'clm_capacity-factor',
+                                                                            'clm_temp_global'])
 
     #  Create the data matrix for lifestyles
     DM_climate = {
@@ -95,6 +97,14 @@ def climate_buildings_interface(DM_ots_fts, write_xls = False):
     # return
     return DM_bld
 
+def variables_to_tpe(DM_ots_fts):
+    
+    dm_tpe = DM_ots_fts["temp"]["clm_capacity-factor"]
+    dm_tpe.append(DM_ots_fts["temp"]["clm_temp_global"], "Variables")
+    df = dm_tpe.write_df()
+    
+    return df
+
 # CORE module
 def climate(lever_setting, years_setting, interface = Interface(), calibration = False):
     
@@ -103,13 +113,15 @@ def climate(lever_setting, years_setting, interface = Interface(), calibration =
     climate_data_file = os.path.join(current_file_directory,'../_database/data/datamatrix/geoscale/climate.pickle')
     DM_ots_fts = read_data(climate_data_file, lever_setting)
     
+    # tpe
+    results_run = variables_to_tpe(DM_ots_fts)
+    
     # interface buildings
     DM_bld = climate_buildings_interface(DM_ots_fts)
     interface.add_link(from_sector='climate', to_sector='buildings', dm=DM_bld)
 
     # TODO: interface water when water is ready
 
-    results_run = {}
     return results_run
 
 
@@ -130,7 +142,7 @@ def local_climate_run():
 
 # # local
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/climate_module.py"
-# database_from_csv_to_datamatrix()
+# # database_from_csv_to_datamatrix()
 # results_run = local_climate_run()
 
 
