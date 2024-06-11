@@ -1537,68 +1537,98 @@ def industry_gtap_interface(DM_energy_demand, DM_material_production, write_xls 
 
 def industry_minerals_interface(DM_material_production, DM_production, DM_ots_fts, write_xls = False):
     
-    # unit conversions
-    dm_timber = DM_material_production["bymat"].filter({"Categories1" : ["timber"]})
-    dm_timber = dm_timber.flatten()
-    dm_timber.rename_col("material-production_timber", "timber", "Variables")
-    dm_timber.array = dm_timber.array / 1000
-    dm_timber.units["timber"] = "Mt"
+    DM_ind = {}
+    
+    # aluminium pack
+    dm_alupack = DM_production["lfs"].filter({"Categories1" : ["aluminium-pack"]})
+    DM_ind["aluminium-pack"] = dm_alupack.flatten()
+    
+    # material production
+    dm_matprod = DM_material_production["bymat"].filter({"Categories1" : ["timber"]})
+    dm_matprod.array = dm_matprod.array / 1000
+    dm_matprod.units["material-production"] = "Mt"
     dm_glass = DM_material_production["bymat"].filter({"Categories1" : ["glass"]})
     dm_glass.array = dm_glass.array / 1000
-    dm_glass.units["material-production"] = "Mt"
+    dm_matprod.append(dm_glass, "Categories1")
     dm_cement = DM_material_production["bymat"].filter({"Categories1" : ['cement']})
     dm_cement.array = dm_cement.array / 1000
-    dm_cement.units["material-production"] = "Mt"
-
-    # rename
-    dm_alupack = DM_production["lfs"].filter({"Categories1" : ["aluminium-pack"]})
-    # dm_alupack.rename_col("ind_product-production","ind_prod","Variables")
+    dm_matprod.append(dm_cement, "Categories1")
+    dm_paper_woodpulp = DM_material_production["bytech"].filter({"Categories1" : ['paper_woodpulp']})
+    dm_matprod.append(dm_paper_woodpulp, "Categories1")
+    dm_matprod.rename_col("material-production", "ind_material-production","Variables")
+    DM_ind["material-production"] = dm_matprod.flatten()
+    
+    # technology development
     dm_techdev = DM_ots_fts['technology-development'].filter(
         {"Categories1" : ['aluminium-prim', 'aluminium-sec','copper-tech',
                           'steel-BF-BOF', 'steel-hisarna', 'steel-hydrog-DRI', 
                           'steel-scrap-EAF']})
     variables = dm_techdev.col_labels["Categories1"]
-    variables_new = [rename_tech_fordeepen(i) for i in variables]
+    variables_new = ['aluminium_primary', 'aluminium_secondary','copper_secondary',
+                      'steel_BF-BOF', 'steel_hisarna', 'steel_hydrog-DRI', 
+                      'steel_scrap-EAF']
     for i in range(len(variables)):
         dm_techdev.rename_col(variables[i], variables_new[i], dim = "Categories1")
-
-    # dm_min
-    dm_min = dm_glass.flatten()
-    dm_min.append(dm_timber, "Variables")
-    dm_min.append(DM_material_production["bytech"].filter(
-        {"Categories1" : ['paper_woodpulp']}).flatten(), "Variables")
-    dm_min.append(dm_cement.flatten(), "Variables")
-    variables = dm_min.col_labels["Variables"]
-    for i in variables:
-        dm_min.rename_col(i, "ind_" + i, "Variables")
-    dm_min.append(DM_ots_fts['material-efficiency'].filter(
+    dm_techdev.rename_col("ind_technology-development","ind_proportion","Variables")
+    DM_ind["technology-development"] = dm_techdev.flatten()
+    
+    # material efficiency
+    DM_ind["material-efficiency"] = DM_ots_fts['material-efficiency'].filter(
         {"Variables" : ['ind_material-efficiency'],
-         "Categories1" : ['aluminium','copper','steel']}).flatten(), "Variables")
-    dm_min.append(DM_ots_fts['material-switch'].filter(
+         "Categories1" : ['aluminium','copper','steel']})
+    
+    # material switch
+    dm_temp = DM_ots_fts['material-switch'].filter(
         {"Categories1" : ['build-steel-to-timber', 'cars-steel-to-chem', 
-                          'trucks-steel-to-aluminium', 'trucks-steel-to-chem']}).flatten(), "Variables")
-    dm_min.append(dm_alupack.flatten(), "Variables")
-    dm_min.append(dm_techdev.flatten(), "Variables")
-    dm_min.append(DM_ots_fts["product-net-import"].filter(
+                          'trucks-steel-to-aluminium', 'trucks-steel-to-chem']}).flatten()
+    dm_temp.rename_col_regex("material-switch_","material-switch-","Variables")
+    DM_ind["material-switch"] = dm_temp
+    
+    # product net import
+    dm_temp = DM_ots_fts["product-net-import"].filter(
         {"Variables" : ["ind_product-net-import"],
          "Categories1" : ['cars-EV', 'cars-FCV', 'cars-ICE', 'computer', 'dishwasher', 'dryer',
                           'freezer', 'fridge','phone','planes','rail','road', 'ships', 'trains',
                           'trolley-cables', 'trucks-EV', 'trucks-FCV', 'trucks-ICE', 'tv', 
-                          'wmachine']}).flatten(), "Variables")
-    dm_min.append(DM_ots_fts["product-net-import"].filter(
-        {"Variables" : ['ind_product-net-import'],
-         "Categories1" : ['new-dhg-pipe']}).flatten(), "Variables")
-    dm_min.rename_col("ind_product-net-import_new-dhg-pipe", "ind_product-net-import_infra-pipe", "Variables")
-    dm_min.sort("Variables")
+                          'wmachine','new-dhg-pipe']})
+    dm_temp.rename_col_regex("cars","LDV","Categories1")
+    dm_temp.rename_col_regex("trucks","HDVL","Categories1")
+    dm_temp.rename_col("computer","electronics-computer","Categories1")
+    dm_temp.rename_col("phone","electronics-phone","Categories1")
+    dm_temp.rename_col("tv","electronics-tv","Categories1")
+    dm_temp.rename_col("dishwasher","dom-appliance-dishwasher","Categories1")
+    dm_temp.rename_col("dryer","dom-appliance-dryer","Categories1")
+    dm_temp.rename_col("freezer","dom-appliance-freezer","Categories1")
+    dm_temp.rename_col("fridge","dom-appliance-fridge","Categories1")
+    dm_temp.rename_col("wmachine","dom-appliance-wmachine","Categories1")
+    dm_temp.rename_col("new-dhg-pipe","infra-pipe","Categories1")
+    dm_temp.rename_col("rail","infra-rail","Categories1")
+    dm_temp.rename_col("road","infra-road","Categories1")
+    dm_temp.rename_col("trolley-cables","infra-trolley-cables","Categories1")
+    dm_temp.rename_col("planes","other-planes","Categories1")
+    dm_temp.rename_col("ships","other-ships","Categories1")
+    dm_temp.rename_col("trains","other-trains","Categories1")
+    dm_temp.sort("Categories1")
+    DM_ind["product-net-import"] = dm_temp.flatten()
 
     # df_min
     if write_xls is True:
+        
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        
+        dm_min = DM_ind['aluminium-pack']
+        dm_min.append(DM_ind['material-production'], "Variables")
+        dm_min.append(DM_ind['technology-development'], "Variables")
+        dm_min.append(DM_ind['material-efficiency'].flatten(), "Variables")
+        dm_min.append(DM_ind['material-switch'], "Variables")
+        dm_min.append(DM_ind['product-net-import'], "Variables")
+        dm_min.sort("Variables")
+        
         df_min = dm_min.write_df()
         df_min.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-minerals.xlsx', index=False)
         
     # return
-    return dm_min
+    return DM_ind
 
 def industry_employment_interface(DM_material_demand, DM_energy_demand, DM_material_production, DM_cost, DM_ots_fts, write_xls = False):
     
@@ -1948,12 +1978,12 @@ def local_industry_run():
     # return
     return results_run
 
-# # run local
-# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
-# # database_from_csv_to_datamatrix()
-# start = time.time()
-# results_run = local_industry_run()
-# end = time.time()
-# print(end-start)
+# run local
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
+# database_from_csv_to_datamatrix()
+start = time.time()
+results_run = local_industry_run()
+end = time.time()
+print(end-start)
 
 
