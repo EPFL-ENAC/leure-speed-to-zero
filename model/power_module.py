@@ -904,18 +904,24 @@ def power(lever_setting, years_setting, interface=Interface()):
     if interface.has_link(from_sector='climate', to_sector='power'):
         dm_climate = interface.get_link(from_sector='climate', to_sector='power')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing climate to power interface')
         dm_climate = simulate_climate_to_power_input()
         dm_climate.filter({'Country': cntr_list}, inplace=True)
 
     if interface.has_link(from_sector='agriculture', to_sector='power'):
         dm_agr_electricity = interface.get_link(from_sector='agriculture', to_sector='power')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing agriculture to power interface')
         dm_agr_electricity = simulate_agriculture_to_power_input()
         dm_agr_electricity.filter({'Country': cntr_list}, inplace=True)
 
     if interface.has_link(from_sector='buildings', to_sector='power'):
         DM_bld = interface.get_link(from_sector='buildings', to_sector='power')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing buildings to power interface')
         DM_bld = simulate_buildings_to_power_input()
         for key in DM_bld.keys():
             DM_bld[key].filter({'Country': cntr_list}, inplace=True)
@@ -923,6 +929,8 @@ def power(lever_setting, years_setting, interface=Interface()):
     if interface.has_link(from_sector='industry', to_sector='power'):
         DM_industry = interface.get_link(from_sector='industry', to_sector='power')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing industry to power interface')
         DM_industry = simulate_industry_to_power_input()
         for key in DM_industry.keys():
             DM_industry[key].filter({'Country': cntr_list}, inplace=True)
@@ -930,6 +938,8 @@ def power(lever_setting, years_setting, interface=Interface()):
     if interface.has_link(from_sector='ammonia', to_sector='power'):
         DM_ammonia = interface.get_link(from_sector='ammonia', to_sector='power')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing ammonia to power interface')
         DM_ammonia = simulate_ammonia_to_power_input()
         for key in DM_ammonia.keys():
             DM_ammonia[key].filter({'Country': cntr_list}, inplace=True)
@@ -937,6 +947,8 @@ def power(lever_setting, years_setting, interface=Interface()):
     if interface.has_link(from_sector='transport', to_sector='power'):
         dm_tra = interface.get_link(from_sector='ammonia', to_sector='power')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing transport to power interface')
         dm_tra = simulate_transport_to_power_input()
         dm_tra.filter({'Country': cntr_list}, inplace=True)
 

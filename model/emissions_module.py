@@ -17,6 +17,7 @@ import os
 import numpy as np
 import re
 import warnings
+import time
 from scipy import interpolate
 warnings.simplefilter("ignore")
 
@@ -157,6 +158,123 @@ def read_data(data_file, lever_setting):
     # return
     return DM_fxa
 
+# !FIXME: add call to this function to compute the change in temperature due to emissions.
+def sum_emissions_by_gas(DM_interface):
+    # NOTE: this is work in progress, to be recovered when we do climate
+
+    # buildings
+    dm_emi = DM_interface["buildings"].filter_w_regex({
+                                                          "Variables": "bld.*gas-ff-natural.*|bld.*heat-ambient.*|bld.*heat-geothermal.*|bld.*heat-solar.*|bld.*liquid-ff-heatingoil.*|bld.*solid-ff-coal.*|bld.*solid-bio.*"})
+    dm_emi.deepen()
+    dm_emi.group_all("Categories1")
+    dm_emi.deepen()
+    dm_emi.add(np.nan, "Categories1", "emissions-CH4", unit="Mt", dummy=True)
+    dm_emi.add(np.nan, "Categories1", "emissions-N2O", unit="Mt", dummy=True)
+    dm_emi.sort("Categories1")
+
+    # transport
+    dm_tra = DM_interface["transport"].filter_w_regex({
+                                                          "Variables": "tra.*LDV.*|tra.*2W.*|tra.*rail.*|tra.*bus.*|tra.*metro-tram.*|tra.*aviation.*|tra.*marine.*|tra.*IWW.*|tra.*HDV.*"})
+    dm_tra.deepen_twice()
+    dm_tra.group_all("Categories1")
+    dm_tra.group_all("Categories1")
+    dm_tra.deepen()
+    dm_emi.append(dm_tra, "Variables")
+
+    # district heating
+    dm_dh = DM_interface["district-heating"].filter_w_regex({
+                                                                "Variables": "dhg.*gas-ff-natural.*|dhg.*heat-ambient.*|dhg.*heat-geothermal.*|dhg.*heat-solar.*|dhg.*liquid-ff-heatingoil.*|dhg.*solid-ff-coal.*|dhg.*solid-bio.*"})
+    dm_dh.deepen_twice()
+    dm_dh.group_all("Categories2")
+    dm_emi.append(dm_dh, "Variables")
+
+    # industry
+    dm_ind = DM_interface["industry"]
+    dm_ind.deepen()
+    dm_temp = dm_ind.filter({"Variables": ['ind_emissions-CO2', 'ind_emissions-CO2_biogenic']})
+    dm_ind.drop(dim="Variables", col_label="ind_emissions-CO2_biogenic")
+    idx = dm_ind.idx
+    dm_ind.array[:, :, idx["ind_emissions-CO2"], :] = np.nansum(dm_temp.array, axis=-2)
+    dm_ind.group_all("Categories1")
+    dm_ind.deepen()
+    dm_emi.append(dm_ind, "Variables")
+
+    # ammonia
+    dm_amm = DM_interface["ammonia"]
+    dm_amm.deepen_twice()
+    dm_amm.group_all("Categories2")
+    dm_emi.append(dm_amm, "Variables")
+
+    # land use
+    dm_lus = DM_interface["land-use"]
+    dm_lus.deepen_twice()
+    dm_lus.group_all("Categories2")
+    dm_lus.add(np.nan, "Categories1", "emissions-CH4", unit="Mt", dummy=True)
+    dm_lus.add(np.nan, "Categories1", "emissions-N2O", unit="Mt", dummy=True)
+    dm_lus.sort("Categories1")
+    dm_emi.append(dm_lus, "Variables")
+
+    # biodiversity
+    dm_bdy = DM_interface["biodiversity"]
+    dm_bdy.deepen()
+    dm_emi.append(dm_bdy, "Variables")
+
+    # agriculture
+    dm_agr = DM_interface["agriculture"]
+    dm_agr.deepen()
+    dm_agr.group_all("Categories1")
+    dm_agr.deepen()
+    dm_emi.append(dm_agr, "Variables")
+
+    # dm_agr_sub = dm_agr.filter_w_regex({"Variables": ".*crop.*"})
+    # dm_agr_sub.deepen_twice()
+    # dm_agr_sub.group_all("Categories2")
+
+    # dm_agr_liv = dm_agr.filter_w_regex({"Variables": ".*liv.*"})
+    # dm_agr_liv.deepen()
+    # dm_agr_liv.deepen(based_on = "Variables")
+    # dm_agr_liv.deepen(based_on = "Variables")
+    # dm_agr_liv.group_all("Categories3")
+    # dm_agr_liv.group_all("Categories2")
+    # dm_agr_liv.group_all("Categories1")
+    # dm_agr_liv.deepen(based_on = "Variables")
+    # dm_agr_sub.append(dm_agr_liv, "Categories1")
+    # dm_agr_sub.group_all("Categories1")
+    # dm_agr_sub.deepen()
+
+    # dm_agr_input = dm_agr.filter_w_regex({"Variables": ".*input.*"})
+    # dm_agr_input.deepen()
+    # dm_agr_input.group_all("Categories1")
+    # dm_agr_input.rename_col(col_in = 'agr_input-use_emissions-CO2', col_out = 'agr_emissions-CO2_input-use', dim = "Variables")
+    # dm_agr_input.deepen()
+
+    # electricity
+    dm_elc = DM_interface["electricity"].filter({"Variables": ["elc_emissions-CO2"]})
+    dm_elc.deepen()
+    dm_elc.add(np.nan, "Categories1", "emissions-CH4", unit="Mt", dummy=True)
+    dm_elc.add(np.nan, "Categories1", "emissions-N2O", unit="Mt", dummy=True)
+    dm_emi.append(dm_elc, "Variables")
+
+    # oil refinery
+    dm_ref = DM_interface["refinery"]
+    dm_ref.deepen()
+    dm_ref.add(np.nan, "Categories1", "emissions-CH4", unit="Mt", dummy=True)
+    dm_ref.add(np.nan, "Categories1", "emissions-N2O", unit="Mt", dummy=True)
+    dm_emi.append(dm_ref, "Variables")
+
+    # sum
+    variables = dm_emi.col_labels["Variables"]
+    for i in variables:
+        dm_emi.rename_col(i, "clm_" + i, "Variables")
+    dm_emi.deepen(based_on="Variables")
+    dm_emi.group_all("Categories2")
+
+    del dm_agr, dm_amm, dm_bdy, dm_dh, dm_elc, dm_ind, dm_lus, dm_ref, dm_temp, \
+        dm_tra, i, idx, variables
+
+    return dm_emi
+
+
 def emissions_equivalent(DM_interface, DM_fxa):
     
     # TODO: note that this currently works with dms all flattened (no categories), later on after all modules are finalized we can think of making it work with categories, and avoid deepen done in variables for TPE
@@ -172,7 +290,7 @@ def emissions_equivalent(DM_interface, DM_fxa):
     
     # put together
     dm_ems = DM_interface["buildings"].copy()
-    keys = ["district-heating","power","land-use","biodiversity",
+    keys = ["district-heating", "power", "land-use", "biodiversity",
             "industry", "ammonia", "refinery", "agriculture", "transport"]
     for key in keys:
         dm_ems.append(DM_interface[key], "Variables")
@@ -418,60 +536,92 @@ def emissions(lever_setting, years_setting, interface = Interface(), calibration
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     emissions_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/emissions.pickle')
     DM_fxa = read_data(emissions_data_file, lever_setting)
-    
+
+    cntr_list = DM_fxa['uncaptured-emissions'].col_labels['Country']
+
     # get / simulate interfaces
     DM_interface = {}
         
     if interface.has_link(from_sector = "buildings", to_sector = 'emissions'):
         DM_interface["buildings"] = interface.get_link(from_sector="buildings", to_sector='emissions')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing buildings to emissions interface')
         DM_interface["buildings"] = simulate_buildings_to_emissions_input()
+        DM_interface['buildings'].filter({'Country': cntr_list}, inplace=True)
         
     if interface.has_link(from_sector = "district-heating", to_sector = 'emissions'):
         DM_interface["district-heating"] = interface.get_link(from_sector="district-heating", to_sector='emissions')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing district-heating to emissions interface')
         DM_interface["district-heating"] = simulate_district_heating_to_emissions_input()
-    
+        DM_interface['district-heating'].filter({'Country': cntr_list}, inplace=True)
+
     if interface.has_link(from_sector = "power", to_sector = 'emissions'):
         DM_interface["power"] = interface.get_link(from_sector="power", to_sector='emissions')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing power to emissions interface')
         DM_interface["power"] = simulate_power_to_emissions_input()
-        
+        DM_interface['power'].filter({'Country': cntr_list}, inplace=True)
+
     if interface.has_link(from_sector = "refinery", to_sector = 'emissions'):
         DM_interface["refinery"] = interface.get_link(from_sector="refinery", to_sector='emissions')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing refinery to emissions interface')
         DM_interface["refinery"] = simulate_refinery_to_emissions_input()
+        DM_interface['refinery'].filter({'Country': cntr_list}, inplace=True)
     
     if interface.has_link(from_sector = "agriculture", to_sector = 'emissions'):
         DM_interface["agriculture"] = interface.get_link(from_sector="agriculture", to_sector='emissions')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing agriculture to emissions interface')
         DM_interface["agriculture"] = simulate_agriculture_to_emissions_input()
+        DM_interface['agriculture'].filter({'Country': cntr_list}, inplace=True)
     
     if interface.has_link(from_sector = "land-use", to_sector = 'emissions'):
         DM_interface["land-use"] = interface.get_link(from_sector="land-use", to_sector='emissions')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing land-use to emissions interface')
         DM_interface["land-use"] = simulate_land_use_to_emissions_input()
+        DM_interface['land-use'].filter({'Country': cntr_list}, inplace=True)
         
     if interface.has_link(from_sector = "biodiversity", to_sector = 'biodiversity'):
         DM_interface["biodiversity"] = interface.get_link(from_sector="biodiversity", to_sector='emissions')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing biodiversity to emissions interface')
         DM_interface["biodiversity"] = simulate_biodiversity_to_emissions_input()
-    
+        DM_interface['biodiversity'].filter({'Country': cntr_list}, inplace=True)
+
     if interface.has_link(from_sector = "industry", to_sector = 'emissions'):
         DM_interface["industry"] = interface.get_link(from_sector="industry", to_sector='emissions')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing industry to emissions interface')
         DM_interface["industry"] = simulate_industry_to_emissions_input()
+        DM_interface['industry'].filter({'Country': cntr_list}, inplace=True)
     
     if interface.has_link(from_sector = "ammonia", to_sector = 'emissions'):
         DM_interface["ammonia"] = interface.get_link(from_sector="ammonia", to_sector='emissions')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing ammonia to emissions interface')
         DM_interface["ammonia"] = simulate_ammonia_to_emissions_input()
+        DM_interface['ammonia'].filter({'Country': cntr_list}, inplace=True)
         
     if interface.has_link(from_sector = "transport", to_sector = 'emissions'):
         DM_interface["transport"] = interface.get_link(from_sector="transport", to_sector='emissions')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing transport to emissions interface')
         DM_interface["transport"] = simulate_transport_to_emissions_input()
-    
+        DM_interface['transport'].filter({'Country': cntr_list}, inplace=True)
+
     # get emissions for gas equivalent
     dm_ems = emissions_equivalent(DM_interface, DM_fxa)
     dm_ems.sort("Variables")
@@ -479,7 +629,7 @@ def emissions(lever_setting, years_setting, interface = Interface(), calibration
     # get variables for tpe
     dm_tpe = variables_for_tpe(dm_ems)
     results_run = dm_tpe.write_df()
-    
+
     # return
     return results_run
 
@@ -506,7 +656,7 @@ def local_emissions_run():
 # database_from_csv_to_datamatrix()
 # import time
 # start = time.time()
-# #results_run = local_emissions_run()
+# results_run = local_emissions_run()
 # end = time.time()
 #print(end-start)
 
