@@ -1990,21 +1990,29 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     if interface.has_link(from_sector='lifestyles', to_sector='agriculture'):
         dm_lfs = interface.get_link(from_sector='lifestyles', to_sector='agriculture')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing lifestyles to agriculture interface')
         dm_lfs = simulate_lifestyles_to_agriculture_input()
         
     if interface.has_link(from_sector='buildings', to_sector='agriculture'):
         dm_bld = interface.get_link(from_sector='buildings', to_sector='agriculture')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing buildings to agriculture interface')
         dm_bld = simulate_buildings_to_agriculture_input()
         
     if interface.has_link(from_sector='industry', to_sector='agriculture'):
         dm_ind = interface.get_link(from_sector='industry', to_sector='agriculture')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing industry to agriculture interface')
         dm_ind = simulate_industry_to_agriculture_input()
         
     if interface.has_link(from_sector='transport', to_sector='agriculture'):
         dm_tra = interface.get_link(from_sector='transport', to_sector='agriculture')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing transport to agriculture interface')
         dm_tra = simulate_transport_to_agriculture_input()
 
     # Filter by country
@@ -2032,7 +2040,7 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
 
     # interface to Land use
     dm_lus = agriculture_landuse_interface(DM_bioenergy, dm_lgn, dm_land_use)
-    interface.add_link(from_sector='agriculture', to_sector='landuse', dm=dm_lus)
+    #interface.add_link(from_sector='agriculture', to_sector='landuse', dm=dm_lus)
 
     # interface to Climate emissions
 
@@ -2066,10 +2074,10 @@ def agriculture_local_run():
 #database_from_csv_to_datamatrix()
 
 # Run the code in local
-start = time.time()
-results_run = agriculture_local_run()
-end = time.time()
-print(end-start)
+# start = time.time()
+# results_run = agriculture_local_run()
+# end = time.time()
+# print(end-start)
 
 
 

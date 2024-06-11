@@ -811,7 +811,7 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
         dm_ind = simulate_industry_to_landuse_input()
         
     if interface.has_link(from_sector='agriculture', to_sector='landuse'):
-        dm_ind = interface.get_link(from_sector='agriculture', to_sector='landuse')
+        DM_bioenergy, dm_lgn, dm_land_use  = interface.get_link(from_sector='agriculture', to_sector='landuse')
     else:
         DM_bioenergy, dm_lgn, dm_land_use = simulate_agriculture_to_landuse_input()
 
@@ -841,10 +841,10 @@ def local_land_use_run():
 # run local
 #__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/landuse_module.py"
 #database_from_csv_to_datamatrix()
-start = time.time()
-results_run = local_land_use_run()
-end = time.time()
-print(end-start)
+# start = time.time()
+# results_run = local_land_use_run()
+# end = time.time()
+# print(end-start)
 
 # WOOD
     #dm_wood.datamatrix_plot({'Country': 'Austria', 'Variables': ['lus_fst_demand_rwe']})

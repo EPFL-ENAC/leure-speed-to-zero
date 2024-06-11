@@ -10,6 +10,10 @@ from model.emissions_module import emissions
 from model.climate_module import climate
 from model.ammonia_module import ammonia
 from model.industry_module import industry
+from model.power_module import power
+from model.landuse_module import land_use
+from model.oilrefinery_module import refinery
+
 
 import math
 import time
@@ -49,8 +53,17 @@ def runner(lever_setting, global_vars, output_nodes, logger):
     TPE['ammonia'] = ammonia(lever_setting, years_setting, interface)
     logger.info('Execution time Ammonia: {0:.3g} s'.format(time.time() - start_time))
     start_time = time.time()
+    TPE['power'] = power(lever_setting, years_setting, interface)
+    logger.info('Execution time Power: {0:.3g} s'.format(time.time() - start_time))
+    start_time = time.time()
+    TPE['oil-refinery'] = refinery(lever_setting, years_setting, interface)
+    logger.info('Execution time Oil-refinery: {0:.3g} s'.format(time.time() - start_time))
+    start_time = time.time()
     TPE['district-heating'] = district_heating(lever_setting, years_setting, interface)
     logger.info('Execution time District-Heating: {0:.3g} s'.format(time.time() - start_time))
+    start_time = time.time()
+    TPE['land-use'] = land_use(lever_setting, years_setting, interface)
+    logger.info('Execution time Land-use: {0:.3g} s'.format(time.time() - start_time))
     start_time = time.time()
     TPE['minerals'] = minerals(interface)
     logger.info('Execution time Minerals: {0:.3g} s'.format(time.time() - start_time))
