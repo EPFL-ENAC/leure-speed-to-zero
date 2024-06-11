@@ -1410,7 +1410,10 @@ def industry_power_interface(DM_energy_demand, write_xls = False):
         {"Categories1" : ['electricity','hydrogen']})
     dm_elc.rename_col("energy-demand", "ind_energy-demand", "Variables")
     dm_elc = dm_elc.flatten()
-    dm_elc.sort("Variables")
+    DM_pow = {
+        'electricity': dm_elc.filter({'Variables': ['ind_energy-demand_electricity']}),
+        'hydrogen': dm_elc.filter({'Variables': ['ind_energy-demand_hydrogen']})
+    }
 
     # df_elc
     if write_xls is True:
@@ -1419,7 +1422,7 @@ def industry_power_interface(DM_energy_demand, write_xls = False):
         dm_elc.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-power.xlsx', index=False)
         
     # return
-    return dm_elc
+    return DM_pow
 
 def industry_refinery_interface(DM_energy_demand, write_xls = False):
     
@@ -1923,8 +1926,8 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     interface.add_link(from_sector='industry', to_sector='agriculture', dm=dm_agr)
     
     # interface power
-    dm_power = industry_power_interface(DM_energy_demand)
-    interface.add_link(from_sector='industry', to_sector='power', dm=dm_power)
+    DM_pow = industry_power_interface(DM_energy_demand)
+    interface.add_link(from_sector='industry', to_sector='power', dm=DM_pow)
     
     # interface refinery
     dm_refinery = industry_refinery_interface(DM_energy_demand)

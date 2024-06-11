@@ -392,10 +392,18 @@ def simulate_transport_to_power_input():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     f = os.path.join(current_file_directory, "../_database/data/xls/"
                                              "All-Countries-interface_from-transport-to-power.xlsx")
-    df = pd.read_excel(f, sheet_name="default")
-    dm_tra = DataMatrix.create_from_df(df, num_cat=1)
+    df = pd.read_excel(f)
+    dm_tra = DataMatrix.create_from_df(df, num_cat=0)
 
-    return dm_tra
+    dm_hydro = dm_tra.filter_w_regex({'Variables': '.*hydrogen'}, inplace=False)
+    dm_tra.drop(dim='Variables', col_label='.*hydrogen')
+
+    DM_tra = {
+        'hydrogen': dm_hydro,
+        'electricity': dm_tra
+    }
+
+    return DM_tra
 
 #######################################################################################################################
 # LocalInterfaces - Industry
@@ -658,7 +666,7 @@ def hourly_production_workflow(dm_production_np, dm_production_p, DM_production_
 # CalculationTree - Power - Yearly demand
 #######################################################################################################################
 
-def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_agr_electricity, dm_tra,
+def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_agr_electricity, DM_tra,
                            dm_ind_hydrogen, dm_amm_hydrogen):
 
     #########################################################################
@@ -683,20 +691,15 @@ def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_ag
     #############################################################################
     # CalculationLeafs - Electricity demand - Transport sectors [GWh] (no-profiles)
     #############################################################################
-
-    dm_demand_train = dm_tra.filter_w_regex({'Categories1': 'rail'})
-    dm_demand_train = dm_demand_train.flatten()
-
-    dm_demand_road = dm_tra.filter_w_regex({'Categories1': 'road'})
-    dm_demand_road = dm_demand_road.flatten()
+    dm_tra_elec = DM_tra['electricity']
+    dm_demand_train = dm_tra_elec.filter_w_regex({'Variables': '.*rail'})
+    dm_demand_road = dm_tra_elec.filter_w_regex({'Variables': '.*road'})
 
     #############################################################################
     # CalculationLeafs - Electricity demand - Other sectors [GWh] (no-profiles)
     #############################################################################
 
-    dm_tra_electricity = dm_tra.filter_w_regex({'Categories1': 'other'})
-    dm_tra_electricity = dm_tra_electricity.flatten()
-    dm_demand_other = dm_tra_electricity.copy()
+    dm_demand_other = dm_tra_elec.filter_w_regex({'Variables': '.*other'})
 
     # Tuto: Append matrices
     dm_demand_other.append(dm_agr_electricity, dim='Variables')
@@ -710,9 +713,7 @@ def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_ag
     # CalculationLeafs - Electricity demand - Hydrogen [GWh]
     #############################################################################
 
-    dm_tra_hydrogen = dm_tra.filter_w_regex({'Categories1': 'hydrogen'})
-    dm_tra_hydrogen = dm_tra_hydrogen.flatten()
-    dm_demand_hydrogen = dm_tra_hydrogen.copy()
+    dm_demand_hydrogen = DM_tra['hydrogen'].copy()
 
     dm_demand_hydrogen.append(dm_amm_hydrogen, dim='Variables')
     dm_demand_hydrogen.append(dm_ind_hydrogen, dim='Variables')
@@ -814,9 +815,8 @@ def hourly_demand_workflow(DM_yearly_demand, DM_demand_profiles):
 
     # Hourly demand
     idx_dd = dm_profile_yearly.idx
-    ay_hourly_profile = dm_profile_yearly.array[:, idx_dd[baseyear], :,
-                   np.newaxis, np.newaxis, np.newaxis] \
-                     * dm_profile_hourly.array[...]
+    ay_hourly_profile = dm_profile_yearly.array[:, idx_dd[baseyear]:, :, np.newaxis, np.newaxis, np.newaxis] \
+                        * dm_profile_hourly.array[...]
 
     # Reshape of the output
     dm_profile_hourly.array = ay_hourly_profile
@@ -945,20 +945,14 @@ def power(lever_setting, years_setting, interface=Interface()):
             DM_ammonia[key].filter({'Country': cntr_list}, inplace=True)
 
     if interface.has_link(from_sector='transport', to_sector='power'):
-        dm_tra = interface.get_link(from_sector='ammonia', to_sector='power')
+        DM_tra = interface.get_link(from_sector='transport', to_sector='power')
     else:
         if len(interface.list_link()) != 0:
             print('You are missing transport to power interface')
-        dm_tra = simulate_transport_to_power_input()
-        dm_tra.filter({'Country': cntr_list}, inplace=True)
+        DM_tra = simulate_transport_to_power_input()
+        for key in DM_tra.keys():
+            DM_tra[key].filter({'Country': cntr_list}, inplace=True)
 
-    #Tuto: filter country in interfaces
-
-    # filter local interface country list (dictionary)
-    for key in DM_bld.keys():
-        DM_bld[key] = DM_bld[key].filter({'Country': cntr_list})
-
-    start1 = time.time()
     # To send to TPE (result run)
     dm_capacity, dm_fb_capacity, dm_production_np, dm_production_p =\
         yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const)
@@ -966,7 +960,7 @@ def power(lever_setting, years_setting, interface=Interface()):
 
     # TUTO give dm_ev_hourly as input to yearly_demand_workflow
     DM_yearly_demand = yearly_demand_workflow(DM_bld, DM_industry['electricity'], DM_ammonia['electricity'],
-                                              dm_agr_electricity, dm_tra, DM_industry['hydrogen'], DM_ammonia['hydrogen'])
+                                              dm_agr_electricity, DM_tra, DM_industry['hydrogen'], DM_ammonia['hydrogen'])
 
     dm_hourly_demand = hourly_demand_workflow(DM_yearly_demand, DM_demand_profiles)
 
