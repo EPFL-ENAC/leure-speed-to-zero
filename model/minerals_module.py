@@ -1353,7 +1353,6 @@ def mineral_extraction(DM_minerals, DM_ind, dm_mindec, CDM_const):
 
     # get data
     DM_fxa = DM_minerals['fxa']
-    # dm_ind = DM_interface["industry"]
 
     ###################################
     ##### MINERAL PRODUCTION (KG) #####
@@ -1508,7 +1507,8 @@ def mineral_extraction(DM_minerals, DM_ind, dm_mindec, CDM_const):
     return dm_extraction
 
 
-def mineral_reserves(DM_minerals, DM_interface, dm_mindec, dm_mindec_sect, dm_extraction, CDM_const):
+def mineral_reserves(DM_minerals, dm_mindec, dm_mindec_sect, dm_extraction, 
+                     CDM_const, dm_lfs, dm_agr, dm_ref, dm_ccus):
     # name of minerals
     minerals = ['bauxite', 'copper', 'graphite', "iron", 'lead', 'lithium', 'manganese', 'nickel', 'phosphate',
                 'potash']
@@ -1526,7 +1526,7 @@ def mineral_reserves(DM_minerals, DM_interface, dm_mindec, dm_mindec_sect, dm_ex
                             years_list=dm_extraction.col_labels["Years"])
 
     # scale reserves by population share to make it country level
-    dm_lfs = DM_interface["lifestyles"].copy()
+    # dm_lfs = DM_lfs.copy()
     idx_lfs = dm_lfs.idx
     arr_temp = dm_lfs.array[..., idx_lfs['lfs_population_total']] / dm_lfs.array[..., idx_lfs['lfs_macro-scenarii_iiasa-ssp2']]
     dm_reserves.array = dm_reserves.array * arr_temp[..., np.newaxis]
@@ -1539,7 +1539,7 @@ def mineral_reserves(DM_minerals, DM_interface, dm_mindec, dm_mindec_sect, dm_ex
     ########################
 
     # demand for oil, gas and coal
-    dm_fossil = DM_interface["refinery"].copy()
+    dm_fossil = dm_ref.copy()
     dm_fossil.rename_col_regex(str1="fos_primary-demand_", str2="min_energy_", dim="Variables")
     idx = dm_fossil.idx
     dm_fossil.array[..., idx["min_energy_coal"]] = dm_fossil.array[..., idx["min_energy_coal"]] * 0.123
@@ -1552,7 +1552,6 @@ def mineral_reserves(DM_minerals, DM_interface, dm_mindec, dm_mindec_sect, dm_ex
 
     # adjust min_energy_gas for ccus_gas
     dm_gas = dm_fossil.filter({"Variables": ["min_energy_gas"]})
-    dm_ccus = DM_interface["ccus"].copy()
     dm_ccus.array[dm_gas.array < 0] = dm_ccus.array[dm_gas.array < 0] + dm_gas.array[
         dm_gas.array < 0]  # in the ambitious pathway, the supply of ccus (which include biogas) is more than the demand for gaz leading to gas demand being negative. The following operation serves to correct this difference by substracting the negative gas demand by the over supply of ccus.
     idx = dm_fossil.idx
@@ -1583,7 +1582,6 @@ def mineral_reserves(DM_minerals, DM_interface, dm_mindec, dm_mindec_sect, dm_ex
 
     # add phosphate and potash extraction
     dm_min_other = DM_fxa["min_other"].copy()
-    dm_agr = DM_interface["agriculture"].copy()
 
     dm_temp = dm_agr.filter_w_regex({"Variables": ".*phosphate.*"})
     dm_temp.append(dm_min_other.filter_w_regex({"Variables": ".*phosphate.*"}), dim="Variables")
@@ -1654,14 +1652,11 @@ def mineral_production_bysector(dm_mindec, dm_mindec_sect, CDM_const):
     return dm_production_sect
 
 
-def variables_for_tpe(DM_interface, DM_minerals, dm_production_sect, dm_fossil, dm_mindec, dm_extraction,
-                      dict_relres_fossil, dict_relres_minerals, DM_ind):
+def variables_for_tpe(DM_minerals, dm_production_sect, dm_fossil, dm_mindec, dm_extraction,
+                      dict_relres_fossil, dict_relres_minerals, DM_ind, dm_agr, dm_ccus):
     # get data
     DM_fxa = DM_minerals['fxa']
     dm_min_other = DM_fxa["min_other"]
-    dm_agr = DM_interface["agriculture"]
-    dm_ccus = DM_interface["ccus"]
-    # dm_ind = DM_interface["industry"]
 
     ###########################
     ##### EXTRA MATERIALS #####
@@ -1788,7 +1783,9 @@ def variables_for_tpe(DM_interface, DM_minerals, dm_production_sect, dm_fossil, 
 
 
 def simulate_lifestyles_to_minerals_input():
+    
     dm = simulate_input(from_sector="lifestyles", to_sector="minerals")
+    dm.rename_col("lfs_pop_population", "lfs_population_total", "Variables")
 
     return dm
 
@@ -1815,6 +1812,7 @@ def simulate_transport_to_minerals_input():
 
 
 def simulate_agriculture_to_minerals_input():
+    
     dm = simulate_input(from_sector="agriculture", to_sector="minerals")
 
     return dm
@@ -1880,7 +1878,9 @@ def simulate_industry_to_minerals_input():
     DM_ind["material-efficiency"] = dm_temp
     
     # material switch
-    DM_ind["material-switch"] = dm.filter_w_regex({"Variables": ".*switch*"})
+    dm_temp = dm.filter_w_regex({"Variables": ".*switch*"})
+    dm_temp.rename_col_regex("switch_", "switch-", "Variables")
+    DM_ind["material-switch"] = dm_temp
     
     # product net import
     dm_temp = dm.filter_w_regex({"Variables": ".*product-net-import*"})
@@ -2014,12 +2014,14 @@ def simulate_buildings_to_minerals_input():
 
 
 def simulate_refinery_to_minerals_input():
+    
     dm = simulate_input(from_sector="refinery", to_sector="minerals")
 
     return dm
 
 
 def simulate_ccus_to_minerals_input():
+    
     dm = simulate_input(from_sector="ccus", to_sector="minerals")
 
     return dm
@@ -2038,15 +2040,16 @@ def minerals(interface=Interface(), calibration=False):
     cntr_list = DM_minerals["fxa"]["elec_new"].col_labels['Country']
 
     # get interfaces
-    DM_interface = {}
 
+    # lifestyles
     if interface.has_link(from_sector='lifestyles', to_sector='minerals'):
-        DM_interface["lifestyles"] = interface.get_link(from_sector='lifestyles', to_sector='minerals')
+        dm_lfs = interface.get_link(from_sector='lifestyles', to_sector='minerals')
     else:
         if len(interface.list_link()) != 0:
             print('You are missing lifestyles to minerals interface')
-        DM_interface["lifestyles"] = simulate_lifestyles_to_minerals_input()
+        dm_lfs = simulate_lifestyles_to_minerals_input()
 
+    # transport
     if interface.has_link(from_sector='transport', to_sector='minerals'):
         DM_tra = interface.get_link(from_sector='transport', to_sector='minerals')
     else:
@@ -2066,14 +2069,16 @@ def minerals(interface=Interface(), calibration=False):
                                                      dm_tra_veh.array[:, idx[2025], :, idx[i]]) / 2
     del idx, cat
 
+    # agriculture
     if interface.has_link(from_sector='agriculture', to_sector='minerals'):
-        DM_interface["agriculture"] = interface.get_link(from_sector='agriculture', to_sector='minerals')
+        dm_agr = interface.get_link(from_sector='agriculture', to_sector='minerals')
     else:
         if len(interface.list_link()) != 0:
             print('You are missing agriculture to minerals interface')
-        DM_interface["agriculture"] = simulate_agriculture_to_minerals_input()
-        DM_interface['agriculture'].filter({'Country': cntr_list}, inplace=True)
+        dm_agr = simulate_agriculture_to_minerals_input()
+        dm_agr.filter({'Country': cntr_list}, inplace=True)
 
+    # industry
     if interface.has_link(from_sector='industry', to_sector='minerals'):
         DM_ind = interface.get_link(from_sector='industry', to_sector='minerals')
     else:
@@ -2083,6 +2088,7 @@ def minerals(interface=Interface(), calibration=False):
         for i in DM_ind.keys():
             DM_ind[i] = DM_ind[i].filter({'Country': cntr_list})
 
+    # storage
     if interface.has_link(from_sector='storage', to_sector='minerals'):
         DM_str = interface.get_link(from_sector='storage', to_sector='minerals')
     else:
@@ -2092,6 +2098,7 @@ def minerals(interface=Interface(), calibration=False):
         for i in DM_str.keys():
             DM_str[i] = DM_str[i].filter({'Country': cntr_list})
 
+    # buildings
     if interface.has_link(from_sector='buildings', to_sector='minerals'):
         DM_buildings = interface.get_link(from_sector='buildings', to_sector='minerals')
     else:
@@ -2101,21 +2108,23 @@ def minerals(interface=Interface(), calibration=False):
         for i in DM_buildings.keys():
             DM_buildings[i] = DM_buildings[i].filter({'Country': cntr_list})
 
+    # refinery
     if interface.has_link(from_sector='refinery', to_sector='minerals'):
-        DM_interface["refinery"] = interface.get_link(from_sector='refinery', to_sector='minerals')
+        dm_ref = interface.get_link(from_sector='refinery', to_sector='minerals')
     else:
         if len(interface.list_link()) != 0:
             print('You are missing refinery to minerals interface')
-        DM_interface["refinery"] = simulate_refinery_to_minerals_input()
-        DM_interface['refinery'].filter({'Country': cntr_list}, inplace=True)
+        dm_ref = simulate_refinery_to_minerals_input()
+        dm_ref.filter({'Country': cntr_list}, inplace=True)
 
+    # ccus
     if interface.has_link(from_sector='ccus', to_sector='minerals'):
-        DM_interface["ccus"] = interface.get_link(from_sector='ccus', to_sector='minerals')
+        dm_ccus = interface.get_link(from_sector='ccus', to_sector='minerals')
     else:
         if len(interface.list_link()) != 0:
             print('You are missing ccus to minerals interface')
-        DM_interface["ccus"] = simulate_ccus_to_minerals_input()
-        DM_interface['ccus'].filter({'Country': cntr_list}, inplace=True)
+        dm_ccus = simulate_ccus_to_minerals_input()
+        dm_ccus.filter({'Country': cntr_list}, inplace=True)
 
     # get product demand
     DM_demand = product_demand(DM_minerals, DM_buildings, DM_str, DM_tra, CDM_const)
@@ -2137,16 +2146,17 @@ def minerals(interface=Interface(), calibration=False):
     dm_extraction = mineral_extraction(DM_minerals, DM_ind, dm_mindec, CDM_const)
 
     # get mineral reserves
-    dict_relres_fossil, dict_relres_minerals, dm_fossil = mineral_reserves(DM_minerals, DM_interface, dm_mindec,
-                                                                           dm_mindec_sect, dm_extraction, CDM_const)
+    dict_relres_fossil, dict_relres_minerals, dm_fossil = mineral_reserves(DM_minerals, dm_mindec, dm_mindec_sect, 
+                                                                           dm_extraction, CDM_const, dm_lfs, 
+                                                                           dm_agr, dm_ref, dm_ccus)
 
     # get mineral production by sector
     dm_production_sect = mineral_production_bysector(dm_mindec, dm_mindec_sect, CDM_const)
 
     # get variables for TPE
-    df_tpe, df_tpe_relres = variables_for_tpe(DM_interface, DM_minerals, dm_production_sect, dm_fossil, dm_mindec,
+    df_tpe, df_tpe_relres = variables_for_tpe(DM_minerals, dm_production_sect, dm_fossil, dm_mindec,
                                               dm_extraction,
-                                              dict_relres_fossil, dict_relres_minerals, DM_ind)
+                                              dict_relres_fossil, dict_relres_minerals, DM_ind, dm_agr, dm_ccus)
 
     # return
     # results_run = {"out1": df_tpe, "out2": "calibration_tbd", "out3" : df_tpe_relres}
@@ -2167,9 +2177,9 @@ def local_minerals_run():
     return results_run
 
 
-# run local
+# # run local
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/minerals_module.py"
-# database_from_csv_to_datamatrix()
+# # database_from_csv_to_datamatrix()
 # import time
 # start = time.time()
 # results_run = local_minerals_run()
