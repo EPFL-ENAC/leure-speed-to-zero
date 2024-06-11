@@ -23,11 +23,11 @@ def runner(lever_setting, global_vars, output_nodes, logger):
     # lever setting dictionary convert float to integer
     lever_setting = {key: math.floor(value) for key, value in lever_setting.items()}
     # Transport module
-    start_time = time.time()
 
+    init_time = time.time()
     TPE = {}
     interface = Interface()
-
+    start_time = time.time()
     TPE['climate'] = climate(lever_setting, years_setting, interface)
     logger.info('Execution time Climate: {0:.3g} s'.format(time.time() - start_time))
     start_time = time.time()
@@ -57,7 +57,7 @@ def runner(lever_setting, global_vars, output_nodes, logger):
     logger.info('Execution time Emissions: {0:.3g} s'.format(time.time() - start_time))
     start_time = time.time()
 
-    logger.info('Execution time: {0:.3g} s'.format(time.time() - start_time))
+    logger.info('Execution time: {0:.3g} s'.format(time.time() - init_time))
 
     return TPE
 
