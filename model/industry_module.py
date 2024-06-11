@@ -1608,6 +1608,7 @@ def industry_minerals_interface(DM_material_production, DM_production, DM_ots_ft
     dm_temp.rename_col("planes","other-planes","Categories1")
     dm_temp.rename_col("ships","other-ships","Categories1")
     dm_temp.rename_col("trains","other-trains","Categories1")
+    dm_temp.rename_col_regex('FCV', 'FCEV', 'Categories1')
     dm_temp.sort("Categories1")
     DM_ind["product-net-import"] = dm_temp.flatten()
 

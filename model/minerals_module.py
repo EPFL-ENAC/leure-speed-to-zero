@@ -690,12 +690,12 @@ def mineral_demand_split(DM_minerals, DM_demand, DM_demand_split, CDM_const, DM_
 
     # get mineral switch parameter
     dm_temp = DM_ind["material-switch"]
-    dm_temp_alu = dm_temp.filter_w_regex({"Variables": ".*switch-trucks-steel-aluminium*"})
-    dm_temp = dm_temp.filter_w_regex({"Variables": ".*switch-trucks-steel-other*"})
+    dm_temp_alu = dm_temp.filter_w_regex({"Variables": ".*switch-trucks-steel-to-aluminium*"})
+    dm_temp = dm_temp.filter_w_regex({"Variables": ".*switch-trucks-steel-to-chem*"})
 
     # set variables with mineral that is switched
     mineral_in = "steel"
-    mineral_out = "other"
+    mineral_out = "chem"
     mineral_out2 = "aluminium"
 
     mineral_in_unadj = mineral_in + "-unadj"
@@ -1830,10 +1830,6 @@ def simulate_industry_to_minerals_input():
     # rename
     dict_rename = {
         "ind_prod_aluminium-pack" : "ind_product-production_aluminium-pack",
-        "ind_material-switch_cars-steel-to-chem" : "ind_material-switch-cars-steel-other",
-        "ind_material-switch_trucks-steel-to-chem"	: "ind_material-switch-trucks-steel-other",
-        "ind_material-switch_trucks-steel-to-aluminium"	 : "ind_material-switch-trucks-steel-aluminium",
-        "ind_material-switch_build-steel-to-timber" : "ind_material-switch-build-steel-to-timber",
         "ind_product-net-import_cars-EV" : "ind_product-net-import_LDV-EV",
         "ind_product-net-import_cars-FCV" : "ind_product-net-import_LDV-FCEV",
         "ind_product-net-import_cars-ICE" : "ind_product-net-import_LDV-ICE",
@@ -2048,11 +2044,15 @@ def minerals(interface=Interface(), calibration=False):
     if interface.has_link(from_sector='lifestyles', to_sector='minerals'):
         DM_interface["lifestyles"] = interface.get_link(from_sector='lifestyles', to_sector='minerals')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing lifestyles to minerals interface')
         DM_interface["lifestyles"] = simulate_lifestyles_to_minerals_input()
 
     if interface.has_link(from_sector='transport', to_sector='minerals'):
         DM_tra = interface.get_link(from_sector='transport', to_sector='minerals')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing transport to minerals interface')
         DM_tra = simulate_transport_to_minerals_input()
         for i in DM_tra.keys():
             DM_tra[i] = DM_tra[i].filter({'Country': cntr_list})
@@ -2070,11 +2070,16 @@ def minerals(interface=Interface(), calibration=False):
     if interface.has_link(from_sector='agriculture', to_sector='minerals'):
         DM_interface["agriculture"] = interface.get_link(from_sector='agriculture', to_sector='minerals')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing agriculture to minerals interface')
         DM_interface["agriculture"] = simulate_agriculture_to_minerals_input()
+        DM_interface['agriculture'].filter({'Country': cntr_list}, inplace=True)
 
     if interface.has_link(from_sector='industry', to_sector='minerals'):
         DM_ind = interface.get_link(from_sector='industry', to_sector='minerals')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing industry to minerals interface')
         DM_ind = simulate_industry_to_minerals_input()
         for i in DM_ind.keys():
             DM_ind[i] = DM_ind[i].filter({'Country': cntr_list})
@@ -2082,6 +2087,8 @@ def minerals(interface=Interface(), calibration=False):
     if interface.has_link(from_sector='storage', to_sector='minerals'):
         DM_str = interface.get_link(from_sector='storage', to_sector='minerals')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing storage to minerals interface')
         DM_str = simulate_storage_to_minerals_input()
         for i in DM_str.keys():
             DM_str[i] = DM_str[i].filter({'Country': cntr_list})
@@ -2089,6 +2096,8 @@ def minerals(interface=Interface(), calibration=False):
     if interface.has_link(from_sector='buildings', to_sector='minerals'):
         DM_buildings = interface.get_link(from_sector='buildings', to_sector='minerals')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing buildings to minerals interface')
         DM_buildings = simulate_buildings_to_minerals_input()
         for i in DM_buildings.keys():
             DM_buildings[i] = DM_buildings[i].filter({'Country': cntr_list})
@@ -2096,16 +2105,18 @@ def minerals(interface=Interface(), calibration=False):
     if interface.has_link(from_sector='refinery', to_sector='minerals'):
         DM_interface["refinery"] = interface.get_link(from_sector='refinery', to_sector='minerals')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing refinery to minerals interface')
         DM_interface["refinery"] = simulate_refinery_to_minerals_input()
+        DM_interface['refinery'].filter({'Country': cntr_list}, inplace=True)
 
     if interface.has_link(from_sector='ccus', to_sector='minerals'):
         DM_interface["ccus"] = interface.get_link(from_sector='ccus', to_sector='minerals')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing ccus to minerals interface')
         DM_interface["ccus"] = simulate_ccus_to_minerals_input()
-
-    # keep only the countries in cntr_list
-    for i in DM_interface.keys():
-        DM_interface[i] = DM_interface[i].filter({'Country': cntr_list})
+        DM_interface['ccus'].filter({'Country': cntr_list}, inplace=True)
 
     # get product demand
     DM_demand = product_demand(DM_minerals, DM_buildings, DM_str, DM_tra, CDM_const)
@@ -2158,12 +2169,12 @@ def local_minerals_run():
 
 
 # run local
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/minerals_module.py"
+# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/minerals_module.py"
 # database_from_csv_to_datamatrix()
-import time
-start = time.time()
-results_run = local_minerals_run()
-end = time.time()
-print(end - start)
+# import time
+# start = time.time()
+# results_run = local_minerals_run()
+# end = time.time()
+# print(end - start)
 
 
