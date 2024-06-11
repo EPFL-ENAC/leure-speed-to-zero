@@ -707,6 +707,7 @@ def passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const, years_sett
     DM_passenger_out['tech'] = dm_tech
     DM_passenger_out['fuel'] = dm_fuel
     DM_passenger_out['agriculture'] = dm_biogas
+    DM_passenger_out['emissions'] = dm_emissions_by_mode
 
     return DM_passenger_out
 
@@ -890,13 +891,12 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
     tmp = tmp_en[:, :, idx_e['tra_freight_energy-demand'], :, np.newaxis, :] \
           * cdm_const.array[np.newaxis, np.newaxis, idx_c['cp_tra_emission-factor'], np.newaxis, :, :]
     tmp = np.nansum(tmp, axis=-1)  # Remove split by fuel
-    col_labels = dm_energy_em.col_labels.copy()
-    col_labels.pop('Categories3')
-    col_labels['Categories2'] = cdm_const.col_labels['Categories1'].copy()  # GHG category
-    unit = {'tra_freight_emissions': 'Mt'}
-    dm_emissions_by_mode = DataMatrix(col_labels=col_labels, units=unit)
-    dm_emissions_by_mode.array = tmp[:, :, np.newaxis, :, :]  # The variable dimension was lost when doing nansum
-    del tmp, unit, col_labels, idx_e, idx_c, tmp_en, dm_energy_em
+    tmp = tmp[:, :, np.newaxis, :, :]
+    dm_emissions_by_mode = DataMatrix.based_on(tmp, format=dm_energy_em,
+                                               change={'Variables': ['tra_freight_emissions'],
+                                                       'Categories2': cdm_const.col_labels['Categories1'],
+                                                       'Categories3': None}, units={'tra_freight_emissions': 'Mt'})
+    del tmp, idx_e, idx_c, tmp_en, dm_energy_em
 
     tmp = np.nansum(dm_emissions_by_mode.array, axis=-2)
     col_labels = dm_emissions_by_mode.col_labels.copy()
@@ -920,6 +920,7 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
     DM_freight_out['tech'] = dm_tech
     DM_freight_out['energy'] = dm_energy
     DM_freight_out['agriculture'] = dm_biogas
+    DM_freight_out['emissions'] = dm_emissions_by_mode
 
     return DM_freight_out
 
@@ -1088,6 +1089,18 @@ def dummy_tra_infrastructure_workflow(dm_pop):
     return dm_infra.filter({'Variables': ['tra_new_infrastructure']})
 
 
+def tra_emissions_interface(dm_pass_emissions, dm_freight_emissions):
+
+    dm_pass_emissions.rename_col('tra_passenger_emissions', 'tra_emissions_passenger', dim='Variables')
+    dm_pass_emissions = dm_pass_emissions.flatten().flatten()
+    dm_freight_emissions.rename_col('tra_freight_emissions', 'tra_emissions_freight', dim='Variables')
+    dm_freight_emissions = dm_freight_emissions.flatten().flatten()
+
+    dm_pass_emissions.append(dm_freight_emissions, dim='Variables')
+
+    return dm_pass_emissions
+
+
 def transport(lever_setting, years_setting, interface=Interface()):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -1132,6 +1145,7 @@ def transport(lever_setting, years_setting, interface=Interface()):
     dm_agriculture.rename_col('biogas', 'gas', dim='Categories1')
     interface.add_link(from_sector='transport', to_sector='agriculture', dm=dm_agriculture)
 
+    # Minerals and Industry
     dm_freight_new_veh = DM_freight_out['tech'].filter({'Variables': ['tra_freight_new-vehicles']})
     dm_passenger_new_veh = DM_passenger_out['tech'].filter({'Variables': ['tra_passenger_new-vehicles']})
     dm_infrastructure = dummy_tra_infrastructure_workflow(DM_lfs['lfs_pop'])
@@ -1142,6 +1156,9 @@ def transport(lever_setting, years_setting, interface=Interface()):
     interface.add_link(from_sector='transport', to_sector='industry', dm=DM_industry)
     interface.add_link(from_sector='transport', to_sector='minerals', dm=DM_minerals)
 
+    # Emissions
+    dm_emissions = tra_emissions_interface(DM_passenger_out['emissions'], DM_freight_out['emissions'])
+    interface.add_link(from_sector='transport', to_sector='emissions', dm=dm_emissions)
     return results_run
 
 
