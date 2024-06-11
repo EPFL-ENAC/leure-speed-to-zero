@@ -1131,6 +1131,8 @@ def transport(lever_setting, years_setting, interface=Interface()):
     if interface.has_link(from_sector='lifestyles', to_sector='transport'):
         DM_lfs = interface.get_link(from_sector='lifestyles', to_sector='transport')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing lifestyles to oil-refinery interface')
         DM_lfs = simulate_lifestyles_input()
         for key in DM_lfs.keys():
             DM_lfs[key] = DM_lfs[key].filter({'Country': cntr_list})

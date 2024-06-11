@@ -11,13 +11,13 @@ import pandas as pd
 # Import Class
 from model.common.data_matrix_class import DataMatrix  # Class for the model inputs
 from model.common.constant_data_matrix_class import ConstantDataMatrix  # Class for the constant inputs
-from model.common.auxiliary_functions import read_level_data, filter_geoscale
+from model.common.interface_class import Interface
 
 # ImportFunctions
 from model.common.io_database import read_database, read_database_fxa  # read functions for levers & fixed assumptions
 from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups,\
     update_interaction_constant_from_file
-
+from model.common.auxiliary_functions import read_level_data, filter_geoscale
 
 #######################################################################################################################
 # ModelSetting - Oil Refinery
@@ -316,7 +316,7 @@ def variables_to_tpe():
 # CoreModule - Refinery
 #######################################################################################################################
 
-def refinery(lever_setting, years_setting):
+def refinery(lever_setting, years_setting, interface=Interface()):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     refinery_data_file = os.path.join(current_file_directory,
                                         '../_database/data/datamatrix/geoscale/oil-refinery.pickle')
@@ -334,18 +334,53 @@ def refinery(lever_setting, years_setting):
     # CalculationLeafs - Data input (other modules) & filter the country
     ######################################
 
-    dm_power = simulate_power_to_refinery_input()
-    dm_power = dm_power.filter({'Country': cntr_list})
-    dm_buildings = simulate_buildings_to_refinery_input()
-    dm_buildings = dm_buildings.filter({'Country': cntr_list})
-    dm_transport = simulate_transport_to_refinery_input()
-    dm_transport = dm_transport.filter({'Country': cntr_list})
-    dm_industry = simulate_industry_to_refinery_input()
-    dm_industry = dm_industry.filter({'Country': cntr_list})
-    dm_ammonia = simulate_ammonia_to_refinery_input()
-    dm_ammonia = dm_ammonia.filter({'Country': cntr_list})
-    dm_agriculture = simulate_agriculture_to_refinery_input()
-    dm_agriculture = dm_agriculture.filter({'Country': cntr_list})
+    if interface.has_link(from_sector='power', to_sector='oil-refinery'):
+        dm_power = interface.get_link(from_sector='power', to_sector='oil-refinery')
+    else:
+        if len(interface.list_link()) != 0:
+            print('You are missing power to oil-refinery interface')
+        dm_power = simulate_power_to_refinery_input()
+        dm_power = dm_power.filter({'Country': cntr_list})
+
+    if interface.has_link(from_sector='buildings', to_sector='oil-refinery'):
+        dm_buildings = interface.get_link(from_sector='buildings', to_sector='oil-refinery')
+    else:
+        if len(interface.list_link()) != 0:
+            print('You are missing buildings to oil-refinery interface')
+        dm_buildings = simulate_buildings_to_refinery_input()
+        dm_buildings = dm_buildings.filter({'Country': cntr_list})
+
+    if interface.has_link(from_sector='transport', to_sector='oil-refinery'):
+        dm_transport = interface.get_link(from_sector='transport', to_sector='oil-refinery')
+    else:
+        if len(interface.list_link()) != 0:
+            print('You are missing transport to oil-refinery interface')
+        dm_transport = simulate_transport_to_refinery_input()
+        dm_transport = dm_transport.filter({'Country': cntr_list})
+
+    if interface.has_link(from_sector='industry', to_sector='oil-refinery'):
+        dm_industry = interface.get_link(from_sector='industry', to_sector='oil-refinery')
+    else:
+        if len(interface.list_link()) != 0:
+            print('You are missing industry to oil-refinery interface')
+        dm_industry = simulate_industry_to_refinery_input()
+        dm_industry = dm_industry.filter({'Country': cntr_list})
+
+    if interface.has_link(from_sector='ammonia', to_sector='oil-refinery'):
+        dm_ammonia = interface.get_link(from_sector='ammonia', to_sector='oil-refinery')
+    else:
+        if len(interface.list_link()) != 0:
+            print('You are missing ammonia to oil-refinery interface')
+        dm_ammonia = simulate_ammonia_to_refinery_input()
+        dm_ammonia = dm_ammonia.filter({'Country': cntr_list})
+
+    if interface.has_link(from_sector='agriculture', to_sector='oil-refinery'):
+        dm_agriculture = interface.get_link(from_sector='agriculture', to_sector='oil-refinery')
+    else:
+        if len(interface.list_link()) != 0:
+            print('You are missing agriculture to oil-refinery interface')
+        dm_agriculture = simulate_agriculture_to_refinery_input()
+        dm_agriculture = dm_agriculture.filter({'Country': cntr_list})
 
     DM_fuel_demand = {
         'power': dm_power,
@@ -388,4 +423,4 @@ def local_refinery_run():
     return results_run
 
 
-results_run = local_refinery_run()
+# results_run = local_refinery_run()
