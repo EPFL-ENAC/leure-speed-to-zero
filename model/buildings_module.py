@@ -4,7 +4,7 @@ from model.common.interface_class import Interface
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database, read_database_fxa, edit_database, read_database_w_filter
 from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups
-from model.common.auxiliary_functions import read_level_data
+from model.common.auxiliary_functions import read_level_data, filter_geoscale
 import pickle
 import json
 import os
@@ -1221,15 +1221,25 @@ def buildings(lever_setting, years_setting, interface=Interface()):
     DM_floor_area, DM_energy, DM_appliances, DM_costs, DM_light_heat, DM_fuel_switch, cdm_const = read_data(buildings_data_file, lever_setting)
 
     # Simulate lifestyle input
-    DM_lfs = simulate_lifestyles_to_buildings_input()
-    cntr_list = DM_floor_area['floor_area'].col_labels['Country']
-    for key in DM_lfs.keys():
-        DM_lfs[key] = DM_lfs[key].filter({'Country': cntr_list})
+    if interface.has_link(from_sector='lifestyles', to_sector='buildings'):
+        DM_lfs = interface.get_link(from_sector='lifestyles', to_sector='buildings')
+    else:
+        if len(interface.list_link()) != 0:
+            print('You are missing lifestyles to buildings interface')
+        DM_lfs = simulate_lifestyles_to_buildings_input()
+        cntr_list = DM_floor_area['floor_area'].col_labels['Country']
+        for key in DM_lfs.keys():
+            DM_lfs[key] = DM_lfs[key].filter({'Country': cntr_list})
 
-    DM_clm = simulate_climate_to_buildings_input()
-    cntr_list = DM_floor_area['floor_area'].col_labels['Country']
-    for key in DM_clm.keys():
-        DM_clm[key] = DM_clm[key].filter({'Country': cntr_list})
+    if interface.has_link(from_sector='climate', to_sector='buildings'):
+        DM_clm = interface.get_link(from_sector='climate', to_sector='buildings')
+    else:
+        if len(interface.list_link()) != 0:
+            print('You are missing climate to buildings interface')
+        DM_clm = simulate_climate_to_buildings_input()
+        cntr_list = DM_floor_area['floor_area'].col_labels['Country']
+        for key in DM_clm.keys():
+            DM_clm[key] = DM_clm[key].filter({'Country': cntr_list})
 
     # Floor area workflow
     baseyear = years_setting[1]
@@ -1290,6 +1300,11 @@ def buildings(lever_setting, years_setting, interface=Interface()):
 def buildings_local_run():
     # Function to run module as stand alone without other modules/converter or TPE
     years_setting, lever_setting = init_years_lever()
+    # Function to run only transport module without converter and tpe
+
+    global_vars = {'geoscale': '.*'}
+    filter_geoscale(global_vars)
+
     buildings(lever_setting, years_setting)
     return
 
