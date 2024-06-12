@@ -363,7 +363,7 @@ def cdm_to_dm(cdm, countries_list, years_list):
     dm.array = arr_temp
     return dm
 
-def simulate_input(from_sector, to_sector, num_cat):
+def simulate_input(from_sector, to_sector, num_cat = 0):
     
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     
