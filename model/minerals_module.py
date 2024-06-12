@@ -1791,11 +1791,8 @@ def simulate_lifestyles_to_minerals_input():
 
 
 def simulate_transport_to_minerals_input():
-
-    current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    f = os.path.join(current_file_directory, "../_database/data/xls/All-Countries-interface_from-transport-to-minerals.xlsx")
-    df = pd.read_excel(f)
-    dm_tra = DataMatrix.create_from_df(df, num_cat=0)
+    
+    dm_tra = simulate_input(from_sector="transport", to_sector="minerals")
 
     # demand for infrastructure [km]
     dm_tra_infra = dm_tra.filter_w_regex({"Variables": 'tra_new_infrastructure'})
