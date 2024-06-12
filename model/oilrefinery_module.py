@@ -7,6 +7,8 @@ import pickle  # read/write the data in pickle
 import json  # read the lever setting
 import os  # operating system (e.g., look for workspace)
 import pandas as pd
+import warnings
+warnings.simplefilter("ignore")
 
 # Import Class
 from model.common.data_matrix_class import DataMatrix  # Class for the model inputs
@@ -298,6 +300,8 @@ def fuel_production_workflow(DM_refinery, DM_fuel_demand):
     ay_fossil_emissions = dm_fossil_demand.array[...] \
                             / dm_factors.array[np.newaxis, np.newaxis, :, :]
     dm_fossil_emissions = DataMatrix.based_on(ay_fossil_emissions, dm_fossil_demand)
+    for v in dm_fossil_emissions.col_labels["Variables"]:
+        dm_fossil_emissions.units[v] = "Mt"
 
     DM_refinery_out = {
         'fossil-demand': dm_fossil_demand,
@@ -306,11 +310,38 @@ def fuel_production_workflow(DM_refinery, DM_fuel_demand):
     return DM_refinery_out
 
     # TODO: (1) Hydrogen; (2) Balance; (3) Costs; (4) CCUS
+    
+def primary_demand(DM_refinery_out):
+    
+    dm_temp = DM_refinery_out["fossil-demand"].copy()
+    dm_fos = dm_temp.groupby({'fos_primary-demand': '.*'}, dim='Variables', regex=True, inplace=False)
+    dm_fos.groupby({'oil': ['diesel', 'fuel-oil', 'gasoline', 'kerosene']}, dim='Categories1', regex=False, inplace=True)
+    
+    return dm_fos
 
-def variables_to_tpe():
+def variables_to_tpe(DM_refinery_out, dm_fos):
     
+    dm_temp = DM_refinery_out["fossil-demand"].copy()
+    dm_temp.rename_col("pow_energy-demand", "elc_energy-demand","Variables")
+    dm_temp.rename_col("coal", "solid-ff-coal","Categories1")
+    dm_temp.rename_col("diesel", "liquid-ff-diesel","Categories1")
+    dm_temp.rename_col("fuel-oil", "liquid-ff-fuel-oil","Categories1")
+    dm_temp.rename_col("gasoline", "liquid-ff-gasoline","Categories1")
+    dm_temp.rename_col("kerosene", "liquid-ff-kerosene","Categories1")
+    dm_temp.rename_col("gas", "gas-ff-natural","Categories1")
+    dm_tpe = dm_temp.flatten()
     
-    return 
+    dm_tpe.append(dm_fos.flatten(), "Variables")
+    
+    return dm_tpe
+
+def oilrefinery_emissions_interface(DM_refinery_out):
+    
+    dm_temp = DM_refinery_out["fossil-emissions"].copy()
+    dm_temp.group_all("Categories1")
+    dm_temp.groupby({'fos_emissions-CO2': '.*'}, "Variables", regex=True, inplace=True)
+    
+    return dm_temp
 
 #######################################################################################################################
 # CoreModule - Refinery
@@ -323,16 +354,12 @@ def refinery(lever_setting, years_setting, interface=Interface()):
     with open(refinery_data_file, 'rb') as handle:  # read binary (rb)
         DM_refinery= pickle.load(handle)
 
-    ######################################
-    # CalculationLeafs - Country filter setting (based on fxa, because their is no read data function / no levers)
-    ######################################
+    # Country filter setting (based on fxa, because their is no read data function / no levers)
 
     dm_fxa = DM_refinery['fxa']['refinery-ratio']
     cntr_list = dm_fxa.col_labels['Country']
 
-    ######################################
-    # CalculationLeafs - Data input (other modules) & filter the country
-    ######################################
+    # Data input (other modules) & filter the country
 
     if interface.has_link(from_sector='power', to_sector='oil-refinery'):
         dm_power = interface.get_link(from_sector='power', to_sector='oil-refinery')
@@ -391,19 +418,24 @@ def refinery(lever_setting, years_setting, interface=Interface()):
         'agriculture': dm_agriculture
     }
 
-    ######################################
-    # CalculationLeafs - Fuel production function
-    ######################################
-
+    # Fuel production function
     DM_refinery_out = fuel_production_workflow(DM_refinery, DM_fuel_demand)
+    
+    # primary demand
+    dm_fos = primary_demand(DM_refinery_out)
+    
+    # tpe
+    dm_tpe = variables_to_tpe(DM_refinery_out, dm_fos)
+    df_tpe = dm_tpe.write_df()
+    
+    # interface emissions
+    dm_ems = oilrefinery_emissions_interface(DM_refinery_out)
+    interface.add_link(from_sector='oilrefinery', to_sector='emissions', dm=dm_ems)
+    
+    # interface minerals
+    interface.add_link(from_sector='oilrefinery', to_sector='minerals', dm=dm_fos.flatten())
 
-    ######################################
-    # CalculationLeafs - Module output
-    ######################################
-
-    results_run = DM_refinery_out
-
-    return results_run
+    return df_tpe
 
 #######################################################################################################################
 # LocalRun - Refinery
@@ -412,15 +444,18 @@ def refinery(lever_setting, years_setting, interface=Interface()):
 def local_refinery_run():
     # Function to run only transport module without converter and tpe
     years_setting = [1990, 2015, 2050, 5]
-    f = open('../config/lever_position.json')
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = open(os.path.join(current_file_directory, '../config/lever_position.json'))
     lever_setting = json.load(f)[0]
 
-    global_vars = {'geoscale': 'Switzerland'}
+    global_vars = {'geoscale': '.*'}
     filter_geoscale(global_vars)
 
     results_run = refinery(lever_setting, years_setting)
 
     return results_run
 
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/emissions_module.py"
+results_run = local_refinery_run()
 
-# results_run = local_refinery_run()
+
