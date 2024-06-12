@@ -479,6 +479,24 @@ def building_workflow(DM_building):
 
     return DM_building_out
 
+def lfs_agriculture_interface(dm_agriculture):
+
+    cat_lfs = ['afats', 'beer', 'bev-alc', 'bev-fer', 'bov', 'cereals', 'coffee', 'dfish', 'egg', 'ffish', 'fruits', \
+               'milk', 'offal', 'oilcrops', 'oth-animals', 'oth-aq-animals', 'pfish', 'pigs', 'poultry', 'pulses',
+               'rice', 'seafood', 'sheep', 'starch', 'stm', 'sugar', 'sweet', 'veg', 'voil', 'wine']
+    cat_agr = ['pro-liv-abp-processed-afat', 'pro-bev-beer', 'pro-bev-bev-alc', 'pro-bev-bev-fer', 'pro-liv-meat-bovine',
+               'crop-cereal', 'coffee', 'dfish', 'pro-liv-abp-hens-egg', 'ffish', 'crop-fruit', 'pro-liv-abp-dairy-milk',
+               'pro-liv-abp-processed-offal', 'crop-oilcrop', 'pro-liv-meat-oth-animals', 'oth-aq-animals', 'pfish',
+               'pro-liv-meat-pig', 'pro-liv-meat-poultry', 'crop-pulse', 'rice', 'seafood', 'pro-liv-meat-sheep',
+               'crop-starch', 'stm', 'pro-crop-processed-sugar', 'pro-crop-processed-sweet', 'crop-veg',
+               'pro-crop-processed-voil', 'pro-bev-wine']
+
+    dm_agriculture.rename_col(cat_lfs, cat_agr, 'Categories1')
+    dm_agriculture.sort('Categories1')
+
+    return dm_agriculture
+
+
 # CORE module
 def lifestyles(lever_setting, years_setting, interface=Interface()):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -497,7 +515,8 @@ def lifestyles(lever_setting, years_setting, interface=Interface()):
     results_run = dm_agriculture_out.write_df()
 
     # !FIXME: currently agriculture renames all of the lifestyles categories, we should rather keep lifestyles categories and rework agriculture
-    #interface.add_link(from_sector='lifestyles', to_sector='agriculture', dm=dm_agriculture_out)
+    dm_agriculture = lfs_agriculture_interface(dm_agriculture_out)
+    interface.add_link(from_sector='lifestyles', to_sector='agriculture', dm=dm_agriculture)
     interface.add_link(from_sector='lifestyles', to_sector='transport', dm=DM_transport_out['transport'])
     DM_building_out['appliance'] = DM_appliance_out['buildings']
     interface.add_link(from_sector='lifestyles', to_sector='buildings', dm=DM_building_out)
