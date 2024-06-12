@@ -370,7 +370,7 @@ def simulate_input(from_sector, to_sector):
     # get file
     xls_directory = os.path.join(current_file_directory, "../../_database/data/xls")
     files = np.array(os.listdir(xls_directory))
-    file = files[[bool(re.search(from_sector + "-to-" + to_sector, str(i))) for i in files]].tolist()[0]
+    file = files[[bool(re.search(from_sector + "-to-" + to_sector + ".xlsx", str(i))) for i in files]].tolist()[0]
     xls_file_directory = xls_directory +  "/" + file
     df = pd.read_excel(xls_file_directory)
     
