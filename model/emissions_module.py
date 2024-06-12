@@ -489,6 +489,9 @@ def simulate_refinery_to_emissions_input():
 def simulate_agriculture_to_emissions_input():
     
     dm = simulate_input(from_sector="agriculture", to_sector="emissions")
+    # import pprint
+    # dm.sort("Variables")
+    # pprint.pprint(dm.col_labels["Variables"])
     
     return dm
 
