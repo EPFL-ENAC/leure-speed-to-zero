@@ -618,14 +618,11 @@ def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
 #######################################################################################################################
 
     # Tuto: Hourly data computation
-def hourly_production_workflow(dm_production_np, dm_production_p, DM_production_profiles):
+def hourly_production_workflow(dm_production_np, dm_production_p, DM_production_profiles, baseyear):
 
     ######################################
     # CalculationLeafs - Hourly production per technology (wind & solar)[GWh]
     ######################################
-
-    # take this from years_setting
-    baseyear = 2015
 
     # Extract hourly data (fake pv hourly profile)
     dm_profile_hourly = DM_production_profiles['pv-profile']
@@ -746,14 +743,11 @@ def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_ag
 #######################################################################################################################
 # CalculationTree - Power - Hourly demand
 #######################################################################################################################
-def hourly_demand_workflow(DM_yearly_demand, DM_demand_profiles):
+def hourly_demand_workflow(DM_yearly_demand, DM_demand_profiles, baseyear):
 
     ######################################
     # CalculationLeafs - Hourly profiles per sector [GWh]
     ######################################
-
-    # take this from years_setting
-    baseyear = 2015
 
     # Extract hourly data (demand profiles)
     dm_profile_hourly = DM_demand_profiles['non-residential-appliances']
@@ -911,11 +905,23 @@ def emissions_workflow(dm_gross_production, cdm_emissions_fact):
 
     return dm_emissions
 
+
+def pow_refinery_interface(dm_gross_production):
+
+    # !FIXME once we figure out the trade, we should include the electricty produced from fossil abroad
+    dm_fossil_production = dm_gross_production.filter({'Categories1': ['coal', 'oil', 'gas', 'nuclear']})
+    dm_fossil_production.add(0, dim='Categories1', col_label=['hydrogen'], dummy=True)
+    dm_fossil_production.sort('Categories1')
+    dm_fossil_production.rename_col('pow_gross-yearly-production', 'pow_energy-demand', dim='Variables')
+
+    return dm_fossil_production
+
 #######################################################################################################################
 # CoreModule - Power
 #######################################################################################################################
 
 def power(lever_setting, years_setting, interface=Interface()):
+    baseyear = years_setting[1]
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
 
     power_data_file = os.path.join(current_file_directory,
@@ -979,20 +985,23 @@ def power(lever_setting, years_setting, interface=Interface()):
     # To send to TPE (result run)
     dm_capacity, dm_fb_capacity, dm_production_np, dm_production_p =\
         yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const)
-    dm_hourly_production = hourly_production_workflow(dm_production_np, dm_production_p, DM_production_profiles)
+    dm_hourly_production = hourly_production_workflow(dm_production_np, dm_production_p, DM_production_profiles, baseyear)
 
     # TUTO give dm_ev_hourly as input to yearly_demand_workflow
     DM_yearly_demand = yearly_demand_workflow(DM_bld, DM_industry['electricity'], DM_ammonia['electricity'],
                                               dm_agr_electricity, DM_tra, DM_industry['hydrogen'], DM_ammonia['hydrogen'])
 
     dm_gross_production = dm_capacity.filter({'Variables': ['pow_gross-yearly-production']})
-    dm_emissions = emissions_workflow(dm_gross_production, cdm_const['emission-factors'])
+    dm_emissions = emissions_workflow(dm_gross_production.copy(), cdm_const['emission-factors'])
 
-    dm_hourly_demand = hourly_demand_workflow(DM_yearly_demand, DM_demand_profiles)
+    dm_hourly_demand = hourly_demand_workflow(DM_yearly_demand, DM_demand_profiles, baseyear)
 
     dm_hourly_equilibrium = storage_workflow(dm_hourly_demand, dm_hourly_production)
 
     interface.add_link(from_sector='power', to_sector='emissions', dm=dm_emissions.flatten().flatten())
+
+    dm_refinery = pow_refinery_interface(dm_gross_production)
+    interface.add_link(from_sector='power', to_sector='oil-refinery', dm=dm_refinery)
     # same number of arg than the return function
 
     # concatenate all results to df

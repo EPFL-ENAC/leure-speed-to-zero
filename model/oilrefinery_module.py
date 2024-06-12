@@ -101,8 +101,9 @@ def simulate_power_to_refinery_input():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     f = os.path.join(current_file_directory, "../_database/data/xls/"
                                              "All-Countries-interface_from-power-to-oil-refinery.xlsx")
-    df = pd.read_excel(f, sheet_name="default")
+    df = pd.read_excel(f)
     dm_power = DataMatrix.create_from_df(df, num_cat=1)
+    dm_power.sort(dim='Categories1')
 
     return dm_power
 
@@ -455,7 +456,7 @@ def local_refinery_run():
 
     return results_run
 
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/emissions_module.py"
-results_run = local_refinery_run()
+# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/emissions_module.py"
+# results_run = local_refinery_run()
 
 
