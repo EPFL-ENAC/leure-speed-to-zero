@@ -363,7 +363,7 @@ def cdm_to_dm(cdm, countries_list, years_list):
     dm.array = arr_temp
     return dm
 
-def simulate_input(from_sector, to_sector):
+def simulate_input(from_sector, to_sector, num_cat):
     
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     
@@ -375,7 +375,7 @@ def simulate_input(from_sector, to_sector):
     df = pd.read_excel(xls_file_directory)
     
     # get dm
-    dm = DataMatrix.create_from_df(df, num_cat=0)
+    dm = DataMatrix.create_from_df(df, num_cat=num_cat)
     return dm
 
 
