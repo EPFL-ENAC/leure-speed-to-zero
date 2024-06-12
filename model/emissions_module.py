@@ -247,7 +247,7 @@ def sum_emissions_by_gas(DM_interface):
     # dm_agr_input.group_all("Categories1")
     # dm_agr_input.rename_col(col_in = 'agr_input-use_emissions-CO2', col_out = 'agr_emissions-CO2_input-use', dim = "Variables")
     # dm_agr_input.deepen()
-
+    # ! FIXME: the interface to power has changed, it needs to be re-done
     # electricity
     dm_elc = DM_interface["electricity"].filter({"Variables": ["elc_emissions-CO2"]})
     dm_elc.deepen()
@@ -278,12 +278,6 @@ def sum_emissions_by_gas(DM_interface):
 def emissions_equivalent(DM_interface, DM_fxa):
     
     # TODO: note that this currently works with dms all flattened (no categories), later on after all modules are finalized we can think of making it work with categories, and avoid deepen done in variables for TPE
-    
-    # drop variables that are already aggregated
-    # TODO: in DM_interface["power"] I have dropped "elc_emissions-CO2_fossil_total" to avoid to double counting in the overall sum, to be reported in the known issues
-    DM_interface["power"].drop("Variables", ['elc_stored-CO2_RES_bio_gas', 'elc_stored-CO2_RES_bio_mass',
-                                                   'elc_emissions-CO2_fossil_total'])
-    
     # put together
     dm_ems = DM_interface["buildings"].copy()
     keys = ["district-heating", "power", "land-use", "biodiversity",
@@ -356,20 +350,19 @@ def variables_for_tpe(dm_ems):
     dm_fos.rename_col("fos_emissions-CO2","fos_emissions-CO2e","Variables")
     dm_tpe.append(dm_fos, "Variables")
     
-    # electricity
-    dm_elc = dm_ems.filter_w_regex({"Variables" : ".*elc.*CH4.*|.*elc.*N2O.*"})
-    dm_elc.deepen("_emissions")
-    dm_elc.group_all("Categories1")
-    dm_elc.rename_col("elc", "elc_emissions-CO2e_RES_bio", "Variables")
+    # power
+    dm_elc = dm_ems.filter_w_regex({"Variables": "pow.*bio.*"})
+    dm_ems.drop('Variables', 'pow.*bio.*')
+    dm_elc.groupby({'pow_emissions-CO2e_RES_bio': '.*'}, dim='Variables', inplace=True, regex=True)
     dm_tpe.append(dm_elc, "Variables")
-    dm_elc = dm_ems.filter({"Variables" : ['elc_emissions-CO2_fossil_coal', 
-                                           'elc_emissions-CO2_fossil_natural-gas', 
-                                           'elc_emissions-CO2_fossil_oil']})
-    dm_elc.rename_col_regex("CO2", "CO2e", "Variables")
-    dm_tpe.append(dm_elc, "Variables")
+    dm_elc = dm_ems.filter_w_regex({"Variables": 'pow_.*'})
+    dm_elc.deepen_twice()
+    dm_elc.group_all('Categories2')
+    dm_elc.rename_col('pow_emissions', 'pow_emissions-CO2e_fossil', 'Variables')
+    dm_tpe.append(dm_elc.flatten(), "Variables")
     
     # agriculture
-    dm_agr = dm_ems.filter_w_regex({"Variables" : ".*agr_emissions.*"})
+    dm_agr = dm_ems.filter_w_regex({"Variables": ".*agr_emissions.*"})
     dm_agr.rename_col_regex("_","-","Variables")
     dm_agr.rename_col_regex("agr-emissions-N2O-","agr_emissions-N2O_","Variables")
     dm_agr.rename_col_regex("agr-emissions-CH4-","agr_emissions-CH4_","Variables")
@@ -471,7 +464,20 @@ def simulate_district_heating_to_emissions_input():
 def simulate_power_to_emissions_input():
     
     dm = simulate_input(from_sector="power", to_sector="emissions")
-    
+
+    # drop variables that are already aggregated
+    # TODO: in DM_interface["power"] I have dropped "elc_emissions-CO2_fossil_total" to avoid to double counting in the overall sum, to be reported in the known issues
+    dm.drop("Variables", ['elc_stored-CO2_RES_bio_gas', 'elc_stored-CO2_RES_bio_mass', 'elc_emissions-CO2_fossil_total'])
+
+    dm.rename_col_regex('RES_bio', 'biogas', 'Variables')
+    dm.rename_col_regex('fossil_', '', 'Variables')
+    dm.rename_col_regex('natural-gas', 'gas', 'Variables')
+    dm.rename_col_regex('elc', 'pow', 'Variables')
+    dm.rename_col_regex('emissions-', 'emissions_', 'Variables')
+    dm.deepen_twice()
+    dm.switch_categories_order('Categories1', 'Categories2')
+    dm = dm.flatten()
+    dm = dm.flatten()
     return dm
 
 def simulate_refinery_to_emissions_input():
