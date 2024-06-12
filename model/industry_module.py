@@ -1855,7 +1855,6 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
         for key in DM_buildings.keys():
             DM_buildings[key].filter({'Country': cntr_list}, inplace=True)
 
-    t1 = time.time()
     # get product import
     dm_imp = DM_ots_fts["product-net-import"]
     
