@@ -2119,7 +2119,7 @@ def agriculture_power_interface(DM_energy_ghg, write_xls=False):
     
     dm_pow = DM_energy_ghg['caf_energy_demand'].filter_w_regex({'Variables': 'agr_energy-demand', 'Categories1': '.*electricity.*'})
     dm_pow = dm_pow.flatten()
-    ktoe_to_twh = 0.01163 / 1000
+    ktoe_to_twh = 0.0116222 # from KNIME factor
     dm_pow.array = dm_pow.array * ktoe_to_twh
     dm_pow.units["agr_energy-demand_electricity"] = "TWh"
     
@@ -2275,7 +2275,7 @@ def agriculture_local_run():
 
 # # Run the code in local
 # start = time.time()
-# results_run = agriculture_local_run()
+results_run = agriculture_local_run()
 # end = time.time()
 # print(end-start)
 
