@@ -218,9 +218,17 @@ def database_from_csv_to_datamatrix():
                                                         pattern='cp_power-unit-self-consumption|'
                                                                 'cp_fuel-based-power-efficiency', num_cat=1)
 
+    cdm_emission_factor = ConstantDataMatrix.extract_constant('interactions_constants',
+                                                              pattern='cp_tec_emission-factor_.*', num_cat=2)
+
+    cdm_emission_factor.rename_col(['gas-bio', 'gas-ff-natural', 'liquid-ff-oil', 'solid-bio', 'solid-ff-coal'],
+                                   ['biogas', 'gas', 'oil', 'biomass', 'coal'], dim='Categories2')
+    cdm_emission_factor = cdm_emission_factor.filter({'Categories2': ['biogas', 'gas', 'oil', 'biomass', 'coal']})
+
     dict_const = {
         'constant_0': cdm_const_cat0,
-        'constant_1': cdm_const_cat1
+        'constant_1': cdm_const_cat1,
+        'emission-factors': cdm_emission_factor
     }
 
 #######################################################################################################################
@@ -256,7 +264,6 @@ def read_data(data_file, lever_setting):
         DM_power = pickle.load(handle)
 
     # FXA data matrix
-
     DM_ots_fts = read_level_data(DM_power, lever_setting)
 
     # Capacity per technology (fuel-based)
@@ -888,6 +895,24 @@ def storage_workflow(dm_hourly_demand, dm_hourly_production):
     return dm_hourly_equilibrium
 
 
+def emissions_workflow(dm_gross_production, cdm_emissions_fact):
+
+    cdm_emissions_fact.sort('Categories2')
+    dm_gross_production.filter({'Categories1': cdm_emissions_fact.col_labels['Categories2']}, inplace=True)
+    dm_gross_production.sort('Categories1')
+
+    ay_emissions = cdm_emissions_fact.array[np.newaxis, np.newaxis, :, :, :] \
+                   * dm_gross_production.array[:, :, :, np.newaxis, :]/1000
+
+    ay_emissions = np.moveaxis(ay_emissions, -2, -1)
+
+    GHG_gas_list = cdm_emissions_fact.col_labels['Categories1']
+    dm_emissions = DataMatrix.based_on(ay_emissions, format=dm_gross_production,
+                                       change={'Variables': ['pow_emissions'], 'Categories2': GHG_gas_list},
+                                       units={'pow_emissions': 'Mt'})
+
+    return dm_emissions
+
 #######################################################################################################################
 # CoreModule - Power
 #######################################################################################################################
@@ -962,10 +987,14 @@ def power(lever_setting, years_setting, interface=Interface()):
     DM_yearly_demand = yearly_demand_workflow(DM_bld, DM_industry['electricity'], DM_ammonia['electricity'],
                                               dm_agr_electricity, DM_tra, DM_industry['hydrogen'], DM_ammonia['hydrogen'])
 
+    dm_gross_production = dm_capacity.filter({'Variables': ['pow_gross-yearly-production']})
+    dm_emissions = emissions_workflow(dm_gross_production, cdm_const['emission-factors'])
+
     dm_hourly_demand = hourly_demand_workflow(DM_yearly_demand, DM_demand_profiles)
 
     dm_hourly_equilibrium = storage_workflow(dm_hourly_demand, dm_hourly_production)
 
+    interface.add_link(from_sector='power', to_sector='emissions', dm=dm_emissions.flatten().flatten())
     # same number of arg than the return function
 
     # concatenate all results to df
@@ -984,7 +1013,7 @@ def local_power_run():
     f = open('../config/lever_position.json')
     lever_setting = json.load(f)[0]
 
-    global_vars = {'geoscale': 'Switzerland'}
+    global_vars = {'geoscale': '.*'}
     filter_geoscale(global_vars)
 
     results_run = power(lever_setting, years_setting)
@@ -994,3 +1023,6 @@ def local_power_run():
 
 # database_from_csv_to_datamatrix()
 # results_run = local_power_run()
+
+
+
