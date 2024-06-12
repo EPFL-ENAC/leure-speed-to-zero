@@ -2209,15 +2209,15 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
 
     # interface to Land use
     dm_lus = agriculture_landuse_interface(DM_bioenergy, dm_lgn, dm_land_use)
-    #interface.add_link(from_sector='agriculture', to_sector='landuse', dm=dm_lus)
+    # interface.add_link(from_sector='agriculture', to_sector='landuse', dm=dm_lus)
 
-    # interface to Climate emissions
+    # interface to Emissions
     dm_climate = agriculture_climate_interface(DM_nitrogen, dm_CO2, DM_crop, DM_manure, DM_land, write_xls=False)
-    # interface.add_link(from_sector='agriculture', to_sector='climate', dm=dm_climate)
+    # interface.add_link(from_sector='agriculture', to_sector='emissions', dm=dm_climate)
 
     # interface to Ammonia
     dm_ammonia = agriculture_ammonia_interface(dm_mineral_fertilizer,  write_xls=False)
-    # interface.add_link(from_sector='agriculture', to_sector='ammonia', dm=dm_ammonia)
+    interface.add_link(from_sector='agriculture', to_sector='ammonia', dm=dm_ammonia)
 
     # interface to Storage
     dm_storage = agriculture_storage_interface(DM_energy_ghg, write_xls=True)
