@@ -734,6 +734,8 @@ def simulate_lifestyles_to_agriculture_input():
         new_cat = 'pro-crop-processed-' + cat
         dm_lfs.rename_col(cat, new_cat, dim='Categories1')
 
+    dm_lfs.sort('Categories1')
+
     return dm_lfs
 
 def simulate_buildings_to_agriculture_input():
@@ -2237,7 +2239,7 @@ def agriculture_local_run():
 
 # Run the code in local
 # start = time.time()
-results_run = agriculture_local_run()
+# results_run = agriculture_local_run()
 # end = time.time()
 # print(end-start)
 
