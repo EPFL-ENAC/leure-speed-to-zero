@@ -302,10 +302,11 @@ def emissions_equivalent(DM_interface, DM_fxa):
         for v in variables:
             arr_temp = dm_ems.array[idx[c],:,idx[v]]
             nan_idx = np.isnan(arr_temp)
-            nans_pos = np.where(nan_idx)[0]
-            nonnan_pos = np.where(~nan_idx)[0]
-            nonnan = arr_temp[nonnan_pos]
-            arr_temp[nan_idx] = np.interp(nans_pos, nonnan_pos, nonnan)
+            if not nan_idx.all():  # If it's not just nans
+                nans_pos = np.where(nan_idx)[0]
+                nonnan_pos = np.where(~nan_idx)[0]
+                nonnan = arr_temp[nonnan_pos]
+                arr_temp[nan_idx] = np.interp(nans_pos, nonnan_pos, nonnan)
     
     # apply eq coefficients
     # NOTE: here in knime they were multiplying by (12 / 44) to go grom MtCO2eq to MtC/year, but as then they convert back to MtCO2eq here I compute directly MtCO2eq (so no multiplication by (12 / 44))
