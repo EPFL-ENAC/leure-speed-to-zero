@@ -52,7 +52,7 @@ def database_from_csv_to_datamatrix():
     lever = "temp"
 
     # Creates the datamatrix for lifestyles population
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 0, 0, 0], baseyear=baseyear,
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 0, 1, 0], baseyear=baseyear,
                                                                 years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
                                                                 column='eucalc-name', group_list=[
                                                                             'bld_climate-impact-space',
@@ -99,7 +99,7 @@ def climate_buildings_interface(DM_ots_fts, write_xls = False):
 
 def variables_to_tpe(DM_ots_fts):
     
-    dm_tpe = DM_ots_fts["temp"]["clm_capacity-factor"].copy()
+    dm_tpe = DM_ots_fts["temp"]["clm_capacity-factor"].flatten()
     dm_tpe.append(DM_ots_fts["temp"]["clm_temp_global"], "Variables")
     df = dm_tpe.write_df()
     
@@ -150,10 +150,10 @@ def local_climate_run():
 
     return results_run
 
-# local
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/climate_module.py"
+# # local
+# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/climate_module.py"
 # database_from_csv_to_datamatrix()
-results_run = local_climate_run()
+# results_run = local_climate_run()
 
 
 
