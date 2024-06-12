@@ -744,7 +744,9 @@ def simulate_buildings_to_agriculture_input():
     # the renamed version has - instead of _
     df = pd.read_excel(f, sheet_name="default")
     dm_bld = DataMatrix.create_from_df(df, num_cat=1)
-
+    dm_bld.operation('solid-woodlogs', '+', 'solid-pellets', dim='Categories1', out_col='solid-bio', nansum=True)
+    dm_bld.filter({'Categories1': ['gas', 'solid-bio']}, inplace=True)
+    dm_bld.rename_col('gas', 'gas-bio', 'Categories1')
     return dm_bld
 
 def simulate_industry_to_agriculture_input():
@@ -1090,7 +1092,7 @@ def bioenergy_workflow(DM_bioenergy, CDM_const, dm_ind, dm_bld, dm_tra):
     idx_tra = dm_tra.idx
     idx_elec = DM_bioenergy['electricity_production'].idx
 
-    dm_bio_gas_demand = dm_bld.array[:, :, idx_bld['bld_bioenergy'], idx_bld['gas']] \
+    dm_bio_gas_demand = dm_bld.array[:, :, idx_bld['bld_bioenergy'], idx_bld['gas-bio']] \
                         + dm_ind_bioenergy.array[:, :, idx_ind_bioenergy['ind_bioenergy'], idx_ind_bioenergy['gas-bio']] \
                         + dm_ind_biomaterial.array[:, :, idx_ind_biomaterial['ind_biomaterial'],
                           idx_ind_biomaterial['gas-bio']] \
@@ -1132,8 +1134,7 @@ def bioenergy_workflow(DM_bioenergy, CDM_const, dm_ind, dm_bld, dm_tra):
     idx_ind_bioenergy = dm_ind_bioenergy.idx
     idx_elec = DM_bioenergy['electricity_production'].idx
 
-    dm_solid_demand = dm_bld.array[:, :, idx_bld['bld_bioenergy'], idx_bld['solid-pellets']] \
-                      + dm_bld.array[:, :, idx_bld['bld_bioenergy'], idx_bld['solid-woodlogs']] \
+    dm_solid_demand = dm_bld.array[:, :, idx_bld['bld_bioenergy'], idx_bld['solid-bio']] \
                       + dm_ind_bioenergy.array[:, :, idx_ind_bioenergy['ind_bioenergy'], idx_ind_bioenergy['solid-bio']] \
                       + DM_bioenergy['electricity_production'].array[:, :, idx_elec['agr_bioenergy-capacity_fdk-req'],
                         idx_elec['solid-biofuel']] \
