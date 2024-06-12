@@ -1964,107 +1964,124 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_ma
 
 def agriculture_landuse_interface(DM_bioenergy, dm_lgn, dm_land_use, write_xls = False):
     
-    dm_lus = {}
+    dm_wood = DM_bioenergy['solid-mix'].filter({"Variables" : ["agr_bioenergy_biomass-demand_solid"],
+                                                "Categories1" : ['fuelwood-and-res']})
+    dm_lgn = dm_lgn.filter({"Variables" : ["agr_bioenergy_biomass-demand_liquid_lgn"],
+                            "Categories1" : ['lgn-btl-fuelwood-and-res']})
+    dm_land_use = dm_land_use.filter({"Variables" : ["agr_lus_land"]})
+    
+    DM_lus = {"wood" : dm_wood,
+              "lgn" : dm_lgn,
+              "landuse" : dm_land_use}
     
     # dm_dh
     if write_xls is True:
         
-        dm_lus = DM_bioenergy['solid-mix'].flatten()
-        dm_lus.append(dm_lgn.flatten(), "Variables")
-        dm_lus.append(dm_land_use.flatten(), "Variables")
+        dm_lus = DM_bioenergy['solid-mix'].filter({"Variables" : ["agr_bioenergy_biomass-demand_solid"],
+                                                    "Categories1" : ['fuelwood-and-res']}).flatten()
+        dm_lus.append(dm_lgn.filter({"Variables" : ["agr_bioenergy_biomass-demand_liquid_lgn"],
+                                "Categories1" : ['lgn-btl-fuelwood-and-res']}).flatten(), "Variables")
+        dm_lus.append(dm_land_use.filter({"Variables" : ["agr_lus_land"]}).flatten(), "Variables")
         
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
         df_lus = dm_lus.write_df()
         df_lus.to_excel(current_file_directory + "/../_database/data/xls/" + 'All-Countries_interface_from-agriculture-to-landuse.xlsx', index=False)
     
-    return dm_lus
+    return DM_lus
 
 
-def agriculture_climate_interface(DM_nitrogen, dm_CO2, DM_crop, DM_manure, DM_land, write_xls=False):
-    dm_climate = {}
+def agriculture_emissions_interface(DM_nitrogen, dm_CO2, DM_crop, DM_manure, DM_land, write_xls=False):
+    
+    # Fertizer emissions N2O FIXME change for cal
+    dm_fertilizer_N2O = DM_nitrogen['emissions'].filter({'Variables': ['agr_crop_emission_N2O-emission']})
+    dm_fertilizer_N2O.add(0.000001, dummy=True, col_label='t_to_Mt', dim='Variables', unit='Mt')
+    dm_fertilizer_N2O.operation('agr_crop_emission_N2O-emission', '*', 't_to_Mt', out_col='agr_emissions-N2O_crop_fertilizer', unit='Mt')
+    dm_fertilizer_N2O = dm_fertilizer_N2O.filter({'Variables': ['agr_emissions-N2O_crop_fertilizer']})
 
-    # dm_dh
+    # CO2 emissions from fertilizer & energy FIXME change for cal
+    dm_input_use_CO2 = dm_CO2.filter({'Variables': ['agr_input-use_emissions-CO2']})
+    dm_input_use_CO2.add(0.000001, dummy=True, col_label='t_to_Mt', dim='Variables', unit='Mt')
+    dm_input_use_CO2.operation('agr_input-use_emissions-CO2', '*', 't_to_Mt', out_col='agr_emissions-CO2_input-use', unit='Mt')
+    dm_input_use_CO2 = dm_input_use_CO2.filter({'Variables': ['agr_emissions-CO2_input-use']})
+    dm_input_use_CO2.rename_col('agr_emissions-CO2_input-use','agr_input-use_emissions-CO2',"Variables")
+    dm_input_use_CO2 = dm_input_use_CO2.flatten()
+
+    # Crop residue emissions
+    # TODO: Agathe check that here that dropping 'agr_emissions-CH4_crop_soil-residues' is fine
+    dm_crop_residues = DM_crop['ef_residues'].filter({'Variables': ['agr_crop_emission'],
+                                                      'Categories1' : ['burnt-residues','soil-residues'],
+                                                      'Categories2': ['N2O-emission', 'CH4-emission']})
+    dm_crop_residues.rename_col('agr_crop_emission', 'agr', dim='Variables')
+    dm_crop_residues.rename_col_regex('emission', 'emissions', dim='Categories2')
+    dm_crop_residues.rename_col('burnt-residues', 'crop_burnt-residues', dim='Categories1')
+    dm_crop_residues.rename_col('soil-residues', 'crop_soil-residues', dim='Categories1')
+    dm_crop_residues.switch_categories_order(cat1='Categories2', cat2='Categories1')
+    dm_crop_residues.rename_col('CH4-emissions','emissions-CH4',"Categories1")
+    dm_crop_residues.rename_col('N2O-emissions','emissions-N2O',"Categories1")
+    dm_crop_residues = dm_crop_residues.flatten().flatten()
+    dm_crop_residues.drop("Variables", ['agr_emissions-CH4_crop_soil-residues'])
+
+    # Livestock emissions CH4 (manure & enteric)  FIXME change for cal
+    dm_CH4_liv = DM_manure['caf_liv_CH4'].filter({'Variables': ['agr_liv_CH4-emission']})
+    dm_CH4_liv.add(0.000001, dummy=True, col_label='t_to_Mt', dim='Variables', unit='Mt')
+    dm_CH4_liv.operation('agr_liv_CH4-emission', '*', 't_to_Mt', out_col='agr_liv_CH4-emissions',
+                               unit='Mt')
+    dm_CH4_liv = dm_CH4_liv.filter({'Variables': ['agr_liv_CH4-emissions']})
+    dm_CH4_liv.switch_categories_order(cat1='Categories2', cat2='Categories1')
+    dm_CH4_liv.rename_col("agr_liv_CH4-emissions","agr_emissions-CH4_liv","Variables")
+    dm_CH4_liv = dm_CH4_liv.flatten()
+    dm_CH4_liv = dm_CH4_liv.flatten()
+
+    # Livestock emissions N2O (manure)  FIXME change for cal
+    dm_N2O_liv = DM_manure['caf_liv_N2O'].filter({'Variables': ['agr_liv_N2O-emission']})
+    dm_N2O_liv.add(0.000001, dummy=True, col_label='t_to_Mt', dim='Variables', unit='Mt')
+    dm_N2O_liv.operation('agr_liv_N2O-emission', '*', 't_to_Mt', out_col='agr_liv_N2O-emissions',
+                         unit='Mt')
+    dm_N2O_liv = dm_N2O_liv.filter({'Variables': ['agr_liv_N2O-emissions']})
+    dm_N2O_liv.switch_categories_order(cat1='Categories2', cat2='Categories1')
+    dm_N2O_liv.rename_col("agr_liv_N2O-emissions","agr_emissions-N2O_liv","Variables")
+    dm_N2O_liv = dm_N2O_liv.flatten()
+    dm_N2O_liv = dm_N2O_liv.flatten()
+
+    # Rice emissions
+    dm_CH4_rice = DM_land['rice'].filter({'Variables': ['agr_rice_crop_CH4-emission']})
+    dm_CH4_rice.add(0.000001, dummy=True, col_label='t_to_Mt', dim='Variables', unit='Mt')
+    dm_CH4_rice.operation('agr_rice_crop_CH4-emission', '*', 't_to_Mt', out_col='agr_emissions-CH4_crop_rice',
+                         unit='Mt')
+    dm_CH4_rice = dm_CH4_rice.filter({'Variables': ['agr_emissions-CH4_crop_rice']})
+
+    # Append everything
+    dm_ems = dm_fertilizer_N2O
+    dm_ems.append(dm_input_use_CO2, dim = 'Variables')
+    dm_ems.append(dm_crop_residues, dim = 'Variables')
+    dm_ems.append(dm_CH4_liv, dim = 'Variables')
+    dm_ems.append(dm_N2O_liv, dim = 'Variables')
+    dm_ems.append(dm_CH4_rice, dim='Variables')
+    
+    # import pprint
+    # dm_ems.sort("Variables")
+    # pprint.pprint(dm_ems.col_labels["Variables"])
+
+    # write
     if write_xls is True:
-
-        # Fertizer emissions N2O FIXME change for cal
-        dm_fertilizer_N2O = DM_nitrogen['emissions'].filter({'Variables': ['agr_crop_emission_N2O-emission']})
-        dm_fertilizer_N2O.add(0.000001, dummy=True, col_label='t_to_Mt', dim='Variables', unit='Mt')
-        dm_fertilizer_N2O.operation('agr_crop_emission_N2O-emission', '*', 't_to_Mt', out_col='agr_emissions-N2O_crop_fertilizer', unit='Mt')
-        dm_fertilizer_N2O = dm_fertilizer_N2O.filter({'Variables': ['agr_emissions-N2O_crop_fertilizer']})
-
-        # CO2 emissions from fertilizer & energy FIXME change for cal
-        dm_input_use_CO2 = dm_CO2.filter({'Variables': ['agr_input-use_emissions-CO2']})
-        dm_input_use_CO2.add(0.000001, dummy=True, col_label='t_to_Mt', dim='Variables', unit='Mt')
-        dm_input_use_CO2.operation('agr_input-use_emissions-CO2', '*', 't_to_Mt', out_col='agr_emissions-CO2_input-use', unit='Mt')
-        dm_input_use_CO2 = dm_input_use_CO2.filter({'Variables': ['agr_emissions-CO2_input-use']})
-        dm_input_use_CO2 = dm_input_use_CO2.flatten()
-
-        # Crop residue emissions
-        dm_crop_residues = DM_crop['ef_residues'].filter({'Variables': ['agr_crop_emission'],
-                                                          'Categories2': ['N2O-emission', 'CH4-emission']})
-        dm_crop_residues.rename_col('agr_crop_emission', 'agr', dim='Variables')
-        dm_crop_residues.rename_col_regex('emission', 'emissions', dim='Categories2')
-        dm_crop_residues.rename_col('burnt-residues', 'crop_burnt-residues', dim='Categories1')
-        dm_crop_residues.rename_col('soil-residues', 'soil_burnt-residues', dim='Categories1')
-        dm_crop_residues.switch_categories_order(cat1='Categories2', cat2='Categories1')
-        dm_crop_residues = dm_crop_residues.flatten()
-        dm_crop_residues = dm_crop_residues.flatten()
-
-        # Livestock emissions CH4 (manure & enteric)  FIXME change for cal
-        dm_CH4_liv = DM_manure['caf_liv_CH4'].filter({'Variables': ['agr_liv_CH4-emission']})
-        dm_CH4_liv.add(0.000001, dummy=True, col_label='t_to_Mt', dim='Variables', unit='Mt')
-        dm_CH4_liv.operation('agr_liv_CH4-emission', '*', 't_to_Mt', out_col='agr_liv_CH4-emissions',
-                                   unit='Mt')
-        dm_CH4_liv = dm_CH4_liv.filter({'Variables': ['agr_liv_CH4-emissions']})
-        dm_CH4_liv.switch_categories_order(cat1='Categories2', cat2='Categories1')
-        dm_CH4_liv = dm_CH4_liv.flatten()
-        dm_CH4_liv = dm_CH4_liv.flatten()
-
-        # Livestock emissions N2O (manure)  FIXME change for cal
-        dm_N2O_liv = DM_manure['caf_liv_N2O'].filter({'Variables': ['agr_liv_N2O-emission']})
-        dm_N2O_liv.add(0.000001, dummy=True, col_label='t_to_Mt', dim='Variables', unit='Mt')
-        dm_N2O_liv.operation('agr_liv_N2O-emission', '*', 't_to_Mt', out_col='agr_liv_N2O-emissions',
-                             unit='Mt')
-        dm_N2O_liv = dm_N2O_liv.filter({'Variables': ['agr_liv_N2O-emissions']})
-        dm_N2O_liv.switch_categories_order(cat1='Categories2', cat2='Categories1')
-        dm_N2O_liv = dm_N2O_liv.flatten()
-        dm_N2O_liv = dm_N2O_liv.flatten()
-
-        # Rice emissions
-        dm_CH4_rice = DM_land['rice'].filter({'Variables': ['agr_rice_crop_CH4-emission']})
-        dm_CH4_rice.add(0.000001, dummy=True, col_label='t_to_Mt', dim='Variables', unit='Mt')
-        dm_CH4_rice.operation('agr_rice_crop_CH4-emission', '*', 't_to_Mt', out_col='agr_emissions-CH4_crop_rice',
-                             unit='Mt')
-        dm_CH4_rice = dm_CH4_rice.filter({'Variables': ['agr_emissions-CH4_crop_rice']})
-
-        # Append everything
-        dm_climate = dm_fertilizer_N2O
-        dm_climate.append(dm_input_use_CO2, dim = 'Variables')
-        dm_climate.append(dm_crop_residues, dim = 'Variables')
-        dm_climate.append(dm_CH4_liv, dim = 'Variables')
-        dm_climate.append(dm_N2O_liv, dim = 'Variables')
-        dm_climate.append(dm_CH4_rice, dim='Variables')
-
-
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        dm_climate = dm_climate.write_df()
-        dm_climate.to_excel(
+        dm_ems = dm_ems.write_df()
+        dm_ems.to_excel(
             current_file_directory + "/../_database/data/xls/" + 'All-Countries_interface_from-agriculture-to-climate.xlsx',
             index=False)
 
-    return dm_climate
+    return dm_ems
 
 
 def agriculture_ammonia_interface(dm_mineral_fertilizer, write_xls=False):
-    dm_ammonia = {}
+    
+    # Demand for Mineral fertilizers
+    dm_ammonia = dm_mineral_fertilizer.filter({'Variables': ['agr_input-use']})
+    dm_ammonia.rename_col('agr_input-use', 'agr_product-demand', dim='Variables')
+    dm_ammonia.rename_col('mineral', 'fertilizer', dim='Categories1')
 
-    # dm_dh
+    # write
     if write_xls is True:
-        # Demand for Mineral fertilizers
-        dm_ammonia = dm_mineral_fertilizer.filter({'Variables': ['agr_input-use']})
-        dm_ammonia = dm_ammonia.flatten()
-        dm_ammonia.rename_col('agr_input-use_mineral', 'agr_fertilizer', dim='Variables')
-
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
         dm_ammonia = dm_ammonia.write_df()
         dm_ammonia.to_excel(
@@ -2073,25 +2090,23 @@ def agriculture_ammonia_interface(dm_mineral_fertilizer, write_xls=False):
 
     return dm_ammonia
 
-def agriculture_storage_interface(DM_energy_ghg, write_xls=True):
-    dm_storage = {}
+def agriculture_storage_interface(DM_energy_ghg, write_xls=False):
+    
+    # TODO: storage is not done for the moment, we'll add this when storage will be done
+    # FIXME: Energy demand filter change to other unit ([TWh] instead of [ktoe])
+    dm_storage = DM_energy_ghg['caf_energy_demand'].filter_w_regex({'Variables': 'agr_energy-demand', 'Categories1': '.*ff.*'})
 
-    # dm_dh
+    # Summing in the same category
+    dm_storage.groupby({'gas-ff-natural': 'gas-ff-natural|liquid-ff-lpg'}, dim='Categories1', regex=True, inplace=True)
+
+    # Renaming
+    dm_storage.rename_col('liquid-ff-fuel-oil', 'liquid-ff-oil', dim='Categories1')
+
+    # Flatten
+    dm_storage = dm_storage.flatten()
+
+    # write
     if write_xls is True:
-
-        # Energy demand filter FIXME change to other unit ([TWh] instead of [ktoe])
-        dm_storage = DM_energy_ghg['caf_energy_demand'].filter_w_regex({'Variables': 'agr_energy-demand', 'Categories1': '.*ff.*'})
-
-        # Summing in the same category
-        dm_storage.groupby({'gas-ff-natural': 'gas-ff-natural|liquid-ff-lpg'}, dim='Categories1', regex=True, inplace=True)
-
-        # Renaming
-        dm_storage.rename_col('liquid-ff-fuel-oil', 'liquid-ff-oil', dim='Categories1')
-
-        # Flatten
-        dm_storage = dm_storage.flatten()
-
-
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
         dm_storage= dm_storage.write_df()
         dm_storage.to_excel(
@@ -2100,43 +2115,59 @@ def agriculture_storage_interface(DM_energy_ghg, write_xls=True):
 
     return dm_storage
 
+def agriculture_power_interface(DM_energy_ghg, write_xls=False):
+    
+    dm_pow = DM_energy_ghg['caf_energy_demand'].filter_w_regex({'Variables': 'agr_energy-demand', 'Categories1': '.*electricity.*'})
+    dm_pow = dm_pow.flatten()
+    ktoe_to_twh = 0.01163 / 1000
+    dm_pow.array = dm_pow.array * ktoe_to_twh
+    dm_pow.units["agr_energy-demand_electricity"] = "TWh"
+    
+    # write
+    if write_xls is True:
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        dm_pow= dm_pow.write_df()
+        dm_pow.to_excel(
+            current_file_directory + "/../_database/data/xls/" + 'All-Countries_interface_from-agriculture-to-power.xlsx',
+            index=False)
+    
+    return dm_pow
+
 def agriculture_minerals_interface(DM_nitrogen, DM_bioenergy, dm_lgn,  write_xls=False):
 
-    dm_minerals = {}
+    # Demand for phosphate & potash
+    dm_minerals = DM_nitrogen['input'].filter({'Variables': ['agr_input-use'], 'Categories1': ['phosphate', 'potash']})
+    dm_minerals.add(0.000001, dummy=True, col_label='t_to_Mt', dim='Variables', unit='Mt')
+    dm_minerals.operation('agr_input-use', '*', 't_to_Mt',
+                                out_col='agr_demand', unit='Mt')
+    dm_minerals = dm_minerals.filter({'Variables': ['agr_demand']})
+    dm_minerals = dm_minerals.flatten()
 
-    # dm_dh
+    # Demand for fuelwood (solid)
+    dm_solid = DM_bioenergy['solid-mix'].filter({'Variables': ['agr_bioenergy_biomass-demand_solid'], 'Categories1': ['fuelwood-and-res']})
+    dm_solid.add(0.1264, dummy=True, col_label='TWh_to_Mt', dim='Variables', unit='Mt')
+    dm_solid.rename_col('agr_bioenergy_biomass-demand_solid', 'agr_bioenergy_biomass-demand_solid_temp', dim='Variables')
+    dm_solid.operation('agr_bioenergy_biomass-demand_solid_temp', '*', 'TWh_to_Mt',
+                          out_col='agr_bioenergy_biomass-demand_solid', unit='Mt')
+    dm_solid = dm_solid.filter({'Variables': ['agr_bioenergy_biomass-demand_solid']})
+    dm_solid = dm_solid.flatten()
+
+    # Demand for fuelwood (liquid)
+    dm_liquid = dm_lgn.filter(
+        {'Variables': ['agr_bioenergy_biomass-demand_liquid_lgn'], 'Categories1': ['lgn-btl-fuelwood-and-res']})
+    dm_liquid.rename_col('lgn-btl-fuelwood-and-res', 'btl-fuelwood-and-res', dim='Categories1')
+    dm_liquid.add(0.1264, dummy=True, col_label='TWh_to_Mt', dim='Variables', unit='Mt')
+    dm_liquid.operation('agr_bioenergy_biomass-demand_liquid_lgn', '*', 'TWh_to_Mt',
+                       out_col='agr_bioenergy_biomass-demand_liquid', unit='Mt')
+    dm_liquid = dm_liquid.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid']})
+    dm_liquid = dm_liquid.flatten()
+
+    # Appending everything together
+    dm_minerals.append(dm_solid, dim='Variables')
+    dm_minerals.append(dm_liquid, dim = 'Variables')
+
+    # writing dm minerals
     if write_xls is True:
-        # Demand for phosphate & potash
-        dm_minerals = DM_nitrogen['input'].filter({'Variables': ['agr_input-use'], 'Categories1': ['phosphate', 'potash']})
-        dm_minerals.add(0.000001, dummy=True, col_label='t_to_Mt', dim='Variables', unit='Mt')
-        dm_minerals.operation('agr_input-use', '*', 't_to_Mt',
-                                    out_col='agr_demand', unit='Mt')
-        dm_minerals = dm_minerals.filter({'Variables': ['agr_demand']})
-        dm_minerals = dm_minerals.flatten()
-
-        # Demand for fuelwood (solid)
-        dm_solid = DM_bioenergy['solid-mix'].filter({'Variables': ['agr_bioenergy_biomass-demand_solid'], 'Categories1': ['fuelwood-and-res']})
-        dm_solid.add(0.1264, dummy=True, col_label='TWh_to_Mt', dim='Variables', unit='Mt')
-        dm_solid.rename_col('agr_bioenergy_biomass-demand_solid', 'agr_bioenergy_biomass-demand_solid_temp', dim='Variables')
-        dm_solid.operation('agr_bioenergy_biomass-demand_solid_temp', '*', 'TWh_to_Mt',
-                              out_col='agr_bioenergy_biomass-demand_solid', unit='Mt')
-        dm_solid = dm_solid.filter({'Variables': ['agr_bioenergy_biomass-demand_solid']})
-        dm_solid = dm_solid.flatten()
-
-        # Demand for fuelwood (liquid)
-        dm_liquid = dm_lgn.filter(
-            {'Variables': ['agr_bioenergy_biomass-demand_liquid_lgn'], 'Categories1': ['lgn-btl-fuelwood-and-res']})
-        dm_liquid.rename_col('lgn-btl-fuelwood-and-res', 'btl-fuelwood-and-res', dim='Categories1')
-        dm_liquid.add(0.1264, dummy=True, col_label='TWh_to_Mt', dim='Variables', unit='Mt')
-        dm_liquid.operation('agr_bioenergy_biomass-demand_liquid_lgn', '*', 'TWh_to_Mt',
-                           out_col='agr_bioenergy_biomass-demand_liquid', unit='Mt')
-        dm_liquid = dm_liquid.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid']})
-        dm_liquid = dm_liquid.flatten()
-
-        # Appending everything together
-        dm_minerals.append(dm_solid, dim='Variables')
-        dm_minerals.append(dm_liquid, dim = 'Variables')
-
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
         dm_minerals = dm_minerals.write_df()
         dm_minerals.to_excel(
@@ -2208,24 +2239,28 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     # INTERFACES OUT ---------------------------------------------------------------------------------------------------
 
     # interface to Land use
-    dm_lus = agriculture_landuse_interface(DM_bioenergy, dm_lgn, dm_land_use)
-    # interface.add_link(from_sector='agriculture', to_sector='landuse', dm=dm_lus)
+    DM_lus = agriculture_landuse_interface(DM_bioenergy, dm_lgn, dm_land_use)
+    interface.add_link(from_sector='agriculture', to_sector='landuse', dm=DM_lus)
 
     # interface to Emissions
-    dm_climate = agriculture_climate_interface(DM_nitrogen, dm_CO2, DM_crop, DM_manure, DM_land, write_xls=False)
-    # interface.add_link(from_sector='agriculture', to_sector='emissions', dm=dm_climate)
+    dm_ems = agriculture_emissions_interface(DM_nitrogen, dm_CO2, DM_crop, DM_manure, DM_land)
+    interface.add_link(from_sector='agriculture', to_sector='emissions', dm=dm_ems)
 
     # interface to Ammonia
-    dm_ammonia = agriculture_ammonia_interface(dm_mineral_fertilizer,  write_xls=False)
+    dm_ammonia = agriculture_ammonia_interface(dm_mineral_fertilizer)
     interface.add_link(from_sector='agriculture', to_sector='ammonia', dm=dm_ammonia)
 
-    # interface to Storage
-    dm_storage = agriculture_storage_interface(DM_energy_ghg, write_xls=True)
+    # # interface to Storage
+    # dm_storage = agriculture_storage_interface(DM_energy_ghg, write_xls=False)
     # interface.add_link(from_sector='agriculture', to_sector='power', dm=dm_storage)
+    
+    # interface to Power
+    dm_power = agriculture_power_interface(DM_energy_ghg)
+    interface.add_link(from_sector='agriculture', to_sector='power', dm=dm_power)
 
     # interface to Minerals
-    dm_minerals = agriculture_minerals_interface(DM_nitrogen, DM_bioenergy, dm_lgn, write_xls=False)
-    # interface.add_link(from_sector='agriculture', to_sector='minerals', dm=dm_minerals)
+    dm_minerals = agriculture_minerals_interface(DM_nitrogen, DM_bioenergy, dm_lgn)
+    interface.add_link(from_sector='agriculture', to_sector='minerals', dm=dm_minerals)
 
     return
 
@@ -2238,7 +2273,7 @@ def agriculture_local_run():
 # Creates the pickle, to do only once
 #database_from_csv_to_datamatrix()
 
-# Run the code in local
+# # Run the code in local
 # start = time.time()
 # results_run = agriculture_local_run()
 # end = time.time()

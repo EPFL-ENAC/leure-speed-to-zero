@@ -778,7 +778,11 @@ def simulate_agriculture_to_landuse_input():
     dm_land_use = dm_lus.filter_w_regex({'Variables': 'agr_lus_land.*'})
     dm_land_use.deepen()
     
-    return dm_wood, dm_lgn, dm_land_use
+    DM_agr = {"wood" : dm_wood,
+              "lgn" : dm_lgn,
+              "landuse" : dm_land_use}
+    
+    return DM_agr
 
 
 def landuse_climate_interface(DM_land_use, write_xls=False):
@@ -813,25 +817,25 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
         dm_ind = simulate_industry_to_landuse_input()
         
     if interface.has_link(from_sector='agriculture', to_sector='landuse'):
-        DM_bioenergy, dm_lgn, dm_land_use  = interface.get_link(from_sector='agriculture', to_sector='landuse')
+        DM_agr  = interface.get_link(from_sector='agriculture', to_sector='landuse')
     else:
         if len(interface.list_link()) != 0:
             print('You are missing agriculture to land-use interface')
-        DM_bioenergy, dm_lgn, dm_land_use = simulate_agriculture_to_landuse_input()
+        DM_agr = simulate_agriculture_to_landuse_input()
 
     # CalculationTree LAND USE
-    dm_wood = wood_workflow(DM_bioenergy, dm_lgn, dm_ind)
-    DM_land_use = land_allocation_workflow(DM_land_use, dm_land_use)
+    dm_wood = wood_workflow(DM_agr["wood"], DM_agr["lgn"], dm_ind)
+    DM_land_use = land_allocation_workflow(DM_land_use, DM_agr["landuse"])
     DM_land_use = land_matrix_workflow(DM_land_use)
     DM_land_use = land_carbon_dynamics_workflow(DM_land_use)
-    DM_land_use = forestry_workflow(DM_land_use, dm_wood, dm_land_use)
+    DM_land_use = forestry_workflow(DM_land_use, dm_wood, DM_agr["landuse"])
     DM_land_use = forestry_biomass_emissions_workflow(DM_land_use, CDM_const)
 
     # INTERFACES OUT ---------------------------------------------------------------------------------------------------
 
     # Interface to Climate
     dm_climate = landuse_climate_interface(DM_land_use, write_xls=False)
-    # interface.add_link(from_sector='land-use', to_sector='emissions', dm=dm_climate)
+    interface.add_link(from_sector='land-use', to_sector='emissions', dm=dm_climate)
 
     return
 
@@ -842,9 +846,9 @@ def local_land_use_run():
     land_use(lever_setting, years_setting)
     return
 
-# run local
-#__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/landuse_module.py"
-#database_from_csv_to_datamatrix()
+# # run local
+# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/landuse_module.py"
+# # database_from_csv_to_datamatrix()
 # start = time.time()
 # results_run = local_land_use_run()
 # end = time.time()
