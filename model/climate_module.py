@@ -99,11 +99,17 @@ def climate_buildings_interface(DM_ots_fts, write_xls = False):
 
 def variables_to_tpe(DM_ots_fts):
     
-    dm_tpe = DM_ots_fts["temp"]["clm_capacity-factor"]
+    dm_tpe = DM_ots_fts["temp"]["clm_capacity-factor"].copy()
     dm_tpe.append(DM_ots_fts["temp"]["clm_temp_global"], "Variables")
     df = dm_tpe.write_df()
     
     return df
+
+def climate_power_interface(DM_ots_fts):
+    
+    dm = DM_ots_fts["temp"]["clm_capacity-factor"].copy()
+    
+    return dm
 
 # CORE module
 def climate(lever_setting, years_setting, interface = Interface(), calibration = False):
@@ -119,6 +125,10 @@ def climate(lever_setting, years_setting, interface = Interface(), calibration =
     # interface buildings
     DM_bld = climate_buildings_interface(DM_ots_fts)
     interface.add_link(from_sector='climate', to_sector='buildings', dm=DM_bld)
+    
+    # interface power
+    dm_pow = climate_power_interface(DM_ots_fts)
+    interface.add_link(from_sector='climate', to_sector='power', dm=dm_pow)
 
     # TODO: interface water when water is ready
 
@@ -140,10 +150,10 @@ def local_climate_run():
 
     return results_run
 
-# # local
-# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/climate_module.py"
-# # database_from_csv_to_datamatrix()
-# results_run = local_climate_run()
+# local
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/climate_module.py"
+# database_from_csv_to_datamatrix()
+results_run = local_climate_run()
 
 
 
