@@ -365,6 +365,10 @@ def dhg_emissions_workflow(DM_energy, dm_CO2_coef, cdm_emission_fact):
     dm_co_product.add(arr, dim='Variables', col_label='dhg_emissions-CO2_heat-co-product', unit='Mt')
     dm_co_product.filter({'Variables': ['dhg_emissions-CO2_heat-co-product']}, inplace=True)
 
+    # For emissions
+    dm_emissions = dm_emissions.flatten().flatten()
+    dm_emissions.rename_col_regex('dhg_emissions_', 'dhg_emissions-', 'Variables')
+
     DM_emissions_out = {
         'TPE': {'added-district-heat': dm_emissions_by_GHG, 'heat-co-product': dm_co_product},
         'emissions': dm_emissions
@@ -487,6 +491,10 @@ def district_heating(lever_setting, years_setting, interface=Interface()):
     # Output:
     baseyear = years_setting[1]
     DM_cost_out = dhg_costs_workflow(DM_energy_out['wf_costs'], DM_bld['pipe'], dm_capacity, dm_rr, dm_price, cdm_cost, baseyear)
+
+    # Emissions interface
+    interface.add_link(from_sector='district-heating', to_sector='emissions', dm=DM_emissions_out['emissions'])
+
     #!FIXME: some dhg output to TPE are computed during the 'cube' but it is not working,...
     # ....fix this by computing the variables directly here
     df_TPE = dhg_TPE_interface(DM_energy_out['TPE'], DM_emissions_out['TPE'])
