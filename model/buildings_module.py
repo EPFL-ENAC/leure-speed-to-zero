@@ -1213,6 +1213,16 @@ def bld_minerals_interface(DM_industry, write_xls):
     return DM_minerals
 
 
+def bld_agriculture_interface(dm_agriculture):
+
+    dm_agriculture.filter({'Categories2': ['gas-bio', 'solid-bio']}, inplace=True)
+    dm_agriculture.group_all('Categories1')
+    dm_agriculture.rename_col('bld_space-heating-energy-demand', 'bld_bioenergy', 'Variables')
+    dm_agriculture.array = dm_agriculture.array/1000
+    dm_agriculture.units['bld_bioenergy'] = 'TWh'
+
+    return dm_agriculture
+
 def buildings(lever_setting, years_setting, interface=Interface()):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -1292,6 +1302,8 @@ def buildings(lever_setting, years_setting, interface=Interface()):
     DM_minerals = bld_minerals_interface(DM_industry, write_xls=False)
     interface.add_link(from_sector='buildings', to_sector='minerals', dm=DM_minerals)
 
+    dm_agriculture = bld_agriculture_interface(DM_energy_out['agriculture']['energy-demand'])
+    interface.add_link(from_sector='buildings', to_sector='agriculture', dm=dm_agriculture)
     # !FIXME do interface buildings to agriculture
 
     return results_run
