@@ -431,10 +431,10 @@ def refinery(lever_setting, years_setting, interface=Interface()):
     
     # interface emissions
     dm_ems = oilrefinery_emissions_interface(DM_refinery_out)
-    interface.add_link(from_sector='oilrefinery', to_sector='emissions', dm=dm_ems)
+    interface.add_link(from_sector='oil-refinery', to_sector='emissions', dm=dm_ems)
     
     # interface minerals
-    interface.add_link(from_sector='oilrefinery', to_sector='minerals', dm=dm_fos.flatten())
+    interface.add_link(from_sector='oil-refinery', to_sector='minerals', dm=dm_fos.flatten())
 
     return df_tpe
 

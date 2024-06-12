@@ -2086,11 +2086,11 @@ def minerals(interface=Interface(), calibration=False):
             DM_ind[i] = DM_ind[i].filter({'Country': cntr_list})
 
     # storage
-    if interface.has_link(from_sector='storage', to_sector='minerals'):
-        DM_str = interface.get_link(from_sector='storage', to_sector='minerals')
+    if interface.has_link(from_sector='power', to_sector='minerals'):
+        DM_str = interface.get_link(from_sector='power', to_sector='minerals')
     else:
         if len(interface.list_link()) != 0:
-            print('You are missing storage to minerals interface')
+            print('You are missing power to minerals interface')
         DM_str = simulate_storage_to_minerals_input()
         for i in DM_str.keys():
             DM_str[i] = DM_str[i].filter({'Country': cntr_list})
@@ -2106,11 +2106,11 @@ def minerals(interface=Interface(), calibration=False):
             DM_buildings[i] = DM_buildings[i].filter({'Country': cntr_list})
 
     # refinery
-    if interface.has_link(from_sector='refinery', to_sector='minerals'):
-        dm_ref = interface.get_link(from_sector='refinery', to_sector='minerals')
+    if interface.has_link(from_sector='oil-refinery', to_sector='minerals'):
+        dm_ref = interface.get_link(from_sector='oil-refinery', to_sector='minerals')
     else:
         if len(interface.list_link()) != 0:
-            print('You are missing refinery to minerals interface')
+            print('You are missing oil-refinery to minerals interface')
         dm_ref = simulate_refinery_to_minerals_input()
         dm_ref.filter({'Country': cntr_list}, inplace=True)
 

@@ -559,13 +559,13 @@ def emissions(lever_setting, years_setting, interface = Interface(), calibration
         DM_interface["power"] = simulate_power_to_emissions_input()
         DM_interface['power'].filter({'Country': cntr_list}, inplace=True)
 
-    if interface.has_link(from_sector = "refinery", to_sector = 'emissions'):
-        DM_interface["refinery"] = interface.get_link(from_sector="refinery", to_sector='emissions')
+    if interface.has_link(from_sector = "oil-refinery", to_sector = 'emissions'):
+        DM_interface["refinery"] = interface.get_link(from_sector="oil-refinery", to_sector='emissions')
     else:
         if len(interface.list_link()) != 0:
             print('You are missing refinery to emissions interface')
-        DM_interface["refinery"] = simulate_refinery_to_emissions_input()
-        DM_interface['refinery'].filter({'Country': cntr_list}, inplace=True)
+        DM_interface["oil-refinery"] = simulate_refinery_to_emissions_input()
+        DM_interface['oil-refinery'].filter({'Country': cntr_list}, inplace=True)
     
     if interface.has_link(from_sector = "agriculture", to_sector = 'emissions'):
         DM_interface["agriculture"] = interface.get_link(from_sector="agriculture", to_sector='emissions')

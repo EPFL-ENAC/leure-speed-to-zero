@@ -808,11 +808,15 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
     if interface.has_link(from_sector='industry', to_sector='agriculture'):
         dm_ind = interface.get_link(from_sector='industry', to_sector='agriculture')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing industry to agriculture interface')
         dm_ind = simulate_industry_to_landuse_input()
         
     if interface.has_link(from_sector='agriculture', to_sector='landuse'):
         DM_bioenergy, dm_lgn, dm_land_use  = interface.get_link(from_sector='agriculture', to_sector='landuse')
     else:
+        if len(interface.list_link()) != 0:
+            print('You are missing agriculture to land-use interface')
         DM_bioenergy, dm_lgn, dm_land_use = simulate_agriculture_to_landuse_input()
 
     # CalculationTree LAND USE
@@ -827,7 +831,7 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
 
     # Interface to Climate
     dm_climate = landuse_climate_interface(DM_land_use, write_xls=False)
-    interface.add_link(from_sector='landuse', to_sector='climate', dm=dm_climate)
+    # interface.add_link(from_sector='land-use', to_sector='emissions', dm=dm_climate)
 
     return
 
