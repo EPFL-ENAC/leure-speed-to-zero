@@ -17,7 +17,7 @@ from model.common.auxiliary_functions import read_level_data, filter_geoscale
 # ImportFunctions
 from model.common.io_database import read_database, read_database_fxa  # read functions for levers & fixed assumptions
 from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups,\
-    update_interaction_constant_from_file
+    update_interaction_constant_from_file, simulate_input
 from model.common.hourly_data_functions import hourly_data_reader
 from model.common.interface_class import Interface
 
@@ -358,10 +358,8 @@ def read_data(data_file, lever_setting):
 # LocalInterfaces - Climate
 #######################################################################################################################
 def simulate_climate_to_power_input():
-    current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    f = os.path.join(current_file_directory, "../_database/data/xls/All-Countries-interface_from-climate-to-power.xlsx")
-    df = pd.read_excel(f, sheet_name="default")
-    dm_climate = DataMatrix.create_from_df(df, num_cat=1)
+
+    dm_climate = simulate_input(from_sector="climate", to_sector="power", num_cat=1)
 
     return dm_climate
 
@@ -1021,7 +1019,8 @@ def local_power_run():
 
     return results_run
 
-# database_from_csv_to_datamatrix()
+# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/minerals_module.py"
+# # database_from_csv_to_datamatrix()
 # results_run = local_power_run()
 
 
