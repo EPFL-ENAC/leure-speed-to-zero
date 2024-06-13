@@ -501,7 +501,7 @@ def land_matrix_workflow(DM_land_use):
                     print(f"No solution found for sub-matrix at index ({i}, {j}, {k})")
 
     # Adding the array to relevant dm
-    DM_land_use['land_matrix'].add(arr_to_solve, col_label='land_use_change_without_rem', dim='Variables')
+    DM_land_use['land_matrix'].add(arr_to_solve, col_label='land_use_change_without_rem', dim='Variables', unit='ha')
 
     # (Check that net change = 0 ?)
 
@@ -514,21 +514,21 @@ def land_matrix_workflow(DM_land_use):
 
     variable_names = ['lus_land', 'lus_land_initial-area_unfccc']
     dm_temp = DM_land_use['land_man_gap'].filter({'Variables': variable_names})
-    index_lus_land = variable_names.index('lus_land')
-    index_lus_land_initial_area_unfccc = variable_names.index('lus_land_initial-area_unfccc')
-    arr_land = dm_temp.array
-    arr_remaining = np.minimum(arr_land[:, :, index_lus_land, :], arr_land[:, :, index_lus_land_initial_area_unfccc, :])
-    DM_land_use['land_man_gap'].add(arr_remaining, col_label='land_remaining_land', dim='Variables')
+    idx = dm_temp.idx
+
+    arr_remaining = np.minimum(dm_temp.array[:, :, idx['lus_land'], :],
+                               dm_temp.array[:, :, idx['lus_land_initial-area_unfccc'], :])
+    DM_land_use['land_man_gap'].add(arr_remaining, col_label='land_remaining_land', dim='Variables', unit='ha')
 
     # Transforming the remaining in land to the relevant format (from 1 cat to 2 cat with values = diagonal and 0 otherwise)
     arr_temp = np.zeros((32, 33, 6, 6))
     for cat in range(arr_remaining.shape[2]):
         arr_temp[:, :, cat, cat] = arr_remaining[:, :, cat]
-    DM_land_use['land_matrix'].add(arr_temp, col_label='land_remaining_land_matrix', dim='Variables')
+    DM_land_use['land_matrix'].add(arr_temp, col_label='land_remaining_land_matrix', dim='Variables', unit='ha')
 
     # Land use change matrix [ha] = Land remaining land matrix [ha] + land use change matrix without remaining [ha]
     DM_land_use['land_matrix'].operation('land_use_change_without_rem', '+', 'land_remaining_land_matrix',
-               dim="Variables", out_col='lus_land_matrix', unit='ha')
+                                         dim="Variables", out_col='lus_land_matrix', unit='ha')
 
 
     return DM_land_use
@@ -608,13 +608,9 @@ def land_carbon_dynamics_workflow(DM_land_use):
     # Total carbon stock from land converted/remaining to XXX [tC] = sum(Carbon stock [tC] from land converted/remaining to XXX)
     # (sum along the rows (cat2) of the sub matrix 6x6 for each country, year)
     dm_total_c_stock = DM_land_use['land_matrix'].filter({'Variables': ['lus_land_lulucf']})
-    dm_total_c_stock.groupby({'total': '.*'}, dim='Categories2', regex=True, inplace=True)
-
-    # Processing and adding to DM_land_use['land_man_gap'] because correct categories
-    array_temp = dm_total_c_stock.array
-    arr_transformed = np.squeeze(array_temp,
-                                 axis=-1)  # removing singleton dimension of last axis ('total from groupby')
-    DM_land_use['land_man_gap'].add(arr_transformed, col_label='lus_land_lulucf_to_tC', dim='Variables')
+    dm_total_c_stock.group_all(dim='Categories2', inplace=True)
+    dm_total_c_stock.rename_col('lus_land_lulucf', 'lus_land_lulucf_to_tC', 'Variables')
+    DM_land_use['land_man_gap'].append(dm_total_c_stock, dim='Variables')
 
     # UNIT CONVERSION FROM tC to MtCO2 ----------------------------------------------------------------------------------
 
@@ -820,15 +816,15 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
     landuse_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/landuse.pickle')
     DM_ots_fts, DM_land_use, CDM_const = read_data(landuse_data_file, lever_setting)
 
-    if interface.has_link(from_sector='industry', to_sector='agriculture'):
-        DM_ind = interface.get_link(from_sector='industry', to_sector='agriculture')
+    if interface.has_link(from_sector='industry', to_sector='land-use'):
+        DM_ind = interface.get_link(from_sector='industry', to_sector='land-use')
     else:
         if len(interface.list_link()) != 0:
             print('You are missing industry to agriculture interface')
         DM_ind = simulate_industry_to_landuse_input()
         
-    if interface.has_link(from_sector='agriculture', to_sector='landuse'):
-        DM_agr  = interface.get_link(from_sector='agriculture', to_sector='landuse')
+    if interface.has_link(from_sector='agriculture', to_sector='land-use'):
+        DM_agr  = interface.get_link(from_sector='agriculture', to_sector='land-use')
     else:
         if len(interface.list_link()) != 0:
             print('You are missing agriculture to land-use interface')

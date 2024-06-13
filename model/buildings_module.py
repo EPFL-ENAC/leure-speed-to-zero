@@ -766,7 +766,7 @@ def bld_costs_workflow(DM_costs, dm_district_heat_supply, dm_new_appliance, dm_f
                        * dm_floor_renovated.array[:, :, idx_r['bld_floor-area-renovated'], :, np.newaxis]
     # Cost of bld renovation by bld type (sum over renovation type)
     arr_cost_bld = np.nansum(arr_cost_bld_ren, axis=-1)
-    dm_floor_renovated.add(arr_cost_bld, dim='Variables', col_label='bld_capex_reno')
+    dm_floor_renovated.add(arr_cost_bld, dim='Variables', col_label='bld_capex_reno', unit='MEUR')
     # Cost of bld renovation by renovation type (sum over building type)
     arr_cost_ren = np.nansum(arr_cost_bld_ren, axis=-2)
     ref_col = dm_cost_renov.col_labels

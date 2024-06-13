@@ -1091,7 +1091,7 @@ def dummy_tra_infrastructure_workflow(dm_pop):
                                            'Categories1': ['infra-rail', 'infra-road', 'infra-trolley-cables']},
                                    units={'tra_tot-infrastructure': 'km'})
     # Add dummy renewal rates
-    dm_infra.add(0, dummy=True, dim='Variables', col_label='tra_renewal-rate')
+    dm_infra.add(0, dummy=True, dim='Variables', col_label='tra_renewal-rate', unit='%')
     idx = dm_infra.idx
     dm_infra.array[:, :, idx['tra_renewal-rate'], idx['infra-road']] = 0.05
     dm_infra.array[:, :, idx['tra_renewal-rate'], idx['infra-rail']] = 0.025

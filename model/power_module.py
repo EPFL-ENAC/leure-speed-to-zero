@@ -421,6 +421,11 @@ def simulate_industry_to_power_input():
     df = pd.read_excel(f, sheet_name="default")
     dm = DataMatrix.create_from_df(df, num_cat=0)
 
+    # Units from TWh to GWh
+    dm.array = dm.array*1000
+    for var in dm.col_labels['Variables']:
+        dm.units[var] = 'GWh'
+
     # Space heating flow:
     dm_ind_electricity = dm.filter_w_regex({'Variables': 'ind_energy-demand_electricity'})
     dm_ind_hydrogen = dm.filter_w_regex({'Variables': 'ind_energy-demand_hydrogen'})
@@ -443,9 +448,15 @@ def simulate_ammonia_to_power_input():
     df = pd.read_excel(f, sheet_name="default")
     dm = DataMatrix.create_from_df(df, num_cat=0)
 
+    # From TWh to GWh
+    dm.array = dm.array*1000
+    for var in dm.col_labels['Variables']:
+        dm.units[var] = 'GWh'
+
     # Space heating flow:
     dm_amm_electricity = dm.filter_w_regex({'Variables': 'amm_energy-demand_electricity'})
     dm_amm_hydrogen = dm.filter_w_regex({'Variables': 'amm_energy-demand_hydrogen'})
+
 
     DM_ammonia = {
         'electricity': dm_amm_electricity,
@@ -466,6 +477,8 @@ def simulate_agriculture_to_power_input():
 
     # Space heating flow:
     dm_agr_electricity = dm.filter_w_regex({'Variables': 'agr_energy-demand_electricity'})
+    dm_agr_electricity.array = dm_agr_electricity.array*1000
+    dm_agr_electricity.units['agr_energy-demand_electricity'] = 'GWh'
 
     return dm_agr_electricity
 
@@ -671,6 +684,12 @@ def hourly_production_workflow(dm_production_np, dm_production_p, DM_production_
 def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_agr_electricity, DM_tra,
                            dm_ind_hydrogen, dm_amm_hydrogen):
 
+    def check_unit(dm, unit):
+        for var in dm.col_labels['Variables']:
+            if dm.units[var] != unit:
+                raise ValueError(f'variable {var} does not have unit {unit}')
+
+
     #########################################################################
     # CalculationLeafs - Electricity demand - Appliances [GWh]
     #########################################################################
@@ -696,7 +715,6 @@ def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_ag
     dm_tra_elec = DM_tra['electricity']
     dm_demand_train = dm_tra_elec.filter_w_regex({'Variables': '.*rail'})
     dm_demand_road = dm_tra_elec.filter_w_regex({'Variables': '.*road'})
-
     #############################################################################
     # CalculationLeafs - Electricity demand - Other sectors [GWh] (no-profiles)
     #############################################################################
@@ -708,20 +726,19 @@ def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_ag
     dm_demand_other.append(dm_ind_electricity, dim='Variables')
     dm_demand_other.append(dm_amm_electricity, dim='Variables')
 
-    ay_total = np.nansum(dm_demand_other.array[...], axis=-1)
-    dm_demand_other.add(ay_total, dim='Variables', col_label='total-other')
 
+    ay_total = np.nansum(dm_demand_other.array[...], axis=-1)
+    dm_demand_other.add(ay_total, dim='Variables', col_label='total-other', unit='GWh')
     #############################################################################
     # CalculationLeafs - Electricity demand - Hydrogen [GWh]
     #############################################################################
 
     dm_demand_hydrogen = DM_tra['hydrogen'].copy()
-
     dm_demand_hydrogen.append(dm_amm_hydrogen, dim='Variables')
     dm_demand_hydrogen.append(dm_ind_hydrogen, dim='Variables')
 
     ay_total = np.nansum(dm_demand_hydrogen.array[...], axis=-1)
-    dm_demand_hydrogen.add(ay_total, dim='Variables', col_label='total-hydrogen')
+    dm_demand_hydrogen.add(ay_total, dim='Variables', col_label='total-hydrogen', unit='GWh')
 
     #############################################################################
     # CalculationLeafs - Output Matrix Yearly Demand
@@ -736,6 +753,10 @@ def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_ag
         'space-cooling': dm_bld_cooling,
         'space-heating': dm_bld_heating
     }
+
+    for key in DM_yearly_demand:
+        dm = DM_yearly_demand[key]
+        check_unit(dm, 'GWh')
 
     return DM_yearly_demand
 
@@ -827,12 +848,12 @@ def hourly_demand_workflow(DM_yearly_demand, DM_demand_profiles, baseyear):
     ######################################
 
     # Yearly demand "other" with no profiles
-    dm_yearly_demand_other = DM_yearly_demand['other-profile']
+    dm_yearly_demand_other = DM_yearly_demand['other-profile'].copy()
     dm_yearly_demand_hydrogen = DM_yearly_demand['hydrogen-profile']
     dm_yearly_demand_other.append(dm_yearly_demand_hydrogen, dim='Variables')
     dm_yearly_demand_other = dm_yearly_demand_other.filter({'Variables':['total-hydrogen','total-other']})
     ay_yearly_demand_other = dm_yearly_demand_other.array[...].sum(axis=-1)
-    dm_yearly_demand_other.add(ay_yearly_demand_other, dim='Variables', col_label='grand-total-other')
+    dm_yearly_demand_other.add(ay_yearly_demand_other, dim='Variables', col_label='grand-total-other', unit='GWh')
 
     # Hourly profiles aggregation
     ay_hourly_profile_total = np.sum(dm_profile_hourly.array[...],axis=2)
@@ -916,6 +937,12 @@ def pow_refinery_interface(dm_gross_production):
 
     return dm_fossil_production
 
+
+def pow_minerals_interface(dm_new_capacity, DM_yearly_demand):
+    # Sum over all weeks, days, daily-hours
+
+    return
+
 #######################################################################################################################
 # CoreModule - Power
 #######################################################################################################################
@@ -994,7 +1021,7 @@ def power(lever_setting, years_setting, interface=Interface()):
     dm_gross_production = dm_capacity.filter({'Variables': ['pow_gross-yearly-production']})
     dm_emissions = emissions_workflow(dm_gross_production.copy(), cdm_const['emission-factors'])
 
-    dm_hourly_demand = hourly_demand_workflow(DM_yearly_demand, DM_demand_profiles, baseyear)
+    dm_hourly_demand = hourly_demand_workflow(DM_yearly_demand.copy(), DM_demand_profiles, baseyear)
 
     dm_hourly_equilibrium = storage_workflow(dm_hourly_demand, dm_hourly_production)
 
@@ -1004,6 +1031,8 @@ def power(lever_setting, years_setting, interface=Interface()):
     interface.add_link(from_sector='power', to_sector='oil-refinery', dm=dm_refinery)
     # same number of arg than the return function
 
+    dm_new_capacity = dm_capacity.filter({'Variables': ['pow_gross-yearly-production']})
+    # dm_minerals = pow_minerals_interface(dm_new_capacity, DM_yearly_demand)
     # concatenate all results to df
     results_run = dm_capacity
 

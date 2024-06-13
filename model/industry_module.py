@@ -1434,6 +1434,11 @@ def industry_power_interface(DM_energy_demand, write_xls = False):
         {"Categories1" : ['electricity','hydrogen']})
     dm_elc.rename_col("energy-demand", "ind_energy-demand", "Variables")
     dm_elc = dm_elc.flatten()
+
+    dm_elc.array = dm_elc.array*1000
+    dm_elc.units['ind_energy-demand_electricity'] = 'GWh'
+    dm_elc.units['ind_energy-demand_hydrogen'] = 'GWh'
+
     DM_pow = {
         'electricity': dm_elc.filter({'Variables': ['ind_energy-demand_electricity']}),
         'hydrogen': dm_elc.filter({'Variables': ['ind_energy-demand_hydrogen']})
@@ -1950,7 +1955,7 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     
     # interface landuse
     DM_lus = industry_landuse_interface(DM_material_production, DM_energy_demand)
-    interface.add_link(from_sector='industry', to_sector='landuse', dm=DM_lus)
+    interface.add_link(from_sector='industry', to_sector='land-use', dm=DM_lus)
     
     # interface power
     DM_pow = industry_power_interface(DM_energy_demand)
