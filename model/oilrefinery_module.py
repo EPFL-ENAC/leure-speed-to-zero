@@ -156,11 +156,8 @@ def simulate_ammonia_to_refinery_input():
 # LocalInterfaces - Agriculture
 #######################################################################################################################
 def simulate_agriculture_to_refinery_input():
-    current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    f = os.path.join(current_file_directory, "../_database/data/xls/"
-                                             "All-Countries-interface_from-agriculture-to-oil-refinery.xlsx")
-    df = pd.read_excel(f, sheet_name="default")
-    dm_agriculture = DataMatrix.create_from_df(df, num_cat=1)
+    
+    dm_agriculture = simulate_input("agriculture","oil-refinery",num_cat = 1)
 
     return dm_agriculture
 
