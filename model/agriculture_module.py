@@ -2185,6 +2185,26 @@ def agriculture_minerals_interface(DM_nitrogen, DM_bioenergy, dm_lgn,  write_xls
 
     return dm_minerals
 
+def agriculture_refinery_interface(DM_energy_ghg):
+    
+    dm_ref = DM_energy_ghg['caf_energy_demand'].filter_w_regex({'Variables': 'agr_energy-demand', 'Categories1': '.*ff.*'})
+
+    # Summing in the same category
+    dm_ref.groupby({'gas-ff-natural': 'gas-ff-natural|liquid-ff-lpg'}, dim='Categories1', regex=True, inplace=True)
+
+    # Renaming
+    dm_ref.rename_col('liquid-ff-fuel-oil', 'liquid-ff-oil', dim='Categories1')
+    
+    # order
+    dm_ref.sort("Categories1")
+    
+    # change unit
+    ktoe_to_twh = 0.0116222  # from KNIME factor
+    dm_ref.array = dm_ref.array * ktoe_to_twh
+    dm_ref.units["agr_energy-demand"] = "TWh"
+    
+    return dm_ref
+
 # ----------------------------------------------------------------------------------------------------------------------
 # AGRICULTURE ----------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
@@ -2259,6 +2279,10 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     # interface to Ammonia
     dm_ammonia = agriculture_ammonia_interface(dm_mineral_fertilizer)
     interface.add_link(from_sector='agriculture', to_sector='ammonia', dm=dm_ammonia)
+    
+    # interface to Oil Refinery
+    dm_ref = agriculture_refinery_interface(DM_energy_ghg)
+    interface.add_link(from_sector='agriculture', to_sector='oil-refinery', dm=dm_ref)
 
     # # interface to Storage
     # dm_storage = agriculture_storage_interface(DM_energy_ghg, write_xls=False)
