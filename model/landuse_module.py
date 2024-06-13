@@ -261,7 +261,7 @@ def wood_workflow(dm_wood, dm_lgn, DM_ind):
     # Timber, Woodpulp & Biomaterial from Industry module : Unit conversion to m3 and renaming
     # Timber
     dm_timber = DM_ind["timber"].copy()
-    dm_timber.rename_col('ind_timber', 'lus_fst_demand_rwe_ind-sawlog_temp', dim='Variables')
+    dm_timber.rename_col('ind_material-production_timber', 'lus_fst_demand_rwe_ind-sawlog_temp', dim='Variables')
     dm_timber.add(1500.0, dummy=True, col_label='kt_to_cubic_m', dim='Variables', unit='m3')
     dm_timber.operation('lus_fst_demand_rwe_ind-sawlog_temp', '*', 'kt_to_cubic_m',
                         out_col='lus_fst_demand_rwe_ind-sawlog', unit='m3')
@@ -769,6 +769,7 @@ def simulate_industry_to_landuse_input():
     
     # timber
     DM_ind["timber"] = dm_ind.filter({"Variables" : ["ind_timber"]})
+    DM_ind["timber"].rename_col("ind_timber", "ind_material-production_timber", "Variables")
     
     # woodpulp
     DM_ind["woodpulp"] = dm_ind.filter({"Variables" : ["ind_material-production_paper_woodpulp"]})
