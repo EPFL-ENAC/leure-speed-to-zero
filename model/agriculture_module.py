@@ -2128,9 +2128,9 @@ def agriculture_power_interface(DM_energy_ghg, write_xls=False):
     
     dm_pow = DM_energy_ghg['caf_energy_demand'].filter_w_regex({'Variables': 'agr_energy-demand', 'Categories1': '.*electricity.*'})
     dm_pow = dm_pow.flatten()
-    ktoe_to_twh = 0.0116222 # from KNIME factor
-    dm_pow.array = dm_pow.array * ktoe_to_twh
-    dm_pow.units["agr_energy-demand_electricity"] = "TWh"
+    ktoe_to_gwh = 0.0116222 * 1000  # from KNIME factor
+    dm_pow.array = dm_pow.array * ktoe_to_gwh
+    dm_pow.units["agr_energy-demand_electricity"] = "GWh"
     
     # write
     if write_xls is True:
@@ -2250,7 +2250,7 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
 
     # interface to Land use
     DM_lus = agriculture_landuse_interface(DM_bioenergy, dm_lgn, dm_land_use)
-    interface.add_link(from_sector='agriculture', to_sector='landuse', dm=DM_lus)
+    interface.add_link(from_sector='agriculture', to_sector='land-use', dm=DM_lus)
 
     # interface to Emissions
     dm_ems = agriculture_emissions_interface(DM_nitrogen, dm_CO2, DM_crop, DM_manure, DM_land)

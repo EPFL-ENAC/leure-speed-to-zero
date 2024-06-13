@@ -878,6 +878,10 @@ def ammonia_power_interface(DM_energy_demand, write_xls = False):
     dm_elc.rename_col("energy-demand", "amm_energy-demand", "Variables")
     dm_elc = dm_elc.flatten()
 
+    dm_elc.array = dm_elc.array*1000
+    for var in dm_elc.col_labels['Variables']:
+        dm_elc.units[var] = 'GWh'
+
     dm_amm_electricity = dm_elc.filter({'Variables': ['amm_energy-demand_electricity']})
     dm_amm_hydrogen = dm_elc.filter({'Variables': ['amm_energy-demand_hydrogen']})
 

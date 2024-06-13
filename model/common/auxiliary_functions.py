@@ -494,13 +494,13 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015, unit
     
     # include variables in cdm_cost inside dm_activity
     dm_activity = dm_activity.copy()
-    dm_activity.add(1, dim="Variables", col_label="ones", dummy=True)
+    dm_activity.add(1, dim="Variables", col_label="ones", dummy=True, unit='#')
     variables = cdm_cost.col_labels["Variables"]
     idx = dm_activity.idx
     idx_cdm = cdm_cost.idx
     # !FIXME: adjust keep_LE to work with constant instead of dm_activity
     arr_temp = (cdm_cost.array[idx_cdm['d-factor']] * dm_activity.array[:, :, idx["ones"], ...])
-    dm_activity.add(arr_temp[:, :, np.newaxis, ...], dim="Variables", col_label='d-factor')
+    dm_activity.add(arr_temp[:, :, np.newaxis, ...], dim="Variables", col_label='d-factor', unit='#')
     idx_temp = dm_activity.idx
     dm_activity.array[:, [idx_temp[y] for y in years_na], idx_temp['d-factor'], ...] = np.nan
 
