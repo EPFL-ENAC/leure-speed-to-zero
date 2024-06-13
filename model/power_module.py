@@ -725,10 +725,8 @@ def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_ag
     dm_demand_other.append(dm_agr_electricity, dim='Variables')
     dm_demand_other.append(dm_ind_electricity, dim='Variables')
     dm_demand_other.append(dm_amm_electricity, dim='Variables')
+    dm_demand_other.groupby({'total-other': '.*'}, dim='Variables', regex=True, inplace=True)
 
-
-    ay_total = np.nansum(dm_demand_other.array[...], axis=-1)
-    dm_demand_other.add(ay_total, dim='Variables', col_label='total-other', unit='GWh')
     #############################################################################
     # CalculationLeafs - Electricity demand - Hydrogen [GWh]
     #############################################################################
@@ -737,8 +735,7 @@ def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_ag
     dm_demand_hydrogen.append(dm_amm_hydrogen, dim='Variables')
     dm_demand_hydrogen.append(dm_ind_hydrogen, dim='Variables')
 
-    ay_total = np.nansum(dm_demand_hydrogen.array[...], axis=-1)
-    dm_demand_hydrogen.add(ay_total, dim='Variables', col_label='total-hydrogen', unit='GWh')
+    dm_demand_hydrogen.groupby({'total-hydrogen': '.*'}, dim='Variables', regex=True, inplace=True)
 
     #############################################################################
     # CalculationLeafs - Output Matrix Yearly Demand
@@ -753,10 +750,6 @@ def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_ag
         'space-cooling': dm_bld_cooling,
         'space-heating': dm_bld_heating
     }
-
-    for key in DM_yearly_demand:
-        dm = DM_yearly_demand[key]
-        check_unit(dm, 'GWh')
 
     return DM_yearly_demand
 
@@ -830,6 +823,7 @@ def hourly_demand_workflow(DM_yearly_demand, DM_demand_profiles, baseyear):
     # Sorting
     dm_profile_yearly.rename_col_regex('bld_power-demand_', 'pow_', dim='Variables')
     dm_profile_yearly.rename_col_regex('tra_', 'pow_', dim='Variables')
+    dm_profile_hourly.rename_col(['pow_rail', 'pow_road'], ['pow_power-demand_rail', 'pow_power-demand_road'], 'Variables')
     dm_profile_hourly.sort(dim='Variables')
     dm_profile_yearly.sort(dim='Variables')
 
@@ -939,9 +933,34 @@ def pow_refinery_interface(dm_gross_production):
 
 
 def pow_minerals_interface(dm_new_capacity, DM_yearly_demand):
-    # Sum over all weeks, days, daily-hours
+    ##############################
+    # Sum all electricity demand #
+    ##############################
 
-    return
+    # rename space-cooling and space-heating so that you can append them
+    DM_yearly_demand['space-cooling'].rename_col('bld_power-demand', 'bld_power-demand_cooling', 'Variables')
+    DM_yearly_demand['space-heating'].rename_col('bld_power-demand', 'bld_power-demand_heating', 'Variables')
+    i = 0
+    for key in DM_yearly_demand.keys():
+        dm = DM_yearly_demand[key]
+        # Sum over categories if any
+        dim_cat_list = [dim for dim in dm.dim_labels if 'Categories' in dim]
+        for dim_cat in reversed(dim_cat_list):
+            dm.group_all(dim_cat, inplace=True)
+        # Group all dm together
+        if i == 0:
+            dm_tot_elec = dm.copy()
+        else:
+            dm_tot_elec.append(dm, dim='Variables')
+        i = i+1
+    dm_tot_elec.groupby({'elc_electricity-demand_total': '.*'}, dim='Variables', regex=True, inplace=True)
+
+    DM_minerals = {
+        'electricity-demand': dm_tot_elec
+    }
+
+
+    return DM_minerals
 
 #######################################################################################################################
 # CoreModule - Power
@@ -950,6 +969,7 @@ def pow_minerals_interface(dm_new_capacity, DM_yearly_demand):
 def power(lever_setting, years_setting, interface=Interface()):
     baseyear = years_setting[1]
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
+
 
     power_data_file = os.path.join(current_file_directory,
                                         '../_database/data/datamatrix/geoscale/power.pickle')
@@ -1032,11 +1052,11 @@ def power(lever_setting, years_setting, interface=Interface()):
     # same number of arg than the return function
 
     dm_new_capacity = dm_capacity.filter({'Variables': ['pow_gross-yearly-production']})
-    # dm_minerals = pow_minerals_interface(dm_new_capacity, DM_yearly_demand)
+    dm_minerals = pow_minerals_interface(dm_new_capacity, DM_yearly_demand)
     # concatenate all results to df
-    results_run = dm_capacity
+    #results_run = dm_capacity
 
-    return results_run
+    return
 
 
 #######################################################################################################################
