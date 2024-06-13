@@ -785,23 +785,29 @@ def simulate_agriculture_to_landuse_input():
     return DM_agr
 
 
-def landuse_climate_interface(DM_land_use, write_xls=False):
+def landuse_emissions_interface(DM_land_use, write_xls=False):
 
-    dm_climate = {}
+    # Emission from converted land
+    # (WARNING : this version accounts for the land rem within the land converted which differs from Knime)
+    dm_ems = DM_land_use['land_man_gap'].filter({'Variables': ['lus_emissions-CO2_land_to']})
+    dm_ems = dm_ems.flatten()
+    # dm_temp = DM_land_use['crop_ef_agroforestry'].filter({"Variables" : ["lus_land_lulucf_agroforestry_cropland"]})
+    # dm_temp.units
+    # dm_temp = DM_land_use['liv_ef_agroforestry'].filter({"Variables" : ["lus_land_lulucf_agroforestry_grassland"]})
+    # dm_temp.units
+    # dm_temp = DM_land_use['forestry'].filter({"Variables" : ["lus_land_lulucf_agroforestry_grassland"]})
+    # dm_temp.units
+    # # emissions wetlands are missing
 
     if write_xls is True:
-        # Emission from converted land
-        # (WARNING : this version accounts for the land rem within the land converted which differs from Knime)
-        dm_climate = DM_land_use['land_man_gap'].filter({'Variables': ['lus_emissions-CO2_land_to']})
-        dm_climate = dm_climate.flatten()
 
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        dm_climate = dm_climate.write_df()
-        dm_climate.to_excel(
+        dm_ems = dm_ems.write_df()
+        dm_ems.to_excel(
             current_file_directory + "/../_database/data/xls/" + 'All-Countries_interface_from-landuse-to-climate.xlsx',
             index=False)
 
-    return dm_climate
+    return dm_ems
 
 def land_use(lever_setting, years_setting, interface = Interface(), calibration = False):
 
@@ -833,8 +839,8 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
 
     # INTERFACES OUT ---------------------------------------------------------------------------------------------------
 
-    # Interface to Climate
-    dm_climate = landuse_climate_interface(DM_land_use, write_xls=False)
+    # Interface to Emissions
+    dm_climate = landuse_emissions_interface(DM_land_use)
     interface.add_link(from_sector='land-use', to_sector='emissions', dm=dm_climate)
 
     return
