@@ -2164,7 +2164,7 @@ def agriculture_minerals_interface(DM_nitrogen, DM_bioenergy, dm_lgn,  write_xls
     # Demand for fuelwood (liquid)
     dm_liquid = dm_lgn.filter(
         {'Variables': ['agr_bioenergy_biomass-demand_liquid_lgn'], 'Categories1': ['lgn-btl-fuelwood-and-res']})
-    dm_liquid.rename_col('lgn-btl-fuelwood-and-res', 'btl-fuelwood-and-res', dim='Categories1')
+    dm_liquid.rename_col('lgn-btl-fuelwood-and-res', 'btl_fuelwood-and-res', dim='Categories1')
     dm_liquid.add(0.1264, dummy=True, col_label='TWh_to_Mt', dim='Variables', unit='Mt')
     dm_liquid.operation('agr_bioenergy_biomass-demand_liquid_lgn', '*', 'TWh_to_Mt',
                        out_col='agr_bioenergy_biomass-demand_liquid', unit='Mt')
