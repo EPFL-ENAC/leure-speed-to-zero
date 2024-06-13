@@ -1903,6 +1903,7 @@ def simulate_power_to_minerals_input():
     find = ["product-demand_" + i for i in energy]
     dm_new_capacity = dm.filter({"Variables": find})
     dm_new_capacity.deepen()
+    dm_new_capacity.sort('Categories1')
     DM_pow["energy"] = dm_new_capacity
     
     # electricity
