@@ -1016,6 +1016,9 @@ def ammonia(lever_setting, years_setting, interface = Interface(), calibration =
     ammonia_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/ammonia.pickle')
     DM_fxa, DM_ots_fts, dm_cal, CDM_const = read_data(ammonia_data_file, lever_setting)
     
+    dm_fxa = DM_fxa['liquid']
+    cntr_list = dm_fxa.col_labels['Country']
+    
     # get / simulate interfaces
     if interface.has_link(from_sector='agriculture', to_sector='ammonia'):
         dm_agriculture = interface.get_link(from_sector='agriculture', to_sector='ammonia')
@@ -1023,6 +1026,7 @@ def ammonia(lever_setting, years_setting, interface = Interface(), calibration =
         if len(interface.list_link()) != 0:
             print('You are missing agriculture to ammonia interface')
         dm_agriculture = simulate_agriculture_to_ammonia_input()
+        dm_agriculture = dm_agriculture.filter({'Country': cntr_list})
     
     # get product import of fertilizer
     dm_imp = DM_ots_fts["product-net-import"]
@@ -1080,9 +1084,7 @@ def ammonia(lever_setting, years_setting, interface = Interface(), calibration =
     
     # interface refinery
     dm_refinery = ammonia_refinery_interface(DM_energy_demand)
-    # df = dm_refinery.write_df()
-    # df.to_excel('All-Countries-interface_from-ammonia-to-oil-refinery.xlsx', index=False)
-    interface.add_link(from_sector='ammonia', to_sector='refinery', dm=dm_refinery)
+    interface.add_link(from_sector='ammonia', to_sector='oil-refinery', dm=dm_refinery)
     
     # # interface water
     # dm_water = ammonia_water_inferface(DM_energy_demand, DM_material_production)

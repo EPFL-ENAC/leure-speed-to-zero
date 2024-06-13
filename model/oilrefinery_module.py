@@ -18,7 +18,7 @@ from model.common.interface_class import Interface
 # ImportFunctions
 from model.common.io_database import read_database, read_database_fxa  # read functions for levers & fixed assumptions
 from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups,\
-    update_interaction_constant_from_file
+    update_interaction_constant_from_file, simulate_input
 from model.common.auxiliary_functions import read_level_data, filter_geoscale
 
 #######################################################################################################################
@@ -147,12 +147,9 @@ def simulate_industry_to_refinery_input():
 # LocalInterfaces - Ammonia
 #######################################################################################################################
 def simulate_ammonia_to_refinery_input():
-    current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    f = os.path.join(current_file_directory, "../_database/data/xls/"
-                                             "All-Countries-interface_from-ammonia-to-oil-refinery.xlsx")
-    df = pd.read_excel(f)
-    dm_ammonia = DataMatrix.create_from_df(df, num_cat=1)
-
+    
+    dm_ammonia = simulate_input("ammonia","oil-refinery",num_cat = 1)
+    
     return dm_ammonia
 
 #######################################################################################################################
