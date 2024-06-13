@@ -675,6 +675,12 @@ def bld_energy_workflow(DM_energy, DM_clm, dm_floor_area, cdm_const):
                                                            'Categories1': '.*households'})
     }
 
+    dm_refinery = dm_heating.group_all(dim='Categories1', inplace=False)
+    dm_refinery.filter({'Variables': ['bld_space-heating-energy-demand']}, inplace=True)
+    dm_refinery.rename_col('bld_space-heating-energy-demand', 'bld_energy-demand', 'Variables')
+    dm_refinery.filter({'Categories1': ['gas-ff-natural', 'liquid-ff-heatingoil', 'solid-ff-coal']}, inplace=True)
+    DM_energy_out['oil-refinery'] = dm_refinery
+
     # Prepare energy output
     # Residential heating
     dm_energy_pow_res = dm_heating.filter({'Variables': ['bld_space-heating-energy-demand'],
@@ -1304,7 +1310,8 @@ def buildings(lever_setting, years_setting, interface=Interface()):
 
     dm_agriculture = bld_agriculture_interface(DM_energy_out['agriculture']['energy-demand'])
     interface.add_link(from_sector='buildings', to_sector='agriculture', dm=dm_agriculture)
-    # !FIXME do interface buildings to agriculture
+
+    interface.add_link(from_sector='buildings', to_sector='oil-refinery', dm=DM_energy_out['oil-refinery'])
 
     return results_run
 
