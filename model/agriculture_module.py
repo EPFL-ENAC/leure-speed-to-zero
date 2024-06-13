@@ -5,7 +5,7 @@ from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database, read_database_fxa, edit_database
 from model.common.interface_class import Interface
 from model.common.auxiliary_functions import compute_stock, read_database_to_ots_fts_dict, filter_geoscale, read_database_to_ots_fts_dict_w_groups
-from model.common.auxiliary_functions import read_level_data
+from model.common.auxiliary_functions import read_level_data, simulate_input
 from scipy.optimize import linprog
 import pickle
 import json
@@ -750,12 +750,25 @@ def simulate_buildings_to_agriculture_input():
     return dm_bld
 
 def simulate_industry_to_agriculture_input():
-    current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    f = os.path.join(current_file_directory, "../_database/data/xls/All-Countries-interface_from-industry-to-agriculture.xlsx")
-    df = pd.read_excel(f, sheet_name="default")
-    dm_ind = DataMatrix.create_from_df(df, num_cat=0)
+    
+    dm_ind = simulate_input(from_sector='industry', to_sector='agriculture')
+    
+    DM_ind = {}
+    
+    # natfiber
+    DM_ind["natfibers"] = dm_ind.filter({"Variables" : ["ind_dem_natfibers"]})
+    
+    # bioenergy
+    dm_temp = dm_ind.filter({"Variables" : ['ind_bioenergy_gas-bio', 'ind_bioenergy_solid-bio']})
+    dm_temp.deepen()
+    DM_ind["bioenergy"] = dm_temp
+    
+    # biomaterial
+    dm_temp = dm_ind.filter({"Variables" : ['ind_biomaterial_gas-bio']})
+    dm_temp.deepen()
+    DM_ind["biomaterial"] = dm_temp
 
-    return dm_ind
+    return DM_ind
 
 def simulate_transport_to_agriculture_input():
     # Read input from lifestyle : food waste & diet
@@ -1052,7 +1065,7 @@ def alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro):
     return DM_alc_bev, dm_bev_ibp_cereal_feed
 
 # CalculationLeaf BIOENERGY CAPACITY ----------------------------------------------------------------------------------
-def bioenergy_workflow(DM_bioenergy, CDM_const, dm_ind, dm_bld, dm_tra):
+def bioenergy_workflow(DM_bioenergy, CDM_const, DM_ind, dm_bld, dm_tra):
 
     # Constant
     cdm_load = CDM_const['cdm_load']
@@ -1078,10 +1091,8 @@ def bioenergy_workflow(DM_bioenergy, CDM_const, dm_ind, dm_bld, dm_tra):
 
     # Filtering input from other modules
     # Industry
-    dm_ind_bioenergy = dm_ind.filter_w_regex({'Variables': 'ind_bioenergy'})
-    dm_ind_bioenergy.deepen()
-    dm_ind_biomaterial = dm_ind.filter_w_regex({'Variables': 'ind_biomaterial'})
-    dm_ind_biomaterial.deepen()
+    dm_ind_bioenergy = DM_ind["bioenergy"].copy()
+    dm_ind_biomaterial = DM_ind["biomaterial"].copy()
 
     # BIOGAS -----------------------------------------------------------------------------------------------------------
     # Biogas feedstock requirements [TWh] =
@@ -1102,10 +1113,9 @@ def bioenergy_workflow(DM_bioenergy, CDM_const, dm_ind, dm_bld, dm_tra):
                         + DM_bioenergy['electricity_production'].array[:, :, idx_elec['agr_bioenergy-capacity_fdk-req'],
                           idx_elec['biogases-hf']]
 
-    dm_biogas = dm_ind.filter({'Variables': [
-        'ind_bioenergy_gas-bio']})  # FIXME backup I do not know how to create a blanck dm with Country & Years
+    dm_biogas = DM_ind["natfibers"].copy()  # FIXME backup I do not know how to create a blanck dm with Country & Years
     dm_biogas.add(dm_bio_gas_demand, dim='Variables', col_label='agr_bioenergy-capacity_biogas-req', unit='TWh')
-    dm_biogas.drop(dim='Variables', col_label=['ind_bioenergy_gas-bio'])  # FIXME to empty when upper comment fixed
+    dm_biogas.drop(dim='Variables', col_label=['ind_dem_natfibers'])  # FIXME to empty when upper comment fixed
 
     # Biogas per type [TWh] = Biogas feedstock requirements [GWh] * biogas technology share [%]
     idx_biogas = dm_biogas.idx
@@ -1141,10 +1151,9 @@ def bioenergy_workflow(DM_bioenergy, CDM_const, dm_ind, dm_bld, dm_tra):
                       + DM_bioenergy['electricity_production'].array[:, :, idx_elec['agr_bioenergy-capacity_fdk-req'],
                         idx_elec['solid-biofuel-hf']]
 
-    dm_solid = dm_ind.filter({'Variables': [
-        'ind_bioenergy_gas-bio']})  # FIXME backup I do not know how to create a blanck dm with Country & Years
+    dm_solid = DM_ind["natfibers"].copy() # FIXME backup I do not know how to create a blanck dm with Country & Years
     dm_solid.add(dm_solid_demand, dim='Variables', col_label='agr_bioenergy-capacity_solid-biofuel-req', unit='TWh')
-    dm_solid.drop(dim='Variables', col_label=['ind_bioenergy_gas-bio'])  # FIXME to empty when upper comment fixed
+    dm_solid.drop(dim='Variables', col_label=['ind_dem_natfibers'])  # FIXME to empty when upper comment fixed
 
     # Solid feedstock per type [TWh] = solid demand for  biofuel [TWh] * biomass share solid [%]
     idx_demand_solid = dm_solid.idx
@@ -1699,11 +1708,11 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
     return DM_crop, dm_crop_other, dm_feed_processed, dm_food_processed
 
 # CalculationLeaf AGRICULTURAL LAND DEMAND -----------------------------------------------------------------------------
-def land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, dm_ind):
+def land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, DM_ind):
 
     # FIBERS -----------------------------------------------------------------------------------------------------------
     # Converting industry fibers from [kt] to [t]
-    dm_ind_fiber = dm_ind.filter({'Variables': ['ind_dem_natfibers']})
+    dm_ind_fiber = DM_ind["natfibers"]
     DM_land['fibers'].append(dm_ind_fiber, dim='Variables')
     DM_land['fibers'].add(1000.0, dummy=True, col_label='kt_to_t', dim='Variables', unit='')
     DM_land['fibers'].operation('ind_dem_natfibers', '*', 'kt_to_t', out_col='ind_dem_natfibers_t', unit='t')
@@ -2202,11 +2211,11 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
         dm_bld = simulate_buildings_to_agriculture_input()
         
     if interface.has_link(from_sector='industry', to_sector='agriculture'):
-        dm_ind = interface.get_link(from_sector='industry', to_sector='agriculture')
+        DM_ind = interface.get_link(from_sector='industry', to_sector='agriculture')
     else:
         if len(interface.list_link()) != 0:
             print('You are missing industry to agriculture interface')
-        dm_ind = simulate_industry_to_agriculture_input()
+        DM_ind = simulate_industry_to_agriculture_input()
         
     if interface.has_link(from_sector='transport', to_sector='agriculture'):
         dm_tra = interface.get_link(from_sector='transport', to_sector='agriculture')
@@ -2219,7 +2228,8 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     cntr_list = DM_food_demand['food-net-import-pro'].col_labels['Country']
     dm_lfs = dm_lfs.filter({'Country': cntr_list})
     dm_bld = dm_bld.filter({'Country': cntr_list})
-    dm_ind = dm_ind.filter({'Country': cntr_list})
+    for key in DM_ind.keys():
+        DM_ind[key] = DM_ind[key].filter({'Country': cntr_list})
     dm_tra = dm_tra.filter({'Country': cntr_list})
 
     # CalculationTree AGRICULTURE
@@ -2227,12 +2237,12 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     dm_lfs, dm_lfs_pro = food_demand_workflow(DM_food_demand, dm_lfs)
     DM_livestock, dm_liv_ibp, dm_liv_ibp= livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro)
     DM_alc_bev, dm_bev_ibp_cereal_feed = alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro)
-    DM_bioenergy, dm_oil, dm_lgn, dm_eth, dm_biofuel_fdk = bioenergy_workflow(DM_bioenergy, CDM_const, dm_ind, dm_bld, dm_tra)
+    DM_bioenergy, dm_oil, dm_lgn, dm_eth, dm_biofuel_fdk = bioenergy_workflow(DM_bioenergy, CDM_const, DM_ind, dm_bld, dm_tra)
     DM_manure = livestock_manure_workflow(DM_manure, DM_livestock, CDM_const)
     DM_feed, dm_aps_ibp, dm_feed_req = feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, CDM_const)
     dm_voil = biomass_allocation_workflow(dm_aps_ibp, dm_oil)
     DM_crop, dm_crop_other, dm_feed_processed, dm_food_processed = crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const)
-    DM_land, dm_land_use = land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, dm_ind)
+    DM_land, dm_land_use = land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, DM_ind)
     DM_nitrogen, dm_fertilizer_co, dm_mineral_fertilizer = nitrogen_workflow(DM_nitrogen, DM_land, CDM_const)
     DM_energy_ghg, dm_CO2 = energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_manure, CDM_const)
 
@@ -2275,7 +2285,7 @@ def agriculture_local_run():
 
 # # Run the code in local
 # start = time.time()
-results_run = agriculture_local_run()
+# results_run = agriculture_local_run()
 # end = time.time()
 # print(end-start)
 

@@ -158,7 +158,7 @@ def read_data(data_file, lever_setting):
     # return
     return DM_fxa
 
-# !FIXME: add call to this function to compute the change in temperature due to emissions.
+# FIXME: add call to this function to compute the change in temperature due to emissions.
 def sum_emissions_by_gas(DM_interface):
     # NOTE: this is work in progress, to be recovered when we do climate
 
@@ -247,7 +247,7 @@ def sum_emissions_by_gas(DM_interface):
     # dm_agr_input.group_all("Categories1")
     # dm_agr_input.rename_col(col_in = 'agr_input-use_emissions-CO2', col_out = 'agr_emissions-CO2_input-use', dim = "Variables")
     # dm_agr_input.deepen()
-    # ! FIXME: the interface to power has changed, it needs to be re-done
+    # FIXME: the interface to power has changed, it needs to be re-done
     # electricity
     dm_elc = DM_interface["electricity"].filter({"Variables": ["elc_emissions-CO2"]})
     dm_elc.deepen()
@@ -256,7 +256,7 @@ def sum_emissions_by_gas(DM_interface):
     dm_emi.append(dm_elc, "Variables")
 
     # oil refinery
-    dm_ref = DM_interface["refinery"]
+    dm_ref = DM_interface["oil-refinery"]
     dm_ref.deepen()
     dm_ref.add(np.nan, "Categories1", "emissions-CH4", unit="Mt", dummy=True)
     dm_ref.add(np.nan, "Categories1", "emissions-N2O", unit="Mt", dummy=True)
@@ -281,7 +281,7 @@ def emissions_equivalent(DM_interface, DM_fxa):
     # put together
     dm_ems = DM_interface["buildings"].copy()
     keys = ["district-heating", "power", "land-use", "biodiversity",
-            "industry", "ammonia", "refinery", "agriculture", "transport"]
+            "industry", "ammonia", "oil-refinery", "agriculture", "transport"]
     for key in keys:
         dm_ems.append(DM_interface[key], "Variables")
 
@@ -498,6 +498,11 @@ def simulate_agriculture_to_emissions_input():
 def simulate_land_use_to_emissions_input():
     
     dm = simulate_input(from_sector="land-use", to_sector="emissions")
+    dm.filter({"Variables" : ['lus_emissions-CO2_land-to-cropland', 'lus_emissions-CO2_land-to-forest', 
+                              'lus_emissions-CO2_land-to-grassland', 'lus_emissions-CO2_land-to-other', 
+                              'lus_emissions-CO2_land-to-settlement', 'lus_emissions-CO2_land-to-wetland']})
+    # NOTE: in knime we have 12 variables here, while here we consider only 6, as emissions in landuse contain
+    # already the remaining emissions
     
     return dm
 
@@ -563,7 +568,7 @@ def emissions(lever_setting, years_setting, interface = Interface(), calibration
         DM_interface['power'].filter({'Country': cntr_list}, inplace=True)
 
     if interface.has_link(from_sector = "oil-refinery", to_sector = 'emissions'):
-        DM_interface["refinery"] = interface.get_link(from_sector="oil-refinery", to_sector='emissions')
+        DM_interface["oil-refinery"] = interface.get_link(from_sector="oil-refinery", to_sector='emissions')
     else:
         if len(interface.list_link()) != 0:
             print('You are missing refinery to emissions interface')
