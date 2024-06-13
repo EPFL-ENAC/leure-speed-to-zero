@@ -307,8 +307,11 @@ class DataMatrix:
             else:
                 raise ValueError(f"You are trying to append data under the label {col_label} which already exists")
         if dim == 'Variables':
-            for i, col in enumerate(col_label):
-                self.units[col] = unit[i]
+            if None not in unit:
+                for i, col in enumerate(col_label):
+                    self.units[col] = unit[i]
+            else:
+                raise ValueError(f'You need to input the units when adding a variables')
         self.array = np.concatenate((self.array, new_array), axis=a)
 
     def drop(self, dim, col_label):
