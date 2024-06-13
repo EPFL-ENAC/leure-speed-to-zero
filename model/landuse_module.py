@@ -225,7 +225,7 @@ def read_data(data_file, lever_setting):
     return DM_ots_fts, DM_land_use, CDM_const
 
 # CalculationLeaf WOOD
-def wood_workflow(dm_wood, dm_lgn, dm_ind):
+def wood_workflow(dm_wood, dm_lgn, DM_ind):
     # WOOD FUEL DEMAND  ------------------------------------------------------------------------------------------------
     # Unit conversion : bioenergy biomass demand [kcal] => [TWh]
     dm_lgn.add(0.00000000000116222, dummy=True, col_label='kcal_to_TWh', dim='Variables', unit='TWh')
@@ -260,7 +260,7 @@ def wood_workflow(dm_wood, dm_lgn, dm_ind):
     # WOOD PRODUCT CONVERSION ------------------------------------------------------------------------------------------
     # Timber, Woodpulp & Biomaterial from Industry module : Unit conversion to m3 and renaming
     # Timber
-    dm_timber = dm_ind.filter({'Variables': ['ind_timber']})
+    dm_timber = DM_ind["timber"].copy()
     dm_timber.rename_col('ind_timber', 'lus_fst_demand_rwe_ind-sawlog_temp', dim='Variables')
     dm_timber.add(1500.0, dummy=True, col_label='kt_to_cubic_m', dim='Variables', unit='m3')
     dm_timber.operation('lus_fst_demand_rwe_ind-sawlog_temp', '*', 'kt_to_cubic_m',
@@ -268,7 +268,7 @@ def wood_workflow(dm_wood, dm_lgn, dm_ind):
     dm_timber = dm_timber.filter({'Variables': ['lus_fst_demand_rwe_ind-sawlog']})
 
     # Woodpulp
-    dm_woodpulp = dm_ind.filter({'Variables': ['ind_material-production_paper_woodpulp']})
+    dm_woodpulp = DM_ind["woodpulp"].copy()
     dm_woodpulp.rename_col('ind_material-production_paper_woodpulp', 'lus_fst_demand_rwe_pulp_temp', dim='Variables')
     dm_woodpulp.add(4500000.0, dummy=True, col_label='Mt_to_cubic_m', dim='Variables', unit='m3')
     dm_woodpulp.operation('lus_fst_demand_rwe_pulp_temp', '*', 'Mt_to_cubic_m',
@@ -276,7 +276,7 @@ def wood_workflow(dm_wood, dm_lgn, dm_ind):
     dm_woodpulp = dm_woodpulp.filter({'Variables': ['lus_fst_demand_rwe_pulp']})
 
     # Biomaterial
-    dm_biomaterial = dm_ind.filter({'Variables': ['ind_biomaterial_solid-bio']})
+    dm_biomaterial = DM_ind["biomaterial"].copy()
     dm_biomaterial.rename_col('ind_biomaterial_solid-bio', 'lus_fst_demand_rwe_oth-ind-wood_temp', dim='Variables')
     dm_biomaterial.add(174420.0, dummy=True, col_label='TWh_to_cubic_m', dim='Variables', unit='m3')
     dm_biomaterial.operation('lus_fst_demand_rwe_oth-ind-wood_temp', '*', 'TWh_to_cubic_m',
@@ -764,8 +764,19 @@ def forestry_biomass_emissions_workflow(DM_land_use, CDM_const):
 def simulate_industry_to_landuse_input():
     
     dm_ind = simulate_input(from_sector='industry', to_sector='agriculture')
+    
+    DM_ind = {}
+    
+    # timber
+    DM_ind["timber"] = dm_ind.filter({"Variables" : ["ind_timber"]})
+    
+    # woodpulp
+    DM_ind["woodpulp"] = dm_ind.filter({"Variables" : ["ind_material-production_paper_woodpulp"]})
+    
+    # biomaterial solid bio
+    DM_ind["biomaterial"] = dm_ind.filter({"Variables" : ["ind_biomaterial_solid-bio"]})
 
-    return dm_ind
+    return DM_ind
 
 def simulate_agriculture_to_landuse_input():
     
@@ -791,13 +802,6 @@ def landuse_emissions_interface(DM_land_use, write_xls=False):
     # (WARNING : this version accounts for the land rem within the land converted which differs from Knime)
     dm_ems = DM_land_use['land_man_gap'].filter({'Variables': ['lus_emissions-CO2_land_to']})
     dm_ems = dm_ems.flatten()
-    # dm_temp = DM_land_use['crop_ef_agroforestry'].filter({"Variables" : ["lus_land_lulucf_agroforestry_cropland"]})
-    # dm_temp.units
-    # dm_temp = DM_land_use['liv_ef_agroforestry'].filter({"Variables" : ["lus_land_lulucf_agroforestry_grassland"]})
-    # dm_temp.units
-    # dm_temp = DM_land_use['forestry'].filter({"Variables" : ["lus_land_lulucf_agroforestry_grassland"]})
-    # dm_temp.units
-    # # emissions wetlands are missing
 
     if write_xls is True:
 
@@ -816,11 +820,11 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
     DM_ots_fts, DM_land_use, CDM_const = read_data(landuse_data_file, lever_setting)
 
     if interface.has_link(from_sector='industry', to_sector='agriculture'):
-        dm_ind = interface.get_link(from_sector='industry', to_sector='agriculture')
+        DM_ind = interface.get_link(from_sector='industry', to_sector='agriculture')
     else:
         if len(interface.list_link()) != 0:
             print('You are missing industry to agriculture interface')
-        dm_ind = simulate_industry_to_landuse_input()
+        DM_ind = simulate_industry_to_landuse_input()
         
     if interface.has_link(from_sector='agriculture', to_sector='landuse'):
         DM_agr  = interface.get_link(from_sector='agriculture', to_sector='landuse')
@@ -830,7 +834,7 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
         DM_agr = simulate_agriculture_to_landuse_input()
 
     # CalculationTree LAND USE
-    dm_wood = wood_workflow(DM_agr["wood"], DM_agr["lgn"], dm_ind)
+    dm_wood = wood_workflow(DM_agr["wood"], DM_agr["lgn"], DM_ind)
     DM_land_use = land_allocation_workflow(DM_land_use, DM_agr["landuse"])
     DM_land_use = land_matrix_workflow(DM_land_use)
     DM_land_use = land_carbon_dynamics_workflow(DM_land_use)

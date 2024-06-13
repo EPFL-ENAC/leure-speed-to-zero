@@ -1369,39 +1369,63 @@ def variables_for_tpe(DM_cost, dm_bld_matswitch_savings_bymat, DM_emissions, DM_
     # return
     return df_tpe
 
-def industry_agriculture_interface(DM_material_production, DM_energy_demand, write_xls = False):
+def industry_agriculture_interface(DM_material_production, DM_energy_demand):
     
-    # adjust variables' names
-    dm_timber = DM_material_production["bymat"].filter({"Categories1" : ["timber"]})
-    dm_timber = dm_timber.flatten()
-    dm_timber.rename_col("material-production_timber", "timber", "Variables")
-    DM_energy_demand["feedstock_bybiomat"].rename_col("energy-demand-feedstock", "biomaterial", "Variables")
-    dm_indwaste = DM_energy_demand["indwaste"]
-    dm_indwaste = dm_indwaste.flatten()
-    dm_indwaste.rename_col("energy-demand_solid-waste", "waste", "Variables")
-    DM_energy_demand["bioener_bybiomat"].rename_col("energy-demand_bioenergy", "bioenergy", "Variables")
-    DM_material_production["natfiber"].rename_col('material-decomposition', "dem", "Variables")
+    DM_agr = {}
+    
+    # natfibers
+    dm_temp = DM_material_production["natfiber"].copy()
+    dm_temp.rename_col('material-decomposition', "ind_dem", "Variables")
+    DM_agr["natfibers"] = dm_temp.flatten()
+    
+    # bioenergy
+    dm_temp = DM_energy_demand["bioener_bybiomat"].copy()
+    dm_temp.rename_col("energy-demand_bioenergy", "ind_bioenergy", "Variables")
+    dm_temp = dm_temp.filter({"Categories1" : ['gas-bio', 'solid-bio']})
+    DM_agr["bioenergy"] = dm_temp
+    
+    # biomaterial
+    dm_temp = DM_energy_demand["feedstock_bybiomat"].copy()
+    dm_temp.rename_col("energy-demand-feedstock", "ind_biomaterial", "Variables")
+    dm_temp = dm_temp.filter({"Categories1" : ['gas-bio']})
+    DM_agr["biomaterial"] = dm_temp
+    
+    return DM_agr
 
-    # dm_agr
-    dm_agr = dm_timber.copy()
-    dm_agr.append(DM_material_production["bytech"].filter({"Categories1" : ['paper_woodpulp']}).flatten(), "Variables")
-    dm_agr.append(DM_energy_demand["feedstock_bybiomat"].flatten(), "Variables")
-    dm_agr.append(dm_indwaste, "Variables")
-    dm_agr.append(DM_energy_demand["bioener_bybiomat"].flatten(), "Variables")
-    dm_agr.append(DM_material_production["natfiber"].flatten(), "Variables")
-    variables = dm_agr.col_labels["Variables"]
-    for i in variables:
-        dm_agr.rename_col(i, "ind_" + i, "Variables")
-    dm_agr.sort("Variables")
+def industry_landuse_interface(DM_material_production, DM_energy_demand, write_xls = False):
+    
+    DM_lus = {}
+    
+    # timber
+    dm_timber = DM_material_production["bymat"].filter({"Categories1" : ["timber"]})
+    dm_timber.rename_col("material-production", "ind_material-production", "Variables")
+    dm_timber = dm_timber.flatten()
+    DM_lus["timber"] = dm_timber
+    
+    # woodpuplp
+    dm_woodpulp = DM_material_production["bytech"].filter({"Categories1" : ['paper_woodpulp']})
+    dm_woodpulp.rename_col("material-production", "ind_material-production", "Variables")
+    DM_lus["woodpulp"] = dm_woodpulp.flatten()
+    
+    # biomaterial solid bio
+    dm_temp = DM_energy_demand["feedstock_bybiomat"].copy()
+    dm_temp.rename_col("energy-demand-feedstock", "ind_biomaterial", "Variables")
+    dm_temp = dm_temp.filter({"Categories1" : ['solid-bio']})
+    DM_lus["biomaterial"] = dm_temp.flatten()
         
     # df_agr
     if write_xls is True:
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        df_agr = dm_agr.write_df()
-        df_agr.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-agriculture.xlsx', index=False)
+        
+        dm_lus = DM_lus["timber"].copy()
+        dm_lus.append(DM_lus["woodpulp"], "Variables")
+        dm_lus.append(DM_lus["biomaterial"], "Variables")
+        
+        dm_lus = dm_lus.write_df()
+        dm_lus.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-agriculture.xlsx', index=False)
 
     # return
-    return dm_agr
+    return DM_lus
 
 def industry_power_interface(DM_energy_demand, write_xls = False):
     
@@ -1921,8 +1945,12 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     df = variables_for_tpe(DM_cost, dm_bld_matswitch_savings_bymat, DM_emissions, DM_material_production, DM_energy_demand)
     
     # interface agriculture
-    dm_agr = industry_agriculture_interface(DM_material_production, DM_energy_demand)
-    interface.add_link(from_sector='industry', to_sector='agriculture', dm=dm_agr)
+    DM_agr = industry_agriculture_interface(DM_material_production, DM_energy_demand)
+    interface.add_link(from_sector='industry', to_sector='agriculture', dm=DM_agr)
+    
+    # interface landuse
+    DM_lus = industry_landuse_interface(DM_material_production, DM_energy_demand)
+    interface.add_link(from_sector='industry', to_sector='landuse', dm=DM_lus)
     
     # interface power
     DM_pow = industry_power_interface(DM_energy_demand)
@@ -1988,9 +2016,9 @@ def local_industry_run():
     # return
     return results_run
 
-# run local
+# # run local
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
-# database_from_csv_to_datamatrix()
+# # database_from_csv_to_datamatrix()
 # start = time.time()
 # results_run = local_industry_run()
 # end = time.time()
