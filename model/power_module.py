@@ -955,9 +955,42 @@ def pow_minerals_interface(dm_new_capacity, DM_yearly_demand):
         i = i+1
     dm_tot_elec.groupby({'elc_electricity-demand_total': '.*'}, dim='Variables', regex=True, inplace=True)
 
-    DM_minerals = {
-        'electricity-demand': dm_tot_elec
+    rename_dict = {
+        'coal': 'energy-coal',
+        'gas': 'energy-gas',
+        'oil': 'energy-oil',
+        'nuclear': 'energy-nuclear',
+        'solar-pv': 'energy-pv',
+        'solar-csp': 'energy-csp',
+        'wind-offshore': 'energy-off-wind',
+        'wind-onshore': 'energy-on-wind',
+        'hydroelectric': 'energy-hydro',
+        'geothermal': 'energy-geo',
+        'marine': 'energy-marine'
     }
+    name_in = []
+    name_out = []
+    for k, v in rename_dict.items():
+        name_in.append(k)
+        name_out.append(v)
+    # !FIXME biogas and biomass demand not considered in minerals infrastructure
+    dm_new_capacity.drop(dim='Categories1', col_label=['biogas', 'biomass'])
+    dm_new_capacity.rename_col(name_in, name_out, 'Categories1')
+    dm_new_capacity.sort('Categories1')
+    dm_new_capacity.rename_col('pow_gross-yearly-production', 'product-demand', 'Variables')
+
+    # Dummy battery
+    # !FIXME this is a dummy battery demand, you need to do storage
+    ay_battery = dm_tot_elec.array*0
+    dm_battery = DataMatrix.based_on(ay_battery, format=dm_tot_elec, change={'Variables': ['str_energy-battery']},
+                                     units={'str_energy-battery': 'GW'})
+
+    DM_minerals = {
+        'battery': dm_battery,
+        'electricity-demand': dm_tot_elec,
+        'energy': dm_new_capacity,
+    }
+
 
 
     return DM_minerals
@@ -1052,7 +1085,8 @@ def power(lever_setting, years_setting, interface=Interface()):
     # same number of arg than the return function
 
     dm_new_capacity = dm_capacity.filter({'Variables': ['pow_gross-yearly-production']})
-    dm_minerals = pow_minerals_interface(dm_new_capacity, DM_yearly_demand)
+    DM_minerals = pow_minerals_interface(dm_new_capacity, DM_yearly_demand)
+    interface.add_link(from_sector='power', to_sector='minerals', dm=DM_minerals)
     # concatenate all results to df
     #results_run = dm_capacity
 
