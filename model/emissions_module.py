@@ -629,6 +629,10 @@ def emissions(lever_setting, years_setting, interface = Interface(), calibration
     
     # get variables for tpe
     dm_tpe = variables_for_tpe(dm_ems)
+    
+    # import pprint
+    # pprint.pprint(dm_tpe.col_labels["Variables"])
+    
     results_run = dm_tpe.write_df()
 
     # return
