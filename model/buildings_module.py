@@ -1140,11 +1140,10 @@ def bld_emissions_interface(dm_appliances, DM_energy):
     dm_emissions_fuel = DM_energy['heat-emissions-by-fuel']
     dm_emissions_fuel.rename_col('bld_CO2-emissions', 'bld_emissions-CO2', dim='Variables')
 
-    dm_appliances.rename_col('bld_CO2-emissions_appliances', 'bld_residential-emissions-CO2', dim='Variables')
-
-    # ! FIXME: emission interface to be changed so that the following is not needed
-    dm_appliances.rename_col('non-residential', 'non_appliances', dim='Categories1')
-    dm_appliances.rename_col('residential', 'appliances', dim='Categories1')
+    dm_appliances.rename_col('bld_CO2-emissions_appliances', 'bld_emissions-CO2_appliances', dim='Variables')
+    # dm_appliances.rename_col('bld_CO2-emissions_appliances', 'bld_residential-emissions-CO2', dim='Variables')
+    # dm_appliances.rename_col('non-residential', 'non_appliances', dim='Categories1')
+    # dm_appliances.rename_col('residential', 'appliances', dim='Categories1')
 
     dm_emissions_bld = dm_emissions_bld.flatten()
     dm_emissions_fuel = dm_emissions_fuel.flatten()
