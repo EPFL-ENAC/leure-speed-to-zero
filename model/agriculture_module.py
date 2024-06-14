@@ -2212,8 +2212,10 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
 
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    agriculture_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/agriculture.pickle')
+    agriculture_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/agriculture.pickle')
     DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, CDM_const = read_data(agriculture_data_file, lever_setting)
+
+    cntr_list = DM_food_demand['food-net-import-pro'].col_labels['Country']
 
     # Simulate data from other modules
     if interface.has_link(from_sector='lifestyles', to_sector='agriculture'):
@@ -2222,6 +2224,7 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
         if len(interface.list_link()) != 0:
             print('You are missing lifestyles to agriculture interface')
         dm_lfs = simulate_lifestyles_to_agriculture_input()
+        dm_lfs.filter({'Country': cntr_list}, inplace=True)
         
     if interface.has_link(from_sector='buildings', to_sector='agriculture'):
         dm_bld = interface.get_link(from_sector='buildings', to_sector='agriculture')
@@ -2229,6 +2232,7 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
         if len(interface.list_link()) != 0:
             print('You are missing buildings to agriculture interface')
         dm_bld = simulate_buildings_to_agriculture_input()
+        dm_bld.filter({'Country': cntr_list}, inplace=True)
         
     if interface.has_link(from_sector='industry', to_sector='agriculture'):
         DM_ind = interface.get_link(from_sector='industry', to_sector='agriculture')
@@ -2236,6 +2240,8 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
         if len(interface.list_link()) != 0:
             print('You are missing industry to agriculture interface')
         DM_ind = simulate_industry_to_agriculture_input()
+        for key in DM_ind.keys():
+            DM_ind[key].filter({'Country': cntr_list}, inplace=True)
         
     if interface.has_link(from_sector='transport', to_sector='agriculture'):
         dm_tra = interface.get_link(from_sector='transport', to_sector='agriculture')
@@ -2243,14 +2249,7 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
         if len(interface.list_link()) != 0:
             print('You are missing transport to agriculture interface')
         dm_tra = simulate_transport_to_agriculture_input()
-
-    # Filter by country
-    cntr_list = DM_food_demand['food-net-import-pro'].col_labels['Country']
-    dm_lfs = dm_lfs.filter({'Country': cntr_list})
-    dm_bld = dm_bld.filter({'Country': cntr_list})
-    for key in DM_ind.keys():
-        DM_ind[key] = DM_ind[key].filter({'Country': cntr_list})
-    dm_tra = dm_tra.filter({'Country': cntr_list})
+        dm_tra.filter({'Country': cntr_list}, inplace=True)
 
     # CalculationTree AGRICULTURE
 

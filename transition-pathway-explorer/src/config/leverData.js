@@ -15,19 +15,6 @@ export const levers = [
     "type": "num"
   },
   {
-    "code": "lever_passenger-aviation-pkm",
-    "title": "Aviation travel demand per capita",
-    "group": "Travel",
-    "headline": "Key behaviours",
-    "range": [
-      1,
-      2,
-      3,
-      4
-    ],
-    "type": "num"
-  },
-  {
     "code": "lever_passenger_modal-share",
     "title": "Mode of transport",
     "group": "Travel",
@@ -457,8 +444,8 @@ export const levers = [
     "type": "num"
   },
   {
-    "code": "lever_decom_fossil",
-    "title": "Coal phase out",
+    "code": "lever_oil-capacity",
+    "title": "Oil",
     "group": "Power",
     "headline": "Technology and fuels",
     "range": [
@@ -470,7 +457,7 @@ export const levers = [
     "type": "num"
   },
   {
-    "code": "lever_ccs",
+    "code": "lever_carbon-storage-capacity",
     "title": "Carbon Capture ratio in power",
     "group": "Power",
     "headline": "Technology and fuels",
@@ -483,7 +470,7 @@ export const levers = [
     "type": "num"
   },
   {
-    "code": "lever_capacity_nuclear",
+    "code": "lever_nuclear-capacity",
     "title": "Nuclear",
     "group": "Power",
     "headline": "Technology and fuels",
@@ -496,7 +483,7 @@ export const levers = [
     "type": "num"
   },
   {
-    "code": "lever_capacity_RES_wind",
+    "code": "lever_onshore-wind-capacity",
     "title": "Wind",
     "group": "Power",
     "headline": "Technology and fuels",
@@ -509,7 +496,7 @@ export const levers = [
     "type": "num"
   },
   {
-    "code": "lever_capacity_RES_solar",
+    "code": "lever_pv-capacity",
     "title": "Solar",
     "group": "Power",
     "headline": "Technology and fuels",
@@ -522,7 +509,7 @@ export const levers = [
     "type": "num"
   },
   {
-    "code": "lever_capacity_RES_other",
+    "code": "lever_hydroelectric-capacity",
     "title": "Hydro, geo & tidal",
     "group": "Power",
     "headline": "Technology and fuels",
@@ -765,5 +752,187 @@ export const levers = [
       4
     ],
     "type": "num"
-  }
+  },
+  {
+    "code": "lever_passenger-aviation-pkm",
+    "title": "Aviation travel",
+    "group": "Travel",
+    "headline": "Key behaviours",
+    "range": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "type": "num"
+  },
+  {
+    "code": "lever_csp-capacity",
+    "title": "Concentrated Solar Power",
+    "group": "Power",
+    "headline": "Technology and fuels",
+    "range": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "type": "num"
+  },
+  {
+    "code": "lever_offshore-wind-capacity",
+    "title": "Offshore Wind Power",
+    "group": "Power",
+    "headline": "Technology and fuels",
+    "range": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "type": "num"
+  },
+  {
+    "code": "lever_biomass-capacity",
+    "title": "Biomass",
+    "group": "Power",
+    "headline": "Technology and fuels",
+    "range": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "type": "num"
+  },
+  {
+    "code": "lever_geothermal-capacity",
+    "title": "Geothermal",
+    "group": "Power",
+    "headline": "Technology and fuels",
+    "range": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "type": "num"
+  },
+  {
+    "code": "lever_marine-capacity",
+    "title": "Marine",
+    "group": "Power",
+    "headline": "Technology and fuels",
+    "range": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "type": "num"
+  },
+  {
+    "code": "lever_gas-capacity",
+    "title": "Gas",
+    "group": "Power",
+    "headline": "Technology and fuels",
+    "range": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "type": "num"
+  },
+  {
+    "code": "lever_coal-capacity",
+    "title": "Coal",
+    "group": "Power",
+    "headline": "Technology and fuels",
+    "range": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "type": "num"
+  },
+  {
+    "code": "lever_biogas-capacity",
+    "title": "Biogas",
+    "group": "Power",
+    "headline": "Technology and fuels",
+    "range": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "type": "num"
+  },
+  {
+    "code": "lever_ev-charging-profile",
+    "title": "EV charging habits",
+    "group": "Power",
+    "headline": "Technology and fuels",
+    "range": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "type": "num"
+  },
+  {
+    "code": "lever_non-residential-heat-profile",
+    "title": "Non-residential heat profile",
+    "group": "Power",
+    "headline": "Technology and fuels",
+    "range": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "type": "num"
+  },
+  {
+    "code": "lever_residential-heat-profile",
+    "title": "Residential heat profile",
+    "group": "Power",
+    "headline": "Technology and fuels",
+    "range": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "type": "num"
+  },
+  {
+    "code": "lever_non-residential-cooling-profile",
+    "title": "Non-residential cooling profile",
+    "group": "Power",
+    "headline": "Technology and fuels",
+    "range": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "type": "num"
+  },
+  {
+    "code": "lever_residential-cooling-profile",
+    "title": "Residential cooling profile",
+    "group": "Power",
+    "headline": "Technology and fuels",
+    "range": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "type": "num"
+  },
 ];
