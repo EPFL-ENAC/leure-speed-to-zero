@@ -160,11 +160,10 @@ def read_data(data_file, lever_setting):
 
 # FIXME: add call to this function to compute the change in temperature due to emissions.
 def sum_emissions_by_gas(DM_interface):
-    # NOTE: this is work in progress, to be recovered when we do climate
+    # NOTE: this is work in progress, to be recovered when we do temperature
 
     # buildings
-    dm_emi = DM_interface["buildings"].filter_w_regex({
-                                                          "Variables": "bld.*gas-ff-natural.*|bld.*heat-ambient.*|bld.*heat-geothermal.*|bld.*heat-solar.*|bld.*liquid-ff-heatingoil.*|bld.*solid-ff-coal.*|bld.*solid-bio.*"})
+    dm_emi = DM_interface["buildings"].filter_w_regex({"Variables": "bld.*gas-ff-natural.*|bld.*heat-ambient.*|bld.*heat-geothermal.*|bld.*heat-solar.*|bld.*liquid-ff-heatingoil.*|bld.*solid-ff-coal.*|bld.*solid-bio.*"})
     dm_emi.deepen()
     dm_emi.group_all("Categories1")
     dm_emi.deepen()
@@ -173,8 +172,7 @@ def sum_emissions_by_gas(DM_interface):
     dm_emi.sort("Categories1")
 
     # transport
-    dm_tra = DM_interface["transport"].filter_w_regex({
-                                                          "Variables": "tra.*LDV.*|tra.*2W.*|tra.*rail.*|tra.*bus.*|tra.*metro-tram.*|tra.*aviation.*|tra.*marine.*|tra.*IWW.*|tra.*HDV.*"})
+    dm_tra = DM_interface["transport"].filter_w_regex({"Variables": "tra.*LDV.*|tra.*2W.*|tra.*rail.*|tra.*bus.*|tra.*metro-tram.*|tra.*aviation.*|tra.*marine.*|tra.*IWW.*|tra.*HDV.*"})
     dm_tra.deepen_twice()
     dm_tra.group_all("Categories1")
     dm_tra.group_all("Categories1")
@@ -182,8 +180,7 @@ def sum_emissions_by_gas(DM_interface):
     dm_emi.append(dm_tra, "Variables")
 
     # district heating
-    dm_dh = DM_interface["district-heating"].filter_w_regex({
-                                                                "Variables": "dhg.*gas-ff-natural.*|dhg.*heat-ambient.*|dhg.*heat-geothermal.*|dhg.*heat-solar.*|dhg.*liquid-ff-heatingoil.*|dhg.*solid-ff-coal.*|dhg.*solid-bio.*"})
+    dm_dh = DM_interface["district-heating"].filter_w_regex({"Variables": "dhg.*gas-ff-natural.*|dhg.*heat-ambient.*|dhg.*heat-geothermal.*|dhg.*heat-solar.*|dhg.*liquid-ff-heatingoil.*|dhg.*solid-ff-coal.*|dhg.*solid-bio.*"})
     dm_dh.deepen_twice()
     dm_dh.group_all("Categories2")
     dm_emi.append(dm_dh, "Variables")
@@ -280,7 +277,7 @@ def emissions_equivalent(DM_interface, DM_fxa):
     # TODO: note that this currently works with dms all flattened (no categories), later on after all modules are finalized we can think of making it work with categories, and avoid deepen done in variables for TPE
     # put together
     dm_ems = DM_interface["buildings"].copy()
-    keys = ["district-heating", "power", "land-use", "biodiversity",
+    keys = ["district-heating", "power", "land-use",
             "industry", "ammonia", "oil-refinery", "agriculture", "transport"]
     for key in keys:
         dm_ems.append(DM_interface[key], "Variables")
@@ -324,42 +321,65 @@ def emissions_equivalent(DM_interface, DM_fxa):
         dm_ems.append(dm_ems_so2, "Variables")
         del dm_ems_so2
         
-    # sum to get total CO2e
-    dm_ems.add(np.nansum(dm_ems.array, axis = -1, keepdims=True), "Variables", "clm_total_CO2e_ems", "Mt")
+    # # sum to get total CO2e
+    # # NOTE: this is commented out for now as modules send variables that are already aggregates / sectorial
+    # # the computation of total co2e is done in variables_for_tpe().
+    # dm_ems.add(np.nansum(dm_ems.array, axis = -1, keepdims=True), "Variables", "clm_total_CO2e_ems", "Mt")
 
     return dm_ems
 
 def variables_for_tpe(dm_ems):
     
-    # biodiversity
-    dm_tpe = dm_ems.filter_w_regex({"Variables" : ".*bdy.*"})
-    dm_tpe.deepen()
-    dm_tpe.group_all("Categories1")
-    dm_tpe.rename_col("bdy", "bdy_emissions-CO2e", "Variables")
-    
-    # ammonia
-    dm_amm = dm_ems.filter_w_regex({"Variables" : ".*amm.*"})
-    dm_amm.rename_col_regex("_ammonia", "", "Variables")
-    dm_amm.deepen()
-    dm_amm.group_all("Categories1")
-    dm_amm.rename_col("amm", "amm_emissions-CO2e", "Variables")
-    dm_tpe.append(dm_amm, "Variables")
+    # # biodiversity
+    # dm_tpe = dm_ems.filter_w_regex({"Variables" : ".*bdy.*"})
+    # dm_tpe.deepen()
+    # dm_tpe.group_all("Categories1")
+    # dm_tpe.rename_col("bdy", "bdy_emissions-CO2e", "Variables")
     
     # refinery
-    dm_fos = dm_ems.filter_w_regex({"Variables" : ".*fos_emissions.*"})
-    dm_fos.rename_col("fos_emissions-CO2","fos_emissions-CO2e","Variables")
-    dm_tpe.append(dm_fos, "Variables")
+    dm_fos_agg = dm_ems.filter_w_regex({"Variables" : ".*fos_emissions.*"})
+    dm_fos_agg.rename_col("fos_emissions-CO2","fos_emissions-CO2e","Variables")
+    dm_tpe = dm_fos_agg.copy()
     
-    # power
-    dm_elc = dm_ems.filter_w_regex({"Variables": "pow.*bio.*"})
+    # power bio
+    dm_pow_bio = dm_ems.filter_w_regex({"Variables": "pow.*bio.*"})
     dm_ems.drop('Variables', 'pow.*bio.*')
-    dm_elc.groupby({'pow_emissions-CO2e_RES_bio': '.*'}, dim='Variables', inplace=True, regex=True)
-    dm_tpe.append(dm_elc, "Variables")
-    dm_elc = dm_ems.filter_w_regex({"Variables": 'pow_.*'})
-    dm_elc.deepen_twice()
-    dm_elc.group_all('Categories2')
-    dm_elc.rename_col('pow_emissions', 'pow_emissions-CO2e_fossil', 'Variables')
-    dm_tpe.append(dm_elc.flatten(), "Variables")
+    dm_pow_bio.groupby({'pow_emissions-CO2e_RES_bio': '.*'}, dim='Variables', inplace=True, regex=True)
+    dm_tpe.append(dm_pow_bio, "Variables")
+    
+    # power fos
+    dm_pow_fos = dm_ems.filter_w_regex({"Variables": 'pow_.*'})
+    dm_pow_fos.rename_col_regex("_CO2","","Variables")
+    dm_pow_fos.deepen()
+    # dm_elc.group_all('Categories2')
+    dm_pow_fos.rename_col('pow_emissions', 'pow_emissions-CO2e_fossil', 'Variables')
+    dm_tpe.append(dm_pow_fos.flatten(), "Variables")
+    
+    # district heating
+    dm_dhg = dm_ems.filter_w_regex({"Variables" : ".*dhg_emissions.*"})
+    dm_dhg.deepen_twice()
+    dm_dhg.group_all("Categories1")
+    dm_dhg.rename_col("dhg", "dhg_emissions-CO2e","Variables")
+    dm_temp = dm_dhg.flatten()
+    dm_tpe.append(dm_temp, "Variables")
+    
+    # district heating aggregates
+    dm_temp = dm_dhg.groupby({'added-district-heat-fossil': ['gas-ff-natural','liquid-ff-heatingoil', 
+                                                             'solid-bio', 'solid-ff-coal']}, 
+                             dim='Categories1', regex=False, inplace=False)
+    dm_tpe.append(dm_temp.flatten(), "Variables")
+    dm_temp = dm_dhg.groupby({'added-district-heat-renewable': ['heat-ambient', 'heat-geothermal', 'heat-solar']}, 
+                             dim='Categories1', regex=False, inplace=False)
+    dm_tpe.append(dm_temp.flatten(), "Variables")
+    
+    # power aggregates (pow fossiles + dhg)
+    dm_pow_agg = dm_pow_fos.group_all("Categories1", inplace = False)
+    dm_temp = dm_dhg.group_all("Categories1", inplace = False)
+    dm_temp.rename_col("dhg_emissions-CO2e","pow_emissions-CO2e_dhg","Variables")
+    dm_pow_agg.append(dm_temp, "Variables")
+    dm_pow_agg.deepen()
+    dm_pow_agg.group_all("Categories1")
+    dm_tpe.append(dm_pow_agg, "Variables")
     
     # agriculture
     dm_agr = dm_ems.filter_w_regex({"Variables": ".*agr_emissions.*"})
@@ -371,51 +391,58 @@ def variables_for_tpe(dm_ems):
     dm_agr = dm_agr.flatten()
     dm_agr.rename_col_regex("agr_", "agr_emissions-CO2e_", "Variables")
     dm_tpe.append(dm_agr, "Variables")
-    dm_agr = dm_ems.filter_w_regex({"Variables" : ".*agr_input-use.*"})
-    for i in dm_agr.col_labels["Variables"]:
-        dm_agr.units[i] = "Mt"
-    dm_tpe.append(dm_agr, "Variables")
+    # dm_agr = dm_ems.filter_w_regex({"Variables" : ".*agr_input-use.*"})
+    # for i in dm_agr.col_labels["Variables"]:
+    #     dm_agr.units[i] = "Mt"
+    # dm_tpe.append(dm_agr, "Variables")
     
-    # # TODO: this code below is an example of what to do with agriculture if we keep variables' names, drop it once interfaces are finalized
-    # dm_agr_crop = dm_ems.filter_w_regex({"Variables" : ".*agr.*crop.*"})
-    # dm_agr_crop.deepen("_emissions-")
-    # dm_agr_crop.deepen(based_on = "Categories1")
-    # dm_agr_crop.group_all("Categories1")
-    # dm_agr_crop = dm_agr_crop.flatten()
-    # dm_agr_crop.rename_col_regex("agr_", "agr_emissions-CO2e_crop_", "Variables")
-    # dm_tpe.append(dm_agr_crop, "Variables")
-    # dm_agr_liv = dm_ems.filter_w_regex({"Variables" : ".*agr.*liv.*"})
-    # dm_agr_liv.deepen()
-    # dm_agr_liv.deepen(based_on = "Variables")
-    # dm_agr_liv.switch_categories_order("Categories1","Categories2")
-    # dm_agr_liv = dm_agr_liv.flatten()
-    # dm_agr_liv.deepen("_emissions-",based_on="Variables")
-    # dm_agr_liv.deepen()
-    # dm_agr_liv.group_all("Categories2")
+    # agriculture aggregates
+    dm_agr_agg = dm_agr.groupby({"agr_emissions-CO2e" : ".*"}, dim='Variables', 
+                                 regex=True, inplace=False)
+    dm_tpe.append(dm_agr_agg, "Variables")
     
     # land use system
     dm_lus = dm_ems.filter_w_regex({"Variables" : ".*lus_emissions.*"})
-    dm_lus.rename_col_regex("CO2", "CO2e", "Variables")
-    dm_tpe.append(dm_lus, "Variables")
+    dm_lus.deepen()
+    dm_lus_agg = dm_lus.group_all("Categories1", inplace = False)
+    dm_lus_agg.rename_col("lus_emissions-CO2", "lus_emissions-CO2e", "Variables")
+    dm_tpe.append(dm_lus_agg, "Variables")
     
     # industry
     dm_ind = dm_ems.filter_w_regex({"Variables" : ".*ind_emissions.*"})
     dm_ind.deepen()
-    dm_temp = dm_ind.filter({"Variables" : ['ind_emissions-CO2_biogenic'], 
-                             "Categories1" : ["cement","paper","lime","chem","steel"]})
     dm_ind.drop("Variables", ['ind_emissions-CO2_biogenic'])
-    # dm_temp = dm_ind.filter({"Variables" : ['ind_emissions-CO2', 'ind_emissions-CO2_biogenic']})
-    # dm_ind.drop(dim = "Variables", col_label = "ind_emissions-CO2_biogenic")
-    # idx = dm_ind.idx
-    # dm_ind.array[:,:,idx["ind_emissions-CO2"],:] = np.nansum(dm_temp.array, axis = -2)
     dm_ind.deepen(based_on="Variables")
     dm_ind.group_all("Categories2")
     dm_ind.rename_col("ind","ind_emissions-CO2e","Variables")
-    dm_ind = dm_ind.flatten()
-    dm_tpe.append(dm_ind, "Variables")
-    dm_temp.rename_col('ind_emissions-CO2_biogenic', 'ind_emissions-CO2e_biogenic', "Variables")
-    dm_temp = dm_temp.flatten()
-    dm_tpe.append(dm_temp, "Variables")
+    dm_tpe.append(dm_ind.flatten(), "Variables")
+    
+    # industry biogenic
+    dm_ind_biogen = dm_ems.filter_w_regex({"Variables" : ".*ind_emissions-CO2_biogenic.*"})
+    dm_ind_biogen.rename_col_regex('CO2', 'CO2e', "Variables")
+    dm_tpe.append(dm_ind_biogen, "Variables")
+    
+    # ammonia
+    dm_amm = dm_ems.filter_w_regex({"Variables" : ".*amm.*"})
+    dm_amm.rename_col_regex("_ammonia", "", "Variables")
+    dm_amm.deepen()
+    dm_amm.group_all("Categories1")
+    dm_amm.rename_col("amm", "amm_emissions-CO2e", "Variables")
+    dm_tpe.append(dm_amm, "Variables")
+    
+    # industry aggregates
+    dm_ind_agg = dm_amm.copy()
+    dm_ind_agg.rename_col("amm_emissions-CO2e","ind_emissions-CO2e_amm","Variables")
+    dm_ind_agg.deepen()
+    dm_ind_agg.append(dm_ind, "Categories1")
+    dm_ind_agg.group_all("Categories1")
+    dm_tpe.append(dm_ind_agg, "Variables")
+    
+    # biogen aggregates
+    dm_clm_biogen_agg = dm_ind_biogen.copy()
+    dm_clm_biogen_agg.append(dm_pow_bio, "Variables")
+    dm_clm_biogen_agg.groupby({"clm_emissions-CO2e_biogenic" : ".*"}, "Variables", regex = True, inplace = True)
+    dm_tpe.append(dm_clm_biogen_agg, "Variables")
     
     # transport
     dm_tra = dm_ems.filter_w_regex({"Variables" : ".*tra_emissions.*"})
@@ -423,28 +450,44 @@ def variables_for_tpe(dm_ems):
     dm_tra.group_all(dim='Categories1')
     dm_tra.rename_col_regex('emissions', 'emissions-CO2e', dim='Variables')
     dm_tra.groupby({'tra_emissions-CO2e_freight_HDV': '.*HDV.*'}, dim='Variables', regex=True, inplace=True)
-
     dm_tpe.append(dm_tra, "Variables")
     
-    # building
+    # transport aggregate
+    dm_tra.deepen_twice()
+    dm_tra.group_all("Categories2")
+    dm_tpe.append(dm_tra.flatten(), "Variables")
+    dm_tra_agg = dm_tra.group_all("Categories1", inplace = False)
+    dm_tpe.append(dm_tra_agg, "Variables")
+    
+    # buildings
     dm_bld = dm_ems.filter_w_regex({"Variables" : ".*bld_emissions.*"})
     dm_bld.rename_col_regex("CO2", "CO2e", "Variables")
     dm_tpe.append(dm_bld, "Variables")
-    dm_bld = dm_ems.filter_w_regex({"Variables" : ".*bld_residential-emissions.*"})
-    dm_tpe.append(dm_bld, "Variables")
     
-    # district heating
-    dm_dhg = dm_ems.filter_w_regex({"Variables" : ".*dhg_emissions.*"})
-    dm_dhg.deepen_twice()
-    dm_dhg.group_all("Categories1")
-    dm_dhg.rename_col("dhg", "dhg_emissions-CO2e","Variables")
-    dm_dhg = dm_dhg.flatten()
-    dm_tpe.append(dm_dhg, "Variables")
+    # buildings aggregates
+    dm_bld_agg = dm_bld.groupby({'bld_emissions-CO2e': 
+                    ["bld_emissions-CO2e_gas-ff-natural", "bld_emissions-CO2e_heat-ambient",
+                     "bld_emissions-CO2e_heat-geothermal", "bld_emissions-CO2e_heat-solar",
+                     "bld_emissions-CO2e_liquid-ff-heatingoil", "bld_emissions-CO2e_solid-bio",
+                     "bld_emissions-CO2e_solid-ff-coal"]}, dim='Variables', inplace=False, regex=False)
+    dm_tpe.append(dm_bld_agg, "Variables")
     
     # total
-    dm_tot = dm_ems.filter_w_regex({"Variables" : ".*clm_total.*"})
+    DM_total = {"lus": dm_lus_agg, # lus
+                # "agr" : dm_agr_agg, # agr
+                "fos" : dm_fos_agg, # fos (oil refinery)
+                "pow" : dm_pow_agg, # pow fos + dhg
+                "tra" : dm_tra_agg, # tra
+                "bld" : dm_bld_agg, # bld
+                "ind" : dm_ind_agg, # ind (includes amm)
+                "ind_biogen" : dm_clm_biogen_agg} # ind biogenic
+    dm_tot = dm_agr_agg.copy()
+    for key in DM_total.keys():
+        dm_tot.append(DM_total[key],"Variables")
+    dm_tot.groupby({"emissions-CO2e" : ".*"}, "Variables", regex = True, inplace = True)
     dm_tpe.append(dm_tot, "Variables")
     
+    # sort
     dm_tpe.sort("Variables")
         
     return dm_tpe
@@ -452,6 +495,12 @@ def variables_for_tpe(dm_ems):
 def simulate_buildings_to_emissions_input():
     
     dm = simulate_input(from_sector="buildings", to_sector="emissions")
+    dm.rename_col("bld_residential-emissions-CO2_non_appliances", "bld_emissions-CO2_appliances_non-residential", "Variables")
+    dm.rename_col("bld_residential-emissions-CO2_appliances", "bld_emissions-CO2_appliances_residential", "Variables")
+    dm = dm.filter({"Variables" : ["bld_emissions-CO2_gas-ff-natural", "bld_emissions-CO2_heat-ambient", 
+                                   "bld_emissions-CO2_heat-geothermal", "bld_emissions-CO2_heat-solar", 
+                                   "bld_emissions-CO2_liquid-ff-heatingoil", "bld_emissions-CO2_solid-bio", 
+                                   "bld_emissions-CO2_solid-ff-coal", "bld_emissions-CO2_appliances_non-residential"]})
     
     return dm
 
@@ -498,7 +547,7 @@ def simulate_agriculture_to_emissions_input():
 def simulate_land_use_to_emissions_input():
     
     dm = simulate_input(from_sector="land-use", to_sector="emissions")
-    dm.filter({"Variables" : ['lus_emissions-CO2_land-to-cropland', 'lus_emissions-CO2_land-to-forest', 
+    dm = dm.filter({"Variables" : ['lus_emissions-CO2_land-to-cropland', 'lus_emissions-CO2_land-to-forest', 
                               'lus_emissions-CO2_land-to-grassland', 'lus_emissions-CO2_land-to-other', 
                               'lus_emissions-CO2_land-to-settlement', 'lus_emissions-CO2_land-to-wetland']})
     # NOTE: in knime we have 12 variables here, while here we consider only 6, as emissions in landuse contain
@@ -630,8 +679,8 @@ def emissions(lever_setting, years_setting, interface = Interface(), calibration
     # get variables for tpe
     dm_tpe = variables_for_tpe(dm_ems)
     
-    # import pprint
-    # pprint.pprint(dm_tpe.col_labels["Variables"])
+    import pprint
+    pprint.pprint(dm_tpe.col_labels["Variables"])
     
     results_run = dm_tpe.write_df()
 
@@ -656,11 +705,11 @@ def local_emissions_run():
     # return
     return results_run
 
-# # run local
-# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/emissions_module.py"
-# # database_from_csv_to_datamatrix()
-# start = time.time()
-# results_run = local_emissions_run()
-# end = time.time()
-# print(end-start)
+# run local
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/emissions_module.py"
+# database_from_csv_to_datamatrix()
+start = time.time()
+results_run = local_emissions_run()
+end = time.time()
+print(end-start)
 
