@@ -39,9 +39,9 @@
         {"id": "lus_emissions-CO2e[Mt]", "color":"#7cb5ec"},
         {"id": "bdy_emissions-CO2e[Mt]", "color":"#434348"},
         {"id": "fos_emissions-CO2e[Mt]", "color":"#f7a35c"},
-        {"id": "elc_emissions-CO2e[Mt]", "color":"#8085e9"},
+        {"id": "pow_emissions-CO2e[Mt]", "color":"#8085e9"},
         {"id": "ind_emissions-CO2e[Mt]", "color":"#e4d354"},
-        {"id": "tra_emissions-CO2[Mt]", "color":"#2b908f"},
+        {"id": "tra_emissions-CO2e[Mt]", "color":"#2b908f"},
         {"id": "bld_emissions-CO2e[Mt]", "color":"#90ed7d"},
         {"id": "agr_emissions-CO2e[Mt]", "color":"#f15c80"},
         {"id": "clm_emissions-CO2e_biogenic[Mt]", "color":"#7aedff"}
@@ -51,10 +51,10 @@
       "title": "GHG emissions per sector in 2050",
       "unit": "Mt CO<sub>2e</sub>/year",
       "outputs": [
-        "elc_emissions-CO2e[Mt]",
-        "elc_emissions-CO2e_fossil_coal[Mt]",
-        "elc_emissions-CO2e_fossil_oil[Mt]",
-        "elc_emissions-CO2e_fossil_natural-gas[Mt]",
+        "pow_emissions-CO2e[Mt]",
+        "pow_emissions-CO2e_fossil_coal[Mt]",
+        "pow_emissions-CO2e_fossil_oil[Mt]",
+        "pow_emissions-CO2e_fossil_natural-gas[Mt]",
         "dhg_emissions-CO2e_added-district-heat-renewable[Mt]",
         "dhg_emissions-CO2e_added-district-heat-fossil[Mt]",
         "dhg_emissions-CO2e_heat-ambient[Mt]",
@@ -65,26 +65,26 @@
         "dhg_emissions-CO2e_solid-bio[Mt]",
         "dhg_emissions-CO2e_solid-ff-coal[Mt]",
         "fos_emissions-CO2e[Mt]",
-        "tra_emissions-CO2[Mt]",
-        "tra_passenger_emissions_CO2[Mt]",
-        "tra_passenger_emissions-by-mode_CO2_LDV[Mt]",
-        "tra_passenger_emissions-by-mode_CO2_2W[Mt]",
-        "tra_passenger_emissions-by-mode_CO2_bus[Mt]",
-        "tra_passenger_emissions-by-mode_CO2_rail[Mt]",
-        "tra_passenger_emissions-by-mode_CO2_aviation[Mt]",
-        "tra_freight_emissions_CO2[Mt]",
-        "tra_freight_emissions-by-mode_CO2_HDV[Mt]",
-        "tra_freight_emissions-by-mode_CO2_rail[Mt]",
-        "tra_freight_emissions-by-mode_CO2_IWW[Mt]",
-        "tra_freight_emissions-by-mode_CO2_marine[Mt]",
-        "tra_freight_emissions-by-mode_CO2_aviation[Mt]",
+        "tra_emissions-CO2e[Mt]",
+        "tra_emissions-CO2e_passenger[Mt]",
+        "tra_emissions-CO2e_passenger_LDV[Mt]",
+        "tra_emissions-CO2e_passenger_2W[Mt]",
+        "tra_emissions-CO2e_passenger_bus[Mt]",
+        "tra_emissions-CO2e_passenger_rail[Mt]",
+        "tra_emissions-CO2e_passenger_aviation[Mt]",
+        "tra_emissions-CO2e_freight[Mt]",
+        "tra_emissions-CO2e_freight_HDV[Mt]",
+        "tra_emissions-CO2e_freight_rail[Mt]",
+        "tra_emissions-CO2e_freight_IWW[Mt]",
+        "tra_emissions-CO2e_freight_marine[Mt]",
+        "tra_emissions-CO2e_freight_aviation[Mt]",
         "bld_emissions-CO2e[Mt]",
         "bld_emissions-CO2e_gas-ff-natural[Mt]",
         "bld_emissions-CO2e_heat-ambient[Mt]",
         "bld_emissions-CO2e_heat-geothermal[Mt]",
         "bld_emissions-CO2e_heat-solar[Mt]",
         "bld_emissions-CO2e_liquid-ff-heatingoil[Mt]",
-        "bld_emissions-CO2e_non-residential_appliances[Mt]",
+        "bld_emissions-CO2e_appliances_non-residential[Mt]",
         "bld_emissions-CO2e_solid-bio[Mt]",
         "bld_emissions-CO2e_solid-ff-coal[Mt]",
         "ind_emissions-CO2e[Mt]",
@@ -142,16 +142,16 @@
         "ind_emissions-CO2e_biogenic_lime[Mt]",
         "ind_emissions-CO2e_biogenic_paper[Mt]",
         "ind_emissions-CO2e_biogenic_steel[Mt]",
-        "elc_emissions-CO2e_RES_bio[Mt]"
+        "pow_emissions-CO2e_RES_bio[Mt]"
       ],
       "structure": {
         "root": {
           "title": "emissions by sector",
           "range": [],
           "series": [
-            "elc_emissions-CO2e[Mt]",
+            "pow_emissions-CO2e[Mt]",
             "fos_emissions-CO2e[Mt]",
-            "tra_emissions-CO2[Mt]",
+            "tra_emissions-CO2e[Mt]",
             "bld_emissions-CO2e[Mt]",
             "ind_emissions-CO2e[Mt]",
             "lus_emissions-CO2e[Mt]",
@@ -159,11 +159,11 @@
             "clm_emissions-CO2e_biogenic[Mt]"
           ]
         },
-        "elc_emissions-CO2e[Mt]": {
+        "pow_emissions-CO2e[Mt]": {
           "series": [
-            "elc_emissions-CO2e_fossil_coal[Mt]",
-            "elc_emissions-CO2e_fossil_oil[Mt]",
-            "elc_emissions-CO2e_fossil_natural-gas[Mt]",
+            "pow_emissions-CO2e_fossil_coal[Mt]",
+            "pow_emissions-CO2e_fossil_oil[Mt]",
+            "pow_emissions-CO2e_fossil_natural-gas[Mt]",
             "dhg_emissions-CO2e_added-district-heat-renewable[Mt]",
             "dhg_emissions-CO2e_added-district-heat-fossil[Mt]"
           ]
@@ -183,28 +183,28 @@
             "dhg_emissions-CO2e_solid-ff-coal[Mt]"
           ]
         },
-        "tra_emissions-CO2[Mt]": {
+        "tra_emissions-CO2e[Mt]": {
           "series": [
-            "tra_passenger_emissions_CO2[Mt]",
-            "tra_freight_emissions_CO2[Mt]"
+            "tra_emissions-CO2e_passenger[Mt]",
+            "tra_emissions-CO2e_freight[Mt]"
           ]
         },
-        "tra_emissions-CO2_passenger[Mt]": {
+        "tra_emissions-CO2e_passenger[Mt]": {
           "series": [
-            "tra_passenger_emissions-by-mode_CO2_LDV[Mt]",
-            "tra_passenger_emissions-by-mode_CO2_2W[Mt]",
-            "tra_passenger_emissions-by-mode_CO2_bus[Mt]",
-            "tra_passenger_emissions-by-mode_CO2_rail[Mt]",
-            "tra_passenger_emissions-by-mode_CO2_aviation[Mt]"
+            "tra_emissions-CO2e_passenger_LDV[Mt]",
+            "tra_emissions-CO2e_passenger_2W[Mt]",
+            "tra_emissions-CO2e_passenger_bus[Mt]",
+            "tra_emissions-CO2e_passenger_rail[Mt]",
+            "tra_emissions-CO2e_passenger_aviation[Mt]"
           ]
         },
-        "tra_emissions-CO2_freight[Mt]": {
+        "tra_emissions-CO2e_freight[Mt]": {
           "series": [
-            "tra_freight_emissions-by-mode_CO2_HDV[Mt]",
-            "tra_freight_emissions-by-mode_CO2_rail[Mt]",
-            "tra_freight_emissions-by-mode_CO2_IWW[Mt]",
-            "tra_freight_emissions-by-mode_CO2_marine[Mt]",
-            "tra_freight_emissions-by-mode_CO2_aviation[Mt]"
+            "tra_emissions-CO2e_freight_HDV[Mt]",
+            "tra_emissions-CO2e_freight_rail[Mt]",
+            "tra_emissions-CO2e_freight_IWW[Mt]",
+            "tra_emissions-CO2e_freight_marine[Mt]",
+            "tra_emissions-CO2e_freight_aviation[Mt]"
           ]
         },
         "bld_emissions-CO2e[Mt]": {
@@ -214,7 +214,7 @@
             "bld_emissions-CO2e_heat-geothermal[Mt]",
             "bld_emissions-CO2e_heat-solar[Mt]",
             "bld_emissions-CO2e_liquid-ff-heatingoil[Mt]",
-            "bld_emissions-CO2e_non-residential_appliances[Mt]",
+            "bld_emissions-CO2e_appliances_non-residential[Mt]",
             "bld_emissions-CO2e_solid-bio[Mt]",
             "bld_emissions-CO2e_solid-ff-coal[Mt]"
           ]
@@ -280,7 +280,7 @@
           	"ind_emissions-CO2e_biogenic_lime[Mt]",
           	"ind_emissions-CO2e_biogenic_paper[Mt]",
           	"ind_emissions-CO2e_biogenic_steel[Mt]",
-          	"elc_emissions-CO2e_RES_bio[Mt]"
+          	"pow_emissions-CO2e_RES_bio[Mt]"
           ]
         }
       }
