@@ -147,8 +147,9 @@ def database_from_csv_to_datamatrix():
     DM_landuse['ots']['land-man']['agr_land-man_matrix'].rename_col_regex(str1="agr_land-man_matrix", str2="agr_matrix",
                                                                           dim="Variables")
     DM_landuse['ots']['land-man']['agr_land-man_matrix'].deepen(based_on='Variables')
+
     # Land matrix FTS
-    for i in range(1,4):
+    for i in DM_landuse['fts']['land-man']['agr_land-man_matrix'].keys():
         # Renaming
         DM_landuse['fts']['land-man']['agr_land-man_matrix'][i].rename_col_regex(str1="agr_land-man_matrix",
                                                                               str2="agr_matrix", dim="Variables")
@@ -444,10 +445,8 @@ def land_matrix_workflow(DM_land_use):
 
     # Creating a blank land use matrix (cat1 = TO, cat2 = FROM) (per year & per country)
     # cat1 = cat2 : cropland, grassland, forest, settlement, wetland, other, total
-    # Creating a NaN array of dimension [32, 33, 1, 6, 6]
-    array_temp = np.full((32, 33, 1, 6, 6), np.nan)
     # Adding it to the dm with the relevant structure
-    DM_land_use['land_matrix'].add(array_temp, dim='Variables', col_label='matrix', unit='ha')
+    DM_land_use['land_matrix'].add(np.nan, dim='Variables', dummy=True, col_label='matrix', unit='ha')
     # Dropping the unuesed variables (we only take the dm for its structure)
     DM_land_use['land_matrix'].drop(dim='Variables', col_label=['agr_matrix'])
 
@@ -521,7 +520,9 @@ def land_matrix_workflow(DM_land_use):
     DM_land_use['land_man_gap'].add(arr_remaining, col_label='land_remaining_land', dim='Variables', unit='ha')
 
     # Transforming the remaining in land to the relevant format (from 1 cat to 2 cat with values = diagonal and 0 otherwise)
-    arr_temp = np.zeros((32, 33, 6, 6))
+    n_cntr = len(dm_temp.col_labels['Country'])
+    n_yrs = len(dm_temp.col_labels['Years'])
+    arr_temp = np.zeros((n_cntr, n_yrs, 6, 6))
     for cat in range(arr_remaining.shape[2]):
         arr_temp[:, :, cat, cat] = arr_remaining[:, :, cat]
     DM_land_use['land_matrix'].add(arr_temp, col_label='land_remaining_land_matrix', dim='Variables', unit='ha')
@@ -816,12 +817,16 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
     landuse_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/landuse.pickle')
     DM_ots_fts, DM_land_use, CDM_const = read_data(landuse_data_file, lever_setting)
 
+    cntr_list = DM_land_use['land_man_use'].col_labels['Country']
+
     if interface.has_link(from_sector='industry', to_sector='land-use'):
         DM_ind = interface.get_link(from_sector='industry', to_sector='land-use')
     else:
         if len(interface.list_link()) != 0:
             print('You are missing industry to agriculture interface')
         DM_ind = simulate_industry_to_landuse_input()
+        for key in DM_ind.keys():
+            DM_ind[key].filter({'Country': cntr_list}, inplace=True)
         
     if interface.has_link(from_sector='agriculture', to_sector='land-use'):
         DM_agr  = interface.get_link(from_sector='agriculture', to_sector='land-use')
@@ -829,6 +834,8 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
         if len(interface.list_link()) != 0:
             print('You are missing agriculture to land-use interface')
         DM_agr = simulate_agriculture_to_landuse_input()
+        for key in DM_agr.keys():
+            DM_agr[key].filter({'Country': cntr_list}, inplace=True)
 
     # CalculationTree LAND USE
     dm_wood = wood_workflow(DM_agr["wood"], DM_agr["lgn"], DM_ind)
@@ -848,14 +855,14 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
 
 def local_land_use_run():
     years_setting, lever_setting = init_years_lever()
-    global_vars = {'geoscale': '.*'}
+    global_vars = {'geoscale': 'Switzerland'}
     filter_geoscale(global_vars)
     land_use(lever_setting, years_setting)
     return
 
 # # run local
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/landuse_module.py"
-# # database_from_csv_to_datamatrix()
+# database_from_csv_to_datamatrix()
 # start = time.time()
 # results_run = local_land_use_run()
 # end = time.time()
