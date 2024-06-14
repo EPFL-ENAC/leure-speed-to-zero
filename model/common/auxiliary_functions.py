@@ -132,7 +132,7 @@ def merge_ots_fts(df_ots, df_fts, levername):
     return df
 
 
-def compute_stock(dm, rr_regex, tot_regex, waste_col, new_col):
+def compute_stock(dm, rr_regex, tot_regex, waste_col, new_col, out_type=int):
     # Function to compute stock MFA. It determines the waste and the new input
     # based on the total and the renewal_rate.
     # rr_regex: is a regex pattern to find the renewal rate data in dm 'Variables'
@@ -156,24 +156,26 @@ def compute_stock(dm, rr_regex, tot_regex, waste_col, new_col):
     idx = dm.index_all()
     # Compute tot and rr at time t-1
     dm.array = np.moveaxis(dm.array, 1, -1)  # moves years dim at the end
-    tot_tm1 = ((n - 1) / n * dm.array[:, idx[tot_col], ...] + 1 / n * dm.array[:, idx[tot_col + '_tmn'], ...]).astype(
-        int)
+    tot_tm1 = ((n - 1) / n * dm.array[:, idx[tot_col], ...] + 1 / n * dm.array[:, idx[tot_col + '_tmn'], ...]).astype(out_type)
     rr_tm1 = (n - 1) / n * dm.array[:, idx[rr_col], ...] + 1 / n * dm.array[:, idx[rr_col + '_tmn'], ...]
     dm.array = np.moveaxis(dm.array, -1, 1)  # moves years back in position
     tot_tm1 = np.moveaxis(tot_tm1, -1, 1)
     rr_tm1 = np.moveaxis(rr_tm1, -1, 1)
     # waste = renewal_rate(t-1) x tot(t-1)
-    waste_tmp = (rr_tm1 * tot_tm1).astype(int)
+    waste_tmp = (rr_tm1 * tot_tm1).astype(out_type)
     # tot(t) = tot(t-1) + new(t) - waste(t) -> new(t) = tot(t) - tot(t-1) + waste(t)
-    new_tmp = (waste_tmp + dm.array[:, :, idx[tot_col], ...] - tot_tm1).astype(int)
+    new_tmp = (waste_tmp + dm.array[:, :, idx[tot_col], ...] - tot_tm1).astype(out_type)
+    # Fix fist year in series by taking next year value
+    new_tmp[:, 0, :] = new_tmp[:, 1, :]
     # Deal with negative values
     # Check for negative values in new_cols
     tot = dm.array[:, :, dm.idx[tot_col], :]
     new_tmp[new_tmp < 0] = 0
-    waste_tmp[new_tmp < 0] = (tot_tm1[new_tmp < 0] - tot[new_tmp < 0]).astype(int)
+    waste_tmp[new_tmp < 0] = (tot_tm1[new_tmp < 0] - tot[new_tmp < 0]).astype(out_type)
     # Add waste and new to datamatrix
-    dm.add(waste_tmp, dim='Variables', col_label=waste_col, unit='number')
-    dm.add(new_tmp, dim='Variables', col_label=new_col, unit='number')
+    unit = dm.units[tot_col]
+    dm.add(waste_tmp, dim='Variables', col_label=waste_col, unit=unit)
+    dm.add(new_tmp, dim='Variables', col_label=new_col, unit=unit)
     # Remove the lagged columns
     dm.drop(dim='Variables', col_label='.*_tmn')
     return
