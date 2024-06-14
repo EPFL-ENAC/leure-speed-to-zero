@@ -1125,25 +1125,28 @@ def bld_power_interface(dm_appliances, dm_energy, dm_fuel, dm_light_heat):
 
 def bld_emissions_interface(dm_appliances, DM_energy):
 
-    dm_emissions_bld = DM_energy['heat-emissions-by-bld']
-    dm_emissions_bld.rename_col('bld_CO2-emissions', 'bld_emissions-CO2', dim='Variables')
+    # dm_emissions_bld = DM_energy['heat-emissions-by-bld']
+    # dm_emissions_bld.rename_col('bld_CO2-emissions', 'bld_emissions-CO2', dim='Variables')
 
-    dm_emissions_fuel = DM_energy['heat-emissions-by-fuel']
+    dm_emissions_fuel = DM_energy['heat-emissions-by-fuel'].filter({"Categories1" : ["gas-ff-natural", "heat-ambient", 
+                                   "heat-geothermal", "heat-solar", 
+                                   "liquid-ff-heatingoil", "solid-bio", 
+                                   "solid-ff-coal"]})
     dm_emissions_fuel.rename_col('bld_CO2-emissions', 'bld_emissions-CO2', dim='Variables')
 
+    dm_appliances = dm_appliances.filter({"Categories1" : ["non-residential"]})
     dm_appliances.rename_col('bld_CO2-emissions_appliances', 'bld_emissions-CO2_appliances', dim='Variables')
     # dm_appliances.rename_col('bld_CO2-emissions_appliances', 'bld_residential-emissions-CO2', dim='Variables')
     # dm_appliances.rename_col('non-residential', 'non_appliances', dim='Categories1')
     # dm_appliances.rename_col('residential', 'appliances', dim='Categories1')
 
-    dm_emissions_bld = dm_emissions_bld.flatten()
+    # dm_emissions_bld = dm_emissions_bld.flatten()
     dm_emissions_fuel = dm_emissions_fuel.flatten()
     dm_appliances = dm_appliances.flatten()
 
-    dm_emissions_bld.append(dm_emissions_fuel, dim='Variables')
-    dm_emissions_bld.append(dm_appliances, dim='Variables')
+    dm_emissions_fuel.append(dm_appliances, dim='Variables')
 
-    return dm_emissions_bld
+    return dm_emissions_fuel
 
 
 def bld_industry_interface(DM_floor, dm_appliances, dm_pipes):
