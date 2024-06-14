@@ -496,6 +496,21 @@ def lfs_agriculture_interface(dm_agriculture):
 
     return dm_agriculture
 
+def lifestyles_TPE_interface(dm_diet, dm_appliances):
+
+    df_diet = dm_diet.write_df()
+
+    dm_own = dm_appliances.filter({'Variables': ['lfs_appliance-own']})
+    df_own = dm_own.write_df()
+
+    dm_use = dm_appliances.filter({'Variables': ['lfs_total-appliance-use']})
+    dm_use.filter({'Categories1': ['comp', 'phone', 'tv']})
+    df_use = dm_use.write_df()
+
+    df = pd.concat([df_diet, df_own.drop(columns=['Country', 'Years'])], axis=1)
+    df = pd.concat([df, df_use.drop(columns=['Country', 'Years'])], axis=1)
+
+    return df
 
 # CORE module
 def lifestyles(lever_setting, years_setting, interface=Interface()):
@@ -512,7 +527,7 @@ def lifestyles(lever_setting, years_setting, interface=Interface()):
     DM_building_out = building_workflow(DM_building)
 
     # concatenate all results to df
-    results_run = dm_agriculture_out.write_df()
+    results_run = lifestyles_TPE_interface(dm_agriculture_out, DM_appliance_out['buildings'].copy())
 
     # !FIXME: currently agriculture renames all of the lifestyles categories, we should rather keep lifestyles categories and rework agriculture
     dm_agriculture = lfs_agriculture_interface(dm_agriculture_out)
@@ -544,4 +559,3 @@ def local_lifestyles_run():
 # database_from_csv_to_datamatrix()  # un-comment to update
 # local_lifestyles_run()  # to un-comment to run in local
 
-#TODO: (1) Industry interface
