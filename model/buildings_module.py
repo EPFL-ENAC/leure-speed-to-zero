@@ -4,7 +4,7 @@ from model.common.interface_class import Interface
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database, read_database_fxa, edit_database, read_database_w_filter
 from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups
-from model.common.auxiliary_functions import read_level_data, filter_geoscale
+from model.common.auxiliary_functions import read_level_data, filter_geoscale, compute_stock
 import pickle
 import json
 import os
@@ -306,6 +306,28 @@ def simulate_climate_to_buildings_input():
     return DM_clm
 
 
+def compute_new_area_KNIME_version(dm_floor_area, dm_rates):
+
+    # Floor area increase (t) [Mm2] = floor-area (t) [Mm2] - floor-area (t-1) [Mm2]
+    dm_floor_area.operation('bld_floor-area', '-', 'bld_floor-area-previous-year',
+                            out_col='bld_floor-area-increase', unit='Mm2')
+
+    # Floor area demolished (t) [Mm2] = floor-area (t-1) [Mm2] * demolition-rate-exi (t) [%]
+    dm_demolition = dm_rates.filter({'Variables': ['bld_building-demolition-rate'], 'Categories2': ['exi']})
+    arr_demolition = dm_demolition.array[:, :, 0, :, 0]
+    dm_floor_area.add(arr_demolition, dim='Variables', col_label='bld_building-demolition-rate', unit='%')
+    dm_floor_area.operation('bld_floor-area-previous-year', '*', 'bld_building-demolition-rate', out_col='bld_floor-area-demolished', unit='Mm2')
+
+    # New area constructed [Mm2] = Area demolished + Area increase
+    dm_floor_area.operation('bld_building-demolition-rate', '+', 'bld_floor-area-increase', out_col='bld_floor-area-constructed', unit='Mm2')
+    # Remove negative
+    idx = dm_floor_area.idx
+    dm_floor_area.array[:, :, idx['bld_floor-area-constructed'], :] = \
+        np.where(dm_floor_area.array[:, :, idx['bld_floor-area-constructed'], :] < 0, 0, dm_floor_area.array[:, :, idx['bld_floor-area-constructed'], :])
+
+    return dm_floor_area
+
+
 def bld_floor_area_workflow(DM_floor_area, dm_lfs, baseyear):
     # Floor area and material workflow
 
@@ -334,81 +356,61 @@ def bld_floor_area_workflow(DM_floor_area, dm_lfs, baseyear):
     dm_floor_area.array[:, :, idx_f['bld_floor-area'], :] = dm_floor_area.array[:, :, idx_f['bld_floor-area'], :]/1000
     dm_floor_area.units['bld_floor-area'] = 'Mm2'
 
-    # Floor area increase (t) [Mm2] = floor-area (t) [Mm2] - floor-area (t-1) [Mm2]
-    dm_floor_area.operation('bld_floor-area', '-', 'bld_floor-area-previous-year',
-                            out_col='bld_cumulated-floor-area-increase', unit='Mm2')
+    # It uses the total-floor area and the demolition rate to obtain floor area demolished constructed
+    # if we want to use the stock function here, the demolition-rate is the renewal-rate,
+    # the floor-area is the total stock. the demolished is the 'waste' and the constructed is the 'new'.
+    # demolished = total-floor area * demolition rate
+    # constructed = demolished + increase
+    # dm_floor_area = compute_new_area_KNIME_version(dm_floor_area, DM_floor_area['buildings_rates'])
+    dm_floor_area.drop('Variables', 'bld_floor-area-previous-year')
+    # !FIXME the values of these rates are off (plot to see) - probably because they were 'cumulated' before
+    dm_rr = DM_floor_area['buildings_rates'].filter({'Variables': ['bld_building-demolition-rate'], 'Categories2': ['exi']})
+    dm_rr.group_all('Categories2')
+    dm_floor_area.append(dm_rr, dim='Variables')
 
-    dm_rates = DM_floor_area['buildings_rates']
-
-    # Floor area demolished (t) [Mm2] = floor-area (t-1) [Mm2] * demolition-rate-exi (t) [%]
-    dm_demolition = dm_rates.filter({'Variables': ['bld_building-demolition-rate'], 'Categories2': ['exi']})
-    arr_demolition = dm_demolition.array[:, :, 0, :, 0]
-    dm_floor_area.add(arr_demolition, dim='Variables', col_label='bld_building-demolition-rate', unit='%')
-    dm_floor_area.operation('bld_floor-area-previous-year', '*', 'bld_building-demolition-rate', out_col='bld_floor-area-demolished', unit='Mm2')
-
-    # New area constructed [Mm2] = Area demolished + Area increase
-    dm_floor_area.operation('bld_building-demolition-rate', '+', 'bld_cumulated-floor-area-increase', out_col='bld_floor-area-constructed', unit='Mm2')
-    # Remove negative
-    idx = dm_floor_area.idx
-    dm_floor_area.array[:, :, idx['bld_floor-area-constructed'], :] = \
-        np.where(dm_floor_area.array[:, :, idx['bld_floor-area-constructed'], :] < 0, 0, dm_floor_area.array[:, :, idx['bld_floor-area-constructed'], :])
+    #################
+    # COMPUTE STOCK #
+    #################
+    compute_stock(dm_floor_area, rr_regex='bld_building-demolition-rate', tot_regex='bld_floor-area',
+                  waste_col='bld_floor-area-demolished', new_col='bld_floor-area-constructed')
 
     # renovated area [Mm2] = renovation-rate [%] * floor area [Mm2]
+    dm_rates = DM_floor_area['buildings_rates']
     idx_r = dm_rates.idx
     idx_f = dm_floor_area.idx
     arr_renovated = dm_rates.array[:, :, idx_r['bld_building-renovation-rate'], :, idx_r['exi']] \
                     * dm_floor_area.array[:, :, idx_f['bld_floor-area'], :]
     dm_floor_area.add(arr_renovated, dim='Variables', col_label='bld_floor-area-renovated', unit='Mm2')
 
+    # unrenovated area [Mm2] = total floor area [Mm2] - constructed [Mm2] - renovated [Mm2]
+    dm_floor_area.operation('bld_floor-area', '-', 'bld_floor-area-constructed',
+                            out_col='bld_floor-area_minus_constructed', unit='Mm2')
+    dm_floor_area.operation('bld_floor-area_minus_constructed', '-', 'bld_floor-area-renovated',
+                            out_col='bld_floor-area-unrenovated', unit='Mm2')
+    dm_floor_area.drop('Variables', 'bld_floor-area_minus_constructed')
+
     #################
     ### MATERIALS ###
     #################
 
-    # Floor area renovated and constructed for fts take into account the gap years
-    # Therefore to obtain the renovated and construction areas only for the year of interest
-    # we need to devide by 1 for ots and 5 for fts
-    gap_years = np.array(dm_floor_area.col_labels['Years'][1:]) - np.array(dm_floor_area.col_labels['Years'][:-1])
-    gap_years = np.concatenate(([1], gap_years))
-    arr_renovated = dm_floor_area.array[:, :, idx['bld_floor-area-renovated'], :]/gap_years[np.newaxis, :, np.newaxis]
-    arr_constructed = dm_floor_area.array[:, :, idx['bld_floor-area-constructed'], :]/gap_years[np.newaxis, :, np.newaxis]
+    # Surface-area = floor-area * surface-per-floor-area
+    idx_f = dm_floor_area.idx
     dm_surface = DM_floor_area['surface-per-floorarea']
-    idx = dm_surface.idx
-    arr_surf_renovated = dm_surface.array[:, :, idx['bld_surface-per-floorarea'], :, :] * arr_renovated[..., np.newaxis]
-    arr_surf_constructed = dm_surface.array[:, :, idx['bld_surface-per-floorarea'], :, :] * arr_constructed[..., np.newaxis]
+    idx_s = dm_surface.idx
+    arr_surf_renovated = dm_surface.array[:, :, idx_s['bld_surface-per-floorarea'], :, :] * \
+                         dm_floor_area.array[:, :, idx_f['bld_floor-area-renovated'], :, np.newaxis]
+    arr_surf_constructed = dm_surface.array[:, :, idx_s['bld_surface-per-floorarea'], :, :] * \
+                           dm_floor_area.array[:, :, idx_f['bld_floor-area-constructed'], :, np.newaxis]
     dm_surface.add(arr_surf_renovated, dim='Variables', col_label='bld_renovated-surface-area', unit='Mm2')
     dm_surface.add(arr_surf_constructed, dim='Variables', col_label='bld_constructed-surface-area', unit='Mm2')
-    # Save area constructed in output for industry
-    dm_constructed = DataMatrix.based_on(arr_constructed[:, :, np.newaxis, ...], format=dm_floor_area,
-                                         change={'Variables': ['bld_floor-area-constructed']},
-                                         units={'bld_floor-area-constructed': 'Mm2'})
 
-    del arr_surf_constructed, arr_constructed, arr_demolition, arr_renovated, arr_surf_renovated
-
+    del arr_surf_constructed, arr_surf_renovated
     ### END OF MATERIALS
+
+    # Save area constructed in output for industry
+    dm_constructed = dm_floor_area.filter({'Variables': ['bld_floor-area-constructed']})
     # Save renovated area for Costs
     dm_renovated = dm_floor_area.filter({'Variables': ['bld_floor-area-renovated']})
-
-    # Compute cumulation of demolished renovated and constructed area from baseyear onwards
-    # Note that the rates already accounted for the fact that we only have one in 5 years
-    variables = ['bld_floor-area-demolished', 'bld_floor-area-constructed', 'bld_floor-area-renovated']
-    idx = dm_floor_area.idx
-    for var in variables:
-        # cumulate sum of constructed, demolished, renovated
-        dm_floor_area.array[:, idx[baseyear]+1:, idx[var], :] = np.cumsum(dm_floor_area.array[:, idx[baseyear]+1:, idx[var], :], axis=1)
-        # set ots years to 0
-        dm_floor_area.array[:, 0:idx[baseyear]+1, idx[var], :] = 0
-        # rename the variable
-        new_var = var.replace('bld_', 'bld_cumulated-')
-        dm_floor_area.rename_col(var, new_var, dim='Variables')
-
-    # Keep only floor area and cumulated floor area
-    dm_floor_area.drop(col_label=['bld_floor-area-previous-year', 'bld_building-demolition-rate'], dim='Variables')
-
-    dm_floor_area.operation('bld_cumulated-floor-area-constructed', '+', 'bld_cumulated-floor-area-renovated',
-                            out_col='bld_floor-area-new-and-renovated', unit='Mm2')
-
-    dm_floor_area.operation('bld_floor-area', '-', 'bld_floor-area-new-and-renovated',
-                            out_col='bld_cumulated-floor-area-unrenovated', unit='Mm2')
 
     DM_floor_out = {}
     DM_floor_out['wf_energy'] = dm_floor_area
@@ -427,16 +429,16 @@ def bld_energy_workflow(DM_energy, DM_clm, dm_floor_area, cdm_const):
     dm_mix = DM_energy['building_mix']
     idx_m = dm_mix.idx
     idx_f = dm_floor_area.idx
-    arr_renovated_area_mix = dm_floor_area.array[:, :, idx_f['bld_cumulated-floor-area-renovated'], :, np.newaxis] \
+    arr_renovated_area_mix = dm_floor_area.array[:, :, idx_f['bld_floor-area-renovated'], :, np.newaxis] \
                              * dm_mix.array[:, :, idx_m['bld_building-renovation-mix'], :, :]
-    dm_mix.add(arr_renovated_area_mix, dim='Variables', col_label='bld_cumulated-floor-area-renovated', unit='Mm2')
+    dm_mix.add(arr_renovated_area_mix, dim='Variables', col_label='bld_floor-area-renovated', unit='Mm2')
     del arr_renovated_area_mix
 
     # Compute construction mix by building type and depth
     idx_m = dm_mix.idx
-    arr_construction_area_mix = dm_floor_area.array[:, :, idx_f['bld_cumulated-floor-area-constructed'], :, np.newaxis]\
+    arr_construction_area_mix = dm_floor_area.array[:, :, idx_f['bld_floor-area-constructed'], :, np.newaxis]\
                                 * dm_mix.array[:, :, idx_m['bld_building-construction-mix'], :, :]
-    dm_mix.add(arr_construction_area_mix, dim='Variables', col_label='bld_cumulated-floor-area-constructed', unit='Mm2')
+    dm_mix.add(arr_construction_area_mix, dim='Variables', col_label='bld_floor-area-constructed', unit='Mm2')
     del arr_construction_area_mix
 
     # Climate impacts
@@ -479,15 +481,15 @@ def bld_energy_workflow(DM_energy, DM_clm, dm_floor_area, cdm_const):
     del dm_renovation_energy, tmp
 
     # energy need space heating [GWh] = renovation-energy-achieved [kWh/m2] * floor area renovated (constructed) [GWh]
-    dm_mix.operation('bld_building-renovation-energy-achieved', '*', 'bld_cumulated-floor-area-renovated',
+    dm_mix.operation('bld_building-renovation-energy-achieved', '*', 'bld_floor-area-renovated',
                      out_col='bld_energy-need_space-heating_renovated', unit='GWh')
-    dm_mix.operation('bld_building-renovation-energy-achieved', '*', 'bld_cumulated-floor-area-constructed',
+    dm_mix.operation('bld_building-renovation-energy-achieved', '*', 'bld_floor-area-constructed',
                      out_col='bld_energy-need_space-heating_constructed', unit='GWh')
 
     # energy need space heating unrenovated [GWh] = energy need [kWh/m2] * floor area unrenovated (constructed) [GWh]
     idx_f = dm_floor_area.idx
     idx_m = dm_mix.idx
-    arr_unren_exi = dm_floor_area.array[:, :, idx_f['bld_cumulated-floor-area-unrenovated'], :] \
+    arr_unren_exi = dm_floor_area.array[:, :, idx_f['bld_floor-area-unrenovated'], :] \
         * dm_mix.array[:, :, idx_m['bld_energy-need-climate-impact_space-heating'], :, idx_m['exi']]
     # Put renovated / constructed / unrenovated together
     # Add dummy energy need unrenovated variable and then assign to 'exi' cat the above computation
@@ -575,41 +577,30 @@ def bld_energy_workflow(DM_energy, DM_clm, dm_floor_area, cdm_const):
     del dm_heating_res, dm_heating_nonres, idx, idx_h, new_units, arr_nonres, arr_res, res_cols, nonres_cols
 
     # Sum floor area and energy-need over building type
-    idx = dm_mix.idx
-    arr_renovated = np.nansum(dm_mix.array[:, :, idx['bld_cumulated-floor-area-renovated'], :, :], axis=-2)
-    arr_constructed = np.nansum(dm_mix.array[:, :, idx['bld_cumulated-floor-area-constructed'], :, :], axis=-2)
+    dm_depth = dm_mix.filter({'Variables': ['bld_floor-area-renovated', 'bld_floor-area-constructed']})
+    dm_depth.group_all(dim='Categories1')
+
     idx = dm_floor_area.idx
-    arr_unrenovated = np.nansum(dm_floor_area.array[:, :, idx['bld_cumulated-floor-area-unrenovated'], :], axis=-1)
-    arr_demolished = np.nansum(dm_floor_area.array[:, :, idx['bld_cumulated-floor-area-demolished'], :], axis=-1)
-
-    idx = dm_energy_heating.idx
-    arr_energy_need = np.nansum(dm_energy_heating.array[:, :, idx['bld_energy-need_space-heating'], :, :, :], axis=-3)
-
-    # Create datamatrix by depth
-    col_labels = {
-        'Country': dm_mix.col_labels['Country'].copy(),
-        'Years': dm_mix.col_labels['Years'].copy(),
-        'Variables': ['bld_floor-area-renovated'],
-        'Categories1': dm_mix.col_labels['Categories2'].copy()
-    }
-    dm_depth = DataMatrix(col_labels, units={'bld_floor-area-renovated': 'Mm2'})
-    dm_depth.array = arr_renovated[:, :, np.newaxis, :]
-    dm_depth.add(arr_constructed, dim='Variables', col_label='bld_floor-area-constructed', unit='Mm2')
+    arr_unrenovated = np.nansum(dm_floor_area.array[:, :, idx['bld_floor-area-unrenovated'], :], axis=-1)
+    arr_demolished = np.nansum(dm_floor_area.array[:, :, idx['bld_floor-area-demolished'], :], axis=-1)
     dm_depth.add(np.nan, dim='Variables', col_label=['bld_floor-area-unrenovated', 'bld_floor-area-demolished'],
                  unit=['Mm2', 'Mm2'], dummy=True)
     idx = dm_depth.idx
     dm_depth.array[:, :, idx['bld_floor-area-unrenovated'], idx['exi']] = arr_unrenovated
     dm_depth.array[:, :, idx['bld_floor-area-demolished'], idx['exi']] = arr_demolished
+    del arr_demolished, arr_unrenovated
 
-    # Add energy to dataframe
-    # Build the col_labels
-    var_name_list = []
-    for cat in dm_energy_heating.col_labels['Categories3']:
-        var_name_list.append('bld_energy-demand-space-heating-' + cat)
-    # Switch the last two axis
-    arr_energy_need = np.moveaxis(arr_energy_need, -2, -1)
-    dm_depth.add(arr_energy_need, dim='Variables', col_label=var_name_list, unit=['GWh', 'GWh', 'GWh'])
-    del arr_constructed, arr_demolished, arr_energy_need, arr_renovated, arr_unrenovated, col_labels, cat, var_name_list
+    # Add energy need for space heating 'constructed' 'renovated' 'unrenovated' as variables to dm_depth
+    # (drop buildings type split)
+    dm_space_heat = dm_energy_heating.filter({'Variables': ['bld_energy-need_space-heating']})
+    # Drop building types
+    dm_space_heat.group_all('Categories1')
+    dm_space_heat.switch_categories_order('Categories1', 'Categories2')
+    dm_space_heat = dm_space_heat.flatten().flatten()
+    dm_space_heat.deepen()
+    dm_space_heat.rename_col_regex('bld_energy-need_space-heating_', 'bld_energy-need_space-heating-', 'Variables')
+
+    dm_depth.append(dm_space_heat, dim='Variables')
 
     ###################
     ###  EMISSIONS  ###
