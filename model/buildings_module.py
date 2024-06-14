@@ -330,7 +330,6 @@ def compute_new_area_KNIME_version(dm_floor_area, dm_rates):
 
 def bld_floor_area_workflow(DM_floor_area, dm_lfs, baseyear):
     # Floor area and material workflow
-
     dm_building_mix = DM_floor_area['building_mix']
     idx_b = dm_building_mix.idx
     idx = dm_lfs.idx
@@ -356,6 +355,9 @@ def bld_floor_area_workflow(DM_floor_area, dm_lfs, baseyear):
     dm_floor_area.array[:, :, idx_f['bld_floor-area'], :] = dm_floor_area.array[:, :, idx_f['bld_floor-area'], :]/1000
     dm_floor_area.units['bld_floor-area'] = 'Mm2'
 
+    #################
+    # COMPUTE STOCK #
+    #################
     # It uses the total-floor area and the demolition rate to obtain floor area demolished constructed
     # if we want to use the stock function here, the demolition-rate is the renewal-rate,
     # the floor-area is the total stock. the demolished is the 'waste' and the constructed is the 'new'.
@@ -367,12 +369,9 @@ def bld_floor_area_workflow(DM_floor_area, dm_lfs, baseyear):
     dm_rr = DM_floor_area['buildings_rates'].filter({'Variables': ['bld_building-demolition-rate'], 'Categories2': ['exi']})
     dm_rr.group_all('Categories2')
     dm_floor_area.append(dm_rr, dim='Variables')
-
-    #################
-    # COMPUTE STOCK #
-    #################
+    # call to compute_stock
     compute_stock(dm_floor_area, rr_regex='bld_building-demolition-rate', tot_regex='bld_floor-area',
-                  waste_col='bld_floor-area-demolished', new_col='bld_floor-area-constructed')
+                  waste_col='bld_floor-area-demolished', new_col='bld_floor-area-constructed', out_type=float)
 
     # renovated area [Mm2] = renovation-rate [%] * floor area [Mm2]
     dm_rates = DM_floor_area['buildings_rates']
@@ -388,6 +387,11 @@ def bld_floor_area_workflow(DM_floor_area, dm_lfs, baseyear):
     dm_floor_area.operation('bld_floor-area_minus_constructed', '-', 'bld_floor-area-renovated',
                             out_col='bld_floor-area-unrenovated', unit='Mm2')
     dm_floor_area.drop('Variables', 'bld_floor-area_minus_constructed')
+
+    # Save area constructed in output for industry
+    dm_constructed = dm_floor_area.filter({'Variables': ['bld_floor-area-constructed']})
+    # Save renovated area for Costs
+    dm_renovated = dm_floor_area.filter({'Variables': ['bld_floor-area-renovated']})
 
     #################
     ### MATERIALS ###
@@ -407,10 +411,6 @@ def bld_floor_area_workflow(DM_floor_area, dm_lfs, baseyear):
     del arr_surf_constructed, arr_surf_renovated
     ### END OF MATERIALS
 
-    # Save area constructed in output for industry
-    dm_constructed = dm_floor_area.filter({'Variables': ['bld_floor-area-constructed']})
-    # Save renovated area for Costs
-    dm_renovated = dm_floor_area.filter({'Variables': ['bld_floor-area-renovated']})
 
     DM_floor_out = {}
     DM_floor_out['wf_energy'] = dm_floor_area
