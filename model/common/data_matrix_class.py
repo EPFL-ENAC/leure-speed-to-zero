@@ -596,7 +596,8 @@ class DataMatrix:
             if self.col_labels[d] != data2.col_labels[d]:
                 self.sort(dim=d)
                 data2.sort(dim=d)
-                assert (self.col_labels[d] == data2.col_labels[d])
+                if self.col_labels[d] != data2.col_labels[d]:
+                    raise ValueError(f'columns {self.col_labels[d]} do not match columns {data2.col_labels[d]}')
         # Check that across the dimension where you want to append the labels are different
         cols1 = set(self.col_labels[dim])
         cols2 = set(data2.col_labels[dim])
