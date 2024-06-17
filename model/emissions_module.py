@@ -460,7 +460,8 @@ def variables_for_tpe(dm_ems):
     dm_tpe.append(dm_tra_agg, "Variables")
     
     # buildings
-    dm_bld = dm_ems.filter_w_regex({"Variables" : ".*bld_emissions.*"})
+    # Emissions by fuel type
+    dm_bld = dm_ems.filter_w_regex({"Variables": "bld_emissions-CO2.*"})
     dm_bld.rename_col_regex("CO2", "CO2e", "Variables")
     dm_tpe.append(dm_bld, "Variables")
     
@@ -475,16 +476,17 @@ def variables_for_tpe(dm_ems):
     # total
     DM_total = {"lus": dm_lus_agg, # lus
                 # "agr" : dm_agr_agg, # agr
-                "fos" : dm_fos_agg, # fos (oil refinery)
-                "pow" : dm_pow_agg, # pow fos + dhg
-                "tra" : dm_tra_agg, # tra
-                "bld" : dm_bld_agg, # bld
-                "ind" : dm_ind_agg, # ind (includes amm)
-                "ind_biogen" : dm_clm_biogen_agg} # ind biogenic
+                "fos": dm_fos_agg, # fos (oil refinery)
+                "pow": dm_pow_agg, # pow fos + dhg
+                "tra": dm_tra_agg, # tra
+                "bld": dm_bld_agg, # bld
+                "ind": dm_ind_agg, # ind (includes amm)
+                "ind_biogen": dm_clm_biogen_agg} # ind biogenic
+
     dm_tot = dm_agr_agg.copy()
     for key in DM_total.keys():
         dm_tot.append(DM_total[key],"Variables")
-    dm_tot.groupby({"emissions-CO2e" : ".*"}, "Variables", regex = True, inplace = True)
+    dm_tot.groupby({"emissions-CO2e" : ".*"}, "Variables", regex=True, inplace=True)
     dm_tpe.append(dm_tot, "Variables")
     
     # sort
@@ -497,10 +499,11 @@ def simulate_buildings_to_emissions_input():
     dm = simulate_input(from_sector="buildings", to_sector="emissions")
     dm.rename_col("bld_residential-emissions-CO2_non_appliances", "bld_emissions-CO2_appliances_non-residential", "Variables")
     dm.rename_col("bld_residential-emissions-CO2_appliances", "bld_emissions-CO2_appliances_residential", "Variables")
-    dm = dm.filter({"Variables" : ["bld_emissions-CO2_gas-ff-natural", "bld_emissions-CO2_heat-ambient", 
+    dm = dm.filter({"Variables" : ["bld_emissions-CO2_gas-ff-natural", "bld_emissions-CO2_heat-ambient",
                                    "bld_emissions-CO2_heat-geothermal", "bld_emissions-CO2_heat-solar", 
                                    "bld_emissions-CO2_liquid-ff-heatingoil", "bld_emissions-CO2_solid-bio", 
                                    "bld_emissions-CO2_solid-ff-coal", "bld_emissions-CO2_appliances_non-residential"]})
+
     
     return dm
 
