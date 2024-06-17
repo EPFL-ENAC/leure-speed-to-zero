@@ -624,7 +624,7 @@ def land_carbon_dynamics_workflow(DM_land_use):
 
     # Unit conversion : tCO2 emitted/stocked => MtCO2 emitted/stocked
     DM_land_use['land_man_gap'].add(0.000001, dummy=True, col_label='t_to_Mt', dim='Variables', unit='t')
-    DM_land_use['land_man_gap'].operation('lus_land_lulucf_to', '*', 't_to_Mt', out_col='lus_emissions-CO2_land_to',
+    DM_land_use['land_man_gap'].operation('lus_land_lulucf_to', '*', 't_to_Mt', out_col='lus_emissions-CO2_land-to',
                                           unit='Mt')
 
     return DM_land_use
@@ -798,8 +798,9 @@ def landuse_emissions_interface(DM_land_use, write_xls=False):
 
     # Emission from converted land
     # (WARNING : this version accounts for the land rem within the land converted which differs from Knime)
-    dm_ems = DM_land_use['land_man_gap'].filter({'Variables': ['lus_emissions-CO2_land_to']})
-    dm_ems = dm_ems.flatten()
+    dm_ems = DM_land_use['land_man_gap'].filter({'Variables': ['lus_emissions-CO2_land-to']})
+    dm_ems = dm_ems.flatten(sep='-')
+
 
     if write_xls is True:
 
@@ -862,7 +863,7 @@ def local_land_use_run():
 
 # # run local
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/landuse_module.py"
-#database_from_csv_to_datamatrix()
+# database_from_csv_to_datamatrix()
 # start = time.time()
 # results_run = local_land_use_run()
 # end = time.time()

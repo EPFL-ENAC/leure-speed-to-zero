@@ -679,9 +679,6 @@ def emissions(lever_setting, years_setting, interface = Interface(), calibration
     # get variables for tpe
     dm_tpe = variables_for_tpe(dm_ems)
     
-    import pprint
-    pprint.pprint(dm_tpe.col_labels["Variables"])
-    
     results_run = dm_tpe.write_df()
 
     # return
@@ -706,10 +703,10 @@ def local_emissions_run():
     return results_run
 
 # run local
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/emissions_module.py"
+# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/emissions_module.py"
 # database_from_csv_to_datamatrix()
-start = time.time()
-results_run = local_emissions_run()
-end = time.time()
-print(end-start)
+# start = time.time()
+# results_run = local_emissions_run()
+# end = time.time()
+# print(end-start)
 
