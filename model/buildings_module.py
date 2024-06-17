@@ -630,7 +630,8 @@ def bld_energy_workflow(DM_energy, DM_clm, dm_floor_area, cdm_const):
 
     DM_energy_out['TPE'] = {
         'floor-area_energy-demand': dm_depth,
-        'floor-area': dm_floor_area.filter({'Variables': ['bld_floor-area', 'bld_space-heating']})
+        'floor-area': dm_floor_area.filter({'Variables': ['bld_floor-area', 'bld_space-heating']}),
+        'heat-emissions-by-bld': dm_floor_area.filter({'Variables': ['bld_CO2-emissions']})
     }
 
 
@@ -652,8 +653,7 @@ def bld_energy_workflow(DM_energy, DM_clm, dm_floor_area, cdm_const):
     }
 
     DM_energy_out['emissions'] = {
-        'heat-emissions-by-bld':  dm_floor_area.filter({'Variables': ['bld_CO2-emissions']}),
-        'heat-emissions-by-fuel': dm_CO2_by_fuel
+        'heat-emissions-by-fuel':  dm_CO2_by_fuel
     }
 
     DM_energy_out['wf_materials'] = {
@@ -1125,9 +1125,6 @@ def bld_power_interface(dm_appliances, dm_energy, dm_fuel, dm_light_heat):
 
 def bld_emissions_interface(dm_appliances, DM_energy):
 
-    # dm_emissions_bld = DM_energy['heat-emissions-by-bld']
-    # dm_emissions_bld.rename_col('bld_CO2-emissions', 'bld_emissions-CO2', dim='Variables')
-
     dm_emissions_fuel = DM_energy['heat-emissions-by-fuel'].filter({"Categories1" : ["gas-ff-natural", "heat-ambient", 
                                    "heat-geothermal", "heat-solar", 
                                    "liquid-ff-heatingoil", "solid-bio", 
@@ -1140,7 +1137,6 @@ def bld_emissions_interface(dm_appliances, DM_energy):
     # dm_appliances.rename_col('non-residential', 'non_appliances', dim='Categories1')
     # dm_appliances.rename_col('residential', 'appliances', dim='Categories1')
 
-    # dm_emissions_bld = dm_emissions_bld.flatten()
     dm_emissions_fuel = dm_emissions_fuel.flatten()
     dm_appliances = dm_appliances.flatten()
 
@@ -1222,6 +1218,20 @@ def bld_agriculture_interface(dm_agriculture):
 
     return dm_agriculture
 
+
+def bld_TPE_interface(dm_floor_energy, dm_floor, dm_emissions):
+
+    dm_emissions.rename_col('bld_CO2-emissions', 'bld_emissions-CO2e_by-bld-type', 'Variables')
+
+    df = dm_floor_energy.write_df()
+    df2 = dm_floor.write_df()
+    df3 = dm_emissions.write_df()
+
+    df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
+    df = pd.concat([df, df3.drop(columns=['Country', 'Years'])], axis=1)
+
+    return df
+
 def buildings(lever_setting, years_setting, interface=Interface()):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -1279,11 +1289,9 @@ def buildings(lever_setting, years_setting, interface=Interface()):
                                                                     cdm_const)
 
     # TPE
-    df = DM_energy_out['TPE']['floor-area_energy-demand'].write_df()
-    df2 = DM_energy_out['TPE']['floor-area'].write_df()
-    df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
-
-    results_run = df
+    results_run = bld_TPE_interface(DM_energy_out['TPE']['floor-area_energy-demand'].copy(),
+                                    DM_energy_out['TPE']['floor-area'].copy(),
+                                    DM_energy_out['TPE']['heat-emissions-by-bld'].copy())
 
     # 'District-heating' module interface
     DM_dhg = bld_district_heating_interface(DM_energy_out['district-heating'], DM_costs_out['industry'].copy(), write_xls=False)
