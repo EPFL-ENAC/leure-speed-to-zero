@@ -720,7 +720,7 @@ class DataMatrix:
 
         return
 
-    def flatten(self):
+    def flatten(self, sep='_'):
         # you can flatten only if you have at least one category
         assert len(self.dim_labels) > 3
         d_2 = self.dim_labels[-1]
@@ -744,14 +744,14 @@ class DataMatrix:
             for c2 in cols_2:
                 col_value = self.array[..., self.idx[c1], self.idx[c2], np.newaxis]
                 if not np.isnan(col_value).all():
-                    new_cols.append(f'{c1}_{c2}')
+                    new_cols.append(f'{c1}{sep}{c2}')
                     if i == 0:
                         i = i+1
                         new_array = col_value
                     else:
                         new_array = np.concatenate([new_array, col_value], axis=-1)
                     if d_1 == 'Variables':
-                        new_units[f'{c1}_{c2}'] = self.units[c1]
+                        new_units[f'{c1}{sep}{c2}'] = self.units[c1]
 
         new_col_labels[d_1] = new_cols
         if d_1 == 'Variables':
