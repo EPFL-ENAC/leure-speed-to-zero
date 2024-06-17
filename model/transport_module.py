@@ -65,6 +65,7 @@ def database_from_csv_to_datamatrix():
 
     dict_ots = {}
     dict_fts = {}
+    # !FIXME the same data are used for all levers
     # Read passenger levers
     file = 'transport_passenger-aviation-pkm'
     lever = 'passenger-aviation-pkm'
@@ -577,7 +578,7 @@ def passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const, years_sett
     PHEV_elec = 0.1 * np.nansum(dm_energy_phev.array, axis=-1)
     dm_energy.add(PHEV_elec, dim='Categories2', col_label='PHEV-elec')
 
-    dm_energy.array = dm_energy.array*0.277778
+    dm_energy.array = dm_energy.array*2.77778e-10
     dm_energy.units['tra_passenger_energy-demand'] = 'TWh'
 
     # Prepare output for energy
@@ -598,7 +599,7 @@ def passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const, years_sett
     dm_efuel.deepen()
 
     dm_electricity.append(dm_efuel, dim='Categories1')
-    dm_electricity.array = dm_electricity.array/1000
+    dm_electricity.array = dm_electricity.array*1000
     dm_electricity.units['tra_power-demand'] = 'GWh'
 
     DM_passenger_out = {
@@ -626,7 +627,7 @@ def passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const, years_sett
     # Power output
     dm_pow_hydrogen = dm_tot_energy.filter({'Categories1': ['hydrogen']})
     dm_pow_hydrogen.rename_col('tra_passenger_total-energy', 'tra_power-demand', dim='Variables')
-    dm_pow_hydrogen.array = dm_pow_hydrogen.array/1000
+    dm_pow_hydrogen.array = dm_pow_hydrogen.array*1000
     dm_pow_hydrogen.units['tra_power-demand'] = 'GWh'
     DM_passenger_out['power']['hydrogen'] = dm_pow_hydrogen.flatten()
 
@@ -715,6 +716,7 @@ def passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const, years_sett
     DM_passenger_out['fuel'] = dm_fuel
     DM_passenger_out['agriculture'] = dm_biogas
     DM_passenger_out['emissions'] = dm_emissions_by_mode
+    DM_passenger_out['energy'] = dm_tot_energy
 
     return DM_passenger_out
 
@@ -813,8 +815,11 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
     PHEV_elec = 0.1 * np.nansum(dm_energy_phev.array, axis=-1)
     dm_energy.add(PHEV_elec, dim='Categories2', col_label='PHEV-elec')
 
-    dm_energy.array = dm_energy.array*0.277778
+    dm_energy.array = dm_energy.array*2.77778e-10
     dm_energy.units['tra_freight_energy-demand'] = 'TWh'
+
+    dm_energy_by_mode = dm_energy.group_all(dim='Categories2', inplace=False)
+    dm_mode.append(dm_energy_by_mode, dim='Variables')
 
     # Prepare output for energy
     dm_electricity = dm_energy.groupby({'power-demand': ['BEV', 'CEV', 'PHEV-elec']}, dim='Categories2')
@@ -834,7 +839,7 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
     dm_efuel.deepen()
 
     dm_electricity.append(dm_efuel, dim='Categories1')
-    dm_electricity.array = dm_electricity.array/1000
+    dm_electricity.array = dm_electricity.array*1000
     dm_electricity.units['tra_power-demand'] = 'GWh'
 
     DM_freight_out = {
@@ -865,7 +870,7 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
     # Output to power:
     dm_pow_hydrogen = dm_total_energy.filter({'Categories1': ['hydrogen']})
     dm_pow_hydrogen.rename_col('tra_freight_total-energy', 'tra_power-demand', dim='Variables')
-    dm_pow_hydrogen.array = dm_pow_hydrogen.array/1000
+    dm_pow_hydrogen.array = dm_pow_hydrogen.array*1000
     dm_pow_hydrogen.units['tra_power-demand'] = 'GWh'
     DM_freight_out['power']['hydrogen'] = dm_pow_hydrogen.flatten()
 
@@ -932,9 +937,10 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
 
     DM_freight_out['mode'] = dm_mode
     DM_freight_out['tech'] = dm_tech
-    DM_freight_out['energy'] = dm_energy
+    DM_freight_out['energy'] = dm_total_energy
     DM_freight_out['agriculture'] = dm_biogas
     DM_freight_out['emissions'] = dm_emissions_by_mode
+
 
     return DM_freight_out
 
@@ -1038,11 +1044,31 @@ def prepare_TPE_output(DM_passenger_out, DM_freight_out):
 
     dm_keep_mode = DM_passenger_out['mode'].filter({'Variables': ['tra_passenger_transport-demand-by-mode',
                                                                   'tra_passenger_energy-demand-by-mode',
-                                                                  'tra_passenger_emissions-by-mode_CO2']})
+                                                                  'tra_passenger_vehicle-fleet',
+                                                                  'tra_passenger_new-vehicles']})
 
-    dm_keep_tech = DM_passenger_out['tech'].filter({'Variables': ['tra_passenger_technology-share-fleet']})
+    dm_keep_tech = DM_passenger_out['tech'].filter({'Variables': ['tra_passenger_vehicle-fleet'], 'Categories1': ['LDV']})
 
     dm_keep_fuel = DM_passenger_out['fuel']
+
+    dm_keep_energy = DM_passenger_out['energy'].copy()
+    dm_keep_energy.drop(dim='Categories1', col_label=['egasoline', 'ediesel', 'egas', 'ejetfuel'])
+
+    dm_freight_energy_by_mode = DM_freight_out['mode'].filter({'Variables': ['tra_freight_energy-demand']})
+    dm_freight_energy_by_mode.rename_col('tra_freight_energy-demand', 'tra_freight_energy-demand-by-mode', dim='Variables')
+    dm_freight_energy_by_mode.groupby({'HDV': 'HDV.*'}, dim='Categories1', inplace=True, regex=True)
+
+    dm_freight_energy_by_fuel = DM_freight_out['energy'].copy()
+    dm_freight_energy_by_fuel.drop(dim='Categories1', col_label=['egasoline', 'ediesel', 'egas', 'ejetfuel'])
+    dm_freight_energy_by_fuel.rename_col('tra_freight_total-energy', 'tra_freight_energy-demand-by-fuel', dim='Variables')
+
+    # Total energy demand
+    dm_energy_tot = DM_passenger_out['energy'].copy()
+    dm_energy_tot.group_all(dim='Categories1')
+    dm_energy_freight = DM_freight_out['energy'].copy()
+    dm_energy_freight.group_all(dim='Categories1')
+    dm_energy_tot.append(dm_energy_freight, dim='Variables')
+    dm_energy_tot.groupby({'tra_energy-demand_total': '.*'}, inplace=True, regex=True, dim='Variables')
 
     # Turn datamatrix to dataframe (because converter and TPE work with dataframes)
     df = dm_keep_mode.write_df()
@@ -1050,19 +1076,14 @@ def prepare_TPE_output(DM_passenger_out, DM_freight_out):
     df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
     df3 = dm_keep_fuel.write_df()
     df = pd.concat([df, df3.drop(columns=['Country', 'Years'])], axis=1)
-
-    # Dummy variable
-    dm_energy_tot = DM_passenger_out['mode'].filter({'Variables': ['tra_passenger_energy-demand-by-mode']})
-    dm_energy_tot.group_all(dim='Categories1')
-    dm_energy_freight = DM_freight_out['energy'].copy()
-    dm_energy_freight.group_all(dim='Categories2')
-    dm_energy_freight.group_all(dim='Categories1')
-    dm_energy_tot.append(dm_energy_freight, dim='Variables')
-    dm_energy_tot.operation('tra_passenger_energy-demand-by-mode', '+', 'tra_freight_energy-demand',
-                            out_col='tra_energy-demand_total', unit='TWh')
-    dm_energy_tot.filter({'Variables': ['tra_energy-demand_total']}, inplace=True)
-    df4 = dm_energy_tot.write_df()
+    df4 = dm_keep_energy.write_df()
     df = pd.concat([df, df4.drop(columns=['Country', 'Years'])], axis=1)
+    df5 = dm_freight_energy_by_mode.write_df()
+    df = pd.concat([df, df5.drop(columns=['Country', 'Years'])], axis=1)
+    df6 = dm_energy_tot.write_df()
+    df = pd.concat([df, df6.drop(columns=['Country', 'Years'])], axis=1)
+    df7 = dm_freight_energy_by_fuel.write_df()
+    df = pd.concat([df, df7.drop(columns=['Country', 'Years'])], axis=1)
 
     return df
 
@@ -1144,8 +1165,6 @@ def transport(lever_setting, years_setting, interface=Interface()):
     cdm_const_freight = cdm_const.copy()
     DM_freight_out = freight_fleet_energy(DM_freight, DM_other, cdm_const_freight, years_setting)
 
-    results_run = prepare_TPE_output(DM_passenger_out, DM_freight_out)
-
     # Power-module
     DM_power = DM_passenger_out['power']
     DM_power['hydrogen'].array = DM_power['hydrogen'].array + DM_freight_out['power']['hydrogen'].array
@@ -1180,6 +1199,8 @@ def transport(lever_setting, years_setting, interface=Interface()):
     # Emissions
     dm_emissions = tra_emissions_interface(DM_passenger_out['emissions'], DM_freight_out['emissions'], write_xls=False)
     interface.add_link(from_sector='transport', to_sector='emissions', dm=dm_emissions)
+
+    results_run = prepare_TPE_output(DM_passenger_out, DM_freight_out)
     return results_run
 
 
