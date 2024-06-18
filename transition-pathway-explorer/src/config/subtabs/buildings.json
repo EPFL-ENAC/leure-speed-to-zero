@@ -205,11 +205,10 @@
       "type": "StackedArea",
       "unit": "million m²",
       "outputs": [
-		{"id":"bld_floor-area-constructed_shl[million_m2]", "color": "#bfdbf6"},
-		{"id":"bld_floor-area-constructed_med[million_m2]", "color": "#7cb5ec"},
-		{"id":"bld_floor-area-constructed_dep[million_m2]", "color": "#398fe2"},
-		{"id":"bld_floor-area-demolished-pos[million_m2]", "color": "#bf8cde"},
-		{"id":"bld_floor-area-demolished_exi[million_m2]", "color": "#bf8cde"}
+		{"id":"bld_floor-area-constructed_shl[Mm2]", "color": "#bfdbf6"},
+		{"id":"bld_floor-area-constructed_med[Mm2]", "color": "#7cb5ec"},
+		{"id":"bld_floor-area-constructed_dep[Mm2]", "color": "#398fe2"},
+		{"id":"bld_floor-area-demolished_exi[Mm2]", "color": "#bf8cde"}
       ]
     },
    "EnergyNeedRenovationConstruction": {

@@ -16,9 +16,9 @@
       "route": "electricity-generation"
     },
     {
-      "title": "(De-)commissioning schedule",
-      "charts": ["DecommissioningSchedule"],
-      "route": "decommissioning-schedule"
+      "title": "Installed capacity",
+      "charts": ["InstalledCapacity"],
+      "route": "installed-capacity"
     },
     {
       "title": "Emissions from el. generation",
@@ -46,14 +46,14 @@
         "fos_primary-demand_gas[TWh]",
         "fos_primary-demand_oil[TWh]",
         "fos_primary-demand_coal[TWh]",
-        "elc_energy-production_electricity_geothermal[TWh]",
-        "elc_energy-production_electricity_hydroelectric[TWh]",
-        "elc_energy-production_electricity_marine[TWh]",
-        "elc_energy-production_electricity_concentrated_solar-power[TWh]",
-        "elc_energy-production_electricity_pv_solar-power[TWh]",
-        "elc_energy-production_electricity_offshore_wind[TWh]",
-        "elc_energy-production_electricity_onshore_wind[TWh]",
-        "elc_energy-demand_nuclear[TWh]",
+        "pow_gross-yearly-production_geothermal[TWh]",
+        "pow_gross-yearly-production_hydroelectric[TWh]",
+        "pow_gross-yearly-production_marine[TWh]",
+        "pow_gross-yearly-production_solar-csp[TWh]",
+        "pow_gross-yearly-production_solar-pv[TWh]",
+        "pow_gross-yearly-production_wind-offshore[TWh]",
+        "pow_gross-yearly-production_wind-onshore[TWh]",
+        "pow_gross-yearly-production_nuclear[TWh]",
         "bld_energy-demand_heat-renewable[TWh]",
         "ind_energy-demand_with-buildings_bio[TWh]"
       ]
@@ -74,27 +74,39 @@
       "unit": "TWh/year",
       "type": "Line",
       "outputs": [
-        "elc_energy-production_electricity_geothermal[TWh]",
-        "elc_energy-production_electricity_hydroelectric[TWh]",
-        "elc_energy-production_electricity_marine[TWh]",
-        "elc_energy-production_electricity_concentrated_solar-power[TWh]",
-        "elc_energy-production_electricity_pv_solar-power[TWh]",
-        "elc_energy-production_electricity_offshore_wind[TWh]",
-        "elc_energy-production_electricity_onshore_wind[TWh]",
-        "elc_energy-production_electricity_bio_mass[TWh]",
-        "elc_energy-production_electricity_fossil_coal[TWh]",
-        "elc_energy-production_electricity_fossil_gas[TWh]",
-        "elc_energy-production_electricity_fossil_oil[TWh]",
-        "elc_energy-production_electricity_nuclear[TWh]"
+        "pow_gross-yearly-production_geothermal[TWh]",
+        "pow_gross-yearly-production_hydroelectric[TWh]",
+        "pow_gross-yearly-production_marine[TWh]",
+        "pow_gross-yearly-production_solar-csp[TWh]",
+        "pow_gross-yearly-production_solar-pv[TWh]",
+        "pow_gross-yearly-production_offshore_wind[TWh]",
+        "pow_gross-yearly-production_onshore_wind[TWh]",
+        "pow_gross-yearly-production_biomass[TWh]",
+        "pow_gross-yearly-production_biogas[TWh]",
+        "pow_gross-yearly-production_coal[TWh]",
+        "pow_gross-yearly-production_gas[TWh]",
+        "pow_gross-yearly-production_oil[TWh]",
+        "pow_gross-yearly-production_nuclear[TWh]"
       ]
     },
-    "DecommissioningSchedule": {
-      "title": "Decommission and commission schedule per technology per country (GW/year)",
+    "InstalledCapacity": {
+      "title": "Installed capacity per technology per country (GW/year)",
       "unit": "GW/year",
       "type": "StackedArea",
       "outputs": [
-        "elc_old-capacity_fossil_coal[GW]",
-        "elc_old-capacity_nuclear[GW]"
+        "pow_existing-capacity_coal[GW]",
+        "pow_existing-capacity_oil[GW]",
+        "pow_existing-capacity_gas[GW]",
+        "pow_existing-capacity_nuclear[GW]",
+        "pow_existing-capacity_solar-pv[GW]",
+        "pow_existing-capacity_solar-csp[GW]",
+        "pow_existing-capacity_biogas[GW]",
+        "pow_existing-capacity_biomass[GW]",
+        "pow_existing-capacity_wind-offshore[GW]",
+        "pow_existing-capacity_wind-onshore[GW]",
+        "pow_existing-capacity_hydroelectric[GW]",
+        "pow_existing-capacity_geothermal[GW]",
+        "pow_existing-capacity_marine[GW]"
       ]
     },
     "EmissionsFromElGeneration": {
@@ -102,9 +114,9 @@
       "unit": "Mt CO2e/year",
       "type": "StackedArea",
       "outputs": [
-        "elc_emissions-CO2e_fossil_coal[Mt]",
-        "elc_emissions-CO2e_fossil_oil[Mt]",
-        "elc_emissions-CO2e_fossil_natural-gas[Mt]"
+        "pow_emissions-CO2e_fossil_coal[Mt]",
+        "pow_emissions-CO2e_fossil_oil[Mt]",
+        "pow_emissions-CO2e_fossil_gas[Mt]"
       ]
     },
     "Balancing": {
