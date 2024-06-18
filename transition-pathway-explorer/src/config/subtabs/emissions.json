@@ -54,7 +54,7 @@
         "pow_emissions-CO2e[Mt]",
         "pow_emissions-CO2e_fossil_coal[Mt]",
         "pow_emissions-CO2e_fossil_oil[Mt]",
-        "pow_emissions-CO2e_fossil_natural-gas[Mt]",
+        "pow_emissions-CO2e_fossil_gas[Mt]",
         "dhg_emissions-CO2e_added-district-heat-renewable[Mt]",
         "dhg_emissions-CO2e_added-district-heat-fossil[Mt]",
         "dhg_emissions-CO2e_heat-ambient[Mt]",
@@ -163,7 +163,7 @@
           "series": [
             "pow_emissions-CO2e_fossil_coal[Mt]",
             "pow_emissions-CO2e_fossil_oil[Mt]",
-            "pow_emissions-CO2e_fossil_natural-gas[Mt]",
+            "pow_emissions-CO2e_fossil_gas[Mt]",
             "dhg_emissions-CO2e_added-district-heat-renewable[Mt]",
             "dhg_emissions-CO2e_added-district-heat-fossil[Mt]"
           ]

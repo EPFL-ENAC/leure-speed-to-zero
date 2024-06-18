@@ -991,10 +991,19 @@ def pow_minerals_interface(dm_new_capacity, DM_yearly_demand):
         'energy': dm_new_capacity,
     }
 
-
-
     return DM_minerals
 
+
+def pow_TPE_interface(dm_production, dm_decommission):
+    # From GWh to TWh
+    dm_production.array = dm_production.array/1000
+    dm_production.units['pow_gross-yearly-production'] = 'TWh'
+
+    df = dm_production.write_df()
+    df2 = dm_decommission.write_df()
+    df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
+
+    return df
 #######################################################################################################################
 # CoreModule - Power
 #######################################################################################################################
@@ -1089,8 +1098,10 @@ def power(lever_setting, years_setting, interface=Interface()):
     interface.add_link(from_sector='power', to_sector='minerals', dm=DM_minerals)
     # concatenate all results to df
     #results_run = dm_capacity
+    dm_decommission = dm_capacity.filter({'Variables': ['pow_existing-capacity']})
+    results_run = pow_TPE_interface(dm_gross_production, dm_decommission)
 
-    return
+    return results_run
 
 
 #######################################################################################################################

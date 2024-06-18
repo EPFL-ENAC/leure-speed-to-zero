@@ -502,6 +502,7 @@ def bld_energy_workflow(DM_energy, DM_clm, dm_floor_area, cdm_const):
     list_var = ['bld_energy-need_space-heating_unrenovated', 'bld_energy-need_space-heating_renovated',
                 'bld_energy-need_space-heating_constructed']
     dm_energy_heating = dm_mix.filter({'Variables': list_var})
+    dm_TPE_out = dm_energy_heating.copy()
     dm_energy_heating.deepen(based_on='Variables')
     dm_mix.drop(col_label=list_var, dim='Variables')
     del list_var
@@ -628,11 +629,15 @@ def bld_energy_workflow(DM_energy, DM_clm, dm_floor_area, cdm_const):
     # Prepare output
     DM_energy_out = {}
 
+
     DM_energy_out['TPE'] = {
         'floor-area_energy-demand': dm_depth,
         'floor-area': dm_floor_area.filter({'Variables': ['bld_floor-area', 'bld_space-heating']}),
         'heat-emissions-by-bld': dm_floor_area.filter({'Variables': ['bld_CO2-emissions']}),
-        'energy-demand-by-fuel': dm_heating
+        'energy-demand-by-fuel': dm_heating,
+        'renovation': dm_mix.filter({'Variables': ['bld_floor-area-renovated', 'bld_floor-area-constructed']}),
+        'unrenovated': dm_floor_area.filter({'Variables': ['bld_floor-area-unrenovated']}),
+        'energy-reno': dm_TPE_out
     }
 
 
@@ -1253,14 +1258,30 @@ def bld_TPE_interface(DM_energy, dm_appliances, dm_hot_water, dm_elec_other):
     dm_energy_tot.array = dm_energy_tot.array/1000
     dm_energy_tot.units['bld_energy-demand_tot'] = 'TWh'
 
+    # Renovation
+    dm_reno = DM_energy['renovation']
+    dm_reno.group_all('Categories1', inplace=True)
+    dm_unreno = DM_energy['unrenovated']
+    dm_unreno.group_all('Categories1', inplace=True)
+    dm_unreno.rename_col('bld_floor-area-unrenovated', 'bld_floor-area-unrenovated_exi', 'Variables')
+    dm_energy_reno = DM_energy['energy-reno']
+    dm_energy_reno.group_all('Categories1', inplace=True)
+    dm_energy_reno.rename_col_regex('bld_energy-need_space-heating_', 'bld_energy-demand-space-heating-', 'Variables')
+
     df = dm_floor_energy.write_df()
     df2 = dm_floor.write_df()
     df3 = dm_emissions.write_df()
     df4 = dm_energy_tot.write_df()
+    df5 = dm_reno.write_df()
+    df6 = dm_unreno.write_df()
+    df7 = dm_energy_reno.write_df()
 
     df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
     df = pd.concat([df, df3.drop(columns=['Country', 'Years'])], axis=1)
     df = pd.concat([df, df4.drop(columns=['Country', 'Years'])], axis=1)
+    df = pd.concat([df, df5.drop(columns=['Country', 'Years'])], axis=1)
+    df = pd.concat([df, df6.drop(columns=['Country', 'Years'])], axis=1)
+    df = pd.concat([df, df7.drop(columns=['Country', 'Years'])], axis=1)
 
     return df
 
