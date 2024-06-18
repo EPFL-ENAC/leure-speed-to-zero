@@ -631,7 +631,8 @@ def bld_energy_workflow(DM_energy, DM_clm, dm_floor_area, cdm_const):
     DM_energy_out['TPE'] = {
         'floor-area_energy-demand': dm_depth,
         'floor-area': dm_floor_area.filter({'Variables': ['bld_floor-area', 'bld_space-heating']}),
-        'heat-emissions-by-bld': dm_floor_area.filter({'Variables': ['bld_CO2-emissions']})
+        'heat-emissions-by-bld': dm_floor_area.filter({'Variables': ['bld_CO2-emissions']}),
+        'energy-demand-by-fuel': dm_heating
     }
 
 
@@ -711,7 +712,7 @@ def bld_appliances_workflow(DM_appliances):
     dm_energy = dm_appliance.filter({'Variables': ['bld_energy-demand_appliances']})
     dm_energy.group_all(dim='Categories1')
     dm_energy.rename_col('bld_energy-demand_appliances', 'bld_power-demand_residential_appliances', dim='Variables')
-    dm_energy.array = dm_energy.array/1000
+    dm_energy.array = dm_energy.array/1e6
     dm_energy.units['bld_power-demand_residential_appliances'] = 'GWh'
 
     DM_appliance_out = {
@@ -985,10 +986,12 @@ def bld_fuel_switch_workflow(DM_fuel_switch, dm_fuel_switch, baseyear):
     dm_water_pow = dm_water_pow.flatten()
     dm_water_pow = dm_water_pow.flatten()
 
-    # ! FIXME: you are here, prepare output
+    dm_energy = dm_fuel_switch.group_all('Categories1', inplace=False)
+
     DM_fuel_switch_out = {
         'wf_emissions_appliances': dm_fuel_switch,
-        'power': dm_water_pow
+        'power': dm_water_pow,
+        'TPE': dm_energy
     }
 
     return DM_fuel_switch_out
@@ -1219,16 +1222,45 @@ def bld_agriculture_interface(dm_agriculture):
     return dm_agriculture
 
 
-def bld_TPE_interface(dm_floor_energy, dm_floor, dm_emissions):
+def bld_TPE_interface(DM_energy, dm_appliances, dm_hot_water, dm_elec_other):
+
+    dm_floor_energy = DM_energy['floor-area_energy-demand'].copy()
+    dm_floor = DM_energy['floor-area'].copy()
+    dm_emissions = DM_energy['heat-emissions-by-bld'].copy()
 
     dm_emissions.rename_col('bld_CO2-emissions', 'bld_emissions-CO2e_by-bld-type', 'Variables')
+
+    # Heat energy demand by fuel type
+    dm_energy_heat = DM_energy['energy-demand-by-fuel'].filter({'Variables': ['bld_space-heating-energy-demand']})
+
+    # Sum heat and hot water
+    dm_energy_tot = dm_energy_heat.group_all('Categories1', inplace=False)
+    dm_energy_tot.append(dm_hot_water, dim='Variables')
+    dm_energy_tot.groupby({'bld_energy-demand_tot': ['bld_hot-water-demand', 'bld_space-heating-energy-demand']}, dim='Variables', inplace=True)
+
+    # Group electricity demand from appliances, cooking, space-cooling, lighting
+    dm_electricity = dm_elec_other.copy()
+    dm_electricity.append(dm_appliances, dim='Variables')
+    dm_electricity.groupby({'bld_energy-demand_electricity': '.*'}, dim='Variables', inplace=True, regex=True)
+
+    # Add electricity demand to total bld energy demand
+    idx = dm_energy_tot.idx
+    idx_el = dm_electricity.idx
+    dm_energy_tot.array[:, :, idx['bld_energy-demand_tot'], idx['electricity']] += \
+        dm_electricity.array[:, :, idx_el['bld_energy-demand_electricity']]
+
+    # From GWh to TWh
+    dm_energy_tot.array = dm_energy_tot.array/1000
+    dm_energy_tot.units['bld_energy-demand_tot'] = 'TWh'
 
     df = dm_floor_energy.write_df()
     df2 = dm_floor.write_df()
     df3 = dm_emissions.write_df()
+    df4 = dm_energy_tot.write_df()
 
     df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
     df = pd.concat([df, df3.drop(columns=['Country', 'Years'])], axis=1)
+    df = pd.concat([df, df4.drop(columns=['Country', 'Years'])], axis=1)
 
     return df
 
@@ -1289,9 +1321,8 @@ def buildings(lever_setting, years_setting, interface=Interface()):
                                                                     cdm_const)
 
     # TPE
-    results_run = bld_TPE_interface(DM_energy_out['TPE']['floor-area_energy-demand'].copy(),
-                                    DM_energy_out['TPE']['floor-area'].copy(),
-                                    DM_energy_out['TPE']['heat-emissions-by-bld'].copy())
+    results_run = bld_TPE_interface(DM_energy_out['TPE'], DM_appliances_out['power'],
+                                    DM_fuel_switch_out['TPE'], DM_light_heat_out['power'])
 
     # 'District-heating' module interface
     DM_dhg = bld_district_heating_interface(DM_energy_out['district-heating'], DM_costs_out['industry'].copy(), write_xls=False)
