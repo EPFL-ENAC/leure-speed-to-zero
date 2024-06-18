@@ -88,15 +88,14 @@
       "type": "StackedArea",
       "unit": "Mt",
       "outputs": [
-		"bld_emissions-CO2e_residential_sfh[Mt]",
-		"bld_emissions-CO2e_residential_mfh[Mt]",
-		"bld_emissions-CO2e_non-residential_offices[Mt]",
-		"bld_emissions-CO2e_non-residential_hotels[Mt]",
-		"bld_emissions-CO2e_non-residential_education[Mt]",
-		"bld_emissions-CO2e_non-residential_health[Mt]",
-		"bld_emissions-CO2e_non-residential_trade[Mt]",
-		"bld_emissions-CO2e_non-residential_other[Mt]",
-		"dhg_emissions-CO2e_heat-district[Mt]"
+        "bld_emissions-CO2e_by-bld-type_education[Mt]",
+        "bld_emissions-CO2e_by-bld-type_health[Mt]",
+        "bld_emissions-CO2e_by-bld-type_hotels[Mt]",
+        "bld_emissions-CO2e_by-bld-type_multi-family-households[Mt]",
+        "bld_emissions-CO2e_by-bld-type_offices[Mt]",
+        "bld_emissions-CO2e_by-bld-type_other[Mt]",
+        "bld_emissions-CO2e_by-bld-type_single-family-households[Mt]",
+        "bld_emissions-CO2e_by-bld-type_trade[Mt]"
       ]
     },
 	"GHGEmissionsPerCarrier": {
@@ -123,21 +122,20 @@
       "type": "StackedArea",
       "unit": "TWh",
       "outputs": [
-		{"id":"bld_energy-demand_alluses_solid-waste[TWh]", "color": "#5b5b61"},
-		{"id":"bld_energy-demand_alluses_liquid-bio[TWh]", "color": "#15518d"},
-		{"id":"bld_energy-demand_alluses_gas-bio[TWh]", "color": "#bf8cde"},
-		{"id":"bld_energy-demand_alluses_heat-geothermal[TWh]", "color": "#f7a35c"},
-		{"id":"bld_energy-demand_alluses_heat-solar[TWh]", "color": "#e4d354"},
-		{"id":"bld_energy-demand_alluses_heat-ambient[TWh]", "color": "#7cb5ec"},
+		{"id":"bld_energy-demand_tot_solid-waste[TWh]", "color": "#5b5b61"},
+		{"id":"bld_energy-demand_tot_liquid-bio[TWh]", "color": "#15518d"},
+		{"id":"bld_energy-demand_tot_gas-bio[TWh]", "color": "#bf8cde"},
+		{"id":"bld_energy-demand_tot_heat-geothermal[TWh]", "color": "#f7a35c"},
+		{"id":"bld_energy-demand_tot_heat-solar[TWh]", "color": "#e4d354"},
+		{"id":"bld_energy-demand_tot_heat-ambient[TWh]", "color": "#7cb5ec"},
 		{"id":"dhg_energy-demand_added-district-heat_renewable[TWh]", "color": "#aee791"},
 		{"id":"dhg_energy-demand_added-district-heat_fossil[TWh]", "color": "#f45b5b"},
 		{"id":"dhg_energy-demand_co-product-heat[TWh]", "color": "#8085e9"},
-		{"id":"bld_energy-demand_alluses_solid-ff-coal[TWh]", "color": "#434348"},
-		{"id":"bld_energy-demand_alluses_liquid-ff-heatingoil[TWh]", "color": "#2b908f"},
-		{"id":"bld_energy-demand_alluses_gas-ff-natural[TWh]", "color": "#e4d354"},
-		{"id":"bld_energy-demand_alluses_solid-bio[TWh]", "color": "#90ed7d"},
-		{"id":"bld_energy-demand_heat_electricity[TWh]", "color": "#f15c80"},
-		{"id":"bld_energy-demand_non-sh_electricity[TWh]", "color": "#5b5b61"}
+		{"id":"bld_energy-demand_tot_solid-ff-coal[TWh]", "color": "#434348"},
+		{"id":"bld_energy-demand_tot_liquid-ff-heatingoil[TWh]", "color": "#2b908f"},
+		{"id":"bld_energy-demand_tot_gas-ff-natural[TWh]", "color": "#e4d354"},
+		{"id":"bld_energy-demand_tot_solid-bio[TWh]", "color": "#90ed7d"},
+		{"id":"bld_energy-demand_tot_electricity[TWh]", "color": "#f15c80"}
       ]
     },
     "GHGEmissionsPerCarrierDHG": {
