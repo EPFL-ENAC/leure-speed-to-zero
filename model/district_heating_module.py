@@ -435,6 +435,18 @@ def dhg_costs_workflow(dm_fuel, dm_pipes, dm_cap, dm_rr, dm_price, cdm_cost, bas
 
 
 def dhg_TPE_interface(DM_energy, DM_emissions):
+
+    # Compute total energy demand
+    dm_energy_added = DM_energy['added-district-heating'].copy()
+    dm_energy_added.groupby({'fossil': ['gas-ff-natural', 'liquid-ff-heatingoil', 'solid-ff-coal'] ,
+                           'renewable': ['heat-ambient', 'heat-geothermal', 'heat-solar', 'solid-bio']}, dim='Categories1', inplace=True)
+    dm_energy_added = dm_energy_added.flatten()
+
+    dm_energy_coproduct = DM_energy['heat-co-product'].groupby({'dhg_energy-demand_co-product-heat': 'dhg_energy-demand_heat-co-product_.*'},
+                                                               dim='Variables', inplace=False, regex=True)
+    dm_energy_added.append(dm_energy_coproduct, dim='Variables')
+    dm_tot_energy = dm_energy_added.groupby({'dhg_energy-demand_heat-district': '.*'}, dim='Variables', regex=True, inplace=False)
+
     # Merge energy output
     dm_energy = DM_energy['added-district-heating'].flatten()
     dm_energy.append(DM_energy['heat-co-product'], dim='Variables')
@@ -443,8 +455,15 @@ def dhg_TPE_interface(DM_energy, DM_emissions):
     dm_emissions.append(DM_emissions['heat-co-product'].flatten(), dim='Variables')
 
     dm_energy.append(dm_emissions, dim='Variables')
-    df_TPE = dm_energy.write_df()
-    return df_TPE
+
+    df = dm_energy.write_df()
+    df2 = dm_tot_energy.write_df()
+    df3 = dm_energy_added.write_df()
+
+    df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
+    df = pd.concat([df, df3.drop(columns=['Country', 'Years'])], axis=1)
+
+    return df
 
 
 def district_heating(lever_setting, years_setting, interface=Interface()):
@@ -497,9 +516,9 @@ def district_heating(lever_setting, years_setting, interface=Interface()):
 
     #!FIXME: some dhg output to TPE are computed during the 'cube' but it is not working,...
     # ....fix this by computing the variables directly here
-    df_TPE = dhg_TPE_interface(DM_energy_out['TPE'], DM_emissions_out['TPE'])
+    results_run = dhg_TPE_interface(DM_energy_out['TPE'], DM_emissions_out['TPE'])
 
-    return df_TPE
+    return results_run
 
 
 def district_heating_local_run():

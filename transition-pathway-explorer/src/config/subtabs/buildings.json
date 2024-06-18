@@ -72,15 +72,15 @@
       "type": "StackedArea",
       "unit": "GWh",
       "outputs": [
-    "bld_space-heating_single-family-households[GWh]",
-    "bld_space-heating_multi-family-households[GWh]",
-    "bld_space-heating_offices[GWh]",
-    "bld_space-heating_hotels[GWh]",
-    "bld_space-heating_education[GWh]",
-    "bld_space-heating_health[GWh]",
-    "bld_space-heating_trade[GWh]",
-    "bld_space-heating_other[GWh]",
-    "dhg_energy-demand_heat-district[TWh]"
+        "bld_space-heating_single-family-households[GWh]",
+        "bld_space-heating_multi-family-households[GWh]",
+        "bld_space-heating_offices[GWh]",
+        "bld_space-heating_hotels[GWh]",
+        "bld_space-heating_education[GWh]",
+        "bld_space-heating_health[GWh]",
+        "bld_space-heating_trade[GWh]",
+        "bld_space-heating_other[GWh]",
+        "dhg_energy-demand_heat-district[TWh]"
       ]
     },
     "SHGHGEmissionsPerBuildingType": {
