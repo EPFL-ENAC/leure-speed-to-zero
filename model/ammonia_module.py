@@ -364,7 +364,7 @@ def material_production(DM_ots_fts, dm_material_demand):
     # get aggregate demand
     dm_matdec_agg = dm_material_demand.group_all(dim='Categories1', inplace=False)
     dm_matdec_agg.array = dm_matdec_agg.array * 0.001
-    dm_matdec_agg.units["mineral-decomposition"] = "kt"
+    dm_matdec_agg.units["material-decomposition"] = "kt"
     dm_matdec_agg.filter({"Categories1" : ["ammonia"]}, inplace = True)
     
     # efficiency
@@ -822,50 +822,73 @@ def compute_costs(CDM_const, DM_fxa, DM_material_production, DM_emissions):
     # return
     return DM_cost
 
-def variables_for_tpe(DM_cost, DM_emissions, DM_material_production, DM_energy_demand):
+def variables_for_tpe(DM_cost, DM_emissions, DM_material_production, DM_energy_demand, DM_ind):
     
-    # adjust variables' names
-    DM_cost["material-production_capex"].rename_col_regex("capex", "investment", "Variables")
-    DM_cost["material-production_capex"].rename_col('ammonia-amm-tech','amm-tech',"Categories1")
-    DM_cost["CO2-capt-w-cc_capex"].rename_col_regex("capex", "investment_CC", "Variables")
-    DM_cost["CO2-capt-w-cc_capex"].rename_col_regex("ammonia-amm-tech", "amm-tech", "Categories1")
-    DM_cost["material-production_opex"].rename_col_regex("opex", "operating-costs", "Variables")
-    DM_cost["material-production_opex"].rename_col('ammonia-amm-tech','amm-tech',"Categories1")
-    DM_cost["CO2-capt-w-cc_opex"].rename_col_regex("opex", "operating-costs_CC", "Variables")
-    DM_cost["CO2-capt-w-cc_opex"].rename_col_regex("ammonia-amm-tech", "amm-tech", "Categories1")
-    DM_emissions["bygas"] = DM_emissions["bygas"].flatten()
-    DM_emissions["bygas"].rename_col_regex("_","-","Variables")
-    variables = DM_material_production["bytech"].col_labels["Categories1"]
-    variables_new = [rename_tech_fordeepen(i) for i in variables]
-    for i in range(len(variables)):
-        DM_material_production["bytech"].rename_col(variables[i], variables_new[i], dim = "Categories1")
-    DM_material_production["bymat"].array = DM_material_production["bymat"].array / 1000
-    DM_material_production["bymat"].units["material-production"] = "Mt"
+    # production of chemicals (chem in ind + chem in ammonia)
+    dm_tpe = DM_material_production["bymat"].copy()
+    dm_tpe.array = dm_tpe.array/1000000
+    dm_tpe.units["material-production"] = "Mt"
+    dm_tpe.append(DM_ind["material-production"], "Categories1")
+    dm_tpe.group_all("Categories1")
+    dm_tpe.rename_col("material-production","ind_material-production_chemicals","Variables")
+    
+    # energy demand chemicals
+    dm_temp = DM_energy_demand["bymat"].copy()
+    dm_temp.append(DM_ind["energy-demand"].group_all("Categories2", inplace=False), "Categories1")
+    dm_temp.group_all("Categories1")
+    dm_temp.rename_col("energy-demand","ind_energy-demand_chemicals","Variables")
+    dm_tpe.append(dm_temp, "Variables")
+    
+    # energy demand chemicals by energy carriers
+    dm_temp = DM_energy_demand["bymatcarr"].copy()
+    dm_temp.append(DM_ind["energy-demand"], "Categories1")
+    dm_temp.group_all("Categories1")
+    dm_temp.rename_col("energy-demand","ind_energy-demand_chemicals","Variables")
+    dm_tpe.append(dm_temp.flatten(), "Variables")
+    
+    # # NOTE: FOR THE MOMENT THE CODE BELOW IS COMMENTED OUT, TO KEEP UNTIL WE FINALIZE THE TPE
+    # # adjust variables' names
+    # DM_cost["material-production_capex"].rename_col_regex("capex", "investment", "Variables")
+    # DM_cost["material-production_capex"].rename_col('ammonia-amm-tech','amm-tech',"Categories1")
+    # DM_cost["CO2-capt-w-cc_capex"].rename_col_regex("capex", "investment_CC", "Variables")
+    # DM_cost["CO2-capt-w-cc_capex"].rename_col_regex("ammonia-amm-tech", "amm-tech", "Categories1")
+    # DM_cost["material-production_opex"].rename_col_regex("opex", "operating-costs", "Variables")
+    # DM_cost["material-production_opex"].rename_col('ammonia-amm-tech','amm-tech',"Categories1")
+    # DM_cost["CO2-capt-w-cc_opex"].rename_col_regex("opex", "operating-costs_CC", "Variables")
+    # DM_cost["CO2-capt-w-cc_opex"].rename_col_regex("ammonia-amm-tech", "amm-tech", "Categories1")
+    # DM_emissions["bygas"] = DM_emissions["bygas"].flatten()
+    # DM_emissions["bygas"].rename_col_regex("_","-","Variables")
+    # variables = DM_material_production["bytech"].col_labels["Categories1"]
+    # variables_new = [rename_tech_fordeepen(i) for i in variables]
+    # for i in range(len(variables)):
+    #     DM_material_production["bytech"].rename_col(variables[i], variables_new[i], dim = "Categories1")
+    # DM_material_production["bymat"].array = DM_material_production["bymat"].array / 1000
+    # DM_material_production["bymat"].units["material-production"] = "Mt"
 
-    # dm_tpe
-    dm_tpe = DM_emissions["bygas"].copy()
-    dm_tpe.append(DM_energy_demand["bymat"].flatten(), "Variables")
-    dm_tpe.append(DM_energy_demand["bycarr"].flatten(), "Variables")
-    dm_tpe.append(DM_cost["CO2-capt-w-cc_capex"].filter({"Variables" : ["investment_CC"]}).flatten(), "Variables")
-    dm_tpe.append(DM_cost["material-production_capex"].filter({"Variables" : ["investment"]}).flatten(), "Variables")
-    dm_tpe.append(DM_cost["CO2-capt-w-cc_opex"].filter({"Variables" : ["operating-costs_CC"]}).flatten(), "Variables")
-    dm_tpe.append(DM_cost["material-production_opex"].filter({"Variables" : ["operating-costs"]}).flatten(), "Variables")
-    dm_tpe.append(DM_material_production["bymat"].flatten(), "Variables")
-    variables = dm_tpe.col_labels["Variables"]
-    for i in variables:
-        dm_tpe.rename_col(i, "amm_" + i, "Variables")
-    variables = ['amm_investment_CC_amm-tech', 'amm_investment_amm-tech', 
-                 'amm_operating-costs_CC_amm-tech', 'amm_operating-costs_amm-tech']
-    variables_new = ['ind_investment_CC_amm-tech', 'ind_investment_amm-tech', 
-                     'ind_operating-costs_CC_amm-tech', 'ind_operating-costs_amm-tech']
-    for i in range(len(variables)):
-        dm_tpe.rename_col(variables[i], variables_new[i], "Variables")
-    dm_tpe.sort("Variables")
+    # # dm_tpe
+    # dm_tpe = DM_emissions["bygas"].copy()
+    # dm_tpe.append(DM_energy_demand["bymat"].flatten(), "Variables")
+    # dm_tpe.append(DM_energy_demand["bycarr"].flatten(), "Variables")
+    # dm_tpe.append(DM_cost["CO2-capt-w-cc_capex"].filter({"Variables" : ["investment_CC"]}).flatten(), "Variables")
+    # dm_tpe.append(DM_cost["material-production_capex"].filter({"Variables" : ["investment"]}).flatten(), "Variables")
+    # dm_tpe.append(DM_cost["CO2-capt-w-cc_opex"].filter({"Variables" : ["operating-costs_CC"]}).flatten(), "Variables")
+    # dm_tpe.append(DM_cost["material-production_opex"].filter({"Variables" : ["operating-costs"]}).flatten(), "Variables")
+    # dm_tpe.append(DM_material_production["bymat"].flatten(), "Variables")
+    # variables = dm_tpe.col_labels["Variables"]
+    # for i in variables:
+    #     dm_tpe.rename_col(i, "amm_" + i, "Variables")
+    # variables = ['amm_investment_CC_amm-tech', 'amm_investment_amm-tech', 
+    #              'amm_operating-costs_CC_amm-tech', 'amm_operating-costs_amm-tech']
+    # variables_new = ['ind_investment_CC_amm-tech', 'ind_investment_amm-tech', 
+    #                  'ind_operating-costs_CC_amm-tech', 'ind_operating-costs_amm-tech']
+    # for i in range(len(variables)):
+    #     dm_tpe.rename_col(variables[i], variables_new[i], "Variables")
+    # dm_tpe.sort("Variables")
 
     # df_tpe
     df_tpe = dm_tpe.write_df()
 
-    del dm_tpe, i, variables, variables_new
+    del dm_tpe
     
     # return
     return df_tpe
@@ -1011,6 +1034,20 @@ def simulate_agriculture_to_ammonia_input():
     dm_agr.deepen()
     
     return dm_agr
+
+def simulate_industry_to_ammonia():
+    
+    dm_ind = simulate_input(from_sector='industry', to_sector='ammonia')
+    
+    dm_ind_matprod = dm_ind.filter({"Variables" : ["material-production_chem"]})
+    dm_ind_matprod.deepen()
+    
+    dm_ind_endem = dm_ind.filter_w_regex({"Variables" : "^((?!material-production).)*$"})
+    dm_ind_endem.deepen_twice()
+    DM_ind = {"material-production" : dm_ind_matprod,
+              "energy-demand" : dm_ind_endem}
+    
+    return DM_ind
     
 
 def ammonia(lever_setting, years_setting, interface = Interface(), calibration = False):
@@ -1023,7 +1060,7 @@ def ammonia(lever_setting, years_setting, interface = Interface(), calibration =
     dm_fxa = DM_fxa['liquid']
     cntr_list = dm_fxa.col_labels['Country']
     
-    # get / simulate interfaces
+    # get / simulate agriculture
     if interface.has_link(from_sector='agriculture', to_sector='ammonia'):
         dm_agriculture = interface.get_link(from_sector='agriculture', to_sector='ammonia')
     else:
@@ -1031,6 +1068,16 @@ def ammonia(lever_setting, years_setting, interface = Interface(), calibration =
             print('You are missing agriculture to ammonia interface')
         dm_agriculture = simulate_agriculture_to_ammonia_input()
         dm_agriculture = dm_agriculture.filter({'Country': cntr_list})
+    
+    # get / simulate industry
+    if interface.has_link(from_sector='industry', to_sector='ammonia'):
+        DM_ind = interface.get_link(from_sector='industry', to_sector='ammonia')
+    else:
+        if len(interface.list_link()) != 0:
+            print('You are missing industry to ammonia interface')
+        DM_ind = simulate_industry_to_ammonia()
+        for key in DM_ind.keys():
+            DM_ind[key] = DM_ind[key].filter({'Country': cntr_list})
     
     # get product import of fertilizer
     dm_imp = DM_ots_fts["product-net-import"]
@@ -1080,7 +1127,7 @@ def ammonia(lever_setting, years_setting, interface = Interface(), calibration =
     DM_cost = compute_costs(CDM_const, DM_fxa, DM_material_production, DM_emissions)
     
     # get variables for tpe (also writes in DM_cost, DM_emissions and DM_material_production for renaming)
-    df = variables_for_tpe(DM_cost, DM_emissions, DM_material_production, DM_energy_demand)
+    df = variables_for_tpe(DM_cost, DM_emissions, DM_material_production, DM_energy_demand, DM_ind)
     
     # interface power
     DM_power = ammonia_power_interface(DM_energy_demand)

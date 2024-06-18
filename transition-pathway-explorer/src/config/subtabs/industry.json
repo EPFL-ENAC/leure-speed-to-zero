@@ -245,15 +245,15 @@
       "unit": "TWh",
       "type": "StackedArea",
       "outputs": [
-        "ind_energy-demand_chem_electricity[TWh]",
-        "ind_energy-demand_chem_solid-ff-coal[TWh]",
-        "ind_energy-demand_chem_liquid-ff-oil[TWh]",
-        "ind_energy-demand_chem_gas-ff-natural[TWh]",
-        "ind_energy-demand_chem_solid-bio[TWh]",
-        "ind_energy-demand_chem_liquid-bio[TWh]",
-        "ind_energy-demand_chem_gas-bio[TWh]",
-        "ind_energy-demand_chem_solid-waste[TWh]",
-        "ind_energy-demand_chem_hydrogen[TWh]"
+        "ind_energy-demand_chemicals_electricity[TWh]",
+        "ind_energy-demand_chemicals_solid-ff-coal[TWh]",
+        "ind_energy-demand_chemicals_liquid-ff-oil[TWh]",
+        "ind_energy-demand_chemicals_gas-ff-natural[TWh]",
+        "ind_energy-demand_chemicals_solid-bio[TWh]",
+        "ind_energy-demand_chemicals_liquid-bio[TWh]",
+        "ind_energy-demand_chemicals_gas-bio[TWh]",
+        "ind_energy-demand_chemicals_solid-waste[TWh]",
+        "ind_energy-demand_chemicals_hydrogen[TWh]"
       ]
     }
   }
