@@ -79,11 +79,11 @@
       "type": "StackedArea",
       "modifier": "round",
       "outputs": [
-        "agr_liv-population_meat_bovine[lsu]",
-        "agr_liv-population_meat_pig[lsu]",
-        "agr_liv-population_meat_poultry[lsu]",
-        "agr_liv-population_meat_sheep[lsu]",
-        "agr_liv-population_meat_oth-animals[lsu]"
+        "agr_liv_population_meat-bovine[lsu]",
+        "agr_liv_population_meat-pig[lsu]",
+        "agr_liv_population_meat-poultry[lsu]",
+        "agr_liv_population_meat-sheep[lsu]",
+        "agr_liv_population_meat-oth-animals[lsu]"
       ]
     },
     "AnimalBasedFoodProduction": {

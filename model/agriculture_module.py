@@ -2205,6 +2205,18 @@ def agriculture_refinery_interface(DM_energy_ghg):
     
     return dm_ref
 
+
+def agriculture_TPE_interface(dm_livestock):
+
+    dm_live_meat = dm_livestock.filter_w_regex({'Variables': 'agr_liv_population', 'Categories1': 'meat.*'}, inplace=False)
+
+    df = dm_live_meat.write_df()
+
+    # df2 = dm_keep_tech.write_df()
+    # df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
+
+    return df
+
 # ----------------------------------------------------------------------------------------------------------------------
 # AGRICULTURE ----------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
@@ -2295,7 +2307,9 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     dm_minerals = agriculture_minerals_interface(DM_nitrogen, DM_bioenergy, dm_lgn)
     interface.add_link(from_sector='agriculture', to_sector='minerals', dm=dm_minerals)
 
-    return
+    results_run = agriculture_TPE_interface(DM_livestock['caf_liv_population'])
+
+    return results_run
 
 def agriculture_local_run():
     years_setting, lever_setting = init_years_lever()
