@@ -290,12 +290,15 @@ def wood_workflow(dm_wood, dm_lgn, DM_ind):
     dm_wood.append(dm_biomaterial, dim='Variables')
     dm_wood.deepen()
 
+    # Creating a copy for the TPE
+    dm_wood_TPE = dm_wood.copy()
+
     # Total wood demand [m3] = Wood-fuel demand + Timber + Woodpulp + Wood for other uses
     dm_wood.groupby({'total': '.*'}, dim='Categories1', regex=True, inplace=True)
 
     # Calibration Wood demand
 
-    return dm_wood
+    return dm_wood, dm_wood_TPE
 
 # CalculationLeaf LAND ALLOCATION
 def land_allocation_workflow(DM_land_use, dm_land_use):
@@ -812,6 +815,26 @@ def landuse_emissions_interface(DM_land_use, write_xls=False):
 
     return dm_ems
 
+def landuse_TPE(DM_land_use, dm_wood_TPE):
+
+    # Land allocation
+    dm_land_allocation = DM_land_use['land_man_use'].filter({'Variables': ['lus_land']})
+    df = dm_land_allocation.write_df()
+
+    # Forestry Production
+    df2 = dm_wood_TPE.write_df()
+
+    # Land emissions
+    # Note : Name selected to differ with other one similar in the TPE
+    dm_land_emissions = DM_land_use['land_man_gap'].filter({'Variables': ['lus_emissions-CO2_land-to']})
+    df3 = dm_land_emissions.write_df()
+
+    # Concatenating dfs together
+    df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
+    df = pd.concat([df, df3.drop(columns=['Country', 'Years'])], axis=1)
+
+    return df
+
 def land_use(lever_setting, years_setting, interface = Interface(), calibration = False):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -839,7 +862,7 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
             DM_agr[key].filter({'Country': cntr_list}, inplace=True)
 
     # CalculationTree LAND USE
-    dm_wood = wood_workflow(DM_agr["wood"], DM_agr["lgn"], DM_ind)
+    dm_wood, dm_wood_TPE = wood_workflow(DM_agr["wood"], DM_agr["lgn"], DM_ind)
     DM_land_use = land_allocation_workflow(DM_land_use, DM_agr["landuse"])
     DM_land_use = land_matrix_workflow(DM_land_use)
     DM_land_use = land_carbon_dynamics_workflow(DM_land_use)
@@ -852,7 +875,11 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
     dm_climate = landuse_emissions_interface(DM_land_use)
     interface.add_link(from_sector='land-use', to_sector='emissions', dm=dm_climate)
 
-    return
+    # TPE OUTPUT -------------------------------------------------------------------------------------------------------
+    results_run = landuse_TPE(DM_land_use, dm_wood_TPE)
+
+
+    return results_run
 
 def local_land_use_run():
     years_setting, lever_setting = init_years_lever()
@@ -865,7 +892,7 @@ def local_land_use_run():
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/landuse_module.py"
 # database_from_csv_to_datamatrix()
 # start = time.time()
-# results_run = local_land_use_run()
+#results_run = local_land_use_run()
 # end = time.time()
 # print(end-start)
 
