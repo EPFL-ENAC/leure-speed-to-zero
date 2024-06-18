@@ -1341,24 +1341,58 @@ def variables_for_tpe(DM_cost, dm_bld_matswitch_savings_bymat, DM_emissions, DM_
     variables_new = [rename_tech_fordeepen(i) for i in variables]
     for i in range(len(variables)):
         DM_material_production["bytech"].rename_col(variables[i], variables_new[i], dim = "Categories1")
-
-    # dm_tpe
-    dm_tpe = DM_emissions["bygas"].copy()
+        
+    # convert kt to mt
+    dm_temp = DM_material_production["bymat"]
+    dm_temp.array = dm_temp.array / 1000
+    dm_temp.units["material-production"] = "Mt"
+    dm_temp = DM_material_production["bytech"]
+    dm_temp.array = dm_temp.array / 1000
+    dm_temp.units["material-production"] = "Mt"
+        
+    # material production total (chemicals done in ammonia)
+    dm_tpe = DM_material_production["bymat"].filter({"Categories1" : ["aluminium","cement","copper",
+                                                                      "glass","lime","paper","steel"]})
+    dm_tpe = dm_tpe.flatten()
+    
+    # energy demand by material
     dm_tpe.append(DM_energy_demand["bymat"].flatten(), "Variables")
-    dm_temp = DM_energy_demand["bymatcarr"].flatten()
+    
+    # emissions (done in emissions)
+    
+    # production technologies (aluminium, cement, paper, steel)
+    dm_temp = DM_material_production["bytech"].filter({"Categories1" : ['aluminium_prim', 'aluminium_sec', 
+                                                                        'cement_dry-kiln', 'cement_geopolym', 
+                                                                        'cement_wet-kiln','paper_recycled', 
+                                                                        'paper_woodpulp', 'steel_BF-BOF', 
+                                                                        'steel_hisarna', 'steel_hydrog-DRI', 
+                                                                        'steel_scrap-EAF']})
     dm_tpe.append(dm_temp.flatten(), "Variables")
-    dm_tpe.append(DM_energy_demand["bioener"], "Variables")
-    dm_tpe.append(DM_cost["CO2-capt-w-cc_capex"].flatten(), "Variables")
-    dm_tpe.append(DM_cost["material-production_capex"].flatten(), "Variables")
-    dm_tpe.append(DM_cost["CO2-capt-w-cc_opex"].flatten(), "Variables")
-    dm_tpe.append(DM_cost["material-production_opex"].flatten(), "Variables")
-    dm_tpe.append(DM_material_production["bymat"].flatten(), "Variables")
-    dm_tpe.append(DM_material_production["bytech"].flatten(), "Variables")
+    
+    # energy demand for steel production (aluminium, cement, chem, glass, lime, paper, steel)
+    dm_temp = DM_energy_demand["bymatcarr"].filter({"Categories1" : ['aluminium', 'cement', 'glass', 
+                                                                     'lime', 'paper', 'steel']})
+    dm_tpe.append(dm_temp.flatten().flatten(), "Variables")
+    
+    # put ind prefix
     variables = dm_tpe.col_labels["Variables"]
     for i in variables:
         dm_tpe.rename_col(i, "ind_" + i, "Variables")
-    dm_tpe.append(dm_bld_matswitch_savings_bymat.flatten(), "Variables")
     dm_tpe.sort("Variables")
+
+    # # dm_tpe
+    # dm_tpe = DM_emissions["bygas"].copy()
+    # dm_tpe.append(DM_energy_demand["bymat"].flatten(), "Variables")
+    # dm_temp = DM_energy_demand["bymatcarr"].flatten()
+    # dm_tpe.append(dm_temp.flatten(), "Variables")
+    # dm_tpe.append(DM_energy_demand["bioener"], "Variables")
+    # dm_tpe.append(DM_cost["CO2-capt-w-cc_capex"].flatten(), "Variables")
+    # dm_tpe.append(DM_cost["material-production_capex"].flatten(), "Variables")
+    # dm_tpe.append(DM_cost["CO2-capt-w-cc_opex"].flatten(), "Variables")
+    # dm_tpe.append(DM_cost["material-production_opex"].flatten(), "Variables")
+    # dm_tpe.append(DM_material_production["bymat"].flatten(), "Variables")
+    # dm_tpe.append(DM_material_production["bytech"].flatten(), "Variables")
+    # dm_tpe.append(dm_bld_matswitch_savings_bymat.flatten(), "Variables")
 
     # df_tpe
     df_tpe = dm_tpe.write_df()
@@ -1391,6 +1425,23 @@ def industry_agriculture_interface(DM_material_production, DM_energy_demand):
     DM_agr["biomaterial"] = dm_temp
     
     return DM_agr
+
+def industry_ammonia_interface(DM_material_production, DM_energy_demand, write_xls = False):
+    
+    dm_amm_matprod = DM_material_production["bymat"].filter({"Categories1" : ["chem"]})
+    dm_amm_endem = DM_energy_demand["bymatcarr"].filter({"Categories1" : ['chem']})
+    DM_amm = {"material-production" : dm_amm_matprod,
+              "energy-demand" : dm_amm_endem}
+    
+    # df_agr
+    if write_xls is True:
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        dm_amm = dm_amm_matprod.flatten()
+        dm_amm.append(dm_amm_endem.flatten().flatten(),"Variables")
+        df_amm = dm_amm.write_df()
+        df_amm.to_excel(current_file_directory + "/../_database/data/xls/" + 'All-Countries-interface_from-industry-to-ammonia.xlsx', index=False)
+    
+    return DM_amm
 
 def industry_landuse_interface(DM_material_production, DM_energy_demand, write_xls = False):
     
@@ -1952,6 +2003,10 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     # interface agriculture
     DM_agr = industry_agriculture_interface(DM_material_production, DM_energy_demand)
     interface.add_link(from_sector='industry', to_sector='agriculture', dm=DM_agr)
+    
+    # interface ammonia
+    DM_amm = industry_ammonia_interface(DM_material_production, DM_energy_demand)
+    interface.add_link(from_sector='industry', to_sector='ammonia', dm=DM_amm)
     
     # interface landuse
     DM_lus = industry_landuse_interface(DM_material_production, DM_energy_demand)
