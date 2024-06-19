@@ -562,7 +562,7 @@ def apply_material_decomposition(DM_production, CDM_const):
     dm_matdec.append(dm_lfs_matdec, dim="Categories1")
 
     # TODO!: check if it's fine to call this material demand, as it's obtained from production variables
-    DM_material_demand = {"material-demand" : dm_matdec}
+    DM_material_demand = {"material-demand": dm_matdec}
     DM_material_demand["material-demand"].drop("Categories2", ["ammonia", "other"])
 
     # clean
@@ -646,14 +646,13 @@ def material_production(DM_fxa, DM_ots_fts, DM_material_demand):
 
     # get aggregate demand
     dm_matdec_agg = DM_material_demand["material-demand"].group_all(dim='Categories1', inplace=False)
-    dm_matdec_agg.array = dm_matdec_agg.array * 0.001
-    dm_matdec_agg.units["material-decomposition"] = "kt"
+    dm_matdec_agg.change_unit('material-decomposition', factor=1e-3, old_unit='t', new_unit='kt')
     # note: here "other" will be different as in knime they filtered out all "other" but for glass_pack_other
 
     # subset aggregate demand for the materials we keep
-    materials = ['aluminium','cement', 'chem', 'copper','glass', 'lime','paper', 'steel','timber']
-    dm_material_production_natfiber = dm_matdec_agg.filter({"Categories1" : ["natfibers"]}) # this will be used for interface agriculture
-    dm_matdec_agg.filter({"Categories1" : materials}, inplace = True)
+    materials = ['aluminium', 'cement', 'chem', 'copper', 'glass', 'lime', 'paper', 'steel', 'timber']
+    dm_material_production_natfiber = dm_matdec_agg.filter({"Categories1": ["natfibers"]}) # this will be used for interface agriculture
+    dm_matdec_agg.filter({"Categories1": materials}, inplace=True)
 
     ######################
     ##### EFFICIENCY #####
@@ -748,12 +747,8 @@ def material_production_by_technology(DM_ots_fts, DM_material_production):
 
     # get material production by technology
     dm_material_production_bytech.array = dm_material_production_bytech.array * dm_temp.array
-    dm_material_production_bytech.array = dm_material_production_bytech.array * 0.001
-    dm_material_production_bytech.units["material-production"] = "Mt"
+    dm_material_production_bytech.change_unit('material-production', factor=1e-3, old_unit='kt', new_unit='Mt')
     DM_material_production["bytech"] = dm_material_production_bytech
-
-    # clean
-    del dm_temp, techs, i, names_present, techs_sub1, techs_sub2, idx, arr_temp, dm_material_production_bytech
 
     # return
     return
@@ -799,10 +794,6 @@ def energy_demand(DM_material_production, CDM_const):
     
     # aggregate energy demand by energy carrier
     DM_energy_demand["bycarr"] = DM_energy_demand["bytechcarr"].group_all(dim='Categories1', inplace=False)
-
-    # clean
-    del feedstock, cdm_temp, f, names, i, dm_energy_demand_temp, dm_energy_demand, \
-        dm_energy_demand_bytechcarr, dm_energy_demand_feedstock_bytechcarr
 
     # return
     return DM_energy_demand
@@ -1168,8 +1159,7 @@ def material_switch_impact_for_buildings(DM_input_matswitchimpact, DM_energy_dem
     dm_matswitchimpact_bld.append(dm_matswitchimpact_bld_temp, "Categories2")
     dm_matswitchimpact_bld.switch_categories_order("Categories1", "Categories2")
     dm_matswitchimpact_bld.group_all("Categories2", inplace = True)
-    dm_matswitchimpact_bld.array = dm_matswitchimpact_bld.array / 1000
-    dm_matswitchimpact_bld.units["material-decomposition"] = "kt"
+    dm_matswitchimpact_bld.change_unit('material-decomposition', factor=1e-3, old_unit='t', new_unit='kt')
     dm_matswitchimpact_bld.rename_col("steel-to-timber", "steel", "Categories1")
     dm_matswitchimpact_bld.rename_col("cement-to-timber", "cement", "Categories1")
 
@@ -1191,14 +1181,13 @@ def material_switch_impact_for_buildings(DM_input_matswitchimpact, DM_energy_dem
     dm_temp1 = dm_temp1.filter({"Categories1" : ["CO2"]})
     dm_temp1 = dm_temp1.flatten()
     dm_temp1.rename_col_regex("CO2_","","Categories1")
-    dm_temp1.array = dm_temp1.array * 1000
-    dm_temp1.units["emissions"] = "Kt"
+    dm_temp1.change_unit('emissions', factor=1e3, old_unit='Mt', new_unit='kt')
     dm_temp1.append(DM_material_production["bymat"].filter({"Categories1" : ["cement","steel"]}), "Variables")
     dm_temp1.operation("emissions", "/", "material-production", dim="Variables", 
                       out_col='emissions-specific', unit='Kt', div0="error")
     dm_temp1.drop(dim = "Variables", col_label = ["emissions", "material-production"])
-    dm_temp1.array = dm_temp1.array / 1000
-    dm_temp1.units["emissions-specific"] = "Mt"
+    dm_temp1.change_unit('emissions-specific', factor=1e-3, old_unit='Kt', new_unit='Mt')
+
 
     # get emissions savings for cement and steel switches to timber (Kt)
     dm_temp1.append(dm_matswitchimpact_bld, "Variables")
@@ -1232,8 +1221,7 @@ def compute_costs(CDM_const, DM_fxa, DM_material_production, DM_emissions):
     variables = DM_material_production["bytech"].col_labels["Categories1"]
     keep = np.array(variables)[[i in cdm_cost_sub.col_labels["Categories1"] for i in variables]].tolist()
     dm_material_techshare_sub = DM_material_production["bytech"].filter({"Categories1" : keep})
-    dm_material_techshare_sub.array = dm_material_techshare_sub.array * 1000
-    dm_material_techshare_sub.units["material-production"] = "kt"
+    dm_material_techshare_sub.change_unit('material-production', factor=1e3, old_unit='Mt', new_unit='kt')
 
     # get costs
     dm_material_techshare_sub_capex = cost(dm_activity = dm_material_techshare_sub, cdm_cost = cdm_cost_sub, 
@@ -1254,8 +1242,7 @@ def compute_costs(CDM_const, DM_fxa, DM_material_production, DM_emissions):
     variables = DM_emissions["capt_w_cc_bytech"].col_labels["Categories1"]
     keep = np.array(variables)[[i in cdm_cost_sub.col_labels["Categories1"] for i in variables]].tolist()
     dm_emissions_capt_w_cc_sub = DM_emissions["capt_w_cc_bytech"].filter({"Categories1" : keep})
-    dm_emissions_capt_w_cc_sub.array = dm_emissions_capt_w_cc_sub.array * 1000000
-    dm_emissions_capt_w_cc_sub.units["CO2-capt-w-cc"] = "t"
+    dm_emissions_capt_w_cc_sub.change_unit("CO2-capt-w-cc", factor=1e6, old_unit='Mt', new_unit='t')
 
     # get costs
     dm_emissions_capt_w_cc_sub_capex = cost(dm_activity = dm_emissions_capt_w_cc_sub, cdm_cost = cdm_cost_sub, 
@@ -1344,13 +1331,8 @@ def variables_for_tpe(DM_cost, dm_bld_matswitch_savings_bymat, DM_emissions, DM_
         DM_material_production["bytech"].rename_col(variables[i], variables_new[i], dim = "Categories1")
         
     # convert kt to mt
-    dm_temp = DM_material_production["bymat"]
-    dm_temp.array = dm_temp.array / 1000
-    dm_temp.units["material-production"] = "Mt"
-    dm_temp = DM_material_production["bytech"]
-    dm_temp.array = dm_temp.array / 1000
-    dm_temp.units["material-production"] = "Mt"
-        
+    DM_material_production["bymat"].change_unit('material-production', factor=1e-3, old_unit='kt', new_unit='Mt')
+
     # material production total (chemicals done in ammonia)
     dm_mat_prod = DM_material_production["bymat"].filter({"Categories1" : ["aluminium","cement","copper",
                                                                       "glass","lime","paper","steel"]})
@@ -1486,9 +1468,8 @@ def industry_power_interface(DM_energy_demand, write_xls = False):
     dm_elc.rename_col("energy-demand", "ind_energy-demand", "Variables")
     dm_elc = dm_elc.flatten()
 
-    dm_elc.array = dm_elc.array*1000
-    dm_elc.units['ind_energy-demand_electricity'] = 'GWh'
-    dm_elc.units['ind_energy-demand_hydrogen'] = 'GWh'
+    dm_elc.change_unit('ind_energy-demand_electricity', factor=1e3, old_unit='TWh', new_unit='GWh')
+    dm_elc.change_unit('ind_energy-demand_hydrogen', factor=1e3, old_unit='TWh', new_unit='GWh')
 
     DM_pow = {
         'electricity': dm_elc.filter({'Variables': ['ind_energy-demand_electricity']}),
@@ -1627,18 +1608,10 @@ def industry_minerals_interface(DM_material_production, DM_production, DM_ots_ft
     DM_ind["aluminium-pack"] = dm_alupack.flatten()
     
     # material production
-    dm_matprod = DM_material_production["bymat"].filter({"Categories1" : ["timber"]})
-    dm_matprod.array = dm_matprod.array / 1000
-    dm_matprod.units["material-production"] = "Mt"
-    dm_glass = DM_material_production["bymat"].filter({"Categories1" : ["glass"]})
-    dm_glass.array = dm_glass.array / 1000
-    dm_matprod.append(dm_glass, "Categories1")
-    dm_cement = DM_material_production["bymat"].filter({"Categories1" : ['cement']})
-    dm_cement.array = dm_cement.array / 1000
-    dm_matprod.append(dm_cement, "Categories1")
-    dm_paper_woodpulp = DM_material_production["bytech"].filter({"Categories1" : ['paper_woodpulp']})
+    dm_matprod = DM_material_production["bymat"].filter({"Categories1": ["timber", 'glass', 'cement']})
+    dm_paper_woodpulp = DM_material_production["bytech"].filter({"Categories1": ['paper_woodpulp']})
     dm_matprod.append(dm_paper_woodpulp, "Categories1")
-    dm_matprod.rename_col("material-production", "ind_material-production","Variables")
+    dm_matprod.rename_col("material-production", "ind_material-production", "Variables")
     DM_ind["material-production"] = dm_matprod.flatten()
     
     # technology development

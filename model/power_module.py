@@ -422,9 +422,8 @@ def simulate_industry_to_power_input():
     dm = DataMatrix.create_from_df(df, num_cat=0)
 
     # Units from TWh to GWh
-    dm.array = dm.array*1000
-    for var in dm.col_labels['Variables']:
-        dm.units[var] = 'GWh'
+    dm.change_unit('ind_energy-demand_electricity', factor=1e3, old_unit='TWh', new_unit='GWh')
+    dm.change_unit('ind_energy-demand_hydrogen', factor=1e3, old_unit='TWh', new_unit='GWh')
 
     # Space heating flow:
     dm_ind_electricity = dm.filter_w_regex({'Variables': 'ind_energy-demand_electricity'})
@@ -449,14 +448,12 @@ def simulate_ammonia_to_power_input():
     dm = DataMatrix.create_from_df(df, num_cat=0)
 
     # From TWh to GWh
-    dm.array = dm.array*1000
-    for var in dm.col_labels['Variables']:
-        dm.units[var] = 'GWh'
+    dm.change_unit('amm_energy-demand_electricity', factor=1e3, old_unit='TWh', new_unit='GWh')
+    dm.change_unit('amm_energy-demand_hydrogen', factor=1e3, old_unit='TWh', new_unit='GWh')
 
     # Space heating flow:
     dm_amm_electricity = dm.filter_w_regex({'Variables': 'amm_energy-demand_electricity'})
     dm_amm_hydrogen = dm.filter_w_regex({'Variables': 'amm_energy-demand_hydrogen'})
-
 
     DM_ammonia = {
         'electricity': dm_amm_electricity,
@@ -477,8 +474,7 @@ def simulate_agriculture_to_power_input():
 
     # Space heating flow:
     dm_agr_electricity = dm.filter_w_regex({'Variables': 'agr_energy-demand_electricity'})
-    dm_agr_electricity.array = dm_agr_electricity.array*1000
-    dm_agr_electricity.units['agr_energy-demand_electricity'] = 'GWh'
+    dm_agr_electricity.change_unit('agr_energy-demand_electricity', factor=1e3, old_unit='TWh', new_unit='GWh')
 
     return dm_agr_electricity
 
@@ -996,8 +992,7 @@ def pow_minerals_interface(dm_new_capacity, DM_yearly_demand):
 
 def pow_TPE_interface(dm_production, dm_decommission):
     # From GWh to TWh
-    dm_production.array = dm_production.array/1000
-    dm_production.units['pow_gross-yearly-production'] = 'TWh'
+    dm_production.change_unit('pow_gross-yearly-production', factor=1e-3, old_unit='GWh', new_unit='TWh')
 
     df = dm_production.write_df()
     df2 = dm_decommission.write_df()

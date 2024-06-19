@@ -357,9 +357,9 @@ def product_demand(DM_minerals, DM_buildings, DM_pow, DM_tra, CDM_const):
     # get demand for batteries from energy sector
     dm_battery = DM_pow["battery"].copy()
 
+    # !FIXME this conversion doesn't make sense, at the same time, we need kWh because the other batteries are in kWh
     # convert from GW to kWh
-    dm_battery.array = dm_battery.array * 1000000
-    dm_battery.units['str_energy-battery'] = "kWh"
+    dm_battery.change_unit('str_energy-battery', factor=1e6, old_unit='GW', new_unit='kWh')
 
     # deepen
     dm_battery.deepen()
@@ -399,7 +399,7 @@ def product_demand(DM_minerals, DM_buildings, DM_pow, DM_tra, CDM_const):
     ##### INFRASTRUCTURE #####
     ##########################
 
-    dm_infra.rename_col_regex('tra_new_infrastructure', 'product-demand', dim='Variables')
+    dm_infra.rename_col('tra_new_infrastructure', 'product-demand', dim='Variables')
     # append
     dm_infra.append(dm_infra_temp, dim="Categories1")
 
@@ -903,8 +903,7 @@ def mineral_demand_split(DM_minerals, DM_demand, DM_demand_split, CDM_const, DM_
     dm_temp = DM_demand["construction"].copy()
 
     # convert Mm2 to m2
-    dm_temp.array = dm_temp.array * 1000000
-    dm_temp.units["product-demand"] = "m2"
+    dm_temp.change_unit('product-demand', factor=1e6, old_unit='Mm2', new_unit='m2')
 
     # expand of 1 dimension
     dm_temp.array = dm_temp.array[..., np.newaxis]
@@ -1130,8 +1129,7 @@ def mineral_demand_split(DM_minerals, DM_demand, DM_demand_split, CDM_const, DM_
 
     # create dm for industry: take direct demand for steel and aluminium and convert from kg to mt
     dm_industry_mindec = dm_mindec_temp.copy()
-    dm_industry_mindec.array = dm_industry_mindec.array * 0.000000001
-    dm_industry_mindec.units['material-decomposition'] = "Mt"
+    dm_industry_mindec.change_unit('material-decomposition', factor=1e-9, old_unit='kg', new_unit='Mt')
 
     # take glass
     dm_temp2 = DM_ind["material-production"].filter({"Variables": ["ind_material-production_glass"]})
@@ -1158,8 +1156,7 @@ def mineral_demand_split(DM_minerals, DM_demand, DM_demand_split, CDM_const, DM_
     dm_industry_mindec.drop(dim="Categories3", col_label=["aluminium", "glass", "steel"])
 
     # transform in kg
-    dm_industry_mindec.array = dm_industry_mindec.array * 1000000000
-    dm_industry_mindec.units['material-decomposition'] = "kg"
+    dm_industry_mindec.change_unit('material-decomposition', factor=1e9, old_unit='Mt', new_unit='kg')
 
     # sum over end point minerals
     dm_temp = dm_industry_mindec.filter({"Categories3": ["aluminium-lithium", "glass-lithium"]})
@@ -1291,8 +1288,7 @@ def mineral_demand_split(DM_minerals, DM_demand, DM_demand_split, CDM_const, DM_
     dm_temp2 = dm_mindec.filter({"Categories2": ["dir"]})
     idx = dm_mindec.idx
     idx2 = dm_temp2.idx
-    dm_mindec.array[:, :, :, :, idx["dir"], :] = dm_temp2.array[..., idx2["dir"], :] * dm_temp.array[:, :, np.newaxis,
-                                                                                       :]
+    dm_mindec.array[:, :, :, :, idx["dir"], :] = dm_temp2.array[..., idx2["dir"], :] * dm_temp.array[:, :, np.newaxis, :]
 
     # clean
     del cdm_temp, dm_temp, dm_temp2, idx, idx2
@@ -1367,26 +1363,21 @@ def mineral_extraction(DM_minerals, DM_ind, dm_mindec, CDM_const):
     idx1 = dm_proportion.idx
     idx2 = dm_temp.idx
 
-    dm_proportion.array[:, :, idx1["min_proportion_eu_steel_EAF"]] = dm_proportion.array[:, :,
-                                                                     idx1["min_proportion_eu_steel_EAF"]] + \
-                                                                     dm_temp.array[:, :,
-                                                                     idx2['ind_proportion_steel_scrap-EAF']] - \
-                                                                     dm_temp.array[:, :,
-                                                                     idx2['ind_proportion_steel_hydrog-DRI']] - \
-                                                                     (dm_temp.array[:, :,
-                                                                      idx2['ind_proportion_steel_hisarna']] / 2) - \
-                                                                     dm_temp.array[:, :,
-                                                                     idx2['ind_proportion_steel_BF-BOF']]
+    ay_steel_EAF = dm_proportion.array[:, :, idx1["min_proportion_eu_steel_EAF"]] \
+                   + dm_temp.array[:, :, idx2['ind_proportion_steel_scrap-EAF']] \
+                   - dm_temp.array[:, :, idx2['ind_proportion_steel_hydrog-DRI']] \
+                   - (dm_temp.array[:, :, idx2['ind_proportion_steel_hisarna']] / 2) \
+                   - dm_temp.array[:, :, idx2['ind_proportion_steel_BF-BOF']]
+
+    dm_proportion.array[:, :, idx1["min_proportion_eu_steel_EAF"]] = ay_steel_EAF
 
     # adjust steel bof for scraps
-    dm_proportion.array[:, :, idx1["min_proportion_eu_steel_BOF"]] = dm_proportion.array[:, :,
-                                                                     idx1["min_proportion_eu_steel_BOF"]] + \
-                                                                     dm_temp.array[:, :,
-                                                                     idx2['ind_proportion_steel_BF-BOF']] - \
-                                                                     (dm_temp.array[:, :,
-                                                                      idx2['ind_proportion_steel_hisarna']] / 2) - \
-                                                                     dm_temp.array[:, :,
-                                                                     idx2['ind_proportion_steel_scrap-EAF']]
+    ay_steel_BOF = dm_proportion.array[:, :, idx1["min_proportion_eu_steel_BOF"]] \
+                   + dm_temp.array[:, :, idx2['ind_proportion_steel_BF-BOF']] \
+                   - (dm_temp.array[:, :, idx2['ind_proportion_steel_hisarna']] / 2) \
+                   - dm_temp.array[:, :, idx2['ind_proportion_steel_scrap-EAF']]
+
+    dm_proportion.array[:, :, idx1["min_proportion_eu_steel_BOF"]] = ay_steel_BOF
 
     # make proportion of primary copper in industry
     dm_temp.add(dm_temp.array[:, :, idx2["ind_proportion_copper_secondary"]],
@@ -1640,11 +1631,9 @@ def variables_for_tpe(DM_minerals, dm_production_sect, dm_fossil, dm_mindec, dm_
     ###########################
 
     # bioenergy wood
-    dm_temp = dm_agr.filter({"Variables": ['agr_bioenergy_biomass-demand_liquid_btl_fuelwood-and-res',
+    dm_extramaterials = dm_agr.filter({"Variables": ['agr_bioenergy_biomass-demand_liquid_btl_fuelwood-and-res',
                                            'agr_bioenergy_biomass-demand_solid_fuelwood-and-res']})
-    dm_temp.add(np.nansum(dm_temp.array, axis=-1, keepdims=True), dim="Variables", col_label="bioenergy_wood",
-                unit="Mt")
-    dm_extramaterials = dm_temp.filter({"Variables": ['bioenergy_wood']})
+    dm_extramaterials.groupby({'bioenergy-wood': '.*'}, dim='Variables', regex=True, inplace=True)
 
     # from industry
     dm_temp = DM_ind["material-production"]
@@ -1656,8 +1645,6 @@ def variables_for_tpe(DM_minerals, dm_production_sect, dm_fossil, dm_mindec, dm_
     dm_temp.rename_col(col_in="ind_material-production_glass", col_out="glass_sand", dim="Variables")
 
     # timber
-    dm_temp.array[..., idx["ind_material-production_timber"]] = dm_temp.array[..., idx["ind_material-production_timber"]] * 0.001
-    dm_temp.units["ind_material-production_timber"] = "Mt"
     dm_temp.rename_col(col_in="ind_material-production_timber", col_out="construction_wood", dim="Variables")
 
     # cement sand
@@ -1774,6 +1761,7 @@ def simulate_transport_to_minerals_input():
     # demand for infrastructure [km]
     dm_tra_infra = dm_tra.filter_w_regex({"Variables": 'tra_new_infrastructure'})
     dm_tra_infra.deepen()
+    dm_tra_infra.units['tra_new_infrastructure'] = 'km'
 
     dm_tra_veh = dm_tra.filter_w_regex({'Variables': 'product-demand'})
     dm_tra_veh.deepen()
@@ -1800,29 +1788,29 @@ def simulate_industry_to_minerals_input():
 
     # rename
     dict_rename = {
-        "ind_prod_aluminium-pack" : "ind_product-production_aluminium-pack",
-        "ind_product-net-import_cars-EV" : "ind_product-net-import_LDV-EV",
-        "ind_product-net-import_cars-FCV" : "ind_product-net-import_LDV-FCEV",
-        "ind_product-net-import_cars-ICE" : "ind_product-net-import_LDV-ICE",
-        "ind_product-net-import_computer" : "ind_product-net-import_electronics-computer",
-        "ind_product-net-import_dishwasher" : "ind_product-net-import_dom-appliance-dishwasher",
-        "ind_product-net-import_dryer" : "ind_product-net-import_dom-appliance-dryer",
-        "ind_product-net-import_freezer" : "ind_product-net-import_dom-appliance-freezer",
-        "ind_product-net-import_fridge" : "ind_product-net-import_dom-appliance-fridge",
-        "ind_product-net-import_new_dhg_pipe" : "ind_product-net-import_infra-pipe",
-        "ind_product-net-import_phone" : "ind_product-net-import_electronics-phone",
-        "ind_product-net-import_planes" : "ind_product-net-import_other-planes",
-        "ind_product-net-import_rail" : "ind_product-net-import_infra-rail",
-        "ind_product-net-import_road" : "ind_product-net-import_infra-road",
-        "ind_product-net-import_ships" : "ind_product-net-import_other-ships",
-        "ind_product-net-import_trains" : "ind_product-net-import_other-trains",
-        "ind_product-net-import_trolley-cables" : "ind_product-net-import_infra-trolley-cables",
-        "ind_product-net-import_trucks-EV" : "ind_product-net-import_HDVL-EV",
-        "ind_product-net-import_trucks-FCV" : "ind_product-net-import_HDVL-FCEV",
-        "ind_product-net-import_trucks-ICE" : "ind_product-net-import_HDVL-ICE",
-        "ind_product-net-import_tv" : "ind_product-net-import_electronics-tv",
-        "ind_product-net-import_wmachine" : "ind_product-net-import_dom-appliance-wmachine",
-        "ind_timber" : "ind_material-production_timber"
+        "ind_prod_aluminium-pack": "ind_product-production_aluminium-pack",
+        "ind_product-net-import_cars-EV": "ind_product-net-import_LDV-EV",
+        "ind_product-net-import_cars-FCV": "ind_product-net-import_LDV-FCEV",
+        "ind_product-net-import_cars-ICE": "ind_product-net-import_LDV-ICE",
+        "ind_product-net-import_computer": "ind_product-net-import_electronics-computer",
+        "ind_product-net-import_dishwasher": "ind_product-net-import_dom-appliance-dishwasher",
+        "ind_product-net-import_dryer": "ind_product-net-import_dom-appliance-dryer",
+        "ind_product-net-import_freezer": "ind_product-net-import_dom-appliance-freezer",
+        "ind_product-net-import_fridge": "ind_product-net-import_dom-appliance-fridge",
+        "ind_product-net-import_new_dhg_pipe": "ind_product-net-import_infra-pipe",
+        "ind_product-net-import_phone": "ind_product-net-import_electronics-phone",
+        "ind_product-net-import_planes": "ind_product-net-import_other-planes",
+        "ind_product-net-import_rail": "ind_product-net-import_infra-rail",
+        "ind_product-net-import_road": "ind_product-net-import_infra-road",
+        "ind_product-net-import_ships": "ind_product-net-import_other-ships",
+        "ind_product-net-import_trains": "ind_product-net-import_other-trains",
+        "ind_product-net-import_trolley-cables": "ind_product-net-import_infra-trolley-cables",
+        "ind_product-net-import_trucks-EV": "ind_product-net-import_HDVL-EV",
+        "ind_product-net-import_trucks-FCV": "ind_product-net-import_HDVL-FCEV",
+        "ind_product-net-import_trucks-ICE": "ind_product-net-import_HDVL-ICE",
+        "ind_product-net-import_tv": "ind_product-net-import_electronics-tv",
+        "ind_product-net-import_wmachine": "ind_product-net-import_dom-appliance-wmachine",
+        "ind_timber": "ind_material-production_timber"
     }
 
     for k, v in dict_rename.items():
@@ -1837,6 +1825,7 @@ def simulate_industry_to_minerals_input():
     DM_ind["material-production"] = dm.filter({"Variables" : 
                                                ['ind_material-production_cement', 'ind_material-production_glass', 
                                                 'ind_material-production_paper_woodpulp', 'ind_material-production_timber']})
+    DM_ind["material-production"].change_unit('ind_material-production_timber', factor=1e-3, old_unit='kt', new_unit='Mt')
     
     # technology development
     dm_temp = dm.filter_w_regex({"Variables" : ".*technology.*"})
@@ -1859,6 +1848,7 @@ def simulate_industry_to_minerals_input():
     # product net import
     dm_temp = dm.filter_w_regex({"Variables": ".*product-net-import*"})
     dm_temp.sort("Variables")
+
     DM_ind["product-net-import"] = dm_temp
 
     return DM_ind
@@ -2162,7 +2152,7 @@ def local_minerals_run():
 # # database_from_csv_to_datamatrix()
 # import time
 # start = time.time()
-# results_run = local_minerals_run()
+results_run = local_minerals_run()
 # end = time.time()
 # print(end - start)
 

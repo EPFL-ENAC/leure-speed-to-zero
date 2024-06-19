@@ -1020,9 +1020,8 @@ def bld_emissions_appliances_workflow(DM_cooking_cooling, dm_hot_water, cdm_cons
     for key in DM_emissions.keys():
         dm_tmp = DM_emissions[key]
         # From GWh to TWh
-        dm_tmp.array = dm_tmp.array/1000
-        for var in dm_tmp.units.keys():
-            dm_tmp.units[var] = 'TWh'
+        for var in dm_tmp.col_labels['Variables']:
+            dm_tmp.change_unit(var, factor=1e-3, old_unit='GWh', new_unit='TWh')
         cdm_const_tmp = cdm_const.filter({'Categories1': dm_tmp.col_labels['Categories1']})
         assert cdm_const_tmp.col_labels['Categories1'] == dm_tmp.col_labels['Categories1'], f"Fuels categories do not match"
         # Multiply energy * emissions-factors
@@ -1221,8 +1220,7 @@ def bld_agriculture_interface(dm_agriculture):
     dm_agriculture.filter({'Categories2': ['gas-bio', 'solid-bio']}, inplace=True)
     dm_agriculture.group_all('Categories1')
     dm_agriculture.rename_col('bld_space-heating-energy-demand', 'bld_bioenergy', 'Variables')
-    dm_agriculture.array = dm_agriculture.array/1000
-    dm_agriculture.units['bld_bioenergy'] = 'TWh'
+    dm_agriculture.change_unit('bld_bioenergy', factor=1e-3, old_unit='GWh', new_unit='TWh')
 
     return dm_agriculture
 
@@ -1255,8 +1253,7 @@ def bld_TPE_interface(DM_energy, dm_appliances, dm_hot_water, dm_elec_other):
         dm_electricity.array[:, :, idx_el['bld_energy-demand_electricity']]
 
     # From GWh to TWh
-    dm_energy_tot.array = dm_energy_tot.array/1000
-    dm_energy_tot.units['bld_energy-demand_tot'] = 'TWh'
+    dm_energy_tot.change_unit('bld_energy-demand_tot', factor=1e-3, old_unit='GWh', new_unit='TWh')
 
     # Renovation
     dm_reno = DM_energy['renovation']

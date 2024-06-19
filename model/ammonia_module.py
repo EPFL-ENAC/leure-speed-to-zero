@@ -363,9 +363,8 @@ def material_production(DM_ots_fts, dm_material_demand):
     
     # get aggregate demand
     dm_matdec_agg = dm_material_demand.group_all(dim='Categories1', inplace=False)
-    dm_matdec_agg.array = dm_matdec_agg.array * 0.001
-    dm_matdec_agg.units["material-decomposition"] = "kt"
-    dm_matdec_agg.filter({"Categories1" : ["ammonia"]}, inplace = True)
+    dm_matdec_agg.change_unit('material-decomposition', factor=1e-3, old_unit='t', new_unit='kt')
+    dm_matdec_agg.filter({"Categories1": ["ammonia"]}, inplace=True)
     
     # efficiency
     dm_temp = DM_ots_fts['material-efficiency'].copy()
@@ -419,8 +418,7 @@ def material_production_by_technology(DM_ots_fts, DM_material_production):
 
     # get material production by technology
     dm_material_production_bytech.array = dm_material_production_bytech.array * dm_temp.array
-    dm_material_production_bytech.array = dm_material_production_bytech.array * 0.001
-    dm_material_production_bytech.units["material-production"] = "Mt"
+    dm_material_production_bytech.change_unit('material-production', factor=1e-3, old_unit='kt', new_unit='Mt')
     dm_material_production_bytech.rename_col("ammonia","ammonia-amm-tech","Categories1")
     DM_material_production["bytech"] = dm_material_production_bytech
 
@@ -764,8 +762,7 @@ def compute_costs(CDM_const, DM_fxa, DM_material_production, DM_emissions):
     variables = DM_material_production["bytech"].col_labels["Categories1"]
     keep = np.array(variables)[[i in cdm_cost_sub.col_labels["Categories1"] for i in variables]].tolist()
     dm_material_techshare_sub = DM_material_production["bytech"].filter({"Categories1" : keep})
-    dm_material_techshare_sub.array = dm_material_techshare_sub.array * 1000
-    dm_material_techshare_sub.units["material-production"] = "kt"
+    dm_material_techshare_sub.change_unit('material-production', factor=1e3, old_unit='Mt', new_unit='kt')
 
     # get costs
     dm_material_techshare_sub_capex = cost(dm_activity = dm_material_techshare_sub, cdm_cost = cdm_cost_sub, 
@@ -786,8 +783,7 @@ def compute_costs(CDM_const, DM_fxa, DM_material_production, DM_emissions):
     variables = DM_emissions["capt_w_cc_bytech"].col_labels["Categories1"]
     keep = np.array(variables)[[i in cdm_cost_sub.col_labels["Categories1"] for i in variables]].tolist()
     dm_emissions_capt_w_cc_sub = DM_emissions["capt_w_cc_bytech"].filter({"Categories1" : keep})
-    dm_emissions_capt_w_cc_sub.array = dm_emissions_capt_w_cc_sub.array * 1000000
-    dm_emissions_capt_w_cc_sub.units["CO2-capt-w-cc"] = "t"
+    dm_emissions_capt_w_cc_sub.change_unit("CO2-capt-w-cc", factor=1e6, old_unit='Mt', new_unit='t')
 
     # get costs
     dm_emissions_capt_w_cc_sub_capex = cost(dm_activity = dm_emissions_capt_w_cc_sub, cdm_cost = cdm_cost_sub, 
@@ -826,24 +822,23 @@ def variables_for_tpe(DM_cost, DM_emissions, DM_material_production, DM_energy_d
     
     # production of chemicals (chem in ind + chem in ammonia)
     dm_tpe = DM_material_production["bymat"].copy()
-    dm_tpe.array = dm_tpe.array/1000000
-    dm_tpe.units["material-production"] = "Mt"
+    dm_tpe.change_unit('material-production', factor=1e-3, old_unit='kt', new_unit='Mt')
     dm_tpe.append(DM_ind["material-production"], "Categories1")
     dm_tpe.group_all("Categories1")
-    dm_tpe.rename_col("material-production","ind_material-production_chemicals","Variables")
+    dm_tpe.rename_col("material-production", "ind_material-production_chemicals", "Variables")
     
     # energy demand chemicals
     dm_temp = DM_energy_demand["bymat"].copy()
     dm_temp.append(DM_ind["energy-demand"].group_all("Categories2", inplace=False), "Categories1")
     dm_temp.group_all("Categories1")
-    dm_temp.rename_col("energy-demand","ind_energy-demand_chemicals","Variables")
+    dm_temp.rename_col("energy-demand", "ind_energy-demand_chemicals", "Variables")
     dm_tpe.append(dm_temp, "Variables")
     
     # energy demand chemicals by energy carriers
     dm_temp = DM_energy_demand["bymatcarr"].copy()
     dm_temp.append(DM_ind["energy-demand"], "Categories1")
     dm_temp.group_all("Categories1")
-    dm_temp.rename_col("energy-demand","ind_energy-demand_chemicals","Variables")
+    dm_temp.rename_col("energy-demand", "ind_energy-demand_chemicals", "Variables")
     dm_tpe.append(dm_temp.flatten(), "Variables")
     
     # # NOTE: FOR THE MOMENT THE CODE BELOW IS COMMENTED OUT, TO KEEP UNTIL WE FINALIZE THE TPE
@@ -899,11 +894,8 @@ def ammonia_power_interface(DM_energy_demand, write_xls = False):
     dm_elc = DM_energy_demand["bycarr"].filter(
         {"Categories1" : ['electricity','hydrogen']})
     dm_elc.rename_col("energy-demand", "amm_energy-demand", "Variables")
+    dm_elc.change_unit('amm_energy-demand', factor=1e3, old_unit='TWh', new_unit='GWh')
     dm_elc = dm_elc.flatten()
-
-    dm_elc.array = dm_elc.array*1000
-    for var in dm_elc.col_labels['Variables']:
-        dm_elc.units[var] = 'GWh'
 
     dm_amm_electricity = dm_elc.filter({'Variables': ['amm_energy-demand_electricity']})
     dm_amm_hydrogen = dm_elc.filter({'Variables': ['amm_energy-demand_hydrogen']})
