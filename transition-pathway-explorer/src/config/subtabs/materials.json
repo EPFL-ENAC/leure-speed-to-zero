@@ -133,7 +133,7 @@
         "min_infra_bauxite[Mt]",
         "min_electronics_bauxite[Mt]",
         "min_building_bauxite[Mt]",
-        "min_dom-appliances_bauxite[Mt]",
+        "min_dom-appliance_bauxite[Mt]",
         "min_energy_bauxite[Mt]",
         "min_other_bauxite[Mt]"
       ]
@@ -145,7 +145,7 @@
       "outputs": [
         "min_indirect_copper[Mt]",
         "min_transport_copper[Mt]",
-        "min_dom-appliances_copper[Mt]",
+        "min_dom-appliance_copper[Mt]",
         "min_electronics_copper[Mt]",
         "min_infra_copper[Mt]",
         "min_building_copper[Mt]",
@@ -161,7 +161,7 @@
         "min_indirect_iron[Mt]",
         "min_transport_iron[Mt]",
         "min_infra_iron[Mt]",
-        "min_dom-appliances_iron[Mt]",
+        "min_dom-appliance_iron[Mt]",
         "min_electronics_iron[Mt]",
         "min_building_iron[Mt]",
         "min_energy_iron[Mt]",

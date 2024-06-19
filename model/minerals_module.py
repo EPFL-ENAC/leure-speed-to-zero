@@ -1581,9 +1581,6 @@ def mineral_reserves(DM_minerals, dm_mindec, dm_mindec_sect, dm_extraction,
         dm=dm_relres_mineral.copy(), reserve_starting_year=2015,
         mineral_type="mineral", range_max=300)
 
-    # clean
-    del dm_temp, variables, drops
-
     # return
     return dict_relres_fossil, dict_relres_minerals, dm_fossil
 
@@ -1633,15 +1630,14 @@ def variables_for_tpe(DM_minerals, dm_production_sect, dm_fossil, dm_mindec, dm_
     # bioenergy wood
     dm_extramaterials = dm_agr.filter({"Variables": ['agr_bioenergy_biomass-demand_liquid_btl_fuelwood-and-res',
                                            'agr_bioenergy_biomass-demand_solid_fuelwood-and-res']})
-    dm_extramaterials.groupby({'bioenergy-wood': '.*'}, dim='Variables', regex=True, inplace=True)
+    dm_extramaterials.groupby({'bioenergy_wood': '.*'}, dim='Variables', regex=True, inplace=True)
 
     # from industry
     dm_temp = DM_ind["material-production"]
     idx = dm_temp.idx
 
     # glass sand
-    dm_temp.array[..., idx["ind_material-production_glass"]] = dm_temp.array[..., idx[
-        "ind_material-production_glass"]] * 1.9 / 2.4
+    dm_temp.array[..., idx["ind_material-production_glass"]] = dm_temp.array[..., idx["ind_material-production_glass"]] * 1.9 / 2.4
     dm_temp.rename_col(col_in="ind_material-production_glass", col_out="glass_sand", dim="Variables")
 
     # timber
@@ -2152,7 +2148,7 @@ def local_minerals_run():
 # # database_from_csv_to_datamatrix()
 # import time
 # start = time.time()
-results_run = local_minerals_run()
+# results_run = local_minerals_run()
 # end = time.time()
 # print(end - start)
 
