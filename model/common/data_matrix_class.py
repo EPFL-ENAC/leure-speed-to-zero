@@ -478,6 +478,7 @@ class DataMatrix:
         countries = dm.col_labels["Country"]
         n_y = len(years)
         n_c = len(countries)
+        # Repeat countries n_year number of times
         country_list = [item for item in countries for _ in range(n_y)]
         years_list = years * n_c
         df = pd.DataFrame(data=zip(country_list, years_list), columns=["Country", "Years"])
@@ -486,7 +487,7 @@ class DataMatrix:
 
         if num_cat == 3:
             dm_new = dm.flatten()
-            dm.__dict__.update(dm_new.__dict__) # it replaces self with dm_new
+            dm.__dict__.update(dm_new.__dict__)  # it replaces self with dm_new
             num_cat = len(dm.dim_labels) - 3
 
         if num_cat == 2:
