@@ -388,6 +388,82 @@ def land_allocation_workflow(DM_land_use, dm_land_use):
 
     return DM_land_use
 
+
+def land_use_change(dm_need, dm_excess):
+
+    # check that dm_need == dm_excess
+    if abs(dm_need.array.sum(axis=-1) - dm_excess.array.sum(axis=-1)).sum() > 1e-5:
+        raise ValueError(f'Total land need and total land excess do not match')
+
+    # Normalise dm_need
+    dm_need_norm = dm_need.copy()
+    dm_need_norm.array = dm_need_norm.array/dm_need.array.sum(axis=-1, keepdims=True)
+
+    # Drop variable and add a x1 to perform the outer multiplication
+    A = dm_excess.array[:, :, 0, :, np.newaxis]
+    B = dm_need_norm.array[:, :, 0, np.newaxis, :]
+
+    # Land use change : allocation of excess land to land need
+    C = A * B
+    # Add variable dimension
+    C = C[:, :, np.newaxis, :, :]
+    # Extract unit from dm_excess:
+    var = dm_excess.col_labels['Variables'][0]
+    unit = dm_excess.units[var]
+
+    # Create land use change matrix
+    dm_land_use_change = DataMatrix.based_on(C, dm_excess, change={'Variables': ['land_use_change_without_rem'],
+                                             'Categories2': dm_need_norm.col_labels['Categories1']},
+                                             units={'land_use_change_without_rem': unit})
+
+    return dm_land_use_change
+
+
+def land_use_change_old(dm_need, dm_excess, dm_matrix):
+
+    arr_to_solve = dm_matrix.array
+    arr_to_crop = dm_need.array
+    arr_excess = dm_excess.array
+
+    # Number of variables (elements in arr_tol_solve, for 1 Country, Year & Variable at the time)
+    n_vars = arr_to_solve[0, 0, 0, :, :].size
+
+    # Coefficients matrix for the linear system
+    # We need 12 equations: 6 for rows and 6 for columns
+    A_eq = np.zeros((12, n_vars))
+
+    # Row constraints
+    for i in range(6):
+        A_eq[i, i * 6:(i + 1) * 6] = 1
+
+    # Column constraints
+    for j in range(6):
+        A_eq[6 + j, j::6] = 1
+
+    # Since we are dealing with a linear system without a specific objective function, we can use linprog with zero cost function
+    c = np.zeros(n_vars)
+
+    # Loop over the first three dimensions and solve the linear system for each 6x6 sub-matrix
+    for i in range(arr_to_crop.shape[0]):
+        for j in range(arr_to_crop.shape[1]):
+            for k in range(arr_to_crop.shape[2]):
+                # Right-hand side for the current sub-matrix
+                b_eq = np.concatenate((arr_to_crop[i, j, k, :], arr_excess[i, j, k, :]))
+
+                # Solve the system using linprog
+                res = linprog(c, A_eq=A_eq, b_eq=b_eq, bounds=(0, None), method='highs')
+
+                # Check if the solver found a solution
+                if res.success:
+                    arr_to_solve[i, j, k, :, :] = res.x.reshape(6, 6)
+                else:
+                    print(f"No solution found for sub-matrix at index ({i}, {j}, {k})")
+
+    dm_land_use_change = DataMatrix.based_on(arr_to_solve, dm_matrix, change={'Variables': ['land_use_change_without_rem']},
+                                             units={'land_use_change_without_rem': 'ha'})
+
+    return dm_land_use_change
+
 # CalculationLeaf LAND USE MATRIX
 def land_matrix_workflow(DM_land_use):
 
@@ -460,50 +536,16 @@ def land_matrix_workflow(DM_land_use):
     # Add a new cat2 = 'total_excess' with the land excess (land type to "change")
     dm_land_excess = DM_land_use['land_man_gap'].filter({'Variables': ['lus_land_excess']})
 
+    dm_land_use_change = land_use_change(dm_land_to_crop, dm_land_excess)
+
     # Solve the values of the matrix so that the sum of the rows/columns are equal to 'total_to-crop/excess'
-
     # Defining arrays to solve
-    dm_matrix = DM_land_use['land_matrix'].filter({'Variables': ['matrix']})
-    arr_to_solve = dm_matrix.array
-    arr_to_crop = dm_land_to_crop.array
-    arr_excess = dm_land_excess.array
+    # dm_matrix = DM_land_use['land_matrix'].filter({'Variables': ['matrix']})
+    # dm_land_use_change_old = land_use_change_old(dm_land_to_crop, dm_land_excess, dm_matrix)
 
-    # Number of variables (elements in arr_tol_solve, for 1 Country, Year & Variable at the time)
-    n_vars = arr_to_solve[0, 0, 0, :, :].size
-
-    # Coefficients matrix for the linear system
-    # We need 12 equations: 6 for rows and 6 for columns
-    A_eq = np.zeros((12, n_vars))
-
-    # Row constraints
-    for i in range(6):
-        A_eq[i, i * 6:(i + 1) * 6] = 1
-
-    # Column constraints
-    for j in range(6):
-        A_eq[6 + j, j::6] = 1
-
-    # Since we are dealing with a linear system without a specific objective function, we can use linprog with zero cost function
-    c = np.zeros(n_vars)
-
-    # Loop over the first three dimensions and solve the linear system for each 6x6 sub-matrix
-    for i in range(arr_to_crop.shape[0]):
-        for j in range(arr_to_crop.shape[1]):
-            for k in range(arr_to_crop.shape[2]):
-                # Right-hand side for the current sub-matrix
-                b_eq = np.concatenate((arr_to_crop[i, j, k, :], arr_excess[i, j, k, :]))
-
-                # Solve the system using linprog
-                res = linprog(c, A_eq=A_eq, b_eq=b_eq, bounds=(0, None), method='highs')
-
-                # Check if the solver found a solution
-                if res.success:
-                    arr_to_solve[i, j, k, :, :] = res.x.reshape(6, 6)
-                else:
-                    print(f"No solution found for sub-matrix at index ({i}, {j}, {k})")
 
     # Adding the array to relevant dm
-    DM_land_use['land_matrix'].add(arr_to_solve, col_label='land_use_change_without_rem', dim='Variables', unit='ha')
+    DM_land_use['land_matrix'].append(dm_land_use_change, dim='Variables')
 
     # (Check that net change = 0 ?)
 
@@ -534,6 +576,7 @@ def land_matrix_workflow(DM_land_use):
     DM_land_use['land_matrix'].operation('land_use_change_without_rem', '+', 'land_remaining_land_matrix',
                                          dim="Variables", out_col='lus_land_matrix', unit='ha')
 
+    DM_land_use['land_matrix'].filter({'Variables': ['lus_land_matrix']}, inplace=True)
 
     return DM_land_use
 
@@ -883,7 +926,7 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
 
 def local_land_use_run():
     years_setting, lever_setting = init_years_lever()
-    global_vars = {'geoscale': 'Switzerland'}
+    global_vars = {'geoscale': '.*'}
     filter_geoscale(global_vars)
     land_use(lever_setting, years_setting)
     return
@@ -892,7 +935,7 @@ def local_land_use_run():
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/landuse_module.py"
 # database_from_csv_to_datamatrix()
 # start = time.time()
-#results_run = local_land_use_run()
+# results_run = local_land_use_run()
 # end = time.time()
 # print(end-start)
 
