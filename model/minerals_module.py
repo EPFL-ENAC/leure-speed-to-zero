@@ -1476,7 +1476,7 @@ def mineral_extraction(DM_minerals, DM_ind, dm_mindec, CDM_const):
 
 
 def mineral_reserves(DM_minerals, dm_mindec, dm_mindec_sect, dm_extraction, 
-                     CDM_const, dm_lfs, dm_agr, dm_ref, dm_ccus):
+                     CDM_const, dm_lfs, dm_agr, dm_ref):
     # name of minerals
     minerals = ['bauxite', 'copper', 'graphite', "iron", 'lead', 'lithium', 'manganese', 'nickel', 'phosphate',
                 'potash']
@@ -1518,13 +1518,13 @@ def mineral_reserves(DM_minerals, dm_mindec, dm_mindec_sect, dm_extraction,
     for i in variables:
         dm_fossil.units[i] = "Mt"
 
-    # adjust min_energy_gas for ccus_gas
-    dm_gas = dm_fossil.filter({"Variables": ["min_energy_gas"]})
-    dm_ccus.array[dm_gas.array < 0] = dm_ccus.array[dm_gas.array < 0] + dm_gas.array[
-        dm_gas.array < 0]  # in the ambitious pathway, the supply of ccus (which include biogas) is more than the demand for gaz leading to gas demand being negative. The following operation serves to correct this difference by substracting the negative gas demand by the over supply of ccus.
-    idx = dm_fossil.idx
-    dm_fossil.array[:, :, idx["min_energy_gas"], np.newaxis] = dm_fossil.array[:, :, idx["min_energy_gas"],
-                                                               np.newaxis] + dm_ccus.array
+    # # adjust min_energy_gas for ccus_gas
+    # dm_gas = dm_fossil.filter({"Variables": ["min_energy_gas"]})
+    # dm_ccus.array[dm_gas.array < 0] = dm_ccus.array[dm_gas.array < 0] + dm_gas.array[
+    #     dm_gas.array < 0]  # in the ambitious pathway, the supply of ccus (which include biogas) is more than the demand for gaz leading to gas demand being negative. The following operation serves to correct this difference by substracting the negative gas demand by the over supply of ccus.
+    # idx = dm_fossil.idx
+    # dm_fossil.array[:, :, idx["min_energy_gas"], np.newaxis] = dm_fossil.array[:, :, idx["min_energy_gas"],
+    #                                                            np.newaxis] + dm_ccus.array
 
     # relative reserves for fossil fuels 
     variables = ["min_reserve_" + i for i in fossils]
@@ -1618,7 +1618,7 @@ def mineral_production_bysector(dm_mindec, dm_mindec_sect, CDM_const):
 
 
 def variables_for_tpe(DM_minerals, dm_production_sect, dm_fossil, dm_mindec, dm_extraction,
-                      dict_relres_fossil, dict_relres_minerals, DM_ind, dm_agr, dm_ccus):
+                      dict_relres_fossil, dict_relres_minerals, DM_ind, dm_agr):
     # get data
     DM_fxa = DM_minerals['fxa']
     dm_min_other = DM_fxa["min_other"]
@@ -1655,10 +1655,10 @@ def variables_for_tpe(DM_minerals, dm_production_sect, dm_fossil, dm_mindec, dm_
 
     dm_extramaterials.append(dm_temp, dim="Variables")
 
-    # gas ccus
-    dm_temp = dm_ccus.copy()
-    dm_temp.rename_col(col_in="ccu_ccus_gas-ff-natural", col_out="ccus_gas", dim="Variables")
-    dm_extramaterials.append(dm_temp, dim="Variables")
+    # # gas ccus
+    # dm_temp = dm_ccus.copy()
+    # dm_temp.rename_col(col_in="ccu_ccus_gas-ff-natural", col_out="ccus_gas", dim="Variables")
+    # dm_extramaterials.append(dm_temp, dim="Variables")
 
     # rename
     for i in dm_extramaterials.col_labels["Variables"]:
@@ -2054,7 +2054,7 @@ def minerals(interface=Interface(), calibration=False):
         for i in DM_ind.keys():
             DM_ind[i] = DM_ind[i].filter({'Country': cntr_list})
 
-    # storage
+    # power
     if interface.has_link(from_sector='power', to_sector='minerals'):
         DM_pow = interface.get_link(from_sector='power', to_sector='minerals')
     else:
@@ -2083,14 +2083,14 @@ def minerals(interface=Interface(), calibration=False):
         dm_ref = simulate_refinery_to_minerals_input()
         dm_ref.filter({'Country': cntr_list}, inplace=True)
 
-    # ccus
-    if interface.has_link(from_sector='ccus', to_sector='minerals'):
-        dm_ccus = interface.get_link(from_sector='ccus', to_sector='minerals')
-    else:
-        if len(interface.list_link()) != 0:
-            print('You are missing ccus to minerals interface')
-        dm_ccus = simulate_ccus_to_minerals_input()
-        dm_ccus.filter({'Country': cntr_list}, inplace=True)
+    # # ccus
+    # if interface.has_link(from_sector='ccus', to_sector='minerals'):
+    #     dm_ccus = interface.get_link(from_sector='ccus', to_sector='minerals')
+    # else:
+    #     if len(interface.list_link()) != 0:
+    #         print('You are missing ccus to minerals interface')
+    #     dm_ccus = simulate_ccus_to_minerals_input()
+    #     dm_ccus.filter({'Country': cntr_list}, inplace=True)
 
     # get product demand
     DM_demand = product_demand(DM_minerals, DM_buildings, DM_pow, DM_tra, CDM_const)
@@ -2114,7 +2114,7 @@ def minerals(interface=Interface(), calibration=False):
     # get mineral reserves
     dict_relres_fossil, dict_relres_minerals, dm_fossil = mineral_reserves(DM_minerals, dm_mindec, dm_mindec_sect, 
                                                                            dm_extraction, CDM_const, dm_lfs, 
-                                                                           dm_agr, dm_ref, dm_ccus)
+                                                                           dm_agr, dm_ref)
 
     # get mineral production by sector
     dm_production_sect = mineral_production_bysector(dm_mindec, dm_mindec_sect, CDM_const)
@@ -2122,7 +2122,7 @@ def minerals(interface=Interface(), calibration=False):
     # get variables for TPE
     df_tpe, df_tpe_relres = variables_for_tpe(DM_minerals, dm_production_sect, dm_fossil, dm_mindec,
                                               dm_extraction,
-                                              dict_relres_fossil, dict_relres_minerals, DM_ind, dm_agr, dm_ccus)
+                                              dict_relres_fossil, dict_relres_minerals, DM_ind, dm_agr)
 
     # return
     # results_run = {"out1": df_tpe, "out2": "calibration_tbd", "out3" : df_tpe_relres}
@@ -2143,13 +2143,13 @@ def local_minerals_run():
     return results_run
 
 
-# # run local
-# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/minerals_module.py"
-# # database_from_csv_to_datamatrix()
-# import time
-# start = time.time()
-# results_run = local_minerals_run()
-# end = time.time()
-# print(end - start)
+# run local
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/minerals_module.py"
+# database_from_csv_to_datamatrix()
+import time
+start = time.time()
+results_run = local_minerals_run()
+end = time.time()
+print(end - start)
 
 
