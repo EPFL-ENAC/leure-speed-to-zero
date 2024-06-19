@@ -20,6 +20,7 @@ import numpy as np
 import re
 import warnings
 import time
+import pandas as pd
 warnings.simplefilter("ignore")
 
 def rename_tech_fordeepen(word):
@@ -1351,34 +1352,29 @@ def variables_for_tpe(DM_cost, dm_bld_matswitch_savings_bymat, DM_emissions, DM_
     dm_temp.units["material-production"] = "Mt"
         
     # material production total (chemicals done in ammonia)
-    dm_tpe = DM_material_production["bymat"].filter({"Categories1" : ["aluminium","cement","copper",
+    dm_mat_prod = DM_material_production["bymat"].filter({"Categories1" : ["aluminium","cement","copper",
                                                                       "glass","lime","paper","steel"]})
-    dm_tpe = dm_tpe.flatten()
+    dm_mat_prod.rename_col('material-production', 'ind_material-production', 'Variables')
     
     # energy demand by material
-    dm_tpe.append(DM_energy_demand["bymat"].flatten(), "Variables")
+    dm_energy_by_mat = DM_energy_demand["bymat"].copy()
+    dm_energy_by_mat.rename_col('energy-demand', 'ind_energy-demand', 'Variables')
     
     # emissions (done in emissions)
     
     # production technologies (aluminium, cement, paper, steel)
-    dm_temp = DM_material_production["bytech"].filter({"Categories1" : ['aluminium_prim', 'aluminium_sec', 
-                                                                        'cement_dry-kiln', 'cement_geopolym', 
-                                                                        'cement_wet-kiln','paper_recycled', 
-                                                                        'paper_woodpulp', 'steel_BF-BOF', 
-                                                                        'steel_hisarna', 'steel_hydrog-DRI', 
-                                                                        'steel_scrap-EAF']})
-    dm_tpe.append(dm_temp.flatten(), "Variables")
+    dm_prod_tech = DM_material_production["bytech"].filter({"Categories1" : ['aluminium_prim', 'aluminium_sec',
+                                                                             'cement_dry-kiln', 'cement_geopolym',
+                                                                             'cement_wet-kiln','paper_recycled',
+                                                                             'paper_woodpulp', 'steel_BF-BOF',
+                                                                             'steel_hisarna', 'steel_hydrog-DRI',
+                                                                             'steel_scrap-EAF']})
+    dm_prod_tech.rename_col('material-production', 'ind_material-production', 'Variables')
     
     # energy demand for steel production (aluminium, cement, chem, glass, lime, paper, steel)
-    dm_temp = DM_energy_demand["bymatcarr"].filter({"Categories1" : ['aluminium', 'cement', 'glass', 
+    dm_energy_by_carrier = DM_energy_demand["bymatcarr"].filter({"Categories1": ['aluminium', 'cement', 'glass',
                                                                      'lime', 'paper', 'steel']})
-    dm_tpe.append(dm_temp.flatten().flatten(), "Variables")
-    
-    # put ind prefix
-    variables = dm_tpe.col_labels["Variables"]
-    for i in variables:
-        dm_tpe.rename_col(i, "ind_" + i, "Variables")
-    dm_tpe.sort("Variables")
+    dm_energy_by_carrier.rename_col('energy-demand', 'ind_energy-demand', 'Variables')
 
     # # dm_tpe
     # dm_tpe = DM_emissions["bygas"].copy()
@@ -1395,13 +1391,17 @@ def variables_for_tpe(DM_cost, dm_bld_matswitch_savings_bymat, DM_emissions, DM_
     # dm_tpe.append(dm_bld_matswitch_savings_bymat.flatten(), "Variables")
 
     # df_tpe
-    df_tpe = dm_tpe.write_df()
-    
-    # clean
-    del dm_bld_matswitch_savings_bymat, dm_temp, dm_tpe, i, variables, variables_new
-    
+    df = dm_mat_prod.write_df()
+    df2 = dm_energy_by_mat.write_df()
+    df3 = dm_prod_tech.write_df()
+    df4 = dm_energy_by_carrier.write_df()
+
+    df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
+    df = pd.concat([df, df3.drop(columns=['Country', 'Years'])], axis=1)
+    df = pd.concat([df, df4.drop(columns=['Country', 'Years'])], axis=1)
+
     # return
-    return df_tpe
+    return df
 
 def industry_agriculture_interface(DM_material_production, DM_energy_demand):
     
