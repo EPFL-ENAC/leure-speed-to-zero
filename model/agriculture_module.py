@@ -1492,16 +1492,19 @@ def biomass_allocation_workflow(dm_aps_ibp, dm_oil):
     # Oilcrop demand for biofuels [kcal] = Liquid biofuel demand oil voil [kcal] - Sum oil substitutes [kcal]
     dm_voil = dm_oil.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_oil'], 'Categories1': ['oil-voil']})
     dm_voil.append(dm_aps_ibp_oil, dim='Variables')
-    dm_voil.operation('agr_bioenergy_biomass-demand_liquid_oil', '-', 'agr_bioenergy_fdk-aby', out_col='agr_oil_voil',
-                      unit='kcal')
+    dm_voil.operation('agr_bioenergy_biomass-demand_liquid_oil', '-', 'agr_bioenergy_fdk-aby',
+                      out_col='agr_bioenergy_biomass-demand_liquid', unit='kcal')
+
+    # For TPE
+    dm_voil_tpe = dm_voil.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid']})
 
     # Feedstock for biogasoline [kcal] =
     # Liquid ethanol demand from cereal [kcal] - Feedstock for biogasoline from bev [kcal]
 
-    return dm_voil
+    return dm_voil, dm_aps_ibp_oil, dm_voil_tpe
 
  # CalculationLeaf CROP PRODUCTION ----------------------------------------------------------------------------------
-def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const):
+def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const, dm_oil):
 
     # DOMESTIC PRODUCTION ACCOUNTING FOR LOSSES ------------------------------------------------------------------------
 
@@ -1589,14 +1592,16 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
     # From ALCOHOLIC BEVERAGES (cereals and fruits) FIXME find correct way to implement
 
     # From BIOENERGY (oilcrop from voil + lgn from solid & liquid) (not accounted for in KNIME probably due to regex error)
+    # Pre processing
+    dm_oilcrop_voil = dm_oil.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_oil'], 'Categories1': ['oil-voil']})
     # Accounting for processing yield
-    idx_voil = dm_voil.idx
+    idx_voil = dm_oilcrop_voil.idx
     idx_cdm = cdm_feed_yield.idx
-    array_temp = dm_voil.array[:, :, idx_voil['agr_oil_voil'], :] \
+    array_temp = dm_oilcrop_voil.array[:, :, idx_voil['agr_bioenergy_biomass-demand_liquid_oil'], :] \
                  / cdm_feed_yield.array[idx_cdm['cp_ibp_processed'], idx_cdm['voil-to-oilcrop']]
-    dm_voil.add(array_temp, dim='Variables', col_label='agr_demand_bioenergy', unit='kcal')
+    dm_oilcrop_voil.add(array_temp, dim='Variables', col_label='agr_demand_bioenergy', unit='kcal')
     # Filtering and renaming for name matching
-    dm_voil = dm_voil.filter({'Variables': ['agr_demand_bioenergy']})
+    dm_voil = dm_oilcrop_voil.filter({'Variables': ['agr_demand_bioenergy']})
     dm_voil.rename_col('oil-voil', 'crop-oilcrop', dim='Categories1')
     # Creating dummy categories
     dm_voil.add(0.0, dummy=True, col_label='crop-cereal', dim='Categories1', unit='kcal')
@@ -2210,7 +2215,7 @@ def agriculture_refinery_interface(DM_energy_ghg):
     return dm_ref
 
 
-def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_aps, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O, DM_energy_ghg, DM_bioenergy, dm_lgn, dm_eth, dm_oil, dm_aps_ibp, DM_food_demand, dm_lfs_pro, dm_lfs, DM_land, dm_fiber):
+def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_aps, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O, DM_energy_ghg, DM_bioenergy, dm_lgn, dm_eth, dm_oil, dm_aps_ibp, DM_food_demand, dm_lfs_pro, dm_lfs, DM_land, dm_fiber, dm_aps_ibp_oil, dm_voil_tpe, DM_alc_bev):
 
     # Livestock population FIXME use cal
     # Note : check if it includes the poultry for eggs
@@ -2294,19 +2299,35 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
 
     # oil aps
     dm_oil_aps = dm_aps_ibp.filter({'Variables': ['agr_aps'], 'Categories2': ['fdk-voil']})
-    #dm_oil_aps.rename_col('agr_aps', 'agr_bioenergy_biomass-demand_liquid_kcal',
-    #                      dim='Variables')
     dm_oil_aps = dm_oil_aps.flatten()
     dm_oil_aps.rename_col_regex('_fdk-voil', '', dim='Categories1')
     dm_oil_aps.add(0.00000000000116222, dummy=True, col_label='kcal_to_TWh', dim='Variables', unit='')
     dm_oil_aps.operation('agr_aps', '*', 'kcal_to_TWh',
-                            out_col='agr_bioenergy_biomass-demand_liquid_kcal', unit='TWh')
+                            out_col='agr_bioenergy_biomass-demand_liquid', unit='TWh')
     df_oil_aps = dm_oil_aps.write_df()
     df_fdk_liquid = pd.concat([df_fdk_liquid, df_oil_aps.drop(columns=['Country', 'Years'])], axis=1)
+    # oil industry byproducts
+    dm_aps_ibp_oil.change_unit('agr_bioenergy_fdk-aby', factor=0.00000000000116222, old_unit='kcal', new_unit='TWh')
+    df_oil_ind_bp = dm_aps_ibp_oil.write_df()
+    df_fdk_liquid = pd.concat([df_fdk_liquid, df_oil_ind_bp.drop(columns=['Country', 'Years'])], axis=1)
+    # oil for oilcrops
+    dm_voil_tpe.rename_col('oil-voil', 'oil-oilcrop', dim='Categories1')
+    dm_voil_tpe.change_unit('agr_bioenergy_biomass-demand_liquid', factor=0.00000000000116222, old_unit='kcal', new_unit='TWh')
+    df_voil_tpe = dm_voil_tpe.write_df()
+    df_fdk_liquid = pd.concat([df_fdk_liquid, df_voil_tpe.drop(columns=['Country', 'Years'])], axis=1)
+    # eth industry byproducts
+    dm_eth_ind_bp = DM_alc_bev['biomass_hierarchy'].filter({'Variables': ['agr_bev_ibp_use_oth'], 'Categories1': ['biogasoline']})
+    dm_eth_ind_bp.change_unit('agr_bev_ibp_use_oth', factor=0.00000000000116222, old_unit='kcal',
+                            new_unit='TWh')
+    df_eth_ind_bp = dm_eth_ind_bp.write_df()
+    df_fdk_liquid = pd.concat([df_fdk_liquid, df_eth_ind_bp.drop(columns=['Country', 'Years'])], axis=1)
+
     # Filter columns to exclude those containing 'kcal' (keeping only the ones in [TWh])
     filtered_columns = [col for col in df_fdk_liquid.columns if 'kcal' not in col]
     # Select only the filtered columns
     df_fdk_liquid = df_fdk_liquid[filtered_columns]
+
+
 
 
     # Notes : some oil categories seem to differ with KNIME (unit = kcal, tpe wants TWh)
@@ -2425,8 +2446,8 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     DM_bioenergy, dm_oil, dm_lgn, dm_eth, dm_biofuel_fdk = bioenergy_workflow(DM_bioenergy, CDM_const, DM_ind, dm_bld, dm_tra)
     DM_manure = livestock_manure_workflow(DM_manure, DM_livestock, CDM_const)
     DM_feed, dm_aps_ibp, dm_feed_req, dm_aps = feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, CDM_const)
-    dm_voil = biomass_allocation_workflow(dm_aps_ibp, dm_oil)
-    DM_crop, dm_crop_other, dm_feed_processed, dm_food_processed = crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const)
+    dm_voil, dm_aps_ibp_oil, dm_voil_tpe = biomass_allocation_workflow(dm_aps_ibp, dm_oil)
+    DM_crop, dm_crop_other, dm_feed_processed, dm_food_processed = crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const, dm_oil)
     DM_land, dm_land_use, dm_fiber = land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, DM_ind)
     DM_nitrogen, dm_fertilizer_co, dm_mineral_fertilizer = nitrogen_workflow(DM_nitrogen, DM_land, CDM_const)
     DM_energy_ghg, dm_CO2, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O = energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_manure, CDM_const, DM_nitrogen)
@@ -2462,7 +2483,7 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     interface.add_link(from_sector='agriculture', to_sector='minerals', dm=dm_minerals)
 
     # TPE OUTPUT -------------------------------------------------------------------------------------------------------
-    results_run = agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_aps, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O, DM_energy_ghg, DM_bioenergy, dm_lgn, dm_eth, dm_oil, dm_aps_ibp, DM_food_demand, dm_lfs_pro, dm_lfs, DM_land, dm_fiber)
+    results_run = agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_aps, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O, DM_energy_ghg, DM_bioenergy, dm_lgn, dm_eth, dm_oil, dm_aps_ibp, DM_food_demand, dm_lfs_pro, dm_lfs, DM_land, dm_fiber, dm_aps_ibp_oil, dm_voil_tpe, DM_alc_bev)
 
     return results_run
 
@@ -2477,7 +2498,7 @@ def agriculture_local_run():
 
 # # Run the code in local
 # start = time.time()
-results_run = agriculture_local_run()
+#results_run = agriculture_local_run()
 # end = time.time()
 # print(end-start)
 

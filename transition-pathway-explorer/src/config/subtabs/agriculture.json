@@ -271,13 +271,13 @@
         "agr_bioenergy_biomass-demand_liquid_oil-afats[TWh]",
         "agr_bioenergy_biomass-demand_liquid_lgn[TWh]",
         "agr_bioenergy_biomass-demand_liquid_lgn-ezm-agr-residues[TWh]",
-        "agr_bioenergy_biomass-demand_liquid_lgn-ezm_energycrop[TWh]",
+        "agr_bioenergy_biomass-demand_liquid_lgn-ezm-energycrop[TWh]",
         "agr_bioenergy_biomass-demand_liquid_lgn-btl-fuelwood-and-res[TWh]",
         "agr_bioenergy_biomass-demand_liquid_lgn-btl-energycrop[TWh]",
-        "agr_bioenergy_biomass-demand_liquid_oil_algae[TWh]",
-        "agr_bioenergy_biomass-demand_liquid_oil_insect[TWh]",
-        "agr_bioenergy_biomass-demand_liquid_eth-ind-byproduct[TWh]",
-        "agr_bioenergy_biomass-demand_liquid_oil-ind-byproduct[TWh]",
+        "agr_bioenergy_biomass-demand_liquid_algae[TWh]",
+        "agr_bioenergy_biomass-demand_liquid_insect[TWh]",
+        "agr_bev_ibp_use_oth_biogasoline[TWh]",
+        "agr_bioenergy_fdk-aby_oil-voil[TWh]",
         "agr_bioenergy_biomass-demand_liquid_oil-oilcrop[TWh]",
         "agr_bioenergy_biomass-demand_biogas_energycrop[TWh]"
       ]
@@ -296,10 +296,10 @@
         "agr_bioenergy_biomass-demand_liquid_lgn-ezm-energycrop[TWh]",
         "agr_bioenergy_biomass-demand_liquid_lgn-btl-fuelwood-and-res[TWh]",
         "agr_bioenergy_biomass-demand_liquid_lgn-btl-energycrop[TWh]",
-        "agr_bioenergy_biomass-demand_liquid_oil_algae[TWh]",
-        "agr_bioenergy_biomass-demand_liquid_oil_insect[TWh]",
-        "agr_bioenergy_biomass-demand_liquid_eth-ind-byproduct[TWh]",
-        "agr_bioenergy_biomass-demand_liquid_oil-ind-byproduct[TWh]",
+        "agr_bioenergy_biomass-demand_liquid_algae[TWh]",
+        "agr_bioenergy_biomass-demand_liquid_insect[TWh]",
+        "agr_bev_ibp_use_oth_biogasoline[TWh]",
+        "agr_bioenergy_fdk-aby_oil-voil[TWh]",
         "agr_bioenergy_biomass-demand_liquid_oil-oilcrop[TWh]"
       ]
     },
