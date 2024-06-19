@@ -143,13 +143,13 @@
         "agr_demand_feed_crop-sugarcrop[kcal]",
         "agr_demand_feed_crop-fruit[kcal]",
         "agr_demand_feed_crop-veg[kcal]",
-        "agr_demand_feed_fish-fish-meal[kcal]",
+        "agr_demand_feed_fish[kcal]",
         "agr_demand_feed_crop-rice[kcal]",
         "agr_demand_feed_liv-meat-meal[kcal]",
         "agr_demand_feed_crop-starch[kcal]",
-        "agr_demand_feed_processed-molasse-sugarcrop[kcal]",
-        "agr_demand_feed_processed-cake-oilcrop[kcal]",
-        "agr_demand_feed_processed-voil-oilcrop[kcal]"
+        "agr_demand_feed_crop-processed-molasse[kcal]",
+        "agr_demand_feed_crop-processed-cake[kcal]",
+        "agr_demand_feed_crop-processed-voil[kcal]"
       ]
     },
     "CH4Emissions": {
