@@ -1714,11 +1714,11 @@ def land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, DM_ind):
     # Converting industry fibers from [kt] to [t]
     dm_ind_fiber = DM_ind["natfibers"]
     DM_land['fibers'].append(dm_ind_fiber, dim='Variables')
-    DM_land['fibers'].add(1000.0, dummy=True, col_label='kt_to_t', dim='Variables', unit='')
-    DM_land['fibers'].operation('ind_dem_natfibers', '*', 'kt_to_t', out_col='ind_dem_natfibers_t', unit='t')
+
+    DM_land['fibers'].change_unit('ind_dem_natfibers', factor=1000, old_unit='kt', new_unit='t')
 
     # Domestic supply fiber crop demand [t] = ind demand natural fibers [t] + domestic supply quantity fibers [t]
-    DM_land['fibers'].operation('ind_dem_natfibers_t', '+', 'fxa_domestic-supply-quantity_fibres-plant-eq',
+    DM_land['fibers'].operation('ind_dem_natfibers', '+', 'fxa_domestic-supply-quantity_fibres-plant-eq',
                                 out_col='agr_domestic-supply-quantity_fibres-plant-eq', unit='t')
 
     # Domestic production fiber crop [t] = Domestic supply fiber crop demand [t] * Self sufficiency ratio [%]
@@ -1837,7 +1837,7 @@ def nitrogen_workflow(DM_nitrogen, DM_land, CDM_const):
     idx_fert = dm_fertilizer_co.idx
     dm_temp = dm_fertilizer_co.array[:, :, idx_fert['agr_input-use'], :] \
               * cdm_fertilizer_co.array[idx_cdm['cp_ef'], :]
-    dm_fertilizer_co.add(dm_temp, dim='Variables', col_label='agr_input-use_emissions-CO2', unit='kcal')
+    dm_fertilizer_co.add(dm_temp, dim='Variables', col_label='agr_input-use_emissions-CO2', unit='t')
 
     return DM_nitrogen, dm_fertilizer_co, dm_mineral_fertilizer
 
@@ -1868,18 +1868,20 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_ma
     idx_cdm = cdm_CO2.idx
     array_temp = dm_energy.array[:, :, idx_energy['agr_energy-demand'], :] \
                  * cdm_CO2.array[idx_cdm['cp_emission-factor_CO2'], :]
-    DM_energy_ghg['caf_energy_demand'].add(array_temp, dim='Variables', col_label='agr_input-use_emissions-CO2_temp',
+    DM_energy_ghg['caf_energy_demand'].add(array_temp, dim='Variables', col_label='agr_input-use_emissions-CO2',
                                            unit='Mt')
 
     # Overall CO2 emission from fuel [Mt] = sum (Energy direct emission [MtCO2])
-    dm_CO2 = DM_energy_ghg['caf_energy_demand'].filter({'Variables': ['agr_input-use_emissions-CO2_temp']})
+    dm_CO2 = DM_energy_ghg['caf_energy_demand'].filter({'Variables': ['agr_input-use_emissions-CO2']})
     dm_CO2.groupby({'fuel': '.*'}, dim='Categories1', regex=True, inplace=True)
     dm_CO2 = dm_CO2.flatten()
 
     # Unit conversion : Overall CO2 emission from fuel [Mt] => [t]
-    dm_CO2.add(1000000.0, dummy=True, col_label='Mt_to_t', dim='Variables', unit='')
-    dm_CO2.operation('agr_input-use_emissions-CO2_temp_fuel', '*', 'Mt_to_t',
-                     out_col='agr_input-use_emissions-CO2_fuel', unit='t')
+    idx = dm_CO2.idx
+    var = 'agr_input-use_emissions-CO2_fuel'
+    dm_CO2.array[:, :, idx[var]] = dm_CO2.array[:, :, idx[var]] * 1e6
+    dm_CO2.units[var] = 't'
+
     dm_CO2 = dm_CO2.filter({'Variables': ['agr_input-use_emissions-CO2_fuel']})
     dm_CO2.deepen()
 
@@ -1902,19 +1904,14 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_ma
     # Unit conversion : N2O, CH4 from crop residues [Mt] => [t]
     dm_ghg = DM_crop['ef_residues'].filter(
         {'Variables': ['agr_crop_emission'], 'Categories2': ['N2O-emission', 'CH4-emission']})
-    dm_ghg = dm_ghg.flatten()
-    dm_ghg.add(1000000.0, dummy=True, col_label='Mt_to_t', dim='Variables', unit='')
-    dm_ghg.operation('agr_crop_emission', '*', 'Mt_to_t',
-                     out_col='agr_emission_residues', unit='t')
+
+    dm_ghg.change_unit('agr_crop_emission', factor=1e6, old_unit='Mt', new_unit='t')
+    dm_ghg.rename_col('agr_crop_emission', 'agr_emission_residues', 'Variables')
 
     # Summing per residue emission type (soil & burnt)
-    dm_ghg.deepen()
-    dm_ghg.groupby({'total': '.*'}, dim='Categories1', regex=True, inplace=True)
+    dm_ghg.group_all(dim='Categories1', inplace=True)
 
     # Pre processing (name matching, adding dummy columns)
-    dm_ghg = dm_ghg.flatten()
-    dm_ghg.rename_col_regex(str1="total_", str2="", dim="Categories1")
-    dm_ghg = dm_ghg.filter({'Variables': ['agr_emission_residues']})
     dm_ghg.add(0.0, dummy=True, col_label='CO2-emission', dim='Categories1', unit='t')
 
     # LIVESTOCK EMISSIONS -------------------------------------------------------------------------------------------
