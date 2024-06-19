@@ -591,7 +591,7 @@ class DataMatrix:
         # The pre-requisite is that all other dimensions match
         dim_lab = self.dim_labels.copy()
         dim_lab.remove(dim)
-        #if 'Variables' in dim_lab:
+        # if 'Variables' in dim_lab:
         #    dim_lab.remove("Variables")
         for d in dim_lab:
             if self.col_labels[d] != data2.col_labels[d]:
@@ -599,12 +599,17 @@ class DataMatrix:
                 data2.sort(dim=d)
                 if self.col_labels[d] != data2.col_labels[d]:
                     raise ValueError(f'columns {self.col_labels[d]} do not match columns {data2.col_labels[d]}')
+        # Check that units are the same
+        if dim != 'Variables':
+            if self.units != data2.units:
+                raise ValueError(f'The units should be the same')
         # Check that across the dimension where you want to append the labels are different
         cols1 = set(self.col_labels[dim])
         cols2 = set(data2.col_labels[dim])
         same_col = cols2.intersection(cols1)
         if len(same_col) != 0:
             raise Exception("The DataMatrix that you are trying to append contains the same labels across dimension ", dim)
+
         # Concatenate the two arrays
         a = self.dim_labels.index(dim)
         self.array = np.concatenate((self.array, data2.array), axis=a)
@@ -859,6 +864,19 @@ class DataMatrix:
         dm.dim_labels = dm.dim_labels[:-1]
         if not inplace:
             return dm
+        return
+
+    def change_unit(self, var, factor, old_unit, new_unit, operator='*'):
+        idx = self.idx
+        if self.units[var] != old_unit:
+            raise ValueError(f'The original unit is not {old_unit}')
+        self.units[var] = new_unit
+        if operator == '*':
+            self.array[:, :, idx[var], ...] = self.array[:, :, idx[var], ...] * factor
+        elif operator == '/':
+            self.array[:, :, idx[var], ...] = self.array[:, :, idx[var], ...] / factor
+        else:
+            raise ValueError(f'Only * and / operators are possible in change_unit')
         return
 
     def datamatrix_plot(self, selected_cols={}, title='title'):
