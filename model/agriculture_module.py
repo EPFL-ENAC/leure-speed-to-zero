@@ -1204,7 +1204,7 @@ def bioenergy_workflow(DM_bioenergy, CDM_const, DM_ind, dm_bld, dm_tra):
                                               col_label='agr_bioenergy-capacity_liq-bio-prod_biojetkerosene',
                                               unit='TWh')
 
-    # Liquid biofuel feedtsock requirements [kcal] = Liquid biofuel per type [TWh] * share per technology [kcal/TWh]
+    # Liquid biofuel feedstock requirements [kcal] = Liquid biofuel per type [TWh] * share per technology [kcal/TWh]
 
     # Constant pre processing
     cdm_biodiesel = CDM_const['cdm_biodiesel']
@@ -1299,25 +1299,25 @@ def bioenergy_workflow(DM_bioenergy, CDM_const, DM_ind, dm_bld, dm_tra):
     # eth
     idx_eth_mix = dm_eth.idx
     idx_eth_demand = dm_biofuel_fdk.idx
-    dm_temp = dm_biofuel_fdk.array[:, :, idx_eth_demand['agr_bioenergy_biomass-demand_liquid_eth'], np.newaxis] * \
+    array_temp = dm_biofuel_fdk.array[:, :, idx_eth_demand['agr_bioenergy_biomass-demand_liquid_eth'], np.newaxis] * \
               dm_eth.array[:, :, idx_eth_mix['agr_biomass-hierarchy_biomass-mix_liquid'], :]
-    dm_eth.add(dm_temp, dim='Variables', col_label='agr_bioenergy_biomass-demand_liquid_eth',
+    dm_eth.add(array_temp, dim='Variables', col_label='agr_bioenergy_biomass-demand_liquid_eth',
                unit='kcal')
 
     # lgn
     idx_lgn_mix = dm_lgn.idx
     idx_lgn_demand = dm_biofuel_fdk.idx
-    dm_temp = dm_biofuel_fdk.array[:, :, idx_lgn_demand['agr_bioenergy_biomass-demand_liquid_lgn'], np.newaxis] * \
+    array_temp = dm_biofuel_fdk.array[:, :, idx_lgn_demand['agr_bioenergy_biomass-demand_liquid_lgn'], np.newaxis] * \
               dm_lgn.array[:, :, idx_lgn_mix['agr_biomass-hierarchy_biomass-mix_liquid'], :]
-    dm_lgn.add(dm_temp, dim='Variables', col_label='agr_bioenergy_biomass-demand_liquid_lgn',
+    dm_lgn.add(array_temp, dim='Variables', col_label='agr_bioenergy_biomass-demand_liquid_lgn',
               unit='kcal')
 
     # oil
     idx_oil_mix = dm_oil.idx
     idx_oil_demand = dm_biofuel_fdk.idx
-    dm_temp = dm_biofuel_fdk.array[:, :, idx_oil_demand['agr_bioenergy_biomass-demand_liquid_oil'], np.newaxis] * \
+    array_temp = dm_biofuel_fdk.array[:, :, idx_oil_demand['agr_bioenergy_biomass-demand_liquid_oil'], np.newaxis] * \
               dm_oil.array[:, :, idx_oil_mix['agr_biomass-hierarchy_biomass-mix_liquid'], :]
-    dm_oil.add(dm_temp, dim='Variables', col_label='agr_bioenergy_biomass-demand_liquid_oil',
+    dm_oil.add(array_temp, dim='Variables', col_label='agr_bioenergy_biomass-demand_liquid_oil',
                unit='kcal')
 
 
@@ -2174,9 +2174,11 @@ def agriculture_minerals_interface(DM_nitrogen, DM_bioenergy, dm_lgn,  write_xls
     dm_liquid = dm_lgn.filter(
         {'Variables': ['agr_bioenergy_biomass-demand_liquid_lgn'], 'Categories1': ['lgn-btl-fuelwood-and-res']})
     dm_liquid.rename_col('lgn-btl-fuelwood-and-res', 'btl_fuelwood-and-res', dim='Categories1')
-    dm_liquid.add(0.1264, dummy=True, col_label='TWh_to_Mt', dim='Variables', unit='Mt')
-    dm_liquid.operation('agr_bioenergy_biomass-demand_liquid_lgn', '*', 'TWh_to_Mt',
-                       out_col='agr_bioenergy_biomass-demand_liquid', unit='Mt')
+    dm_liquid.rename_col('agr_bioenergy_biomass-demand_liquid_lgn', 'agr_bioenergy_biomass-demand_liquid', dim='Variables')
+    dm_liquid.change_unit('agr_bioenergy_biomass-demand_liquid', factor=0.00000000000116222, old_unit='kcal',
+                            new_unit='TWh')
+    dm_liquid.change_unit('agr_bioenergy_biomass-demand_liquid', factor=0.1264, old_unit='TWh',
+                          new_unit='Mt')
     dm_liquid = dm_liquid.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid']})
     dm_liquid = dm_liquid.flatten()
 
@@ -2505,7 +2507,7 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     # TPE OUTPUT -------------------------------------------------------------------------------------------------------
     results_run = agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_aps, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O, DM_energy_ghg, DM_bioenergy, dm_lgn, dm_eth, dm_oil, dm_aps_ibp, DM_food_demand, dm_lfs_pro, dm_lfs, DM_land, dm_fiber, dm_aps_ibp_oil, dm_voil_tpe, DM_alc_bev, dm_biofuel_fdk)
 
-    return results_run
+ : fix    return results_run
 
 def agriculture_local_run():
     years_setting, lever_setting = init_years_lever()
