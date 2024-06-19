@@ -1734,6 +1734,9 @@ def land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, DM_ind):
                                 'agr_climate-smart-crop_yield_fibres-plant-eq',
                                 out_col='agr_land_cropland_fibres-plant-eq', unit='ha')
 
+    # Copy for TPE
+    dm_fiber = DM_land['fibers'].copy()
+
     # LAND DEMAND ------------------------------------------------------------------------------------------------------
 
     # Categories x11 : cereals, oilcrop, pulse, fruit, veg, starch, sugarcrop, rice , lgn, algae, insect FIXME gas energycrop in Knime but regex issue
@@ -1789,7 +1792,7 @@ def land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, DM_ind):
                               'agr_land_cropland_rice',
                               out_col='agr_rice_crop_CH4-emission', unit='t')
 
-    return DM_land, dm_land_use
+    return DM_land, dm_land_use, dm_fiber
 
 # CalculationLeaf NITROGEN BALANCE -------------------------------------------------------------------------------------
 def nitrogen_workflow(DM_nitrogen, DM_land, CDM_const):
@@ -2210,7 +2213,7 @@ def agriculture_refinery_interface(DM_energy_ghg):
     return dm_ref
 
 
-def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_aps, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O, DM_energy_ghg, DM_bioenergy, dm_lgn, dm_eth, dm_oil, dm_aps_ibp):
+def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_aps, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O, DM_energy_ghg, DM_bioenergy, dm_lgn, dm_eth, dm_oil, dm_aps_ibp, DM_food_demand, dm_lfs_pro, dm_lfs, DM_land, dm_fiber):
 
     # Livestock population FIXME use cal
     # Note : check if it includes the poultry for eggs
@@ -2220,8 +2223,6 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
     # Meat
     dm_meat = DM_livestock['losses'].filter({'Variables': ['agr_domestic_production']})
     df_meat = dm_meat.write_df()
-
-    # Crop use
 
     # Crop production
     dm_crop_prod_food = DM_crop['crop'].filter({'Variables': ['agr_domestic-production_afw']})
@@ -2275,28 +2276,43 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
 
     # Liquid bioenergy-feedstock mix
     dm_fdk_oil = dm_oil.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_oil']})
-    dm_fdk_oil.rename_col('agr_bioenergy_biomass-demand_liquid_oil', 'agr_bioenergy_biomass-demand_liquid', dim='Variables')
+    dm_fdk_oil.rename_col('agr_bioenergy_biomass-demand_liquid_oil', 'agr_bioenergy_biomass-demand_liquid_kcal', dim='Variables')
     dm_fdk_eth = dm_eth.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_eth']})
-    dm_fdk_eth.rename_col('agr_bioenergy_biomass-demand_liquid_eth', 'agr_bioenergy_biomass-demand_liquid',
+    dm_fdk_eth.rename_col('agr_bioenergy_biomass-demand_liquid_eth', 'agr_bioenergy_biomass-demand_liquid_kcal',
                           dim='Variables')
     dm_fdk_lgn = dm_lgn.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_lgn']})
-    dm_fdk_lgn.rename_col('agr_bioenergy_biomass-demand_liquid_lgn', 'agr_bioenergy_biomass-demand_liquid',
+    dm_fdk_lgn.rename_col('agr_bioenergy_biomass-demand_liquid_lgn', 'agr_bioenergy_biomass-demand_liquid_kcal',
                           dim='Variables')
+    # Unit conversion [kcal] => [TWh]
+    dm_fdk_oil.append(dm_fdk_eth, dim='Categories1')
+    dm_fdk_oil.append(dm_fdk_lgn, dim='Categories1')
+    dm_fdk_oil.add(0.00000000000116222, dummy=True, col_label='kcal_to_TWh', dim='Variables', unit='')
+    dm_fdk_oil.operation('agr_bioenergy_biomass-demand_liquid_kcal', '*', 'kcal_to_TWh',
+                         out_col='agr_bioenergy_biomass-demand_liquid', unit='TWh')
     df_fdk_liquid = dm_fdk_oil.write_df()
     df_fdk_lgn = dm_fdk_lgn.write_df()
     df_fdk_eth = dm_fdk_eth.write_df()
     df_fdk_liquid = pd.concat([df_fdk_liquid, df_fdk_lgn.drop(columns=['Country', 'Years'])], axis=1)
     df_fdk_liquid = pd.concat([df_fdk_liquid, df_fdk_eth.drop(columns=['Country', 'Years'])], axis=1)
+
     # oil aps
     dm_oil_aps = dm_aps_ibp.filter({'Variables': ['agr_aps'], 'Categories2': ['fdk-voil']})
-    dm_oil_aps.rename_col('agr_aps', 'agr_bioenergy_biomass-demand_liquid_oil',
-                          dim='Variables')
+    #dm_oil_aps.rename_col('agr_aps', 'agr_bioenergy_biomass-demand_liquid_kcal',
+    #                      dim='Variables')
     dm_oil_aps = dm_oil_aps.flatten()
     dm_oil_aps.rename_col_regex('_fdk-voil', '', dim='Categories1')
-    dm_oil_aps = dm_oil_aps.write_df()
-    df_fdk_liquid = pd.concat([df_fdk_liquid, dm_oil_aps.drop(columns=['Country', 'Years'])], axis=1)
+    dm_oil_aps.add(0.00000000000116222, dummy=True, col_label='kcal_to_TWh', dim='Variables', unit='')
+    dm_oil_aps.operation('agr_aps', '*', 'kcal_to_TWh',
+                            out_col='agr_bioenergy_biomass-demand_liquid_kcal', unit='TWh')
+    df_oil_aps = dm_oil_aps.write_df()
+    df_fdk_liquid = pd.concat([df_fdk_liquid, df_oil_aps.drop(columns=['Country', 'Years'])], axis=1)
+    # Filter columns to exclude those containing 'kcal' (keeping only the ones in [TWh])
+    filtered_columns = [col for col in df_fdk_liquid.columns if 'kcal' not in col]
+    # Select only the filtered columns
+    df_fdk_liquid = df_fdk_liquid[filtered_columns]
 
-    # Notes : some oil categories seem to differ with KNIME
+
+    # Notes : some oil categories seem to differ with KNIME (unit = kcal, tpe wants TWh)
 
 
     # Solid bioenergy - feedstock mix
@@ -2307,6 +2323,37 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
     dm_fdk_biogas = DM_bioenergy['digestor-mix'].filter({'Variables': ['agr_bioenergy_biomass-demand_biogas']})
     df_fdk_biogas = dm_fdk_biogas.write_df()
 
+    # Crop use
+    # Total food from crop (does not include processed food)
+    dm_crop_food = dm_lfs.filter_w_regex({'Variables': 'agr_demand', 'Categories1': 'crop.*'})
+    dm_crop_food.groupby({'food_crop': '.*'}, dim='Categories1', regex=True, inplace=True)
+    df_crop_use = dm_crop_food.write_df()
+    # Total feed from crop
+    dm_crop_feed = DM_feed['ration'].filter_w_regex({'Variables': 'agr_demand_feed', 'Categories1': 'crop.*'})
+    dm_crop_feed.groupby({'crop': '.*'}, dim='Categories1', regex=True, inplace=True)
+    df_crop_feed = dm_crop_feed.write_df()
+    # Total bioenergy consumption (sum of liquid, biogas feedstock) (solid not included in KNIME)
+    # Liquid (same as bioenergy feedstock mix)
+    #dm_use_liquid = sum in kcal
+    # Biogas (same as bioenergy feedstock mix)
+    # Solid (same as bioenergy feedstock mix) Note : not included in KNIME
+
+    # Total non-food consumption (beverages and fiber crops) FIXME check with Gino if okay to consider fiber crops
+    # Beverages
+    dm_crop_bev = dm_lfs_pro.filter_w_regex({'Variables': 'agr_domestic_production', 'Categories1': 'pro-bev.*'})
+    dm_crop_bev.groupby({'crop-bev': '.*'}, dim='Categories1', regex=True, inplace=True)
+    dm_crop_bev = dm_crop_bev.flatten()
+    # Fiber crops
+    dm_crop_fiber = dm_fiber.filter_w_regex({'Variables': 'agr_domestic-production.*'})
+    # Unit conversion : [t] => [kcal]
+    dm_crop_fiber.add(4299300.0, dummy=True, col_label='t_to_kcal', dim='Variables', unit='')
+    dm_crop_fiber.operation('agr_domestic-production_fibres-plant-eq', '*', 't_to_kcal',
+                            out_col='agr_domestic-production_fibres-plant-eq_kcal', unit='kcal')
+    # Total non-food consumption [kcal] = bev + fibers
+    dm_crop_bev.append(dm_crop_fiber, dim='Variables')
+    dm_crop_bev.operation('agr_domestic-production_fibres-plant-eq_kcal', '+', 'agr_domestic_production_crop-bev',
+                          out_col='agr_crop-cons_non-food', unit='kcal')
+    df_crop_non_food = dm_crop_bev.write_df()
 
     # Concatenating dfs
     df = pd.concat([df, df_meat.drop(columns=['Country', 'Years'])], axis=1)
@@ -2321,6 +2368,9 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
     df = pd.concat([df, df_fdk_solid.drop(columns=['Country', 'Years'])], axis=1)
     df = pd.concat([df, df_fdk_biogas.drop(columns=['Country', 'Years'])], axis=1)
     df = pd.concat([df, df_bio_cap.drop(columns=['Country', 'Years'])], axis=1)
+    df = pd.concat([df, df_crop_use.drop(columns=['Country', 'Years'])], axis=1)
+    df = pd.concat([df, df_crop_feed.drop(columns=['Country', 'Years'])], axis = 1)
+    df = pd.concat([df, df_crop_non_food.drop(columns=['Country', 'Years'])], axis = 1)
 
     return df
 
@@ -2380,7 +2430,7 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     DM_feed, dm_aps_ibp, dm_feed_req, dm_aps = feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, CDM_const)
     dm_voil = biomass_allocation_workflow(dm_aps_ibp, dm_oil)
     DM_crop, dm_crop_other, dm_feed_processed, dm_food_processed = crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const)
-    DM_land, dm_land_use = land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, DM_ind)
+    DM_land, dm_land_use, dm_fiber = land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, DM_ind)
     DM_nitrogen, dm_fertilizer_co, dm_mineral_fertilizer = nitrogen_workflow(DM_nitrogen, DM_land, CDM_const)
     DM_energy_ghg, dm_CO2, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O = energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_manure, CDM_const, DM_nitrogen)
 
@@ -2415,7 +2465,7 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     interface.add_link(from_sector='agriculture', to_sector='minerals', dm=dm_minerals)
 
     # TPE OUTPUT -------------------------------------------------------------------------------------------------------
-    results_run = agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_aps, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O, DM_energy_ghg, DM_bioenergy, dm_lgn, dm_eth, dm_oil, dm_aps_ibp)
+    results_run = agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_aps, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O, DM_energy_ghg, DM_bioenergy, dm_lgn, dm_eth, dm_oil, dm_aps_ibp, DM_food_demand, dm_lfs_pro, dm_lfs, DM_land, dm_fiber)
 
     return results_run
 
@@ -2430,7 +2480,7 @@ def agriculture_local_run():
 
 # # Run the code in local
 # start = time.time()
-#results_run = agriculture_local_run()
+results_run = agriculture_local_run()
 # end = time.time()
 # print(end-start)
 
