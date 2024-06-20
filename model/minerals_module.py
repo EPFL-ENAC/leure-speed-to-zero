@@ -2124,11 +2124,7 @@ def minerals(interface=Interface(), calibration=False):
                                               dm_extraction,
                                               dict_relres_fossil, dict_relres_minerals, DM_ind, dm_agr)
 
-    # return
-    # results_run = {"out1": df_tpe, "out2": "calibration_tbd", "out3" : df_tpe_relres}
-    results_run = df_tpe
-
-    return results_run
+    return df_tpe, df_tpe_relres
 
 
 def local_minerals_run():
@@ -2144,12 +2140,12 @@ def local_minerals_run():
 
 
 # run local
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/minerals_module.py"
+#__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/minerals_module.py"
 # database_from_csv_to_datamatrix()
-import time
-start = time.time()
-results_run = local_minerals_run()
-end = time.time()
-print(end - start)
+#import time
+#start = time.time()
+# results_run = local_minerals_run()
+#end = time.time()
+#print(end - start)
 
 

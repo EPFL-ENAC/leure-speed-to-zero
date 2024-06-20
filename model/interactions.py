@@ -65,7 +65,7 @@ def runner(lever_setting, global_vars, output_nodes, logger):
     TPE['land-use'] = land_use(lever_setting, years_setting, interface)
     logger.info('Execution time Land-use: {0:.3g} s'.format(time.time() - start_time))
     start_time = time.time()
-    TPE['minerals'] = minerals(interface)
+    TPE['minerals'], TPE['minerals_EU'] = minerals(interface)
     logger.info('Execution time Minerals: {0:.3g} s'.format(time.time() - start_time))
     start_time = time.time()
     TPE['emissions'] = emissions(lever_setting, years_setting, interface)
