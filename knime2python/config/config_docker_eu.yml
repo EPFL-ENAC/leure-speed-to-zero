@@ -15,29 +15,46 @@ model:
     levers_file: /eucalc/config/lever_position.json
   prod:
     output_nodes:
+      - 'climate'
+      - 'lifestyles'
       - 'transport'
+      - 'buildings'
+      - 'agriculture'
+      - 'industry'
+      - 'power'
+      - 'oil-refinery'
+      - 'land-use'
+      - 'minerals'
+      - 'emissions'
+      - 'district-heating'
+      - 'ammonia'
+      - 'minerals_EU'
   years: [1990, 2015, 2050, 5]
-  geoscale: 'France|Paris'
+  geoscale: '.*'
   interfaces:
     file: /eucalc/config/interface.xlsx
     levers_sheet: Levers
     cube_sheet: "0.2 Pathway Explorer"
   max_cache_size: 100
   scenarios:
-    - [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-    - [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,1,1]
-    - [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1]
+    - [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    - [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    - [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
   GTAP:
     scenarios:
-      EUREF: [1, 1, 1, 1, 1, 2, 2, 1.5, 1.5, 2.1, 1, 1, 2, 1, 1, 2, 2, 2, 1, 2, 1, 1, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1, 1, 1, 1, 4, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 2, 1, 1, 2, 2, 1, 2, 2, 2, 1, 1]
+      EUREF: [1, 1, 1, 1, 1, 2, 2, 1.5, 1.5, 2.1, 1, 1, 2, 1, 1, 2, 2, 2, 1, 2, 1, 1, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1, 1, 1, 1, 4, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 2, 1, 1, 2, 2, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     metrics:
+      #- "ind_energy-demand[TWh]"
       - "tra_energy-demand_total[TWh]"
+      #- "bld_energy-demand[TWh]"
+      #- "lfs_diet_bov[kcal]"
+      #- "agr_energy-demand[Twh]"
 log:
-  suppress_run_logs: True
+  suppress_run_logs: False
   level: INFO
   file: api.log
 api:
-  port: 5000
+  port: 9393
   country_codes:
     Austria: AT
     Belgium: BE
@@ -59,6 +76,7 @@ api:
     Luxembourg: LU
     Malta: MT
     Netherlands: NL
+    Paris: PS
     Poland: PL
     Portugal: PT
     Romania: RO
@@ -71,5 +89,6 @@ api:
     Europe: EU
     RoW : RW
     World : WD
+    Vaud: VD
 api_db:
   port: 5001
