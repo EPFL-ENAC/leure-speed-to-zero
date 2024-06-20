@@ -7,7 +7,7 @@
     </div>
 
     <div id="inputs-pathways">
-      <!-- <h3>Choose example pathway for Paris:</h3> -->
+      <!-- <h3>Choose example pathway:</h3> -->
       <PathwaySelector :app-state="appState"/>
     </div>
 

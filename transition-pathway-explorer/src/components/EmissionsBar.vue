@@ -11,7 +11,7 @@
               Start calculating
             </span>
             <span v-if="appState.mode==='main'">
-              Try to meet your Parisian GHG budget (click to change)
+              Try to meet your GHG budget (click to change)
             </span>
           </div>
         </div>

@@ -6,7 +6,7 @@
       >
         <img class="cursor-pointer" src="/img/eucalc_logo-alt5.png" v-on:click="reloadPage">
         <div id="page-title" class="cursor-pointer" v-on:click="reloadPage">
-          Paris<span>Calculator </span><br>
+          Pathaway<span>Calculator </span><br>
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 <template>
   <div id="levers-pathways">
-    <div id="levers-pathway-title">Choose example pathway for Paris: </div>
+    <div id="levers-pathway-title">Choose example pathway: </div>
     <div id="levers-pathways-select">
       <select v-on:change="selectPathway">
         <option disabled value="" :selected="appState.pathwayIndex < 0"></option>
