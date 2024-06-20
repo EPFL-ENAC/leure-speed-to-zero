@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.6](https://github.com/2050Calculators/PathwayCalc/compare/v1.0.5...v1.0.6) (2024-06-20)
+
+
+### Bug Fixes
+
+* new eucalc.epfl.ch ([cd2035a](https://github.com/2050Calculators/PathwayCalc/commit/cd2035aeb15e975b627a8dd1edf7785a657470ec))
+
 ## [1.0.5](https://github.com/2050Calculators/PathwayCalc/compare/v1.0.4...v1.0.5) (2024-06-06)
 
 
