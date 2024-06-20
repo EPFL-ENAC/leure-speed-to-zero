@@ -2219,6 +2219,8 @@ def agriculture_refinery_interface(DM_energy_ghg):
 
 def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_aps, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O, DM_energy_ghg, DM_bioenergy, dm_lgn, dm_eth, dm_oil, dm_aps_ibp, DM_food_demand, dm_lfs_pro, dm_lfs, DM_land, dm_fiber, dm_aps_ibp_oil, dm_voil_tpe, DM_alc_bev, dm_biofuel_fdk):
 
+    kcal_to_TWh = 1.163e-12
+
     # Livestock population FIXME use cal
     # Note : check if it includes the poultry for eggs
     dm_liv_meat = DM_livestock['caf_liv_population'].filter_w_regex({'Variables': 'agr_liv_population', 'Categories1': 'meat.*'}, inplace=False)
@@ -2282,66 +2284,64 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
 
     # Liquid bioenergy-feedstock mix
     dm_fdk_oil = dm_oil.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_oil']})
-    dm_fdk_oil.rename_col('agr_bioenergy_biomass-demand_liquid_oil', 'agr_bioenergy_biomass-demand_liquid_kcal', dim='Variables')
+    dm_fdk_oil.rename_col('agr_bioenergy_biomass-demand_liquid_oil', 'agr_bioenergy_biomass-demand_liquid', dim='Variables')
     dm_fdk_eth = dm_eth.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_eth']})
-    dm_fdk_eth.rename_col('agr_bioenergy_biomass-demand_liquid_eth', 'agr_bioenergy_biomass-demand_liquid_kcal',
+    dm_fdk_eth.rename_col('agr_bioenergy_biomass-demand_liquid_eth', 'agr_bioenergy_biomass-demand_liquid',
                           dim='Variables')
     dm_fdk_lgn = dm_lgn.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_lgn']})
-    dm_fdk_lgn.rename_col('agr_bioenergy_biomass-demand_liquid_lgn', 'agr_bioenergy_biomass-demand_liquid_kcal',
+    dm_fdk_lgn.rename_col('agr_bioenergy_biomass-demand_liquid_lgn', 'agr_bioenergy_biomass-demand_liquid',
                           dim='Variables')
     # Unit conversion [kcal] => [TWh]
     dm_fdk_oil.append(dm_fdk_eth, dim='Categories1')
     dm_fdk_oil.append(dm_fdk_lgn, dim='Categories1')
-    dm_fdk_oil.add(0.00000000000116222, dummy=True, col_label='kcal_to_TWh', dim='Variables', unit='')
-    dm_fdk_oil.operation('agr_bioenergy_biomass-demand_liquid_kcal', '*', 'kcal_to_TWh',
-                         out_col='agr_bioenergy_biomass-demand_liquid', unit='TWh')
-    df_fdk_liquid = dm_fdk_oil.write_df()
-    df_fdk_lgn = dm_fdk_lgn.write_df()
-    df_fdk_eth = dm_fdk_eth.write_df()
-    df_fdk_liquid = pd.concat([df_fdk_liquid, df_fdk_lgn.drop(columns=['Country', 'Years'])], axis=1)
-    df_fdk_liquid = pd.concat([df_fdk_liquid, df_fdk_eth.drop(columns=['Country', 'Years'])], axis=1)
+    dm_fdk_oil.change_unit('agr_bioenergy_biomass-demand_liquid', kcal_to_TWh, old_unit='kcal', new_unit='TWh')
+    dm_fdk_liquid = dm_fdk_oil # Rename
+
 
     # oil aps
     dm_oil_aps = dm_aps_ibp.filter({'Variables': ['agr_aps'], 'Categories2': ['fdk-voil']})
-    dm_oil_aps = dm_oil_aps.flatten()
-    dm_oil_aps.rename_col_regex('_fdk-voil', '', dim='Categories1')
-    dm_oil_aps.add(0.00000000000116222, dummy=True, col_label='kcal_to_TWh', dim='Variables', unit='')
-    dm_oil_aps.operation('agr_aps', '*', 'kcal_to_TWh',
-                            out_col='agr_bioenergy_biomass-demand_liquid', unit='TWh')
-    df_oil_aps = dm_oil_aps.write_df()
-    df_fdk_liquid = pd.concat([df_fdk_liquid, df_oil_aps.drop(columns=['Country', 'Years'])], axis=1)
-    # oil industry byproducts
-    dm_aps_ibp_oil.change_unit('agr_bioenergy_fdk-aby', factor=0.00000000000116222, old_unit='kcal', new_unit='TWh')
-    df_oil_ind_bp = dm_aps_ibp_oil.write_df()
-    df_fdk_liquid = pd.concat([df_fdk_liquid, df_oil_ind_bp.drop(columns=['Country', 'Years'])], axis=1)
+    dm_oil_aps.group_all('Categories2')
+    dm_oil_aps.rename_col('agr_aps', 'agr_bioenergy_biomass-demand_liquid', dim='Variables')
+    dm_oil_aps.change_unit('agr_bioenergy_biomass-demand_liquid', kcal_to_TWh, old_unit='kcal', new_unit='TWh')
+    dm_fdk_liquid.append(dm_oil_aps, dim='Categories1')
+
     # oil for oilcrops
     dm_voil_tpe.rename_col('oil-voil', 'oil-oilcrop', dim='Categories1')
-    dm_voil_tpe.change_unit('agr_bioenergy_biomass-demand_liquid', factor=0.00000000000116222, old_unit='kcal', new_unit='TWh')
-    df_voil_tpe = dm_voil_tpe.write_df()
-    df_fdk_liquid = pd.concat([df_fdk_liquid, df_voil_tpe.drop(columns=['Country', 'Years'])], axis=1)
+    dm_voil_tpe.change_unit('agr_bioenergy_biomass-demand_liquid', factor=kcal_to_TWh, old_unit='kcal', new_unit='TWh')
+    dm_fdk_liquid.append(dm_voil_tpe, dim='Categories1')
+
+    # lgn demand
+    dm_liquid_lgn = dm_biofuel_fdk.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_lgn']})
+    dm_liquid_lgn.change_unit('agr_bioenergy_biomass-demand_liquid_lgn', factor=kcal_to_TWh, old_unit='kcal',
+                              new_unit='TWh')
+    dm_liquid_lgn.deepen()
+    dm_fdk_liquid.append(dm_liquid_lgn, dim='Categories1')
+
+    df_fdk_liquid = dm_fdk_liquid.write_df()
+
+    # oil industry byproducts
+    dm_aps_ibp_oil.change_unit('agr_bioenergy_fdk-aby', factor=kcal_to_TWh, old_unit='kcal', new_unit='TWh')
+    dm_aps_ibp_oil = dm_aps_ibp_oil.flatten()
+
     # eth industry byproducts
     dm_eth_ind_bp = DM_alc_bev['biomass_hierarchy'].filter({'Variables': ['agr_bev_ibp_use_oth'], 'Categories1': ['biogasoline']})
-    dm_eth_ind_bp.change_unit('agr_bev_ibp_use_oth', factor=0.00000000000116222, old_unit='kcal',
+    dm_eth_ind_bp.change_unit('agr_bev_ibp_use_oth', factor=kcal_to_TWh, old_unit='kcal',
                             new_unit='TWh')
-    df_eth_ind_bp = dm_eth_ind_bp.write_df()
-    df_fdk_liquid = pd.concat([df_fdk_liquid, df_eth_ind_bp.drop(columns=['Country', 'Years'])], axis=1)
-    #lgn demand
-    dm_liquid_lgn = dm_biofuel_fdk.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_lgn']})
-    dm_liquid_lgn.change_unit('agr_bioenergy_biomass-demand_liquid_lgn', factor=0.00000000000116222, old_unit='kcal',
-                              new_unit='TWh')
-    df_liquid_lgn = dm_liquid_lgn.write_df()
-    df_fdk_liquid = pd.concat([df_fdk_liquid, df_liquid_lgn.drop(columns=['Country', 'Years'])], axis=1)
-
-    # Filter columns to exclude those containing 'kcal' (keeping only the ones in [TWh])
-    filtered_columns = [col for col in df_fdk_liquid.columns if 'kcal' not in col]
-    # Select only the filtered columns
-    df_fdk_liquid = df_fdk_liquid[filtered_columns]
+    dm_eth_ind_bp = dm_eth_ind_bp.flatten()
+    dm_aps_ibp_oil.append(dm_eth_ind_bp, dim='Variables')
+    dm_ind_bp = dm_aps_ibp_oil
+    df_ind_bp = dm_ind_bp.write_df()
 
 
-
+    # Total bioenergy consumption (sum of liquid, biogas feedstock kcal) (solid not included in KNIME) FIXME check with Gino if solid should be considered
+    # Sum liquid & solid
+    dm_bioenergy = dm_fdk_liquid.group_all('Categories1', inplace=False)
+    dm_bioenergy.append(dm_ind_bp, dim='Variables')
+    dm_bioenergy.groupby({'agr_crop-cons_bioenergy': '.*'}, dim='Variables', inplace=True, regex=True)
+    dm_bioenergy.change_unit('agr_crop-cons_bioenergy', 1/kcal_to_TWh, old_unit='TWh', new_unit='kcal')
+    df_bioenergy_kcal = dm_bioenergy.write_df()
 
     # Notes : some oil categories seem to differ with KNIME (unit = kcal, tpe wants TWh)
-
 
     # Solid bioenergy - feedstock mix
     dm_fdk_solid = DM_bioenergy['solid-mix'].filter({'Variables': ['agr_bioenergy_biomass-demand_solid']})
@@ -2360,20 +2360,6 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
     dm_crop_feed = DM_feed['ration'].filter_w_regex({'Variables': 'agr_demand_feed', 'Categories1': 'crop.*'})
     dm_crop_feed.groupby({'crop': '.*'}, dim='Categories1', regex=True, inplace=True)
     df_crop_feed = dm_crop_feed.write_df()
-    # Total bioenergy consumption (sum of liquid, biogas feedstock kcal) (solid not included in KNIME) FIXME check with Gino if solid should be considered
-    # Sum liquid & solid
-    df_bioenergy_kcal = pd.concat([df_fdk_liquid, df_fdk_biogas.drop(columns=['Country', 'Years'])], axis=1)
-    # Sum the columns along the rows, excluding 'Country' and 'Years', starting from the 3rd columns
-    start_column = 2
-    df_bioenergy_kcal['agr_crop-cons_bioenergy[TWh]'] = df_bioenergy_kcal.iloc[:, start_column:].sum(axis=1)
-    # Select only the required columns
-    df_bioenergy_kcal = df_bioenergy_kcal[['Country', 'Years', 'agr_crop-cons_bioenergy[TWh]']]
-
-    # Unit conversion [TWh] => [kcal]
-    df_bioenergy_kcal['agr_crop-cons_bioenergy[kcal]'] = df_bioenergy_kcal[
-                                                             'agr_crop-cons_bioenergy[TWh]'] / 0.00000000000116222
-    # Drop the old column (optional)
-    df_bioenergy_kcal.drop(columns=['agr_crop-cons_bioenergy[TWh]'], inplace=True)
 
     # Solid (same as bioenergy feedstock mix) Note : not included in KNIME
 
@@ -2403,6 +2389,7 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
     df = pd.concat([df, df_NO2.drop(columns=['Country', 'Years'])], axis=1)
     df = pd.concat([df, df_energy_demand.drop(columns=['Country', 'Years'])], axis=1)
     df = pd.concat([df, df_fdk_liquid.drop(columns=['Country', 'Years'])], axis=1)
+    df = pd.concat([df, df_ind_bp.drop(columns=['Country', 'Years'])], axis=1)
     df = pd.concat([df, df_bio_cap.drop(columns=['Country', 'Years'])], axis=1)
     df = pd.concat([df, df_fdk_solid.drop(columns=['Country', 'Years'])], axis=1)
     df = pd.concat([df, df_fdk_biogas.drop(columns=['Country', 'Years'])], axis=1)
