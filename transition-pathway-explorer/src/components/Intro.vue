@@ -5,10 +5,10 @@
 
     <div class="intro-sheet-content">
       <p>
-      <b>How would you decarbonise Paris?</b>
+      <b>How would you decarbonise?</b>
       </p>
       <p style="text-align: right">
-      <b>Would your pathway be fast enough to meet the Paris accord goals?</b>
+      <b>Would your pathway be fast enough to meet the agreements goals?</b>
       </p>
       <p style="padding-left: 20px">
       <b>In which sector would you be most ambitious?</b>
@@ -17,10 +17,10 @@
       <b>Which levers do you consider most powerful?</b>
       </p>
       <p>
-      This Transition Pathways Explorer allows you to run your own emission scenarios, powered by the <a target="_blank" href="https://github.com/dr-gbaudry?tab=repositories" rel="noopener">ParisCalc</a> model, and directly visualise its effects.
+      This Transition Pathways Explorer allows you to run your own emission scenarios, powered by the <a target="_blank" href="https://github.com/dr-gbaudry?tab=repositories" rel="noopener">PathwayCalc</a> model, and directly visualise its effects.
       </p>
       <p>
-      Based on the ambition level you choose for each sector, The ParisCalc model projects the energy and material use, greenhouse gas emissions and the consequent societal, environmental and land use impacts.
+      Based on the ambition level you choose for each sector, The PathwayCalc model projects the energy and material use, greenhouse gas emissions and the consequent societal, environmental and land use impacts.
       </p>
       <p>
       Co-designed with scientific and societal actors, the model is fully transparent and open-source.

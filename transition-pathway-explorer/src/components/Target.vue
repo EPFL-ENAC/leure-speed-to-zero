@@ -1,7 +1,7 @@
 <template>
   <div id="target">
     <div id="target-content">
-      <h2>Determine the Parisian GHG budget</h2>
+      <h2>Determine the GHG budget</h2>
 
       <div id="target-page">
         <div class="target-row" id="target-intro">
@@ -74,7 +74,7 @@
 
                 <div class="option-description">
                   <div class="target-description">
-                    In order to come up with the Parisian share of the resulting global budget, you have to decide what you consider a fair share.
+                    In order to come up with the share of the resulting global budget, you have to decide what you consider a fair share.
                   </div>
                   <div class="target-description">
                     Either you choose that every person should be allowed to emit the same amount of greenhouse gases (“Per capita”),
