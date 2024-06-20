@@ -1977,19 +1977,13 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_ma
     # FORMATTING FOR TPE & INTERFACE -----------------------------------------------------------------------------------
     # CO2 emissions from fertilizer & energy FIXME change for cal
     dm_input_use_CO2 = dm_CO2.filter({'Variables': ['agr_input-use_emissions-CO2']})
-    dm_input_use_CO2.add(0.000001, dummy=True, col_label='t_to_Mt', dim='Variables', unit='Mt')
-    dm_input_use_CO2.operation('agr_input-use_emissions-CO2', '*', 't_to_Mt', out_col='agr_emissions-CO2_input-use',
-                               unit='Mt')
-    dm_input_use_CO2 = dm_input_use_CO2.filter({'Variables': ['agr_emissions-CO2_input-use']})
-    dm_input_use_CO2.rename_col('agr_emissions-CO2_input-use', 'agr_input-use_emissions-CO2', "Variables")
+    dm_input_use_CO2.change_unit('agr_input-use_emissions-CO2', 1e-6, old_unit='t', new_unit='Mt')
     dm_input_use_CO2 = dm_input_use_CO2.flatten()
 
     # Fertizer emissions N2O FIXME change for cal
     dm_fertilizer_N2O = DM_nitrogen['emissions'].filter({'Variables': ['agr_crop_emission_N2O-emission']})
-    dm_fertilizer_N2O.add(0.000001, dummy=True, col_label='t_to_Mt', dim='Variables', unit='Mt')
-    dm_fertilizer_N2O.operation('agr_crop_emission_N2O-emission', '*', 't_to_Mt',
-                                out_col='agr_emissions-N2O_crop_fertilizer', unit='Mt')
-    dm_fertilizer_N2O = dm_fertilizer_N2O.filter({'Variables': ['agr_emissions-N2O_crop_fertilizer']})
+    dm_fertilizer_N2O.change_unit('agr_crop_emission_N2O-emission', 1e-6, old_unit='t', new_unit='Mt')
+    dm_fertilizer_N2O.rename_col('agr_crop_emission_N2O-emission', 'agr_emissions-N2O_crop_fertilizer', 'Variables')
 
     # Crop residue emissions
     dm_crop_residues = DM_crop['ef_residues'].filter({'Variables': ['agr_crop_emission'],
@@ -2007,32 +2001,24 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_ma
 
     # Livestock emissions CH4 (manure & enteric)  FIXME change for cal
     dm_CH4_liv = DM_manure['caf_liv_CH4'].filter({'Variables': ['agr_liv_CH4-emission']})
-    dm_CH4_liv.add(0.000001, dummy=True, col_label='t_to_Mt', dim='Variables', unit='Mt')
-    dm_CH4_liv.operation('agr_liv_CH4-emission', '*', 't_to_Mt', out_col='agr_liv_CH4-emissions',
-                         unit='Mt')
-    dm_CH4_liv = dm_CH4_liv.filter({'Variables': ['agr_liv_CH4-emissions']})
+    dm_CH4_liv.change_unit('agr_liv_CH4-emission', 1e-6, old_unit='t', new_unit='Mt')
     dm_CH4_liv.switch_categories_order(cat1='Categories2', cat2='Categories1')
-    dm_CH4_liv.rename_col("agr_liv_CH4-emissions", "agr_emissions-CH4_liv", "Variables")
+    dm_CH4_liv.rename_col("agr_liv_CH4-emission", "agr_emissions-CH4_liv", "Variables")
     dm_CH4_liv = dm_CH4_liv.flatten()
     dm_CH4_liv = dm_CH4_liv.flatten()
 
     # Livestock emissions N2O (manure)  FIXME change for cal
     dm_N2O_liv = DM_manure['caf_liv_N2O'].filter({'Variables': ['agr_liv_N2O-emission']})
-    dm_N2O_liv.add(0.000001, dummy=True, col_label='t_to_Mt', dim='Variables', unit='Mt')
-    dm_N2O_liv.operation('agr_liv_N2O-emission', '*', 't_to_Mt', out_col='agr_liv_N2O-emissions',
-                         unit='Mt')
-    dm_N2O_liv = dm_N2O_liv.filter({'Variables': ['agr_liv_N2O-emissions']})
+    dm_N2O_liv.change_unit('agr_liv_N2O-emission', 1e-6, old_unit='t', new_unit='Mt')
     dm_N2O_liv.switch_categories_order(cat1='Categories2', cat2='Categories1')
-    dm_N2O_liv.rename_col("agr_liv_N2O-emissions", "agr_emissions-N2O_liv", "Variables")
+    dm_N2O_liv.rename_col("agr_liv_N2O-emission", "agr_emissions-N2O_liv", "Variables")
     dm_N2O_liv = dm_N2O_liv.flatten()
     dm_N2O_liv = dm_N2O_liv.flatten()
 
     # Rice emissions
     dm_CH4_rice = DM_land['rice'].filter({'Variables': ['agr_rice_crop_CH4-emission']})
-    dm_CH4_rice.add(0.000001, dummy=True, col_label='t_to_Mt', dim='Variables', unit='Mt')
-    dm_CH4_rice.operation('agr_rice_crop_CH4-emission', '*', 't_to_Mt', out_col='agr_emissions-CH4_crop_rice',
-                          unit='Mt')
-    dm_CH4_rice = dm_CH4_rice.filter({'Variables': ['agr_emissions-CH4_crop_rice']})
+    dm_CH4_rice.change_unit('agr_rice_crop_CH4-emission', 1e-6, old_unit='t', new_unit='Mt')
+    dm_CH4_rice.rename_col('agr_rice_crop_CH4-emission', 'agr_emissions-CH4_crop_rice', 'Variables')
 
 
     return DM_energy_ghg, dm_CO2, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O
@@ -2155,19 +2141,13 @@ def agriculture_minerals_interface(DM_nitrogen, DM_bioenergy, dm_lgn,  write_xls
 
     # Demand for phosphate & potash
     dm_minerals = DM_nitrogen['input'].filter({'Variables': ['agr_input-use'], 'Categories1': ['phosphate', 'potash']})
-    dm_minerals.add(0.000001, dummy=True, col_label='t_to_Mt', dim='Variables', unit='Mt')
-    dm_minerals.operation('agr_input-use', '*', 't_to_Mt',
-                                out_col='agr_demand', unit='Mt')
-    dm_minerals = dm_minerals.filter({'Variables': ['agr_demand']})
+    dm_minerals.change_unit('agr_input-use', 1e-6, old_unit='t', new_unit='Mt')
+    dm_minerals.rename_col('agr_input-use', 'agr_demand', 'Variables')
     dm_minerals = dm_minerals.flatten()
 
     # Demand for fuelwood (solid)
     dm_solid = DM_bioenergy['solid-mix'].filter({'Variables': ['agr_bioenergy_biomass-demand_solid'], 'Categories1': ['fuelwood-and-res']})
-    dm_solid.add(0.1264, dummy=True, col_label='TWh_to_Mt', dim='Variables', unit='Mt')
-    dm_solid.rename_col('agr_bioenergy_biomass-demand_solid', 'agr_bioenergy_biomass-demand_solid_temp', dim='Variables')
-    dm_solid.operation('agr_bioenergy_biomass-demand_solid_temp', '*', 'TWh_to_Mt',
-                          out_col='agr_bioenergy_biomass-demand_solid', unit='Mt')
-    dm_solid = dm_solid.filter({'Variables': ['agr_bioenergy_biomass-demand_solid']})
+    dm_solid.change_unit('agr_bioenergy_biomass-demand_solid', 0.1264, old_unit='TWh', new_unit='Mt')
     dm_solid = dm_solid.flatten()
 
     # Demand for fuelwood (liquid)
@@ -2211,8 +2191,7 @@ def agriculture_refinery_interface(DM_energy_ghg):
     
     # change unit
     ktoe_to_twh = 0.0116222  # from KNIME factor
-    dm_ref.array = dm_ref.array * ktoe_to_twh
-    dm_ref.units["agr_energy-demand"] = "TWh"
+    dm_ref.change_unit('agr_energy-demand', ktoe_to_twh, old_unit='ktoe', new_unit='TWh')
     
     return dm_ref
 
