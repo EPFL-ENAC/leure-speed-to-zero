@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.7](https://github.com/2050Calculators/PathwayCalc/compare/v1.0.6...v1.0.7) (2024-06-20)
+
+
+### Bug Fixes
+
+* config_docker_eu ([59954e5](https://github.com/2050Calculators/PathwayCalc/commit/59954e5a3ad21cc53af4edca1cdea92f34056b3f))
+
 ## [1.0.6](https://github.com/2050Calculators/PathwayCalc/compare/v1.0.5...v1.0.6) (2024-06-20)
 
 
