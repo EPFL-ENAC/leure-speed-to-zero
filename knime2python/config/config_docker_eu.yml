@@ -50,11 +50,11 @@ model:
       #- "lfs_diet_bov[kcal]"
       #- "agr_energy-demand[Twh]"
 log:
-  suppress_run_logs: False
+  suppress_run_logs: True
   level: INFO
   file: api.log
 api:
-  port: 9393
+  port: 5000
   country_codes:
     Austria: AT
     Belgium: BE
