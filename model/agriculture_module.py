@@ -2507,7 +2507,7 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     # TPE OUTPUT -------------------------------------------------------------------------------------------------------
     results_run = agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_aps, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O, DM_energy_ghg, DM_bioenergy, dm_lgn, dm_eth, dm_oil, dm_aps_ibp, DM_food_demand, dm_lfs_pro, dm_lfs, DM_land, dm_fiber, dm_aps_ibp_oil, dm_voil_tpe, DM_alc_bev, dm_biofuel_fdk)
 
- : fix    return results_run
+    return results_run
 
 def agriculture_local_run():
     years_setting, lever_setting = init_years_lever()
