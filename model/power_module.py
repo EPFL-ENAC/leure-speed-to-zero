@@ -973,7 +973,7 @@ def pow_minerals_interface(dm_new_capacity, DM_yearly_demand):
     dm_new_capacity.drop(dim='Categories1', col_label=['biogas', 'biomass'])
     dm_new_capacity.rename_col(name_in, name_out, 'Categories1')
     dm_new_capacity.sort('Categories1')
-    dm_new_capacity.rename_col('pow_gross-yearly-production', 'product-demand', 'Variables')
+    dm_new_capacity.rename_col('pow_new-capacity', 'product-demand', 'Variables')
 
     # Dummy battery
     # !FIXME this is a dummy battery demand, you need to do storage
@@ -1088,7 +1088,7 @@ def power(lever_setting, years_setting, interface=Interface()):
     interface.add_link(from_sector='power', to_sector='oil-refinery', dm=dm_refinery)
     # same number of arg than the return function
 
-    dm_new_capacity = dm_capacity.filter({'Variables': ['pow_gross-yearly-production']})
+    dm_new_capacity = dm_capacity.filter({'Variables': ['pow_new-capacity']})
     DM_minerals = pow_minerals_interface(dm_new_capacity, DM_yearly_demand)
     interface.add_link(from_sector='power', to_sector='minerals', dm=DM_minerals)
     # concatenate all results to df
