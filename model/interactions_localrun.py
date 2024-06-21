@@ -70,7 +70,7 @@ def interactions(lever_setting, years_setting):
     
     runtime['Execution time'] = time.time() - init_time
 
-    return TPE
+    return TPE, runtime
 
 from model.common.auxiliary_functions import filter_geoscale
 
@@ -90,7 +90,7 @@ def local_interactions_run():
     filter_geoscale(global_vars)
 
     # run
-    results_run = interactions(lever_setting, years_setting)
+    results_run, runtime = interactions(lever_setting, years_setting)
     
     # return
     return results_run, runtime
