@@ -21,12 +21,10 @@ import os
 import json
 
 
-def runner(lever_setting, global_vars, runtime):
-    # get years setting from global variables
-    years_setting = global_vars['years_setting']
-    # lever setting dictionary convert float to integer
-    lever_setting = {key: math.floor(value) for key, value in lever_setting.items()}
-    # Transport module
+def interactions(lever_setting, years_setting):
+
+    # create dictionary for storing run time
+    runtime = {}    
 
     init_time = time.time()
     TPE = {}
@@ -82,26 +80,21 @@ def local_interactions_run():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     f = open(os.path.join(current_file_directory, '../config/lever_position.json'))
     lever_setting = json.load(f)[0]
+    lever_setting = {key: math.floor(value) for key, value in lever_setting.items()}
+    
+    # get years
+    years_setting = [1990, 2015, 2050, 5]
     
     # geoscale
     global_vars = {'geoscale': '.*'}
     filter_geoscale(global_vars)
-    
-    # get years
-    global_vars = {"years_setting" : [1990, 2015, 2050, 5]}
-    
-    # create dictionary for storing run time
-    runtime = {}
 
     # run
-    results_run = runner(lever_setting, global_vars, runtime)
+    results_run = interactions(lever_setting, years_setting)
     
     # return
     return results_run, runtime
 
 # run local
 __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/interactions_localrun.py"
-# database_from_csv_to_datamatrix()
 results_run, runtime = local_interactions_run()
-
-
