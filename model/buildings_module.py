@@ -352,8 +352,7 @@ def bld_floor_area_workflow(DM_floor_area, dm_lfs, baseyear):
             dm_building_mix.array[:, :, idx_b['bld_floor-area-previous-year'], idx_b[cat]]/1000
 
     # Change units to million m2
-    dm_floor_area.array[:, :, idx_f['bld_floor-area'], :] = dm_floor_area.array[:, :, idx_f['bld_floor-area'], :]/1000
-    dm_floor_area.units['bld_floor-area'] = 'Mm2'
+    dm_floor_area.change_unit('bld_floor-area', 1e-3, '1000m2', 'Mm2')
 
     #################
     # COMPUTE STOCK #
@@ -676,6 +675,7 @@ def bld_energy_workflow(DM_energy, DM_clm, dm_floor_area, cdm_const):
     dm_refinery.filter({'Variables': ['bld_space-heating-energy-demand']}, inplace=True)
     dm_refinery.rename_col('bld_space-heating-energy-demand', 'bld_energy-demand', 'Variables')
     dm_refinery.filter({'Categories1': ['gas-ff-natural', 'liquid-ff-heatingoil', 'solid-ff-coal']}, inplace=True)
+    dm_refinery.change_unit('bld_energy-demand', 1e-3, old_unit='GWh', new_unit='TWh')
     DM_energy_out['oil-refinery'] = dm_refinery
 
     # Prepare energy output

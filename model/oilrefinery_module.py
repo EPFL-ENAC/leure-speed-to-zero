@@ -116,7 +116,7 @@ def simulate_buildings_to_refinery_input():
                                              "All-Countries-interface_from-buildings-to-oil-refinery.xlsx")
     df = pd.read_excel(f, sheet_name="default")
     dm_buildings = DataMatrix.create_from_df(df, num_cat=1)
-
+    dm_buildings.change_unit('bld_energy-demand', 1e-3, old_unit='GWh', new_unit='TWh')
     return dm_buildings
 
 #######################################################################################################################
@@ -166,46 +166,50 @@ def simulate_agriculture_to_refinery_input():
 #######################################################################################################################
 def fuel_production_workflow(DM_refinery, DM_fuel_demand):
 
+    def check_unit(dm, unit):
+        for var in dm.col_labels['Variables']:
+            if dm.units[var] != unit:
+                raise ValueError(f'variable {var} does not have unit {unit}')
+
     ######################################
-    # CalculationLeafs - Energy demand per fuel [GWh]
+    # CalculationLeafs - Energy demand per fuel [TWh]
     ######################################
 
     # Uniforming the matrices (energy carriers)
     dm_power = DM_fuel_demand['power']
     dm_power.add(0, dummy=True, col_label=['diesel', 'gasoline', 'kerosene'],
                  dim='Categories1', unit=['TWh', 'TWh', 'TWh'])
+    check_unit(dm_power, 'TWh')
     dm_buildings = DM_fuel_demand['buildings']
     dm_buildings.add(0, dummy=True, col_label=['nuclear','diesel', 'gasoline', 'kerosene'],
                  dim='Categories1', unit=['TWh', 'TWh', 'TWh', 'TWh'])
+    check_unit(dm_buildings, 'TWh')
     dm_transport = DM_fuel_demand['transport']
     dm_transport.add(0, dummy=True, col_label=['coal', 'nuclear'],
                  dim='Categories1', unit=['TWh', 'TWh'])
+    check_unit(dm_transport, 'TWh')
     dm_industry = DM_fuel_demand['industry']
     dm_industry.add(0, dummy=True, col_label=['nuclear', 'gasoline', 'kerosene'],
                  dim='Categories1', unit=['TWh', 'TWh', 'TWh'])
+    check_unit(dm_industry, 'TWh')
     dm_ammonia = DM_fuel_demand['ammonia']
     dm_ammonia.add(0, dummy=True, col_label=['nuclear', 'gasoline', 'kerosene'],
                     dim='Categories1', unit=['TWh', 'TWh', 'TWh'])
+    check_unit(dm_ammonia, 'TWh')
     dm_agriculture = DM_fuel_demand['agriculture']
     dm_agriculture.add(0, dummy=True, col_label=['nuclear','kerosene'],
                     dim='Categories1', unit=['TWh', 'TWh'])
-
+    check_unit(dm_agriculture, 'TWh')
     # ToDo: to remove when energy carriers will be uniform
     dm_hydrogen = dm_power.filter({'Categories1': ['hydrogen']})
-
+    check_unit(dm_hydrogen, 'TWh')
     dm_power.rename_col('oil', 'fuel-oil', dim='Categories1')
-    dm_power = dm_power.filter({'Categories1': ['coal','gas','nuclear','fuel-oil','diesel','gasoline','kerosene']})
-    dm_power.array = dm_power.array / 1000
-    for var in dm_power.col_labels['Variables']:
-        dm_power.units[var] = 'TWh'
+    dm_power = dm_power.filter({'Categories1': ['coal', 'gas', 'nuclear', 'fuel-oil', 'diesel', 'gasoline', 'kerosene']})
 
 
     dm_buildings.rename_col('gas-ff-natural', 'gas', dim='Categories1')
     dm_buildings.rename_col('liquid-ff-heatingoil', 'fuel-oil', dim='Categories1')
     dm_buildings.rename_col('solid-ff-coal', 'coal', dim='Categories1')
-    dm_buildings.array = dm_buildings.array / 1000
-    for var in dm_buildings.col_labels['Variables']:
-        dm_buildings.units[var] = 'TWh'
 
     dm_transport.rename_col('gas-ff-natural', 'gas', dim='Categories1')
     dm_transport.rename_col('liquid-ff-fuel-oil', 'fuel-oil', dim='Categories1')
@@ -249,21 +253,16 @@ def fuel_production_workflow(DM_refinery, DM_fuel_demand):
     # CalculationLeafs - Oil demand for oil-based fuel production [GWh]
     ######################################
 
-    # Total per fuel
-    # dm_total_fuel_demand = dm_fuel_demand.groupby({'ori_energy-demand': '.*'}, dim='Variables', regex=True, inplace=False)
-    #dm_fuel_demand.append(dm_total_fuel_demand, dim='Variables')
-
-    # Oil equivalent [GWh]
-    dm_oil = dm_fuel_demand.filter({'Categories1': ['diesel','fuel-oil','gasoline','kerosene']})
+    # Oil equivalent [TWh]
+    dm_oil = dm_fuel_demand.filter({'Categories1': ['diesel', 'fuel-oil', 'gasoline', 'kerosene']})
     dm_cp = DM_refinery['constant']
-    dm_cp = dm_cp.filter({'Variables': ['cp_refinery-yield_diesel','cp_refinery-yield_fuel-oil',
-                                          'cp_refinery-yield_gasoline','cp_refinery-yield_kerosene']})
+    dm_cp = dm_cp.filter({'Variables': ['cp_refinery-yield_diesel', 'cp_refinery-yield_fuel-oil',
+                                        'cp_refinery-yield_gasoline', 'cp_refinery-yield_kerosene']})
     dm_cp.deepen(based_on='Variables')
-    ay_oil_equivalent = dm_oil.array[...] \
-                          * dm_cp.array[np.newaxis,np.newaxis,:, :]
-    dm_oil_equivalent = DataMatrix.based_on(ay_oil_equivalent,dm_oil)
+    ay_oil_equivalent = dm_oil.array[...] * dm_cp.array[np.newaxis, np.newaxis, :, :]
+    dm_oil_equivalent = DataMatrix.based_on(ay_oil_equivalent, dm_oil)
 
-    # Refinery self-consumption [GWh]
+    # Refinery self-consumption [TWh]
     dm_cp = DM_refinery['constant']
     dm_self_consumption = dm_cp.filter({'Variables': ['cp_refinery-efficiency_energy-use']})
     ay_oil_equivalent = dm_oil_equivalent.array[...] \
@@ -278,7 +277,7 @@ def fuel_production_workflow(DM_refinery, DM_fuel_demand):
     dm_demand_oil = DataMatrix.based_on(ay_oil_equivalent_net, dm_oil)
 
     ######################################
-    # CalculationLeafs - Fossil fuels emissions [GWh]
+    # CalculationLeafs - Fossil fuels emissions [TWh]
     ######################################
 
     # Energy demand
@@ -347,7 +346,7 @@ def refinery(lever_setting, years_setting, interface=Interface()):
     refinery_data_file = os.path.join(current_file_directory,
                                         '../_database/data/datamatrix/geoscale/oil-refinery.pickle')
     with open(refinery_data_file, 'rb') as handle:  # read binary (rb)
-        DM_refinery= pickle.load(handle)
+        DM_refinery = pickle.load(handle)
 
     # Country filter setting (based on fxa, because their is no read data function / no levers)
 
