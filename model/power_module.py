@@ -922,6 +922,7 @@ def pow_refinery_interface(dm_gross_production):
     # !FIXME once we figure out the trade, we should include the electricty produced from fossil abroad
     dm_fossil_production = dm_gross_production.filter({'Categories1': ['coal', 'oil', 'gas', 'nuclear']})
     dm_fossil_production.add(0, dim='Categories1', col_label=['hydrogen'], dummy=True)
+    dm_fossil_production.change_unit('pow_gross-yearly-production', 1e-3, old_unit='GWh', new_unit='TWh')
     dm_fossil_production.sort('Categories1')
     dm_fossil_production.rename_col('pow_gross-yearly-production', 'pow_energy-demand', dim='Variables')
 
