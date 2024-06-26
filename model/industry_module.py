@@ -1357,6 +1357,9 @@ def variables_for_tpe(DM_cost, dm_bld_matswitch_savings_bymat, DM_emissions, DM_
     dm_energy_by_carrier = DM_energy_demand["bymatcarr"].filter({"Categories1": ['aluminium', 'cement', 'glass',
                                                                      'lime', 'paper', 'steel']})
     dm_energy_by_carrier.rename_col('energy-demand', 'ind_energy-demand', 'Variables')
+    
+    # savings from material switch
+    dm_bld_matswitch_savings_bymat.change_unit(var = "emissions_savings", factor = 1e-3, old_unit = "Kt", new_unit = "Mt")
 
     # # dm_tpe
     # dm_tpe = DM_emissions["bygas"].copy()
@@ -1377,10 +1380,12 @@ def variables_for_tpe(DM_cost, dm_bld_matswitch_savings_bymat, DM_emissions, DM_
     df2 = dm_energy_by_mat.write_df()
     df3 = dm_prod_tech.write_df()
     df4 = dm_energy_by_carrier.write_df()
+    df5 = dm_bld_matswitch_savings_bymat.write_df()
 
     df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
     df = pd.concat([df, df3.drop(columns=['Country', 'Years'])], axis=1)
     df = pd.concat([df, df4.drop(columns=['Country', 'Years'])], axis=1)
+    df = pd.concat([df, df5.drop(columns=['Country', 'Years'])], axis=1)
 
     # return
     return df
