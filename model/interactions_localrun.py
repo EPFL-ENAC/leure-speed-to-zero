@@ -95,15 +95,15 @@ def local_interactions_run():
     # return
     return results_run, runtime
 
-# run local
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/interactions_localrun.py"
-results_run, runtime = local_interactions_run()
+# # run local
+# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/interactions_localrun.py"
+# results_run, runtime = local_interactions_run()
 
-# checks
-import pprint
-pprint.pprint(results_run["emissions"].columns.tolist())
-import pandas as pd
-df = results_run["emissions"].filter(['Country', 'Years', 'fos_emissions-CO2e[Mt]', 'ind_emissions-CO2e[Mt]'])
-df = pd.melt(df, id_vars = ["Country","Years"])
-df = df.groupby(["variable","Years",])['value'].agg(sum)
+# # checks
+# import pprint
+# pprint.pprint(results_run["emissions"].columns.tolist())
+# import pandas as pd
+# df = results_run["emissions"].filter(['Country', 'Years', 'fos_emissions-CO2e[Mt]', 'ind_emissions-CO2e[Mt]'])
+# df = pd.melt(df, id_vars = ["Country","Years"])
+# df = df.groupby(["variable","Years",])['value'].agg(sum)
 
