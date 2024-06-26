@@ -182,8 +182,8 @@
       "type": "StackedArea",
       "unit": "Mt",
       "outputs": [
-		"emission_savings_cement[Mt]",
-		"emission_savings_steel[Mt]"
+		"emissions_savings_cement[Mt]",
+		"emissions_savings_steel[Mt]"
       ]
     },
    "FloorAreaRenovationConstruction": {
