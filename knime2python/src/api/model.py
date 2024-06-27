@@ -234,7 +234,7 @@ class Model():
         output_dict = self.cube_transformation(output_columns, run_output)
 
         self.logger.debug('Time for output loops: {0:.3g} s'.format(time.time() - time_here))
-        self.logger.info('Execution time: {0:.3g} s'.format(time.time() - start_time))
+        self.logger.info('Total execution time: {0:.3g} s'.format(time.time() - start_time))
 
         # FIXME: should return the correct name
         return output_dict, "EUREF"   # self.gtap_scenario_dict[''.join(str(x) for x in lever_position_tuple)][0]
