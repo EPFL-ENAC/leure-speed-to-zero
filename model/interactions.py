@@ -72,7 +72,7 @@ def runner(lever_setting, global_vars, output_nodes, logger):
     logger.info('Execution time Emissions: {0:.3g} s'.format(time.time() - start_time))
     start_time = time.time()
 
-    logger.info('Execution time: {0:.3g} s'.format(time.time() - init_time))
+    logger.info('Execution time Interactions: {0:.3g} s'.format(time.time() - init_time))
 
     return TPE
 
