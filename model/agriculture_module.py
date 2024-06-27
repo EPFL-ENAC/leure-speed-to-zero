@@ -2350,12 +2350,10 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
     # Fiber crops
     dm_crop_fiber = dm_fiber.filter_w_regex({'Variables': 'agr_domestic-production.*'})
     # Unit conversion : [t] => [kcal]
-    dm_crop_fiber.add(4299300.0, dummy=True, col_label='t_to_kcal', dim='Variables', unit='')
-    dm_crop_fiber.operation('agr_domestic-production_fibres-plant-eq', '*', 't_to_kcal',
-                            out_col='agr_domestic-production_fibres-plant-eq_kcal', unit='kcal')
+    dm_crop_fiber.change_unit('agr_domestic-production_fibres-plant-eq', 4299300, old_unit='t', new_unit='kcal')
     # Total non-food consumption [kcal] = bev + fibers
     dm_crop_bev.append(dm_crop_fiber, dim='Variables')
-    dm_crop_bev.operation('agr_domestic-production_fibres-plant-eq_kcal', '+', 'agr_domestic_production_crop-bev',
+    dm_crop_bev.operation('agr_domestic-production_fibres-plant-eq', '+', 'agr_domestic_production_crop-bev',
                           out_col='agr_crop-cons_non-food', unit='kcal')
     df_crop_non_food = dm_crop_bev.write_df()
 
