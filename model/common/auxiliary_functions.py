@@ -494,17 +494,17 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015, unit
     years = dm_activity.col_labels["Years"]
     years_na = np.array(years)[[i < baseyear for i in years]].tolist()
     
-    # include variables in cdm_cost inside dm_activity
-    dm_activity = dm_activity.copy()
-    dm_activity.add(1, dim="Variables", col_label="ones", dummy=True, unit='#')
-    variables = cdm_cost.col_labels["Variables"]
-    idx = dm_activity.idx
-    idx_cdm = cdm_cost.idx
-    # !FIXME: adjust keep_LE to work with constant instead of dm_activity
-    arr_temp = (cdm_cost.array[idx_cdm['d-factor']] * dm_activity.array[:, :, idx["ones"], ...])
-    dm_activity.add(arr_temp[:, :, np.newaxis, ...], dim="Variables", col_label='d-factor', unit='#')
-    idx_temp = dm_activity.idx
-    dm_activity.array[:, [idx_temp[y] for y in years_na], idx_temp['d-factor'], ...] = np.nan
+    # # include variables in cdm_cost inside dm_activity
+    # dm_activity = dm_activity.copy()
+    # dm_activity.add(1, dim="Variables", col_label="ones", dummy=True, unit='#')
+    # variables = cdm_cost.col_labels["Variables"]
+    # idx = dm_activity.idx
+    # idx_cdm = cdm_cost.idx
+    # # !FIXME: adjust keep_LE to work with constant instead of dm_activity
+    # arr_temp = (cdm_cost.array[idx_cdm['d-factor']] * dm_activity.array[:, :, idx["ones"], ...])
+    # dm_activity.add(arr_temp[:, :, np.newaxis, ...], dim="Variables", col_label='d-factor', unit='#')
+    # idx_temp = dm_activity.idx
+    # dm_activity.array[:, [idx_temp[y] for y in years_na], idx_temp['d-factor'], ...] = np.nan
 
     dm_activity.drop(dim="Variables", col_label="ones")
     
@@ -540,6 +540,7 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015, unit
         dm_activity_LR.add(arr_temp, dim="Variables", col_label="learning", unit=activity_unit)
 
         # a_factor = unit_cost_baseyear / learning
+        # TODO: the "learning" above is with respect to the year y, while here I should divide by the "learning" in 2015 (which is x(2015)^b)
         arr_temp = cdm_cost_LR.array[np.newaxis, np.newaxis, idx_c_LR["unit-cost-baseyear"], ...] \
                   / dm_activity_LR.array[:, :, idx_a_LR['learning'], ...]
         dm_activity_LR.add(arr_temp, dim="Variables", col_label="a-factor", unit='num/' + activity_unit)
@@ -561,21 +562,37 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015, unit
         keep = np.array(dm_activity.col_labels[activity_last_cat])[keep_LE].tolist()
         dm_activity_LE = dm_activity.filter({activity_last_cat: keep})
         cdm_cost_LE = cdm_cost.filter({activity_last_cat: keep})
-        idx_a_LE = dm_activity_LE.idx
+        # idx_a_LE = dm_activity_LE.idx
         idx_c_LE = cdm_cost_LE.idx
 
         # unit_cost = d_factor * (years - baseyear) + unit_cost_baseyear
         years_diff = np.array(dm_activity.col_labels['Years']) - baseyear
-        cdm_cost_LE.array = cdm_cost_LE.array[np.newaxis, np.newaxis, ...]
-        dm_activity_LE.array = np.moveaxis(dm_activity_LE.array, 1, -1)  # move years to end
-        cdm_cost_LE.array = np.moveaxis(cdm_cost_LE.array, 1, -1)  # move years to end
-        arr_temp = dm_activity_LE.array[:, idx_a_LE['d-factor'], ...] * years_diff \
-                   + cdm_cost_LE.array[:, idx_c_LE["unit-cost-baseyear"], ...]
-        arr_temp = np.moveaxis(arr_temp, -1, 1)
-        dm_activity_LE.array = np.moveaxis(dm_activity_LE.array, -1, 1)  # move years to end
+        cdm_cost_LE.array = cdm_cost_LE.array[np.newaxis, np.newaxis, ...] # add country and years dimensions
+        dm_activity_LE.array = np.moveaxis(dm_activity_LE.array, 1, -1)  # move years to end (to match dimension of years_diff in operation below)
+        cdm_cost_LE.array = np.moveaxis(cdm_cost_LE.array, 1, -1)  # move years to end (to match dimension of years_diff in operation below)
+        arr_temp = cdm_cost_LE.array[:, idx_c_LE["d-factor"], ...] * years_diff \
+                    + cdm_cost_LE.array[:, idx_c_LE["unit-cost-baseyear"], ...]
+        arr_temp = np.moveaxis(arr_temp, -1, 1) # move years back to second position
+        dm_activity_LE.array = np.moveaxis(dm_activity_LE.array, -1, 1)  # move years back to second position
+        arr_temp = np.repeat(arr_temp, len(dm_activity_LE.col_labels["Country"]), axis=0) # repeat to make .add work
         dm_activity_LE.add(arr_temp, dim="Variables", col_label="unit-cost", unit="EUR/" + activity_unit)
         dm_activity_LE.filter({"Variables": ["unit-cost"]}, inplace=True)
+        idx_temp = dm_activity.idx
+        dm_activity_LE.array[:, [idx_temp[y] for y in years_na], ...] = np.nan # FIXME: this is done to reflect knime, see later what to do
         dm_cost_LE = dm_activity_LE
+        
+        # years_diff = np.array(dm_activity.col_labels['Years']) - baseyear
+        # cdm_cost_LE.array = cdm_cost_LE.array[np.newaxis, np.newaxis, ...] # add country and years dimensions
+        # dm_activity_LE.array = np.moveaxis(dm_activity_LE.array, 1, -1)  # move years to end (to match dimension of years_diff in operation below)
+        # cdm_cost_LE.array = np.moveaxis(cdm_cost_LE.array, 1, -1)  # move years to end (to match dimension of years_diff in operation below)
+        # arr_temp = dm_activity_LE.array[:, idx_a_LE['d-factor'], ...] * years_diff \
+        #             + cdm_cost_LE.array[:, idx_c_LE["unit-cost-baseyear"], ...]
+        # arr_temp = np.moveaxis(arr_temp, -1, 1) # move years to second position
+        # dm_activity_LE.array = np.moveaxis(dm_activity_LE.array, -1, 1)  # move years to second position
+        # dm_activity_LE.add(arr_temp, dim="Variables", col_label="unit-cost", unit="EUR/" + activity_unit)
+        # dm_activity_LE.filter({"Variables": ["unit-cost"]}, inplace=True)
+        # dm_cost_LE = dm_activity_LE
+        
         del arr_temp, cdm_cost_LE, idx_c_LE, idx_a_LE
     
     ##### PUT TOGETHER #####
