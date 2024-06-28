@@ -406,17 +406,20 @@ class DataMatrix:
     def fill_nans(self, dim_to_interp):
 
         axis_to_interp = self.dim_labels.index(dim_to_interp)
-        def interpolate_nans(arr):
+        def interpolate_nans(arr, x_values):
             nan_indices = np.isnan(arr)
             if nan_indices.any():
-                x_values = np.arange(len(arr))
                 if len(x_values[~nan_indices]) > 0:
                     arr[nan_indices] = np.interp(x_values[nan_indices], x_values[~nan_indices], arr[~nan_indices])
             return arr
 
         # Apply interpolation along the specified axis
         if np.isnan(self.array).any():
-            self.array = np.apply_along_axis(interpolate_nans, axis_to_interp, self.array)
+            if dim_to_interp == 'Years':
+                x_values = np.array(self.col_labels['Years'])
+            else:
+                x_values = np.arange(len(self.array))
+            self.array = np.apply_along_axis(interpolate_nans, axis_to_interp, self.array, x_values)
 
         return
 
