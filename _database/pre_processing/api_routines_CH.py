@@ -2,69 +2,109 @@ import requests
 import numpy as np
 from model.common.data_matrix_class import DataMatrix
 
+
 def json_to_dm(data_json, mapping_dims, mapping_vars, units):
-    # Number of dimensions in the key
-    num_dimensions = len(data_json['data'][0]['key'])
-    # Initialize a list of sets to store unique elements for each dimension
-    dimension_sets = [set() for _ in range(num_dimensions)]
 
-    # Iterate through each dictionary in the JSON data
-    for entry in data_json['data']:
-        key = entry['key']
-        # Update each dimension's set with the current key's elements
-        for i in range(num_dimensions):
-            dimension_sets[i].add(key[i])
-    del entry, key, i, num_dimensions
+    def get_col_labels_json(json_data):
+        # Number of dimensions in the key
+        num_dimensions = len(json_data['data'][0]['key'])
+        # Initialize a list of sets to store unique elements for each dimension
+        dimension_sets = [set() for _ in range(num_dimensions)]
 
-    # Convert sets to lists for the final output
-    dimension_lists = [sorted(list(dimension_set)) for dimension_set in dimension_sets]
-    del dimension_sets
-    arr_shape = [len(l) for l in dimension_lists]
-    arr_shape = tuple(arr_shape)
-    arr = np.empty(arr_shape)
-    for elem in data_json['data']:
-        keys = elem['key']
-        value = elem['values'][0]
-        idx = []
-        for dim in range(len(dimension_lists)):
-            idx.append(dimension_lists[dim].index(keys[dim]))
-        arr[tuple(idx)] = value
-    del arr_shape, keys, value, elem, idx, dim
+        # Iterate through each dictionary in the JSON data
+        for entry in json_data['data']:
+            key = entry['key']
+            # Update each dimension's set with the current key's elements
+            for i in range(num_dimensions):
+                dimension_sets[i].add(key[i])
 
-    map_tmp = {}
-    for i, vars_json in enumerate(dimension_lists):
-        dim_json = data_json['columns'][i]['text']
-        vars_dm = [mapping_vars[dim_json][var] for var in vars_json]
-        map_tmp[dim_json] = {'cols': vars_dm, 'axis': i}
-    del vars_dm, dim_json, mapping_vars, i, vars_json, data_json, dimension_lists
+        # Convert sets to lists for the final output
+        dimension_lists = [sorted(list(dimension_set)) for dimension_set in dimension_sets]
+        return dimension_lists
 
-    col_labels = {}
-    dim_axis = {}
-    for dim_dm, dim_json in mapping_dims.items():
-        col_labels[dim_dm] = map_tmp[dim_json]['cols']
-        dim_axis[dim_dm] = map_tmp[dim_json]['axis']
-    del dim_dm, dim_json, mapping_dims, map_tmp
+    def from_json_to_numpy(json_data, json_col_labels):
+        # Turn json structure into numpy array
+        arr_shape = [len(l) for l in json_col_labels]
+        arr_shape = tuple(arr_shape)
+        arr = np.empty(arr_shape)
+        for elem in json_data['data']:
+            key = elem['key']
+            value = elem['values'][0]
+            idx = []
+            # Match key with position in numpy array
+            for dim_axis_json in range(len(json_col_labels)):
+                col_json = key[dim_axis_json]
+                col_idx = json_col_labels[dim_axis_json].index(col_json)
+                idx.append(col_idx)
+            arr[tuple(idx)] = value
+        return arr
+
+    def get_col_labels_axis_dim(json_col_labels, var_mapping, dim_mapping):
+        # Maps json col_labels to dm col_labels and extracts the dim axis
+        map_tmp = dict()
+        for i, cols_json in enumerate(json_col_labels):
+            dim_json = data_json['columns'][i]['text']
+            # dict for dimension 'dim_json' to map columns from json indexes to dm col names
+            cols_map = var_mapping[dim_json]
+            cols_dm = [cols_map[col] for col in cols_json]
+            map_tmp[dim_json] = {'cols': cols_dm, 'axis': i}
+
+        col_labels = {}
+        dim_axis = {}
+        for dim_dm, dim_json in dim_mapping.items():
+            col_labels[dim_dm] = map_tmp[dim_json]['cols']
+            dim_axis[dim_dm] = map_tmp[dim_json]['axis']
+
+        # Turn years to int
+        col_labels['Years'] = [int(y) for y in col_labels['Years']]
+
+        return col_labels, dim_axis
+
+    # Get col labels from json data
+    col_labels_json = get_col_labels_json(data_json)
+
+    # From json structure to numpy array (with dimensions ordered like json)
+    arr_raw = from_json_to_numpy(data_json, col_labels_json)
+
+    # Get dm col_labels structure and a dictionary with the dims axis
+    col_labels, dim_axis = get_col_labels_axis_dim(col_labels_json, mapping_vars, mapping_dims)
 
     unit_vars = {}
     for i, var in enumerate(col_labels['Variables']):
         unit_vars[var] = units[i]
 
-    # Turn years to int
-    col_labels['Years'] = [int(y) for y in col_labels['Years']]
     dm = DataMatrix(col_labels, unit_vars)
-    del col_labels, unit_vars, var, i, units
+    del i, var, unit_vars
 
     # Re-order the axis of the numpy array
-    new_order = list(range(len(arr.shape)))
+    dim_labels = dm.dim_labels
+    new_order = list(range(len(arr_raw.shape)))
     arr_shape = []
-    for axis, dim in enumerate(dm.dim_labels):
+    for axis, dim in enumerate(dim_labels):
         axis_json = dim_axis[dim]
-        new_order[axis_json] = axis
-        if axis != len(dm.dim_labels)-1:
-            new_order[axis] = axis_json
-        arr_shape.append(len(dm.col_labels[dim]))
+        new_order[axis] = axis_json
+        arr_shape.append(len(col_labels[dim]))
 
-    arr = np.transpose(arr, axes=new_order)
+    # Create a final_order list to capture the correct permutation
+    # For unmapped dimensions, keep their positions in the remaining slots
+    mapped_axes = set(dim_axis.values())
+    unmapped_axes = [axis for axis in range(len(arr_raw.shape)) if axis not in mapped_axes]
+
+    # Fill final_order respecting the original position for unmapped axes
+    final_order = [None] * len(arr_raw.shape)
+    used_axes = set()
+
+    # Assign mapped axes first
+    for axis, dim in enumerate(dim_labels):
+        final_order[axis] = dim_axis[dim]
+        used_axes.add(dim_axis[dim])
+
+    # Assign remaining unmapped axes to the available slots
+    for i in range(len(final_order)):
+        if final_order[i] is None:
+            final_order[i] = unmapped_axes.pop(0)
+
+    arr = np.transpose(arr_raw, axes=final_order)
     arr = arr.reshape(tuple(arr_shape))
 
     dm.array = arr

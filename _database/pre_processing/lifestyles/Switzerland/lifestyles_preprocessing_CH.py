@@ -285,7 +285,6 @@ def extract_lfs_floor_space(years_ots, dm_lfs_tot_pop):
     cal_factor = avg_floor_space_CH_2022_m2 / dm_floor_area.array[
         idx['Switzerland'], idx[2022], idx['lfs_avg-floor-size']]
     dm_floor_area.filter({'Variables': ['lfs_avg-floor-size']}, inplace=True)
-    idx = dm_floor_area.idx
     dm_floor_area.array = dm_floor_area.array * cal_factor
 
     # Linear fitting
@@ -314,8 +313,7 @@ dm_lfs_age, dm_lfs_tot_pop = extract_lfs_pop(years_ots)
 # Get urban share (ots)
 # dm_lfs_urban_pop = extract_lfs_urban_share(years_ots)
 # Get floor area (ots)
-# !FIXME this data are not good (too much noise for a housing stock)
 dm_lfs_floor_area = extract_lfs_floor_space(years_ots, dm_lfs_tot_pop)
-
+print('Hello')
 
 
