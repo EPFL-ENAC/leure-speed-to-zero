@@ -12,6 +12,20 @@ from os.path import isfile, join
 import pickle
 
 
+def add_missing_ots_years(dm, startyear, baseyear):
+    # Add all years as np.nan
+    years_ots = list(range(startyear, baseyear + 1))
+    years_missing = list(set(years_ots) - set(dm.col_labels['Years']))
+    dm.add(np.nan, dim='Years', col_label=years_missing, dummy=True)
+    dm.sort('Years')
+
+    # Fill nans
+    dm.fill_nans(dim_to_interp='Country')
+
+    return dm
+
+
+
 def add_all_missing_fts_years(dm, baseyear, lastyear):
     # Given a DataMatrix in the style of EUcalc with years every 5 for fts, it returns a DataMatrix with all years
     # whose values are set to nan
