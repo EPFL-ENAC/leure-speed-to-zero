@@ -508,8 +508,8 @@ def district_heating(lever_setting, years_setting, interface=Interface()):
     DM_emissions_out = dhg_emissions_workflow(DM_energy_out['wf_emissions'], DM_pow['wf_emissions'], cdm_emission)
     # Input: district-capacity (by fuel), replacement-rate, energy-demand (by fuel)
     # Output:
-    baseyear = years_setting[1]
-    DM_cost_out = dhg_costs_workflow(DM_energy_out['wf_costs'], DM_bld['pipe'], dm_capacity, dm_rr, dm_price, cdm_cost, baseyear)
+    # baseyear = years_setting[1]
+    # DM_cost_out = dhg_costs_workflow(DM_energy_out['wf_costs'], DM_bld['pipe'], dm_capacity, dm_rr, dm_price, cdm_cost, baseyear)
 
     # Emissions interface
     interface.add_link(from_sector='district-heating', to_sector='emissions', dm=DM_emissions_out['emissions'])
