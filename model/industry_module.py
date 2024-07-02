@@ -98,11 +98,35 @@ def database_from_csv_to_datamatrix():
     #############################
 
     # Read fixed assumptions to datamatrix
-    df = read_database_fxa('industry_fixed-assumptions') # weird warning as there seems to be no repeated lines
+    df = read_database_fxa('industry_fixed-assumptions')
     dm_ind = DataMatrix.create_from_df(df, num_cat=0)
 
-    df = read_database_fxa('costs_fixed-assumptions') # weird warning as there seems to be no repeated lines
+    df = read_database_fxa('costs_fixed-assumptions')
     dm_cost = DataMatrix.create_from_df(df, num_cat=0)
+    dm_cost.drop("Country", "EU28")
+    
+    # costs
+    dm_cost = dm_cost.filter_w_regex({"Variables" : ".*ind_.*"})
+    dm_cost = dm_cost.filter_w_regex({"Variables" : "^((?!elc_).)*$"})
+    dm_cost.rename_col_regex("ind_", "", dim = "Variables")
+    variables = dm_cost.col_labels["Variables"]
+    drop = np.array(variables)[[bool(re.search("amm-tech", i)) for i in variables]].tolist()
+    dm_cost.drop(dim = "Variables", col_label = drop)
+    variables = dm_cost.col_labels["Variables"]
+    variables_new = [rename_tech(i) for i in variables]
+    for i in range(len(variables)):
+        dm_cost.rename_col(variables[i], variables_new[i], "Variables")
+        
+    # costs for material production
+    dm_cost_matprod = dm_cost.filter_w_regex({"Variables" : "^((?!CC).)*$"})
+    dm_cost_matprod.deepen()
+    dm_cost_matprod.drop("Categories1", "steel-DRI-EAF")
+    
+    # costs for cc
+    dm_cost_cc = dm_cost.filter_w_regex({"Variables" : ".*CC.*"})
+    dm_cost_cc.rename_col_regex("CC_", "", dim = "Variables")
+    dm_cost_cc.deepen()
+    dm_cost_cc.drop("Categories1", "steel-DRI-EAF")
 
     # Keep only ots and fts years
     dm_ind = dm_ind.filter(selected_cols={'Years': years_all})
@@ -114,7 +138,8 @@ def database_from_csv_to_datamatrix():
     dict_fxa = {
         'liquid': dm_liquid,
         'prod': dm_prod,
-        'cost': dm_cost
+        'cost-matprod': dm_cost_matprod,
+        'cost-CC' : dm_cost_cc
     }
 
     ##################
@@ -250,30 +275,30 @@ def database_from_csv_to_datamatrix():
     # material switch
     dict_const["material-switch"] = cdm_const.filter_w_regex({"Variables" : ".*switch.*"})
     
-    # costs
-    cdm_cost = cdm_const.filter_w_regex({"Variables" : ".*cost-ind.*$"})
-    cdm_cost.rename_col_regex("_productive-assets", "", dim = "Variables")
-    cdm_cost.rename_col_regex("cost-ind_", "", dim = "Variables")
-    variables = cdm_cost.col_labels["Variables"]
-    drop = np.array(variables)[[bool(re.search("amm-tech", i)) for i in variables]].tolist()
-    cdm_cost.drop(dim = "Variables", col_label = drop)
-    variables = cdm_cost.col_labels["Variables"]
-    variables_new = [rename_tech(i) for i in variables]
-    for i in range(len(variables)):
-        cdm_cost.rename_col(variables[i], variables_new[i], "Variables")
+    # # costs
+    # cdm_cost = cdm_const.filter_w_regex({"Variables" : ".*ind.*"})
+    # cdm_cost.rename_col_regex("_productive-assets", "", dim = "Variables")
+    # cdm_cost.rename_col_regex("cost-ind_", "", dim = "Variables")
+    # variables = cdm_cost.col_labels["Variables"]
+    # drop = np.array(variables)[[bool(re.search("amm-tech", i)) for i in variables]].tolist()
+    # cdm_cost.drop(dim = "Variables", col_label = drop)
+    # variables = cdm_cost.col_labels["Variables"]
+    # variables_new = [rename_tech(i) for i in variables]
+    # for i in range(len(variables)):
+    #     cdm_cost.rename_col(variables[i], variables_new[i], "Variables")
         
-    # costs for material production
-    cdm_cost_sub = cdm_cost.filter_w_regex({"Variables" : "^((?!CC).)*$"})
-    cdm_cost_sub.deepen()
-    cdm_cost_sub.drop("Categories1", "steel-DRI-EAF")
-    dict_const["cost_material-production"] = cdm_cost_sub
+    # # costs for material production
+    # cdm_cost_sub = cdm_cost.filter_w_regex({"Variables" : "^((?!CC).)*$"})
+    # cdm_cost_sub.deepen()
+    # cdm_cost_sub.drop("Categories1", "steel-DRI-EAF")
+    # dict_const["cost_material-production"] = cdm_cost_sub
     
-    # costs for cc
-    cdm_cost_sub = cdm_cost.filter_w_regex({"Variables" : ".*CC.*"})
-    cdm_cost_sub.rename_col_regex("CC_", "", dim = "Variables")
-    cdm_cost_sub.deepen()
-    cdm_cost_sub.drop("Categories1", "steel-DRI-EAF")
-    dict_const["cost_CC"] = cdm_cost_sub
+    # # costs for cc
+    # cdm_cost_sub = cdm_cost.filter_w_regex({"Variables" : ".*CC.*"})
+    # cdm_cost_sub.rename_col_regex("CC_", "", dim = "Variables")
+    # cdm_cost_sub.deepen()
+    # cdm_cost_sub.drop("Categories1", "steel-DRI-EAF")
+    # dict_const["cost_CC"] = cdm_cost_sub
     
     # material decomposition
     dict_const["material-decomposition_pipe"] = cdm_const.filter_w_regex({"Variables":".*pipe.*"})
@@ -1208,47 +1233,44 @@ def material_switch_impact_for_buildings(DM_input_matswitchimpact, DM_energy_dem
 def compute_costs(CDM_const, DM_fxa, DM_material_production, DM_emissions):
 
     # get price index
-    dm_price_index = DM_fxa['cost'].copy()
+    # dm_price_index = DM_fxa['cost'].copy()
+    
+    # # get countries
+    # countries = DM_material_production["bymat"].col_labels["Country"]
 
     ###############################
     ##### MATERIAL PRODUCTION #####
     ###############################
 
     # subset cdm
-    cdm_cost_sub = CDM_const["cost_material-production"]
+    dm_cost_sub = DM_fxa["cost-matprod"]
 
     # get material production by technology
     variables = DM_material_production["bytech"].col_labels["Categories1"]
-    keep = np.array(variables)[[i in cdm_cost_sub.col_labels["Categories1"] for i in variables]].tolist()
+    keep = np.array(variables)[[i in dm_cost_sub.col_labels["Categories1"] for i in variables]].tolist()
     dm_material_techshare_sub = DM_material_production["bytech"].filter({"Categories1" : keep})
     dm_material_techshare_sub.change_unit('material-production', factor=1e3, old_unit='Mt', new_unit='kt')
 
     # get costs
-    dm_material_techshare_sub_capex = cost(dm_activity = dm_material_techshare_sub, cdm_cost = cdm_cost_sub, 
-                                           dm_price_index = dm_price_index, cost_type = "capex")
-
-    dm_material_techshare_sub_opex = cost(dm_activity = dm_material_techshare_sub, cdm_cost = cdm_cost_sub, 
-                                          dm_price_index = dm_price_index, cost_type = "opex")
-
+    dm_material_techshare_sub_capex = cost(dm_activity = dm_material_techshare_sub, dm_cost = dm_cost_sub, cost_type = "capex")
+    dm_material_techshare_sub_opex = cost(dm_activity = dm_material_techshare_sub, dm_cost = dm_cost_sub, cost_type = "opex")
 
     ######################################
     ##### EMISSIONS CAPTURED WITH CC #####
     ######################################
 
     # subset cdm
-    cdm_cost_sub = CDM_const["cost_CC"]
+    dm_cost_sub = DM_fxa["cost-CC"]
 
     # get emissions captured with carbon capture
     variables = DM_emissions["capt_w_cc_bytech"].col_labels["Categories1"]
-    keep = np.array(variables)[[i in cdm_cost_sub.col_labels["Categories1"] for i in variables]].tolist()
+    keep = np.array(variables)[[i in dm_cost_sub.col_labels["Categories1"] for i in variables]].tolist()
     dm_emissions_capt_w_cc_sub = DM_emissions["capt_w_cc_bytech"].filter({"Categories1" : keep})
     dm_emissions_capt_w_cc_sub.change_unit("CO2-capt-w-cc", factor=1e6, old_unit='Mt', new_unit='t')
 
     # get costs
-    dm_emissions_capt_w_cc_sub_capex = cost(dm_activity = dm_emissions_capt_w_cc_sub, cdm_cost = cdm_cost_sub, 
-                                                  dm_price_index = dm_price_index, cost_type = "capex")
-    dm_emissions_capt_w_cc_sub_opex = cost(dm_activity = dm_emissions_capt_w_cc_sub, cdm_cost = cdm_cost_sub, 
-                                                 dm_price_index = dm_price_index, cost_type = "opex")
+    dm_emissions_capt_w_cc_sub_capex = cost(dm_activity = dm_emissions_capt_w_cc_sub, dm_cost = dm_cost_sub, cost_type = "capex")
+    dm_emissions_capt_w_cc_sub_opex = cost(dm_activity = dm_emissions_capt_w_cc_sub, dm_cost = dm_cost_sub, cost_type = "opex")
 
     ########################
     ##### PUT TOGETHER #####
@@ -1307,9 +1329,9 @@ def compute_costs(CDM_const, DM_fxa, DM_material_production, DM_emissions):
         DM_cost[key] = dm_temp1
 
     # clean
-    del cdm_cost_sub, dm_emissions_capt_w_cc_sub, dm_emissions_capt_w_cc_sub_capex, \
+    del dm_emissions_capt_w_cc_sub, dm_emissions_capt_w_cc_sub_capex, \
         dm_emissions_capt_w_cc_sub_opex, dm_material_techshare_sub, dm_material_techshare_sub_capex, \
-        dm_material_techshare_sub_opex, dm_price_index, dm_temp, dm_temp1, dm_temp2, i, keep, key, \
+        dm_material_techshare_sub_opex, dm_temp, dm_temp1, dm_temp2, i, keep, key, \
         variables, variables_new, variables_unique, idx, years_na
 
     # return
@@ -2043,6 +2065,7 @@ def local_industry_run():
     # lever_setting["lever_energy-carrier-mix"] = 3
     # lever_setting["lever_cc"] = 3
     # lever_setting["lever_material-switch"] = 3
+    # lever_setting["lever_technology-share"] = 4
     
     # get geoscale
     global_vars = {'geoscale': '.*'}
