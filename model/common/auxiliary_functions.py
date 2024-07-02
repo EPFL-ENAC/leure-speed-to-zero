@@ -486,41 +486,34 @@ def calibration_rates(dm, dm_cal, calibration_start_year = 1990, calibration_end
     # return
     return dm_cal_sub
 
-def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015, unit_cost=True):
-
+def cost(dm_activity, dm_cost, cost_type, baseyear = 2015, unit_cost=True):
+    
+    # error if there are more activities
     if len(dm_activity.col_labels["Variables"]) > 1:
         raise ValueError("This function works only for one activity at the time")
+    
+    # error if there are more than 1 category
+    if len(dm_activity.dim_labels) > 4:
+        raise ValueError("This function works only for a datamatrix with 1 category")
+    # note: this option is here for choosing non-zero values in the linear option, to be lifted later on in case
+    
     # Check that they have the same categories
-    for dim in cdm_cost.dim_labels:
+    for dim in dm_cost.dim_labels:
         if "Categories" in dim:
-            assert dm_activity.col_labels[dim] == cdm_cost.col_labels[dim]
+            assert dm_activity.col_labels[dim] == dm_cost.col_labels[dim]
     
     # filter for selected cost_type
-    cdm_cost = cdm_cost.filter_w_regex({"Variables": ".*" + cost_type + ".*|.*evolution-method.*"})
-    cdm_cost.rename_col_regex(cost_type + "-", "", dim="Variables")
-    cdm_cost.rename_col('baseyear', 'unit-cost-baseyear', "Variables")
+    dm_cost = dm_cost.filter_w_regex({"Variables": ".*" + cost_type + ".*|.*evolution-method.*"})
+    dm_cost.rename_col_regex(cost_type + "-", "", dim="Variables")
+    dm_cost.rename_col('baseyear', 'unit-cost-baseyear', "Variables")
     
     # get some constants
     activity_last_cat = dm_activity.dim_labels[-1]
     activity_name = dm_activity.col_labels["Variables"][0]
     activity_unit = dm_activity.units[activity_name]
-    cost_unit_denominator = re.split("/", cdm_cost.units["unit-cost-baseyear"])[1]
+    cost_unit_denominator = re.split("/", dm_cost.units["unit-cost-baseyear"])[1]
     years = dm_activity.col_labels["Years"]
     years_na = np.array(years)[[i < baseyear for i in years]].tolist()
-    
-    # # include variables in cdm_cost inside dm_activity
-    # dm_activity = dm_activity.copy()
-    # dm_activity.add(1, dim="Variables", col_label="ones", dummy=True, unit='#')
-    # variables = cdm_cost.col_labels["Variables"]
-    # idx = dm_activity.idx
-    # idx_cdm = cdm_cost.idx
-    # # !FIXME: adjust keep_LE to work with constant instead of dm_activity
-    # arr_temp = (cdm_cost.array[idx_cdm['d-factor']] * dm_activity.array[:, :, idx["ones"], ...])
-    # dm_activity.add(arr_temp[:, :, np.newaxis, ...], dim="Variables", col_label='d-factor', unit='#')
-    # idx_temp = dm_activity.idx
-    # dm_activity.array[:, [idx_temp[y] for y in years_na], idx_temp['d-factor'], ...] = np.nan
-
-    dm_activity.drop(dim="Variables", col_label="ones")
     
     # error if unit is not the same
     if cost_unit_denominator != activity_unit:
@@ -530,19 +523,24 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015, unit
     ##### UNIT COSTS #####
     ######################
     
+    # get countries
+    countries = dm_activity.col_labels["Country"]
+    
     ##### LEARNING RATE METHODOLOGY #####
     
     # keep only variables that have evolution-method == 2 or 3
-    idx = cdm_cost.idx
-    keep_LR = ((cdm_cost.array[idx["evolution-method"], :] == 2) | \
-               (cdm_cost.array[idx["evolution-method"], :] == 3)).tolist()
+    idx = dm_cost.idx
+    keep_LR = ((dm_cost.array[0,:,idx["evolution-method"], ...] == 2) | \
+               (dm_cost.array[0,:,idx["evolution-method"], ...] == 3))[0].tolist()
         
     if any(keep_LR):
+        
+        # set damatrixes
         keep = np.array(dm_activity.col_labels[activity_last_cat])[keep_LR].tolist()
         dm_activity_LR = dm_activity.filter({activity_last_cat: keep})
-        cdm_cost_LR = cdm_cost.filter({activity_last_cat: keep})
+        dm_cost_LR = dm_cost.filter({activity_last_cat: keep})
         idx_a_LR = dm_activity_LR.idx
-        idx_c_LR = cdm_cost_LR.idx
+        idx_c_LR = dm_cost_LR.idx
 
         # make activity cumulative
         dm_activity_LR.array[:, :, idx_a_LR[activity_name], ...] = \
@@ -550,67 +548,71 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015, unit
         
         # learning = cumulated activity ^ b_factor
         arr_temp = (dm_activity_LR.array[:, :, idx_a_LR[activity_name], ...]\
-                   ** cdm_cost_LR.array[np.newaxis, np.newaxis, idx_c_LR["b-factor"], ...])
+                   ** dm_cost_LR.array[:, :, idx_c_LR["b-factor"], ...])
         dm_activity_LR.add(arr_temp, dim="Variables", col_label="learning", unit=activity_unit)
 
-        # a_factor = unit_cost_baseyear / learning
-        # TODO: the "learning" above is with respect to the year y, while here I should divide by the "learning" in 2015 (which is x(2015)^b)
-        arr_temp = cdm_cost_LR.array[np.newaxis, np.newaxis, idx_c_LR["unit-cost-baseyear"], ...] \
-                  / dm_activity_LR.array[:, :, idx_a_LR['learning'], ...]
-        dm_activity_LR.add(arr_temp, dim="Variables", col_label="a-factor", unit='num/' + activity_unit)
+        # a_factor = unit_cost_baseyear / (cumulated activity in baseyear)^b
+        years_keep = np.array(years)[[i >= baseyear for i in years]].tolist() # get years from baseyear onwards
+        def keep_first_nonzero(country, variable):
+            # function to select the first non-zero number per country, for each variable in activity (it gives back 1 value)
+            # note that doing this one country at the time, one variable at the time is compulsory 
+            dm_temp = dm_activity_LR.filter({"Country" : [country], "Years" : years_keep}) # subset only from baseyear onwards
+            idx_temp = dm_temp.idx
+            arr_temp = dm_temp.array[:,:,idx_temp[activity_name], idx_temp[variable]]
+            index = arr_temp != 0
+            if index.any():
+                return arr_temp[arr_temp != 0][0]
+            else:
+                return 0
+        arr_temp = np.array([[keep_first_nonzero(c, v) for c in countries] for v in keep])
+        arr_temp = np.moveaxis(arr_temp, 1, 0)
+        arr_temp1 = dm_cost_LR.array[:,:,idx_c_LR["unit-cost-baseyear"], ...] \
+            / (arr_temp[:,np.newaxis,...] ** dm_cost_LR.array[:,:,idx_c_LR["b-factor"], ...])
+        dm_cost_LR.add(arr_temp1, dim="Variables", col_label="a-factor", unit='num/' + activity_unit)
+        idx_c_LR = dm_cost_LR.idx
         
         # unit cost = a_factor * learning
-        # FIXME!: THIS IS LIKE THE KNIME, BUT NOT SURE THIS ISCORRECT, AS LIKE THIS UNIT COST = UNIT COST BASEYEAR (TBC WHAT TO DO)
-        dm_activity_LR.operation("a-factor", "*", "learning", dim="Variables", out_col="unit-cost", unit="EUR/" + activity_unit)
+        arr_temp = dm_cost_LR.array[:,:,idx_c_LR["a-factor"],...] \
+            * dm_activity_LR.array[:,:,idx_a_LR["learning"],...]
+        dm_activity_LR.add(arr_temp, dim="Variables", col_label="unit-cost", unit='EUR/' + activity_unit)
         dm_activity_LR.filter({"Variables": ["unit-cost"]}, inplace=True)
         dm_cost_LR = dm_activity_LR
-        del cdm_cost_LR, idx_c_LR, idx_a_LR, arr_temp
+        del idx_c_LR, idx_a_LR, arr_temp
 
     ##### LINEAR EVOLUTION METHODOLOGY #####
     
     # keep only variables that have evolution-method == 1
-    idx = cdm_cost.idx
-    keep_LE = (cdm_cost.array[idx["evolution-method"], :] == 1).tolist()
+    idx = dm_cost.idx
+    keep_LE = (dm_cost.array[0,:,idx["evolution-method"], ...] == 1)[0].tolist()
     
     if any(keep_LE):
+        
+        # set damatrixes
         keep = np.array(dm_activity.col_labels[activity_last_cat])[keep_LE].tolist()
         dm_activity_LE = dm_activity.filter({activity_last_cat: keep})
-        cdm_cost_LE = cdm_cost.filter({activity_last_cat: keep})
+        dm_cost_LE = dm_cost.filter({activity_last_cat: keep})
         # idx_a_LE = dm_activity_LE.idx
-        idx_c_LE = cdm_cost_LE.idx
+        idx_c_LE = dm_cost_LE.idx
 
         # unit_cost = d_factor * (years - baseyear) + unit_cost_baseyear
         years_diff = np.array(dm_activity.col_labels['Years']) - baseyear
-        cdm_cost_LE.array = cdm_cost_LE.array[np.newaxis, np.newaxis, ...] # add country and years dimensions
         dm_activity_LE.array = np.moveaxis(dm_activity_LE.array, 1, -1)  # move years to end (to match dimension of years_diff in operation below)
-        cdm_cost_LE.array = np.moveaxis(cdm_cost_LE.array, 1, -1)  # move years to end (to match dimension of years_diff in operation below)
-        arr_temp = cdm_cost_LE.array[:, idx_c_LE["d-factor"], ...] * years_diff \
-                    + cdm_cost_LE.array[:, idx_c_LE["unit-cost-baseyear"], ...]
+        dm_cost_LE.array = np.moveaxis(dm_cost_LE.array, 1, -1)  # move years to end (to match dimension of years_diff in operation below)
+        arr_temp = dm_cost_LE.array[:, idx_c_LE["d-factor"], ...] * years_diff \
+                    + dm_cost_LE.array[:, idx_c_LE["unit-cost-baseyear"], ...]
         arr_temp = np.moveaxis(arr_temp, -1, 1) # move years back to second position
         dm_activity_LE.array = np.moveaxis(dm_activity_LE.array, -1, 1)  # move years back to second position
-        arr_temp = np.repeat(arr_temp, len(dm_activity_LE.col_labels["Country"]), axis=0) # repeat to make .add work
         dm_activity_LE.add(arr_temp, dim="Variables", col_label="unit-cost", unit="EUR/" + activity_unit)
         dm_activity_LE.filter({"Variables": ["unit-cost"]}, inplace=True)
         idx_temp = dm_activity.idx
         dm_activity_LE.array[:, [idx_temp[y] for y in years_na], ...] = np.nan # FIXME: this is done to reflect knime, see later what to do
         dm_cost_LE = dm_activity_LE
         
-        # years_diff = np.array(dm_activity.col_labels['Years']) - baseyear
-        # cdm_cost_LE.array = cdm_cost_LE.array[np.newaxis, np.newaxis, ...] # add country and years dimensions
-        # dm_activity_LE.array = np.moveaxis(dm_activity_LE.array, 1, -1)  # move years to end (to match dimension of years_diff in operation below)
-        # cdm_cost_LE.array = np.moveaxis(cdm_cost_LE.array, 1, -1)  # move years to end (to match dimension of years_diff in operation below)
-        # arr_temp = dm_activity_LE.array[:, idx_a_LE['d-factor'], ...] * years_diff \
-        #             + cdm_cost_LE.array[:, idx_c_LE["unit-cost-baseyear"], ...]
-        # arr_temp = np.moveaxis(arr_temp, -1, 1) # move years to second position
-        # dm_activity_LE.array = np.moveaxis(dm_activity_LE.array, -1, 1)  # move years to second position
-        # dm_activity_LE.add(arr_temp, dim="Variables", col_label="unit-cost", unit="EUR/" + activity_unit)
-        # dm_activity_LE.filter({"Variables": ["unit-cost"]}, inplace=True)
-        # dm_cost_LE = dm_activity_LE
-        
-        del arr_temp, cdm_cost_LE, idx_c_LE, idx_a_LE
+        del arr_temp, idx_c_LE
     
     ##### PUT TOGETHER #####
     
+    countries = dm_activity.col_labels["Country"]
     dm_cost = dm_activity.filter({"Variables": [activity_name]})
     if any(keep_LE) and any(keep_LR):
         dm_cost_LR.append(dm_cost_LE, activity_last_cat)
@@ -625,21 +627,16 @@ def cost(dm_activity, dm_price_index, cdm_cost, cost_type, baseyear = 2015, unit
     ##### COSTS #####
     #################
     
-    # cost = unit cost * activity * price index / 100 / 1000000
+    # cost = unit cost by country * activity / 1000000
     idx = dm_cost.idx
-    arr_temp = dm_cost.array[:, :, idx["unit-cost"], ...] * dm_cost.array[:, :, idx[activity_name],...] / 100 / 1000000
-    arr_temp = np.moveaxis(arr_temp, 0, -1)
-    arr_temp = dm_price_index.array[:, 0, 0] * arr_temp
-    arr_temp = np.moveaxis(arr_temp, -1, 0)
-    if unit_cost:
-        dm_cost.add(arr_temp, dim="Variables", col_label=cost_type, unit="MEUR")
-        dm_cost.drop("Variables", activity_name)
-        # return
-        return dm_cost
-    else:
-        dm_out = DataMatrix.based_on(arr_temp[:, :, np.newaxis, ...], format=dm_cost,
-                                     change={'Variables': [cost_type]}, units={cost_type: 'MEUR'})
-        return dm_out
+    arr_temp = dm_cost.array[:, :, idx["unit-cost"], ...] * dm_cost.array[:, :, idx[activity_name],...] / 1000000
+    dm_cost.add(arr_temp, dim="Variables", col_label=cost_type, unit="MEUR")
+    
+    # substitue inf with nan
+    dm_cost.array[dm_cost.array == np.inf] = np.nan
+
+    # return
+    return dm_cost
 
 def material_switch(dm, dm_ots_fts, cdm_const, material_in, material_out, product, 
                     switch_percentage_prefix, switch_ratio_prefix, dict_for_output = None):
