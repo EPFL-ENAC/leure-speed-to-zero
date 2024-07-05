@@ -1031,7 +1031,7 @@ def emissions(CDM_const, DM_energy_demand, DM_material_production):
     idx = dm_emissions_combustion.idx
     arr_temp = dm_emissions_combustion.array[:,:,:,idx["CH4"],:,:]
     dm_emissions_combustion.add(arr_temp[:,:,:,np.newaxis,:,:], "Categories1", col_label = "CO2")
-    dm_emissions_combustion.add(arr_temp[:,:,:,np.newaxis,:,:], "Categories1", col_label = "N20")
+    dm_emissions_combustion.add(arr_temp[:,:,:,np.newaxis,:,:], "Categories1", col_label = "N2O")
     dm_emissions_combustion.array = dm_emissions_combustion.array * \
         cdm_temp2.array[np.newaxis,np.newaxis,:,:,:,np.newaxis]
 
@@ -1050,7 +1050,7 @@ def emissions(CDM_const, DM_energy_demand, DM_material_production):
     idx = dm_emissions_process.idx
     arr_temp = dm_emissions_process.array[:,:,:,idx["CH4"],:]
     dm_emissions_process.add(arr_temp[:,:,:,np.newaxis,:], "Categories1", col_label = "CO2")
-    dm_emissions_process.add(arr_temp[:,:,:,np.newaxis,:], "Categories1", col_label = "N20")
+    dm_emissions_process.add(arr_temp[:,:,:,np.newaxis,:], "Categories1", col_label = "N2O")
     dm_emissions_process.array = dm_emissions_process.array * cdm_temp1.array[np.newaxis,np.newaxis,...]
 
     # total emissions per technology
