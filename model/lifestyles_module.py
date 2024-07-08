@@ -12,7 +12,7 @@ from model.common.constant_data_matrix_class import ConstantDataMatrix  # Class 
 from model.common.interface_class import Interface
 
 # ImportFunctions
-from model.common.io_database import read_database, read_database_fxa  # read functions for levers & fixed assumptions
+from model.common.io_database import edit_database, read_database_fxa  # read functions for levers & fixed assumptions
 from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups
 from model.common.auxiliary_functions import read_level_data, filter_geoscale
 
@@ -22,6 +22,13 @@ import time
 
 # Lever setting for local purpose
 
+def database_pre_processing():
+    # Changes to the EUcalc version
+    file = 'lifestyles_floor-intensity'
+    lever = 'floor-intensity'
+    edit_database(file, lever, column='eucalc-name', pattern='lighting|cold-setpoint_degrees|heat-setpoint_degrees',
+                  mode='remove')
+    return
 
 def init_years_lever():
     # function that can be used when running the module as standalone to initialise years and levers
@@ -213,15 +220,13 @@ def read_data(data_file, lever_setting):
 
     # Buildings
     dm_population = DM_ots_fts['pop']['lfs_population_']
-    dm_lighting = DM_ots_fts['floor-intensity'].filter({'Variables': ['lighting']})
     dm_unchanged = DM_ots_fts['heatcool-behaviour']
-    dm_unchanged.append(dm_lighting, dim='Variables')
     dm_intensity = DM_ots_fts['floor-intensity'].filter({'Variables': ['lfs_floor-intensity_space-cap']})
     dm_building = DM_ots_fts['floor-area-fraction']
     dm_building.append(dm_fxa_caf_intensity, dim='Variables')
     dm_building.append(dm_intensity, dim='Variables')
     dm_building.append(dm_population, dim='Variables')
-    del dm_lighting, dm_intensity
+    del dm_intensity
 
 
     # Aggregate datamatrix by theme/flow
