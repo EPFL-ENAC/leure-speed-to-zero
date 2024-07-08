@@ -282,7 +282,7 @@ def simulate_lifestyles_to_buildings_input():
     dm_lfs_appliance = dm.filter_w_regex({'Variables': '.*appliance.*|.*substitution-rate.*'})
     dm_lfs_appliance.deepen()
     dm_lfs_floor = dm.filter_w_regex({'Variables': 'lfs_floor-space_cool|lfs_floor-space_total'})
-    dm_lfs_other = dm.filter_w_regex({'Variables': 'lfs_household_population|lfs_heatcool-behaviour_degrees|lighting'})
+    dm_lfs_other = dm.filter_w_regex({'Variables': 'lfs_heatcool-behaviour_degrees'})
     DM_lfs = {
         'appliance': dm_lfs_appliance,
         'floor': dm_lfs_floor,
