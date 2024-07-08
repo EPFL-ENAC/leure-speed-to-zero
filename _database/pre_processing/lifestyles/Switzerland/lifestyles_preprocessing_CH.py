@@ -2,6 +2,7 @@ import numpy as np
 from model.common.auxiliary_functions import interpolate_nans, add_missing_ots_years
 from _database.pre_processing.api_routines_CH import get_data_api_CH
 from scipy.stats import linregress
+from model.common.data_matrix_class import DataMatrix
 
 
 def linear_fitting(dm, years_ots):
@@ -44,7 +45,6 @@ def create_ots_years_list(years_setting):
 ### POPULATION - deprecated ###
 ###############################
 def deprecated_extract_lfs_population_total(years_ots):
-    # !FIXME: you should rather download the resident population and not the citizens
     # Demographic balance by institutional units
     table_id = "px-x-0102020000_201"
     structure = get_data_api_CH(table_id, mode='example')
@@ -59,8 +59,8 @@ def deprecated_extract_lfs_population_total(years_ots):
                    'Years': 'Year',
                    'Variables': 'Demographic component'}
 
-
-    dm_lfs_pop = get_data_api_CH(table_id, mode='extract', filter=filter, mapping_dims=mapping_dim, units=['inhabitants'])
+    dm_lfs_pop = get_data_api_CH(table_id, mode='extract', filter=filter,
+                                 mapping_dims=mapping_dim, units=['inhabitants'])
 
     dm_lfs_pop.rename_col('- Vaud', 'Vaud', dim='Country')
     dm_lfs_pop.rename_col('Population on 1 January', 'lfs_population_total', dim='Variables')
@@ -124,9 +124,8 @@ def deprecated_extract_lfs_demography_age():
 ###    POPULATION    ###
 ### tot & by age new ###
 ########################
-def extract_lfs_pop(years_ots):
+def extract_lfs_pop(years_ots, table_id):
     # Demographic balance by age and canton
-    table_id = 'px-x-0102020000_104'
     structure, title = get_data_api_CH(table_id, mode='example')
 
     # Extract all age classes
@@ -189,9 +188,8 @@ def extract_lfs_pop(years_ots):
 ########################
 ### URBAN POPULATION ###
 ########################
-def extract_lfs_urban_share(years_ots):
+def extract_lfs_urban_share(years_ots, table_id):
     # Suisse urbaine: sélection de variables selon la typologie urbain-rural
-    table_id = 'px-x-2105000000_404'
     structure, title = get_data_api_CH(table_id, mode='example', language='fr')
 
     # Extract all age classes
@@ -232,8 +230,7 @@ def extract_lfs_urban_share(years_ots):
 ########################
 ####   FLOOR-AREA   ####
 ########################
-def extract_lfs_floor_space(years_ots, dm_lfs_tot_pop):
-    table_id = 'px-x-0902020200_103'
+def extract_lfs_floor_space(years_ots, dm_lfs_tot_pop, table_id):
     structure, title = get_data_api_CH(table_id, mode='example', language='fr')
 
     # Extract buildings floor area
@@ -304,16 +301,51 @@ def extract_lfs_floor_space(years_ots, dm_lfs_tot_pop):
 
     return dm_floor_area
 
+######################
+### HOUSEHOLD-SIZE ###
+######################
+def extract_lfs_household_size(years_ots, table_id):
+    structure, title = get_data_api_CH(table_id, mode='example')
+    # Extract buildings floor area
+    filter = {'Year': structure['Year'],
+              'Canton (-) / District (>>) / Commune (......)': ['Schweiz / Suisse / Svizzera / Switzerland', '- Vaud'],
+              'Household size': ['1 person', '2 persons', '3 persons', '4 persons', '5 persons', '6 persons or more']}
+    mapping_dim = {'Country': 'Canton (-) / District (>>) / Commune (......)', 'Years': 'Year',
+                   'Variables': 'Household size'}
+    unit_all = ['people'] * len(filter['Household size'])
+    # Get api data
+    dm_household = get_data_api_CH(table_id, mode='extract', filter=filter, mapping_dims=mapping_dim, units=unit_all)
+
+    dm_household.rename_col(['Schweiz / Suisse / Svizzera / Switzerland', '- Vaud'], ['Switzerland', 'Vaud'],
+                            dim='Country')
+    drop_strings = [' persons or more', ' persons', ' person']
+    for drop_str in drop_strings:
+        dm_household.rename_col_regex(drop_str, '', dim='Variables')
+    # dm_household contains the number of household per each household-size
+    # Compute the average household size by doing the weighted average
+    sizes = np.array([int(num_ppl) for num_ppl in dm_household.col_labels['Variables']])
+    arr_weighted_size = dm_household.array * sizes[np.newaxis, np.newaxis, :]
+    arr_avg_size = np.nansum(arr_weighted_size, axis=-1, keepdims=True) / np.nansum(dm_household.array, axis=-1,
+                                                                                    keepdims=True)
+    # Create new datamatrix
+    dm_household_size = DataMatrix.based_on(arr_avg_size, dm_household, change={'Variables': ['lfs_household-size']},
+                                            units={'lfs_household-size': 'people'})
+    linear_fitting(dm_household_size, years_ots)
+    return dm_household_size
+
 
 years_setting = [1990, 2022, 2050, 5]  # Set the timestep for historical years & scenarios
 years_ots = create_ots_years_list(years_setting)
-
+deprecated_extract_lfs_population_total(years_ots)
 # Get population total and by age group (ots)
-dm_lfs_age, dm_lfs_tot_pop = extract_lfs_pop(years_ots)
+dm_lfs_age, dm_lfs_tot_pop = extract_lfs_pop(years_ots, table_id='px-x-0102020000_104')
 # Get urban share (ots)
-# dm_lfs_urban_pop = extract_lfs_urban_share(years_ots)
+dm_lfs_urban_pop = extract_lfs_urban_share(years_ots, table_id='px-x-2105000000_404')
 # Get floor area (ots)
-dm_lfs_floor_area = extract_lfs_floor_space(years_ots, dm_lfs_tot_pop)
+dm_lfs_floor_area = extract_lfs_floor_space(years_ots, dm_lfs_tot_pop, table_id='px-x-0902020200_103')
+# Get lfs_household-size (ots)
+dm_lfs_household_size = extract_lfs_household_size(years_ots, table_id='px-x-0102020000_402')
+
 print('Hello')
 
 
