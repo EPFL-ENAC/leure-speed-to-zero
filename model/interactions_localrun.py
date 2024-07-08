@@ -96,7 +96,7 @@ def local_interactions_run():
     return results_run, runtime
 
 # run local
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/interactions_localrun.py"
+# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/interactions_localrun.py"
 results_run, runtime = local_interactions_run()
 
 # # checks
