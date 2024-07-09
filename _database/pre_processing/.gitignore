@@ -1,0 +1,6 @@
+# discard excel files being edited
+~$*.xlsx
+
+# discard csv files and excel files (no data allowed)
+*.csv 
+*.xlsx
