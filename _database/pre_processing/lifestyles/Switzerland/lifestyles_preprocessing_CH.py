@@ -1,9 +1,14 @@
 import numpy as np
+import pandas as pd
+
 from model.common.auxiliary_functions import interpolate_nans, add_missing_ots_years
 from _database.pre_processing.api_routines_CH import get_data_api_CH
 from scipy.stats import linregress
 from model.common.data_matrix_class import DataMatrix
-
+import math
+import requests
+import os
+from _database.pre_processing.WorldBank_data_extract import get_WB_data
 
 def linear_fitting(dm, years_ots):
 
@@ -334,18 +339,92 @@ def extract_lfs_household_size(years_ots, table_id):
     return dm_household_size
 
 
+#######################
+### COOL-AREA-SHARE ###
+#######################
+def extract_lfs_floor_area_cool_share():
+    warning = 'The floor_area_cool_share routine is not complete, temperature data and GDP data are missing'
+    # "Space cooling technology in Europe" by HeatRoadmapEU
+    # https://heatroadmap.eu/wp-content/uploads/2018/11/HRE4_D3.2.pdf
+    # Equation "share of residential floor area cooled" at page 21
+    # Household size as number of people
+    hhd = 2.2
+    # GNI is the average per capita purchasing power parity
+    GNI = 92980
+    # Cooled Days Degrees
+    CDD = 1400
+    # Market saturation = all need covered
+    share_of_residential_floor_area_cooled = 0.815 * (1 - math.exp(-0.00225 * CDD)) / (
+                1 + 126.8 * math.exp(-0.000069 * GNI / hhd))
+    # To gather temperature data:
+    # At EPFL you can access MeteoSwiss measurements through CLIMAP app available on Windows or on mac by virtual machine
+    # Visit https://enacserver.epfl.ch/Servers/RemoteDesktop/enacvm-climap for info
+    print(warning)
+    return
+
+
+############################
+### GDP (PPP) per capita ###
+############################
+def extract_per_capita_gdp_ppp():
+    file_url = 'https://api.worldbank.org/v2/en/indicator/NY.GDP.PCAP.PP.CD?downloadformat=excel'
+    # Define the local filename to save the downloaded file
+    local_filename = 'data/GDP_World.xlsx'
+    var_name = 'GDP[USD/cap]'
+    dm_GDP = get_WB_data(file_url, local_filename, var_name, years_ots)
+
+    # In case you want to have simply GDP per capita data in CHF you have
+    read_CH_GDP = False
+    if read_CH_GDP:
+        # URL of the file to be downloaded
+        file_url = 'https://dam-api.bfs.admin.ch/hub/api/dam/assets/27065040/master'
+        # Define the local filename to save the downloaded file
+        local_filename = 'data/GDP_Switzerland.xlsx'
+        # Send a GET request to the URL
+        response = requests.get(file_url, stream=True)
+
+        if not os.path.exists(local_filename):
+            # Check if the request was successful
+            if response.status_code == 200:
+                # Open the local file in write-binary mode and write the response content to it
+                with open(local_filename, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+                print(f"File downloaded successfully as {local_filename}")
+            else:
+                print(f"Error: {response.status_code}, {response.text}")
+
+        df = pd.read_excel(local_filename)
+
+        # Clean df
+        # Rename columns
+        rename_dict = {'PIB par habitant à prix courants': 'Years', 'Unnamed: 1': 'GDP[CHF/cap]'}
+        df.rename(columns=rename_dict, inplace=True)
+        df = df[['Years', 'GDP[CHF/cap]']]
+        # Only keep ots years
+        int_years_ots = [int(year_str) for year_str in years_ots]
+        df_years = df[df['Years'].isin(int_years_ots)]
+        # Add Country column = Switzerland
+        df_years['Country'] = 'Switzerland'
+        # Create datamatrix
+        dm_GDP = DataMatrix.create_from_df(df_years, num_cat=0)
+
+    return dm_GDP
+
+
 years_setting = [1990, 2022, 2050, 5]  # Set the timestep for historical years & scenarios
 years_ots = create_ots_years_list(years_setting)
-deprecated_extract_lfs_population_total(years_ots)
+
 # Get population total and by age group (ots)
-dm_lfs_age, dm_lfs_tot_pop = extract_lfs_pop(years_ots, table_id='px-x-0102020000_104')
+#dm_lfs_age, dm_lfs_tot_pop = extract_lfs_pop(years_ots, table_id='px-x-0102020000_104')
 # Get urban share (ots)
-dm_lfs_urban_pop = extract_lfs_urban_share(years_ots, table_id='px-x-2105000000_404')
+#dm_lfs_urban_pop = extract_lfs_urban_share(years_ots, table_id='px-x-2105000000_404')
 # Get floor area (ots)
-dm_lfs_floor_area = extract_lfs_floor_space(years_ots, dm_lfs_tot_pop, table_id='px-x-0902020200_103')
+#dm_lfs_floor_area = extract_lfs_floor_space(years_ots, dm_lfs_tot_pop, table_id='px-x-0902020200_103')
 # Get lfs_household-size (ots)
-dm_lfs_household_size = extract_lfs_household_size(years_ots, table_id='px-x-0102020000_402')
+#dm_lfs_household_size = extract_lfs_household_size(years_ots, table_id='px-x-0102020000_402')
+
+
 
 print('Hello')
-
-
