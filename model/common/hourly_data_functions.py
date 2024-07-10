@@ -2,7 +2,7 @@ import pandas as pd
 import os
 import numpy as np
 from model.common.data_matrix_class import DataMatrix
-from model.common.auxiliary_functions import dm_lever_dict_from_df
+from model.common.io_database import dm_lever_dict_from_df
 
 
 def hourly_data_reader(file, years_setting, lever=None, dict_ots={}, dict_fts={}):

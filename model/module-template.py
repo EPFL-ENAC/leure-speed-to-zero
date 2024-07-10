@@ -14,9 +14,7 @@ from model.common.constant_data_matrix_class import ConstantDataMatrix  # Class 
 from model.common.interface_class import Interface
 
 # ImportFunctions
-from model.common.io_database import read_database, read_database_fxa  # read functions for levers & fixed assumptions
-from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups,\
-    update_interaction_constant_from_file
+from model.common.io_database import read_database_to_ots_fts_dict
 from model.common.auxiliary_functions import read_level_data, filter_geoscale
 
 
@@ -227,4 +225,4 @@ def local_power_run():
     return results_run
 
 
-results_run = local_power_run()
+# results_run = local_power_run()

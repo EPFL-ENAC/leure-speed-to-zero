@@ -14,7 +14,7 @@ from model.common.constant_data_matrix_class import ConstantDataMatrix
 
 # Import functions
 from model.common.io_database import read_database, read_database_fxa, read_database_w_filter, update_database_from_db
-from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups
+from model.common.io_database import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups
 from model.common.auxiliary_functions import read_level_data, cost
 
 warnings.simplefilter("ignore")

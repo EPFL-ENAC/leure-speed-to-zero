@@ -8,9 +8,9 @@ Created on Thu May 30 15:55:39 2024
 
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
-from model.common.io_database import read_database, read_database_fxa
+from model.common.io_database import read_database_fxa, read_database_to_ots_fts_dict
 from model.common.interface_class import Interface
-from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm, read_database_to_ots_fts_dict, read_level_data, simulate_input, calibration_rates, cost, read_database_to_ots_fts_dict_w_groups
+from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm, read_level_data, simulate_input, calibration_rates, cost
 import pickle
 import json
 import os
