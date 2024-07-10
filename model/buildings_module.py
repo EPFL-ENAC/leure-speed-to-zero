@@ -3,7 +3,7 @@ from model.common.data_matrix_class import DataMatrix
 from model.common.interface_class import Interface
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database, read_database_fxa, edit_database, read_database_w_filter
-from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups
+from model.common.io_database import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups
 from model.common.auxiliary_functions import read_level_data, filter_geoscale, compute_stock
 import pickle
 import json
@@ -792,7 +792,7 @@ def bld_light_heat_cool_workflow(DM_light_heat, DM_lfs, DM_clm, baseyear):
     dm_clm = DM_clm['climate-impact-average']
     idx_l = dm_lfs.idx
     idx_c = dm_clm.idx
-    # bld_index_lfs_heatcool-behaviour_degrees\[#\]|bld_index_lfs_floor-space_cool\[#\]|bld_climate-impact_average\[%\]
+    # bld_index_lfs_heatcool-behaviour_degrees[#]|bld_index_lfs_floor-space_cool[#]|bld_climate-impact_average[%]
     arr_tmp = dm_clm.array[:, :, idx_c['bld_climate-impact_average']] *\
               dm_lfs.array[:, :, idx_l['lfs_floor-space_cool']]/dm_lfs.array[:, np.newaxis, idx_l[baseyear], idx_l['lfs_floor-space_cool']] *\
               dm_lfs.array[:, :, idx_l['lfs_heatcool-behaviour_degrees']]/dm_lfs.array[:, np.newaxis, idx_l[baseyear], idx_l['lfs_heatcool-behaviour_degrees']]

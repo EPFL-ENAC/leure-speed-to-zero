@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import warnings
+from model.common.data_matrix_class import DataMatrix
 
 def read_database(filename, lever, folderpath="default", db_format=False, level='all'):
     # Reads csv file in database/data/csv and extracts it in df format with columns
@@ -269,3 +270,135 @@ def read_database_fxa(filename, folderpath="default", db_format=False, filter_di
         df.rename(columns=rename_cols, inplace=True)
         return df
 
+
+def dm_lever_dict_from_df(df_fts, levername, num_cat):
+    levels = list(set(df_fts[levername]))
+    dict_dm = {}
+    for i in levels:
+        df_fts_i = df_fts.loc[df_fts[levername] == i].copy()
+        df_fts_i.drop(columns=[levername], inplace=True)
+        rename_fts = {}
+        for col in df_fts_i.columns:
+            rename_fts[col] = col.replace('fts_', '')
+        df_fts_i.rename(columns=rename_fts, inplace=True)
+        df_fts_i.sort_values(by=['Country', 'Years'], axis=0, inplace=True)
+        dict_dm[i] = DataMatrix.create_from_df(df_fts_i, num_cat=num_cat)
+    return dict_dm
+
+
+def read_database_to_ots_fts_dict(file, lever, num_cat, baseyear, years, dict_ots, dict_fts, df_ots=None, df_fts=None,
+                                  filter_dict=None):
+    # It reads the database in data/csv with name file and returns the ots and the fts in form
+    # of datamatrix accessible by dictionaries:
+    # e.g.  dict_ots = {lever: dm_ots}
+    #       dict_fts = {lever: {1: dm_fts_level_1, 2: dm_fts_level_2, 3: dm_fts_level_3, 4: dm_fts_level_4}}
+    # where file is the name of the file and lever is the levername
+    if df_ots is None and df_fts is None:
+        if filter_dict is None:
+            df_ots, df_fts = read_database(file, lever, level='all')
+        else:
+            df_ots, df_fts = read_database_w_filter(file, lever, filter_dict)
+
+    # Drop from fts the baseyear and earlier years if any
+    df_fts.drop(df_fts[df_fts.Years <= baseyear].index, inplace=True)
+    # Keep fts only one every five years
+    df_fts = df_fts[df_fts['Years'].isin(years)].copy()
+    # Keep only years from 1990
+    df_ots.drop(df_ots[df_ots.Years > baseyear].index, inplace=True)
+    df_ots = df_ots[df_ots['Years'].isin(years)].copy()
+    dict_lever = dm_lever_dict_from_df(df_fts, lever, num_cat)
+    # Remove 'ots_' and drop lever
+    df_ots.drop(columns=[lever], inplace=True)
+    rename_ots = {}
+    for col in df_ots.columns:
+        rename_ots[col] = col.replace('ots_', '')
+    df_ots.rename(columns=rename_ots, inplace=True)
+    # Sort by country years
+    df_ots.sort_values(by=['Country', 'Years'], axis=0, inplace=True)
+    dm_ots = DataMatrix.create_from_df(df_ots, num_cat)
+    dict_ots[lever] = dm_ots
+    dict_fts[lever] = dict_lever
+    return dict_ots, dict_fts
+
+
+def read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list, baseyear, years, dict_ots, dict_fts, column: str,
+                                           group_list: list):
+    # It reads the database in data/csv with name file and returns the ots and the fts in form
+    # of datamatrix accessible by dictionaries:
+    # e.g.  dict_ots = {lever: {group1: dm_1, group2: dm_2, grou}}
+    #       dict_fts = {lever: [dm_fts_a, dm_fts_b, dm_fts_c]}
+    # where file is the name of the file and lever is the levername
+    dm_ots_groups = {}
+    dm_fts_groups = {}
+    for (i, group) in enumerate(group_list):
+        filter_dict = {column: group}
+        num_cat = num_cat_list[i]
+        dict_tmp_ots = {}
+        dict_tmp_fts = {}
+        read_database_to_ots_fts_dict(file, lever, num_cat, baseyear, years, dict_tmp_ots, dict_tmp_fts,
+                                      filter_dict=filter_dict)
+        group = group.replace('.*', '')
+        dm_ots_groups[group] = dict_tmp_ots[lever]
+        dm_fts_groups[group] = dict_tmp_fts[lever]
+
+    dict_ots[lever] = dm_ots_groups
+    dict_fts[lever] = dm_fts_groups
+
+    return dict_ots, dict_fts
+
+
+def database_to_df(df_db, lever, level='all'):
+    # Given a dataframe in database format and a lever name, it extracts df_ots and df_fts as dataframes with columns:
+    # Country, Years, var1, var2, var3 etc
+    # Impose correct type
+    df_db['timescale'] = df_db['timescale'].astype(int)
+    df_db['level'] = df_db['level'].astype(int)
+    df_db['value'] = df_db['value'].astype(float)
+    df_db['geoscale'] = df_db['geoscale'].astype(str)
+    df_db['lever'] = df_db['lever'].astype(str)
+    df_db['string-pivot'] = df_db['string-pivot'].astype(str)
+    # Remove duplicates
+    len_init = len(df_db)
+    df_db = df_db.drop_duplicates(subset=['geoscale', 'timescale', 'level', 'string-pivot', 'variables'])
+    if len(df_db) - len_init < 0:
+        print(f"Duplicates found, use .duplicated on dataframe to check which lines are repeated")
+    # Extract ots
+    df_db_ots = (df_db.loc[(df_db["level"] == 0) & (df_db['lever'] == lever)]).copy()
+    # Extract fts
+    if level == 'all':
+        df_db_fts = (df_db.loc[(df_db["level"] != 0) & (df_db['lever'] == lever)]).copy()
+    else:
+        df_db_fts = (df_db.loc[(df_db["level"] == level) & (df_db['lever'] == lever)]).copy()
+    # Pivot ots
+    if (df_db_ots['string-pivot'] != 'none').any():
+        df_ots = df_db_ots.pivot(index=['geoscale', 'timescale', 'level', 'string-pivot'], columns="variables",
+                                 values='value')
+    else:
+        df_ots = df_db_ots.pivot(index=['geoscale', 'timescale', 'level'], columns="variables", values='value')
+    df_ots.reset_index(inplace=True)
+    # Pivot fts
+    if (df_db_fts['string-pivot'] != 'none').any():
+        df_fts = df_db_fts.pivot(index=['geoscale', 'timescale', 'level', 'string-pivot'], columns="variables",
+                                 values='value')
+    else:
+        df_fts = df_db_fts.pivot(index=['geoscale', 'timescale', 'level'], columns="variables", values='value')
+
+    df_fts.reset_index(inplace=True)
+    rename_cols = {'geoscale': "Country", 'timescale': 'Years', 'level': lever}
+    df_ots.rename(columns=rename_cols, inplace=True)
+    df_fts.rename(columns=rename_cols, inplace=True)
+
+    return df_ots, df_fts
+
+
+def database_to_dm(df_db, lever, num_cat, baseyear, years, level='all'):
+    # Given a dataframe in database format, it extracts the ots and the fts dictionaries
+    # e.g.  dict_ots = {lever: dm_ots}
+    #       dict_fts = {lever: {1: dm_fts_level_1, 2: dm_fts_level_2, 3: dm_fts_level_3, 4: dm_fts_level_4}}
+    df_ots, df_fts = database_to_df(df_db, lever, level)
+    dict_ots = dict()
+    dict_fts = dict()
+    dict_ots, dict_fts = read_database_to_ots_fts_dict(file=None, lever=lever, num_cat=num_cat, baseyear=baseyear,
+                                                       years=years, dict_ots=dict_ots, dict_fts=dict_fts, df_ots=df_ots,
+                                                       df_fts=df_fts)
+    return dict_ots, dict_fts

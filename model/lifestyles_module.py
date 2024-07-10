@@ -13,7 +13,7 @@ from model.common.interface_class import Interface
 
 # ImportFunctions
 from model.common.io_database import edit_database, read_database_fxa  # read functions for levers & fixed assumptions
-from model.common.auxiliary_functions import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups
+from model.common.io_database import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups
 from model.common.auxiliary_functions import read_level_data, filter_geoscale
 
 import time

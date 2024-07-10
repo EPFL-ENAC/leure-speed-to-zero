@@ -9,9 +9,9 @@ Created on Sun May 26 14:29:08 2024
 
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
-from model.common.io_database import read_database, read_database_fxa, edit_database
+from model.common.io_database import read_database, read_database_fxa, edit_database, read_database_to_ots_fts_dict
 from model.common.interface_class import Interface
-from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm, read_database_to_ots_fts_dict, read_level_data
+from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm, read_level_data
 from model.common.auxiliary_functions import simulate_input, material_decomposition, calibration_rates, cost
 from model.common.auxiliary_functions import energy_switch
 import pickle

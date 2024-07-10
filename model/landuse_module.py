@@ -10,9 +10,9 @@ import pandas as pd
 
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
-from model.common.io_database import read_database, read_database_fxa, edit_database
+from model.common.io_database import read_database_fxa, read_database_to_ots_fts_dict_w_groups
 from model.common.interface_class import Interface
-from model.common.auxiliary_functions import compute_stock, read_database_to_ots_fts_dict, filter_geoscale, read_database_to_ots_fts_dict_w_groups
+from model.common.auxiliary_functions import filter_geoscale
 from model.common.auxiliary_functions import read_level_data, simulate_input
 from scipy.optimize import linprog
 import pickle
