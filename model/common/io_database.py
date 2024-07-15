@@ -357,6 +357,7 @@ def database_to_df(df_db, lever, level='all'):
     df_db['geoscale'] = df_db['geoscale'].astype(str)
     df_db['lever'] = df_db['lever'].astype(str)
     df_db['string-pivot'] = df_db['string-pivot'].astype(str)
+    df_db['variables'] = df_db['variables'].astype(str)
     # Remove duplicates
     len_init = len(df_db)
     df_db = df_db.drop_duplicates(subset=['geoscale', 'timescale', 'level', 'string-pivot', 'variables'])
@@ -396,6 +397,8 @@ def database_to_dm(df_db, lever, num_cat, baseyear, years, level='all'):
     # e.g.  dict_ots = {lever: dm_ots}
     #       dict_fts = {lever: {1: dm_fts_level_1, 2: dm_fts_level_2, 3: dm_fts_level_3, 4: dm_fts_level_4}}
     df_ots, df_fts = database_to_df(df_db, lever, level)
+    if isinstance(years[0], str):
+        years = [int(y) for y in years]
     dict_ots = dict()
     dict_fts = dict()
     dict_ots, dict_fts = read_database_to_ots_fts_dict(file=None, lever=lever, num_cat=num_cat, baseyear=baseyear,
