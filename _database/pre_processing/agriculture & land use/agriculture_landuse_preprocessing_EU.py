@@ -43,7 +43,7 @@ def create_ots_years_list(years_setting):
     return years_ots
 
 
-# Lever SELF-SUFFICIENCY CROP & LIVESTOCK ------------------------------------------------------------------------------
+# CalculationLeaf SELF-SUFFICIENCY CROP & LIVESTOCK ------------------------------------------------------------------------------
 def self_sufficiency_processing():
 
     # Read data ------------------------------------------------------------------------------------------------------------
@@ -243,369 +243,485 @@ def self_sufficiency_processing():
 
     return df_ssr_pathwaycalc
 
+# CalculationLeaf CLIMATE SMART CROP ---------------------------------------------------------------------------------------------
+def climate_smart_crop_processing():
 
+    # Common for all
+    # List of countries
+    list_countries = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czechia', 'Denmark',
+                      'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
+                      'Lithuania', 'Luxembourg', 'Malta', 'Netherlands (Kingdom of the)', 'Poland', 'Portugal',
+                      'Romania', 'Slovakia',
+                      'Slovenia', 'Spain', 'Sweden', 'Switzerland',
+                      'United Kingdom of Great Britain and Northern Ireland']
+
+    # ----------------------------------------------------------------------------------------------------------------------
+    # EF AGROFORESTRY ------------------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # LAND USE (RL)
+    # List of elements and items
+    list_elements = ['Carbon stock in living biomass']
+    list_items = ['Cropland area under protective cover', '-- Cropland', 'Cropland area under zero or no tillage']
+
+    # 1990 - 2022
+    code = 'RL'
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
+                  '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
+                  '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    # df_agroforestry_1990_2022 = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # ENERGY DEMAND --------------------------------------------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------------------------------------------------------
+    # INPUT USE ------------------------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # NITROGEN, PHOSPHATE, POTASH ------------------------------------------------------------------------------------------
+
+    # List of elements
+    list_elements = ['Use per area of cropland']
+
+    list_items = ['Nutrient nitrogen N (total)', 'Nutrient phosphate P2O5 (total)', 'Nutrient potash K2O (total)']
+
+    # 1990 - 2021
+    ld = faostat.list_datasets()
+    code = 'RFN'
+    pars = faostat.list_pars(code)
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
+                  '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
+                  '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_input_nitrogen_1990_2021 = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # PESTICIDES -----------------------------------------------------------------------------------------------------------
+
+    # List of elements
+    list_elements = ['Use per area of cropland']
+
+    list_items = ['Pesticides (total) + (Total)']
+
+    # 1990 - 2021
+    code = 'RP'
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
+                  '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
+                  '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_input_pesticides_1990_2021 = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # LIMING, UREA ---------------------------------------------------------------------------------------------------------
+    # List of elements
+    list_elements = ['Agricultural Use']
+
+    list_items = ['Urea', 'Calcium ammonium nitrate (CAN) and other mixtures with calcium carbonate']
+
+    # Input Liming Urea 2002 - 2021
+    code = 'RFB'
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
+                  '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_input_liming_urea_1990_2021 = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # Area Harvested 2002 - 2021
+
+    # List of elements
+    list_elements = ['Area harvested']
+    list_items = ['Cereals, primary + (Total)', 'Fibre Crops, Fibre Equivalent + (Total)', 'Fruit Primary + (Total)',
+                  'Oilcrops, Oil Equivalent + (Total)', 'Pulses, Total + (Total)', 'Rice',
+                  'Roots and Tubers, Total + (Total)',
+                  'Sugar Crops Primary + (Total)', 'Vegetables Primary + (Total)']
+    code = 'QCL'
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
+                  '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_area_2022_2021 = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # Conversion from [t] in [t/ha]-----------------------------------------------------------------------------------------
+    # Summming Area harvested per country and year (and element)
+    df_area_total_2022_2021 = df_area_2022_2021.groupby(['Area', 'Element', 'Year'])['Value'].sum().reset_index()
+
+    # UREA
+    # Filtering and dropping columns
+    df_input_urea_1990_2021 = df_input_liming_urea_1990_2021[df_input_liming_urea_1990_2021['Item'] == 'Urea']
+    df_input_urea_1990_2021 = df_input_urea_1990_2021.drop(
+        columns=['Domain Code', 'Domain', 'Area Code', 'Element Code',
+                 'Item Code', 'Year Code', 'Unit', 'Item'])
+    # Concatenate
+    df_urea_area = pd.concat([df_area_total_2022_2021, df_input_urea_1990_2021])
+    # Step 1: Pivot the DataFrame
+    pivot_df = df_urea_area.pivot_table(index=['Area', 'Year'], columns='Element', values='Value').reset_index()
+    # Step 2: Compute the input [t/ha]
+    pivot_df['Input[t/ha]'] = pivot_df['Agricultural Use'] / pivot_df['Area harvested']
+    # Drop the columns Yield
+    pivot_df = pivot_df.drop(columns=['Agricultural Use', 'Area harvested'])
+    # Adding a column Item
+    pivot_df['Item'] = 'Urea'
+    cols = pivot_df.columns.tolist()
+    cols.insert(cols.index('Input[t/ha]'), cols.pop(cols.index('Item')))
+    pivot_df = pivot_df[cols]
+    pivot_df_urea = pivot_df.copy()
+
+    # LIMING
+    # Filtering and dropping columns
+    df_input_liming_1990_2021 = df_input_liming_urea_1990_2021[df_input_liming_urea_1990_2021[
+                                                                   'Item'] == 'Calcium ammonium nitrate (CAN) and other mixtures with calcium carbonate']
+    df_input_liming_1990_2021 = df_input_liming_1990_2021.drop(
+        columns=['Domain Code', 'Domain', 'Area Code', 'Element Code',
+                 'Item Code', 'Year Code', 'Unit', 'Item'])
+    # Concatenate
+    df_liming_area = pd.concat([df_area_total_2022_2021, df_input_liming_1990_2021])
+    # Step 1: Pivot the DataFrame
+    pivot_df = df_liming_area.pivot_table(index=['Area', 'Year'], columns='Element', values='Value').reset_index()
+    # Step 2: Compute the input [t/ha]
+    pivot_df['Input[t/ha]'] = pivot_df['Agricultural Use'] / pivot_df['Area harvested']
+    # Drop the columns
+    pivot_df = pivot_df.drop(columns=['Agricultural Use', 'Area harvested'])
+    # Adding a column Item
+    pivot_df['Item'] = 'Calcium ammonium nitrate (CAN) and other mixtures with calcium carbonate'
+    cols = pivot_df.columns.tolist()
+    cols.insert(cols.index('Input[t/ha]'), cols.pop(cols.index('Item')))
+    pivot_df = pivot_df[cols]
+    pivot_df_liming = pivot_df.copy()
+
+    # Conversion from [kg/ha] in [t/ha]-------------------------------------------------------------------------------------
+
+    # Concatenating
+    df_input_pesticides_nitrogen = pd.concat([df_input_pesticides_1990_2021, df_input_nitrogen_1990_2021])
+    # Step 1: Pivot the DataFrame
+    pivot_df = df_input_pesticides_nitrogen.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
+                                                        values='Value').reset_index()
+    # Step 2: Compute the Input [t/ha]
+    pivot_df['Input[t/ha]'] = pivot_df['Use per area of cropland'] * 0.001
+    # Drop the columns
+    pivot_df_pesticides_nitrogen = pivot_df.drop(columns=['Use per area of cropland'])
+
+    # Extrapolating RFB for 1990 to 2001 and other missing values ----------------------------------------------------------
+
+    # Extrapolating everything for 2022
+
+    # PathwayCalc formatting -----------------------------------------------------------------------------------------------
+
+    # Concatenating
+    pivot_df_input = pd.concat([pivot_df_urea, pivot_df_liming], axis=0)
+    pivot_df_input = pd.concat([pivot_df_input, pivot_df_pesticides_nitrogen], axis=0)
+
+    # Food item name matching with dictionary
+    # Read excel file
+    df_dict_csc = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        sheet_name='climate-smart-crops')
+
+    # Merge based on 'Item'
+    df_input_pathwaycalc = pd.merge(df_dict_csc, pivot_df_input, on='Item')
+
+    # Drop the 'Item' column
+    df_input_pathwaycalc = df_input_pathwaycalc.drop(columns=['Item'])
+
+    # Renaming existing columns (geoscale, timsecale, value)
+    df_input_pathwaycalc.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Input[t/ha]': 'value'}, inplace=True)
+
+    # Adding the columns module, lever, level and string-pivot at the correct places
+    df_input_pathwaycalc['module'] = 'agriculture'
+    df_input_pathwaycalc['lever'] = 'climate-smart-crop'
+    df_input_pathwaycalc['level'] = 0
+    df_input_pathwaycalc['string-pivot'] = 'none'
+    cols = df_input_pathwaycalc.columns.tolist()
+    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('string-pivot')))
+    df_input_pathwaycalc = df_input_pathwaycalc[cols]
+
+    # Rename countries to Pathaywcalc name
+    df_input_pathwaycalc['geoscale'] = df_input_pathwaycalc['geoscale'].replace(
+        'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+    df_input_pathwaycalc['geoscale'] = df_input_pathwaycalc['geoscale'].replace('Netherlands (Kingdom of the)',
+                                                                                'Netherlands')
+    df_input_pathwaycalc['geoscale'] = df_input_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
+
+    # ----------------------------------------------------------------------------------------------------------------------
+    # LOSSES ---------------------------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # FOOD BALANCE SHEETS (FBS) - For everything  -------------------------------------------------
+    # List of elements
+    list_elements = ['Losses', 'Production Quantity']
+
+    list_items = ['Cereals - Excluding Beer + (Total)', 'Fruits - Excluding Wine + (Total)', 'Oilcrops + (Total)',
+                  'Pulses + (Total)', 'Rice (Milled Equivalent)', 'Starchy Roots + (Total)', 'Sugar Crops + (Total)',
+                  'Vegetables + (Total)', ]
+
+    # 1990 - 2013
+    code = 'FBSH'
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
+                  '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_losses_1990_2013 = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # 2010 - 2022
+    # Different list because different in item nomination such as rice
+    list_items = ['Cereals - Excluding Beer + (Total)', 'Fruits - Excluding Wine + (Total)', 'Oilcrops + (Total)',
+                  'Pulses + (Total)', 'Rice and products', 'Starchy Roots + (Total)', 'Sugar Crops + (Total)',
+                  'Vegetables + (Total)', ]
+    code = 'FBS'
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_losses_2010_2021 = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # Concatenating
+    df_losses = pd.concat([df_losses_1990_2013, df_losses_2010_2021])
+
+    # Compute losses ([%] of production) -----------------------------------------------------------------------------------
+    # Losses [%] = 1 / (1 - Losses [1000t] / Production [1000t]) (pre processing for multiplicating the workflow)
+
+    # Step 1: Pivot the DataFrame
+    pivot_df = df_losses.pivot_table(index=['Area', 'Year', 'Item'], columns='Element', values='Value').reset_index()
+
+    # Step 2: Compute the Losses [%] (really it's unit less)
+    pivot_df['Losses[%]'] = 1 / (1 - pivot_df['Losses'] / pivot_df['Production'])
+
+    # Drop the columns Production, Import Quantity and Export Quantity
+    pivot_df = pivot_df.drop(columns=['Production', 'Losses'])
+
+    # Extrapolating for 2022 -----------------------------------------------------------------------------------------------
+
+    # PathwayCalc formatting -----------------------------------------------------------------------------------------------
+
+    # Food item name matching with dictionary
+    # Read excel file
+    df_dict_csc = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        sheet_name='climate-smart-crops')
+
+    # Merge based on 'Item'
+    df_losses_pathwaycalc = pd.merge(df_dict_csc, pivot_df, on='Item')
+
+    # Drop the 'Item' column
+    df_losses_pathwaycalc = df_losses_pathwaycalc.drop(columns=['Item'])
+
+    # Renaming existing columns (geoscale, timsecale, value)
+    df_losses_pathwaycalc.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Losses[%]': 'value'}, inplace=True)
+
+    # Adding the columns module, lever, level and string-pivot at the correct places
+    df_losses_pathwaycalc['module'] = 'agriculture'
+    df_losses_pathwaycalc['lever'] = 'climate-smart-crop'
+    df_losses_pathwaycalc['level'] = 0
+    df_losses_pathwaycalc['string-pivot'] = 'none'
+    cols = df_losses_pathwaycalc.columns.tolist()
+    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('string-pivot')))
+    df_losses_pathwaycalc = df_losses_pathwaycalc[cols]
+
+    # Rename countries to Pathaywcalc name
+    df_losses_pathwaycalc['geoscale'] = df_losses_pathwaycalc['geoscale'].replace(
+        'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+    df_losses_pathwaycalc['geoscale'] = df_losses_pathwaycalc['geoscale'].replace('Netherlands (Kingdom of the)',
+                                                                                  'Netherlands')
+    df_losses_pathwaycalc['geoscale'] = df_losses_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
+
+    # RESIDUE SHARE --------------------------------------------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------------------------------------------------------
+    # YIELD ----------------------------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # CROPS AND LIVESTOCK PRODUCTS (QCL) (for everything except lgn-energycrop, gas-energycrop, algae and insect)
+    # List of elements
+    list_elements = ['Yield']
+
+    list_items = ['Cereals, primary + (Total)', 'Fibre Crops, Fibre Equivalent + (Total)', 'Fruit Primary + (Total)',
+                  'Oilcrops, Oil Equivalent + (Total)', 'Pulses, Total + (Total)', 'Rice',
+                  'Roots and Tubers, Total + (Total)',
+                  'Sugar Crops Primary + (Total)', 'Vegetables Primary + (Total)']
+
+    # 1990 - 2022
+    code = 'QCL'
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
+                  '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
+                  '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_yield_1990_2022 = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # Unit conversion from [100g/ha] to [t/ha]  ----------------------------------------------------------------------------
+
+    # Step 1: Pivot the DataFrame
+    pivot_df = df_yield_1990_2022.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
+                                              values='Value').reset_index()
+
+    # Step 2: Compute the Yield [t/ha]
+    pivot_df['Yield[t/ha]'] = pivot_df['Yield'] * 0.0001
+
+    # Drop the columns Yield
+    pivot_df = pivot_df.drop(columns=['Yield'])
+
+    # PathwayCalc formatting -----------------------------------------------------------------------------------------------
+
+    # Food item name matching with dictionary
+    # Read excel file
+    df_dict_csc = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        sheet_name='climate-smart-crops')
+
+    # Merge based on 'Item'
+    df_yield_pathwaycalc = pd.merge(df_dict_csc, pivot_df, on='Item')
+
+    # Drop the 'Item' column
+    df_yield_pathwaycalc = df_yield_pathwaycalc.drop(columns=['Item'])
+
+    # Renaming existing columns (geoscale, timsecale, value)
+    df_yield_pathwaycalc.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Yield[t/ha]': 'value'}, inplace=True)
+
+    # Adding the columns module, lever, level and string-pivot at the correct places
+    df_yield_pathwaycalc['module'] = 'agriculture'
+    df_yield_pathwaycalc['lever'] = 'climate-smart-crop'
+    df_yield_pathwaycalc['level'] = 0
+    df_yield_pathwaycalc['string-pivot'] = 'none'
+    cols = df_yield_pathwaycalc.columns.tolist()
+    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('string-pivot')))
+    df_yield_pathwaycalc = df_yield_pathwaycalc[cols]
+
+    # Rename countries to Pathaywcalc name
+    df_yield_pathwaycalc['geoscale'] = df_yield_pathwaycalc['geoscale'].replace(
+        'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+    df_yield_pathwaycalc['geoscale'] = df_yield_pathwaycalc['geoscale'].replace('Netherlands (Kingdom of the)',
+                                                                                'Netherlands')
+    df_yield_pathwaycalc['geoscale'] = df_yield_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
+
+    # FINAL RESULT ---------------------------------------------------------------------------------------------------------
+    df_climate_smart_crop = pd.concat([df_input_pathwaycalc, df_losses_pathwaycalc])
+    df_climate_smart_crop = pd.concat([df_climate_smart_crop, df_yield_pathwaycalc])
+
+    return df_climate_smart_crop
 
 
 
 #years_setting = [1990, 2022, 2050, 5]  # Set the timestep for historical years & scenarios
 #years_ots = create_ots_years_list(years_setting)
 
-# RUNNING PRE-PROCESSING -----------------------------------------------------------------------------------------------
+# CalculationTree RUNNING PRE-PROCESSING -----------------------------------------------------------------------------------------------
 
 #df_ssr_pathwaycalc = self_sufficiency_processing()
+#df_climate_smart_crop = climate_smart_crop_processing()
 
-
-
-
-# Lever CLIMATE SMART CROP ---------------------------------------------------------------------------------------------
+# CalculationLeaf CLIMATE SMART LIVESTOCK ---------------------------------------------------------------------------------------------
 
 # Common for all
 # List of countries
 list_countries = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czechia', 'Denmark',
-                    'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
-                    'Lithuania', 'Luxembourg', 'Malta', 'Netherlands (Kingdom of the)', 'Poland', 'Portugal',
-                    'Romania', 'Slovakia',
-                    'Slovenia', 'Spain', 'Sweden', 'Switzerland',
-                    'United Kingdom of Great Britain and Northern Ireland']
-
-# EF AGROFORESTRY ------------------------------------------------------------------------------------------------------
+                  'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
+                  'Lithuania', 'Luxembourg', 'Malta', 'Netherlands (Kingdom of the)', 'Poland', 'Portugal',
+                  'Romania', 'Slovakia',
+                  'Slovenia', 'Spain', 'Sweden', 'Switzerland',
+                  'United Kingdom of Great Britain and Northern Ireland']
 
 
-# ENERGY DEMAND --------------------------------------------------------------------------------------------------------
+# LIVESTOCK DENSITY & GRAZING INTENSITY
 
+# AGROFORESTRY (GRASSLAND & HEDGES)
 
+# ENTERIC EMISSIONS
 
+# LOSSES
 
+# MANURE EMISSIONS (APPLIED, PASTURE & TREATED)
 
-# ----------------------------------------------------------------------------------------------------------------------
-# INPUT USE ------------------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------------
-
-# NITROGEN, PHOSPHATE, POTASH ------------------------------------------------------------------------------------------
-
-# List of elements
-list_elements = ['Use per area of cropland']
-
-list_items = ['Nutrient nitrogen N (total)', 'Nutrient phosphate P2O5 (total)', 'Nutrient potash K2O (total)']
-
-# 1990 - 2021
-ld = faostat.list_datasets()
-code = 'RFN'
-pars = faostat.list_pars(code)
-my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
-my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
-my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
-list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
-              '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
-              '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021']
-my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
-
-my_pars = {
-    'area': my_countries,
-    'element': my_elements,
-    'item': my_items,
-    'year': my_years
-}
-df_input_nitrogen_1990_2021 = faostat.get_data_df(code, pars=my_pars, strval=False)
-
-# PESTICIDES -----------------------------------------------------------------------------------------------------------
-
-# List of elements
-list_elements = ['Use per area of cropland']
-
-list_items = ['Pesticides (total) + (Total)']
-
-# 1990 - 2021
-code = 'RP'
-my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
-my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
-my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
-list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
-              '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
-              '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021']
-my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
-
-my_pars = {
-    'area': my_countries,
-    'element': my_elements,
-    'item': my_items,
-    'year': my_years
-}
-df_input_pesticides_1990_2021 = faostat.get_data_df(code, pars=my_pars, strval=False)
-
-# LIMING, UREA ---------------------------------------------------------------------------------------------------------
-# List of elements
-list_elements = ['Agricultural Use']
-
-list_items = ['Urea', 'Calcium ammonium nitrate (CAN) and other mixtures with calcium carbonate']
-
-# Input Liming Urea 2002 - 2021
-code = 'RFB'
-my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
-my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
-my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
-list_years = ['2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
-              '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021']
-my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
-
-my_pars = {
-    'area': my_countries,
-    'element': my_elements,
-    'item': my_items,
-    'year': my_years
-}
-df_input_liming_urea_1990_2021 = faostat.get_data_df(code, pars=my_pars, strval=False)
-
-# Area Harvested 2002 - 2021
-
-# List of elements
-list_elements = ['Area harvested']
-list_items = ['Cereals, primary + (Total)', 'Fibre Crops, Fibre Equivalent + (Total)', 'Fruit Primary + (Total)',
-              'Oilcrops, Oil Equivalent + (Total)', 'Pulses, Total + (Total)', 'Rice', 'Roots and Tubers, Total + (Total)',
-              'Sugar Crops Primary + (Total)', 'Vegetables Primary + (Total)']
-code = 'QCL'
-my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
-my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
-my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
-list_years = [ '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
-              '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021']
-my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
-
-my_pars = {
-    'area': my_countries,
-    'element': my_elements,
-    'item': my_items,
-    'year': my_years
-}
-df_area_2022_2021 = faostat.get_data_df(code, pars=my_pars, strval=False)
-
-# Conversion from [t] in [t/ha]-----------------------------------------------------------------------------------------
-# Summming Area harvested per country and year (and element)
-df_area_total_2022_2021 = df_area_2022_2021.groupby(['Area', 'Element', 'Year'])['Value'].sum().reset_index()
-
-
-# UREA
-# Filtering and dropping columns
-df_input_urea_1990_2021 = df_input_liming_urea_1990_2021[df_input_liming_urea_1990_2021['Item'] == 'Urea']
-df_input_urea_1990_2021 = df_input_urea_1990_2021.drop(columns=['Domain Code', 'Domain', 'Area Code', 'Element Code',
-                                                                'Item Code', 'Year Code', 'Unit', 'Item'])
-# Concatenate
-df_urea_area = pd.concat([df_area_total_2022_2021, df_input_urea_1990_2021])
-# Step 1: Pivot the DataFrame
-pivot_df = df_urea_area.pivot_table(index=['Area', 'Year'], columns='Element', values='Value').reset_index()
-# Step 2: Compute the input [t/ha]
-pivot_df['Input[t/ha]'] =  pivot_df['Agricultural Use'] / pivot_df['Area harvested']
-# Drop the columns Yield
-pivot_df = pivot_df.drop(columns=['Agricultural Use', 'Area harvested'])
-# Adding a column Item
-pivot_df['Item'] = 'Urea'
-cols = pivot_df.columns.tolist()
-cols.insert(cols.index('Input[t/ha]'), cols.pop(cols.index('Item')))
-pivot_df = pivot_df[cols]
-pivot_df_urea = pivot_df.copy()
-
-# LIMING
-# Filtering and dropping columns
-df_input_liming_1990_2021 = df_input_liming_urea_1990_2021[df_input_liming_urea_1990_2021['Item'] == 'Calcium ammonium nitrate (CAN) and other mixtures with calcium carbonate']
-df_input_liming_1990_2021 = df_input_liming_1990_2021.drop(columns=['Domain Code', 'Domain', 'Area Code', 'Element Code',
-                                                                'Item Code', 'Year Code', 'Unit', 'Item'])
-# Concatenate
-df_liming_area = pd.concat([df_area_total_2022_2021, df_input_liming_1990_2021])
-# Step 1: Pivot the DataFrame
-pivot_df = df_liming_area.pivot_table(index=['Area', 'Year'], columns='Element', values='Value').reset_index()
-# Step 2: Compute the input [t/ha]
-pivot_df['Input[t/ha]'] =  pivot_df['Agricultural Use'] / pivot_df['Area harvested']
-# Drop the columns
-pivot_df = pivot_df.drop(columns=['Agricultural Use', 'Area harvested'])
-# Adding a column Item
-pivot_df['Item'] = 'Calcium ammonium nitrate (CAN) and other mixtures with calcium carbonate'
-cols = pivot_df.columns.tolist()
-cols.insert(cols.index('Input[t/ha]'), cols.pop(cols.index('Item')))
-pivot_df = pivot_df[cols]
-pivot_df_liming = pivot_df.copy()
-
-# Conversion from [kg/ha] in [t/ha]-------------------------------------------------------------------------------------
-
-# Concatenating
-df_input_pesticides_nitrogen = pd.concat([df_input_pesticides_1990_2021, df_input_nitrogen_1990_2021])
-# Step 1: Pivot the DataFrame
-pivot_df = df_input_pesticides_nitrogen.pivot_table(index=['Area', 'Year', 'Item'], columns='Element', values='Value').reset_index()
-# Step 2: Compute the Input [t/ha]
-pivot_df['Input[t/ha]'] = pivot_df['Use per area of cropland'] * 0.001
-# Drop the columns
-pivot_df_pesticides_nitrogen = pivot_df.drop(columns=['Use per area of cropland'])
-
-# Extrapolating RFB for 1990 to 2001 and other missing values ----------------------------------------------------------
-
-# Extrapolating everything for 2022
-
-# PathwayCalc formatting -----------------------------------------------------------------------------------------------
-
-# Concatenating
-pivot_df_input = pd.concat([pivot_df_urea, pivot_df_liming], axis=0)
-pivot_df_input = pd.concat([pivot_df_input, pivot_df_pesticides_nitrogen], axis=0)
-
-# Food item name matching with dictionary
-# Read excel file
-df_dict_csc = pd.read_excel(
-    '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
-    sheet_name='climate-smart-crops')
-
-# Merge based on 'Item'
-df_input_pathwaycalc = pd.merge(df_dict_csc, pivot_df_input, on='Item')
-
-# Drop the 'Item' column
-df_input_pathwaycalc = df_input_pathwaycalc.drop(columns=['Item'])
-
-# Renaming existing columns (geoscale, timsecale, value)
-df_input_pathwaycalc.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Input[t/ha]': 'value'}, inplace=True)
-
-# Adding the columns module, lever, level and string-pivot at the correct places
-df_input_pathwaycalc['module'] = 'agriculture'
-df_input_pathwaycalc['lever'] = 'climate-smart-crop'
-df_input_pathwaycalc['level'] = 0
-df_input_pathwaycalc['string-pivot'] = 'none'
-cols = df_input_pathwaycalc.columns.tolist()
-cols.insert(cols.index('value'), cols.pop(cols.index('module')))
-cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
-cols.insert(cols.index('value'), cols.pop(cols.index('level')))
-cols.insert(cols.index('value'), cols.pop(cols.index('string-pivot')))
-df_input_pathwaycalc = df_input_pathwaycalc[cols]
-
-# Rename countries to Pathaywcalc name
-df_input_pathwaycalc['geoscale'] = df_input_pathwaycalc['geoscale'].replace(
-    'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
-df_input_pathwaycalc['geoscale'] = df_input_pathwaycalc['geoscale'].replace('Netherlands (Kingdom of the)',
-                                                                        'Netherlands')
-df_input_pathwaycalc['geoscale'] = df_input_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
-
-
+# FEED RATION
 
 # ----------------------------------------------------------------------------------------------------------------------
-# LOSSES ---------------------------------------------------------------------------------------------------------------
+# SLAUGHTERED LIVESTOCK  & YIELD (DAIRY & EGGS) --------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
+list_elements = ['Producing Animals/Slaughtered', 'Production Quantity']
 
-# FOOD BALANCE SHEETS (FBS) - For everything  -------------------------------------------------
-# List of elements
-list_elements = ['Losses', 'Production Quantity']
-
-list_items = ['Cereals - Excluding Beer + (Total)', 'Fruits - Excluding Wine + (Total)', 'Oilcrops + (Total)',
-              'Pulses + (Total)', 'Rice (Milled Equivalent)', 'Starchy Roots + (Total)', 'Sugar Crops + (Total)',
-              'Vegetables + (Total)',]
-
-# 1990 - 2013
-code = 'FBSH'
-my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
-my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
-my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
-list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
-              '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013']
-my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
-
-my_pars = {
-    'area': my_countries,
-    'element': my_elements,
-    'item': my_items,
-    'year': my_years
-}
-df_losses_1990_2013 = faostat.get_data_df(code, pars=my_pars, strval=False)
-
-# 2010 - 2022
-# Different list because different in item nomination such as rice
-list_items = ['Cereals - Excluding Beer + (Total)', 'Fruits - Excluding Wine + (Total)', 'Oilcrops + (Total)',
-              'Pulses + (Total)', 'Rice and products', 'Starchy Roots + (Total)', 'Sugar Crops + (Total)',
-              'Vegetables + (Total)',]
-code = 'FBS'
-my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
-my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
-my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
-list_years = ['2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021']
-my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
-
-my_pars = {
-    'area': my_countries,
-    'element': my_elements,
-    'item': my_items,
-    'year': my_years
-}
-df_losses_2010_2021 = faostat.get_data_df(code, pars=my_pars, strval=False)
-
-# Concatenating
-df_losses = pd.concat([df_losses_1990_2013, df_losses_2010_2021])
-
-
-# Compute losses ([%] of production) -----------------------------------------------------------------------------------
-# Losses [%] = 1 / (1 - Losses [1000t] / Production [1000t]) (pre processing for multiplicating the workflow)
-
-# Step 1: Pivot the DataFrame
-pivot_df = df_losses.pivot_table(index=['Area', 'Year', 'Item'], columns='Element', values='Value').reset_index()
-
-# Step 2: Compute the Losses [%] (really it's unit less)
-pivot_df['Losses[%]'] =  1 / (1 - pivot_df['Losses'] / pivot_df['Production'])
-
-# Drop the columns Production, Import Quantity and Export Quantity
-pivot_df = pivot_df.drop(columns=['Production', 'Losses'])
-
-# Extrapolating for 2022 -----------------------------------------------------------------------------------------------
-
-# PathwayCalc formatting -----------------------------------------------------------------------------------------------
-
-# Food item name matching with dictionary
-# Read excel file
-df_dict_csc = pd.read_excel(
-    '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
-    sheet_name='climate-smart-crops')
-
-# Merge based on 'Item'
-df_losses_pathwaycalc = pd.merge(df_dict_csc, pivot_df, on='Item')
-
-# Drop the 'Item' column
-df_losses_pathwaycalc = df_losses_pathwaycalc.drop(columns=['Item'])
-
-# Renaming existing columns (geoscale, timsecale, value)
-df_losses_pathwaycalc.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Losses[%]': 'value'}, inplace=True)
-
-# Adding the columns module, lever, level and string-pivot at the correct places
-df_losses_pathwaycalc['module'] = 'agriculture'
-df_losses_pathwaycalc['lever'] = 'climate-smart-crop'
-df_losses_pathwaycalc['level'] = 0
-df_losses_pathwaycalc['string-pivot'] = 'none'
-cols = df_losses_pathwaycalc.columns.tolist()
-cols.insert(cols.index('value'), cols.pop(cols.index('module')))
-cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
-cols.insert(cols.index('value'), cols.pop(cols.index('level')))
-cols.insert(cols.index('value'), cols.pop(cols.index('string-pivot')))
-df_losses_pathwaycalc = df_losses_pathwaycalc[cols]
-
-# Rename countries to Pathaywcalc name
-df_losses_pathwaycalc['geoscale'] = df_losses_pathwaycalc['geoscale'].replace(
-    'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
-df_losses_pathwaycalc['geoscale'] = df_losses_pathwaycalc['geoscale'].replace('Netherlands (Kingdom of the)',
-                                                                        'Netherlands')
-df_losses_pathwaycalc['geoscale'] = df_losses_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
-
-
-
-
-# RESIDUE SHARE --------------------------------------------------------------------------------------------------------
-
-# ----------------------------------------------------------------------------------------------------------------------
-# YIELD ----------------------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-# CROPS AND LIVESTOCK PRODUCTS (QCL) (for everything except lgn-energycrop, gas-energycrop, algae and insect)
-# List of elements
-list_elements = ['Yield']
-
-list_items = ['Cereals, primary + (Total)', 'Fibre Crops, Fibre Equivalent + (Total)', 'Fruit Primary + (Total)',
-              'Oilcrops, Oil Equivalent + (Total)', 'Pulses, Total + (Total)', 'Rice', 'Roots and Tubers, Total + (Total)',
-              'Sugar Crops Primary + (Total)', 'Vegetables Primary + (Total)']
+list_items = ['Milk, Total > (List)', 'Eggs Primary > (List)']
 
 # 1990 - 2022
-ld = faostat.list_datasets()
 code = 'QCL'
-pars = faostat.list_pars(code)
 my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
 my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
 my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
@@ -620,55 +736,189 @@ my_pars = {
     'item': my_items,
     'year': my_years
 }
-df_yield_1990_2022 = faostat.get_data_df(code, pars=my_pars, strval=False)
+df_producing_animals_1990_2022 = faostat.get_data_df(code, pars=my_pars, strval=False)
 
-# Unit conversion from [100g/ha] to [t/ha]  ----------------------------------------------------------------------------
+# Drop the rows where Production is not in Nb of Eggs
+df_producing_animals_1990_2022 = df_producing_animals_1990_2022[df_producing_animals_1990_2022['Unit'] != '1000 No']
 
-# Step 1: Pivot the DataFrame
-pivot_df = df_yield_1990_2022.pivot_table(index=['Area', 'Year', 'Item'], columns='Element', values='Value').reset_index()
+# Renaming item as the same animal (for meat and live/producing/slaugthered animals)
+df_producing_animals_1990_2022.loc[df_producing_animals_1990_2022['Item'].str.contains('Cattle', case=False, na=False), 'Item'] = 'Dairy cows'
+df_producing_animals_1990_2022.loc[df_producing_animals_1990_2022['Item'].str.contains('Sheep', case=False, na=False), 'Item'] = 'Dairy sheep'
+df_producing_animals_1990_2022.loc[df_producing_animals_1990_2022['Item'].str.contains('Goat', case=False, na=False), 'Item'] = 'Dairy goat'
+df_producing_animals_1990_2022.loc[df_producing_animals_1990_2022['Item'].str.contains('Buffalo', case=False, na=False), 'Item'] = 'Dairy buffalo'
+df_producing_animals_1990_2022.loc[df_producing_animals_1990_2022['Item'].str.contains('Hen eggs', case=False, na=False), 'Item'] = 'Chicken laying hens'
+df_producing_animals_1990_2022.loc[df_producing_animals_1990_2022['Item'].str.contains('Eggs from other birds', case=False, na=False), 'Item'] = 'Other laying hens'
 
-# Step 2: Compute the Yield [t/ha]
-pivot_df['Yield[t/ha]'] =  pivot_df['Yield'] * 0.0001
+# Unit conversion Poultry : [1000 An] => [An]
+df_producing_animals_1990_2022.loc[df_producing_animals_1990_2022['Unit'] == '1000 An', 'Value'] *= 1000
+
+# Reading excel lsu equivalent
+df_lsu = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/lsu_equivalent.xlsx',
+        sheet_name='lsu_equivalent')
+# Merging
+df_producing_animals_1990_2022 = pd.merge(df_producing_animals_1990_2022, df_lsu, on='Item')
+
+# Converting Animals to lsu
+condition = (df_producing_animals_1990_2022['Unit'] == 'An') | (df_producing_animals_1990_2022['Unit'] == '1000 An')
+df_producing_animals_1990_2022.loc[condition, 'Value'] *= df_producing_animals_1990_2022['lsu']
+
+# Aggregating
+grouped_df = df_producing_animals_1990_2022.groupby(['Aggregation', 'Area', 'Year', 'Element', 'Unit'], as_index=False)['Value'].sum()
+
+# Pivot the df
+pivot_df = grouped_df.pivot_table(index=['Area', 'Year', 'Aggregation'], columns='Element',
+                                              values='Value').reset_index()
+
+# "Merging" the columns 'Laying' and 'Milk Animals' into 'Producing Animals'
+# Replace NaN with 0
+pivot_df['Laying'].fillna(0, inplace=True)
+pivot_df['Milk Animals'].fillna(0, inplace=True)
+
+# Sum the columns to create the 'Producing Animals' column
+pivot_df['Producing Animals'] = pivot_df['Laying'] + pivot_df['Milk Animals']
+
+# Yield [t/lsu] = Production quantity / Producing animals/Slaugthered
+pivot_df['Yield [t/lsu]'] = pivot_df['Production'] / pivot_df['Producing Animals']
 
 # Drop the columns Yield
-pivot_df = pivot_df.drop(columns=['Yield'])
+pivot_df = pivot_df.drop(columns=['Laying', 'Milk Animals', 'Production', 'Producing Animals'])
+
+
+
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# SLAUGHTERED LIVESTOCK  & YIELD (MEAT) --------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+list_elements = ['Producing Animals/Slaughtered', 'Stocks', 'Production Quantity']
+
+list_items = ['Meat, Total > (List)', 'Live Animals > (List)']
+
+# 1990 - 2022
+code = 'QCL'
+my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
+              '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
+              '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022']
+my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+my_pars = {
+    'area': my_countries,
+    'element': my_elements,
+    'item': my_items,
+    'year': my_years
+}
+df_slaughtered_1990_2022 = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+# Dropping 'Bees'
+df_slaughtered_1990_2022 = df_slaughtered_1990_2022[df_slaughtered_1990_2022['Item'] != 'Bees']
+
+# Renaming item as the same animal (for meat and live/producing/slaugthered animals)
+df_slaughtered_1990_2022.loc[df_slaughtered_1990_2022['Item'].str.contains('Pig', case=False, na=False), 'Item'] = 'Pig'
+df_slaughtered_1990_2022.loc[df_slaughtered_1990_2022['Item'].str.contains('Cattle', case=False, na=False), 'Item'] = 'Cattle'
+df_slaughtered_1990_2022.loc[df_slaughtered_1990_2022['Item'].str.contains('Buffalo', case=False, na=False), 'Item'] = 'Cattle'
+df_slaughtered_1990_2022.loc[df_slaughtered_1990_2022['Item'].str.contains('Camel', case=False, na=False), 'Item'] = 'Other non-specified'
+df_slaughtered_1990_2022.loc[df_slaughtered_1990_2022['Item'].str.contains('Rodent', case=False, na=False), 'Item'] = 'Other non-specified'
+df_slaughtered_1990_2022.loc[df_slaughtered_1990_2022['Item'].str.contains('Chicken', case=False, na=False), 'Item'] = 'Chicken'
+df_slaughtered_1990_2022.loc[df_slaughtered_1990_2022['Item'].str.contains('Duck', case=False, na=False), 'Item'] = 'Duck'
+df_slaughtered_1990_2022.loc[df_slaughtered_1990_2022['Item'].str.contains('Geese', case=False, na=False), 'Item'] = 'Goose'
+df_slaughtered_1990_2022.loc[df_slaughtered_1990_2022['Item'].str.contains('Pigeon', case=False, na=False), 'Item'] = 'Pigeon'
+df_slaughtered_1990_2022.loc[df_slaughtered_1990_2022['Item'].str.contains('Horses', case=False, na=False), 'Item'] = 'Horse'
+df_slaughtered_1990_2022.loc[df_slaughtered_1990_2022['Item'].str.contains('Rabbits and hares', case=False, na=False), 'Item'] = 'Rabbit'
+
+# Unit conversion Poultry : [1000 An] => [An]
+df_slaughtered_1990_2022.loc[df_slaughtered_1990_2022['Unit'] == '1000 An', 'Value'] *= 1000
+
+# Reading excel lsu equivalent
+df_lsu = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/lsu_equivalent.xlsx',
+        sheet_name='lsu_equivalent')
+# Merging
+df_slaughtered_1990_2022 = pd.merge(df_slaughtered_1990_2022, df_lsu, on='Item')
+
+# Converting Animals to lsu
+condition = (df_slaughtered_1990_2022['Unit'] == 'An') | (df_slaughtered_1990_2022['Unit'] == '1000 An')
+df_slaughtered_1990_2022.loc[condition, 'Value'] *= df_slaughtered_1990_2022['lsu']
+
+# Aggregating
+grouped_df = df_slaughtered_1990_2022.groupby(['Aggregation', 'Area', 'Year', 'Element', 'Unit'], as_index=False)['Value'].sum()
+
+# Pivot the df
+pivot_df_slau = grouped_df.pivot_table(index=['Area', 'Year', 'Aggregation'], columns='Element',
+                                              values='Value').reset_index()
+
+# Replace NaN with 0
+pivot_df_slau['Producing Animals/Slaughtered'].fillna(0, inplace=True)
+pivot_df_slau['Production'].fillna(0, inplace=True)
+
+# Slaughtered animals [%] = 'Producing Animals/Slaughtered' / 'Stocks'
+pivot_df_slau['Slaughtered animals [%]'] = pivot_df_slau['Producing Animals/Slaughtered'] / pivot_df_slau['Stocks']
+
+# Yield [t/lsu] = Production quantity / Producing animals/Slaugthered
+pivot_df_slau['Yield [t/lsu]'] = pivot_df_slau['Production'] / pivot_df_slau['Producing Animals/Slaughtered']
+
+# Drop the columns
+pivot_df_slau = pivot_df_slau.drop(columns=['Producing Animals/Slaughtered', 'Stocks', 'Production'])
+
+# Replace NaN with 0
+pivot_df_slau['Yield [t/lsu]'].fillna(0, inplace=True)
+pivot_df_slau['Slaughtered animals [%]'].fillna(0, inplace=True)
 
 # PathwayCalc formatting -----------------------------------------------------------------------------------------------
 
+# Separating between slaugthered animals and yield (for meat)
+df_yield_meat = pivot_df_slau[['Area', 'Year', 'Aggregation', 'Yield [t/lsu]']]
+df_slau_meat = pivot_df_slau[['Area', 'Year', 'Aggregation', 'Slaughtered animals [%]']]
+
+# Renaming into 'Value'
+df_yield_meat.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Yield [t/lsu]': 'value'}, inplace=True)
+pivot_df.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Yield [t/lsu]': 'value'}, inplace=True)
+df_slau_meat.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Slaughtered animals [%]': 'value'}, inplace=True)
+
+# Concatenating yield (meat, milk & eggs)
+df_yield_liv = pd.concat([df_yield_meat, pivot_df])
+
 # Food item name matching with dictionary
 # Read excel file
-df_dict_csc = pd.read_excel(
+df_dict_csl_yield = pd.read_excel(
     '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
-    sheet_name='climate-smart-crops')
+    sheet_name='climate-smart-livestock_yield')
+df_dict_csl_slau = pd.read_excel(
+    '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+    sheet_name='climate-smart-livestock_slau')
 
 # Merge based on 'Item'
-df_yield_pathwaycalc = pd.merge(df_dict_csc, pivot_df, on='Item')
+df_yield_liv_pathwaycalc = pd.merge(df_dict_csl_yield, df_yield_liv, left_on='Item', right_on='Aggregation')
+df_slau_liv_pathwaycalc = pd.merge(df_dict_csl_slau, df_slau_meat, left_on='Item', right_on='Aggregation')
 
 # Drop the 'Item' column
-df_yield_pathwaycalc = df_yield_pathwaycalc.drop(columns=['Item'])
+df_yield_liv_pathwaycalc = df_yield_liv_pathwaycalc.drop(columns=['Item', 'Aggregation'])
+df_slau_liv_pathwaycalc = df_slau_liv_pathwaycalc.drop(columns=['Item', 'Aggregation'])
 
-# Renaming existing columns (geoscale, timsecale, value)
-df_yield_pathwaycalc.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Yield[t/ha]': 'value'}, inplace=True)
+# Concatenating yield and slau
+df_yield_slau_liv_pathwaycalc = pd.concat([df_yield_liv_pathwaycalc, df_slau_liv_pathwaycalc])
 
 # Adding the columns module, lever, level and string-pivot at the correct places
-df_yield_pathwaycalc['module'] = 'agriculture'
-df_yield_pathwaycalc['lever'] = 'climate-smart-crop'
-df_yield_pathwaycalc['level'] = 0
-df_yield_pathwaycalc['string-pivot'] = 'none'
-cols = df_yield_pathwaycalc.columns.tolist()
+df_yield_slau_liv_pathwaycalc['module'] = 'agriculture'
+df_yield_slau_liv_pathwaycalc['lever'] = 'climate-smart-livestock'
+df_yield_slau_liv_pathwaycalc['level'] = 0
+df_yield_slau_liv_pathwaycalc['string-pivot'] = 'none'
+cols = df_yield_slau_liv_pathwaycalc.columns.tolist()
 cols.insert(cols.index('value'), cols.pop(cols.index('module')))
 cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
 cols.insert(cols.index('value'), cols.pop(cols.index('level')))
 cols.insert(cols.index('value'), cols.pop(cols.index('string-pivot')))
-df_losses_pathwaycalc = df_losses_pathwaycalc[cols]
+df_yield_pathwaycalc = df_yield_slau_liv_pathwaycalc[cols]
 
 # Rename countries to Pathaywcalc name
-df_yield_pathwaycalc['geoscale'] = df_yield_pathwaycalc['geoscale'].replace(
+df_yield_slau_liv_pathwaycalc['geoscale'] = df_yield_slau_liv_pathwaycalc['geoscale'].replace(
     'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
-df_yield_pathwaycalc['geoscale'] = df_yield_pathwaycalc['geoscale'].replace('Netherlands (Kingdom of the)',
-                                                                        'Netherlands')
-df_yield_pathwaycalc['geoscale'] = df_yield_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
-
+df_yield_slau_liv_pathwaycalc['geoscale'] = df_yield_slau_liv_pathwaycalc['geoscale'].replace('Netherlands (Kingdom of the)',
+                                                                            'Netherlands')
+df_yield_slau_liv_pathwaycalc['geoscale'] = df_yield_slau_liv_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
 
 
 years_setting = [1990, 2022, 2050, 5]
