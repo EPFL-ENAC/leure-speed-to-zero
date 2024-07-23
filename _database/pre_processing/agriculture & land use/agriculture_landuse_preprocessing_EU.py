@@ -4,6 +4,7 @@ from model.common.auxiliary_functions import interpolate_nans, add_missing_ots_y
 from scipy.stats import linregress
 import pandas as pd
 import faostat
+import eurostat
 from model.common.io_database import database_to_dm
 
 
@@ -1492,9 +1493,69 @@ def climate_smart_livestock_processing(df_csl_feed):
 
 # CalculationTree RUNNING PRE-PROCESSING -----------------------------------------------------------------------------------------------
 
-df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing()
-df_climate_smart_crop = climate_smart_crop_processing()
-df_climate_smart_livestock = climate_smart_livestock_processing(df_csl_feed)
+#df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing()
+#df_climate_smart_crop = climate_smart_crop_processing()
+#df_climate_smart_livestock = climate_smart_livestock_processing(df_csl_feed)
+
+
+# CalculationLeaf LAND MANAGEMENT ------------------------------------------------------------------------------
+
+# CalculationLeaf BIOMASS HIERARCHY ------------------------------------------------------------------------------
+
+# Common for all
+# List of countries
+list_countries = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czechia', 'Denmark',
+                  'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
+                  'Lithuania', 'Luxembourg', 'Malta', 'Netherlands (Kingdom of the)', 'Poland', 'Portugal',
+                  'Romania', 'Slovakia',
+                  'Slovenia', 'Spain', 'Sweden', 'Switzerland',
+                  'United Kingdom of Great Britain and Northern Ireland']
+
+list_test = ['Switzerland']
+
+# ----------------------------------------------------------------------------------------------------------------------
+# BIOMASS MIX ----------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+
+# API EUROSTAT (DOES NOT CORK FOR CH)
+#code_eurostat = 'nrg_cb_rw'
+#list_test = ['LI']
+#list_countries_eurostat = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE',
+#                           'EL', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT',
+#                           'RO', 'SK', 'SI', 'ES', 'SE', 'UK']
+#my_filter_pars = {'startPeriod': 1990,'endPeriod': 2022, 'geo': list_test}
+#data = eurostat.get_data_df(code_eurostat, filter_pars=my_filter_pars)
+
+
+# Drop the irrelevant columns
+
+
+list_elements = ['Energy production']
+
+list_items = ['Total Bioenergy > (List)']
+
+# 1990 - 2022
+code = 'BE'
+my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
+              '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
+              '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022']
+my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+my_pars = {
+    'area': my_countries,
+    'element': my_elements,
+    'item': my_items,
+    'year': my_years
+}
+df_bioenergy_mix_1990_2022 = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+
+
+
+
 
 
 

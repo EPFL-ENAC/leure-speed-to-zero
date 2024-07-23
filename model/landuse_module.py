@@ -10,7 +10,7 @@ import pandas as pd
 
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
-from model.common.io_database import read_database_fxa, read_database_to_ots_fts_dict_w_groups
+from model.common.io_database import read_database_fxa, read_database_to_ots_fts_dict_w_groups, edit_database
 from model.common.interface_class import Interface
 from model.common.auxiliary_functions import filter_geoscale
 from model.common.auxiliary_functions import read_level_data, simulate_input
@@ -73,9 +73,9 @@ def database_from_csv_to_datamatrix():
     dm_livestock_ef_agroforestry = DataMatrix.create_from_df(df, num_cat=1)
     dict_fxa['agr_climate-smart-livestock_ef_agroforestry'] = dm_livestock_ef_agroforestry
     # AGROFORESTRY Forestry - natural losses & others
-    df = read_database_fxa(file, filter_dict={'eucalc-name': 'agr_climate-smart-forestry'})
-    dm_agroforestry = DataMatrix.create_from_df(df, num_cat=0)
-    dict_fxa['agr_climate-smart-forestry'] = dm_agroforestry
+    #df = read_database_fxa(file, filter_dict={'eucalc-name': 'agr_climate-smart-forestry'})
+    #dm_agroforestry = DataMatrix.create_from_df(df, num_cat=0)
+    #dict_fxa['agr_climate-smart-forestry'] = dm_agroforestry
 
     ##################
     ##### LEVERS #####
@@ -97,7 +97,15 @@ def database_from_csv_to_datamatrix():
                                                                             'agr_land-man_gap.*',
                                                                             'agr_land-man_matrix.*'])
 
-
+    # Read climate-smart-forestry
+    file = 'agriculture_climate-smart-forestry_pathwaycalc'
+    lever = 'climate-smart-forestry'
+    #edit_database(file,lever,column='eucalc-name',pattern={'def_':'def-'},mode='rename')
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[0],
+                                                                baseyear=baseyear,
+                                                                years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
+                                                                column='eucalc-name',
+                                                                group_list=['agr_climate-smart-forestry.*'])
 
     #######################
     ##### CALIBRATION #####
@@ -204,7 +212,7 @@ def read_data(data_file, lever_setting):
     # Sub-matrix for LAND USE - Agroforestry
     dm_agroforestry_crop = DM_landuse['fxa']['agr_climate-smart-crop_ef_agroforestry']
     dm_agroforestry_liv = DM_landuse['fxa']['agr_climate-smart-livestock_ef_agroforestry']
-    dm_forestry = DM_landuse['fxa']['agr_climate-smart-forestry']
+    dm_forestry = DM_ots_fts['climate-smart-forestry']['agr_climate-smart-forestry']
 
     # Aggregated Data Matrix - LAND USE
     DM_land_use = {
@@ -713,7 +721,7 @@ def forestry_workflow(DM_land_use, dm_wood, dm_land_use):
     DM_land_use['forestry'].append(dm_forest, dim='Variables')
 
     # Incremental biomass gain from forestry [m3] = biomass yield from managed agroforestry [m3/ha] * Forest land [ha]
-    DM_land_use['forestry'].operation('lus_land_forest', '*', 'fxa_agr_climate-smart-forestry_csf-man',
+    DM_land_use['forestry'].operation('lus_land_forest', '*', 'agr_climate-smart-forestry_csf-man',
                                       out_col='lus_climate-smart-forestry_biomass_csf-inc', unit='m3')
 
     # Incremental CO2 capture from forestry [Mt] = Incremental biomass gain from forestry [m3] * CO2 capture factor [Mt/m3]
@@ -722,19 +730,19 @@ def forestry_workflow(DM_land_use, dm_wood, dm_land_use):
                                       out_col='lus_climate-smart-forestry_biomass_csf-inc_CO2-capture', unit='Mt')
 
     # Gross biomass gain from forest growth [m3] = Forest incremental growth [m3/ha] * Forest land [ha]
-    DM_land_use['forestry'].operation('lus_land_forest', '*', 'fxa_agr_climate-smart-forestry_g-inc',
+    DM_land_use['forestry'].operation('lus_land_forest', '*', 'agr_climate-smart-forestry_g-inc',
                                       out_col='lus_forestry_biomass_gross-increment', unit='m3')
 
     # Gross biomass forest available for wood supply [m3] = Gross biomass gain from forest growth [m3]
     #                                                       * share of forest wood available for wood supply [%]
     DM_land_use['forestry'].operation('lus_forestry_biomass_gross-increment', '*',
-                                      'fxa_agr_climate-smart-forestry_faws-share',
+                                      'agr_climate-smart-forestry_faws-share',
                                       out_col='lus_forestry_biomass_faws_gross-increment', unit='m3')
 
     # Harvested biomass forest available for wood supply [m3] = Gross biomass forest available for wood supply [m3]
     #                                                           * harvesting rate [%]
     DM_land_use['forestry'].operation('lus_forestry_biomass_faws_gross-increment', '*',
-                                      'fxa_agr_climate-smart-forestry_h-rate',
+                                      'agr_climate-smart-forestry_h-rate',
                                       out_col='lus_forestry_biomass_faws_harvested', unit='m3')
 
     # FORESTRY SELF-SUFFICIENCY ----------------------------------------------------------------------------------------
@@ -757,7 +765,7 @@ def forestry_biomass_emissions_workflow(DM_land_use, CDM_const):
     # FORESTRY LOSSES --------------------------------------------------------------------------------------------------
 
     # Total yield forestry biomass losses from natural causes [m3/ha] = sum (yield losses from natural causes [m3/ha])
-    DM_land_use['forestry'].groupby({'yield_nat-losses_total': 'fxa_agr_climate-smart-forestry_nat-losses.*'},
+    DM_land_use['forestry'].groupby({'yield_nat-losses_total': 'agr_climate-smart-forestry_nat-losses.*'},
                                     dim='Variables', regex=True, inplace=True)
 
     # Total forestry biomass loss from natural causes [m3] = Forest land [ha] *
@@ -768,9 +776,9 @@ def forestry_biomass_emissions_workflow(DM_land_use, CDM_const):
 
     # Total forestry biomass loss (fuel & burnt) [m3] = Total forestry biomass loss from natural causes [m3]
     #                                                   * yield forestry biomass loss from deforestation [%]
-    DM_land_use['forestry'].operation('lus_forestry_biomass_loss', '*', 'fxa_agr_climate-smart-forestry_def-wood-fuel',
+    DM_land_use['forestry'].operation('lus_forestry_biomass_loss', '*', 'agr_climate-smart-forestry_def-wood-fuel',
                                       out_col='lus_forestry_biomass_loss_def-wood-fuel', unit='m3')
-    DM_land_use['forestry'].operation('lus_forestry_biomass_loss', '*', 'fxa_agr_climate-smart-forestry_def-burnt',
+    DM_land_use['forestry'].operation('lus_forestry_biomass_loss', '*', 'agr_climate-smart-forestry_def-burnt',
                                       out_col='lus_forestry_biomass_loss_def-burnt', unit='m3')
 
     # BURNT BIOMASS EMISSIONS ------------------------------------------------------------------------------------------
@@ -931,13 +939,20 @@ def local_land_use_run():
     land_use(lever_setting, years_setting)
     return
 
+# Agathe : made this because the above local_run was not running on my computer
+def land_use_local_run():
+    years_setting, lever_setting = init_years_lever()
+    land_use(lever_setting, years_setting)
+    return
+
+
 # # run local
-# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/landuse_module.py"
-# database_from_csv_to_datamatrix()
-# start = time.time()
-# results_run = local_land_use_run()
-# end = time.time()
-# print(end-start)
+#__file__ = "/Users/crosnier/DocumentsPathwayCalc/model/landuse_module.py"
+#database_from_csv_to_datamatrix()
+start = time.time()
+results_run = local_land_use_run()
+end = time.time()
+print(end-start)
 
 # WOOD
     #dm_wood.datamatrix_plot({'Country': 'Austria', 'Variables': ['lus_fst_demand_rwe']})
