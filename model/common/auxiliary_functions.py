@@ -327,7 +327,7 @@ def material_decomposition(dm, cdm):
         raise ValueError("This function works only for dm with categories (max 2)")
 
     # unit
-    unit = cdm.units
+    unit = cdm.units.copy()
     key_old = list(unit)[0]
     unit["material-decomposition"] = unit.pop(key_old)
     value_old = list(unit.values())[0]
