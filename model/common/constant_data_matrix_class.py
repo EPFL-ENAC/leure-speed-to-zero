@@ -1,6 +1,7 @@
 import re
 import numpy as np
 import copy
+import pandas as pd
 from model.common.io_database import read_database
 
 # ConstantDataMatrix is a class used to deal with constants in a way that is similar to DataMatrix class.
@@ -463,3 +464,118 @@ class ConstantDataMatrix:
             else:
                 self.units.pop(col_label)
         return
+
+    def flatten(self, sep='_'):
+        # you can flatten only if you have at least one category
+        assert len(self.dim_labels) > 1
+        d_2 = self.dim_labels[-1]
+        cols_2 = self.col_labels[d_2]
+        d_1 = self.dim_labels[-2]
+        cols_1 = self.col_labels[d_1]
+        new_shape = []
+        new_col_labels = {}
+        for d in self.dim_labels:
+            if d is not d_1 and d is not d_2:
+                new_shape.append(len(self.col_labels[d]))
+                new_col_labels[d] = self.col_labels[d].copy()
+        new_shape.append(1)
+        new_shape = tuple(new_shape)
+        new_array = np.empty(shape=new_shape)
+        new_array[...] = np.nan
+        new_cols = []
+        new_units = {}
+        i = 0
+        for c1 in cols_1:
+            for c2 in cols_2:
+                col_value = self.array[..., self.idx[c1], self.idx[c2], np.newaxis]
+                if not np.isnan(col_value).all():
+                    new_cols.append(f'{c1}{sep}{c2}')
+                    if i == 0:
+                        i = i+1
+                        new_array = col_value
+                    else:
+                        new_array = np.concatenate([new_array, col_value], axis=-1)
+                    if d_1 == 'Variables':
+                        new_units[f'{c1}{sep}{c2}'] = self.units[c1]
+    
+        new_col_labels[d_1] = new_cols
+        if d_1 == 'Variables':
+            dm_new = ConstantDataMatrix(col_labels=new_col_labels, units=new_units)
+        else:
+            dm_new = ConstantDataMatrix(col_labels=new_col_labels, units=self.units)
+        dm_new.array = new_array
+        dm_new.idx = dm_new.index_all()
+        return dm_new
+    
+    def append(self, data2, dim):
+        # appends DataMatrix data2 to self in dimension dim.
+        # The pre-requisite is that all other dimensions match
+        dim_lab = self.dim_labels.copy()
+        dim_lab.remove(dim)
+        # if 'Variables' in dim_lab:
+        #    dim_lab.remove("Variables")
+        for d in dim_lab:
+            if self.col_labels[d] != data2.col_labels[d]:
+                self.sort(dim=d)
+                data2.sort(dim=d)
+                if self.col_labels[d] != data2.col_labels[d]:
+                    raise ValueError(f'columns {self.col_labels[d]} do not match columns {data2.col_labels[d]}')
+        # Check that units are the same
+        if dim != 'Variables':
+            if self.units != data2.units:
+                raise ValueError(f'The units should be the same')
+        # Check that across the dimension where you want to append the labels are different
+        cols1 = set(self.col_labels[dim])
+        cols2 = set(data2.col_labels[dim])
+        same_col = cols2.intersection(cols1)
+        if len(same_col) != 0:
+            raise Exception("The DataMatrix that you are trying to append contains the same labels across dimension ", dim)
+
+        # Concatenate the two arrays
+        a = self.dim_labels.index(dim)
+        self.array = np.concatenate((self.array, data2.array), axis=a)
+        # Concatenate the two lists of labels across dimension dim
+        self.col_labels[dim] = self.col_labels[dim] + data2.col_labels[dim]
+        # Re initialise the indexes
+        for (ci, c) in enumerate(self.col_labels[dim]):  # sort indexes
+            self.idx[c] = ci
+        # Add the units if you are appending over "Variables"
+        if dim == "Variables":
+            self.units = self.units | data2.units
+            
+    def write_df(self):
+        dm = self.copy()
+        # years = dm.col_labels["Years"]
+        # countries = dm.col_labels["Country"]
+        # n_y = len(years)
+        # n_c = len(countries)
+        # # Repeat countries n_year number of times
+        # country_list = [item for item in countries for _ in range(n_y)]
+        # years_list = years * n_c
+        df = pd.DataFrame()
+
+        num_cat = len(dm.dim_labels) - 1
+
+        if num_cat == 3:
+            dm_new = dm.flatten()
+            dm.__dict__.update(dm_new.__dict__)  # it replaces self with dm_new
+            num_cat = len(dm.dim_labels) - 1
+
+        if num_cat == 2:
+            dm_new = dm.flatten()
+            dm.__dict__.update(dm_new.__dict__)  # it replaces self with dm_new
+            num_cat = len(dm.dim_labels) - 1
+
+        if num_cat == 0:
+            for v in dm.col_labels["Variables"]:
+                col_name = v + "[" + dm.units[v] + "]"
+                col_value = dm.array[dm.idx[v]].flatten()
+                df[col_name] = col_value
+        if num_cat == 1:
+            for v in dm.col_labels["Variables"]:
+                for c in dm.col_labels["Categories1"]:
+                    col_name = v + "_" + c + "[" + dm.units[v] + "]"
+                    col_value = dm.array[dm.idx[v], dm.idx[c]].flatten()
+                    if not np.isnan(col_value).all():
+                        df[col_name] = col_value
+        return df
