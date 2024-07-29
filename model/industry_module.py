@@ -672,19 +672,21 @@ def material_production(DM_fxa, DM_ots_fts, DM_material_demand):
     ##### EFFICIENCY #####
     ######################
     
-    dm_matdec_bymatprod = DM_material_demand["material-demand"].copy()
+    # get efficiency coefficients
     dm_temp = DM_ots_fts['material-efficiency'].copy()
-    dm_temp.filter({"Categories1" : dm_matdec_bymatprod.col_labels["Categories2"]}, inplace=True)
+    dm_temp.filter({"Categories1" : DM_material_demand["material-demand"].col_labels["Categories2"]}, inplace=True)
     dm_temp.add(0, "Categories1", "natfiber", unit="%", dummy=True)
     dm_temp.sort("Categories1")
-    dm_matdec_bymatprod.array = dm_matdec_bymatprod.array * (1 - dm_temp.array[:,:,:,np.newaxis,:])
+    
+    # apply formula to material demand (and overwrite)
+    DM_material_demand["material-demand"].array = DM_material_demand["material-demand"].array * (1 - dm_temp.array[:,:,:,np.newaxis,:])
     
     ############################
     ##### AGGREGATE DEMAND #####
     ############################
 
     # get aggregate demand
-    dm_matdec_agg = dm_matdec_bymatprod.group_all(dim='Categories1', inplace=False)
+    dm_matdec_agg = DM_material_demand["material-demand"].group_all(dim='Categories1', inplace=False)
     dm_matdec_agg.change_unit('material-decomposition', factor=1e-3, old_unit='t', new_unit='kt')
     # note: here "other" will be different as in knime they filtered out all "other" but for glass_pack_other
 
