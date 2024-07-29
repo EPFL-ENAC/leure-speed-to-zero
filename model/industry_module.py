@@ -35,19 +35,22 @@ def rename_tech_fordeepen(word):
     word_new = first + "_" + last[0]
     return word_new
 
-def sum_over_techs(dm, category_with_techs, 
-                   material_tech_multi = ['aluminium-prim', 'aluminium-sec', 'cement-dry-kiln', 
-                                          'cement-geopolym', 'cement-wet-kiln', 'paper-recycled', 
-                                          'paper-woodpulp', 'steel-BF-BOF', 'steel-hisarna', 
-                                          'steel-hydrog-DRI', 'steel-scrap-EAF'],
-                   material_tech_single = ['chem-chem-tech', 'copper-tech', 'fbt-tech', 'glass-glass', 
-                                           'lime-lime', 'mae-tech', 'ois-tech','textiles-tech', 
-                                           'tra-equip-tech', 'wwp-tech']):
+def sum_over_techs(dm, category_with_techs):
     
     # this function sums over techs to get the total by material
     # it uses rename_tech_fordeepen()
+    
+    # get material_tech_multi and material_tech_single
     # material_tech_multi are the techs for those materials that have more than one tech (like aluminium-prim and aluminium-sec)
     # material_tech_single are the techs for those materials that have only one tech (like copper-tech)
+    techs = dm.col_labels[category_with_techs]
+    ls_temp = [i.split("-")[0] for i in techs]
+    materials = list(set(ls_temp))
+    materials.sort()
+    materials_with_multi_tech = np.array(materials)[[sum([m in i for i in ls_temp]) > 1 for m in materials]].tolist()
+    pattern = "|".join(materials_with_multi_tech)
+    material_tech_multi = np.array(techs)[[bool(re.search(pattern, i)) for i in ls_temp]].tolist()
+    material_tech_single = np.array(techs)[[not bool(re.search(pattern, i)) for i in ls_temp]].tolist()
 
     if material_tech_multi is not None:
         # activity with different techs
