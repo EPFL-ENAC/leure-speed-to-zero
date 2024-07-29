@@ -668,12 +668,23 @@ def apply_material_switch(DM_material_demand, DM_ots_fts, CDM_const, DM_input_ma
 
 def material_production(DM_fxa, DM_ots_fts, DM_material_demand):
     
+    ######################
+    ##### EFFICIENCY #####
+    ######################
+    
+    dm_matdec_bymatprod = DM_material_demand["material-demand"].copy()
+    dm_temp = DM_ots_fts['material-efficiency'].copy()
+    dm_temp.filter({"Categories1" : dm_matdec_bymatprod.col_labels["Categories2"]}, inplace=True)
+    dm_temp.add(0, "Categories1", "natfiber", unit="%", dummy=True)
+    dm_temp.sort("Categories1")
+    dm_matdec_bymatprod.array = dm_matdec_bymatprod.array * (1 - dm_temp.array[:,:,:,np.newaxis,:])
+    
     ############################
     ##### AGGREGATE DEMAND #####
     ############################
 
     # get aggregate demand
-    dm_matdec_agg = DM_material_demand["material-demand"].group_all(dim='Categories1', inplace=False)
+    dm_matdec_agg = dm_matdec_bymatprod.group_all(dim='Categories1', inplace=False)
     dm_matdec_agg.change_unit('material-decomposition', factor=1e-3, old_unit='t', new_unit='kt')
     # note: here "other" will be different as in knime they filtered out all "other" but for glass_pack_other
 
@@ -681,14 +692,6 @@ def material_production(DM_fxa, DM_ots_fts, DM_material_demand):
     materials = ['aluminium', 'cement', 'chem', 'copper', 'glass', 'lime', 'paper', 'steel', 'timber']
     dm_material_production_natfiber = dm_matdec_agg.filter({"Categories1": ["natfibers"]}) # this will be used for interface agriculture
     dm_matdec_agg.filter({"Categories1": materials}, inplace=True)
-
-    ######################
-    ##### EFFICIENCY #####
-    ######################
-
-    dm_temp = DM_ots_fts['material-efficiency'].copy()
-    dm_temp.filter({"Categories1" : materials}, inplace = True)
-    dm_matdec_agg.array = dm_matdec_agg.array * (1 - dm_temp.array)
 
     ######################
     ##### PRODUCTION #####
