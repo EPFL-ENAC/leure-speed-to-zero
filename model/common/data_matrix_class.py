@@ -837,7 +837,7 @@ class DataMatrix:
             dm_out.sort(dim=dim)
             return dm_out
 
-    def group_all(self, dim=str, inplace=True):
+    def group_all(self, dim=str, inplace=True, aggregation = "sum"):
         # Function to drop a dimension by summing all categories
         # Call example: dm_to_group.group_all(dim='Categories2', inplace=True)
         # or dm_grouped = dm_to_group.group_all(dim='Categories1', inplace=False)
@@ -849,7 +849,10 @@ class DataMatrix:
         else:
             dm = self.copy()
         a = dm.dim_labels.index(dim)
-        dm.array = np.nansum(dm.array, axis=a)
+        if aggregation == "sum":
+            dm.array = np.nansum(dm.array, axis=a)
+        if aggregation == "mean":
+            dm.array = np.nanmean(dm.array, axis=a)
         # Remove indexes
         for col in dm.col_labels[dim]:
             dm.idx.pop(col)
