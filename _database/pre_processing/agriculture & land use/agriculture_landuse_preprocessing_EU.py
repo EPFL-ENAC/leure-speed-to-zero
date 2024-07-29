@@ -1497,10 +1497,109 @@ def climate_smart_livestock_processing(df_csl_feed):
 #df_climate_smart_crop = climate_smart_crop_processing()
 #df_climate_smart_livestock = climate_smart_livestock_processing(df_csl_feed)
 
+# CalculationLeaf CLIMATE SMART FORESTRY -------------------------------------------------------------------------------
 
-# CalculationLeaf LAND MANAGEMENT ------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+# INCREMENTAL GROWTH [m3/ha] -------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
-# CalculationLeaf BIOMASS HIERARCHY ------------------------------------------------------------------------------
+# Read csv
+df_g_inc = pd.read_csv('/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/fra-growingStock.csv')
+df_area = pd.read_csv('/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/fra-extentOfForest.csv')
+
+# Change the format ----------------------------------------------------------------------------------------------------
+# Set 1st line as the index
+df_g_inc.columns = df_g_inc.iloc[0]
+df_g_inc = df_g_inc[1:]
+df_area.columns = df_area.iloc[0]
+df_area = df_area[1:]
+
+# Rename column name 'geoscale'
+df_g_inc.rename(columns={df_g_inc.columns[0]: 'geoscale'}, inplace=True)
+df_area.rename(columns={df_area.columns[0]: 'geoscale'}, inplace=True)
+
+# df_g_inc : Unit change [million m3] => [m3]
+# Ensure only numerical columns (except the first) are multiplied
+numeric_cols = df_g_inc.columns[1:]  # Get all columns except the first
+df_g_inc[numeric_cols] = df_g_inc[numeric_cols].apply(pd.to_numeric, errors='coerce')  # Convert to numeric, if not already
+
+# Multiply all columns except the first one by 10^6
+df_g_inc[numeric_cols] = df_g_inc[numeric_cols] * 10**6
+
+# Melting the dfs to have the relevant format (geoscale, year, value)
+df_g_inc = pd.melt(df_g_inc, id_vars=['geoscale'], var_name='timescale', value_name='growing stock [m3]')
+df_area = pd.melt(df_area, id_vars=['geoscale'], var_name='timescale', value_name='forest area [ha]')
+# Convert 'year' to integer type (optional, for better numerical handling)
+df_g_inc['timescale'] = df_g_inc['timescale'].astype(int)
+df_area['timescale'] = df_area['timescale'].astype(int)
+
+# Compute the incremental difference -----------------------------------------------------------------------------------
+# Ensure the DataFrame is sorted by geoscale and timescale
+df_g_inc.sort_values(by=['geoscale', 'timescale'], inplace=True)
+
+# Compute the incremental growing stock for each country
+df_g_inc['incremental growing stock [m3]'] = df_g_inc.groupby('geoscale')['growing stock [m3]'].diff()
+
+# Merge the dfs (growing stock and area)
+df_g_inc_area = pd.merge(df_g_inc, df_area, on=['geoscale', 'timescale'])
+
+# Drop the rows that are not countries (they both contain 2024)
+df_g_inc_area = df_g_inc_area[~df_g_inc_area['geoscale'].str.contains('2024', na=False)]
+
+# Incremental growing stock [m3/ha] = Incremental growing stock [m3] / forest area [ha]
+df_g_inc_area['value'] = df_g_inc_area['incremental growing stock [m3]'] / df_g_inc_area['forest area [ha]']
+
+# Only keep the columns geoscale, timescale and value
+df_g_inc_area_pathwaycalc = df_g_inc_area[['geoscale', 'timescale', 'value']]
+
+# PathwayCalc formatting -----------------------------------------------------------------------------------------------
+# Adding the columns module, lever, level and string-pivot at the correct places
+df_g_inc_area_pathwaycalc['module'] = 'land-use'
+df_g_inc_area_pathwaycalc['lever'] = 'climate-smart-forestry'
+df_g_inc_area_pathwaycalc['level'] = 0
+df_g_inc_area_pathwaycalc['string-pivot'] = 'none'
+df_g_inc_area_pathwaycalc['variables'] = 'ots_agr_climate-smart-forestry_g-inc[m3/ha]'
+cols = df_g_inc_area_pathwaycalc.columns.tolist()
+cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+cols.insert(cols.index('value'), cols.pop(cols.index('string-pivot')))
+cols.insert(cols.index('geoscale'), cols.pop(cols.index('variables')))
+df_g_inc_area_pathwaycalc = df_g_inc_area_pathwaycalc[cols]
+
+# Rename countries to Pathaywcalc name
+df_g_inc_area_pathwaycalc['geoscale'] = df_g_inc_area_pathwaycalc['geoscale'].replace(
+    'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+df_g_inc_area_pathwaycalc['geoscale'] = df_g_inc_area_pathwaycalc['geoscale'].replace(
+    'Netherlands (Kingdom of the)',
+    'Netherlands')
+df_g_inc_area_pathwaycalc['geoscale'] = df_g_inc_area_pathwaycalc['geoscale'].replace('Czechia','Czech Republic')
+
+# ----------------------------------------------------------------------------------------------------------------------
+# CSF MANAGED ----------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------------------------------------------------
+# GSTOCK  --------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# DEFFORESTATION -------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------------------------------------------------
+# SHARE FOREST AVAILABLE FOR WOOD SUPPLY (FAWS) ------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# NATURAL LOSSES -------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+
+# CalculationLeaf LAND MANAGEMENT --------------------------------------------------------------------------------------
+
+# CalculationLeaf BIOMASS HIERARCHY ------------------------------------------------------------------------------------
 
 # Common for all
 # List of countries
