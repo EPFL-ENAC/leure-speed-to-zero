@@ -1801,12 +1801,28 @@ my_pars = {
 }
 df_bioenergy_mix_1990_2022 = faostat.get_data_df(code, pars=my_pars, strval=False)
 
+# ----------------------------------------------------------------------------------------------------------------------
+# INTERACTIONS CONSTANTS
+# ----------------------------------------------------------------------------------------------------------------------
 
+# Goal is to add the add the constants from the agriculture module to the interactions_constants file common
+# to all modules
 
+# Read csv
+constants_agr = pd.read_csv('/Users/crosnier/Documents/PathwayCalc/_database/data/csv/interactions_constants_pathwaycalc.csv', sep=';')
+constants_all = pd.read_csv('/Users/crosnier/Documents/PathwayCalc/_database/data/csv/interactions_constants_back-up.csv', sep=';')
 
+# Identify the columns to check for duplicates
+common_columns = constants_all.columns.tolist()
 
+# Filter out rows in df2 that are already in df1 based on common columns
+constants_agr_unique = constants_agr[~constants_agr.apply(tuple, axis=1).isin(constants_all.apply(tuple, axis=1))]
 
+# Concatenate df1 with the filtered df2
+result = pd.concat([constants_all, constants_agr_unique])
 
+# Export to csv
+result.to_csv('interactions_constants_30-07.csv', index=False, sep=';')
 
 
 

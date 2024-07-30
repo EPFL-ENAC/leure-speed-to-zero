@@ -49,7 +49,7 @@ def database_from_csv_to_datamatrix():
     # FixedAssumptionsToDatamatrix
 
     dict_fxa = {}
-    file = 'agriculture_fixed-assumptions_pathwaycalc_non_nan'
+    file = 'agriculture_fixed-assumptions'
     
     # LAND USE --------------------------------------------------------------------------------------------------------
     # LAND ALLOCATION - Total area
@@ -85,7 +85,7 @@ def database_from_csv_to_datamatrix():
     dict_fts = {}
     
     # Read land management
-    file = 'agriculture_land-management_pathwaycalc'
+    file = 'agriculture_land-management'
     lever = 'land-man'
     # edit_database(file,lever,column='eucalc-name',pattern={'_rem_':'_', '_to_':'_'},mode='rename')
     dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 1],
@@ -98,7 +98,7 @@ def database_from_csv_to_datamatrix():
                                                                             'agr_land-man_matrix.*'])
 
     # Read climate-smart-forestry
-    file = 'agriculture_climate-smart-forestry_pathwaycalc'
+    file = 'agriculture_climate-smart-forestry'
     lever = 'climate-smart-forestry'
     #edit_database(file,lever,column='eucalc-name',pattern={'def_':'def-'},mode='rename')
     dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[0],
@@ -121,7 +121,7 @@ def database_from_csv_to_datamatrix():
     # ConstantsToDatamatrix
 
     # get constants
-    cdm_const = ConstantDataMatrix.extract_constant('interactions_constants_pathwaycalc',
+    cdm_const = ConstantDataMatrix.extract_constant('interactions_constants',
                                                     pattern='cp_emission-factor_CO2.*|cp_fst_ef_emissions-CH4_burnt|cp_fst_ef_emissions-CO2_burnt|cp_fst_ef_emissions-N2O_burnt',
                                                     num_cat=0)
 
@@ -949,10 +949,10 @@ def land_use_local_run():
 # # run local
 #__file__ = "/Users/crosnier/DocumentsPathwayCalc/model/landuse_module.py"
 #database_from_csv_to_datamatrix()
-start = time.time()
-results_run = local_land_use_run()
-end = time.time()
-print(end-start)
+#start = time.time()
+#results_run = local_land_use_run()
+#end = time.time()
+#print(end-start)
 
 # WOOD
     #dm_wood.datamatrix_plot({'Country': 'Austria', 'Variables': ['lus_fst_demand_rwe']})

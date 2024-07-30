@@ -52,7 +52,7 @@ def database_from_csv_to_datamatrix():
 
     # FixedAssumptionsToDatamatrix
     dict_fxa = {}
-    file = 'agriculture_fixed-assumptions_pathwaycalc_non_nan'
+    file = 'agriculture_fixed-assumptions'
     lever = 'none'
     #edit_database(file, lever, column='eucalc-name', mode='rename',pattern={'meat_': 'meat-', 'abp_': 'abp-'})
     #edit_database(file, lever, column='eucalc-name', mode='rename',pattern={'_rem_': '_', '_to_': '_', 'land-man_ef': 'fxa_land-man_ef'})
@@ -132,7 +132,7 @@ def database_from_csv_to_datamatrix():
 
     # CalibrationFactorsToDatamatrix
     # Data - Fixed assumptions
-    file = 'agriculture_calibration-factors_pathwaycalc'
+    file = 'agriculture_calibration-factors'
     lever = 'none'
     # Renaming to correct format : Calibration factors - Livestock domestic production
     #edit_database(file, lever, column='eucalc-name', mode='rename', pattern={'production_liv': 'production-liv',
@@ -266,7 +266,7 @@ def database_from_csv_to_datamatrix():
     dict_fts = {}
 
     # Read self-sufficiency
-    file = 'agriculture_self-sufficiency_pathwaycalc'
+    file = 'agriculture_self-sufficiency'
     lever = 'food-net-import'
     # Rename to correct format
     #edit_database(file,lever,column='eucalc-name',pattern={'processeced':'processed'},mode='rename')
@@ -275,7 +275,7 @@ def database_from_csv_to_datamatrix():
                                                            dict_ots=dict_ots, dict_fts=dict_fts)
 
     # Read climate smart livestock
-    file = 'agriculture_climate-smart-livestock_pathwaycalc_renamed'
+    file = 'agriculture_climate-smart-livestock'
     lever = 'climate-smart-livestock'
     #edit_database(file,lever,column='eucalc-name',pattern={'_CH4-emission':''},mode='rename')
     #edit_database(file,lever,column='eucalc-name',pattern={'ration_crop_':'ration_crop-', 'ration_liv_':'ration_liv-'},mode='rename')
@@ -288,7 +288,7 @@ def database_from_csv_to_datamatrix():
                                                                             'climate-smart-livestock_ration.*', 'agr_climate-smart-livestock_ef_agroforestry.*'])
 
     # Read biomass hierarchy
-    file = 'agriculture_biomass-use-hierarchy_pathwaycalc'
+    file = 'agriculture_biomass-use-hierarchy'
     lever = 'biomass-hierarchy'
     # Rename to correct format
     #edit_database(file,lever,column='eucalc-name',pattern={'bev_ibp_use_oth':'bev-ibp-use-oth', 'biomass-hierarchy_bev':'biomass-hierarchy-bev', 'solid_bioenergy':'solid-bioenergy'},mode='rename')
@@ -307,7 +307,7 @@ def database_from_csv_to_datamatrix():
                                                                             'biomass-hierarchy_crop_cereal.*'])
 
     # Read bioenergy capacity
-    file = 'agriculture_bioenergy-capacity_pathwaycalc'
+    file = 'agriculture_bioenergy-capacity'
     lever = 'bioenergy-capacity'
     # Rename to correct format
     #edit_database(file,lever,column='eucalc-name',pattern={'capacity_solid-biofuel':'capacity_elec_solid-biofuel', 'capacity_biogases':'capacity_elec_biogases'},mode='rename')
@@ -318,7 +318,7 @@ def database_from_csv_to_datamatrix():
                                                                             'bioenergy-capacity_efficiency.*', 'bioenergy-capacity_liq_b.*', 'bioenergy-capacity_elec.*'])
 
     # Read livestock protein meals
-    file = 'agriculture_livestock-protein-meals_pathwaycalc'
+    file = 'agriculture_livestock-protein-meals'
     lever = 'alt-protein'
     #edit_database(file,lever,column='eucalc-name',pattern={'meat_':'meat-', 'abp_':'abp-'},mode='rename')
     dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[2],
@@ -328,7 +328,7 @@ def database_from_csv_to_datamatrix():
                                                                 group_list=['agr_alt-protein.*'])
 
     # Read climate smart crop
-    file = 'agriculture_climate-smart-crop_pathwaycalc'
+    file = 'agriculture_climate-smart-crop'
     lever = 'climate-smart-crop'
     #edit_database(file,lever,column='eucalc-name',pattern={'meat_':'meat-', 'abp_':'abp-'},mode='rename')
     #edit_database(file,lever,column='eucalc-name',pattern={'_energycrop':'-energycrop'},mode='rename')
@@ -347,7 +347,7 @@ def database_from_csv_to_datamatrix():
     #####################
     # ConstantsToDatamatrix
     # Data - Read Constants (use 'xx|xx|xx' to add)
-    cdm_const = ConstantDataMatrix.extract_constant('interactions_constants_pathwaycalc',
+    cdm_const = ConstantDataMatrix.extract_constant('interactions_constants',
                                                     pattern='cp_ibp_liv_.*_brf_fdk_afat|cp_ibp_liv_.*_brf_fdk_offal|cp_ibp_bev_.*|cp_liquid_tec.*|cp_load_hours|cp_ibp_aps_insect.*|cp_ibp_aps_algae.*|cp_efficiency_liv.*|cp_ibp_processed.*|cp_ef_urea.*|cp_ef_liming|cp_emission-factor_CO2.*',
                                                     num_cat=0)
 
@@ -2484,10 +2484,10 @@ def agriculture_local_run():
 #database_from_csv_to_datamatrix()
 
 # # Run the code in local
-# start = time.time()
-# results_run = agriculture_local_run()
-# end = time.time()
-# print(end-start)
+#start = time.time()
+#results_run = agriculture_local_run()
+#end = time.time()
+#print(end-start)
 
 
 
