@@ -697,7 +697,7 @@ def linear_fitting(dm, years_ots):
 
     # Define a function to apply linear regression and extrapolate
     def extrapolate_to_year(arr, years, target_year):
-        mask = ~np.isnan(arr)
+        mask = ~np.isnan(arr) & ~np.isfinite(arr)
 
         filtered_arr = arr[mask]
         filtered_years = np.array(years)[mask]
