@@ -149,7 +149,6 @@ class DataMatrix:
         categories = {}
         variables = []
         units = dict()
-        i = 1
         for col in cols:
             try:
                 unit = re.search(r'\[(.*?)\]', col).group(1)

@@ -1,7 +1,7 @@
 import numpy as np
 from model.common.data_matrix_class import DataMatrix
 from scipy.interpolate import interp1d, CubicSpline
-from model.common.io_database import read_database, update_database_from_db, read_database_w_filter
+from model.common.io_database import read_database, update_database_from_db, database_to_dm, dm_to_database
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 import pandas as pd
 import os
@@ -10,17 +10,19 @@ import json
 from os import listdir
 from os.path import isfile, join
 import pickle
+from scipy.stats import linregress
 
 
 def add_missing_ots_years(dm, startyear, baseyear):
     # Add all years as np.nan
     years_ots = list(range(startyear, baseyear + 1))
     years_missing = list(set(years_ots) - set(dm.col_labels['Years']))
-    dm.add(np.nan, dim='Years', col_label=years_missing, dummy=True)
-    dm.sort('Years')
+    if len(years_missing)>0:
+        dm.add(np.nan, dim='Years', col_label=years_missing, dummy=True)
+        dm.sort('Years')
 
     # Fill nans
-    dm.fill_nans(dim_to_interp='Country')
+    dm.fill_nans(dim_to_interp='Years')
 
     return dm
 
@@ -159,7 +161,7 @@ def compute_stock(dm, rr_regex, tot_regex, waste_col, new_col, out_type=int):
             rr_col = col
         elif re.match(tot_pattern, col):
             tot_col = col
-    # waste(ti + n) = [ (n-1)/n * tot(ti+n) + 1/n *tot(ti) ] +  [ (n-1)/n * RR(ti+n) + 1/n *RR(ti) ]
+    # waste(ti + n) = [ (n-1)/n * tot(ti+n) + 1/n *tot(ti) ] x [ (n-1)/n * RR(ti+n) + 1/n *RR(ti) ]
     # create tot(ti) and RR(ti)
     dm.lag_variable(tot_pattern, 1, "_tmn")
     dm.lag_variable(rr_pattern, 1, "_tmn")
@@ -689,3 +691,97 @@ def energy_switch(dm_energy_demand, dm_energy_carrier_mix, carrier_in, carrier_o
     dm_energy_demand.drop(carriers_category, drops)
     dm_energy_demand.append(dm_temp1, carriers_category)
     dm_energy_demand.sort(carriers_category)
+
+
+def linear_fitting(dm, years_ots):
+
+    # Define a function to apply linear regression and extrapolate
+    def extrapolate_to_year(arr, years, target_year):
+        mask = ~np.isnan(arr)
+
+        filtered_arr = arr[mask]
+        filtered_years = np.array(years)[mask]
+
+        # If it's all nan
+        if filtered_arr.size < 5:
+            extrapolated_value = np.nan*target_year
+            return extrapolated_value
+
+        slope, intercept, _, _, _ = linregress(filtered_years, filtered_arr)
+        extrapolated_value = intercept + slope * target_year
+
+        return extrapolated_value
+
+    start_year = int(years_ots[0])
+    base_year = int(years_ots[-1])
+    # Check if start_year has value different then nan, else extrapolate
+
+
+    # extrapolated array values at year = start_year
+    for year_target in [start_year, base_year]:
+        # Apply the function along the last axis (years axis)
+        array_reshaped = np.moveaxis(dm.array, 1, -1)
+        extrapolated_year = np.apply_along_axis(extrapolate_to_year, axis=-1, arr=array_reshaped, years=dm.col_labels['Years'],
+                                                 target_year=year_target)
+
+        # If start_year is not in dm, set dm value at start_year to extrapolated value
+        if year_target not in dm.col_labels['Years']:
+            dm.add(extrapolated_year, dim='Years', col_label=[start_year])
+            dm.sort('Years')
+        else:
+            idx = dm.idx
+            dm.array = np.moveaxis(dm.array, 1, 0)
+            mask_nan = np.isnan(dm.array[idx[year_target], ...])
+            dm.array[idx[year_target], mask_nan] = extrapolated_year[mask_nan]
+            dm.array = np.moveaxis(dm.array, 0, 1)
+
+
+    # Add missing ots years as nan
+    dm = add_missing_ots_years(dm, startyear=start_year, baseyear=base_year)
+
+    # Fill nan
+    dm.fill_nans(dim_to_interp='Years')
+
+    return
+
+
+def linear_fitting_ots_db(df_db, years_ots, countries='all'):
+    levers = list(set(df_db['lever']))
+    if len(levers) > 1:
+        raise ValueError('There is more than one lever in the file, use only one lever per file')
+    lever_name = levers[0]
+    module = list(set(df_db['module']))
+    if len(module) > 1:
+        raise ValueError('There is more than one module in the file, use only one module per file')
+    module_name = module[0]
+    # Use 0 categories by default
+    num_cat = 0
+    # Last ots year is the baseyear
+    baseyear = int(years_ots[-1])
+    # Extract database as dm dictionary one country at the time
+    i = 0
+    if countries == 'all':
+        countries = set(df_db['geoscale'])
+    if isinstance(countries, str):
+        countries = [countries]
+    for country in countries:
+        print(country)
+        df_db_country = df_db.loc[df_db['geoscale'] == country].copy()
+        dict_ots_country, dict_fts = database_to_dm(df_db_country, lever_name, num_cat, baseyear, years_ots, level='all')
+        # Keep only ots years as dm
+        dm_country = dict_ots_country[lever_name]
+        # Do linear fitting
+        linear_fitting(dm_country, years_ots)
+        if i == 0:
+            dm = dm_country
+        else:
+            dm.append(dm_country, dim='Country')
+        i = i+1
+
+    # From dm to database format
+    df_db_ots = dm_to_database(dm, lever=lever_name, module=module_name, level=0)
+    # merge the linear fitted version in the new
+    df_merged = update_database_from_db(db_old=df_db, db_new=df_db_ots)
+
+    return df_merged
+
