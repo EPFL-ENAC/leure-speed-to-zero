@@ -13,7 +13,7 @@ from model.common.interface_class import Interface
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 
 # Import functions
-from model.common.io_database import read_database, read_database_fxa, read_database_w_filter, update_database_from_db
+from model.common.io_database import read_database, read_database_fxa, read_database_w_filter, update_database_from_db_old
 from model.common.io_database import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups
 from model.common.auxiliary_functions import read_level_data, cost
 
@@ -34,8 +34,8 @@ def dummy_countries_fxa():
     df_db_vd['geoscale'] = 'Vaud'
     df_db_eu = df_db.loc[df_db['geoscale'] == 'Germany']
     df_db_eu['geoscale'] = 'EU27'
-    update_database_from_db(file, df_db_vd)
-    update_database_from_db(file, df_db_eu)
+    update_database_from_db_old(file, df_db_vd)
+    update_database_from_db_old(file, df_db_eu)
     return
 
 def dummy_countries_power():

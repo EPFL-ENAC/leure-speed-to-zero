@@ -205,7 +205,7 @@ def read_database_w_filter(filename, lever, filter_dict, folderpath="default", d
         return df_ots, df_fts
 
 
-def update_database_from_db(filename, db_new, folderpath="default"):
+def update_database_from_db_old(filename, db_new, folderpath="default"):
     # Update csv file in database/data/csv based on a database with columns
     # "geoscale, timescale, eucalc-name, level, value"
     if folderpath == "default":
@@ -299,14 +299,18 @@ def read_database_to_ots_fts_dict(file, lever, num_cat, baseyear, years, dict_ot
         else:
             df_ots, df_fts = read_database_w_filter(file, lever, filter_dict)
 
-    # Drop from fts the baseyear and earlier years if any
-    df_fts.drop(df_fts[df_fts.Years <= baseyear].index, inplace=True)
-    # Keep fts only one every five years
-    df_fts = df_fts[df_fts['Years'].isin(years)].copy()
+    if not df_fts.empty:
+        # Drop from fts the baseyear and earlier years if any
+        df_fts.drop(df_fts[df_fts.Years <= baseyear].index, inplace=True)
+        # Keep fts only one every five years
+        df_fts = df_fts[df_fts['Years'].isin(years)].copy()
+
+    dict_lever = dm_lever_dict_from_df(df_fts, lever, num_cat)
+    dict_fts[lever] = dict_lever
+
     # Keep only years from 1990
     df_ots.drop(df_ots[df_ots.Years > baseyear].index, inplace=True)
     df_ots = df_ots[df_ots['Years'].isin(years)].copy()
-    dict_lever = dm_lever_dict_from_df(df_fts, lever, num_cat)
     # Remove 'ots_' and drop lever
     df_ots.drop(columns=[lever], inplace=True)
     rename_ots = {}
@@ -317,7 +321,7 @@ def read_database_to_ots_fts_dict(file, lever, num_cat, baseyear, years, dict_ot
     df_ots.sort_values(by=['Country', 'Years'], axis=0, inplace=True)
     dm_ots = DataMatrix.create_from_df(df_ots, num_cat)
     dict_ots[lever] = dm_ots
-    dict_fts[lever] = dict_lever
+
     return dict_ots, dict_fts
 
 
@@ -356,11 +360,10 @@ def database_to_df(df_db, lever, level='all'):
     df_db['value'] = df_db['value'].astype(float)
     df_db['geoscale'] = df_db['geoscale'].astype(str)
     df_db['lever'] = df_db['lever'].astype(str)
-    df_db['string-pivot'] = df_db['string-pivot'].astype(str)
     df_db['variables'] = df_db['variables'].astype(str)
     # Remove duplicates
     len_init = len(df_db)
-    df_db = df_db.drop_duplicates(subset=['geoscale', 'timescale', 'level', 'string-pivot', 'variables'])
+    df_db = df_db.drop_duplicates(subset=['geoscale', 'timescale', 'level', 'variables'])
     if len(df_db) - len_init < 0:
         print(f"Duplicates found, use .duplicated on dataframe to check which lines are repeated")
     # Extract ots
@@ -371,18 +374,10 @@ def database_to_df(df_db, lever, level='all'):
     else:
         df_db_fts = (df_db.loc[(df_db["level"] == level) & (df_db['lever'] == lever)]).copy()
     # Pivot ots
-    if (df_db_ots['string-pivot'] != 'none').any():
-        df_ots = df_db_ots.pivot(index=['geoscale', 'timescale', 'level', 'string-pivot'], columns="variables",
-                                 values='value')
-    else:
-        df_ots = df_db_ots.pivot(index=['geoscale', 'timescale', 'level'], columns="variables", values='value')
+    df_ots = df_db_ots.pivot(index=['geoscale', 'timescale', 'level'], columns="variables", values='value')
     df_ots.reset_index(inplace=True)
     # Pivot fts
-    if (df_db_fts['string-pivot'] != 'none').any():
-        df_fts = df_db_fts.pivot(index=['geoscale', 'timescale', 'level', 'string-pivot'], columns="variables",
-                                 values='value')
-    else:
-        df_fts = df_db_fts.pivot(index=['geoscale', 'timescale', 'level'], columns="variables", values='value')
+    df_fts = df_db_fts.pivot(index=['geoscale', 'timescale', 'level'], columns="variables", values='value')
 
     df_fts.reset_index(inplace=True)
     rename_cols = {'geoscale': "Country", 'timescale': 'Years', 'level': lever}
@@ -405,3 +400,35 @@ def database_to_dm(df_db, lever, num_cat, baseyear, years, level='all'):
                                                        years=years, dict_ots=dict_ots, dict_fts=dict_fts, df_ots=df_ots,
                                                        df_fts=df_fts)
     return dict_ots, dict_fts
+
+
+def dm_to_database(dm, lever, module, level=0):
+    df = dm.write_df()
+    rename_cols = {'Country': "geoscale", 'Years': 'timescale'}
+    df.rename(columns=rename_cols, inplace=True)
+    df['level'] = level
+    df['lever'] = lever
+    df['module'] = module
+    df_db = df.melt(id_vars=['geoscale', 'timescale', 'lever', 'level', 'module'], var_name='variables', value_name='value')
+
+    return df_db
+
+
+def update_database_from_db(db_old, db_new):
+    # Replace
+    # Merge DataFrame A with DataFrame B based on common columns
+    on_cols = list(db_old.columns.drop(['value']))
+    merged_df = db_old.merge(db_new, how='outer', on=on_cols, suffixes=('_old', '_new'))
+    merged_df['value'] = merged_df['value_new']
+
+    # check for NaN values
+    mask = pd.isna(merged_df['value'])
+    merged_df.loc[mask, 'value'] = merged_df.loc[mask, 'value_old']
+    # Copy merged on value_old, delete value and value_new and rename value_old as value
+    # (this is to preserve the column order)
+    merged_df['value_old'] = merged_df['value']
+    merged_df.drop(columns=["value_new", "value"], inplace=True)
+    merged_df.rename(columns={'value_old': 'value'}, inplace=True)
+    merged_df.sort_values(by=['geoscale', 'timescale'], axis=0, inplace=True)
+
+    return merged_df
