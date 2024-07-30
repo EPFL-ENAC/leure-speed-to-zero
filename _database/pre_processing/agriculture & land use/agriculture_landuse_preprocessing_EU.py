@@ -1634,8 +1634,7 @@ gstock = pd.merge(gstock_faws, gstock_total, on=['geoscale', 'timescale'])
 gstock = pd.merge(gstock, area_faws, on=['geoscale', 'timescale'])
 gstock = pd.merge(gstock, df_area, on=['geoscale', 'timescale'])
 
-# Creating a copy for NATURAL LOSSES with area and growing stock
-gstock_copy = gstock.copy()
+
 
 # Changing data type to numeric (except for the geoscale column)
 gstock.loc[:, gstock.columns != 'geoscale'] = gstock.loc[:, gstock.columns != 'geoscale'].apply(pd.to_numeric, errors='coerce')
@@ -1698,6 +1697,44 @@ gstock_pathwaycalc['geoscale'] = gstock_pathwaycalc['geoscale'].replace('Czechia
 # DEFFORESTATION -------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 
+# ----------------------------------------------------------------------------------------------------------------------
+# HARVESTING RATE -------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+# Read files (growing stock available fo wood supply and not)
+h_rate = pd.read_excel('/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_forestry.xlsx', sheet_name='h-rate')
+
+# Format correctly
+# Melting the dfs to have the relevant format (geoscale, year, value)
+h_rate = pd.melt(h_rate, id_vars=['geoscale'], var_name='timescale', value_name='value')
+# Convert 'year' to integer type (optional, for better numerical handling)
+h_rate['timescale'] = h_rate['timescale'].astype(int)
+
+# Merge with forest area (df_area) (to filter the relevant countries) then filter out
+h_rate = pd.merge(h_rate, df_area, on=['geoscale', 'timescale'])
+h_rate = h_rate[['geoscale', 'timescale', 'value']]
+
+# Create copy
+h_rate_pathwaycalc = h_rate.copy()
+
+# PathwayCalc formatting -----------------------------------------------------------------------------------------------
+# Adding the columns module, lever, level and string-pivot at the correct places
+h_rate_pathwaycalc['module'] = 'land-use'
+h_rate_pathwaycalc['lever'] = 'climate-smart-forestry'
+h_rate_pathwaycalc['level'] = 0
+h_rate_pathwaycalc['variables'] = 'agr_climate-smart-forestry_h-rate[%]'
+cols = h_rate_pathwaycalc.columns.tolist()
+cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+cols.insert(cols.index('geoscale'), cols.pop(cols.index('variables')))
+h_rate_pathwaycalc = h_rate_pathwaycalc[cols]
+
+# Rename countries to Pathaywcalc name
+h_rate_pathwaycalc['geoscale'] = h_rate_pathwaycalc['geoscale'].replace(
+    'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+h_rate_pathwaycalc['geoscale'] = h_rate_pathwaycalc['geoscale'].replace('Netherlands (Kingdom of the)',
+                                                                              'Netherlands')
+h_rate_pathwaycalc['geoscale'] = h_rate_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
 
 
 # ----------------------------------------------------------------------------------------------------------------------
