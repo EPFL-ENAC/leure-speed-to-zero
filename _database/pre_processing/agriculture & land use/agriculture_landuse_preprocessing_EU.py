@@ -1606,6 +1606,9 @@ gstock = pd.merge(gstock_faws, gstock_total, on=['geoscale', 'timescale'])
 gstock = pd.merge(gstock, area_faws, on=['geoscale', 'timescale'])
 gstock = pd.merge(gstock, df_area, on=['geoscale', 'timescale'])
 
+# Creating a copy for NATURAL LOSSES with area and growing stock
+gstock_copy = gstock.copy()
+
 # Changing data type to numeric (except for the geoscale column)
 gstock.loc[:, gstock.columns != 'geoscale'] = gstock.loc[:, gstock.columns != 'geoscale'].apply(pd.to_numeric, errors='coerce')
 
@@ -1623,6 +1626,8 @@ gstock['Growing stock non faws [m3/ha]'] = (10**6 * gstock['growing stock non fa
 
 # Share faws [%] = total forest area [ha] - forest available for wood supply [ha]
 gstock['Share faws [%]'] = 1000 * gstock['area faws [1000ha]'] / gstock['forest area [ha]']
+
+
 
 # PathwayCalc formatting -----------------------------------------------------------------------------------------------
 # Melt the DataFrame
@@ -1670,6 +1675,77 @@ gstock_pathwaycalc['geoscale'] = gstock_pathwaycalc['geoscale'].replace('Czechia
 # ----------------------------------------------------------------------------------------------------------------------
 # NATURAL LOSSES -------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
+
+# Read file
+nat_losses = pd.read_excel('/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_forestry.xlsx',
+                           sheet_name='nat-losses_1000ha')
+
+# Format correctly
+# Melt the DataFrame to long format
+df_melted = pd.melt(nat_losses, id_vars=['geoscale'], var_name='variable', value_name='Losses [1000ha]')
+
+# Extract 'item' and 'year' from the 'variable' column
+df_melted['Item'] = df_melted['variable'].str.extract(r'^(.*?)\s\d{4}$')[0]
+df_melted['timescale'] = df_melted['variable'].str.extract(r'(\d{4})$')[0]
+
+# Drop the original 'variable' column
+df_melted = df_melted.drop(columns=['variable'])
+
+# Rearrange the columns
+nat_losses = df_melted[['geoscale', 'timescale', 'Item', 'Losses [1000ha]']]
+
+# Change type to numeric for timescale to merge
+nat_losses['timescale'] = nat_losses['timescale'].apply(pd.to_numeric, errors='coerce')
+
+# Adding forest area and total growing stock
+nat_losses = pd.merge(nat_losses, df_area, on=['geoscale', 'timescale'])
+nat_losses = pd.merge(nat_losses, gstock_total, on=['geoscale', 'timescale'])
+
+# Change type to numeric
+numeric_cols = nat_losses.columns[3:]  # Get all columns except the first three
+nat_losses[numeric_cols] = nat_losses[numeric_cols].apply(pd.to_numeric, errors='coerce')  # Convert to numeric, if not already
+
+# Ratio of losses area compared to total forest area
+nat_losses['Ratio of losses'] = 1000 * nat_losses['Losses [1000ha]'] / nat_losses['forest area [ha]']
+
+# Growing stock total [m3/ha] = Growing stock [Mm3] / forest area [ha]
+nat_losses['Growing stock total [m3/ha]'] = 10**6 * nat_losses['growing stock total [Mm3]'] / nat_losses['forest area [ha]']
+
+# Losses [m3/ha] = Ratio of losses [%] * Growing stock total [m3/ha]
+nat_losses['value'] = nat_losses['Ratio of losses'] * nat_losses['Growing stock total [m3/ha]']
+
+# Filtering
+nat_losses_pathwaycalc = nat_losses.copy()
+nat_losses_pathwaycalc = nat_losses_pathwaycalc[['Item', 'geoscale', 'timescale', 'value']]
+
+# PathwayCalc formatting -----------------------------------------------------------------------------------------------
+# Read excel file
+df_dict_forestry = pd.read_excel(
+    '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+    sheet_name='climate-smart-forestry')
+
+# Merge based on 'Item'
+nat_losses_pathwaycalc = pd.merge(df_dict_forestry, nat_losses_pathwaycalc, on='Item')
+
+# Drop the 'Item' column
+nat_losses_pathwaycalc = nat_losses_pathwaycalc.drop(columns=['Item'])
+
+# Adding the columns module, lever, level and string-pivot at the correct places
+nat_losses_pathwaycalc['module'] = 'land-use'
+nat_losses_pathwaycalc['lever'] = 'climate-smart-forestry'
+nat_losses_pathwaycalc['level'] = 0
+cols = nat_losses_pathwaycalc.columns.tolist()
+cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+nat_losses_pathwaycalc = nat_losses_pathwaycalc[cols]
+
+# Rename countries to Pathaywcalc name
+nat_losses_pathwaycalc['geoscale'] = nat_losses_pathwaycalc['geoscale'].replace(
+    'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+nat_losses_pathwaycalc['geoscale'] = nat_losses_pathwaycalc['geoscale'].replace('Netherlands (Kingdom of the)',
+                                                                              'Netherlands')
+nat_losses_pathwaycalc['geoscale'] = nat_losses_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
 
 # CalculationLeaf LAND MANAGEMENT --------------------------------------------------------------------------------------
 
