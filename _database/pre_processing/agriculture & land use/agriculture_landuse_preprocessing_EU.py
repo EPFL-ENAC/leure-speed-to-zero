@@ -1582,8 +1582,36 @@ df_g_inc_area_pathwaycalc['geoscale'] = df_g_inc_area_pathwaycalc['geoscale'].re
 # CSF MANAGED ----------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 
+# Is equal to 0 for all ots for all countries
+
+# Use df_g_inc_area_pathwaycalc as a structural basis
+csf_managed = df_g_inc_area_pathwaycalc.copy()
+
+# Add rows to have 1990-2022
+# Generate a DataFrame with all combinations of geoscale and timescale
+geoscale_values = csf_managed['geoscale'].unique()
+timescale_values = pd.Series(range(1990, 2023))
+
+# Create a DataFrame for the cartesian product
+cartesian_product = pd.MultiIndex.from_product([geoscale_values, timescale_values], names=['geoscale', 'timescale']).to_frame(index=False)
+
+# Merge the original DataFrame with the cartesian product to include all combinations
+csf_managed = pd.merge(cartesian_product, csf_managed, on=['geoscale', 'timescale'], how='left')
+
+# Replace the variable with ots_agr_climate-smart-forestry_csf-man[m3/ha]
+csf_managed['variables'] = 'ots_agr_climate-smart-forestry_csf-man[m3/ha]'
+
+# Replace the value with 0
+csf_managed['value'] = 0
+
+# PathwayCalc formatting
+csf_managed['module'] = 'land-use'
+csf_managed['lever'] = 'climate-smart-forestry'
+csf_managed['level'] = 0
+csf_managed['string-pivot'] = 'none'
+
 # ----------------------------------------------------------------------------------------------------------------------
-# FAWS SHARE & GSTOCK (FAWS & NON FAWS)  --------------------------------------------------------------------------------------------------------------
+# FAWS SHARE & GSTOCK (FAWS & NON FAWS)  -------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 
 # Read files (growing stock available fo wood supply and not)
@@ -1822,7 +1850,7 @@ constants_agr_unique = constants_agr[~constants_agr.apply(tuple, axis=1).isin(co
 result = pd.concat([constants_all, constants_agr_unique])
 
 # Export to csv
-result.to_csv('interactions_constants_30-07.csv', index=False, sep=';')
+#result.to_csv('interactions_constants_30-07.csv', index=False, sep=';')
 
 
 
