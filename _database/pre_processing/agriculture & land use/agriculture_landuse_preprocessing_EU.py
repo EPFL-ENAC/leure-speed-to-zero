@@ -290,32 +290,7 @@ def climate_smart_crop_processing():
                       'Slovenia', 'Spain', 'Sweden', 'Switzerland',
                       'United Kingdom of Great Britain and Northern Ireland']
 
-    # ----------------------------------------------------------------------------------------------------------------------
-    # EF AGROFORESTRY ------------------------------------------------------------------------------------------------------
-    # ----------------------------------------------------------------------------------------------------------------------
 
-    # LAND USE (RL)
-    # List of elements and items
-    list_elements = ['Carbon stock in living biomass']
-    list_items = ['Cropland area under protective cover', '-- Cropland', 'Cropland area under zero or no tillage']
-
-    # 1990 - 2022
-    code = 'RL'
-    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
-    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
-    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
-    list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
-                  '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
-                  '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022']
-    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
-
-    my_pars = {
-        'area': my_countries,
-        'element': my_elements,
-        'item': my_items,
-        'year': my_years
-    }
-    # df_agroforestry_1990_2022 = faostat.get_data_df(code, pars=my_pars, strval=False)
 
     # ENERGY DEMAND --------------------------------------------------------------------------------------------------------
 
@@ -524,6 +499,59 @@ def climate_smart_crop_processing():
     df_input_pathwaycalc['geoscale'] = df_input_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
 
     # ----------------------------------------------------------------------------------------------------------------------
+    # EF AGROFORESTRY ------------------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+    # Is equal to 0 for all ots for all countries
+
+    # Use pivot_df_input as a structural basis
+    agroforestry_crop = pivot_df_input.copy()
+
+    # Drop the column Item
+    agroforestry_crop = agroforestry_crop.drop(columns=['Item', 'Input[t/ha]'])
+
+    # Rename the column in geoscale and timescale
+    agroforestry_crop.rename(columns={'Area': 'geoscale', 'Year': 'timescale'}, inplace=True)
+
+    # Changing data type to numeric (except for the geoscale column)
+    agroforestry_crop.loc[:, agroforestry_crop.columns != 'geoscale'] = agroforestry_crop.loc[:,
+                                                                        agroforestry_crop.columns != 'geoscale'].apply(
+        pd.to_numeric, errors='coerce')
+
+    # Add rows to have 1990-2022
+    # Generate a DataFrame with all combinations of geoscale and timescale
+    geoscale_values = agroforestry_crop['geoscale'].unique()
+    timescale_values = pd.Series(range(1990, 2023))
+
+    # Create a DataFrame for the cartesian product
+    cartesian_product = pd.MultiIndex.from_product([geoscale_values, timescale_values],
+                                                   names=['geoscale', 'timescale']).to_frame(index=False)
+
+
+
+    # Merge the original DataFrame with the cartesian product to include all combinations
+    agroforestry_crop = pd.merge(cartesian_product, agroforestry_crop, on=['geoscale', 'timescale'], how='left')
+
+    # Add the variables with a value of 0
+    agroforestry_crop['ots_agr_climate-smart-crop_ef_agroforestry_cover-crop[tC/ha]'] = 0
+    agroforestry_crop['ots_agr_climate-smart-crop_ef_agroforestry_cropland[tC/ha]'] = 0
+    agroforestry_crop['ots_agr_climate-smart-crop_ef_agroforestry_hedges[tC/ha]'] = 0
+    agroforestry_crop['ots_agr_climate-smart-crop_ef_agroforestry_no-till[tC/ha]'] = 0
+
+    # Melt the df
+    agroforestry_crop_pathwaycalc = pd.melt(agroforestry_crop, id_vars=['geoscale'], var_name='timescale', value_name='value')
+
+    # PathwayCalc formatting
+    agroforestry_crop_pathwaycalc['module'] = 'agriculture'
+    agroforestry_crop_pathwaycalc['lever'] = 'climate-smart-crop'
+    agroforestry_crop_pathwaycalc['level'] = 0
+    cols = agroforestry_crop_pathwaycalc.columns.tolist()
+    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    agroforestry_crop_pathwaycalc = agroforestry_crop_pathwaycalc[cols]
+
+
+    # ----------------------------------------------------------------------------------------------------------------------
     # LOSSES ---------------------------------------------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------------------------------------------
 
@@ -705,6 +733,7 @@ def climate_smart_crop_processing():
     # FINAL RESULT ---------------------------------------------------------------------------------------------------------
     df_climate_smart_crop = pd.concat([df_input_pathwaycalc, df_losses_pathwaycalc])
     df_climate_smart_crop = pd.concat([df_climate_smart_crop, df_yield_pathwaycalc])
+    df_climate_smart_crop = pd.concat([df_climate_smart_crop, agroforestry_crop_pathwaycalc])
 
     return df_climate_smart_crop
 
@@ -1574,6 +1603,11 @@ def climate_smart_forestry_processing():
     csf_managed['module'] = 'land-use'
     csf_managed['lever'] = 'climate-smart-forestry'
     csf_managed['level'] = 0
+    cols = csf_managed.columns.tolist()
+    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    csf_managed = csf_managed[cols]
 
     # ----------------------------------------------------------------------------------------------------------------------
     # FAWS SHARE & GSTOCK (FAWS & NON FAWS)  -------------------------------------------------------------------------------
