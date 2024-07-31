@@ -73,9 +73,9 @@ def database_from_csv_to_datamatrix():
     dm_livestock_ef_agroforestry = DataMatrix.create_from_df(df, num_cat=1)
     dict_fxa['agr_climate-smart-livestock_ef_agroforestry'] = dm_livestock_ef_agroforestry
     # AGROFORESTRY Forestry - natural losses & others
-    #df = read_database_fxa(file, filter_dict={'eucalc-name': 'agr_climate-smart-forestry'})
-    #dm_agroforestry = DataMatrix.create_from_df(df, num_cat=0)
-    #dict_fxa['agr_climate-smart-forestry'] = dm_agroforestry
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'agr_climate-smart-forestry_def'})
+    dm_forestry = DataMatrix.create_from_df(df, num_cat=0)
+    dict_fxa['agr_climate-smart-forestry'] = dm_forestry
 
     ##################
     ##### LEVERS #####
@@ -126,7 +126,7 @@ def database_from_csv_to_datamatrix():
                                                     num_cat=0)
 
     # Constant pre-processing ------------------------------------------------------------------------------------------
-    # Creating a dictionnay with contants
+    # Creating a dictionnay with constants
     dict_const = {}
 
     # Constants for burnt biomass
@@ -213,6 +213,8 @@ def read_data(data_file, lever_setting):
     dm_agroforestry_crop = DM_landuse['fxa']['agr_climate-smart-crop_ef_agroforestry']
     dm_agroforestry_liv = DM_landuse['fxa']['agr_climate-smart-livestock_ef_agroforestry']
     dm_forestry = DM_ots_fts['climate-smart-forestry']['agr_climate-smart-forestry']
+    dm_fxa_forestry = DM_landuse['fxa']['agr_climate-smart-forestry']
+    dm_forestry.append(dm_fxa_forestry, dim='Variables')
 
     # Aggregated Data Matrix - LAND USE
     DM_land_use = {
@@ -776,9 +778,9 @@ def forestry_biomass_emissions_workflow(DM_land_use, CDM_const):
 
     # Total forestry biomass loss (fuel & burnt) [m3] = Total forestry biomass loss from natural causes [m3]
     #                                                   * yield forestry biomass loss from deforestation [%]
-    DM_land_use['forestry'].operation('lus_forestry_biomass_loss', '*', 'agr_climate-smart-forestry_def-wood-fuel',
+    DM_land_use['forestry'].operation('lus_forestry_biomass_loss', '*', 'fxa_agr_climate-smart-forestry_def-wood-fuel',
                                       out_col='lus_forestry_biomass_loss_def-wood-fuel', unit='m3')
-    DM_land_use['forestry'].operation('lus_forestry_biomass_loss', '*', 'agr_climate-smart-forestry_def-burnt',
+    DM_land_use['forestry'].operation('lus_forestry_biomass_loss', '*', 'fxa_agr_climate-smart-forestry_def-burnt',
                                       out_col='lus_forestry_biomass_loss_def-burnt', unit='m3')
 
     # BURNT BIOMASS EMISSIONS ------------------------------------------------------------------------------------------
@@ -949,10 +951,10 @@ def land_use_local_run():
 # # run local
 #__file__ = "/Users/crosnier/DocumentsPathwayCalc/model/landuse_module.py"
 #database_from_csv_to_datamatrix()
-#start = time.time()
-#results_run = local_land_use_run()
-#end = time.time()
-#print(end-start)
+start = time.time()
+results_run = local_land_use_run()
+end = time.time()
+print(end-start)
 
 # WOOD
     #dm_wood.datamatrix_plot({'Country': 'Austria', 'Variables': ['lus_fst_demand_rwe']})
