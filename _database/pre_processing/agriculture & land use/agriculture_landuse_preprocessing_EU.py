@@ -532,13 +532,18 @@ def climate_smart_crop_processing():
     agroforestry_crop = pd.merge(cartesian_product, agroforestry_crop, on=['geoscale', 'timescale'], how='left')
 
     # Add the variables with a value of 0
-    agroforestry_crop['ots_agr_climate-smart-crop_ef_agroforestry_cover-crop[tC/ha]'] = 0
-    agroforestry_crop['ots_agr_climate-smart-crop_ef_agroforestry_cropland[tC/ha]'] = 0
-    agroforestry_crop['ots_agr_climate-smart-crop_ef_agroforestry_hedges[tC/ha]'] = 0
-    agroforestry_crop['ots_agr_climate-smart-crop_ef_agroforestry_no-till[tC/ha]'] = 0
+    agroforestry_crop['agr_climate-smart-crop_ef_agroforestry_cover-crop[tC/ha]'] = 0
+    agroforestry_crop['agr_climate-smart-crop_ef_agroforestry_cropland[tC/ha]'] = 0
+    agroforestry_crop['agr_climate-smart-crop_ef_agroforestry_hedges[tC/ha]'] = 0
+    agroforestry_crop['agr_climate-smart-crop_ef_agroforestry_no-till[tC/ha]'] = 0
 
     # Melt the df
-    agroforestry_crop_pathwaycalc = pd.melt(agroforestry_crop, id_vars=['geoscale'], var_name='timescale', value_name='value')
+    agroforestry_crop_pathwaycalc = pd.melt(agroforestry_crop, id_vars=['timescale', 'geoscale'],
+                                           value_vars=['agr_climate-smart-crop_ef_agroforestry_cover-crop[tC/ha]',
+                                                       'agr_climate-smart-crop_ef_agroforestry_cropland[tC/ha]',
+                                                       'agr_climate-smart-crop_ef_agroforestry_hedges[tC/ha]',
+                                                       'agr_climate-smart-crop_ef_agroforestry_no-till[tC/ha]'],
+                                           var_name='variables', value_name='value')
 
     # PathwayCalc formatting
     agroforestry_crop_pathwaycalc['module'] = 'agriculture'
@@ -548,6 +553,7 @@ def climate_smart_crop_processing():
     cols.insert(cols.index('value'), cols.pop(cols.index('module')))
     cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
     cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    cols.insert(cols.index('timescale'), cols.pop(cols.index('variables')))
     agroforestry_crop_pathwaycalc = agroforestry_crop_pathwaycalc[cols]
 
 
@@ -871,6 +877,60 @@ def climate_smart_livestock_processing(df_csl_feed):
     # ----------------------------------------------------------------------------------------------------------------------
     # AGROFORESTRY (GRASSLAND & HEDGES) ------------------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------------------------------------------
+    # Is equal to 0 for all ots for all countries
+
+    # Use density (grouped_df) as a structural basis
+    agroforestry_liv = grouped_df.copy()
+
+    # Drop the column Item
+    agroforestry_liv = agroforestry_liv.drop(columns=['Item', 'value'])
+
+    # Rename the column in geoscale and timescale
+    agroforestry_liv.rename(columns={'Area': 'geoscale', 'Year': 'timescale'}, inplace=True)
+
+    # Changing data type to numeric (except for the geoscale column)
+    agroforestry_liv.loc[:, agroforestry_liv.columns != 'geoscale'] = agroforestry_liv.loc[:,
+                                                                        agroforestry_liv.columns != 'geoscale'].apply(
+        pd.to_numeric, errors='coerce')
+
+    # Add rows to have 1990-2022
+    # Generate a DataFrame with all combinations of geoscale and timescale
+    geoscale_values = agroforestry_liv['geoscale'].unique()
+    timescale_values = pd.Series(range(1990, 2023))
+
+    # Create a DataFrame for the cartesian product
+    cartesian_product = pd.MultiIndex.from_product([geoscale_values, timescale_values],
+                                                   names=['geoscale', 'timescale']).to_frame(index=False)
+
+    # Merge the original DataFrame with the cartesian product to include all combinations
+    agroforestry_liv = pd.merge(cartesian_product, agroforestry_liv, on=['geoscale', 'timescale'], how='left')
+
+    # Add the variables with a value of 0
+    agroforestry_liv['agr_climate-smart-livestock_ef_agroforestry_grassland[tC/ha]'] = 0
+    agroforestry_liv['agr_climate-smart-livestock_ef_agroforestry_hedges[tC/ha]'] = 0
+
+    # Melt the df
+    agroforestry_liv_pathwaycalc = pd.melt(agroforestry_liv, id_vars=['timescale', 'geoscale'],
+                    value_vars=['agr_climate-smart-livestock_ef_agroforestry_grassland[tC/ha]', 'agr_climate-smart-livestock_ef_agroforestry_hedges[tC/ha]'],
+                    var_name='variables', value_name='value')
+
+    # PathwayCalc formatting --------------------------------------------------------------------------------------------
+    agroforestry_liv_pathwaycalc['module'] = 'agriculture'
+    agroforestry_liv_pathwaycalc['lever'] = 'climate-smart-crop'
+    agroforestry_liv_pathwaycalc['level'] = 0
+    cols = agroforestry_liv_pathwaycalc.columns.tolist()
+    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    cols.insert(cols.index('timescale'), cols.pop(cols.index('variables')))
+    agroforestry_liv_pathwaycalc = agroforestry_liv_pathwaycalc[cols]
+
+    # Rename countries to Pathaywcalc name
+    agroforestry_liv_pathwaycalc['geoscale'] = agroforestry_liv_pathwaycalc['geoscale'].replace(
+        'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+    agroforestry_liv_pathwaycalc['geoscale'] = agroforestry_liv_pathwaycalc['geoscale'].replace('Netherlands (Kingdom of the)',
+                                                                                  'Netherlands')
+    agroforestry_liv_pathwaycalc['geoscale'] = agroforestry_liv_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
 
     # ----------------------------------------------------------------------------------------------------------------------
     # ENTERIC EMISSIONS ----------------------------------------------------------------------------------------------------
@@ -1436,6 +1496,10 @@ def climate_smart_livestock_processing(df_csl_feed):
     df_yield_meat = pivot_df_slau[['Area', 'Year', 'Aggregation', 'Yield [t/lsu]']]
     df_slau_meat = pivot_df_slau[['Area', 'Year', 'Aggregation', 'Slaughtered animals [%]']]
 
+    # Creating copies
+    df_yield_meat = df_yield_meat.copy()
+    df_slau_meat = df_slau_meat.copy()
+
     # Renaming into 'Value'
     df_yield_meat.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Yield [t/lsu]': 'value'}, inplace=True)
     pivot_df.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Yield [t/lsu]': 'value'}, inplace=True)
@@ -1493,6 +1557,7 @@ def climate_smart_livestock_processing(df_csl_feed):
     df_csl = pd.concat([df_csl, df_losses_csl_pathwaycalc])
     df_csl = pd.concat([df_csl, df_csl_feed_pathwaycalc])
     df_csl = pd.concat([df_csl, df_yield_slau_liv_pathwaycalc])
+    df_csl = pd.concat([df_csl, agroforestry_liv_pathwaycalc])
 
     return df_csl
 
@@ -1832,10 +1897,10 @@ def climate_smart_forestry_processing():
 
 # CalculationTree RUNNING PRE-PROCESSING -----------------------------------------------------------------------------------------------
 
-#df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing()
-#df_climate_smart_crop = climate_smart_crop_processing()
-#df_climate_smart_livestock = climate_smart_livestock_processing(df_csl_feed)
-#df_csf = climate_smart_forestry_processing()
+df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing()
+df_climate_smart_crop = climate_smart_crop_processing()
+df_climate_smart_livestock = climate_smart_livestock_processing(df_csl_feed)
+df_csf = climate_smart_forestry_processing()
 
 #df_climate_smart_livestock.to_csv('climate-smart-livestock_29-07-24.csv', index=False)
 
