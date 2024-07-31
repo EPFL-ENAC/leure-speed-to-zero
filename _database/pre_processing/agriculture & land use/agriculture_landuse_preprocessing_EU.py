@@ -261,12 +261,10 @@ def self_sufficiency_processing():
     df_ssr_pathwaycalc['module'] = 'agriculture'
     df_ssr_pathwaycalc['lever'] = 'food-net-import'
     df_ssr_pathwaycalc['level'] = 0
-    df_ssr_pathwaycalc['string-pivot'] = 'none'
     cols = df_ssr_pathwaycalc.columns.tolist()
     cols.insert(cols.index('value'), cols.pop(cols.index('module')))
     cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
     cols.insert(cols.index('value'), cols.pop(cols.index('level')))
-    cols.insert(cols.index('value'), cols.pop(cols.index('string-pivot')))
     df_ssr_pathwaycalc = df_ssr_pathwaycalc[cols]
 
     # Rename countries to Pathaywcalc name
@@ -512,12 +510,10 @@ def climate_smart_crop_processing():
     df_input_pathwaycalc['module'] = 'agriculture'
     df_input_pathwaycalc['lever'] = 'climate-smart-crop'
     df_input_pathwaycalc['level'] = 0
-    df_input_pathwaycalc['string-pivot'] = 'none'
     cols = df_input_pathwaycalc.columns.tolist()
     cols.insert(cols.index('value'), cols.pop(cols.index('module')))
     cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
     cols.insert(cols.index('value'), cols.pop(cols.index('level')))
-    cols.insert(cols.index('value'), cols.pop(cols.index('string-pivot')))
     df_input_pathwaycalc = df_input_pathwaycalc[cols]
 
     # Rename countries to Pathaywcalc name
@@ -614,12 +610,10 @@ def climate_smart_crop_processing():
     df_losses_pathwaycalc['module'] = 'agriculture'
     df_losses_pathwaycalc['lever'] = 'climate-smart-crop'
     df_losses_pathwaycalc['level'] = 0
-    df_losses_pathwaycalc['string-pivot'] = 'none'
     cols = df_losses_pathwaycalc.columns.tolist()
     cols.insert(cols.index('value'), cols.pop(cols.index('module')))
     cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
     cols.insert(cols.index('value'), cols.pop(cols.index('level')))
-    cols.insert(cols.index('value'), cols.pop(cols.index('string-pivot')))
     df_losses_pathwaycalc = df_losses_pathwaycalc[cols]
 
     # Rename countries to Pathaywcalc name
@@ -695,12 +689,10 @@ def climate_smart_crop_processing():
     df_yield_pathwaycalc['module'] = 'agriculture'
     df_yield_pathwaycalc['lever'] = 'climate-smart-crop'
     df_yield_pathwaycalc['level'] = 0
-    df_yield_pathwaycalc['string-pivot'] = 'none'
     cols = df_yield_pathwaycalc.columns.tolist()
     cols.insert(cols.index('value'), cols.pop(cols.index('module')))
     cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
     cols.insert(cols.index('value'), cols.pop(cols.index('level')))
-    cols.insert(cols.index('value'), cols.pop(cols.index('string-pivot')))
     df_yield_pathwaycalc = df_yield_pathwaycalc[cols]
 
     # Rename countries to Pathaywcalc name
@@ -833,12 +825,10 @@ def climate_smart_livestock_processing(df_csl_feed):
     df_csl_density_pathwaycalc['module'] = 'agriculture'
     df_csl_density_pathwaycalc['lever'] = 'climate-smart-livestock'
     df_csl_density_pathwaycalc['level'] = 0
-    df_csl_density_pathwaycalc['string-pivot'] = 'none'
     cols = df_csl_density_pathwaycalc.columns.tolist()
     cols.insert(cols.index('value'), cols.pop(cols.index('module')))
     cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
     cols.insert(cols.index('value'), cols.pop(cols.index('level')))
-    cols.insert(cols.index('value'), cols.pop(cols.index('string-pivot')))
     df_csl_density_pathwaycalc = df_csl_density_pathwaycalc[cols]
 
     # Rename countries to Pathaywcalc name
@@ -949,12 +939,10 @@ def climate_smart_livestock_processing(df_csl_feed):
     df_enteric_pathwaycalc['module'] = 'agriculture'
     df_enteric_pathwaycalc['lever'] = 'climate-smart-livestock'
     df_enteric_pathwaycalc['level'] = 0
-    df_enteric_pathwaycalc['string-pivot'] = 'none'
     cols = df_enteric_pathwaycalc.columns.tolist()
     cols.insert(cols.index('value'), cols.pop(cols.index('module')))
     cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
     cols.insert(cols.index('value'), cols.pop(cols.index('level')))
-    cols.insert(cols.index('value'), cols.pop(cols.index('string-pivot')))
     df_enteric_pathwaycalc = df_enteric_pathwaycalc[cols]
 
     # Rename countries to Pathaywcalc name
@@ -1072,12 +1060,10 @@ def climate_smart_livestock_processing(df_csl_feed):
     df_manure_pathwaycalc['module'] = 'agriculture'
     df_manure_pathwaycalc['lever'] = 'climate-smart-livestock'
     df_manure_pathwaycalc['level'] = 0
-    df_manure_pathwaycalc['string-pivot'] = 'none'
     cols = df_manure_pathwaycalc.columns.tolist()
     cols.insert(cols.index('value'), cols.pop(cols.index('module')))
     cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
     cols.insert(cols.index('value'), cols.pop(cols.index('level')))
-    cols.insert(cols.index('value'), cols.pop(cols.index('string-pivot')))
     df_manure_pathwaycalc = df_manure_pathwaycalc[cols]
 
     # Rename countries to Pathaywcalc name
@@ -1181,12 +1167,10 @@ def climate_smart_livestock_processing(df_csl_feed):
     df_losses_csl_pathwaycalc['module'] = 'agriculture'
     df_losses_csl_pathwaycalc['lever'] = 'climate-smart-livestock'
     df_losses_csl_pathwaycalc['level'] = 0
-    df_losses_csl_pathwaycalc['string-pivot'] = 'none'
     cols = df_losses_csl_pathwaycalc.columns.tolist()
     cols.insert(cols.index('value'), cols.pop(cols.index('module')))
     cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
     cols.insert(cols.index('value'), cols.pop(cols.index('level')))
-    cols.insert(cols.index('value'), cols.pop(cols.index('string-pivot')))
     df_losses_csl_pathwaycalc = df_losses_csl_pathwaycalc[cols]
 
     # Rename countries to Pathaywcalc name
@@ -1232,12 +1216,10 @@ def climate_smart_livestock_processing(df_csl_feed):
     df_csl_feed_pathwaycalc['module'] = 'agriculture'
     df_csl_feed_pathwaycalc['lever'] = 'climate-smart-livestock'
     df_csl_feed_pathwaycalc['level'] = 0
-    df_csl_feed_pathwaycalc['string-pivot'] = 'none'
     cols = df_csl_feed_pathwaycalc.columns.tolist()
     cols.insert(cols.index('value'), cols.pop(cols.index('module')))
     cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
     cols.insert(cols.index('value'), cols.pop(cols.index('level')))
-    cols.insert(cols.index('value'), cols.pop(cols.index('string-pivot')))
     df_csl_feed_pathwaycalc = df_csl_feed_pathwaycalc[cols]
 
     # Rename countries to Pathaywcalc name
@@ -1458,12 +1440,10 @@ def climate_smart_livestock_processing(df_csl_feed):
     df_yield_slau_liv_pathwaycalc['module'] = 'agriculture'
     df_yield_slau_liv_pathwaycalc['lever'] = 'climate-smart-livestock'
     df_yield_slau_liv_pathwaycalc['level'] = 0
-    df_yield_slau_liv_pathwaycalc['string-pivot'] = 'none'
     cols = df_yield_slau_liv_pathwaycalc.columns.tolist()
     cols.insert(cols.index('value'), cols.pop(cols.index('module')))
     cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
     cols.insert(cols.index('value'), cols.pop(cols.index('level')))
-    cols.insert(cols.index('value'), cols.pop(cols.index('string-pivot')))
     df_yield_pathwaycalc = df_yield_slau_liv_pathwaycalc[cols]
 
     # Rename countries to Pathaywcalc name
@@ -1487,6 +1467,331 @@ def climate_smart_livestock_processing(df_csl_feed):
 
     return df_csl
 
+# CalculationLeaf CLIMATE SMART FORESTRY -------------------------------------------------------------------------------
+def climate_smart_forestry_processing():
+
+    # ----------------------------------------------------------------------------------------------------------------------
+    # INCREMENTAL GROWTH [m3/ha] -------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # Read csv
+    df_g_inc = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_forestry.xlsx',
+        sheet_name='annual_ginc_per_area_m3ha')
+
+    # Read and format forest area for later
+    df_area = pd.read_csv(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/fra-extentOfForest.csv')
+    df_area.columns = df_area.iloc[0]
+    df_area = df_area[1:]
+    # Rename column name 'geoscale'
+    df_area.rename(columns={df_area.columns[0]: 'geoscale'}, inplace=True)
+
+    # Format correctly
+    # Melting the dfs to have the relevant format (geoscale, year, value)
+    df_g_inc = pd.melt(df_g_inc, id_vars=['geoscale'], var_name='timescale', value_name='value')
+    df_area = pd.melt(df_area, id_vars=['geoscale'], var_name='timescale', value_name='forest area [ha]')
+    # Changing data type to numeric (except for the geoscale column)
+    df_g_inc.loc[:, df_g_inc.columns != 'geoscale'] = df_g_inc.loc[:, df_g_inc.columns != 'geoscale'].apply(
+        pd.to_numeric, errors='coerce')
+    # Merge the dfs (growing stock and area) to filter the relevant countries
+    df_g_inc_area = pd.merge(df_g_inc, df_area, on=['geoscale', 'timescale'])
+    # Only keep the columns geoscale, timescale and value
+    df_g_inc_area = df_g_inc_area[['geoscale', 'timescale', 'value']]
+    df_g_inc_area_pathwaycalc = df_g_inc_area.copy()
+
+    # DEPRECIATED Compute the incremental difference -----------------------------------------------------------------------------------
+    # Ensure the DataFrame is sorted by geoscale and timescale
+    # df_g_inc.sort_values(by=['geoscale', 'timescale'], inplace=True)
+
+    # Compute the incremental growing stock for each country : incremental growing stock [m3] = growing stock y(i) - growing stock y(i-1)
+    # df_g_inc['incremental growing stock [m3/ha]'] = df_g_inc.groupby('geoscale')['growing stock [m3/ha]'].diff()
+
+    # Calculate the number of years between each period
+    # df_g_inc['years_diff'] = df_g_inc.groupby('geoscale')['timescale'].diff()
+
+    # Calculate the annual increment by dividing the incremental growing stock by the number of years
+    # df_g_inc['annual increment [m3/ha/yr]'] = df_g_inc['incremental growing stock [m3/ha]'] / df_g_inc['years_diff']
+
+    # Drop the rows that are not countries (they both contain 2024)
+    # df_g_inc_area = df_g_inc_area[~df_g_inc_area['geoscale'].str.contains('2024', na=False)]
+
+    # Incremental growing stock [m3/ha] = Incremental growing stock [m3] / forest area [ha]
+    # df_g_inc_area['Incremental growing stock [m3/ha]'] = df_g_inc_area['incremental growing stock [m3]'] / df_g_inc_area['forest area [ha]']
+
+    # Incremental growing stock [m3/ha] = Incremental growing stock [m3] / forest area [ha]
+    # df_g_inc_area['value'] = df_g_inc_area['annual increment [m3/yr]'] / df_g_inc_area['forest area [ha]']
+
+    # PathwayCalc formatting -----------------------------------------------------------------------------------------------
+    # Adding the columns module, lever, level and string-pivot at the correct places
+    df_g_inc_area_pathwaycalc['module'] = 'land-use'
+    df_g_inc_area_pathwaycalc['lever'] = 'climate-smart-forestry'
+    df_g_inc_area_pathwaycalc['level'] = 0
+    df_g_inc_area_pathwaycalc['variables'] = 'agr_climate-smart-forestry_g-inc[m3/ha]'
+    cols = df_g_inc_area_pathwaycalc.columns.tolist()
+    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    cols.insert(cols.index('geoscale'), cols.pop(cols.index('variables')))
+    df_g_inc_area_pathwaycalc = df_g_inc_area_pathwaycalc[cols]
+
+    # Rename countries to Pathaywcalc name
+    df_g_inc_area_pathwaycalc['geoscale'] = df_g_inc_area_pathwaycalc['geoscale'].replace(
+        'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+    df_g_inc_area_pathwaycalc['geoscale'] = df_g_inc_area_pathwaycalc['geoscale'].replace(
+        'Netherlands (Kingdom of the)',
+        'Netherlands')
+    df_g_inc_area_pathwaycalc['geoscale'] = df_g_inc_area_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
+
+    # ----------------------------------------------------------------------------------------------------------------------
+    # CSF MANAGED ----------------------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # Is equal to 0 for all ots for all countries
+
+    # Use df_g_inc_area_pathwaycalc as a structural basis
+    csf_managed = df_g_inc_area_pathwaycalc.copy()
+
+    # Add rows to have 1990-2022
+    # Generate a DataFrame with all combinations of geoscale and timescale
+    geoscale_values = csf_managed['geoscale'].unique()
+    timescale_values = pd.Series(range(1990, 2023))
+
+    # Create a DataFrame for the cartesian product
+    cartesian_product = pd.MultiIndex.from_product([geoscale_values, timescale_values],
+                                                   names=['geoscale', 'timescale']).to_frame(index=False)
+
+    # Merge the original DataFrame with the cartesian product to include all combinations
+    csf_managed = pd.merge(cartesian_product, csf_managed, on=['geoscale', 'timescale'], how='left')
+
+    # Replace the variable with ots_agr_climate-smart-forestry_csf-man[m3/ha]
+    csf_managed['variables'] = 'ots_agr_climate-smart-forestry_csf-man[m3/ha]'
+
+    # Replace the value with 0
+    csf_managed['value'] = 0
+
+    # PathwayCalc formatting
+    csf_managed['module'] = 'land-use'
+    csf_managed['lever'] = 'climate-smart-forestry'
+    csf_managed['level'] = 0
+
+    # ----------------------------------------------------------------------------------------------------------------------
+    # FAWS SHARE & GSTOCK (FAWS & NON FAWS)  -------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # Read files (growing stock available fo wood supply and not)
+    gstock_total = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_forestry.xlsx',
+        sheet_name='gstock_total_Mm3')
+    gstock_faws = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_forestry.xlsx',
+        sheet_name='gstock_faws_Mm3')
+    area_faws = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_forestry.xlsx',
+        sheet_name='forest_area_faws_1000ha')
+
+    # Format correctly
+    # Melting the dfs to have the relevant format (geoscale, year, value)
+    gstock_faws = pd.melt(gstock_faws, id_vars=['geoscale'], var_name='timescale',
+                          value_name='growing stock faws [Mm3]')
+    area_faws = pd.melt(area_faws, id_vars=['geoscale'], var_name='timescale', value_name='area faws [1000ha]')
+    gstock_total = pd.melt(gstock_total, id_vars=['geoscale'], var_name='timescale',
+                           value_name='growing stock total [Mm3]')
+    # Convert 'year' to integer type (optional, for better numerical handling)
+    gstock_faws['timescale'] = gstock_faws['timescale'].astype(int)
+    area_faws['timescale'] = area_faws['timescale'].astype(int)
+    gstock_total['timescale'] = gstock_total['timescale'].astype(int)
+
+    # Merge together and  with forest area (df_area) (also filters the relevant countries)
+    gstock = pd.merge(gstock_faws, gstock_total, on=['geoscale', 'timescale'])
+    gstock = pd.merge(gstock, area_faws, on=['geoscale', 'timescale'])
+    gstock = pd.merge(gstock, df_area, on=['geoscale', 'timescale'])
+
+    # Changing data type to numeric (except for the geoscale column)
+    gstock.loc[:, gstock.columns != 'geoscale'] = gstock.loc[:, gstock.columns != 'geoscale'].apply(pd.to_numeric,
+                                                                                                    errors='coerce')
+
+    # Growing stock not faws [m3] = Growing stock total [m3] - Growing stock faws [m3]
+    gstock['growing stock non faws [Mm3]'] = gstock['growing stock total [Mm3]'] - gstock['growing stock faws [Mm3]']
+
+    # Forest area not for wood supply [ha] = total forest area [ha] - forest available for wood supply [ha]
+    gstock['area non faws [ha]'] = gstock['forest area [ha]'] - 1000 * gstock['area faws [1000ha]']
+
+    # Growing stock faws [m3/ha] = 10**6 * Growing stock faws [Mm3] / forest available for wood supply [ha]
+    gstock['Growing stock faws [m3/ha]'] = (10 ** 6 * gstock['growing stock faws [Mm3]']) / (
+                1000 * gstock['area faws [1000ha]'])
+
+    # Growing stock non faws [m3/ha] = 10**6 * Growing stock non faws [Mm3] / forest non faws [ha]
+    gstock['Growing stock non faws [m3/ha]'] = (10 ** 6 * gstock['growing stock non faws [Mm3]']) / gstock[
+        'area non faws [ha]']
+
+    # Share faws [%] = total forest area [ha] - forest available for wood supply [ha]
+    gstock['Share faws [%]'] = 1000 * gstock['area faws [1000ha]'] / gstock['forest area [ha]']
+
+    # PathwayCalc formatting -----------------------------------------------------------------------------------------------
+    # Melt the DataFrame
+    gstock_pathwaycalc = pd.melt(gstock, id_vars=['geoscale', 'timescale'],
+                                 value_vars=['Growing stock faws [m3/ha]', 'Growing stock non faws [m3/ha]',
+                                             'Share faws [%]'],
+                                 var_name='Item', value_name='value')
+
+    # Read excel file
+    df_dict_forestry = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        sheet_name='climate-smart-forestry')
+
+    # Merge based on 'Item'
+    gstock_pathwaycalc = pd.merge(df_dict_forestry, gstock_pathwaycalc, on='Item')
+
+    # Drop the 'Item' column
+    gstock_pathwaycalc = gstock_pathwaycalc.drop(columns=['Item'])
+
+    # Adding the columns module, lever, level and string-pivot at the correct places
+    gstock_pathwaycalc['module'] = 'land-use'
+    gstock_pathwaycalc['lever'] = 'climate-smart-forestry'
+    gstock_pathwaycalc['level'] = 0
+    cols = gstock_pathwaycalc.columns.tolist()
+    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    gstock_pathwaycalc = gstock_pathwaycalc[cols]
+
+    # Rename countries to Pathaywcalc name
+    gstock_pathwaycalc['geoscale'] = gstock_pathwaycalc['geoscale'].replace(
+        'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+    gstock_pathwaycalc['geoscale'] = gstock_pathwaycalc['geoscale'].replace('Netherlands (Kingdom of the)',
+                                                                            'Netherlands')
+    gstock_pathwaycalc['geoscale'] = gstock_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
+
+    # ----------------------------------------------------------------------------------------------------------------------
+    # HARVESTING RATE -------------------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+    # Read files (growing stock available fo wood supply and not)
+    h_rate = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_forestry.xlsx',
+        sheet_name='h-rate')
+
+    # Format correctly
+    # Melting the dfs to have the relevant format (geoscale, year, value)
+    h_rate = pd.melt(h_rate, id_vars=['geoscale'], var_name='timescale', value_name='value')
+    # Convert 'year' to integer type (optional, for better numerical handling)
+    h_rate['timescale'] = h_rate['timescale'].astype(int)
+
+    # Merge with forest area (df_area) (to filter the relevant countries) then filter out
+    h_rate = pd.merge(h_rate, df_area, on=['geoscale', 'timescale'])
+    h_rate = h_rate[['geoscale', 'timescale', 'value']]
+
+    # Create copy
+    h_rate_pathwaycalc = h_rate.copy()
+
+    # PathwayCalc formatting -----------------------------------------------------------------------------------------------
+    # Adding the columns module, lever, level and string-pivot at the correct places
+    h_rate_pathwaycalc['module'] = 'land-use'
+    h_rate_pathwaycalc['lever'] = 'climate-smart-forestry'
+    h_rate_pathwaycalc['level'] = 0
+    h_rate_pathwaycalc['variables'] = 'agr_climate-smart-forestry_h-rate[%]'
+    cols = h_rate_pathwaycalc.columns.tolist()
+    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    cols.insert(cols.index('geoscale'), cols.pop(cols.index('variables')))
+    h_rate_pathwaycalc = h_rate_pathwaycalc[cols]
+
+    # Rename countries to Pathaywcalc name
+    h_rate_pathwaycalc['geoscale'] = h_rate_pathwaycalc['geoscale'].replace(
+        'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+    h_rate_pathwaycalc['geoscale'] = h_rate_pathwaycalc['geoscale'].replace('Netherlands (Kingdom of the)',
+                                                                            'Netherlands')
+    h_rate_pathwaycalc['geoscale'] = h_rate_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
+
+    # ----------------------------------------------------------------------------------------------------------------------
+    # NATURAL LOSSES -------------------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # Read file
+    nat_losses = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_forestry.xlsx',
+        sheet_name='nat-losses_1000ha')
+
+    # Format correctly
+    # Melt the DataFrame to long format
+    df_melted = pd.melt(nat_losses, id_vars=['geoscale'], var_name='variable', value_name='Losses [1000ha]')
+
+    # Extract 'item' and 'year' from the 'variable' column
+    df_melted['Item'] = df_melted['variable'].str.extract(r'^(.*?)\s\d{4}$')[0]
+    df_melted['timescale'] = df_melted['variable'].str.extract(r'(\d{4})$')[0]
+
+    # Drop the original 'variable' column
+    df_melted = df_melted.drop(columns=['variable'])
+
+    # Rearrange the columns
+    nat_losses = df_melted[['geoscale', 'timescale', 'Item', 'Losses [1000ha]']]
+
+    # Change type to numeric for timescale to merge
+    nat_losses['timescale'] = nat_losses['timescale'].apply(pd.to_numeric, errors='coerce')
+
+    # Adding forest area and total growing stock
+    nat_losses = pd.merge(nat_losses, df_area, on=['geoscale', 'timescale'])
+    nat_losses = pd.merge(nat_losses, gstock_total, on=['geoscale', 'timescale'])
+
+    # Change type to numeric
+    numeric_cols = nat_losses.columns[3:]  # Get all columns except the first three
+    nat_losses[numeric_cols] = nat_losses[numeric_cols].apply(pd.to_numeric,
+                                                              errors='coerce')  # Convert to numeric, if not already
+
+    # Ratio of losses area compared to total forest area
+    nat_losses['Ratio of losses'] = 1000 * nat_losses['Losses [1000ha]'] / nat_losses['forest area [ha]']
+
+    # Growing stock total [m3/ha] = Growing stock [Mm3] / forest area [ha]
+    nat_losses['Growing stock total [m3/ha]'] = 10 ** 6 * nat_losses['growing stock total [Mm3]'] / nat_losses[
+        'forest area [ha]']
+
+    # Losses [m3/ha] = Ratio of losses [%] * Growing stock total [m3/ha]
+    nat_losses['value'] = nat_losses['Ratio of losses'] * nat_losses['Growing stock total [m3/ha]']
+
+    # Filtering
+    nat_losses_pathwaycalc = nat_losses.copy()
+    nat_losses_pathwaycalc = nat_losses_pathwaycalc[['Item', 'geoscale', 'timescale', 'value']]
+
+    # PathwayCalc formatting -----------------------------------------------------------------------------------------------
+    # Read excel file
+    df_dict_forestry = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        sheet_name='climate-smart-forestry')
+
+    # Merge based on 'Item'
+    nat_losses_pathwaycalc = pd.merge(df_dict_forestry, nat_losses_pathwaycalc, on='Item')
+
+    # Drop the 'Item' column
+    nat_losses_pathwaycalc = nat_losses_pathwaycalc.drop(columns=['Item'])
+
+    # Adding the columns module, lever, level and string-pivot at the correct places
+    nat_losses_pathwaycalc['module'] = 'land-use'
+    nat_losses_pathwaycalc['lever'] = 'climate-smart-forestry'
+    nat_losses_pathwaycalc['level'] = 0
+    cols = nat_losses_pathwaycalc.columns.tolist()
+    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    nat_losses_pathwaycalc = nat_losses_pathwaycalc[cols]
+
+    # Rename countries to Pathaywcalc name
+    nat_losses_pathwaycalc['geoscale'] = nat_losses_pathwaycalc['geoscale'].replace(
+        'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+    nat_losses_pathwaycalc['geoscale'] = nat_losses_pathwaycalc['geoscale'].replace('Netherlands (Kingdom of the)',
+                                                                                    'Netherlands')
+    nat_losses_pathwaycalc['geoscale'] = nat_losses_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
+
+    # ----------------------------------------------------------------------------------------------------------------------
+    # FINAL RESULT ---------------------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # Concat all dfs together
+    df_csf = pd.concat([df_g_inc_area_pathwaycalc, csf_managed])
+    df_csf = pd.concat([df_csf, gstock_pathwaycalc])
+    df_csf = pd.concat([df_csf, h_rate_pathwaycalc])
+    df_csf = pd.concat([df_csf, nat_losses_pathwaycalc])
+    return df_csf
 
 #years_setting = [1990, 2022, 2050, 5]  # Set the timestep for historical years & scenarios
 #years_ots = create_ots_years_list(years_setting)
@@ -1496,321 +1801,10 @@ def climate_smart_livestock_processing(df_csl_feed):
 #df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing()
 #df_climate_smart_crop = climate_smart_crop_processing()
 #df_climate_smart_livestock = climate_smart_livestock_processing(df_csl_feed)
+#df_csf = climate_smart_forestry_processing()
 
 #df_climate_smart_livestock.to_csv('climate-smart-livestock_29-07-24.csv', index=False)
 
-# CalculationLeaf CLIMATE SMART FORESTRY -------------------------------------------------------------------------------
-
-# ----------------------------------------------------------------------------------------------------------------------
-# INCREMENTAL GROWTH [m3/ha] -------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------------
-
-# Read csv
-df_g_inc = pd.read_csv('/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/fra-growingStock.csv')
-df_area = pd.read_csv('/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/fra-extentOfForest.csv')
-
-# Change the format ----------------------------------------------------------------------------------------------------
-# Set 1st line as the index
-df_g_inc.columns = df_g_inc.iloc[0]
-df_g_inc = df_g_inc[1:]
-df_area.columns = df_area.iloc[0]
-df_area = df_area[1:]
-
-# Rename column name 'geoscale'
-df_g_inc.rename(columns={df_g_inc.columns[0]: 'geoscale'}, inplace=True)
-df_area.rename(columns={df_area.columns[0]: 'geoscale'}, inplace=True)
-
-# df_g_inc : Unit change [million m3] => [m3]
-# Ensure only numerical columns (except the first) are multiplied
-numeric_cols = df_g_inc.columns[1:]  # Get all columns except the first
-df_g_inc[numeric_cols] = df_g_inc[numeric_cols].apply(pd.to_numeric, errors='coerce')  # Convert to numeric, if not already
-
-# Multiply all columns except the first one by 10^6
-df_g_inc[numeric_cols] = df_g_inc[numeric_cols] * 10**6
-
-# Melting the dfs to have the relevant format (geoscale, year, value)
-df_g_inc = pd.melt(df_g_inc, id_vars=['geoscale'], var_name='timescale', value_name='growing stock [m3]')
-df_area = pd.melt(df_area, id_vars=['geoscale'], var_name='timescale', value_name='forest area [ha]')
-# Convert 'year' to integer type (optional, for better numerical handling)
-df_g_inc['timescale'] = df_g_inc['timescale'].astype(int)
-df_area['timescale'] = df_area['timescale'].astype(int)
-
-# Compute the incremental difference -----------------------------------------------------------------------------------
-# Ensure the DataFrame is sorted by geoscale and timescale
-df_g_inc.sort_values(by=['geoscale', 'timescale'], inplace=True)
-
-# Compute the incremental growing stock for each country
-df_g_inc['incremental growing stock [m3]'] = df_g_inc.groupby('geoscale')['growing stock [m3]'].diff()
-
-# Merge the dfs (growing stock and area)
-df_g_inc_area = pd.merge(df_g_inc, df_area, on=['geoscale', 'timescale'])
-
-# Drop the rows that are not countries (they both contain 2024)
-df_g_inc_area = df_g_inc_area[~df_g_inc_area['geoscale'].str.contains('2024', na=False)]
-
-# Incremental growing stock [m3/ha] = Incremental growing stock [m3] / forest area [ha]
-df_g_inc_area['value'] = df_g_inc_area['incremental growing stock [m3]'] / df_g_inc_area['forest area [ha]']
-
-# Only keep the columns geoscale, timescale and value
-df_g_inc_area = df_g_inc_area[['geoscale', 'timescale', 'value']]
-df_g_inc_area_pathwaycalc = df_g_inc_area.copy()
-
-# PathwayCalc formatting -----------------------------------------------------------------------------------------------
-# Adding the columns module, lever, level and string-pivot at the correct places
-df_g_inc_area_pathwaycalc['module'] = 'land-use'
-df_g_inc_area_pathwaycalc['lever'] = 'climate-smart-forestry'
-df_g_inc_area_pathwaycalc['level'] = 0
-df_g_inc_area_pathwaycalc['string-pivot'] = 'none'
-df_g_inc_area_pathwaycalc['variables'] = 'ots_agr_climate-smart-forestry_g-inc[m3/ha]'
-cols = df_g_inc_area_pathwaycalc.columns.tolist()
-cols.insert(cols.index('value'), cols.pop(cols.index('module')))
-cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
-cols.insert(cols.index('value'), cols.pop(cols.index('level')))
-cols.insert(cols.index('value'), cols.pop(cols.index('string-pivot')))
-cols.insert(cols.index('geoscale'), cols.pop(cols.index('variables')))
-df_g_inc_area_pathwaycalc = df_g_inc_area_pathwaycalc[cols]
-
-# Rename countries to Pathaywcalc name
-df_g_inc_area_pathwaycalc['geoscale'] = df_g_inc_area_pathwaycalc['geoscale'].replace(
-    'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
-df_g_inc_area_pathwaycalc['geoscale'] = df_g_inc_area_pathwaycalc['geoscale'].replace(
-    'Netherlands (Kingdom of the)',
-    'Netherlands')
-df_g_inc_area_pathwaycalc['geoscale'] = df_g_inc_area_pathwaycalc['geoscale'].replace('Czechia','Czech Republic')
-
-# ----------------------------------------------------------------------------------------------------------------------
-# CSF MANAGED ----------------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------------
-
-# Is equal to 0 for all ots for all countries
-
-# Use df_g_inc_area_pathwaycalc as a structural basis
-csf_managed = df_g_inc_area_pathwaycalc.copy()
-
-# Add rows to have 1990-2022
-# Generate a DataFrame with all combinations of geoscale and timescale
-geoscale_values = csf_managed['geoscale'].unique()
-timescale_values = pd.Series(range(1990, 2023))
-
-# Create a DataFrame for the cartesian product
-cartesian_product = pd.MultiIndex.from_product([geoscale_values, timescale_values], names=['geoscale', 'timescale']).to_frame(index=False)
-
-# Merge the original DataFrame with the cartesian product to include all combinations
-csf_managed = pd.merge(cartesian_product, csf_managed, on=['geoscale', 'timescale'], how='left')
-
-# Replace the variable with ots_agr_climate-smart-forestry_csf-man[m3/ha]
-csf_managed['variables'] = 'ots_agr_climate-smart-forestry_csf-man[m3/ha]'
-
-# Replace the value with 0
-csf_managed['value'] = 0
-
-# PathwayCalc formatting
-csf_managed['module'] = 'land-use'
-csf_managed['lever'] = 'climate-smart-forestry'
-csf_managed['level'] = 0
-csf_managed['string-pivot'] = 'none'
-
-# ----------------------------------------------------------------------------------------------------------------------
-# FAWS SHARE & GSTOCK (FAWS & NON FAWS)  -------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------------
-
-# Read files (growing stock available fo wood supply and not)
-gstock_total = pd.read_excel('/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_forestry.xlsx', sheet_name='gstock_total_Mm3')
-gstock_faws = pd.read_excel('/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_forestry.xlsx', sheet_name='gstock_faws_Mm3')
-area_faws = pd.read_excel('/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_forestry.xlsx', sheet_name='forest_area_faws_1000ha')
-
-# Format correctly
-# Melting the dfs to have the relevant format (geoscale, year, value)
-gstock_faws = pd.melt(gstock_faws, id_vars=['geoscale'], var_name='timescale', value_name='growing stock faws [Mm3]')
-area_faws = pd.melt(area_faws, id_vars=['geoscale'], var_name='timescale', value_name='area faws [1000ha]')
-gstock_total = pd.melt(gstock_total, id_vars=['geoscale'], var_name='timescale', value_name='growing stock total [Mm3]')
-# Convert 'year' to integer type (optional, for better numerical handling)
-gstock_faws['timescale'] = gstock_faws['timescale'].astype(int)
-area_faws['timescale'] = area_faws['timescale'].astype(int)
-gstock_total['timescale'] = gstock_total['timescale'].astype(int)
-
-# Merge together and  with forest area (df_area) (also filters the relevant countries)
-gstock = pd.merge(gstock_faws, gstock_total, on=['geoscale', 'timescale'])
-gstock = pd.merge(gstock, area_faws, on=['geoscale', 'timescale'])
-gstock = pd.merge(gstock, df_area, on=['geoscale', 'timescale'])
-
-
-
-# Changing data type to numeric (except for the geoscale column)
-gstock.loc[:, gstock.columns != 'geoscale'] = gstock.loc[:, gstock.columns != 'geoscale'].apply(pd.to_numeric, errors='coerce')
-
-# Growing stock not faws [m3] = Growing stock total [m3] - Growing stock faws [m3]
-gstock['growing stock non faws [Mm3]'] = gstock['growing stock total [Mm3]'] - gstock['growing stock faws [Mm3]']
-
-# Forest area not for wood supply [ha] = total forest area [ha] - forest available for wood supply [ha]
-gstock['area non faws [ha]'] = gstock['forest area [ha]'] - 1000 * gstock['area faws [1000ha]']
-
-# Growing stock faws [m3/ha] = 10**6 * Growing stock faws [Mm3] / forest available for wood supply [ha]
-gstock['Growing stock faws [m3/ha]'] = (10**6 * gstock['growing stock faws [Mm3]']) / (1000 * gstock['area faws [1000ha]'])
-
-# Growing stock non faws [m3/ha] = 10**6 * Growing stock non faws [Mm3] / forest non faws [ha]
-gstock['Growing stock non faws [m3/ha]'] = (10**6 * gstock['growing stock non faws [Mm3]']) / gstock['area non faws [ha]']
-
-# Share faws [%] = total forest area [ha] - forest available for wood supply [ha]
-gstock['Share faws [%]'] = 1000 * gstock['area faws [1000ha]'] / gstock['forest area [ha]']
-
-
-
-# PathwayCalc formatting -----------------------------------------------------------------------------------------------
-# Melt the DataFrame
-gstock_pathwaycalc = pd.melt(gstock, id_vars=['geoscale', 'timescale'],
-                    value_vars=['Growing stock faws [m3/ha]', 'Growing stock non faws [m3/ha]', 'Share faws [%]'],
-                    var_name='Item', value_name='value')
-
-# Read excel file
-df_dict_forestry = pd.read_excel(
-    '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
-    sheet_name='climate-smart-forestry')
-
-# Merge based on 'Item'
-gstock_pathwaycalc = pd.merge(df_dict_forestry, gstock_pathwaycalc, on='Item')
-
-# Drop the 'Item' column
-gstock_pathwaycalc = gstock_pathwaycalc.drop(columns=['Item'])
-
-# Adding the columns module, lever, level and string-pivot at the correct places
-gstock_pathwaycalc['module'] = 'land-use'
-gstock_pathwaycalc['lever'] = 'climate-smart-forestry'
-gstock_pathwaycalc['level'] = 0
-gstock_pathwaycalc['string-pivot'] = 'none'
-cols = gstock_pathwaycalc.columns.tolist()
-cols.insert(cols.index('value'), cols.pop(cols.index('module')))
-cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
-cols.insert(cols.index('value'), cols.pop(cols.index('level')))
-cols.insert(cols.index('value'), cols.pop(cols.index('string-pivot')))
-gstock_pathwaycalc = gstock_pathwaycalc[cols]
-
-# Rename countries to Pathaywcalc name
-gstock_pathwaycalc['geoscale'] = gstock_pathwaycalc['geoscale'].replace(
-    'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
-gstock_pathwaycalc['geoscale'] = gstock_pathwaycalc['geoscale'].replace('Netherlands (Kingdom of the)',
-                                                                              'Netherlands')
-gstock_pathwaycalc['geoscale'] = gstock_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-# DEFFORESTATION -------------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------------
-
-# ----------------------------------------------------------------------------------------------------------------------
-# HARVESTING RATE -------------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------------
-# Read files (growing stock available fo wood supply and not)
-h_rate = pd.read_excel('/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_forestry.xlsx', sheet_name='h-rate')
-
-# Format correctly
-# Melting the dfs to have the relevant format (geoscale, year, value)
-h_rate = pd.melt(h_rate, id_vars=['geoscale'], var_name='timescale', value_name='value')
-# Convert 'year' to integer type (optional, for better numerical handling)
-h_rate['timescale'] = h_rate['timescale'].astype(int)
-
-# Merge with forest area (df_area) (to filter the relevant countries) then filter out
-h_rate = pd.merge(h_rate, df_area, on=['geoscale', 'timescale'])
-h_rate = h_rate[['geoscale', 'timescale', 'value']]
-
-# Create copy
-h_rate_pathwaycalc = h_rate.copy()
-
-# PathwayCalc formatting -----------------------------------------------------------------------------------------------
-# Adding the columns module, lever, level and string-pivot at the correct places
-h_rate_pathwaycalc['module'] = 'land-use'
-h_rate_pathwaycalc['lever'] = 'climate-smart-forestry'
-h_rate_pathwaycalc['level'] = 0
-h_rate_pathwaycalc['variables'] = 'agr_climate-smart-forestry_h-rate[%]'
-cols = h_rate_pathwaycalc.columns.tolist()
-cols.insert(cols.index('value'), cols.pop(cols.index('module')))
-cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
-cols.insert(cols.index('value'), cols.pop(cols.index('level')))
-cols.insert(cols.index('geoscale'), cols.pop(cols.index('variables')))
-h_rate_pathwaycalc = h_rate_pathwaycalc[cols]
-
-# Rename countries to Pathaywcalc name
-h_rate_pathwaycalc['geoscale'] = h_rate_pathwaycalc['geoscale'].replace(
-    'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
-h_rate_pathwaycalc['geoscale'] = h_rate_pathwaycalc['geoscale'].replace('Netherlands (Kingdom of the)',
-                                                                              'Netherlands')
-h_rate_pathwaycalc['geoscale'] = h_rate_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-# NATURAL LOSSES -------------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------------
-
-# Read file
-nat_losses = pd.read_excel('/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_forestry.xlsx',
-                           sheet_name='nat-losses_1000ha')
-
-# Format correctly
-# Melt the DataFrame to long format
-df_melted = pd.melt(nat_losses, id_vars=['geoscale'], var_name='variable', value_name='Losses [1000ha]')
-
-# Extract 'item' and 'year' from the 'variable' column
-df_melted['Item'] = df_melted['variable'].str.extract(r'^(.*?)\s\d{4}$')[0]
-df_melted['timescale'] = df_melted['variable'].str.extract(r'(\d{4})$')[0]
-
-# Drop the original 'variable' column
-df_melted = df_melted.drop(columns=['variable'])
-
-# Rearrange the columns
-nat_losses = df_melted[['geoscale', 'timescale', 'Item', 'Losses [1000ha]']]
-
-# Change type to numeric for timescale to merge
-nat_losses['timescale'] = nat_losses['timescale'].apply(pd.to_numeric, errors='coerce')
-
-# Adding forest area and total growing stock
-nat_losses = pd.merge(nat_losses, df_area, on=['geoscale', 'timescale'])
-nat_losses = pd.merge(nat_losses, gstock_total, on=['geoscale', 'timescale'])
-
-# Change type to numeric
-numeric_cols = nat_losses.columns[3:]  # Get all columns except the first three
-nat_losses[numeric_cols] = nat_losses[numeric_cols].apply(pd.to_numeric, errors='coerce')  # Convert to numeric, if not already
-
-# Ratio of losses area compared to total forest area
-nat_losses['Ratio of losses'] = 1000 * nat_losses['Losses [1000ha]'] / nat_losses['forest area [ha]']
-
-# Growing stock total [m3/ha] = Growing stock [Mm3] / forest area [ha]
-nat_losses['Growing stock total [m3/ha]'] = 10**6 * nat_losses['growing stock total [Mm3]'] / nat_losses['forest area [ha]']
-
-# Losses [m3/ha] = Ratio of losses [%] * Growing stock total [m3/ha]
-nat_losses['value'] = nat_losses['Ratio of losses'] * nat_losses['Growing stock total [m3/ha]']
-
-# Filtering
-nat_losses_pathwaycalc = nat_losses.copy()
-nat_losses_pathwaycalc = nat_losses_pathwaycalc[['Item', 'geoscale', 'timescale', 'value']]
-
-# PathwayCalc formatting -----------------------------------------------------------------------------------------------
-# Read excel file
-df_dict_forestry = pd.read_excel(
-    '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
-    sheet_name='climate-smart-forestry')
-
-# Merge based on 'Item'
-nat_losses_pathwaycalc = pd.merge(df_dict_forestry, nat_losses_pathwaycalc, on='Item')
-
-# Drop the 'Item' column
-nat_losses_pathwaycalc = nat_losses_pathwaycalc.drop(columns=['Item'])
-
-# Adding the columns module, lever, level and string-pivot at the correct places
-nat_losses_pathwaycalc['module'] = 'land-use'
-nat_losses_pathwaycalc['lever'] = 'climate-smart-forestry'
-nat_losses_pathwaycalc['level'] = 0
-cols = nat_losses_pathwaycalc.columns.tolist()
-cols.insert(cols.index('value'), cols.pop(cols.index('module')))
-cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
-cols.insert(cols.index('value'), cols.pop(cols.index('level')))
-nat_losses_pathwaycalc = nat_losses_pathwaycalc[cols]
-
-# Rename countries to Pathaywcalc name
-nat_losses_pathwaycalc['geoscale'] = nat_losses_pathwaycalc['geoscale'].replace(
-    'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
-nat_losses_pathwaycalc['geoscale'] = nat_losses_pathwaycalc['geoscale'].replace('Netherlands (Kingdom of the)',
-                                                                              'Netherlands')
-nat_losses_pathwaycalc['geoscale'] = nat_losses_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
 
 # CalculationLeaf LAND MANAGEMENT --------------------------------------------------------------------------------------
 
