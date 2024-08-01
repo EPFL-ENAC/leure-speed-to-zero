@@ -736,10 +736,49 @@ def climate_smart_crop_processing():
                                                                                 'Netherlands')
     df_yield_pathwaycalc['geoscale'] = df_yield_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
 
+    # ------------------------------------------------------------------------------------------------------------------
+    # YIELD ALGAE & INSECT ---------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+    # Is constant for all ots for all countries
+
+    # Use (agroforestry_crop) as a structural basis
+    yield_aps = agroforestry_crop[['timescale', 'geoscale']].copy()
+
+    # Add the variables with a value of 0
+    yield_aps['agr_climate-smart-crop_yield_algae[kcal/ha]'] = 119866666.666667
+    yield_aps['agr_climate-smart-crop_yield_insect[kcal/ha]'] = 675000000.0
+
+    # Melt the df
+    yield_aps_pathwaycalc = pd.melt(yield_aps, id_vars=['timescale', 'geoscale'],
+                                           value_vars=['agr_climate-smart-crop_yield_algae[kcal/ha]',
+                                                       'agr_climate-smart-crop_yield_insect[kcal/ha]'],
+                                           var_name='variables', value_name='value')
+
+    # PathwayCalc formatting --------------------------------------------------------------------------------------------
+    yield_aps_pathwaycalc['module'] = 'agriculture'
+    yield_aps_pathwaycalc['lever'] = 'climate-smart-crop'
+    yield_aps_pathwaycalc['level'] = 0
+    cols = yield_aps_pathwaycalc.columns.tolist()
+    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    cols.insert(cols.index('timescale'), cols.pop(cols.index('variables')))
+    yield_aps_pathwaycalc = yield_aps_pathwaycalc[cols]
+
+    # Rename countries to Pathaywcalc name
+    yield_aps_pathwaycalc['geoscale'] = yield_aps_pathwaycalc['geoscale'].replace(
+        'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+    yield_aps_pathwaycalc['geoscale'] = yield_aps_pathwaycalc['geoscale'].replace(
+        'Netherlands (Kingdom of the)',
+        'Netherlands')
+    yield_aps_pathwaycalc['geoscale'] = yield_aps_pathwaycalc['geoscale'].replace('Czechia',
+                                                                                                'Czech Republic')
+
     # FINAL RESULT ---------------------------------------------------------------------------------------------------------
     df_climate_smart_crop = pd.concat([df_input_pathwaycalc, df_losses_pathwaycalc])
     df_climate_smart_crop = pd.concat([df_climate_smart_crop, df_yield_pathwaycalc])
     df_climate_smart_crop = pd.concat([df_climate_smart_crop, agroforestry_crop_pathwaycalc])
+    df_climate_smart_crop = pd.concat([df_climate_smart_crop, yield_aps_pathwaycalc])
 
     return df_climate_smart_crop
 
@@ -1897,10 +1936,10 @@ def climate_smart_forestry_processing():
 
 # CalculationTree RUNNING PRE-PROCESSING -----------------------------------------------------------------------------------------------
 
-df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing()
+#df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing()
 df_climate_smart_crop = climate_smart_crop_processing()
-df_climate_smart_livestock = climate_smart_livestock_processing(df_csl_feed)
-df_csf = climate_smart_forestry_processing()
+#df_climate_smart_livestock = climate_smart_livestock_processing(df_csl_feed)
+#df_csf = climate_smart_forestry_processing()
 
 #df_climate_smart_livestock.to_csv('climate-smart-livestock_29-07-24.csv', index=False)
 
