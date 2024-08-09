@@ -1,39 +1,17 @@
 import numpy as np
 import pandas as pd
+from io import StringIO
 
-from model.common.auxiliary_functions import interpolate_nans, add_missing_ots_years
+import pylab as pl
+
+from model.common.auxiliary_functions import linear_fitting, linear_fitting_ots_db
+from model.common.io_database import dm_to_database, database_to_dm
 from _database.pre_processing.api_routines_CH import get_data_api_CH
-from scipy.stats import linregress
 from model.common.data_matrix_class import DataMatrix
 import math
 import requests
 import os
 from _database.pre_processing.WorldBank_data_extract import get_WB_data
-
-def linear_fitting(dm, years_ots):
-
-    # Define a function to apply linear regression and extrapolate
-    def extrapolate_to_year(arr, years, target_year):
-        slope, intercept, _, _, _ = linregress(years, arr)
-        extrapolated_value = intercept + slope * target_year
-
-        return extrapolated_value
-
-    start_year = int(years_ots[0])
-    base_year = int(years_ots[-1])
-    # Apply the function along the last axis (years axis)
-    array_reshaped = np.moveaxis(dm.array, 1, -1)
-    extrapolated_data = np.apply_along_axis(extrapolate_to_year, axis=-1, arr=array_reshaped, years=dm.col_labels['Years'],
-                                            target_year=start_year)
-    dm.add(extrapolated_data, dim='Years', col_label=[start_year])
-
-    # Add missing ots years as nan
-    dm = add_missing_ots_years(dm, startyear=start_year, baseyear=base_year)
-
-    # Fill nan
-    dm.fill_nans(dim_to_interp='Years')
-
-    return
 
 
 def create_ots_years_list(years_setting):
@@ -210,6 +188,7 @@ def extract_lfs_urban_share(years_ots, table_id):
     # Extract urban / rural pop
     dm_lfs_urban = get_data_api_CH(table_id, mode='extract', filter=filter, mapping_dims=mapping_dim,
                                    units=['inhabitants', 'inhabitants', 'inhabitants'], language='fr')
+
     dm_lfs_urban.rename_col('Valeur', 'Switzerland', dim='Country')
     dm_lfs_urban.groupby({'non-urban': ['Intermédiaire (périurbain dense et centres ruraux)', 'Rural'],
                           'urban': ['Urbain']}, dim='Variables', inplace=True, regex=False)
@@ -306,6 +285,7 @@ def extract_lfs_floor_space(years_ots, dm_lfs_tot_pop, table_id):
 
     return dm_floor_area
 
+
 ######################
 ### HOUSEHOLD-SIZE ###
 ######################
@@ -380,10 +360,10 @@ def extract_per_capita_gdp_ppp():
         file_url = 'https://dam-api.bfs.admin.ch/hub/api/dam/assets/27065040/master'
         # Define the local filename to save the downloaded file
         local_filename = 'data/GDP_Switzerland.xlsx'
-        # Send a GET request to the URL
-        response = requests.get(file_url, stream=True)
 
         if not os.path.exists(local_filename):
+            # Send a GET request to the URL
+            response = requests.get(file_url, stream=True)
             # Check if the request was successful
             if response.status_code == 200:
                 # Open the local file in write-binary mode and write the response content to it
@@ -417,14 +397,48 @@ years_setting = [1990, 2022, 2050, 5]  # Set the timestep for historical years &
 years_ots = create_ots_years_list(years_setting)
 
 # Get population total and by age group (ots)
-#dm_lfs_age, dm_lfs_tot_pop = extract_lfs_pop(years_ots, table_id='px-x-0102020000_104')
+# dm_lfs_age, dm_lfs_tot_pop = extract_lfs_pop(years_ots, table_id='px-x-0102020000_104')
 # Get urban share (ots)
 #dm_lfs_urban_pop = extract_lfs_urban_share(years_ots, table_id='px-x-2105000000_404')
 # Get floor area (ots)
 #dm_lfs_floor_area = extract_lfs_floor_space(years_ots, dm_lfs_tot_pop, table_id='px-x-0902020200_103')
 # Get lfs_household-size (ots)
-#dm_lfs_household_size = extract_lfs_household_size(years_ots, table_id='px-x-0102020000_402')
+# dm_lfs_household_size = extract_lfs_household_size(years_ots, table_id='px-x-0102020000_402')
+
+# Look at paper on cooling confort temperature and use that to determine
 
 
+#table_id = 'px-x-0204000000_106'
+#structure, title = get_data_api_CH(table_id, mode='example')
+
+dm_GDP = extract_per_capita_gdp_ppp()
+idx = dm_GDP.idx
+GDP_cntr = dm_GDP.array[idx['Italy'], ...]
+hs = 2
+CDD = np.tile(np.array(range(2500)).reshape(-1, 1).T, (GDP_cntr.shape[0], 1))
+
+GDP_cntr_2D = np.tile(GDP_cntr, (1, CDD.shape[1]))
+share = 0.815*(1-np.exp(-0.00225*CDD))/(1 + 126.8 * np.exp(-0.000069 * GDP_cntr_2D * hs))
+
+share_IT = 0.815*(1-np.exp(-0.00225*600))/(1 + 126.8 * np.exp(-0.000069 * GDP_cntr * hs))
+
+# pl.plot(GDP_cntr.flatten(), share_IT.flatten())
+
+GDP_test = np.array(range(90000)).reshape(-1, 1).T
+share_GDP = 0.815*(1-np.exp(-0.00225*200))/(1 + 126.8 * np.exp(-0.000069 * GDP_test * hs))
+# pl.plot(GDP_test.flatten(), share_GDP.flatten())
+share_fix = 0.815*(1-np.exp(-0.00225*200))/(1 + 126.8 * np.exp(-0.000069 * 90000 * hs))
+
+CDD_1D = np.array(range(1200))
+uptake = 0.95/(1 + np.exp(-(CDD_1D-700)/150))
+
+
+pl.plot(CDD_1D, uptake)
+
+pl.xlabel('CDD')
+pl.ylabel('Uptake')
+pl.title('Uptake by CDD')
+pl.grid(visible=True)
+pl.show()
 
 print('Hello')
