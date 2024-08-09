@@ -693,17 +693,17 @@ def energy_switch(dm_energy_demand, dm_energy_carrier_mix, carrier_in, carrier_o
     dm_energy_demand.sort(carriers_category)
 
 
-def linear_fitting(dm, years_ots):
-
+def linear_fitting(dm, years_ots, max_t0=None, max_tb=None, min_t0=None, min_tb=None):
+    # max/min_t0/tb are the max min value that the linear fitting can extrapolate to at t=t0 (1990) and t=tb (baseyear)
     # Define a function to apply linear regression and extrapolate
     def extrapolate_to_year(arr, years, target_year):
-        mask = ~np.isnan(arr) & ~np.isfinite(arr)
+        mask = ~np.isnan(arr) & np.isfinite(arr)
 
         filtered_arr = arr[mask]
         filtered_years = np.array(years)[mask]
 
         # If it's all nan
-        if filtered_arr.size < 5:
+        if filtered_arr.size < 3:
             extrapolated_value = np.nan*target_year
             return extrapolated_value
 
@@ -726,7 +726,17 @@ def linear_fitting(dm, years_ots):
 
         # If start_year is not in dm, set dm value at start_year to extrapolated value
         if year_target not in dm.col_labels['Years']:
-            dm.add(extrapolated_year, dim='Years', col_label=[start_year])
+            if year_target == start_year:
+                if min_t0 is not None:
+                    extrapolated_year = np.maximum(extrapolated_year, min_t0)
+                if max_t0 is not None:
+                    extrapolated_year = np.minimum(extrapolated_year, max_t0)
+            if year_target == base_year:
+                if min_tb is not None:
+                    extrapolated_year = np.maximum(extrapolated_year, min_tb)
+                if max_tb is not None:
+                    extrapolated_year = np.minimum(extrapolated_year, max_tb)
+            dm.add(extrapolated_year, dim='Years', col_label=[year_target])
             dm.sort('Years')
         else:
             idx = dm.idx
