@@ -1,17 +1,19 @@
 import numpy as np
 import pandas as pd
-from io import StringIO
+import pickle
 
-import pylab as pl
 
 from model.common.auxiliary_functions import linear_fitting, linear_fitting_ots_db
-from model.common.io_database import dm_to_database, database_to_dm
+from model.common.io_database import update_database_from_dm, csv_database_reformat
 from _database.pre_processing.api_routines_CH import get_data_api_CH
 from model.common.data_matrix_class import DataMatrix
+
 import math
 import requests
-import os
+
 from _database.pre_processing.WorldBank_data_extract import get_WB_data
+
+import os
 
 
 def create_ots_years_list(years_setting):
@@ -23,6 +25,12 @@ def create_ots_years_list(years_setting):
         np.linspace(start=startyear, stop=baseyear, num=(baseyear - startyear) + 1).astype(int).astype(str))
     return years_ots
 
+
+def create_fts_years_list():
+
+    years_fts = list(
+        np.linspace(start=2025, stop=2050, num=6).astype(int))
+    return years_fts
 
 ###############################
 ### POPULATION - deprecated ###
@@ -166,6 +174,110 @@ def extract_lfs_pop(years_ots, table_id):
     dm_lfs_pop_tot.group_all('Categories1')
     dm_lfs_pop_tot.rename_col('Population on 1 January', 'lfs_population_total', dim='Variables')
     return dm_lfs_pop_age, dm_lfs_pop_tot
+
+
+def extract_lfs_pop_fts(years_fts, table_id):
+
+    structure, title = get_data_api_CH(table_id, mode='example', language='fr')
+    # Extract buildings floor area
+    scenarios = ['Scénario de référence A-00-2020', "Scénario B-00-2020 'haut'",
+                 "Variante A-03-2020 'plus haute espérance de vie à la naissance'", "Scénario C-00-2020 'bas'"]
+    filter = {'Scénario-variante': scenarios,
+              'Nationalité (catégorie)': ['Nationalité - total'],
+              'Sexe': ['Homme', 'Femme'],
+              "Classe d'âge": structure["Classe d'âge"],
+              "Unité d'observation": ['Population au 1er janvier'],
+              "Année": structure["Année"]}
+    mapping_dim = {'Country': 'Nationalité (catégorie)', 'Years': "Année", 'Variables': 'Scénario-variante',
+                   'Categories1': 'Sexe', 'Categories2': "Classe d'âge"}
+    unit_all = ['inhabitants'] * len(filter['Scénario-variante'])
+    # Get api data
+    dm_pop_fts = get_data_api_CH(table_id, mode='extract', filter=filter, mapping_dims=mapping_dim, units=unit_all,
+                                 language='fr')
+
+    # Rename
+    dm_pop_fts.rename_col('Nationalité - total', 'Switzerland', dim='Country')
+
+    # Filter only fts years
+    dm_pop_fts.filter({'Years': years_fts}, inplace=True)
+    dm_pop_fts.sort(dim='Years')
+
+    dm_pop_fts_tot = dm_pop_fts.filter({'Categories2': ["Classe d'âge - total"]})
+    dm_pop_fts_tot.group_all(dim='Categories2')
+    dm_pop_fts_tot.group_all(dim='Categories1')
+
+    dm_pop_fts.drop(dim='Categories2', col_label="Classe d'âge - total")
+    dm_pop_fts.rename_col_regex(' ans', '', dim='Categories2')
+
+    # Group ages by category
+    group_dict = {
+        'below19': [],
+        'age20-29': [],
+        'age30-54': [],
+        'age55-64': [],
+        'above65': [],
+    }
+    min_age = [col.split('-')[0] for col in dm_pop_fts.col_labels['Categories2']]
+    dm_pop_fts.rename_col(col_in=dm_pop_fts.col_labels['Categories2'].copy(), col_out=min_age, dim='Categories2')
+
+    for age in dm_pop_fts.col_labels['Categories2']:
+        if int(age) <= 19:
+            group_dict['below19'].append(age)
+        elif (int(age) >= 20) and (int(age) <= 29):
+            group_dict['age20-29'].append(age)
+        elif (int(age) >= 30) and (int(age) <= 54):
+            group_dict['age30-54'].append(age)
+        elif (int(age) >= 55) and (int(age) <= 64):
+            group_dict['age55-64'].append(age)
+        elif int(age) >= 65:
+            group_dict['above65'].append(age)
+
+    dm_pop_fts.groupby(group_dict, 'Categories2', inplace=True, regex=False)
+    # Rename sex
+    dm_pop_fts.rename_col('Homme', 'male', dim='Categories1')
+    dm_pop_fts.rename_col('Femme', 'female', dim='Categories1')
+    dm_pop_fts = dm_pop_fts.flatten(sep='-')
+
+    # Assign levers
+    level_dict = {1: "Scénario de référence A-00-2020",
+                  2: "Scénario B-00-2020 'haut'",
+                  3: "Variante A-03-2020 'plus haute espérance de vie à la naissance'",
+                  4: "Scénario C-00-2020 'bas'"}
+    dict_dm_pop_fts = dict()
+    dict_dm_pop_fts_tot = dict()
+    for k, v in level_dict.items():
+        dict_dm_pop_fts[k] = dm_pop_fts.filter({'Variables': [v]})
+        dict_dm_pop_fts[k].rename_col(v, 'lfs_demography', dim='Variables')
+
+        dict_dm_pop_fts_tot[k] = dm_pop_fts_tot.filter({'Variables': [v]})
+        dict_dm_pop_fts_tot[k].rename_col(v, 'lfs_population_total', dim='Variables')
+
+    return dict_dm_pop_fts, dict_dm_pop_fts_tot
+
+
+def add_vaud_fts_pop(dm_lfs_age, dm_lfs_tot_pop, dict_lfs_age_fts, dict_lfs_tot_pop_fts):
+    idx = dm_lfs_tot_pop.idx
+    # vaud share for last ots year available
+    vaud_share = dm_lfs_tot_pop.array[idx['Vaud'], -1, ...] / dm_lfs_tot_pop.array[idx['Switzerland'], -1, ...]
+    # Check that ots and fts are harmonised
+    for l, dm_fts in dict_lfs_tot_pop_fts.items():
+        vaud_arr = vaud_share[np.newaxis, np.newaxis, ...] * dm_fts.array
+        dm_fts.add(vaud_arr, dim='Country', col_label='Vaud')
+        # Remove comment to check smoothness
+        # dm_fts.append(dm_lfs_tot_pop, dim='Years')
+        # dm_fts.sort(dim='Years')
+        # dm_fts.datamatrix_plot(title=l)
+
+    idx = dm_lfs_tot_pop.idx
+    vaud_share = dm_lfs_age.array[idx['Vaud'], -1, ...] / dm_lfs_age.array[idx['Switzerland'], -1, ...]
+    for l, dm_fts in dict_lfs_age_fts.items():
+        vaud_arr = vaud_share[np.newaxis, np.newaxis, ...] * dm_fts.array
+        dm_fts.add(vaud_arr, dim='Country', col_label='Vaud')
+        # Remove comment to check smoothness
+        # dm_fts.append(dm_lfs_age, dim='Years')
+        # dm_fts.sort(dim='Years')
+        # dm_fts.datamatrix_plot(title=l)
+        return
 
 
 ########################
@@ -395,9 +507,24 @@ def extract_per_capita_gdp_ppp():
 
 years_setting = [1990, 2022, 2050, 5]  # Set the timestep for historical years & scenarios
 years_ots = create_ots_years_list(years_setting)
+years_fts = create_fts_years_list()
+update_pop = False
+if update_pop:
+    # Get population total and by age group (ots)
+    dm_lfs_age, dm_lfs_tot_pop = extract_lfs_pop(years_ots, table_id='px-x-0102020000_104')
+    # Get raw fts pop data (fts)
+    dict_lfs_age_fts, dict_lfs_tot_pop_fts = extract_lfs_pop_fts(years_fts, table_id='px-x-0104000000_101')
+    # Add Vaud
+    add_vaud_fts_pop(dm_lfs_age, dm_lfs_tot_pop, dict_lfs_age_fts, dict_lfs_tot_pop_fts)
+    # Update lifestyles_population.csv data
+    file = 'lifestyles_population.csv'
+    update_database_from_dm(dm_lfs_tot_pop, filename=file, lever='pop', level=0, module='lifestyles')
+    update_database_from_dm(dm_lfs_age, filename=file, lever='pop', level=0, module='lifestyles')
+    for lev, dm_fts in dict_lfs_age_fts.items():
+        update_database_from_dm(dm_fts, filename=file, lever='pop', level=lev, module='lifestyles')
+    for lev, dm_fts in dict_lfs_tot_pop_fts.items():
+        update_database_from_dm(dm_fts, filename=file, lever='pop', level=lev, module='lifestyles')
 
-# Get population total and by age group (ots)
-# dm_lfs_age, dm_lfs_tot_pop = extract_lfs_pop(years_ots, table_id='px-x-0102020000_104')
 # Get urban share (ots)
 #dm_lfs_urban_pop = extract_lfs_urban_share(years_ots, table_id='px-x-2105000000_404')
 # Get floor area (ots)
@@ -405,40 +532,9 @@ years_ots = create_ots_years_list(years_setting)
 # Get lfs_household-size (ots)
 # dm_lfs_household_size = extract_lfs_household_size(years_ots, table_id='px-x-0102020000_402')
 
-# Look at paper on cooling confort temperature and use that to determine
 
 
 #table_id = 'px-x-0204000000_106'
 #structure, title = get_data_api_CH(table_id, mode='example')
-
-dm_GDP = extract_per_capita_gdp_ppp()
-idx = dm_GDP.idx
-GDP_cntr = dm_GDP.array[idx['Italy'], ...]
-hs = 2
-CDD = np.tile(np.array(range(2500)).reshape(-1, 1).T, (GDP_cntr.shape[0], 1))
-
-GDP_cntr_2D = np.tile(GDP_cntr, (1, CDD.shape[1]))
-share = 0.815*(1-np.exp(-0.00225*CDD))/(1 + 126.8 * np.exp(-0.000069 * GDP_cntr_2D * hs))
-
-share_IT = 0.815*(1-np.exp(-0.00225*600))/(1 + 126.8 * np.exp(-0.000069 * GDP_cntr * hs))
-
-# pl.plot(GDP_cntr.flatten(), share_IT.flatten())
-
-GDP_test = np.array(range(90000)).reshape(-1, 1).T
-share_GDP = 0.815*(1-np.exp(-0.00225*200))/(1 + 126.8 * np.exp(-0.000069 * GDP_test * hs))
-# pl.plot(GDP_test.flatten(), share_GDP.flatten())
-share_fix = 0.815*(1-np.exp(-0.00225*200))/(1 + 126.8 * np.exp(-0.000069 * 90000 * hs))
-
-CDD_1D = np.array(range(1200))
-uptake = 0.95/(1 + np.exp(-(CDD_1D-700)/150))
-
-
-pl.plot(CDD_1D, uptake)
-
-pl.xlabel('CDD')
-pl.ylabel('Uptake')
-pl.title('Uptake by CDD')
-pl.grid(visible=True)
-pl.show()
 
 print('Hello')
