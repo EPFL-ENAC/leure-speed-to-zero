@@ -5,6 +5,10 @@ import pandas as pd
 from model.common.data_matrix_class import DataMatrix
 from model.common.auxiliary_functions import linear_fitting
 
+EU27_cntr_list = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czech Republic', 'Denmark', 'Estonia', 'Finland',
+                  'France', 'Germany', 'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia', 'Lithuania', 'Luxembourg',
+                  'Malta', 'Netherlands', 'Poland', 'Portugal', 'Romania', 'Slovakia', 'Slovenia', 'Spain', 'Sweden']
+
 def create_ots_years_list(years_setting):
     startyear: int = years_setting[0]  # Start year is argument [0], i.e., 1990
     baseyear: int = years_setting[1]  # Base/Reference year is argument [1], i.e., 2015
@@ -15,7 +19,7 @@ def create_ots_years_list(years_setting):
     return years_ots
 
 
-def get_pop_eurostat(code_pop, years_ots):
+def get_pop_eurostat(code_pop, EU27_cntr_list):
 
     df_pop = eurostat.get_data_df(code_pop)
 
@@ -49,11 +53,23 @@ def get_pop_eurostat(code_pop, years_ots):
     # Create datamatrix
     dm = DataMatrix.create_from_df(df_pivoted, num_cat=2)
 
+    # Set Germany to 1990 to np.nan
+    idx = dm.idx
+    dm.array[idx['Germany'], idx[1990], :, :] = np.nan
+    # Drop Switzerland and EU27
+    dm.drop(dim='Country', col_label=['Switzerland', 'EU27'])
+
     dm_pop_tot = dm.filter({'Categories1': ['TOTAL'], 'Categories2': ['T']}, inplace=False)
     dm_pop_tot = dm_pop_tot.flatten()
     dm_pop_tot.rename_col('TOTAL_T', 'population_total', dim='Categories1')
     dm_pop_tot = dm_pop_tot.flatten()
-    dm_pop_tot.change_unit('lfs_population_total',1,old_unit='')
+    dm_pop_tot.change_unit('lfs_population_total', 1, old_unit='nb', new_unit='inhabitants')
+    cntr_to_interp = ['France', 'Germany']
+    for c in cntr_to_interp:
+        dm_cntr_tot = dm_pop_tot.filter({'Country': [c]})
+        dm_cntr_tot.fill_nans(dim_to_interp='Years')
+        dm_pop_tot.drop(col_label=c, dim='Country')
+        dm_pop_tot.append(dm_cntr_tot, dim='Country')
 
     dm_pop_age = dm.copy()
     dm_pop_age.drop(dim='Categories1', col_label='TOTAL')
@@ -67,6 +83,14 @@ def get_pop_eurostat(code_pop, years_ots):
         'above65': ['OPEN'],
     }
     dm_pop_age.drop(dim='Categories1', col_label='UNK')
+
+    cntr_to_interp = ['France', 'Germany', 'Croatia']
+    for c in cntr_to_interp:
+        dm_cntr_age = dm_pop_age.filter({'Country': [c]})
+        dm_cntr_age.fill_nans(dim_to_interp='Years')
+        dm_pop_age.drop(col_label=c, dim='Country')
+        dm_pop_age.append(dm_cntr_age, dim='Country')
+
     for age in dm_pop_age.col_labels['Categories1']:
         try:
             int_age = int(age)
@@ -89,28 +113,35 @@ def get_pop_eurostat(code_pop, years_ots):
     dm_pop_age.switch_categories_order('Categories1', 'Categories2')
     dm_pop_age = dm_pop_age.flatten()
 
-    # Find France 1990 data
-    dm_france_age = dm_pop_age.filter({'Country': ['France']})
-    linear_fitting(dm_france_age, years_ots)
-    dm_pop_age.drop(col_label='France', dim='Country')
-    dm_pop_age.append(dm_france_age, dim='Country')
+    dm_EU27_tot = dm_pop_tot.groupby({'EU27': EU27_cntr_list}, dim='Country')
+    dm_pop_tot.append(dm_EU27_tot, dim='Country')
 
-    dm_france_tot = dm_pop_tot.filter({'Country': ['France']})
-    linear_fitting(dm_france_tot, years_ots)
-    dm_pop_tot.drop(col_label='France', dim='Country')
-    dm_pop_tot.append(dm_france_tot, dim='Country')
+    dm_EU27_age = dm_pop_age.groupby({'EU27': EU27_cntr_list}, dim='Country')
+    dm_pop_age.append(dm_EU27_age, dim='Country')
+
+    # Make sure sum over ages matches with total age
+    dm_pop_age.sort(dim='Country')
+    dm_pop_tot.sort(dim='Country')
+    dm_pop_age.array = dm_pop_age.array/np.sum(dm_pop_age.array, axis=-1, keepdims=True)*dm_pop_tot.array[..., np.newaxis]
+
+    # Check for nans
+    if np.isnan(dm_pop_age.array).any():
+        raise ValueError('dm_pop_age contains nan, it should be fixed')
+    if np.isnan(dm_pop_tot.array).any():
+        raise ValueError('dm_pop_tot contains nan, it should be fixed')
 
     return dm_pop_age, dm_pop_tot
 
 
-years_setting = [1990, 2022, 2050, 5]  # Set the timestep for historical years & scenarios
-years_ots = create_ots_years_list(years_setting)
+#years_setting = [1990, 2022, 2050, 5]  # Set the timestep for historical years & scenarios
+#years_ots = create_ots_years_list(years_setting)
 
 # Use following line to explore EUROSTAT database
 #toc = eurostat.get_toc_df(agency='EUROSTAT', lang='en')
 #toc_pop = eurostat.subset_toc_df(toc, 'population on 1 January by age')
 
 # Code
-dm_pop_tot, dm_pop_age = get_pop_eurostat('demo_pjan', years_ots)
+dm_pop_age, dm_pop_tot = get_pop_eurostat('demo_pjan', EU27_cntr_list)
+
 
 print('Hello')
