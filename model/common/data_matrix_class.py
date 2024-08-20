@@ -165,7 +165,7 @@ class DataMatrix:
                 else:
                     if cat not in categories[i]:
                         categories[i].append(cat)
-                col_tmp = col_tmp.replace(f'_{cat}', '')
+                col_tmp = re.sub(f'_{cat}$', '', col_tmp)
             var = col_tmp
             if var not in variables:
                 variables.append(var)
@@ -321,7 +321,7 @@ class DataMatrix:
         a = self.dim_labels.index(dim)
         # if col_label it's a string, check for the columns that match the regex pattern
         if isinstance(col_label, str):
-            tmp = [c for c in self.col_labels[dim] if re.match(col_label, c)]
+            tmp = [c for c in self.col_labels[dim] if re.match(col_label, str(c))]
             col_label = tmp
         # remove the data from the matrix
         idx = self.single_index(col_label, dim)  # get index of col_label
@@ -569,7 +569,7 @@ class DataMatrix:
         keep = {}
         for d in dict_dim_pattern.keys():
             pattern = re.compile(dict_dim_pattern[d])
-            keep[d] = [col for col in self.col_labels[d] if re.match(pattern, col)]
+            keep[d] = [col for col in self.col_labels[d] if re.match(pattern, str(col))]
         dm_keep = self.filter(keep, inplace)
         return dm_keep
 
