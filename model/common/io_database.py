@@ -3,6 +3,20 @@ import os
 import warnings
 from model.common.data_matrix_class import DataMatrix
 
+
+def find_git_root():
+    path = os.getcwd()
+
+    while True:
+        if os.path.isdir(os.path.join(path, '.git')):
+            return path
+        new_path = os.path.abspath(os.path.join(path, '..'))
+        if new_path == path:
+            # We've reached the root of the filesystem without finding a .git directory
+            return None
+        path = new_path
+
+
 def read_database(filename, lever, folderpath="default", db_format=False, level='all'):
     # Reads csv file in database/data/csv and extracts it in df format with columns
     # "Country, Years, lever-name, variable-columns"
@@ -432,3 +446,29 @@ def update_database_from_db(db_old, db_new):
     merged_df.sort_values(by=['geoscale', 'timescale'], axis=0, inplace=True)
 
     return merged_df
+
+
+def csv_database_reformat(filename):
+    # Change format of database .csv file (drop useless colums)
+    root = find_git_root()
+    folder = '_database/data/csv/'
+    file = folder + filename
+    file_path = os.path.join(root, file)
+    df = pd.read_csv(file_path, sep=';')
+    df = df[['geoscale', 'timescale', 'module', 'eucalc-name', 'lever', 'level', 'value']].copy()
+    df.rename({'eucalc-name': 'variables'}, axis=1, inplace=True)
+    df.to_csv(file_path, sep=';', index=False)
+
+    return
+
+
+def update_database_from_dm(dm, filename, lever, level, module):
+    root = find_git_root()
+    path = '_database/data/csv/'
+    file = path + filename
+    file_path = os.path.join(root, file)
+    db_new = dm_to_database(dm, lever=lever, module=module, level=level)
+    db_old = pd.read_csv(file_path, sep=';')
+    df_merged = update_database_from_db(db_old, db_new)
+    df_merged.to_csv(file_path, index=False, sep=';')
+    return
