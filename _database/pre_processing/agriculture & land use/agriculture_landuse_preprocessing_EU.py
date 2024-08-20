@@ -1698,7 +1698,7 @@ def climate_smart_forestry_processing():
     csf_managed = pd.merge(cartesian_product, csf_managed, on=['geoscale', 'timescale'], how='left')
 
     # Replace the variable with ots_agr_climate-smart-forestry_csf-man[m3/ha]
-    csf_managed['variables'] = 'ots_agr_climate-smart-forestry_csf-man[m3/ha]'
+    csf_managed['variables'] = 'agr_climate-smart-forestry_csf-man[m3/ha]'
 
     # Replace the value with 0
     csf_managed['value'] = 0
@@ -1929,7 +1929,7 @@ def climate_smart_forestry_processing():
     df_csf = pd.concat([df_csf, gstock_pathwaycalc])
     df_csf = pd.concat([df_csf, h_rate_pathwaycalc])
     df_csf = pd.concat([df_csf, nat_losses_pathwaycalc])
-    return df_csf
+    return df_csf, csf_managed
 
 #years_setting = [1990, 2022, 2050, 5]  # Set the timestep for historical years & scenarios
 #years_ots = create_ots_years_list(years_setting)
@@ -1937,14 +1937,74 @@ def climate_smart_forestry_processing():
 # CalculationTree RUNNING PRE-PROCESSING -----------------------------------------------------------------------------------------------
 
 #df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing()
-df_climate_smart_crop = climate_smart_crop_processing()
+#df_climate_smart_crop = climate_smart_crop_processing()
 #df_climate_smart_livestock = climate_smart_livestock_processing(df_csl_feed)
-#df_csf = climate_smart_forestry_processing()
+df_csf, csf_managed = climate_smart_forestry_processing()
 
 #df_climate_smart_livestock.to_csv('climate-smart-livestock_29-07-24.csv', index=False)
 
 
 # CalculationLeaf LAND MANAGEMENT --------------------------------------------------------------------------------------
+
+# Importing UNFCCC excel files and reading them with a loop (only for Switzerland)
+
+# ----------------------------------------------------------------------------------------------------------------------
+# LAND MATRIX & LAND MAN USE----------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+
+# 1990 to 2020 , to update !
+
+# Importing UNFCCC excel files and reading them with a loop (only for Switzerland) Table 4.1
+# Putting in a df in 3 dimensions (from, to, year)
+
+
+# Dropping the rows and columns that contain 'unmanaged'
+
+
+# Use the row 'Final area' for 'land-man_use' forest, other, settlement and wetland
+
+
+# PathwayCalc formatting
+
+# ----------------------------------------------------------------------------------------------------------------------
+# LAND DYN -------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+
+# 1 for forest, 0 for grassland and unmanaged for all ots
+
+# Using csf_managed as a structural basis
+df_land_dyn_forest = csf_managed.copy()
+df_land_dyn_grass = csf_managed.copy()
+df_land_dyn_unmanaged = csf_managed.copy()
+
+# Changing values and variable name
+df_land_dyn_forest['variables'] = 'agr_land-man_dyn_forest[%]'
+df_land_dyn_forest['value'] = 1
+df_land_dyn_grass['variables'] = 'agr_land-man_dyn_grassland[%]'
+df_land_dyn_grass['value'] = 0
+df_land_dyn_unmanaged['variables'] = 'agr_land-man_dyn_unmanaged[%]'
+df_land_dyn_unmanaged['value'] = 0
+
+# Concatenating
+df_land_dyn = pd.concat([df_land_dyn_forest, df_land_dyn_grass])
+df_land_dyn = pd.concat([df_land_dyn, df_land_dyn_unmanaged])
+
+# PathwayCalc formatting
+df_land_dyn['lever'] = 'land-man'
+
+# ----------------------------------------------------------------------------------------------------------------------
+# LAND GAP -------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+# Difference in values between FAO and UNFCCC
+
+# Read FAO Values (for Switzerland)
+
+# Read UNFCCC values (for Switzerland)
+
+# Computing the difference
+
+# PathwayCalc formatting
+
 
 # CalculationLeaf BIOMASS HIERARCHY ------------------------------------------------------------------------------------
 
