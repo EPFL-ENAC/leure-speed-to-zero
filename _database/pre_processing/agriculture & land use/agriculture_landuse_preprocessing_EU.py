@@ -4,6 +4,7 @@ from model.common.auxiliary_functions import interpolate_nans, add_missing_ots_y
 from scipy.stats import linregress
 import pandas as pd
 import faostat
+import os
 import eurostat
 from model.common.io_database import database_to_dm
 
@@ -1956,9 +1957,61 @@ df_csf, csf_managed = climate_smart_forestry_processing()
 
 # Importing UNFCCC excel files and reading them with a loop (only for Switzerland) Table 4.1
 # Putting in a df in 3 dimensions (from, to, year)
+# Define the path where the Excel files are located
+folder_path = '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_unfccc'
+
+# List all files in the folder
+files = os.listdir(folder_path)
+
+# Filter and sort files by the year (1990 to 2020)
+sorted_files = sorted([f for f in files if f.startswith('CHE_2022_') and int(f.split('_')[2]) in range(1990, 2021)],
+                      key=lambda x: int(x.split('_')[2]))
+
+# Initialize a list to store DataFrames
+data_frames = []
+
+# Loop through sorted files, read the required rows, and append to the list
+for file in sorted_files:
+    # Extract the year from the filename
+    year = int(file.split('_')[2])
+
+    # Full path to the file
+    file_path = os.path.join(folder_path, file)
+
+    # Read the specific rows and sheet from the Excel file
+    df = pd.read_excel(file_path, sheet_name='Table4.1', skiprows=4, nrows=14, header=None)
+
+    # Add a column for the year to the DataFrame
+    df['Year'] = year
+
+    # Append to the list of DataFrames
+    data_frames.append(df)
+
+# Combine all DataFrames into a single DataFrame with a multi-index
+combined_df = pd.concat(data_frames, axis=0).set_index(['Year'])
+
+# Create a 3D array
+values_3d = np.array([df.values for df in data_frames])
+
+# Convert array in string
+data = values_3d.astype(str)
+
+# Convert to string to handle mixed types
+data = data.astype(str)
+
+# Create a row mask where the first column of each 14x13 slice doesn't contain 'unmanaged'
+row_mask = np.all(np.core.defchararray.find(data[:, :, 0], 'unmanaged') == -1, axis=0)
+
+# Create a column mask where the first row of each 14x13 slice doesn't contain 'unmanaged'
+col_mask = np.all(np.core.defchararray.find(data[:, 0, :], 'unmanaged') == -1, axis=0)
+
+# Apply the row mask to keep rows in each slice that do not contain 'unmanaged' in the first column
+filtered_data = data[:, row_mask, :]
+
+# Apply the column mask to keep columns in each slice that do not contain 'unmanaged' in the first row
+filtered_data = filtered_data[:, :, col_mask]
 
 
-# Dropping the rows and columns that contain 'unmanaged'
 
 
 # Use the row 'Final area' for 'land-man_use' forest, other, settlement and wetland
