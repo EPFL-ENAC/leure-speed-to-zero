@@ -2022,12 +2022,130 @@ def drop_second_row(slice_2d):
 
     return filtered_slice
 
-
 # Apply the function to each 14x13 slice
 filtered_data_2 = np.array([drop_second_row(filtered_data[i]) for i in range(filtered_data.shape[0])])
 
 # Create a copy for potential issues due to mask
 filtered_data_2 = filtered_data_2.copy()
+
+# LAND MATRIX -------------------------------------------------------------------------------------------------------------
+
+# Create a copy
+array_land_matrix = filtered_data_2.copy()
+
+# Drop the unwanted row and column to only keep the land to and from (not final)
+# Function to drop the second row (index 1) in a 14x13 slice
+def drop_rows_and_columns(slice_2d, rows_to_drop=None, cols_to_drop=None):
+    """
+    Drop specific rows and columns from a 2D NumPy array.
+
+    Parameters:
+    slice_2d (np.ndarray): The 2D NumPy array from which rows and columns will be dropped.
+    rows_to_drop (list or None): List of row indices to be dropped. If None, no rows are dropped.
+    cols_to_drop (list or None): List of column indices to be dropped. If None, no columns are dropped.
+
+    Returns:
+    np.ndarray: The modified 2D NumPy array with specified rows and columns removed.
+    """
+    # If rows_to_drop is None or empty, don't drop any rows
+    if rows_to_drop is None:
+        rows_to_drop = []
+    # If cols_to_drop is None or empty, don't drop any columns
+    if cols_to_drop is None:
+        cols_to_drop = []
+
+    # Create a mask for rows to keep (not in rows_to_drop)
+    if rows_to_drop:
+        row_mask = np.ones(slice_2d.shape[0], dtype=bool)
+        row_mask[rows_to_drop] = False
+    else:
+        row_mask = np.ones(slice_2d.shape[0], dtype=bool)
+
+    # Create a mask for columns to keep (not in cols_to_drop)
+    if cols_to_drop:
+        col_mask = np.ones(slice_2d.shape[1], dtype=bool)
+        col_mask[cols_to_drop] = False
+    else:
+        col_mask = np.ones(slice_2d.shape[1], dtype=bool)
+
+    # Apply the masks to keep only the rows and columns that are not in the drop lists
+    filtered_slice = slice_2d[row_mask, :][:, col_mask]
+
+    return filtered_slice
+
+# Apply the function to each 14x13 slice
+array_land_matrix = np.array([drop_rows_and_columns(array_land_matrix[i], rows_to_drop=[7,8], cols_to_drop=None) for i in range(array_land_matrix.shape[0])])
+
+# Transform in a df
+# Reshape array
+array_2d = array_land_matrix.reshape(-1, array_land_matrix.shape[2])
+# Convert the 2D array to a DataFrame
+df_land_matrix = pd.DataFrame(array_2d)
+
+# Set the first row as index
+df_land_matrix.columns = df_land_matrix.iloc[0]  # Set the first row as the new column headers
+df_land_matrix = df_land_matrix[1:]  # Remove the first row from the DataFrame
+df_land_matrix = df_land_matrix.reset_index(drop=True)  # Reset the index after removing the first row
+
+# Drop the rows that contain TO:
+df_land_matrix = df_land_matrix[~df_land_matrix.apply(lambda row: row.astype(str).str.contains('TO:').any(), axis=1)]
+
+# Rename cols 1990 into timescale
+df_land_matrix.rename(columns={'1990': 'timescale'}, inplace=True)
+
+# Change type to numeric
+numeric_cols = df_land_matrix.columns[1:]  # Get all columns except the first three
+df_land_matrix[numeric_cols] = df_land_matrix[numeric_cols].apply(pd.to_numeric,
+                                                             errors='coerce')  # Convert to numeric, if not already
+
+
+# Divide each column by the initial area to convert from [ha] to [%]
+df_land_matrix['Forest land (managed)'] = df_land_matrix['Forest land (managed)'] / df_land_matrix['Initial area']
+df_land_matrix['Cropland '] = df_land_matrix['Cropland '] / df_land_matrix['Initial area']
+df_land_matrix['Grassland (managed)'] = df_land_matrix['Grassland (managed)'] / df_land_matrix['Initial area']
+df_land_matrix['Wetlands (managed)'] = df_land_matrix['Wetlands (managed)'] / df_land_matrix['Initial area']
+df_land_matrix['Settlements'] = df_land_matrix['Settlements'] / df_land_matrix['Initial area']
+df_land_matrix['Other land'] = df_land_matrix['Other land'] / df_land_matrix['Initial area']
+
+# Drop the column 'Initial area'
+df_land_matrix = df_land_matrix.drop(columns=['Initial area'])
+
+# Melt to have year, values, land-to and land-from
+df_land_matrix = pd.melt(df_land_matrix, id_vars=['TO:', 'timescale'],
+                    value_vars=['Forest land (managed)', 'Cropland ', 'Grassland (managed)', 'Wetlands (managed)',
+                                'Settlements', 'Other land'],
+                    var_name='FROM:', value_name='value')
+
+# Combine 'TO:' and 'FROM:' columns into a single 'item' column
+df_land_matrix['Item'] = df_land_matrix['FROM:'] + ' to '+ df_land_matrix['TO:']
+
+# Drop the original 'TO:' and 'FROM:' columns if no longer needed
+df_land_matrix = df_land_matrix.drop(columns=['TO:', 'FROM:'])
+
+# PathwayCalc formatting -----------------------------------------------------------------------------------------------
+# Match with dictionary for correct names
+# Read excel file
+df_dict_land_man = pd.read_excel(
+    '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+    sheet_name='land-management')
+
+# Merge based on 'Item'
+df_land_matrix_pathwaycalc = pd.merge(df_dict_land_man, df_land_matrix, on='Item')
+
+# Drop the 'Item' column
+df_land_matrix_pathwaycalc = df_land_matrix_pathwaycalc.drop(columns=['Item'])
+
+# Adding the columns module, lever, level and string-pivot at the correct places
+df_land_matrix_pathwaycalc['module'] = 'land-use'
+df_land_matrix_pathwaycalc['lever'] = 'land-man'
+df_land_matrix_pathwaycalc['level'] = 0
+df_land_matrix_pathwaycalc['geoscale'] = 'Switzerland'
+cols = df_land_matrix_pathwaycalc.columns.tolist()
+cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+cols.insert(cols.index('timescale'), cols.pop(cols.index('geoscale')))
+df_land_matrix_pathwaycalc = df_land_matrix_pathwaycalc[cols]
 
 # LAND USE -------------------------------------------------------------------------------------------------------------
 # Use the row 'Final area' for 'land-man_use' forest, other, settlement and wetland ------------------------------------
@@ -2122,6 +2240,12 @@ df_land_dyn['lever'] = 'land-man'
 # Computing the difference
 
 # PathwayCalc formatting
+
+# ----------------------------------------------------------------------------------------------------------------------
+# FINAL RESULTS --------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+
+# Concatenating all dfs
 
 
 # CalculationLeaf BIOMASS HIERARCHY ------------------------------------------------------------------------------------
