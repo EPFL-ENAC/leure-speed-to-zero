@@ -1955,7 +1955,7 @@ df_csf, csf_managed = climate_smart_forestry_processing()
 
 # 1990 to 2020 , to update !
 
-# Importing UNFCCC excel files and reading them with a loop (only for Switzerland) Table 4.1
+# Importing UNFCCC excel files and reading them with a loop (only for Switzerland) Table 4.1 ---------------------------
 # Putting in a df in 3 dimensions (from, to, year)
 # Define the path where the Excel files are located
 folder_path = '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_unfccc'
@@ -1996,10 +1996,7 @@ values_3d = np.array([df.values for df in data_frames])
 # Convert array in string
 data = values_3d.astype(str)
 
-# Convert to string to handle mixed types
-data = data.astype(str)
-
-# Create a row mask where the first column of each 14x13 slice doesn't contain 'unmanaged'
+# Create a row mask where the first column of each 14x13 slice doesn't contain 'unmanaged' -----------------------------
 row_mask = np.all(np.core.defchararray.find(data[:, :, 0], 'unmanaged') == -1, axis=0)
 
 # Create a column mask where the first row of each 14x13 slice doesn't contain 'unmanaged'
@@ -2011,13 +2008,81 @@ filtered_data = data[:, row_mask, :]
 # Apply the column mask to keep columns in each slice that do not contain 'unmanaged' in the first row
 filtered_data = filtered_data[:, :, col_mask]
 
+# Creating a copy due to mask issue in the following steps
+filtered_data = filtered_data.copy()
+
+# Dropping the row that contain 'FROM' (index 1) ---------------------------------------------------------------------------------
+# Function to drop the second row (index 1) in a 14x13 slice
+def drop_second_row(slice_2d):
+    # Create a mask for all rows except the one to drop (row index 1)
+    row_mask = np.arange(slice_2d.shape[0]) != 1
+
+    # Keep only the rows that are not the second row
+    filtered_slice = slice_2d[row_mask, :]
+
+    return filtered_slice
 
 
+# Apply the function to each 14x13 slice
+filtered_data_2 = np.array([drop_second_row(filtered_data[i]) for i in range(filtered_data.shape[0])])
 
-# Use the row 'Final area' for 'land-man_use' forest, other, settlement and wetland
+# Create a copy for potential issues due to mask
+filtered_data_2 = filtered_data_2.copy()
+
+# LAND USE -------------------------------------------------------------------------------------------------------------
+# Use the row 'Final area' for 'land-man_use' forest, other, settlement and wetland ------------------------------------
+def keep_final_use_row(slice_2d):
+    # Create a mask for all rows except the one to drop (row index 1)
+    row_mask = np.arange(slice_2d.shape[0]) == 7
+
+    # Keep only the rows that are not the second row
+    filtered_slice = slice_2d[row_mask, :]
+
+    return filtered_slice
 
 
-# PathwayCalc formatting
+# Apply the function to each 14x13 slice
+filtered_data_land_use = np.array([keep_final_use_row(filtered_data_2[i]) for i in range(filtered_data_2.shape[0])])
+
+# Transform  array in df
+# Remove the extra dimension
+reshaped_array = filtered_data_land_use.reshape(31, 9)
+# Create a DataFrame from the reshaped array
+df_land_use = pd.DataFrame(reshaped_array)
+
+# Change the correct indices for columns
+new_column_names = ['element', 'agr_land-man_use_forest[ha]', 'agr_land-man_use_cropland[ha]',
+                    'agr_land-man_use_grassland[ha]', 'agr_land-man_use_wetland[ha]', 'agr_land-man_use_settlement[ha]',
+                    'agr_land-man_use_other[ha]', 'initial area', 'timescale']
+
+# Assign the new column names to the DataFrame
+df_land_use.columns = new_column_names
+
+# Dropping the columns 'element' and 'initial area'
+df_land_use = df_land_use.drop(columns=['element', 'initial area'])
+df_land_use_filtered = df_land_use.drop(columns=['agr_land-man_use_cropland[ha]', 'agr_land-man_use_grassland[ha]'])
+
+# Melting the dfs to have the relevant format (geoscale, year, value)
+df_land_use_pathwaycalc = pd.melt(df_land_use_filtered, id_vars=['timescale'], var_name='variables', value_name='value')
+
+# Convert the 'value' column from string to numeric
+df_land_use_pathwaycalc['value'] = pd.to_numeric(df_land_use_pathwaycalc['value'], errors='coerce')
+
+# Unit conversion [kha] => [ha]
+df_land_use_pathwaycalc['value'] = df_land_use_pathwaycalc['value'] * 1000
+
+# PathwayCalc formatting -----------------------------------------------------------------------------------------------
+# Adding the columns module, lever, level and string-pivot at the correct places
+df_land_use_pathwaycalc['module'] = 'land-use'
+df_land_use_pathwaycalc['lever'] = 'land-man'
+df_land_use_pathwaycalc['level'] = 0
+df_land_use_pathwaycalc['geoscale'] = 'Switzerland'
+cols = df_land_use_pathwaycalc.columns.tolist()
+cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+cols.insert(cols.index('timescale'), cols.pop(cols.index('geoscale')))
+df_land_use_pathwaycalc = df_land_use_pathwaycalc[cols]
 
 # ----------------------------------------------------------------------------------------------------------------------
 # LAND DYN -------------------------------------------------------------------------------------------------------------
