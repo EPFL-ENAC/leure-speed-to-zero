@@ -2233,11 +2233,74 @@ df_land_dyn['lever'] = 'land-man'
 # ----------------------------------------------------------------------------------------------------------------------
 # Difference in values between FAO and UNFCCC
 
-# Read FAO Values (for Switzerland)
+# Read FAO Values (for Switzerland) --------------------------------------------------------------------------------------------
+# List of countries
+list_countries = ['Switzerland']
+
+# List of elements
+list_elements = ['Area']
+
+list_items = ['-- Cropland', '-- Permanent meadows and pastures', 'Forest land']
+
+# 1990 - 2022
+ld = faostat.list_datasets()
+code = 'RL'
+pars = faostat.list_pars(code)
+my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
+              '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
+              '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022']
+my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+my_pars = {
+    'area': my_countries,
+    'element': my_elements,
+    'item': my_items,
+    'year': my_years
+}
+df_land_use_fao = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+# Drop columns
+df_land_use_fao = df_land_use_fao.drop(
+    columns=['Domain Code', 'Domain', 'Area Code', 'Element Code',
+             'Item Code', 'Year Code', 'Unit', 'Element', 'Area'])
+
+# Reshape
+df = df_land_use_fao.copy()
+# Reshape the DataFrame using pivot
+reshaped_df = df.pivot(index='Year', columns='Item', values='Value')
+# Reset the index if you want a flat DataFrame with 'item' as a column
+reshaped_df = reshaped_df.reset_index()
 
 # Read UNFCCC values (for Switzerland)
+# done in previous steps, result is df_land_use
+
+# Merged based on timescale
+df_land_gap = pd.merge(reshaped_df, df_land_use, left_on='Year', right_on='timescale')
+
+# Change type to numeric
+numeric_cols = df_land_gap.columns[1:]  # Get all columns except the first three
+df_land_gap[numeric_cols] = df_land_gap[numeric_cols].apply(pd.to_numeric,
+                                                          errors='coerce')
 
 # Computing the difference
+df_land_gap['agr_land-man_gap_cropland[ha]'] = df_land_gap['agr_land-man_use_cropland[ha]'] - df_land_gap['Cropland']
+df_land_gap['agr_land-man_gap_forest[ha]'] = df_land_gap['agr_land-man_use_forest[ha]'] - df_land_gap['Forest land']
+df_land_gap['agr_land-man_gap_grassland[ha]'] = df_land_gap['agr_land-man_use_grassland[ha]'] - df_land_gap['Permanent meadows and pastures']
+#df_land_gap['agr_land-man_gap_other[ha]'] = df_land_gap[''] - df_land_gap['']
+#df_land_gap['agr_land-man_gap_settlement[ha]'] = df_land_gap[''] - df_land_gap['']
+#df_land_gap['agr_land-man_gap_wetland[ha]'] = df_land_gap[''] - df_land_gap['']
+
+# Keep only the useful columns
+df_land_gap = df_land_gap[['timescale', 'agr_land-man_gap_cropland[ha]', 'agr_land-man_gap_forest[ha]',
+                                         'agr_land-man_gap_grassland[ha]']]
+
+# Melt the df
+
+
+# Unit conversion [kha] => [ha]
 
 # PathwayCalc formatting
 
