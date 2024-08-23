@@ -2360,6 +2360,35 @@ df_bioenergy_capacity_CH_PC.rename(columns={'Area': 'geoscale', 'Year': 'timesca
 
 # CalculationLeaf BIOMASS HIERARCHY ------------------------------------------------------------------------------------
 
+# Using and formatting df_csl_feed as a structural basis for constant ots values across all countries
+df_biomass_hierarchy_all = df_csl_feed.copy()
+df_biomass_hierarchy_all = df_biomass_hierarchy_all.drop(columns=['Item', 'Feed'])
+# Dropping duplicate rows
+df_biomass_hierarchy_all = df_biomass_hierarchy_all.drop_duplicates()
+
+# Using and formatting df_csl_feed as a structural basis for constant ots values in Switzerland
+df_biomass_hierarchy_CH = df_biomass_hierarchy_all.copy()
+# Keeping only the rows where geoscale = Switzerland
+df_biomass_hierarchy_CH = df_biomass_hierarchy_CH[df_biomass_hierarchy_CH['Area'] == 'Switzerland']
+
+# Adding ots values
+df_biomass_hierarchy_all['agr_biomass-hierarchy-bev-ibp-use-oth_fertilizer[%]'] = 0.05
+df_biomass_hierarchy_all['agr_biomass-hierarchy-bev-ibp-use-oth_solid-bioenergy[%]'] = 0.8
+df_biomass_hierarchy_all['agr_biomass-hierarchy-bev-ibp-use-oth_biogasoline[%]'] = 0.05
+df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_ibp_fdk[%]'] = 0.1
+df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_fdk-demand_eth_mix_cereal[%]'] = 0.5
+df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_fdk-demand_eth_mix_sugarcrop[%]'] = 0.5
+df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_fdk-demand_oil_mix_voil[%]'] = 1.0
+df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biodiesel_btl[%]'] = 0.0
+df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biodiesel_est[%]'] = 1.0
+df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biodiesel_hvo[%]'] = 0.0
+df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biogasoline_ezm[%]'] = 0.0
+df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biogasoline_fer[%]'] = 1.0
+df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biojetkerosene_btl[%]'] = 0.0
+df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biojetkerosene_hvo[%]'] = 1.0
+
+
+
 # Common for all
 # List of countries
 list_countries = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czechia', 'Denmark',
