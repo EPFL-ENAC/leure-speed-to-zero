@@ -1219,7 +1219,7 @@ def material_switch_impact_for_buildings(DM_input_matswitchimpact, DM_energy_dem
     dm_temp1.operation("emissions", "/", "material-production", dim="Variables", 
                       out_col='emissions-specific', unit='Kt', div0="error")
     dm_temp1.drop(dim = "Variables", col_label = ["emissions", "material-production"])
-    dm_temp1.change_unit('emissions-specific', factor=1e-3, old_unit='Kt', new_unit='Mt')
+    # dm_temp1.change_unit('emissions-specific', factor=1e-3, old_unit='Kt', new_unit='Mt')
 
 
     # get emissions savings for cement and steel switches to timber (Kt)
