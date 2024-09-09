@@ -2388,17 +2388,43 @@ df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biojetkerosene_
 df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biojetkerosene_hvo[%]'] = 1.0
 
 
+# CalculationLeaf LIVESTOCK PROTEIN MEALS ------------------------------------------------------------------------------------
 
-# Common for all
-# List of countries
-list_countries = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czechia', 'Denmark',
-                  'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
-                  'Lithuania', 'Luxembourg', 'Malta', 'Netherlands (Kingdom of the)', 'Poland', 'Portugal',
-                  'Romania', 'Slovakia',
-                  'Slovenia', 'Spain', 'Sweden', 'Switzerland',
-                  'United Kingdom of Great Britain and Northern Ireland']
+# Using and formatting df_csl_feed as a structural basis for constant ots values across all countries
+df_protein_meals_all = df_csl_feed.copy()
+df_protein_meals_all = df_protein_meals_all.drop(columns=['Item', 'Feed'])
+# Dropping duplicate rows
+df_protein_meals_all = df_protein_meals_all.drop_duplicates()
 
-list_test = ['Switzerland']
+# Adding ots values
+df_protein_meals_all['agr_alt-protein_abp-dairy-milk_algae[%]'] = 0.0
+df_protein_meals_all['agr_alt-protein_abp-dairy-milk_insect[%]'] = 0.0
+df_protein_meals_all['agr_alt-protein_abp-hens-egg_algae[%]'] = 0.0
+df_protein_meals_all['agr_alt-protein_abp-hens-egg_insect[%]'] = 0.0
+df_protein_meals_all['agr_alt-protein_meat-bovine_algae[%]'] = 0.0
+df_protein_meals_all['agr_alt-protein_meat-bovine_insect[%]'] = 0.0
+df_protein_meals_all['agr_alt-protein_meat-oth-animals_algae[%]'] = 0.0
+df_protein_meals_all['agr_alt-protein_meat-oth-animals_insect[%]'] = 0.0
+df_protein_meals_all['agr_alt-protein_meat-pig_algae[%]'] = 0.0
+df_protein_meals_all['agr_alt-protein_meat-pig_insect[%]'] = 0.0
+df_protein_meals_all['agr_alt-protein_meat-poultry_algae[%]'] = 0.0
+df_protein_meals_all['agr_alt-protein_meat-poultry_insect[%]'] = 0.0
+df_protein_meals_all['agr_alt-protein_meat-sheep_algae[%]'] = 0.0
+df_protein_meals_all['agr_alt-protein_meat-sheep_insect[%]'] = 0.0
+
+# Creating a copy
+df_protein_meals_pathwaycalc = df_protein_meals_all.copy()
+
+# PathwayCalc formatting
+df_protein_meals_pathwaycalc['module'] = 'agriculture'
+df_protein_meals_pathwaycalc['lever'] = 'alt-protein'
+df_protein_meals_pathwaycalc['level'] = 0
+cols = df_protein_meals_pathwaycalc.columns.tolist()
+cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+df_protein_meals_pathwaycalc = df_protein_meals_pathwaycalc[cols]
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 # BIOMASS MIX ----------------------------------------------------------------------------------------------------------
