@@ -201,7 +201,7 @@ class DataMatrix:
         return dm
 
     @classmethod
-    def based_on(cls, array, format, change={}, units={}):
+    def based_on(cls, array, format, change=dict(), units=dict()):
         # Creates a datamatrix given an array and a datamatrix (based_on) from which to take the structure
         # If the structure differ, you can define in a dictionary (change) with the dimension that differ,
         # for example:
@@ -323,6 +323,9 @@ class DataMatrix:
         if isinstance(col_label, str):
             tmp = [c for c in self.col_labels[dim] if re.match(col_label, str(c))]
             col_label = tmp
+        # If you are removing years col_label is an integer
+        if isinstance(col_label, int):
+            col_label = [col_label]
         # remove the data from the matrix
         idx = self.single_index(col_label, dim)  # get index of col_label
         i_val = list(idx.values())
@@ -353,11 +356,11 @@ class DataMatrix:
         for (vi, v) in vars:
             v_sub = v + subfix  # new variable name
             unit = self.units[v]
-            new_array = np.roll(self.array[:, :, vi, :], shift, axis=1)  # shift along Years axis
+            new_array = np.roll(self.array[:, :, vi, ...], shift, axis=1)  # shift along Years axis
             if shift == 1:
-                new_array[:, 0, :] = new_array[:, 1, :]  # copy 1991 value to 1990
+                new_array[:, 0, ...] = new_array[:, 1, ...]  # copy 1991 value to 1990
             elif shift == -1:
-                new_array[:, -1, :] = new_array[:, -2, :]  # copy 2045 value to 2050
+                new_array[:, -1, ...] = new_array[:, -2, ...]  # copy 2045 value to 2050
             else:
                 raise Exception("You can only shift by +1 or -1 in lag_variable func of DataMatrix class")
             self.add(new_array, dim_label, v_sub, unit)  # append new_array to self_array
@@ -923,7 +926,29 @@ class DataMatrix:
 
         return
 
+    def normalise(self, dim, inplace=True, keep_original=False):
 
-
-
-
+        # Axis over which to normalise
+        a = self.dim_labels.index(dim)
+        if inplace and not keep_original:
+            # Overwrites datamatrix with normalised data and changes the units to '%'
+            self.array = self.array/np.nansum(self.array, axis=a, keepdims=True)
+            for v in self.col_labels['Variables']:
+                self.units[v] = '%'
+        else:
+            # Create a new normalised array
+            arr_data = self.array.copy()
+            arr_data = arr_data / np.nansum(arr_data, axis=a, keepdims=True)
+            new_var_cols = [var + '_share' for var in self.col_labels['Variables']]
+            # Adds the normalised array to the existing data in the same database
+            if inplace and keep_original:
+                self.add(arr_data, dim='Variables', col_label=new_var_cols, unit=['%']*len(new_var_cols))
+            if not inplace:
+                units_new = {}
+                vars_new = []
+                for var in self.col_labels['Variables']:
+                    units_new[var] = '%'
+                    vars_new.append(var+'_share')
+                dm_out = DataMatrix.based_on(arr_data, format=self, change={'Variables': vars_new}, units=units_new)
+                return dm_out
+        return
