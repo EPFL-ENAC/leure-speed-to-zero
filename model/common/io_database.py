@@ -2,6 +2,7 @@ import pandas as pd
 import os
 import warnings
 from model.common.data_matrix_class import DataMatrix
+import numpy as np
 
 
 def find_git_root():
@@ -472,3 +473,23 @@ def update_database_from_dm(dm, filename, lever, level, module):
     df_merged = update_database_from_db(db_old, db_new)
     df_merged.to_csv(file_path, index=False, sep=';')
     return
+
+
+def read_database_to_dm(filename, lever=None, num_cat=0, baseyear=2022, years=None, level='all'):
+    root = find_git_root()
+    path = '_database/data/csv/'
+    file = path + filename
+    file_path = os.path.join(root, file)
+    df_db = pd.read_csv(file_path, sep=';')
+    if lever is None:
+        levers = list(set(df_db['lever']))
+        if len(levers) != 1:
+            raise ValueError(f'the file {filename} contains more than one lever: {levers}')
+        else:
+            lever = levers[0]
+    if years is None:
+        years_ots = list(np.linspace(start=1990, stop=2022, num=(2022-1990)+1))
+        years_fts = list(np.linspace(start=2025, stop=2050, num=int((2050-2025)/5+1)))
+        years = years_ots + years_fts
+    dict_ots, dict_fts = database_to_dm(df_db, lever, num_cat, baseyear, years, level=level)
+    return dict_ots, dict_fts
