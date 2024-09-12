@@ -349,7 +349,6 @@ def extract_lfs_floor_space(years_ots, dm_lfs_tot_pop, table_id):
     dm_floor_area.rename_col(['Suisse', ' - Vaud'], ['Switzerland', 'Vaud'], dim='Country')
     dm_floor_area.group_all('Categories2')
     dm_floor_area.groupby({'lfs_dwellings': '.*'}, dim='Variables', regex=True, inplace=True)
-    # !FIXME you are here, you should find the total floor area. Alternatively dowload the per capita floor area data
     dm_num_bld = dm_floor_area.group_all('Categories1', inplace=False)
 
     ## Compute total floor space
@@ -526,11 +525,11 @@ if update_pop:
         update_database_from_dm(dm_fts, filename=file, lever='pop', level=lev, module='lifestyles')
 
 # Get urban share (ots)
-#dm_lfs_urban_pop = extract_lfs_urban_share(years_ots, table_id='px-x-2105000000_404')
+dm_lfs_urban_pop = extract_lfs_urban_share(years_ots, table_id='px-x-2105000000_404')
 # Get floor area (ots)
-#dm_lfs_floor_area = extract_lfs_floor_space(years_ots, dm_lfs_tot_pop, table_id='px-x-0902020200_103')
+dm_lfs_floor_area = extract_lfs_floor_space(years_ots, dm_lfs_tot_pop, table_id='px-x-0902020200_103')
 # Get lfs_household-size (ots)
-# dm_lfs_household_size = extract_lfs_household_size(years_ots, table_id='px-x-0102020000_402')
+dm_lfs_household_size = extract_lfs_household_size(years_ots, table_id='px-x-0102020000_402')
 
 
 
