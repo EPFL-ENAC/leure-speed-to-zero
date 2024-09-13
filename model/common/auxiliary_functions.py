@@ -714,15 +714,14 @@ def linear_fitting(dm, years_ots, max_t0=None, max_tb=None, min_t0=None, min_tb=
 
     start_year = int(years_ots[0])
     base_year = int(years_ots[-1])
-    # Check if start_year has value different then nan, else extrapolate
-
+    # Check if start_year has value different than nan, else extrapolate
 
     # extrapolated array values at year = start_year
     for year_target in [start_year, base_year]:
         # Apply the function along the last axis (years axis)
         array_reshaped = np.moveaxis(dm.array, 1, -1)
-        extrapolated_year = np.apply_along_axis(extrapolate_to_year, axis=-1, arr=array_reshaped, years=dm.col_labels['Years'],
-                                                 target_year=year_target)
+        extrapolated_year = np.apply_along_axis(extrapolate_to_year, axis=-1, arr=array_reshaped,
+                                                years=dm.col_labels['Years'], target_year=year_target)
 
         # If start_year is not in dm, set dm value at start_year to extrapolated value
         if year_target not in dm.col_labels['Years']:
@@ -795,3 +794,29 @@ def linear_fitting_ots_db(df_db, years_ots, countries='all'):
 
     return df_merged
 
+
+def linear_forecast_BAU(dm_ots, start_t, years_ots, years_fts):
+    # Business as usual linear forecast for fts years based on ots dm
+    # Return a datamatrix for years_fts
+    # Linear extrapolation performed on data from start_t onwards
+    years_ots_keep = [y for y in years_ots if y > start_t]
+    years_to_keep = years_ots_keep + years_fts
+    dm_fts_BAU = dm_ots.filter({'Years': years_ots_keep}, inplace=False)
+    linear_fitting(dm_fts_BAU, years_to_keep, min_tb=1)
+    dm_fts_BAU.filter({'Years': years_fts}, inplace=True)
+
+    return dm_fts_BAU
+
+
+def moving_average(arr, window_size, axis):
+    # Apply moving average along the specified axis
+    smoothed_data = np.apply_along_axis(lambda x: np.convolve(x, np.ones(window_size) / window_size, mode='valid'),
+                                        axis=axis, arr=arr)
+    return smoothed_data
+
+
+def create_years_list(start_year, end_year, step, astype=int):
+    num_yrs = int((end_year-start_year)/step + 1)
+    years_list = list(
+        np.linspace(start=start_year, stop=end_year, num=num_yrs).astype(int).astype(astype))
+    return years_list
