@@ -1,25 +1,16 @@
 import pandas as pd
 from model.common.data_matrix_class import DataMatrix
 import numpy as np
-from model.common.auxiliary_functions import linear_fitting
+from model.common.auxiliary_functions import linear_fitting, linear_forecast_BAU, moving_average, create_years_list
 from model.common.io_database import read_database_to_dm, edit_database, update_database_from_dm
 import eurostat
 import json
 from _database.pre_processing.api_routine_Eurostat import get_data_api_eurostat
 from scipy.optimize import minimize
-from scipy.interpolate import interp1d
 
 EU27_cntr_list = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czech Republic', 'Denmark', 'Estonia', 'Finland',
                   'France', 'Germany', 'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia', 'Lithuania', 'Luxembourg',
                   'Malta', 'Netherlands', 'Poland', 'Portugal', 'Romania', 'Slovakia', 'Slovenia', 'Spain', 'Sweden']
-
-
-def moving_average(data, window_size, axis):
-    # Apply moving average along the first axis (rows)
-    smoothed_data = np.apply_along_axis(lambda x: np.convolve(x, np.ones(window_size) / window_size, mode='valid'),
-                                        axis=axis, arr=data)
-    return smoothed_data
-
 
 def get_CDD_data():
     # The datasource for the CDD is Eurostat, base temperature is 21, threshold is 24.
@@ -395,36 +386,6 @@ def get_household_area_eustat(EU27_cntr_list, dict_iso2):
     return dm_size
 
 
-def get_household_nb_people_eustat(EU27_cntr_list, dict_iso2):
-
-    ##### Extract number of household with a certain number of people
-    filter = {'geo\TIME_PERIOD': list(dict_iso2.keys())}
-    mapping_dim = {'Country': 'geo\TIME_PERIOD',
-                   'Variables': 'unit',
-                   'Categories1': 'n_person'}
-    dm_ppl = get_data_api_eurostat('cens_hndwsize', filter, mapping_dim, 'households', years_ots)
-
-    # There is only one value in GE6 for Cyprus, but Cyprus also has 6 and GE7 data. remove GE6 and Total
-    dm_ppl.drop(col_label=['GE6', 'TOTAL'], dim='Categories1')
-    # Rename GE7 as 7
-    dm_ppl.rename_col('GE7', '7', dim='Categories1')
-    ppl_int = np.array([int(ppl) for ppl in dm_ppl.col_labels['Categories1']])
-    arr_hh_tot = np.sum(dm_ppl.array, axis=-1)
-    arr_ppl_w_hh = np.sum(dm_ppl.array[:, :, :, :] * ppl_int[np.newaxis, np.newaxis, np.newaxis, :], axis=-1)
-    # Sum together all houses (since it is a nan sum I will overwrite it with the actual sum)
-    dm_ppl.group_all('Categories1', )
-    # Compute average household size in number of people
-    arr_hh_size = arr_ppl_w_hh / arr_hh_tot
-    dm_ppl.add(arr_hh_size, dim='Variables', col_label='lfs_household-size', unit='people')
-    dm_ppl.rename_col('PER', 'lfs_households', dim='Variables')
-    # replace household size with avg household size
-    dm_ppl.fill_nans(dim_to_interp='Years')
-    # Number of households
-    idx = dm_ppl.idx
-    dm_ppl.array[:, :, idx['lfs_households']] = arr_hh_tot[:, :, 0]
-
-    return dm_ppl
-
 def estimate_average_room_size(dm_rooms, dm_area_2020, dm_pop, dm_pop_bld_type):
     # 1) lfs_rooms-cap [rooms/cap] x lfs_pop-by-bld-type [habitants] = lfs_rooms [rooms] (by bld type)
     # 2) bld_floor-area_2020 [m2] / lfs_rooms [rooms] (t=2020) = lfs_avg-room-size [m2/rooms] (t=2020)
@@ -751,11 +712,46 @@ def compute_stock_share_all_types(dm_area_2020, dm_area_stock):
 
     return dm_area_stock_share
 
+
+def forecast_floor_int_fts_from_ots(dm_floor_ots, years_ots, years_fts):
+
+    dm_floor_fts_1 = linear_forecast_BAU(dm_floor_ots, start_t=2012, years_ots=years_ots, years_fts=years_fts)
+    # level 2: 7.3% higher than 2015
+    # level 3: 6% lower than 2015
+    # level 4: 19% lower than 2015
+    # Rates based on EUcalc
+    dict_2050 = {2: 0.073, 3: -0.06, 4: -0.19}
+    idx_o = dm_floor_ots.idx
+    idx_b = dm_floor_fts_1.idx
+    arr_2015 = dm_floor_ots.array[:, idx_o[2015], idx_o['lfs_floor-intensity_space-cap']]
+    arr_2050_1 = dm_floor_fts_1.array[:, idx_b[2050], idx_b['lfs_floor-intensity_space-cap']]
+    dict_fts = dict()
+    for level in [2, 3, 4]:
+        dm_floor_fts_lev = dm_floor_ots.copy()
+        dm_floor_fts_lev.add(np.nan, dim='Years', col_label=years_fts, dummy=True)
+        idx = dm_floor_fts_lev.idx
+        # Get increase/reduction level for 2050 wrt 2015
+        rate = 1 + dict_2050[level]
+        arr_2050_tmp = arr_2015 * rate
+        arr_2050_lev = np.minimum(arr_2050_tmp, arr_2050_1)
+        for cntr in dm_floor_ots.col_labels['Country']:
+            arr_2050_lev_cntr = np.maximum(arr_2050_lev[idx_b[cntr]], 25)
+            dm_floor_fts_lev.array[idx[cntr], idx[2050], idx['lfs_floor-intensity_space-cap']] = arr_2050_lev_cntr
+        # Fill nans
+        dm_floor_fts_lev.fill_nans(dim_to_interp='Years')
+        dict_fts[level] = dm_floor_fts_lev.filter({'Years': years_fts}, inplace=False)
+
+    dict_fts[1] = dm_floor_fts_1
+
+    return dict_fts
+
+
 #######################
 #### RUN ROUTINES #####
 #######################
-years_setting = [1990, 2023, 2050, 5]  # Set the timestep for historical years & scenarios
-years_ots = create_ots_years_list(years_setting, astype=int)
+years_ots = create_years_list(start_year=1990, end_year=2023, step=1, astype=int)
+years_fts = create_years_list(start_year=2025, end_year=2050, step=5, astype=int)
+
 f = open('../../country_codes_iso2.json')
 dict_iso2 = json.load(f)
 dict_iso2.pop('CH')  # Remove Switzerland
@@ -793,16 +789,28 @@ dm_area_cap, dm_all = recompute_floor_area_per_capita(dm_all, dm_pop)
 # Floor area shares for all building types
 dm_floor_shares = compute_stock_share_all_types(dm_area_2020, dm_all)
 
-# Update lifestyles_population.csv data
-#file = 'lifestyles_floor-intensity.csv'
-#update_database_from_dm(dm_area_cap_res, filename=file, lever='pop', level=0, module='lifestyles')
+# Update floor-intensity space-cap data
+update_floor_intensity = False
+if update_floor_intensity:
+    file = 'lifestyles_floor-intensity.csv'
+    years_ots = create_years_list(start_year=1990, end_year=2022, step=1, astype=int)
+    # csv_database_reformat(file)
+    update_database_from_dm(dm_area_cap, filename=file, lever='floor-intensity', level=0, module='lifestyles')
+    # It uses EUcalc rates for level 2, 3, 4
+    dict_dm_floor_int_fts = forecast_floor_int_fts_from_ots(dm_area_cap, years_ots, years_fts)
+    for lev, dm_fts in dict_dm_floor_int_fts.items():
+        update_database_from_dm(dm_fts, filename=file, lever='floor-intensity', level=lev, module='lifestyles')
+    #for level in range(4):
+    #    level = level + 1
+    #    dm_all = dm_area_cap.copy()
+    #    dm_all.append(dict_dm_floor_int_fts[level], dim='Years')
+    #    dm_all.datamatrix_plot()
 
-del dm_new_1, dm_new_2
 
 # Extract population data
 #edit_database('lifestyles_population.csv', 'pop', column='geoscale', pattern='Paris|Norway|United Kingdom', mode='remove')
 
-print('Hello')
+
 
 
 # I currently have u_new(t), u_stock(t0), stock(2020), new(t), ren-rate(t), cdd(t), hdd(t)
