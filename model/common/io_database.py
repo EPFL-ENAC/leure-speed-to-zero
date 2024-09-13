@@ -470,12 +470,20 @@ def update_database_from_dm(dm, filename, lever, level, module):
     file_path = os.path.join(root, file)
     db_new = dm_to_database(dm, lever=lever, module=module, level=level)
     db_old = pd.read_csv(file_path, sep=';')
+    # Impose correct type
+    db_old['timescale'] = db_old['timescale'].astype(int)
+    db_old['level'] = db_old['level'].astype(int)
+    db_old['value'] = db_old['value'].astype(float)
+    db_old['geoscale'] = db_old['geoscale'].astype(str)
+    db_old['lever'] = db_old['lever'].astype(str)
+    db_old['variables'] = db_old['variables'].astype(str)
     df_merged = update_database_from_db(db_old, db_new)
     df_merged.to_csv(file_path, index=False, sep=';')
     return
 
 
-def read_database_to_dm(filename, lever=None, num_cat=0, baseyear=2022, years=None, level='all'):
+def read_database_to_dm(filename, lever=None, num_cat=0, baseyear=2022, years=None, level='all', filter=dict()):
+    # csv file columns: geoscale;timescale;module;variables;lever;level;value
     root = find_git_root()
     path = '_database/data/csv/'
     file = path + filename
@@ -491,5 +499,9 @@ def read_database_to_dm(filename, lever=None, num_cat=0, baseyear=2022, years=No
         years_ots = list(np.linspace(start=1990, stop=2022, num=(2022-1990)+1))
         years_fts = list(np.linspace(start=2025, stop=2050, num=int((2050-2025)/5+1)))
         years = years_ots + years_fts
+    if len(filter.items()) > 0:
+        for col_name, values_to_keep in filter.items():
+            df_db = df_db[df_db[col_name].isin(values_to_keep)].copy()
+
     dict_ots, dict_fts = database_to_dm(df_db, lever, num_cat, baseyear, years, level=level)
     return dict_ots, dict_fts
