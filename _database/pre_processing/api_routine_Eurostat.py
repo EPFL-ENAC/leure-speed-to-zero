@@ -2,7 +2,6 @@ import eurostat
 import pandas as pd
 import numpy as np
 from model.common.data_matrix_class import DataMatrix
-from model.common.auxiliary_functions import debug_create_from_df_error
 # Check website for more insight https://pypi.org/project/eurostat/
 # Use the following lines to search a string of text in a table title in eurostat
 # toc = eurostat.get_toc_df(agency='EUROSTAT', lang='en')
@@ -84,7 +83,6 @@ def get_data_api_eurostat(eustat_code, filter, mapping_dim, unit, years=None):
     df_all = df_pivoted.set_index(['Country', 'Years']).reindex(multi_index).reset_index()
 
     # Create datamatrix
-    debug_create_from_df_error(df)
     dm = DataMatrix.create_from_df(df_all, num_cat)
 
     if years is not None:
