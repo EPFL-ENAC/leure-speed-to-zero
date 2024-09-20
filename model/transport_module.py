@@ -1249,5 +1249,5 @@ def local_transport_run():
     return results_run
 
 # database_from_csv_to_datamatrix()
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
-results_run = local_transport_run()
+# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
+# results_run = local_transport_run()
