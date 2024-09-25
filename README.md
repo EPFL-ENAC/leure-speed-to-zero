@@ -40,6 +40,7 @@ Go to *knime2python/config/* if you don't see a *config_eu.yml*, copy & paste *c
 and rename it as config_eu.yml. Then, in the file you will find 3 paths that you need to change manually to match your local workspace.
 
 ### Step 4: Local server
+Download node js version v16.17.0 https://nodejs.org/download/release/v16.17.0/. Download the .msi file.
 Open a terminal, navigate to PathwayCalc/transition-pathway-explorer and run 
 
 ```
