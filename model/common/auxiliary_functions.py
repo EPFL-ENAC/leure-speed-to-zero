@@ -804,8 +804,48 @@ def linear_forecast_BAU(dm_ots, start_t, years_ots, years_fts):
     dm_fts_BAU = dm_ots.filter({'Years': years_ots_keep}, inplace=False)
     linear_fitting(dm_fts_BAU, years_to_keep, min_tb=1)
     dm_fts_BAU.filter({'Years': years_fts}, inplace=True)
-
     return dm_fts_BAU
+
+
+def linear_forecast_BAU_w_noise(dm_ots, start_t, years_ots, years_fts):
+
+    # Linear trend + noise
+    if 'Categories1' in dm_ots.dim_labels:
+        raise ValueError('The datamatrix contains a Categories1 dimension. This should be removed. Use flatten()')
+
+    years_ots_keep = [y for y in years_ots if y > start_t]
+    dm_ots_keep = dm_ots.filter({'Years': years_ots_keep}, inplace=False)
+
+    idx = dm_ots_keep.idx
+    years = np.array(years_ots_keep)
+    future_years = np.array(years_fts)
+    n_countries = len(dm_ots_keep.col_labels['Country'])
+    n_vars = len(dm_ots_keep.col_labels['Variables'])
+
+    # Initialise dm_fts_noise with nan
+    array_nan = np.nan*np.ones((n_countries, len(future_years), n_vars))
+    dm_fts_noise = DataMatrix.based_on(array_nan, format=dm_ots_keep, change={'Years': years_fts}, units=dm_ots_keep.units)
+
+    for var in dm_ots_keep.col_labels['Variables']:
+        values = dm_ots_keep.array[:, :, idx[var]]
+        # Step 1: Fit a linear model for each country
+        # Use polyfit for each country (axis=1 means fitting over the years)
+        coefficients = np.polyfit(years, values.T, 1)  # Transpose to fit over axis 1
+        slopes = coefficients[0]  # Slopes for each country
+        intercepts = coefficients[1]  # Intercepts for each country
+
+        # Step 2: Estimate noise (residuals) and standard deviation of noise
+        predicted_values = slopes[:, np.newaxis] * years + intercepts[:, np.newaxis]
+        residuals = values - predicted_values
+        noise_std = np.std(residuals, axis=1)  # Std of residuals for each country
+
+        # Step 3: Forecast future values
+        future_trend = slopes[:, np.newaxis] * future_years + intercepts[:, np.newaxis]
+        simulated_noise = np.random.normal(0, noise_std[:, np.newaxis], size=(n_countries, len(future_years)))
+        future_values_with_noise = future_trend + simulated_noise
+        dm_fts_noise.array[:, :, idx[var]] = future_values_with_noise
+
+    return dm_fts_noise
 
 
 def moving_average(arr, window_size, axis):
@@ -820,3 +860,39 @@ def create_years_list(start_year, end_year, step, astype=int):
     years_list = list(
         np.linspace(start=start_year, stop=end_year, num=num_yrs).astype(int).astype(astype))
     return years_list
+
+
+def eurostat_iso2_dict():
+    # Eurostat iso2: country name
+    dict_iso2 = {
+        "AT": "Austria",
+        "BE": "Belgium",
+        "BG": "Bulgaria",
+        "HR": "Croatia",
+        "CY": "Cyprus",
+        "CZ": "Czech Republic",
+        "DK": "Denmark",
+        "EE": "Estonia",
+        "FI": "Finland",
+        "FR": "France",
+        "DE": "Germany",
+        "EL": "Greece",
+        "HU": "Hungary",
+        "IE": "Ireland",
+        "IT": "Italy",
+        "LV": "Latvia",
+        "LT": "Lithuania",
+        "LU": "Luxembourg",
+        "MT": "Malta",
+        "NL": "Netherlands",
+        "PL": "Poland",
+        "PT": "Portugal",
+        "RO": "Romania",
+        "SK": "Slovakia",
+        "SI": "Slovenia",
+        "ES": "Spain",
+        "SE": "Sweden",
+        "CH": "Switzerland",
+        "EU27_2020": "EU27"
+    }
+    return dict_iso2
