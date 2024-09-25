@@ -12,34 +12,6 @@ EU27_cntr_list = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czech 
                   'France', 'Germany', 'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia', 'Lithuania', 'Luxembourg',
                   'Malta', 'Netherlands', 'Poland', 'Portugal', 'Romania', 'Slovakia', 'Slovenia', 'Spain', 'Sweden']
 
-def get_CDD_data():
-    # The datasource for the CDD is Eurostat, base temperature is 21, threshold is 24.
-    file = 'Eurostat_CDD.xlsx'
-    data_path = 'data/'
-    rows_to_skip = list(range(8)) + [9] + [39, 40, 41]
-    df_cdd = pd.read_excel(data_path+file, sheet_name='Sheet 1', skiprows=rows_to_skip)
-    df_cdd.rename({'TIME': 'Country'}, axis=1, inplace=True)
-    # It melts a short format to a long format, var_name is all of the columns except the one specified in id_vars
-    df_melted = pd.melt(df_cdd, id_vars=['Country'], var_name='Years', value_name='clm_CDD[daysK]')
-    dm_cdd = DataMatrix.create_from_df(df_melted, num_cat=0)
-    dm_cdd.rename_col('European Union - 27 countries (from 2020)', 'EU27', dim='Country')
-    dm_cdd.rename_col('Czechia', 'Czech Republic', dim='Country')
-    return dm_cdd
-
-
-def get_HDD_data():
-    file = 'Eurostat_HDD.xlsx'
-    data_path = 'data/'
-    rows_to_skip = list(range(8)) + [9] + [39, 40, 41]
-    df_hdd = pd.read_excel(data_path+file, sheet_name='Sheet 1', skiprows=rows_to_skip)
-    df_hdd.rename({'TIME': 'Country'}, axis=1, inplace=True)
-    # It melts a short format to a long format, var_name is all of the columns except the one specified in id_vars
-    df_melted = pd.melt(df_hdd, id_vars=['Country'], var_name='Years', value_name='clm_HDD[daysK]')
-    dm_hdd = DataMatrix.create_from_df(df_melted, num_cat=0)
-    dm_hdd.rename_col('European Union - 27 countries (from 2020)', 'EU27', dim='Country')
-    dm_hdd.rename_col('Czechia', 'Czech Republic', dim='Country')
-    return dm_hdd
-
 
 def get_new_building():
     file = 'Floor-area_new_built.xlsx'
@@ -756,10 +728,7 @@ f = open('../../country_codes_iso2.json')
 dict_iso2 = json.load(f)
 dict_iso2.pop('CH')  # Remove Switzerland
 
-# Load CDD
-dm_cdd = get_CDD_data()
-# Load HDD
-dm_hdd = get_HDD_data()
+
 # Load renovation rates
 dm_rr = get_renovation_rate()
 # Load U-value for new buildings()
