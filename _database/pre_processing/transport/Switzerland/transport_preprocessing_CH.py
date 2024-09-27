@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from _database.pre_processing.api_routines_CH import get_data_api_CH
 from model.common.data_matrix_class import DataMatrix
-from model.common.auxiliary_functions import create_years_list, linear_fitting, add_missing_ots_years
+from model.common.auxiliary_functions import create_years_list, linear_fitting, add_missing_ots_years, moving_average
 import pickle
 import os
 import requests
@@ -77,9 +77,9 @@ def compute_passenger_new_fleet(table_id_new_veh, file_new_veh_ots1, file_new_ve
         # Map fuel technology to transport module category
         dict_tech = {'FCEV': ['Hydrogen'], 'BEV': ['Electricity'],
                      'ICE-diesel': ['Diesel', 'Diesel-electricity: conventional hybrid'],
-                     'ICE-petrol': ['Petrol', 'Petrol-electricity: conventional hybrid'],
-                     'PHEV-diesel': ['Petrol-electricity: plug-in hybrid'],
-                     'PHEV-gesoline': ['Diesel-electricity: plug-in hybrid'],
+                     'ICE-gasoline': ['Petrol', 'Petrol-electricity: conventional hybrid'],
+                     'PHEV-diesel': ['Diesel-electricity: plug-in hybrid'],
+                     'PHEV-gesoline': ['Petrol-electricity: plug-in hybrid'],
                      'ICE-gas': ['Gas (monovalent and bivalent)']}
         dm_pass_new_fleet.groupby(dict_tech, dim='Categories2', regex=False, inplace=True)
         dm_pass_new_fleet.drop(col_label='Without motor', dim='Categories2')
@@ -209,7 +209,7 @@ def get_passenger_stock_fleet_by_tech_raw(table_id, file):
     # Map fuel technology to transport module category. Other category cannot be removed as it is above 1%
     dict_tech = {'BEV': ['Electricity'],
                  'ICE-diesel': ['Diesel'],
-                 'ICE-petrol': ['Petrol']}
+                 'ICE-gasoline': ['Petrol']}
     dm_fleet.groupby(dict_tech, dim='Categories2', regex=False, inplace=True)
     dm_fleet.drop(dim='Categories2', col_label='Without motor')
 
@@ -241,9 +241,9 @@ def allocate_other_to_new_technologies(dm_fleet, dm_new_tech):
     # Map fuel technology to transport module category
     dict_tech = {'FCEV': ['Hydrogen'],
                  'ICE-diesel': ['Diesel-electricity: conventional hybrid'],
-                 'ICE-petrol': ['Petrol-electricity: conventional hybrid'],
-                 'PHEV-diesel': ['Petrol-electricity: plug-in hybrid'],
-                 'PHEV-gesoline': ['Diesel-electricity: plug-in hybrid'],
+                 'ICE-gasoline': ['Petrol-electricity: conventional hybrid'],
+                 'PHEV-diesel': ['Diesel-electricity: plug-in hybrid'],
+                 'PHEV-gesoline': ['Petrol-electricity: plug-in hybrid'],
                  'ICE-gas': ['Gas (monovalent and bivalent)']}
     dm_fleet_other.groupby(dict_tech, dim='Categories2', regex=False, inplace=True)
 
@@ -257,10 +257,10 @@ def allocate_other_to_new_technologies(dm_fleet, dm_new_tech):
         dm_fleet_new.array[:, :, :, :, idx_f['ICE-diesel']] \
         + dm_fleet_other.array[:, :, :, :, idx_o['ICE-diesel']]
     # Petrol
-    dm_fleet_new.array[:, :, :, :, idx_f['ICE-petrol']] = \
-        dm_fleet_new.array[:, :, :, :, idx_f['ICE-petrol']] \
-        + dm_fleet_other.array[:, :, :, :, idx_o['ICE-petrol']]
-    dm_fleet_other.drop(dim='Categories2', col_label=['ICE-petrol', 'ICE-diesel'])
+    dm_fleet_new.array[:, :, :, :, idx_f['ICE-gasoline']] = \
+        dm_fleet_new.array[:, :, :, :, idx_f['ICE-gasoline']] \
+        + dm_fleet_other.array[:, :, :, :, idx_o['ICE-gasoline']]
+    dm_fleet_other.drop(dim='Categories2', col_label=['ICE-gasoline', 'ICE-diesel'])
 
     dm_fleet_new.append(dm_fleet_other, dim='Categories2')
 
@@ -387,7 +387,7 @@ def get_public_transport_data(file_url, local_filename, years_ots):
         new_header = df.iloc[2]
         new_header.values[0] = 'Variables'
         df.columns = new_header
-        df = df[3:]
+        df = df[3:].copy()
         # Remove nans and empty columns/rows
         df.drop(columns=np.nan, inplace=True)
         df.set_index('Variables', inplace=True)
@@ -395,11 +395,11 @@ def get_public_transport_data(file_url, local_filename, years_ots):
         df.dropna(axis=1, how='all', inplace=True)
         # Filter rows that contain at least one number (integer or float)
         df = df[df.applymap(pd.api.types.is_number).any(axis=1)]
-        df = df.loc[:, df.applymap(pd.api.types.is_number).any(axis=0)]
+        df = df.loc[:, df.applymap(pd.api.types.is_number).any(axis=0)].copy()
         # Extract only the data we are interested in:
         vehicles_vars = ['Voitures voyageurs (voitures de commande isolées, automotrices et éléments de rames automotrices inclus)',
                          'Trolleybus', 'Tram', 'Autobus', 'Total - nombre de véhicules motorisés']
-        df_pass_public_veh = df.loc[vehicles_vars]
+        df_pass_public_veh = df.loc[vehicles_vars].copy()
         df_pass_public_veh = df_pass_public_veh.applymap(lambda x: pd.to_numeric(x, errors='coerce'))
         df_pass_public_veh.reset_index(inplace=True)
         df_pass_public_veh['Variables'] = df_pass_public_veh['Variables'].str[:10]
@@ -437,7 +437,7 @@ def get_public_transport_data(file_url, local_filename, years_ots):
         new_header = df.iloc[2]
         new_header.values[0] = 'Variables'
         df.columns = new_header
-        df = df[3:]
+        df = df[3:].copy()
         # Remove nans and empty columns/rows
         df.drop(columns=np.nan, inplace=True)
         df.set_index('Variables', inplace=True)
@@ -445,7 +445,7 @@ def get_public_transport_data(file_url, local_filename, years_ots):
         df.dropna(axis=1, how='all', inplace=True)
         # Filter rows that contain at least one number (integer or float)
         df = df[df.applymap(pd.api.types.is_number).any(axis=1)]
-        df = df.loc[:, df.applymap(pd.api.types.is_number).any(axis=0)]
+        df = df.loc[:, df.applymap(pd.api.types.is_number).any(axis=0)].copy()
         # Vars to keep
         vars_to_keep = ['Chemins de fer', 'Chemins de fer à crémaillère', 'Tram', 'Trolleybus', 'Autobus']
         df_pkm = df.loc[vars_to_keep]
@@ -495,7 +495,7 @@ def get_public_transport_data(file_url, local_filename, years_ots):
         new_header = df.iloc[2]
         new_header.values[0] = 'Variables'
         df.columns = new_header
-        df = df[3:]
+        df = df[3:].copy()
         # Remove nans and empty columns/rows
         df.drop(columns=np.nan, inplace=True)
         df.set_index('Variables', inplace=True)
@@ -506,7 +506,7 @@ def get_public_transport_data(file_url, local_filename, years_ots):
         df = df.loc[:, df.applymap(pd.api.types.is_number).any(axis=0)]
         # Vars to keep
         vars_to_keep = ['Chemins de fer', 'Chemins de fer à crémaillère', 'Tram', 'Trolleybus', 'Autobus']
-        df_vkm = df.loc[vars_to_keep]
+        df_vkm = df.loc[vars_to_keep].copy()
         # Convert ... to numerics
         df_vkm = df_vkm.applymap(lambda x: pd.to_numeric(x, errors='coerce'))
         df_vkm.reset_index(inplace=True)
@@ -544,7 +544,6 @@ def get_public_transport_data(file_url, local_filename, years_ots):
 
         return dm
 
-
     DF_dict = get_excel_file_sheets(file_url, local_filename)
     dm_public_fleet = extract_public_passenger_fleet(DF_dict['Passenger fleet'], years_ots)
     dm_public_demand_pkm = extract_public_passenger_pkm(DF_dict['Passenger pkm'], years_ots)
@@ -554,6 +553,242 @@ def get_public_transport_data(file_url, local_filename, years_ots):
                  'public_demand-vkm': dm_public_demand_vkm}
 
     return DM_public
+
+
+def get_vehicle_efficiency(table_id, file, years_ots, var_name, overwrite_VD_PHEV_FCEV=False):
+    # New fleet data are heavy, download them only once
+    try:
+        with open(file, 'rb') as handle:
+            dm_veh_eff = pickle.load(handle)
+            print(f'The vehicle efficienty is read from file {file}. Delete it if you want to update data from api.')
+    except OSError:
+        structure, title = get_data_api_CH(table_id, mode='example', language='fr')
+        i = 0
+        # The table is too big to be downloaded at once
+        for eu_class in structure["Classe d'émission selon l'UE"]:
+            for part in structure['Filtre à particules']:
+                i = i + 1
+                filtering = {'Année': structure['Année'],
+                             'Carburant': structure['Carburant'],
+                             'Puissance': structure['Puissance'],
+                             'Canton': ['Suisse', 'Vaud'],
+                             "Classe d'émission selon l'UE": eu_class,
+                             'Émissions de CO2 par km (NEDC)': structure['Émissions de CO2 par km (NEDC)'],
+                             'Filtre à particules': part}
+
+                mapping_dim = {'Country': 'Canton',
+                               'Years': 'Année',
+                               'Variables': 'Puissance',
+                               'Categories1': 'Carburant',
+                               'Categories2': 'Émissions de CO2 par km (NEDC)'}
+
+                # Extract new fleet
+                dm_veh_eff_cl = get_data_api_CH(table_id, mode='extract', filter=filtering, mapping_dims=mapping_dim,
+                                                units=['gCO2/km']*len(structure['Puissance']), language='fr')
+                dm_veh_eff_cl.array = np.nan_to_num(dm_veh_eff_cl.array)
+
+                if dm_veh_eff_cl is None:
+                    raise ValueError(f'API returned None for {eu_class}')
+                if i == 1:
+                    dm_veh_eff = dm_veh_eff_cl.copy()
+                else:
+                    dm_veh_eff.array = dm_veh_eff.array + dm_veh_eff_cl.array
+
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        f = os.path.join(current_file_directory, file)
+        with open(f, 'wb') as handle:
+            pickle.dump(dm_veh_eff, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    # Distribute Inconnu on other categories based on their share
+    cat_other = [cat for cat in dm_veh_eff.col_labels['Categories2'] if cat != 'Inconnu']
+    dm_other = dm_veh_eff.filter({'Categories2': cat_other}, inplace=False)
+    dm_other.normalise(dim='Categories2', inplace=True)
+    idx = dm_veh_eff.idx
+    arr_inc = dm_veh_eff.array[:, :, :, :, idx['Inconnu'], np.newaxis] * dm_other.array
+    dm_veh_eff.drop(dim='Categories2', col_label='Inconnu')
+    dm_veh_eff.array = dm_veh_eff.array + arr_inc
+
+    # Remove fuel type "Autre" (there are only very few car in this category)
+    dm_veh_eff.drop(dim='Categories1', col_label='Autre')
+
+    # Assign Vaud Hydrogen and hybrid-rechargeable to Swiss values
+    if overwrite_VD_PHEV_FCEV:
+        idx = dm_veh_eff.idx
+        cats = ['Hydrogène', 'Essence-électrique: hybride rechargeable', 'Diesel-électrique: hybride rechargeable']
+        for cat in cats:
+            dm_veh_eff.array[idx['Vaud'], :, :, idx[cat]] = dm_veh_eff.array[idx['Suisse'], :, :, idx[cat]]
+
+    # Group categories1 according to model
+    map_cat = {'ICE-diesel': ['Diesel', 'Diesel-électrique: hybride normal'],
+               'ICE-gasoline': ['Essence', 'Essence-électrique: hybride normal'],
+               'ICE-gas': ['Gaz (monovalent et bivalent)'],
+               'BEV': ['Électrique'],
+               'FCEV': ['Hydrogène'],
+               'PHEV-diesel': ['Diesel-électrique: hybride rechargeable'],
+               'PHEV-gasoline': ['Essence-électrique: hybride rechargeable']
+               }
+    dm_veh_eff.groupby(map_cat, dim='Categories1', inplace=True)
+
+    # Do this to have realistic curves
+    mask = dm_veh_eff.array == 0
+    dm_veh_eff.array[mask] = np.nan
+
+    # Flat extrapolation
+    years_to_add = [year for year in years_ots if year not in dm_veh_eff.col_labels['Years']]
+    dm_veh_eff.add(np.nan, dummy=True, col_label=years_to_add, dim='Years')
+    dm_veh_eff.sort(dim='Years')
+    dm_veh_eff.fill_nans(dim_to_interp='Years')
+
+    dm_veh_eff.groupby({var_name: '.*'}, dim='Variables', regex=True, inplace=True)
+
+    # Clean grams CO2 category and perform weighted average
+    # cols are e.g '0 - 50 g' -> '0-50' -> 25
+    dm_veh_eff.rename_col_regex(' g', '', dim='Categories2')
+    dm_veh_eff.rename_col_regex(' ', '', dim='Categories2')
+    dm_veh_eff.rename_col('Plusde300', '300-350', dim='Categories2')
+    cat2_list_old = dm_veh_eff.col_labels['Categories2']
+    co2_km = []
+    for i in range(len(cat2_list_old)):
+        old_cat = cat2_list_old[i]
+        new_cat = float(old_cat.split('-')[0]) + float(old_cat.split('-')[1])/2
+        co2_km.append(new_cat)
+    co2_arr = np.array(co2_km)
+    dm_veh_eff.normalise(dim='Categories2', inplace=True)
+    dm_veh_eff.array = dm_veh_eff.array*co2_arr[np.newaxis, np.newaxis, np.newaxis, np.newaxis, :]
+    dm_veh_eff.group_all(dim='Categories2')
+
+    dm_veh_eff.change_unit(var_name, 1, old_unit='%', new_unit='gCO2/km')
+
+
+    for i in range(2):
+        window_size = 3  # Change window size to control the smoothing effect
+        data_smooth = moving_average(dm_veh_eff.array, window_size, axis=dm_veh_eff.dim_labels.index('Years'))
+        dm_veh_eff.array[:, 1:-1, ...] = data_smooth
+
+    # Add LDV
+    dm_veh_eff_LDV = DataMatrix.based_on(dm_veh_eff.array[..., np.newaxis], dm_veh_eff, change={'Categories2': ['LDV']},
+                                         units=dm_veh_eff.units)
+    dm_veh_eff_LDV.switch_categories_order()
+
+    return dm_veh_eff_LDV
+
+
+def get_new_vehicle_efficiency(table_id, file, years_ots, var_name):
+    # New fleet data are heavy, download them only once
+    try:
+        with open(file, 'rb') as handle:
+            dm_veh_eff = pickle.load(handle)
+            print(f'The vehicle efficienty is read from file {file}. Delete it if you want to update data from api.')
+    except OSError:
+        structure, title = get_data_api_CH(table_id, mode='example', language='fr')
+        i = 0
+        # The table is too big to be downloaded at once
+        for eu_class in structure["Classe d'émission selon l'UE"]:
+            i = i + 1
+            filtering = {'Année': structure['Année'],
+                         'Carburant': structure['Carburant'],
+                         'Puissance': structure['Puissance'],
+                         'Canton': ['Suisse', 'Vaud'],
+                         "Classe d'émission selon l'UE": eu_class,
+                         'Émissions de CO2 par km (NEDC/WLTP)': structure['Émissions de CO2 par km (NEDC/WLTP)']}
+
+            mapping_dim = {'Country': 'Canton',
+                           'Years': 'Année',
+                           'Variables': 'Puissance',
+                           'Categories1': 'Carburant',
+                           'Categories2': 'Émissions de CO2 par km (NEDC/WLTP)'}
+
+            # Extract new fleet
+            dm_veh_eff_cl = get_data_api_CH(table_id, mode='extract', filter=filtering, mapping_dims=mapping_dim,
+                                            units=['gCO2/km']*len(structure['Puissance']), language='fr')
+            dm_veh_eff_cl.array = np.nan_to_num(dm_veh_eff_cl.array)
+
+            if dm_veh_eff_cl is None:
+                raise ValueError(f'API returned None for {eu_class}')
+            if i == 1:
+                dm_veh_eff = dm_veh_eff_cl.copy()
+            else:
+                dm_veh_eff.array = dm_veh_eff.array + dm_veh_eff_cl.array
+
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        f = os.path.join(current_file_directory, file)
+        with open(f, 'wb') as handle:
+            pickle.dump(dm_veh_eff, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    # Do this to have realistic curves
+    mask = dm_veh_eff.array == 0
+    dm_veh_eff.array[mask] = np.nan
+
+    # Flat extrapolation
+    years_to_add = [year for year in years_ots if year not in dm_veh_eff.col_labels['Years']]
+    dm_veh_eff.add(np.nan, dummy=True, col_label=years_to_add, dim='Years')
+    dm_veh_eff.sort(dim='Years')
+    dm_veh_eff.fill_nans(dim_to_interp='Years')
+
+    # Explore Inconnu category
+    # -> The data seem to be good only from 2016 to 2020, still the "Inconnu" share is big
+    dm_norm = dm_veh_eff.normalise(dim='Categories2', inplace=False)
+    idx = dm_norm.idx
+    for country in dm_veh_eff.col_labels['Country']:
+        for year in dm_veh_eff.col_labels['Years']:
+            for cat in dm_veh_eff.col_labels['Categories1']:
+                # If "Inconnu" is more than 20% remove the data points
+                if dm_norm.array[idx[country], idx[year], 0, idx[cat], idx['Inconnu']] > 0.2:
+                    dm_veh_eff.array[idx[country], idx[year], 0, idx[cat], :] = np.nan
+
+    for i in range(2):
+        window_size = 3  # Change window size to control the smoothing effect
+        data_smooth = moving_average(dm_veh_eff.array, window_size, axis=dm_veh_eff.dim_labels.index('Years'))
+        dm_veh_eff.array[:, 1:-1, ...] = data_smooth
+
+    # Distribute Inconnu on other categories based on their share
+    cat_other = [cat for cat in dm_veh_eff.col_labels['Categories2'] if cat != 'Inconnu']
+    dm_other = dm_veh_eff.filter({'Categories2': cat_other}, inplace=False)
+    dm_other.normalise(dim='Categories2', inplace=True)
+    dm_other.array = np.nan_to_num(dm_other.array)
+    idx = dm_veh_eff.idx
+    arr_inc = np.nan_to_num(dm_veh_eff.array[:, :, :, :, idx['Inconnu'], np.newaxis]) * dm_other.array
+    dm_veh_eff.drop(dim='Categories2', col_label='Inconnu')
+    dm_veh_eff.array = dm_veh_eff.array + arr_inc
+
+    # Remove fuel type "Autre" (there are only very few car in this category)
+    dm_veh_eff.drop(dim='Categories1', col_label='Autre')
+
+    # Group categories1 according to model
+    map_cat = {'ICE-diesel': ['Diesel', 'Diesel-électrique: hybride normal'],
+               'ICE-gasoline': ['Essence', 'Essence-électrique: hybride normal'],
+               'ICE-gas': ['Gaz (monovalent et bivalent)'],
+               'BEV': ['Électrique'],
+               'FCEV': ['Hydrogène'],
+               'PHEV-diesel': ['Diesel-électrique: hybride rechargeable'],
+               'PHEV-gasoline': ['Essence-électrique: hybride rechargeable']
+               }
+    dm_veh_eff.groupby(map_cat, dim='Categories1', inplace=True)
+
+    dm_veh_eff.groupby({var_name: '.*'}, dim='Variables', regex=True, inplace=True)
+
+    # Clean grams CO2 category and perform weighted average
+    # cols are e.g '0 - 50 g' -> '0-50' -> 25
+    dm_veh_eff.rename_col_regex(' g', '', dim='Categories2')
+    dm_veh_eff.rename_col_regex(' ', '', dim='Categories2')
+    dm_veh_eff.rename_col('Plusde300', '300-350', dim='Categories2')
+    cat2_list_old = dm_veh_eff.col_labels['Categories2']
+    co2_km = []
+    for i in range(len(cat2_list_old)):
+        old_cat = cat2_list_old[i]
+        new_cat = float(old_cat.split('-')[0]) + float(old_cat.split('-')[1])/2
+        co2_km.append(new_cat)
+    dm_veh_eff.normalise(dim='Categories2', inplace=True)
+    dm_veh_eff.array = dm_veh_eff.array*np.array(co2_km)
+    dm_veh_eff.group_all(dim='Categories2')
+    dm_veh_eff.change_unit(var_name, 1, old_unit='%', new_unit='gCO2/km')
+
+    # Add LDV
+    dm_veh_eff_LDV = DataMatrix.based_on(dm_veh_eff.array[..., np.newaxis], dm_veh_eff, change={'Categories2': ['LDV']},
+                                         units=dm_veh_eff.units)
+    dm_veh_eff_LDV.switch_categories_order()
+
+    return dm_veh_eff_LDV
 
 
 years_ots = create_years_list(start_year=1990, end_year=2023, step=1, astype=int)
@@ -589,17 +824,25 @@ file_url = 'https://dam-api.bfs.admin.ch/hub/api/dam/assets/32253175/master'
 # Transports publics (trafic marchandises rail inclus) - séries chronologiques détaillées
 local_filename = 'data/tra_public_transport.xlsx'
 DM_public = get_public_transport_data(file_url, local_filename, years_ots)
-del years_ots, file_url, local_filename
+del file_url, local_filename
 
-#### Vehicle efficiency - CO2/km
+#### Vehicle efficiency - LDV - CO2/km
+# FCEV (Hydrogen) data are off - BEV too
+# !!! Attention: The data are bad before 2016 and after 2020, backcasting to 1990 from 2016 done with linear fitting.
 table_id_veh_eff = 'px-x-1103020100_106'
-local_filename_veh = 'data/tra_veh_efficiency.pickle'
+local_filename_veh = 'data/tra_veh_efficiency.pickle'  # The file is created if it doesn't exist
+overwrite_VD_PHEV_FCEV = False
+dm_veh_eff_LDV = get_vehicle_efficiency(table_id_veh_eff, local_filename_veh,
+                                        var_name='tra_passenger_veh-efficiency_fleet', years_ots=years_ots)
+del table_id_veh_eff, local_filename_veh, overwrite_VD_PHEV_FCEV
 
-
+#### Vehicle efficiency new - LDV - CO2/km
+# FCEV data are off, BEV = 25 gCO2/km independently of car power
 table_id_new_eff = 'px-x-1103020200_201'
-local_filename_new = 'data/tra_new-veh_efficiency.pickle'
-
-
+local_filename_new = 'data/tra_new-veh_efficiency.pickle'  # The file is created if it doesn't exist3#
+dm_veh_new_eff_LDV = get_new_vehicle_efficiency(table_id_new_eff, local_filename_new,
+                                                var_name='tra_passenger_veh-efficiency_new', years_ots=years_ots)
+del table_id_new_eff, local_filename_new
 
 
 print('Hello')
