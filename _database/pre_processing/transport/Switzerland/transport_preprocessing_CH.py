@@ -5,9 +5,39 @@ from _database.pre_processing.api_routines_CH import get_data_api_CH
 from model.common.data_matrix_class import DataMatrix
 from model.common.io_database import read_database_to_dm
 from model.common.auxiliary_functions import create_years_list, linear_fitting, add_missing_ots_years, moving_average
+from model.common.auxiliary_functions import linear_forecast_BAU
+from _database.pre_processing.WorldBank_data_extract import get_WB_data
 import pickle
 import os
 import requests
+
+
+def fill_var_nans_based_on_var_curve(dm, var_nan, var_ref):
+    # Fills nan in a variable dm based on another variable curve
+    dm.operation(var_nan, '/', var_ref, out_col='ratio', unit='%')
+    linear_fitting(dm, dm.col_labels['Years'])
+    dm.operation('ratio', '*', var_ref, out_col=var_nan+'_ok', unit=dm.units[var_ref])
+    dm.filter({'Variables': [var_nan + '_ok']}, inplace=True)
+    dm.rename_col(var_nan + '_ok', var_nan, dim='Variables')
+    return dm
+
+
+def save_url_to_file(file_url, local_filename):
+    response = requests.get(file_url, stream=True)
+    if not os.path.exists(local_filename):
+        # Check if the request was successful
+        if response.status_code == 200:
+            with open(local_filename, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+            print(f"File downloaded successfully as {local_filename}")
+        else:
+            print(f"Error: {response.status_code}, {response.text}")
+    else:
+        print(f'File {local_filename} already exists. If you want to download again delete the file')
+
+    return
 
 
 def compute_passenger_new_fleet(table_id_new_veh, file_new_veh_ots1, file_new_veh_ots2):
@@ -398,8 +428,9 @@ def get_public_transport_data(file_url, local_filename, years_ots):
         df = df[df.apply(lambda row: row.map(pd.api.types.is_number), axis=1).any(axis=1)]
         df = df.loc[:, df.apply(lambda col: col.map(pd.api.types.is_number)).any(axis=0)].copy()
         # Extract only the data we are interested in:
+        # Electrique and Diesel here below refers to the engine type of rails
         vehicles_vars = ['Voitures voyageurs (voitures de commande isolées, automotrices et éléments de rames automotrices inclus)',
-                         'Trolleybus', 'Tram', 'Autobus', 'Total - nombre de véhicules motorisés']
+                         'Trolleybus', 'Tram', 'Autobus', 'Électrique', 'Diesel ']
         df_pass_public_veh = df.loc[vehicles_vars].copy()
         df_pass_public_veh = df_pass_public_veh.applymap(lambda x: pd.to_numeric(x, errors='coerce'))
         df_pass_public_veh.reset_index(inplace=True)
@@ -416,7 +447,9 @@ def get_public_transport_data(file_url, local_filename, years_ots):
         df_pivot.reset_index(inplace=True)
 
         dm_fleet = DataMatrix.create_from_df(df_pivot, num_cat=1)
-        map_cat = {'bus': ['Autobus', 'Trolleybus'], 'metrotram': ['Tram'], 'rail': ['Total - no', 'Voitures v']}
+        map_cat = {'bus_CEV': ['Trolleybus'], 'bus_ICE-diesel': ['Autobus'],
+                   'metrotram_mt': ['Tram'], 'rail': ['Voitures v'], 'rail_CEV': ['Électrique'],
+                   'rail_ICE-diesel': ['Diesel ']}
         dm_fleet.groupby(map_cat, dim='Categories1', inplace=True)
         mask = dm_fleet.array == 0
         dm_fleet.array[mask] = np.nan
@@ -430,6 +463,21 @@ def get_public_transport_data(file_url, local_filename, years_ots):
         # Join historical values with extrapolated ones
         dm_fleet.drop(dim='Years', col_label=years_init)
         dm_fleet.append(dm_tmp, dim='Years')
+
+        # We have extracted the total number of wagon (as 'rail')
+        # and then the number of motorised wagon by electric and diesel (as 'rail_CEV', 'rail_ICE-diesel')
+        # we want to distribute the number of wagon by diesel and electric
+        dm_rail_tech = dm_fleet.filter({'Categories1': ['rail_CEV', 'rail_ICE-diesel']})
+        dm_rail_tech.normalise(dim='Categories1')
+
+        idx_f = dm_fleet.idx
+        idx_r = dm_rail_tech.idx
+        dm_fleet.array[:, :, :, idx_f['rail_ICE-diesel']] = dm_fleet.array[:, :, :, idx_f['rail']]\
+                                                            * dm_rail_tech.array[:, :, :, idx_r['rail_ICE-diesel']]
+        dm_fleet.array[:, :, :, idx_f['rail_CEV']] = dm_fleet.array[:, :, :, idx_f['rail']]\
+                                                     * dm_rail_tech.array[:, :, :, idx_r['rail_CEV']]
+        dm_fleet.drop(col_label=['rail'], dim='Categories1')
+        dm_fleet.deepen()
 
         return dm_fleet
 
@@ -815,6 +863,7 @@ def get_travel_demand_canton_microrecencement_2021(file_url, local_filename, yea
     DF = {'Vaud': df_VD, 'Switzerland': df_CH}
     for country in DF.keys():
         df = DF[country]
+        # Only keep column with pkm/cap
         cols = [df.columns[i] for i in [0, 11, 13, 15]]
         df = df[cols].copy()
         df.columns = ['Demographic', 'tra_pkm-cap_Bike-Walk[km/cap]', 'tra_pkm-cap_LDV-2W[km/cap]', 'tra_pkm-cap_Public[km/cap]']
@@ -924,15 +973,15 @@ def compute_canton_passenger_transport_demand_pkm(DF, var_name):
     return dm_pkm
 
 
-
-def df_fso_excel_to_dm(df, header_row, names_dict, var_name, unit, num_cat):
+def df_fso_excel_to_dm(df, header_row, names_dict, var_name, unit, num_cat, keep_first=False, country='Switzerland'):
     # Change headers
     new_header = df.iloc[header_row]
     new_header.values[0] = 'Variables'
     df.columns = new_header
     df = df[header_row+1:].copy()
     # Remove nans and empty columns/rows
-    df.drop(columns=np.nan, inplace=True)
+    if np.nan in df.columns:
+        df.drop(columns=np.nan, inplace=True)
     df.set_index('Variables', inplace=True)
     df.dropna(axis=0, how='all', inplace=True)
     df.dropna(axis=1, how='all', inplace=True)
@@ -945,35 +994,30 @@ def df_fso_excel_to_dm(df, header_row, names_dict, var_name, unit, num_cat):
     df_filter.reset_index(inplace=True)
     # Keep only first 10 caracters
     df_filter['Variables'] = df_filter['Variables'].replace(names_dict)
+    if keep_first:
+        df_filter = df_filter.drop_duplicates(subset=['Variables'], keep='first')
     df_filter = df_filter.groupby(['Variables']).sum()
     df_filter.reset_index(inplace=True)
 
     # Pivot the dataframe
-    df_filter['Country'] = 'Switzerland'
+    df_filter['Country'] = country
     df_T = pd.melt(df_filter, id_vars=['Variables', 'Country'], var_name='Years', value_name='values')
     df_pivot = df_T.pivot_table(index=['Country', 'Years'], columns=['Variables'], values='values', aggfunc='sum')
     df_pivot = df_pivot.add_suffix('[' + unit + ']')
     df_pivot = df_pivot.add_prefix(var_name + '_')
     df_pivot.reset_index(inplace=True)
 
+    # Drop non numeric values in Years col
+    df_pivot['Years'] = pd.to_numeric(df_pivot['Years'], errors='coerce')
+    df_pivot = df_pivot.dropna(subset=['Years'])
+
     dm = DataMatrix.create_from_df(df_pivot, num_cat=num_cat)
     return dm
 
 
 def get_transport_demand_vkm(file_url, local_filename, years_ots):
-    response = requests.get(file_url, stream=True)
-    if not os.path.exists(local_filename):
-        # Check if the request was successful
-        if response.status_code == 200:
-            with open(local_filename, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-            print(f"File downloaded successfully as {local_filename}")
-        else:
-            print(f"Error: {response.status_code}, {response.text}")
-    else:
-        print(f'File {local_filename} already exists. If you want to download again delete the file')
+    # If file does not exist, it downloads it and creates it
+    save_url_to_file(file_url, local_filename)
 
     df_latest = pd.read_excel(local_filename)
     df_earlier = pd.read_excel(local_filename, sheet_name='1990-2004')
@@ -1014,6 +1058,119 @@ def get_transport_demand_vkm(file_url, local_filename, years_ots):
     return dm
 
 
+def get_pkm_cap_aviation(file_url, local_filename):
+    # Extract CH pkm/cap (data available every 5 years)
+    save_url_to_file(file_url, local_filename)
+    df = pd.read_excel(local_filename)
+    filter_1 = ['Average annual mobility per person3 by aeroplane (within Switzerland and abroad), in km']
+    new_names_1 = ['aviation']
+    names_map = dict()
+    for i, row in enumerate(filter_1):
+        names_map[row] = new_names_1[i]
+    var_name = 'tra_passenger_pkm-cap'
+    unit = 'pkm/cap'
+    header_row = 2
+    dm_pkm = df_fso_excel_to_dm(df, header_row, names_map, var_name, unit, num_cat=1)
+    return dm_pkm
+
+
+def get_world_pop(pop_url, local_filename):
+    save_url_to_file(pop_url, local_filename)
+    df_pop = pd.read_excel(local_filename)
+    filter = ['World']
+    new_names = ['lfs_population_total']
+    names_map = dict()
+    for i, row in enumerate(filter):
+        names_map[row] = new_names[i]
+    var_name = 'tra_passenger'
+    unit = 'number'
+    header_row = 2
+    dm_pop = df_fso_excel_to_dm(df_pop, header_row, names_map, var_name, unit, num_cat=0, keep_first=True,
+                                country='World')
+    return dm_pop
+
+
+def compute_pkm_cap_aviation(dm_pkm_cap_aviation_CH_raw, dm_pkm_aviation_WLD, dm_pop_WLD, years_ots):
+    dm_pkm_cap_aviation_CH = dm_pkm_cap_aviation_CH_raw.copy()
+    dm_pkm_aviation_WLD.filter({'Years': years_ots}, inplace=True)
+    dm_pkm_aviation_WLD.change_unit('tra_passenger_transport-demand', factor=1e9, old_unit='Bpkm', new_unit='pkm')
+    dm_pkm_aviation_WLD = dm_pkm_aviation_WLD.flatten()
+
+    # pkm_cap_WLD = pkm/pop
+    years_WLD = dm_pkm_aviation_WLD.col_labels['Years']
+    dm_pop_WLD.filter({'Years': years_WLD}, inplace=True)
+    dm_pkm_aviation_WLD.append(dm_pop_WLD, dim='Variables')
+    dm_pkm_aviation_WLD.operation('tra_passenger_transport-demand_aviation', '/', 'tra_passenger_lfs_population_total',
+                                  out_col='tra_passenger_pkm-cap_aviation', unit='pkm/cap')
+    dm_pkm_cap_WLD = dm_pkm_aviation_WLD.filter({'Variables': ['tra_passenger_pkm-cap_aviation']})
+    dm_pkm_cap_WLD.deepen()
+
+    # Make years compatible
+    years_CH = dm_pkm_cap_aviation_CH.col_labels['Years']
+    years_to_add = [y for y in years_WLD if y not in years_CH]
+    dm_pkm_cap_aviation_CH.add(np.nan, dim='Years', col_label=years_to_add, dummy=True)
+    dm_pkm_cap_aviation_CH.sort('Years')
+    dm_pkm_cap_aviation_CH.filter({'Years': years_WLD}, inplace=True)
+
+    # Replace 0s with np.nans in CH data
+    mask = dm_pkm_cap_aviation_CH.array == 0
+    dm_pkm_cap_aviation_CH.array[mask] = np.nan
+
+    dm_pkm_cap_WLD.rename_col('World', 'Switzerland', dim='Country')
+    dm_pkm_cap_WLD.rename_col('tra_passenger_pkm-cap', 'reference_curve', dim='Variables')
+
+    # ratio = pkm_cap_CH / pkm_cap_WLD, for available years (e
+    dm_2021 = dm_pkm_cap_aviation_CH.filter({'Years': [2021]})
+    idx = dm_pkm_cap_aviation_CH.idx
+    dm_pkm_cap_aviation_CH.array[:, idx[2021], ...] = np.nan
+    dm_pkm_cap_aviation_CH.append(dm_pkm_cap_WLD, dim='Variables')
+    dm_pkm_cap_aviation_CH = fill_var_nans_based_on_var_curve(dm_pkm_cap_aviation_CH, 'tra_passenger_pkm-cap', 'reference_curve')
+
+    idx = dm_pkm_cap_aviation_CH.idx
+    dm_pkm_cap_aviation_CH.array[:, idx[2021], ...] = dm_2021.array
+
+    # Fix 2020 value
+    ## In reality flights in 2020 were lower than in 2021. We take pkm_cap_2020/pkm_cap_2021 for world and apply it to CH
+    idx = dm_pkm_cap_WLD.idx
+    ratio_2020_2019 = dm_pkm_cap_WLD.array[0, idx[2020], idx['reference_curve'], idx['aviation']] / \
+                      dm_pkm_cap_WLD.array[0, idx[2021], idx['reference_curve'], idx['aviation']]
+    idx = dm_pkm_cap_aviation_CH.idx
+    dm_pkm_cap_aviation_CH.array[:, idx[2020], ...] = dm_pkm_cap_aviation_CH.array[:, idx[2021], ...]*ratio_2020_2019
+
+    return dm_pkm_cap_aviation_CH
+
+
+def get_aviation_fleet(file_url, local_filename):
+    # Extract CH pkm/cap (data available every 5 years)
+    save_url_to_file(file_url, local_filename)
+    df = pd.read_excel(local_filename)
+    filter_1 = ['MTOM2 > 5700 kg']
+    new_names_1 = ['aviation']
+    names_map = dict()
+    for i, row in enumerate(filter_1):
+        names_map[row] = new_names_1[i]
+    var_name = 'tra_passenger_vehicle-fleet'
+    unit = 'number'
+    header_row = 2
+    dm_fleet_aviation = df_fso_excel_to_dm(df, header_row, names_map, var_name, unit, num_cat=1, keep_first=True)
+
+    return dm_fleet_aviation
+
+
+def downscale_public_fleet_VD(dm_public_fleet, dm_pkm):
+    dm_public_fleet.sort('Categories1')
+    dm_public_pkm = dm_pkm.filter({'Categories1': dm_public_fleet.col_labels['Categories1']})
+    idx = dm_public_pkm.idx
+    arr_ratio_pkm = dm_public_pkm.array[idx['Vaud'], :, :, :] / dm_public_pkm.array[idx['Switzerland'], :, :, :]
+    idx = dm_public_fleet.idx
+    arr_VD = dm_public_fleet.array[idx['Switzerland'], :, :, :, :] * arr_ratio_pkm[..., np.newaxis]
+    dm_public_fleet.add(arr_VD, dim='Country', col_label='Vaud')
+    return dm_public_fleet
+
+#################################################
+#######    PRE-PROCESS TRANSPORT DATA     #######
+#################################################
+
 years_ots = create_years_list(start_year=1990, end_year=2023, step=1, astype=int)
 
 #### New passenger fleet by technology LDV, 2W
@@ -1023,22 +1180,22 @@ file_new_veh_ots1 = 'data/tra_new_fleet.pickle'
 # download this from https://www.bfs.admin.ch/asset/en/30305446, download csv file FSO number gr-e-11.03.02.02.01a
 file_new_veh_ots2 = 'data/tra_new-vehicles_CH_1990-2023.csv'
 # dm_new_tech is the number of new vehicles for new technologies (used to allocate "Other" category in dm_pass_fleet
-#dm_pass_new_fleet, dm_new_tech = compute_passenger_new_fleet(table_id_new_veh, file_new_veh_ots1, file_new_veh_ots2)
-#del table_id_new_veh, file_new_veh_ots1, file_new_veh_ots2
+dm_pass_new_fleet, dm_new_tech = compute_passenger_new_fleet(table_id_new_veh, file_new_veh_ots1, file_new_veh_ots2)
+del table_id_new_veh, file_new_veh_ots1, file_new_veh_ots2
 
 #### Passenger fleet by technology (stock) LDV, 2W
 table_id_tot_veh = 'px-x-1103020100_101'
 file_tot_veh = 'data/tra_tot_fleet.pickle'
-#dm_pass_fleet_raw = get_passenger_stock_fleet_by_tech_raw(table_id_tot_veh, file_tot_veh)
+dm_pass_fleet_raw = get_passenger_stock_fleet_by_tech_raw(table_id_tot_veh, file_tot_veh)
 # Allocate "Other" category to new technologies
-#dm_pass_fleet = allocate_other_to_new_technologies(dm_pass_fleet_raw, dm_new_tech)
-#del table_id_tot_veh, file_tot_veh, dm_pass_fleet_raw, dm_new_tech
+dm_pass_fleet = allocate_other_to_new_technologies(dm_pass_fleet_raw, dm_new_tech)
+del table_id_tot_veh, file_tot_veh, dm_pass_fleet_raw, dm_new_tech
 
 #### Passenger transport demand - Switzerland only
 # Data source: Sweet CROSS
 file_url = 'https://sweet-cross.ethz.ch/data/end-use-energy-demand-cross/2022-09-30/passenger-transport-demand-2000-2050.csv'
 local_filename = 'data/SweetCROSS_passenger-transport-energy-demand.csv'  # Created by the routine if it doesn't exist
-#dm_pass_demand_ots, dict_pass_demand_fts = get_passenger_transport_demand(file_url, local_filename, years_ots)
+dm_pass_demand_ots, dict_pass_demand_fts = get_passenger_transport_demand(file_url, local_filename, years_ots)
 del file_url, local_filename
 
 #### Public transport - Switzerland only
@@ -1048,8 +1205,8 @@ file_url = 'https://dam-api.bfs.admin.ch/hub/api/dam/assets/32253175/master'
 local_filename = 'data/tra_public_transport.xlsx'
 DM_public = get_public_transport_data(file_url, local_filename, years_ots)
 # Allocate to Vaud based on population
-#dict_lfs, tmp = read_database_to_dm('lifestyles_population.csv', num_cat=0, level=0)
-#dm_pop = dict_lfs['pop'].filter({'Variables': ['lfs_population_total'], 'Country': ['Switzerland', 'Vaud']}, inplace=False)
+dict_lfs, tmp = read_database_to_dm('lifestyles_population.csv', num_cat=0, level=0)
+dm_pop = dict_lfs['pop'].filter({'Variables': ['lfs_population_total'], 'Country': ['Switzerland', 'Vaud']}, inplace=False)
 del file_url, local_filename
 
 #### Vehicle efficiency - LDV - CO2/km
@@ -1058,18 +1215,17 @@ del file_url, local_filename
 table_id_veh_eff = 'px-x-1103020100_106'
 local_filename_veh = 'data/tra_veh_efficiency.pickle'  # The file is created if it doesn't exist
 overwrite_VD_PHEV_FCEV = False
-#dm_veh_eff_LDV = get_vehicle_efficiency(table_id_veh_eff, local_filename_veh,
-#                                        var_name='tra_passenger_veh-efficiency_fleet', years_ots=years_ots)
+dm_veh_eff_LDV = get_vehicle_efficiency(table_id_veh_eff, local_filename_veh,
+                                        var_name='tra_passenger_veh-efficiency_fleet', years_ots=years_ots)
 del table_id_veh_eff, local_filename_veh, overwrite_VD_PHEV_FCEV
 
 #### Vehicle efficiency new - LDV - CO2/km
 # FCEV data are off, BEV = 25 gCO2/km independently of car power
 table_id_new_eff = 'px-x-1103020200_201'
 local_filename_new = 'data/tra_new-veh_efficiency.pickle'  # The file is created if it doesn't exist3#
-#dm_veh_new_eff_LDV = get_new_vehicle_efficiency(table_id_new_eff, local_filename_new,
-#                                                var_name='tra_passenger_veh-efficiency_new', years_ots=years_ots)
+dm_veh_new_eff_LDV = get_new_vehicle_efficiency(table_id_new_eff, local_filename_new,
+                                                var_name='tra_passenger_veh-efficiency_new', years_ots=years_ots)
 del table_id_new_eff, local_filename_new
-
 
 #### Trasport demand - pkm par canton (Microrecencement)
 file_url_dict = {2021: 'https://dam-api.bfs.admin.ch/hub/api/dam/assets/24025445/master',
@@ -1078,27 +1234,27 @@ file_url_dict = {2021: 'https://dam-api.bfs.admin.ch/hub/api/dam/assets/24025445
 
 local_filename_dict = {2021: 'data/tra_pkm_CH_VD_2021.xlsx',
                        2015: {'Vaud': 'data/tra_pkm_VD_2015.xls', 'Switzerland': 'data/tra_pkm_CH_2015.xls'}}
-
+# Check to make sure pkm/cap match with Mircorecencement
 dm_2021 = get_travel_demand_canton_microrecencement_2021(file_url_dict[2021], local_filename_dict[2021], 2021)
 dm_2015 = get_travel_demand_canton_microrecencement_2015(file_url_dict[2015], local_filename_dict[2015], 2015)
 dm_2021.append(dm_2015, dim='Years')
 dm_pkm_cap_fact = get_canton_pkm_cap_fact(dm_2021, years_ots)
-del dm_2015, dm_2021
+del dm_2015, dm_2021, local_filename_dict, file_url_dict
 
 # Load population data
 dict_lfs, tmp = read_database_to_dm('lifestyles_population.csv', filter={'geoscale': ['Vaud', 'Switzerland']}, baseyear=years_ots[-1], num_cat=0, level=0)
 dm_pop = dict_lfs['pop'].filter({'Variables': ['lfs_population_total']}, inplace=False)
 dm_pop.sort('Country')
+del tmp, dict_lfs
 
-# Transport demand VD (from CH)
+# Transport demand pkm - VD (from CH)
 # Compute Swiss pkm/cap
 ## pkm/cap_CH = pkm_CH / pop_CH
-#DF = {'private_km_CH': dm_pass_demand_ots.copy(),
-#      'public_km_CH': DM_public['public_demand-pkm'].copy(),
-#      'pkm_cap_ratio': dm_pkm_cap_fact.copy(),
-#      'pop': dm_pop.copy()}
-print('fix the variables names!')
-#dm_pkm = compute_canton_passenger_transport_demand_pkm(DF, 'tra_passenger_transport-demand')
+DF = {'private_km_CH': dm_pass_demand_ots.copy(),
+      'public_km_CH': DM_public['public_demand-pkm'].copy(),
+      'pkm_cap_ratio': dm_pkm_cap_fact.copy(),
+      'pop': dm_pop.copy()}
+dm_pkm = compute_canton_passenger_transport_demand_pkm(DF, 'tra_passenger_transport-demand')
 
 # Transport demand vkm - CH
 ## Transport de personnes: prestations kilométriques et mouvements des véhicules
@@ -1110,5 +1266,94 @@ DF = {'private_km_CH': dm_vkm_CH.copy(),
       'pkm_cap_ratio': dm_pkm_cap_fact.filter({'Categories1': ['LDV', '2W', 'bus', 'metrotram', 'rail']}),
       'pop': dm_pop.copy()}
 dm_vkm = compute_canton_passenger_transport_demand_pkm(DF, 'tra_passenger_transport-demand-vkm')
+del dm_vkm_CH, file_url, local_filename
 
+# Public fleet VD (from CH)
+dm_public_fleet = DM_public['public_fleet'].copy()
+dm_public_fleet = downscale_public_fleet_VD(dm_public_fleet, dm_pkm)
+
+# Aviation
+## Transport pkm/cap aviation (CH)
+## Civil Aviation
+### ! Data available only every 5 years
+file_url = 'https://dam-api.bfs.admin.ch/hub/api/dam/assets/32013522/master'
+local_filename = 'data/tra_aviation_CH.xlsx'
+dm_pkm_cap_aviation_CH_raw = get_pkm_cap_aviation(file_url, local_filename)
+## Transport pkm aviation (World)
+### Download data from "Our World in Data"
+### https://ourworldindata.org/grapher/aviation-demand-efficiency
+df = pd.read_csv('data/tra_global_aviation-demand.csv')
+df = df[['Entity', 'Year', 'Passenger demand']]
+df.columns = ['Country', 'Years', 'tra_passenger_transport-demand_aviation[Bpkm]']
+dm_pkm_aviation_WLD = DataMatrix.create_from_df(df, num_cat=1)
+### Extract world population from World Bank
+wb_pop_url = 'https://api.worldbank.org/v2/en/indicator/SP.POP.TOTL?downloadformat=excel'
+local_filename = 'data/lfs_world_population_WB.xlsx'
+dm_pop_WLD = get_world_pop(wb_pop_url, local_filename)
+### Complete historical aviation pkm CH using World trend
+dm_pkm_cap_aviation_CH = compute_pkm_cap_aviation(dm_pkm_cap_aviation_CH_raw, dm_pkm_aviation_WLD, dm_pop_WLD, years_ots)
+del df, wb_pop_url, local_filename, file_url, dm_pop_WLD
+
+## Transport aviation-fleet (CH)
+## Civil Aviation
+### ! Data available only every 5 years
+file_url = 'https://dam-api.bfs.admin.ch/hub/api/dam/assets/32013522/master'
+local_filename = 'data/tra_aviation_CH.xlsx'
+pkm_fleet_aviation = get_aviation_fleet(file_url, local_filename)
+
+### We should do a separate flow for aviation . from pkm/cap -> pkm -> techology share (applied to pkm) -> emissions / pkm
+
+data_file = '/Users/paruta/2050-Calculators/PathwayCalc/_database/data/datamatrix/transport.pickle'
+with open(data_file, 'rb') as handle:
+    DM_transport = pickle.load(handle)
+
+
+# -------------------
+years_fts = create_years_list(start_year=2025, end_year=2050, step=5)
+
+# Technology share fleet (from fleet 2W, LDV)
+## For tech share we don't need the forecasting because it is computed from new_fleet
+dm_fleet_tech_share = dm_pass_fleet.normalise(dim='Categories2', inplace=False)
+dm_fleet_tech_share.rename_col('tra_passenger_vehicle-fleet_share', 'tra_passenger_technology-share_fleet', dim='Variables')
+dm_fleet_tech_share.add(np.nan, dummy=True, dim='Years', col_label=years_fts)
+dm_fleet_tech_share.fill_nans(dim_to_interp='Years')
+print('Save Technology share fleet to database csv (as fxa)')
+
+# Technology share new fleet (from new fleet 2W, LDV)
+## Normalise new-fleet
+dm_fleet_new_tech_share = dm_pass_new_fleet.normalise(dim='Categories2', inplace=False)
+dm_fleet_new_tech_share.rename_col('tra_passenger_new-vehicles_share', 'tra_passenger_technology-share_new', dim='Variables')
+## Compute fts as linear extrapolation of new-fleet and then normalise
+dm_new_fleet_fts_BAU = linear_forecast_BAU(dm_pass_new_fleet, start_t=2020, years_ots=years_ots, years_fts=years_fts)
+dm_new_tech_share_fts = dm_new_fleet_fts_BAU.normalise(dim='Categories2', inplace=False)
+dm_new_tech_share_fts.rename_col('tra_passenger_new-vehicles_share', 'tra_passenger_technology-share_new', dim='Variables')
+dm_fts_dict = dict()
+for lev in range(4):
+    lev = lev + 1
+    dm_fts_dict[lev] = dm_new_tech_share_fts
+print('Save Technology share new fleet to database csv (as ots/fts)')
+
+# Technology share fleet (bus, metrotram, rail)
+dm_public_tech_share = dm_public_fleet.normalise('Categories2', inplace=False)
+dm_public_tech_share.rename_col('tra_passenger_vehicle-fleet_share', 'tra_passenger_technology-share_fleet', dim='Variables')
+dm_public_tech_share.add(np.nan, dummy=True, dim='Years', col_label=years_fts)
+dm_public_tech_share.fill_nans(dim_to_interp='Years')
+print('Merge public fleet with private technology share fleet')
+
+# Public fleet avg-pkm-veh [pkm/veh]
+dm_public = dm_public_fleet.group_all('Categories2', inplace=False)
+dm_public_pkm = dm_pkm.filter({'Categories1': ['bus', 'metrotram', 'rail']}, inplace=False)
+dm_public_pkm.sort('Categories1')
+dm_public.append(dm_public_pkm, dim='Variables')
+dm_public.operation('tra_passenger_transport-demand', '/', 'tra_passenger_vehicle-fleet',
+                    out_col='tra_passenger_avg-pkm-by-veh', unit='pkm/veh')
+
+dm_old_data = DM_transport['ots']['passenger_technology-share_new'].copy()
+dm_old_data.filter({'Country': ['Switzerland'], 'Categories1': ['aviation', 'bus', 'metrotram', 'rail']}, inplace=True)
+dm_old_data.flatten().datamatrix_plot()
+
+
+dm_old_data = DM_transport['fxa']['passenger_mode_other'].copy()
+dm_old_data.filter({'Country': ['France'], 'Categories1': ['metrotram', 'rail']}, inplace=True)
+dm_old_data.datamatrix_plot()
 print('Hello')
