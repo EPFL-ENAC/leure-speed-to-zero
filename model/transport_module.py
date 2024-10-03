@@ -940,9 +940,10 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
     return DM_freight_out
 
 
-def tra_industry_interface(dm_freight_new_veh, dm_passenger_new_veh, dm_infrastructure, 
-                           dm_freight_waste_veh, dm_passenger_waste_veh, write_xls = False):
+def tra_industry_interface(dm_freight_veh, dm_passenger_veh, dm_infrastructure,
+                           write_xls = False):
     # Filter cars only and rename technology as ICE, FCV and EV
+    dm_passenger_new_veh = dm_passenger_veh.filter({'Variables' : ['tra_passenger_new-vehicles']})
     dm_cars = dm_passenger_new_veh.filter({'Categories1': ['LDV']})
     dm_cars.group_all(dim='Categories1', inplace=True)
     dm_cars.groupby({'cars-ICE': 'ICE.*|PHEV.*', 'cars-FCV': 'FCEV', 'cars-EV': 'BEV'}, dim='Categories1', regex=True, inplace=True)
@@ -950,6 +951,7 @@ def tra_industry_interface(dm_freight_new_veh, dm_passenger_new_veh, dm_infrastr
     dm_cars.rename_col('tra_passenger_new-vehicles', 'tra_product-demand', dim='Variables')
 
     # Filter trucks only and rename technologies as ICE, FCV, EV
+    dm_freight_new_veh = dm_freight_veh.filter({'Variables' : ['tra_freight_new-vehicles']})
     dm_trucks = dm_freight_new_veh.filter({'Categories1': ['HDVH', 'HDVL', 'HDVM']})
     dm_trucks.group_all(dim='Categories1')
     dm_trucks.groupby({'trucks-ICE': 'ICE.*|PHEV.*', 'trucks-FCV': 'FCEV', 'trucks-EV': 'BEV|CEV'}, dim='Categories1', regex=True, inplace=True)
@@ -977,44 +979,62 @@ def tra_industry_interface(dm_freight_new_veh, dm_passenger_new_veh, dm_infrastr
     dm_infra_ind.rename_col_regex('infra-', '', dim='Categories1')
     dm_infra_ind.rename_col('tra_new_infrastructure', 'tra_product-demand', dim='Variables')
     
-    # get vehicles that go to waste
-    dm_cars_waste = dm_passenger_waste_veh.filter({'Categories1': ['LDV']})
-    dm_cars_waste.drop("Categories2", ["mt","CEV"]) # mt is metrotram
-    dm_cars_waste.group_all(dim='Categories1', inplace=True)
-    dm_cars_waste.groupby({'cars-ICE': 'ICE.*|PHEV.*', 'cars-FCV': 'FCEV', 'cars-EV': 'BEV'}, dim='Categories1', regex=True, inplace=True)
-    dm_trucks_waste = dm_freight_waste_veh.filter({'Categories1': ['HDVH', 'HDVL', 'HDVM']})
-    dm_trucks_waste.group_all(dim='Categories1')
-    dm_trucks_waste.groupby({'trucks-ICE': 'ICE.*|PHEV.*', 'trucks-FCV': 'FCEV', 'trucks-EV': 'BEV|CEV'}, dim='Categories1', regex=True, inplace=True)
-    dm_freight_waste_oth = dm_freight_waste_veh.group_all(dim='Categories2', inplace = False).filter({'Categories1': ['aviation', 'marine', 'rail']})
-    dm_passenger_waste_oth = dm_passenger_waste_veh.group_all(dim='Categories2', inplace = False).filter({'Categories1': ['aviation', 'rail']})
-    dm_passenger_waste_oth.add(0, dim='Categories1', col_label=['marine'], dummy=True)  # add dummy 'marine' to passenger
-    dm_waste = dm_freight_waste_oth.copy()
-    dm_waste.append(dm_passenger_waste_oth, "Variables")
-    dm_waste.groupby({'tra_product-waste': '.*'}, dim='Variables', regex=True, inplace=True)
-    dm_waste.rename_col(['aviation', 'marine', 'rail'], ['planes', 'ships', 'trains'], dim='Categories1')
+    # get vehicles that go to eol + vehicles' stock
+    dm_passenger_eol_veh = dm_passenger_veh.filter({'Variables' : ['tra_passenger_vehicle-waste','tra_passenger_vehicle-fleet']})
+    dm_cars_eol = dm_passenger_eol_veh.filter({'Categories1': ['LDV']})
+    dm_cars_eol.drop("Categories2", ["mt","CEV"]) # mt is metrotram
+    dm_cars_eol.group_all(dim='Categories1', inplace=True)
+    dm_cars_eol.groupby({'cars-ICE': 'ICE.*|PHEV.*', 'cars-FCV': 'FCEV', 'cars-EV': 'BEV'}, dim='Categories1', regex=True, inplace=True)
+    dm_freight_eol_veh = dm_freight_veh.filter({'Variables' : ['tra_freight_vehicle-waste', 'tra_freight_vehicle-fleet']})
+    dm_trucks_eol = dm_freight_eol_veh.filter({'Categories1': ['HDVH', 'HDVL', 'HDVM']})
+    dm_trucks_eol.group_all(dim='Categories1')
+    dm_trucks_eol.groupby({'trucks-ICE': 'ICE.*|PHEV.*', 'trucks-FCV': 'FCEV', 'trucks-EV': 'BEV|CEV'}, dim='Categories1', regex=True, inplace=True)
+    dm_freight_eol_oth = dm_freight_eol_veh.group_all(dim='Categories2', inplace = False).filter({'Categories1': ['aviation', 'marine', 'rail']})
+    dm_passenger_eol_oth = dm_passenger_eol_veh.group_all(dim='Categories2', inplace = False).filter({'Categories1': ['aviation', 'rail']})
+    dm_passenger_eol_oth.add(0, dim='Categories1', col_label=['marine'], dummy=True)  # add dummy 'marine' to passenger
+    dm_eol = dm_freight_eol_oth.copy()
+    dm_eol.append(dm_passenger_eol_oth, "Variables")
+    dm_eol.groupby({'tra_product-waste': '.*waste.*', 
+                      'tra_product-stock' : '.*fleet.*'}, dim='Variables', regex=True, inplace=True)
+    dm_eol.rename_col(['aviation', 'marine', 'rail'], ['planes', 'ships', 'trains'], dim='Categories1')
     
-    # append cars and trucks
+    # create dm for waste
+    dm_waste = dm_eol.filter({"Variables" : ["tra_product-waste"]})
+    dm_cars_waste = dm_cars_eol.filter({"Variables" : ["tra_passenger_vehicle-waste"]})
     dm_cars_waste.rename_col("tra_passenger_vehicle-waste","tra_product-waste","Variables")
     dm_waste.append(dm_cars_waste, dim='Categories1')
+    dm_trucks_waste = dm_trucks_eol.filter({"Variables" : ["tra_freight_vehicle-waste"]})
     dm_trucks_waste.rename_col("tra_freight_vehicle-waste","tra_product-waste","Variables")
     dm_waste.append(dm_trucks_waste, dim='Categories1')
     dm_waste.sort(dim='Categories1')
+    
+    # create dm for stocks
+    dm_stock = dm_eol.filter({"Variables" : ["tra_product-stock"]})
+    dm_cars_stock = dm_cars_eol.filter({"Variables" : ["tra_passenger_vehicle-fleet"]})
+    dm_cars_stock.rename_col("tra_passenger_vehicle-fleet","tra_product-stock","Variables")
+    dm_stock.append(dm_cars_stock, dim='Categories1')
+    dm_trucks_stock = dm_trucks_eol.filter({"Variables" : ["tra_freight_vehicle-fleet"]})
+    dm_trucks_stock.rename_col("tra_freight_vehicle-fleet","tra_product-stock","Variables")
+    dm_stock.append(dm_trucks_stock, dim='Categories1')
+    dm_stock.sort(dim='Categories1')
     
     # dm_ind
     if write_xls is True:
         dm_ind = dm_product_demand.flatten()
         dm_ind.append(dm_infra_ind.flatten(), "Variables")
         dm_ind.append(dm_waste.flatten(), "Variables")
+        dm_ind.append(dm_stock.flatten(), "Variables")
         dm_ind.sort("Variables")
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
         df_ind = dm_ind.write_df()
-        df_ind.to_excel(current_file_directory + "/../_database/data/xls/" + 'transport-to-industry.xlsx', index=False)
+        df_ind.to_excel(current_file_directory + "/../_database/data/xls/" + 'All-Countries-interface_from-transport-to-industry.xlsx', index=False)
 
     # ! FIXME add infrastructure in km
     DM_industry = {
         'tra-veh': dm_product_demand,
         'tra-infra': dm_infra_ind,
-        'tra-waste': dm_waste
+        'tra-waste': dm_waste,
+        'tra-stock': dm_stock
     }
     return DM_industry
 
@@ -1215,13 +1235,11 @@ def transport(lever_setting, years_setting, interface=Interface()):
     interface.add_link(from_sector='transport', to_sector='agriculture', dm=dm_agriculture)
 
     # Minerals and Industry
-    dm_freight_new_veh = DM_freight_out['tech'].filter({'Variables': ['tra_freight_new-vehicles']})
-    dm_freight_waste_veh = DM_freight_out['tech'].filter({'Variables': ['tra_freight_vehicle-waste']})
-    dm_passenger_new_veh = DM_passenger_out['tech'].filter({'Variables': ['tra_passenger_new-vehicles']})
-    dm_passenger_waste_veh = DM_passenger_out['tech'].filter({'Variables': ['tra_passenger_vehicle-waste']})
+    dm_freight_veh = DM_freight_out['tech'].filter({'Variables': ['tra_freight_new-vehicles','tra_freight_vehicle-waste','tra_freight_vehicle-fleet']})
+    dm_passenger_veh = DM_passenger_out['tech'].filter({'Variables': ['tra_passenger_new-vehicles','tra_passenger_vehicle-waste', 'tra_passenger_vehicle-fleet']})
     dm_infrastructure = dummy_tra_infrastructure_workflow(DM_lfs['lfs_pop'])
-    DM_industry = tra_industry_interface(dm_freight_new_veh.copy(), dm_passenger_new_veh.copy(), dm_infrastructure, dm_freight_waste_veh.copy(), dm_passenger_waste_veh.copy())
-    DM_minerals = tra_minerals_interface(dm_freight_new_veh, dm_passenger_new_veh, DM_industry, dm_infrastructure, write_xls=False)
+    DM_industry = tra_industry_interface(dm_freight_veh.copy(), dm_passenger_veh.copy(), dm_infrastructure)
+    DM_minerals = tra_minerals_interface(dm_freight_veh, dm_passenger_veh, DM_industry, dm_infrastructure, write_xls=False)
     # !FIXME: add km infrastructure data, using compute_stock with tot_km and renovation rate as input.
     #  data for ch ok, data for eu, backcalculation? dummy based on swiss pop?
     interface.add_link(from_sector='transport', to_sector='industry', dm=DM_industry)
@@ -1249,5 +1267,5 @@ def local_transport_run():
     return results_run
 
 # database_from_csv_to_datamatrix()
-# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
-# results_run = local_transport_run()
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
+results_run = local_transport_run()
