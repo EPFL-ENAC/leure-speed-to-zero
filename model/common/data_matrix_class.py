@@ -932,13 +932,19 @@ class DataMatrix:
         a = self.dim_labels.index(dim)
         if inplace and not keep_original:
             # Overwrites datamatrix with normalised data and changes the units to '%'
-            self.array = self.array/np.nansum(self.array, axis=a, keepdims=True)
+            arr_sum = np.nansum(self.array, axis=a, keepdims=True)
+            arr_sum = np.nan_to_num(arr_sum)
+            with np.errstate(divide='ignore', invalid='ignore'):
+                self.array = np.where(arr_sum != 0, self.array / arr_sum, np.nan)
             for v in self.col_labels['Variables']:
                 self.units[v] = '%'
         else:
             # Create a new normalised array
             arr_data = self.array.copy()
-            arr_data = arr_data / np.nansum(arr_data, axis=a, keepdims=True)
+            arr_sum = np.nansum(arr_data, axis=a, keepdims=True)
+            arr_sum = np.nan_to_num(arr_sum)
+            with np.errstate(divide='ignore', invalid='ignore'):
+                arr_data = np.where(arr_sum != 0, arr_data / arr_sum, np.nan)
             new_var_cols = [var + '_share' for var in self.col_labels['Variables']]
             # Adds the normalised array to the existing data in the same database
             if inplace and keep_original:
@@ -947,8 +953,9 @@ class DataMatrix:
                 units_new = {}
                 vars_new = []
                 for var in self.col_labels['Variables']:
-                    units_new[var] = '%'
-                    vars_new.append(var+'_share')
+                    var_new = var + '_share'
+                    vars_new.append(var_new)
+                    units_new[var_new] = '%'
                 dm_out = DataMatrix.based_on(arr_data, format=self, change={'Variables': vars_new}, units=units_new)
                 return dm_out
         return
