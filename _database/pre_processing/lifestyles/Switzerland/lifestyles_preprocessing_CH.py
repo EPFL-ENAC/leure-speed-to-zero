@@ -3,7 +3,7 @@ import pandas as pd
 import pickle
 
 
-from model.common.auxiliary_functions import linear_fitting, linear_fitting_ots_db
+from model.common.auxiliary_functions import linear_fitting, linear_fitting_ots_db, create_years_list
 from model.common.io_database import update_database_from_dm, csv_database_reformat
 from _database.pre_processing.api_routines_CH import get_data_api_CH
 from model.common.data_matrix_class import DataMatrix
@@ -120,7 +120,8 @@ def extract_lfs_pop(years_ots, table_id):
     structure, title = get_data_api_CH(table_id, mode='example')
 
     # Extract all age classes
-    filter = {'Year': years_ots,
+    years_ots_str = [str(y) for y in years_ots]
+    filter = {'Year': years_ots_str,
               'Canton': ['Switzerland', 'Vaud'],
               'Citizenship (category)': 'Citizenship (category) - total',  # Swiss and non-Swiss resident
               'Sex': ['Male', 'Female'],
@@ -173,6 +174,11 @@ def extract_lfs_pop(years_ots, table_id):
     dm_lfs_pop_tot.group_all('Categories2')
     dm_lfs_pop_tot.group_all('Categories1')
     dm_lfs_pop_tot.rename_col('Population on 1 January', 'lfs_population_total', dim='Variables')
+
+    # Sort Years
+    dm_lfs_pop_age.sort('Years')
+    dm_lfs_pop_tot.sort('Years')
+
     return dm_lfs_pop_age, dm_lfs_pop_tot
 
 
@@ -504,9 +510,9 @@ def extract_per_capita_gdp_ppp():
     return dm_GDP
 
 
-years_setting = [1990, 2022, 2050, 5]  # Set the timestep for historical years & scenarios
-years_ots = create_ots_years_list(years_setting)
-years_fts = create_fts_years_list()
+years_setting = [1990, 2023, 2050, 5]  # Set the timestep for historical years & scenarios
+years_ots = create_years_list(start_year=1990, end_year=2023, step=1)
+years_fts = create_years_list(start_year=2025, end_year=2050, step=5)
 update_pop = False
 if update_pop:
     # Get population total and by age group (ots)
