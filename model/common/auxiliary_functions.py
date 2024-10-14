@@ -693,9 +693,10 @@ def energy_switch(dm_energy_demand, dm_energy_carrier_mix, carrier_in, carrier_o
     dm_energy_demand.sort(carriers_category)
 
 
-def linear_fitting(dm, years_ots, max_t0=None, max_tb=None, min_t0=None, min_tb=None):
+def linear_fitting(dm, years_ots, max_t0=None, max_tb=None, min_t0=None, min_tb=None, based_on=None):
     # max/min_t0/tb are the max min value that the linear fitting can extrapolate to at t=t0 (1990) and t=tb (baseyear)
     # Define a function to apply linear regression and extrapolate
+    # based_on can be a list of years on which you want to base the extrapolation
     def extrapolate_to_year(arr, years, target_year):
         mask = ~np.isnan(arr) & np.isfinite(arr)
 
@@ -711,6 +712,11 @@ def linear_fitting(dm, years_ots, max_t0=None, max_tb=None, min_t0=None, min_tb=
         extrapolated_value = intercept + slope * target_year
 
         return extrapolated_value
+
+    if based_on is not None:
+        dm_tmp = dm.copy()
+        dm_tmp.drop('Years', col_label=based_on)
+        dm.filter({'Years': based_on}, inplace=True)
 
     start_year = int(years_ots[0])
     base_year = int(years_ots[-1])
@@ -744,14 +750,17 @@ def linear_fitting(dm, years_ots, max_t0=None, max_tb=None, min_t0=None, min_tb=
             dm.array[idx[year_target], mask_nan] = extrapolated_year[mask_nan]
             dm.array = np.moveaxis(dm.array, 0, 1)
 
-
     # Add missing ots years as nan
     dm = add_missing_ots_years(dm, startyear=start_year, baseyear=base_year)
 
     # Fill nan
     dm.fill_nans(dim_to_interp='Years')
 
-    return
+    if based_on is not None:
+        dm.append(dm_tmp, dim='Years')
+        dm.sort('Years')
+
+    return dm
 
 
 def linear_fitting_ots_db(df_db, years_ots, countries='all'):
@@ -795,14 +804,14 @@ def linear_fitting_ots_db(df_db, years_ots, countries='all'):
     return df_merged
 
 
-def linear_forecast_BAU(dm_ots, start_t, years_ots, years_fts):
+def linear_forecast_BAU(dm_ots, start_t, years_ots, years_fts, min_tb=None, max_tb=None):
     # Business as usual linear forecast for fts years based on ots dm
     # Return a datamatrix for years_fts
     # Linear extrapolation performed on data from start_t onwards
     years_ots_keep = [y for y in years_ots if y > start_t]
     years_to_keep = years_ots_keep + years_fts
     dm_fts_BAU = dm_ots.filter({'Years': years_ots_keep}, inplace=False)
-    linear_fitting(dm_fts_BAU, years_to_keep, min_tb=1)
+    linear_fitting(dm_fts_BAU, years_to_keep, min_tb=min_tb, max_tb=max_tb)
     dm_fts_BAU.filter({'Years': years_fts}, inplace=True)
     return dm_fts_BAU
 
