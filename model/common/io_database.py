@@ -496,7 +496,7 @@ def read_database_to_dm(filename, lever=None, num_cat=0, baseyear=2022, years=No
         else:
             lever = levers[0]
     if years is None:
-        years_ots = list(np.linspace(start=1990, stop=2022, num=(2022-1990)+1))
+        years_ots = list(np.linspace(start=1990, stop=baseyear, num=(baseyear-1990)+1))
         years_fts = list(np.linspace(start=2025, stop=2050, num=int((2050-2025)/5+1)))
         years = years_ots + years_fts
     if len(filter.items()) > 0:
