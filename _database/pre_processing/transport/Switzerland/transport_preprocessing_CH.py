@@ -433,7 +433,8 @@ def get_public_transport_data(file_url, local_filename, years_ots):
         vehicles_vars = ['Voitures voyageurs (voitures de commande isolées, automotrices et éléments de rames automotrices inclus)',
                          'Trolleybus', 'Tram', 'Autobus', 'Électrique', 'Diesel ']
         df_pass_public_veh = df.loc[vehicles_vars].copy()
-        df_pass_public_veh = df_pass_public_veh.applymap(lambda x: pd.to_numeric(x, errors='coerce'))
+        df_pass_public_veh = df_pass_public_veh.apply(lambda col: pd.to_numeric(col, errors='coerce'))
+        #df_pass_public_veh = df_pass_public_veh.applymap(lambda x: pd.to_numeric(x, errors='coerce'))
         df_pass_public_veh.reset_index(inplace=True)
         df_pass_public_veh['Variables'] = df_pass_public_veh['Variables'].str[:10]
         df_pass_public_veh = df_pass_public_veh.groupby(['Variables']).sum()
@@ -500,7 +501,8 @@ def get_public_transport_data(file_url, local_filename, years_ots):
         vars_to_keep = ['Chemins de fer', 'Chemins de fer à crémaillère', 'Tram', 'Trolleybus', 'Autobus']
         df_pkm = df.loc[vars_to_keep]
         # Convert ... to numerics
-        df_pkm = df_pkm.applymap(lambda x: pd.to_numeric(x, errors='coerce'))
+        df_pkm = df_pkm.apply(lambda col: pd.to_numeric(col, errors='coerce'))
+        #df_pkm = df_pkm.applymap(lambda x: pd.to_numeric(x, errors='coerce'))
         df_pkm.reset_index(inplace=True)
 
         # Pivot the dataframe
@@ -558,7 +560,8 @@ def get_public_transport_data(file_url, local_filename, years_ots):
         vars_to_keep = ['Chemins de fer', 'Chemins de fer à crémaillère', 'Tram', 'Trolleybus', 'Autobus']
         df_vkm = df.loc[vars_to_keep].copy()
         # Convert ... to numerics
-        df_vkm = df_vkm.applymap(lambda x: pd.to_numeric(x, errors='coerce'))
+        df_vkm = df_vkm.apply(lambda col: pd.to_numeric(col, errors='coerce'))
+        #df_vkm = df_vkm.applymap(lambda x: pd.to_numeric(x, errors='coerce'))
         df_vkm.reset_index(inplace=True)
 
         # Pivot the dataframe
@@ -979,7 +982,8 @@ def df_fso_excel_to_dm(df, header_row, names_dict, var_name, unit, num_cat, keep
     df_clean = df.loc[:, df.apply(lambda col: col.map(pd.api.types.is_number)).any(axis=0)].copy()
     # Extract only the data we are interested in:
     df_filter = df_clean.loc[names_dict.keys()].copy()
-    df_filter = df_filter.applymap(lambda x: pd.to_numeric(x, errors='coerce'))
+    df_filter = df_filter.apply(lambda col: pd.to_numeric(col, errors='coerce'))
+    #df_filter = df_filter.applymap(lambda x: pd.to_numeric(x, errors='coerce'))
     df_filter.reset_index(inplace=True)
     # Keep only first 10 caracters
     df_filter['Variables'] = df_filter['Variables'].replace(names_dict)
@@ -1183,6 +1187,8 @@ def compute_pkm_cap_aviation(dm_pkm_cap_aviation_CH_raw, dm_pkm_aviation_WLD, dm
     dm_pkm_cap_aviation_VD.rename_col('Switzerland', 'Vaud', dim='Country')
     dm_pkm_cap_aviation_CH.append(dm_pkm_cap_aviation_VD, dim='Country')
 
+    linear_fitting(dm_pkm_cap_aviation_CH, years_ots=[2020, 2021, 2022, 2023], based_on=[2020, 2021])
+
     return dm_pkm_cap_aviation_CH
 
 
@@ -1359,7 +1365,7 @@ def convert_eff_from_gCO2_km_to_MJ_km(dm_veh_eff_LDV, cdm_emissions_factors, new
     return dm_veh_eff_LDV
 
 
-def replace_LDV_efficiency_with_new(dm_veh_eff, dm_veh_new_eff):
+def replace_LDV_efficiency_with_new(dm_veh_eff, dm_veh_new_eff, baseyear_old):
 
     dm_veh_eff_VD = dm_veh_eff.copy()
     dm_veh_eff_VD.rename_col('Switzerland', 'Vaud', dim='Country')
@@ -1369,8 +1375,7 @@ def replace_LDV_efficiency_with_new(dm_veh_eff, dm_veh_new_eff):
     dm_veh_new_eff_VD.rename_col('Switzerland', 'Vaud', dim='Country')
     dm_veh_new_eff.append(dm_veh_new_eff_VD, dim='Country')
 
-    baseyear_old = 2015
-    years_match = [y for y in dm_veh_eff.col_labels['Years'] if y <= 2015]
+    years_match = [y for y in dm_veh_eff.col_labels['Years'] if y <= baseyear_old]
     years_missing = list(set(dm_veh_eff_LDV.col_labels['Years']) - set(years_match))
     dm_veh_eff.filter({'Years': years_match}, inplace=True)
     dm_veh_eff.add(np.nan, dummy=True, dim='Years', col_label=years_missing)
@@ -1387,10 +1392,58 @@ def replace_LDV_efficiency_with_new(dm_veh_eff, dm_veh_new_eff):
     # Remove aviation
     dm_veh_eff.drop(dim='Categories1', col_label='aviation')
     dm_veh_new_eff.drop(dim='Categories1', col_label='aviation')
-    dm_veh_eff.drop(col_label=['PHEV', 'ICE'], dim='Categories2')
-    dm_veh_new_eff.drop(col_label=['PHEV', 'ICE'], dim='Categories2')
+    drop_cat = ['PHEV', 'ICE']
+    for cat in drop_cat:
+        if cat in dm_veh_eff.col_labels['Categories2']:
+            dm_veh_eff.drop(col_label=cat, dim='Categories2')
+            dm_veh_new_eff.drop(col_label=cat, dim='Categories2')
 
     return dm_veh_eff, dm_veh_new_eff
+
+
+def fix_freight_tech_shares(DM_transport_new):
+    dm_tech = DM_transport_new['fxa']['freight_tech'].filter({'Variables': ['tra_freight_technology-share_fleet']})
+    # Fix the shares
+    idx = dm_tech.idx
+    dm_tech.array[:, :, :, idx['aviation'], idx['BEV']] = 0
+    dm_tech.array[:, :, :, idx['aviation'], idx['ICE']] = 1
+    dm_tech.array[:, :, :, idx['marine'], idx['FCEV']] = 0
+    dm_tech.array[:, :, :, idx['marine'], idx['BEV']] = 0
+    dm_tech.array[:, :, :, idx['marine'], idx['ICE']] = 1
+    dm_tech.array[:, :, :, idx['IWW'], idx['FCEV']] = 0
+    dm_tech.array[:, :, :, idx['IWW'], idx['BEV']] = 0
+    dm_tech.array[:, :, :, idx['IWW'], idx['ICE']] = 1
+    dm_tech.normalise(dim='Categories2')
+    idx = DM_transport_new['fxa']['freight_tech'].idx
+    DM_transport_new['fxa']['freight_tech'].array[:, :, idx['tra_freight_technology-share_fleet'], np.newaxis, ...] = dm_tech.array
+
+    dm_tech = DM_transport_new['ots']['freight_technology-share_new']
+    # Fix the shares
+    idx = dm_tech.idx
+    dm_tech.array[:, :, :, idx['aviation'], idx['BEV']] = 0
+    dm_tech.array[:, :, :, idx['aviation'], idx['ICE']] = 1
+    dm_tech.array[:, :, :, idx['marine'], idx['FCEV']] = 0
+    dm_tech.array[:, :, :, idx['marine'], idx['BEV']] = 0
+    dm_tech.array[:, :, :, idx['marine'], idx['ICE']] = 1
+    dm_tech.array[:, :, :, idx['IWW'], idx['FCEV']] = 0
+    dm_tech.array[:, :, :, idx['IWW'], idx['BEV']] = 0
+    dm_tech.array[:, :, :, idx['IWW'], idx['ICE']] = 1
+    dm_tech.normalise(dim='Categories2')
+
+    for lev in [1, 2, 3, 4]:
+        dm_tech = DM_transport_new['fts']['freight_technology-share_new'][lev]
+        # Fix the shares
+        idx = dm_tech.idx
+        dm_tech.array[:, :, :, idx['aviation'], idx['BEV']] = 0
+        dm_tech.array[:, :, :, idx['aviation'], idx['ICE']] = 1
+        dm_tech.array[:, :, :, idx['marine'], idx['FCEV']] = 0
+        dm_tech.array[:, :, :, idx['marine'], idx['BEV']] = 0
+        dm_tech.array[:, :, :, idx['marine'], idx['ICE']] = 1
+        dm_tech.array[:, :, :, idx['IWW'], idx['FCEV']] = 0
+        dm_tech.array[:, :, :, idx['IWW'], idx['BEV']] = 0
+        dm_tech.array[:, :, :, idx['IWW'], idx['ICE']] = 1
+        dm_tech.normalise(dim='Categories2')
+    return
 
 
 #################################################
@@ -1588,6 +1641,9 @@ data_file = '/Users/paruta/2050-Calculators/PathwayCalc/_database/data/datamatri
 with open(data_file, 'rb') as handle:
     DM_transport = pickle.load(handle)
 
+lev = list(DM_transport['ots'].keys())[0]
+baseyear_old = DM_transport['ots'][lev].col_labels['Years'][-1]
+
 #### Emission factors
 #region Literature on emissions factors
 # Source cited in EUCalc doc
@@ -1623,11 +1679,12 @@ dm_veh_eff = DM_transport['fxa']['passenger_tech'].filter({'Variables': ['tra_pa
 dm_veh_new_eff = DM_transport['ots']['passenger_veh-efficiency_new'].filter(
     {'Variables': ['tra_passenger_veh-efficiency_new'], 'Country': ['Switzerland']})
 # It also removes aviation
-dm_veh_eff, dm_veh_new_eff = replace_LDV_efficiency_with_new(dm_veh_eff, dm_veh_new_eff)
+dm_veh_eff, dm_veh_new_eff = replace_LDV_efficiency_with_new(dm_veh_eff, dm_veh_new_eff, baseyear_old)
 
 del dm_veh_new_eff_LDV, dm_veh_eff_LDV, mapping_cat, emis
 
 #######################################################################
+
 years_fts = create_years_list(start_year=2025, end_year=2050, step=5)
 
 #### Modal-share
@@ -1675,7 +1732,6 @@ dm_tmp = dm_fleet_tech_share.filter({'Categories1': ['bus', 'metrotram', 'rail']
 dm_tmp.rename_col('tra_passenger_technology-share_fleet', 'tra_passenger_technology-share_new', 'Variables')
 dm_fleet_new_tech_share.append(dm_tmp.filter({'Years': years_ots}), dim='Categories1')
 dm_new_tech_share_fts.append(dm_tmp.filter({'Years': years_fts}), dim='Categories1')
-print('Save Technology share new fleet to database csv (as ots/fts)')
 
 ##### Public fleet avg-pkm-veh [pkm/veh] (bus, metrotram, rail)
 # by construction avg-pkm-veh CH and VD are the same
@@ -1692,7 +1748,6 @@ dm_public_avg_pkm.fill_nans(dim_to_interp='Years')
 dm_public_avg_pkm.append(dm_public.filter({'Variables': ['tra_passenger_avg-pkm-by-veh'], 'Years': [2020, 2021, 2022, 2023]}), dim='Years')
 dm_public_avg_pkm.sort('Years')
 del dm_public_pkm, dm_public
-print('Put avg-pkm in database')
 
 
 ##### Occupancy pkm/vkm (LDV/2W)
@@ -1763,23 +1818,41 @@ dm_fleet_tech_share.append(dm_veh_eff, dim='Variables')
 dm_veh_new_eff_fts = dm_veh_new_eff.copy()
 dm_veh_new_eff_fts.add(np.nan, dim='Years', dummy=True, col_label=years_fts)
 dm_veh_new_eff_fts.fill_nans(dim_to_interp='Years')
-dm_veh_new_eff_fts.filter({'Years': years_fts})
+dm_veh_new_eff_fts.filter({'Years': years_fts}, inplace=True)
+
+##### Aviation
+dm_pkm_cap_aviation_fts = dm_pkm_cap_aviation.copy()
+dm_pkm_cap_aviation_fts.add(np.nan, dim='Years', col_label=years_fts, dummy=True)
+linear_fitting(dm_pkm_cap_aviation_fts, years_fts)
+dm_pkm_cap_aviation_fts.filter({'Years': years_fts}, inplace=True)
+
+# Compute vehicle lifetime in vkm for LDV and 2W instead of renewal rate
+dm_tmp = dm_utilisation_ots.copy()
+dm_tmp.append(dm_renewal_rate.filter({'Categories1': ['2W', 'LDV'], 'Years': years_ots}), dim='Variables')
+dm_tmp.operation('tra_passenger_utilisation-rate', '/', 'tra_passenger_renewal-rate',
+                             out_col='tra_passenger_vehicle-lifetime', unit='vkm')
+dm_veh_lifetime = dm_tmp.filter({'Variables': ['tra_passenger_vehicle-lifetime']}, inplace=False)
+dm_veh_lifetime.add(np.nan, dim='Years', col_label=years_fts, dummy=True)
+dm_veh_lifetime.fill_nans(dim_to_interp='Years')
+dm_renewal_rate.drop(col_label=['2W', 'LDV'], dim='Categories1')
+## Compute the avg veh-lifetime from 2009-2019
+#linear_fitting(dm_veh_lifetime, years_fts, based_on=create_years_list(2004, 2019, 1))
+
 
 # FXA
 DM_transport_new = {'fxa': dict(), 'ots': dict(), 'fts': dict(), 'constant': dict()}
 DM_transport_new['fxa']['passenger_renewal-rate'] = dm_renewal_rate
 DM_transport_new['fxa']['passenger_avg-pkm-by-veh'] = dm_public_avg_pkm
 DM_transport_new['fxa']['passenger_tech'] = dm_fleet_tech_share
-
+DM_transport_new['fxa']['passenger_vehicle-lifetime'] = dm_veh_lifetime
 
 # OTS
 # Filter aviation pkm/cap and rename
-linear_fitting(dm_pkm_cap_aviation, years_ots=[2020, 2021, 2022, 2023], based_on=[2020, 2021])
 DM_transport_new['ots']['passenger_aviation-pkm'] = dm_pkm_cap_aviation
 DM_transport_new['ots']['passenger_modal-share'] = dm_modal_share
 DM_transport_new['ots']['passenger_occupancy'] = dm_occupancy_ots
 DM_transport_new['ots']['passenger_technology-share_new'] = dm_fleet_new_tech_share
-DM_transport_new['ots']['passenger_utlization-rate'] = dm_utilisation_ots
+DM_transport_new['ots']['passenger_utilization-rate'] = dm_utilisation_ots
 DM_transport_new['ots']['passenger_veh-efficiency_new'] = dm_veh_new_eff
 
 
@@ -1788,15 +1861,16 @@ DM_transport_new['fts']['passenger_aviation-pkm'] = dict()
 DM_transport_new['fts']['passenger_modal-share'] = dict()
 DM_transport_new['fts']['passenger_occupancy'] = dict()
 DM_transport_new['fts']['passenger_technology-share_new'] = dict()
-DM_transport_new['fts']['passenger_utlization-rate'] = dict()
+DM_transport_new['fts']['passenger_utilization-rate'] = dict()
 DM_transport_new['fts']['passenger_veh-efficiency_new'] = dict()
 
 for lev in range(4):
     lev = lev+1
+    DM_transport_new['fts']['passenger_aviation-pkm'][lev] = dm_pkm_cap_aviation_fts
     DM_transport_new['fts']['passenger_modal-share'][lev] = dm_modal_share_fts
     DM_transport_new['fts']['passenger_occupancy'][lev] = dm_occupancy_BAU_fts
     DM_transport_new['fts']['passenger_technology-share_new'][lev] = dm_new_tech_share_fts
-    DM_transport_new['fts']['passenger_utlization-rate'][lev] = dm_utilisation_BAU_fts
+    DM_transport_new['fts']['passenger_utilization-rate'][lev] = dm_utilisation_BAU_fts
     DM_transport_new['fts']['passenger_veh-efficiency_new'][lev] = dm_veh_new_eff_fts
 
 # CONSTANT
@@ -1815,17 +1889,75 @@ years_for_extrap = create_years_list(2005, 2019, 1)
 linear_fitting(dm_pkm_cap_tot_fts, years_fts, based_on=years_for_extrap)
 dm_pkm_cap_tot_fts.filter({'Years': years_fts}, inplace=True)
 
-DM_transport_new['ots']['passenger_pkm/cap'] = dm_pkm_cap_tot
-DM_transport_new['fts']['passenger_pkm/cap'] = dict()
+DM_transport_new['ots']['pkm'] = dm_pkm_cap_tot
+DM_transport_new['fts']['pkm'] = dict()
 for lev in range(4):
     lev = lev+1
-    DM_transport_new['fts']['passenger_pkm/cap'] = dm_pkm_cap_tot_fts
+    DM_transport_new['fts']['pkm'][lev] = dm_pkm_cap_tot_fts
+
+types = ['ots', 'fts', 'fxa']
+
+lev = list(DM_transport['ots'].keys())[0]
+years_ots_old = DM_transport['ots'][lev].col_labels['Years']
+years_fts_old = DM_transport['fts'][lev][1].col_labels['Years']
+years_missing = list(set(set(years_ots) - set(years_ots_old)))
+years_to_drop = list(set(years_ots).intersection(set(years_fts_old)))
+for t in types:
+    labels = DM_transport[t].keys()
+    for key in labels:
+        if 'freight' in key and key not in DM_transport_new[t].keys():
+            dm = DM_transport[t][key].filter({'Country': ['Switzerland', 'Vaud']})
+            if t == 'fxa':
+                dm.drop(col_label=years_to_drop, dim='Years')
+                dm.add(np.nan, dim='Years', col_label=years_missing, dummy=True)
+                linear_fitting(dm, years_ots+years_fts)
+                DM_transport_new['fxa'][key] = dm.filter({'Years': years_ots+years_fts})
+            if t == 'ots':
+                # Fill in the missing years based on the BAU scenario (level=1)
+                dm_fts = DM_transport['fts'][key][1].filter({'Country': ['Switzerland', 'Vaud']})
+                dm_fts.drop(col_label=years_to_drop, dim='Years')
+                dm_all = dm.copy()
+                dm_all.append(dm_fts, dim='Years')
+                dm_all.add(np.nan, dim='Years', col_label=years_missing, dummy=True)
+                linear_fitting(dm_all, years_ots+years_fts)
+                dm_ots = dm_all.filter({'Years': years_ots})
+                DM_transport_new['ots'][key] = dm_ots
+                DM_transport_new['fts'][key] = {1: dm_all.filter({'Years': years_fts})}
+                for lev in [2, 3, 4]:
+                    dm_fts = DM_transport['fts'][key][lev].filter({'Country': ['Switzerland', 'Vaud']})
+                    dm_fts.array[:, 0:-1, ...] = np.nan
+                    dm_fts.drop(col_label=years_to_drop, dim='Years')
+                    dm_all = dm_ots.copy()
+                    dm_all.append(dm_fts, dim='Years')
+                    linear_fitting(dm_all, years_ots + years_fts)
+                    DM_transport_new['fts'][key][lev] = dm_all.filter({'Years': years_fts})
+
+
+# Fix freight tech-share
+fix_freight_tech_shares(DM_transport_new)
+# Fix freight modal-share
+dm_modal = DM_transport_new['ots']['freight_modal-share']
+idx = dm_modal.idx
+dm_modal.array[:, :, :, idx['marine']] = 0
+dm_modal.normalise('Categories1')
+for lev in [1, 2, 3, 4]:
+    dm_modal_fts = DM_transport_new['fts']['freight_modal-share'][lev]
+    idx = dm_modal_fts.idx
+    dm_modal_fts.array[:, :, :, idx['marine']] = 0
+    dm_modal_fts.array[:, 0:-1, ...] = np.nan
+    dm_modal_all = dm_modal.copy()
+    dm_modal_all.append(dm_modal_fts, dim='Years')
+    linear_fitting(dm_modal_all, years_ots+years_fts)
+    dm_modal_all.normalise('Categories1')
+    DM_transport_new['fts']['freight_modal-share'][lev] = dm_modal_all.filter({'Years': years_fts})
+
 
 
 current_file_directory = os.path.dirname(os.path.abspath(__file__))
 f = os.path.join(current_file_directory, 'data/transport_CH_VD.pickle')
 with open(f, 'wb') as handle:
     pickle.dump(DM_transport_new, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
 
 
 print('Hello')
