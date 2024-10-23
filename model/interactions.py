@@ -9,7 +9,7 @@ from model.agriculture_module import agriculture
 from model.emissions_module import emissions
 from model.climate_module import climate
 # from model.ammonia_module import ammonia
-# from model.industry_module import industry
+from model.industry_module import industry
 from model.power_module import power
 from model.landuse_module import land_use
 from model.oilrefinery_module import refinery
@@ -44,9 +44,9 @@ def runner(lever_setting, global_vars, output_nodes, logger):
     TPE['buildings'] = buildings(lever_setting, years_setting, interface)
     logger.info('Execution time Buildings: {0:.3g} s'.format(time.time() - start_time))
     start_time = time.time()
-    # TPE['industry'] = industry(lever_setting, years_setting, interface)
-    # logger.info('Execution time Industry: {0:.3g} s'.format(time.time() - start_time))
-    # start_time = time.time()
+    TPE['industry'] = industry(lever_setting, years_setting, interface)
+    logger.info('Execution time Industry: {0:.3g} s'.format(time.time() - start_time))
+    start_time = time.time()
     TPE['agriculture'] = agriculture(lever_setting, years_setting, interface)
     logger.info('Execution time Agriculture: {0:.3g} s'.format(time.time() - start_time))
     start_time = time.time()
