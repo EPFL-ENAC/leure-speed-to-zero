@@ -1039,42 +1039,44 @@ def tra_industry_interface(dm_freight_veh, dm_passenger_veh, dm_infrastructure,
     return DM_industry
 
 
-def tra_minerals_interface(dm_freight_new_veh, dm_passenger_new_veh, DM_industry, dm_infrastructure, write_xls=False):
+# def tra_minerals_interface(dm_freight_new_veh, dm_passenger_new_veh, DM_industry, dm_infrastructure, write_xls=False):
 
-    # Group technologies as PHEV, ICE, EV and FCEV
-    dm_freight_new_veh.groupby({'PHEV': 'PHEV.*', 'ICE': 'ICE.*', 'EV': 'BEV|CEV'}, regex=True, inplace=True, dim='Categories2')
-    # note that mt is later dropped
-    dm_passenger_new_veh.groupby({'PHEV': 'PHEV.*', 'ICE': 'ICE.*', 'EV': 'BEV|CEV|mt'}, regex=True, inplace=True, dim='Categories2')
-    # keep only certain vehicles
-    keep_veh = 'HDV.*|2W|LDV|bus'
-    dm_keep_new_veh = dm_passenger_new_veh.filter_w_regex({'Categories1': keep_veh})
-    dm_keep_new_veh.rename_col('tra_passenger_new-vehicles', 'tra_product-demand', dim='Variables')
-    dm_keep_freight_new_veh = dm_freight_new_veh.filter_w_regex({'Categories1': keep_veh})
-    dm_keep_freight_new_veh.rename_col('tra_freight_new-vehicles', 'tra_product-demand', dim='Variables')
-    # join passenger and freight
-    dm_keep_new_veh.append(dm_keep_freight_new_veh, dim='Categories1')
-    # flatten to obtain e.g. LDV-EV or HDVL-FCEV
-    dm_keep_new_veh = dm_keep_new_veh.flatten()
-    dm_keep_new_veh.rename_col_regex('_', '-', 'Categories1')
+#     # Group technologies as PHEV, ICE, EV and FCEV
+#     dm_freight_new_veh.groupby({'PHEV': 'PHEV.*', 'ICE': 'ICE.*', 'EV': 'BEV|CEV'}, regex=True, inplace=True, dim='Categories2')
+#     # note that mt is later dropped
+#     dm_passenger_new_veh.groupby({'PHEV': 'PHEV.*', 'ICE': 'ICE.*', 'EV': 'BEV|CEV|mt'}, regex=True, inplace=True, dim='Categories2')
+#     # keep only certain vehicles
+#     keep_veh = 'HDV.*|2W|LDV|bus'
+#     dm_keep_new_veh = dm_passenger_new_veh.filter_w_regex({'Categories1': keep_veh})
+#     dm_keep_new_veh.rename_col('tra_passenger_new-vehicles', 'tra_product-demand', dim='Variables')
+#     dm_keep_freight_new_veh = dm_freight_new_veh.filter_w_regex({'Categories1': keep_veh})
+#     dm_keep_freight_new_veh.rename_col('tra_freight_new-vehicles', 'tra_product-demand', dim='Variables')
+#     dm_keep_freight_new_veh.rename_col('tra_freight_vehicle-fleet', 'tra_vehicle-fleet', dim='Variables')
+#     dm_keep_freight_new_veh.rename_col('tra_freight_vehicle-waste', 'tra_vehicle-waste', dim='Variables')
+#     # join passenger and freight
+#     dm_keep_new_veh.rename_col('tra_passenger_vehicle-fleet', 'tra_vehicle-fleet', dim='Variables')
+#     dm_keep_new_veh.rename_col('tra_passenger_vehicle-waste', 'tra_vehicle-waste', dim='Variables')
+#     dm_keep_new_veh.append(dm_keep_freight_new_veh, dim='Categories1')
+#     # flatten to obtain e.g. LDV-EV or HDVL-FCEV
+#     dm_keep_new_veh = dm_keep_new_veh.flatten()
+#     dm_keep_new_veh.rename_col_regex('_', '-', 'Categories1')
+#     dm_other = DM_industry['tra-veh'].filter({'Categories1': ['planes', 'ships', 'trains']})
+#     dm_other.groupby({'other-planes': ['planes'], 'other-ships': ['ships'], 'other-trains': ['trains']}, dim='Categories1', inplace=True)
+#     dm_keep_new_veh.append(dm_other, dim='Categories1')
+#     dm_keep_new_veh.rename_col('tra_product-demand', 'product-demand', dim='Variables')
 
-    dm_other = DM_industry['tra-veh'].filter({'Categories1': ['planes', 'ships', 'trains']})
-    dm_other.groupby({'other-planes': ['planes'], 'other-ships': ['ships'], 'other-trains': ['trains']}, dim='Categories1', inplace=True)
+#     DM_minerals = {
+#         'tra_veh': dm_keep_new_veh,
+#         'tra_infra': dm_infrastructure
+#     }
 
-    dm_keep_new_veh.append(dm_other, dim='Categories1')
-    dm_keep_new_veh.rename_col('tra_product-demand', 'product-demand', dim='Variables')
+#     if write_xls:
+#         df1 = DM_minerals['tra_veh'].write_df()
+#         df2 = DM_minerals['tra_infra'].write_df()
+#         df = pd.concat([df1, df2.drop(columns=['Country', 'Years'])], axis=1)
+#         df.to_excel('../_database/data/xls/All-Countries-interface_from-transport-to-minerals.xlsx', index=False)
 
-    DM_minerals = {
-        'tra_veh': dm_keep_new_veh,
-        'tra_infra': dm_infrastructure
-    }
-
-    if write_xls:
-        df1 = DM_minerals['tra_veh'].write_df()
-        df2 = DM_minerals['tra_infra'].write_df()
-        df = pd.concat([df1, df2.drop(columns=['Country', 'Years'])], axis=1)
-        df.to_excel('../_database/data/xls/All-Countries-interface_from-transport-to-minerals.xlsx', index=False)
-
-    return DM_minerals
+#     return DM_minerals
 
 def tra_oilrefinery_interface(dm_pass_energy, dm_freight_energy):
 
@@ -1238,8 +1240,9 @@ def transport(lever_setting, years_setting, interface=Interface()):
     dm_freight_veh = DM_freight_out['tech'].filter({'Variables': ['tra_freight_new-vehicles','tra_freight_vehicle-waste','tra_freight_vehicle-fleet']})
     dm_passenger_veh = DM_passenger_out['tech'].filter({'Variables': ['tra_passenger_new-vehicles','tra_passenger_vehicle-waste', 'tra_passenger_vehicle-fleet']})
     dm_infrastructure = dummy_tra_infrastructure_workflow(DM_lfs['lfs_pop'])
-    DM_industry = tra_industry_interface(dm_freight_veh.copy(), dm_passenger_veh.copy(), dm_infrastructure)
-    DM_minerals = tra_minerals_interface(dm_freight_veh, dm_passenger_veh, DM_industry, dm_infrastructure, write_xls=False)
+    DM_industry = tra_industry_interface(dm_freight_veh.copy(), dm_passenger_veh.copy(), dm_infrastructure, write_xls=False)
+    # DM_minerals = tra_minerals_interface(dm_freight_veh, dm_passenger_veh, DM_industry, dm_infrastructure, write_xls=False)
+    DM_minerals = DM_industry.copy()
     # !FIXME: add km infrastructure data, using compute_stock with tot_km and renovation rate as input.
     #  data for ch ok, data for eu, backcalculation? dummy based on swiss pop?
     interface.add_link(from_sector='transport', to_sector='industry', dm=DM_industry)
@@ -1266,6 +1269,7 @@ def local_transport_run():
 
     return results_run
 
-# database_from_csv_to_datamatrix()
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
-results_run = local_transport_run()
+# # database_from_csv_to_datamatrix()
+# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/transport_module.py"
+# results_run = local_transport_run()
+
