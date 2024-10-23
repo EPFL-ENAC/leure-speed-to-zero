@@ -377,7 +377,8 @@ def calibration_rates(dm, dm_cal, calibration_start_year = 1990, calibration_end
     
     # get calibration rates = (calib - variable)/variable
     dm_cal_sub.array = (dm_cal_sub.array - dm_sub.array)/dm_sub.array + 1
-    dm_cal_sub.col_labels["Variables"] = ['cal_rate']
+    old_name = dm_cal_sub.col_labels["Variables"][0]
+    dm_cal_sub.rename_col(old_name, "cal_rate", "Variables")
     dm_cal_sub.units['cal_rate'] = "%"
 
     # adjust missing years in dm_cal_sub
