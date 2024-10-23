@@ -793,7 +793,7 @@ class DataMatrix:
         self.col_labels[cat2] = col1
         return
 
-    def groupby(self, group_cols={}, dim=str, regex=False, inplace=False):
+    def groupby(self, group_cols={}, dim=str, aggregation = "sum", regex=False, inplace=False):
         # Sum values in group, e.g.
         # dm.groupby({'road': ['LDV', '2W']}, dim='Categories1') sums LDV and 2W and calls it road
         # dm.groupby({'freight': 'HDV.*|marine.*', 'passenger': 'LDV|bus|aviation'}, dim='Categories2', regex = True)
@@ -811,7 +811,10 @@ class DataMatrix:
                 self.drop(dim=dim, col_label=col_to_group)
             a = self.dim_labels.index(dim)  # extract the index of the dimension
             new_array = np.moveaxis(dm_to_group.array, a, -1)  # move dimension to end
-            new_array = np.nansum(new_array, axis=-1, keepdims=True)  # nansum
+            if aggregation == "sum": # nansum
+                new_array = np.nansum(new_array, axis=-1, keepdims=True)
+            if aggregation == "mean": # mean
+                new_array = np.nanmean(new_array, axis=-1, keepdims=True)
             dm_to_group.array = np.moveaxis(new_array, -1, a)  # put dimension back to right place
             # remove the idx of the grouped columns
             for col in dm_to_group.col_labels[dim]:
