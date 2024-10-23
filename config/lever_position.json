@@ -56,7 +56,7 @@
   "lever_product-net-import":1,
   "lever_material-net-import":1,
   "lever_temp":1,
-  "lever_passenger-aviation-pkm":1,
+  "lever_passenger_aviation-pkm":1,
   "lever_pv-capacity":1,
   "lever_csp-capacity":1,
   "lever_onshore-wind-capacity":1,
