@@ -1031,10 +1031,10 @@ def tra_industry_interface(dm_freight_veh, dm_passenger_veh, dm_infrastructure,
 
     # ! FIXME add infrastructure in km
     DM_industry = {
-        'tra-veh': dm_product_demand,
-        'tra-infra': dm_infra_ind,
-        'tra-waste': dm_waste,
-        'tra-stock': dm_stock
+        'tra-veh-demand': dm_product_demand,
+        'tra-infra-demand': dm_infra_ind,
+        'tra-veh-waste': dm_waste,
+        'tra-veh-stock': dm_stock
     }
     return DM_industry
 
