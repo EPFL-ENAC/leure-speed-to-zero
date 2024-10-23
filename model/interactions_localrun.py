@@ -2,14 +2,14 @@
 from model.transport_module import transport
 from model.lifestyles_module import lifestyles
 from model.buildings_module import buildings
-from model.minerals_module import minerals
+# from model.minerals_module import minerals
 from model.common.interface_class import Interface
 from model.district_heating_module import district_heating
 from model.agriculture_module import agriculture
 from model.emissions_module import emissions
 from model.climate_module import climate
-from model.ammonia_module import ammonia
-from model.industry_module import industry
+# from model.ammonia_module import ammonia
+# from model.industry_module import industry
 from model.power_module import power
 from model.landuse_module import land_use
 from model.oilrefinery_module import refinery
@@ -40,15 +40,15 @@ def interactions(lever_setting, years_setting):
     TPE['buildings'] = buildings(lever_setting, years_setting, interface)
     runtime['Execution time Buldings'] = time.time() - start_time
     start_time = time.time()
-    TPE['industry'] = industry(lever_setting, years_setting, interface)
-    runtime['Execution time Industry'] = time.time() - start_time
-    start_time = time.time()
+    # TPE['industry'] = industry(lever_setting, years_setting, interface)
+    # runtime['Execution time Industry'] = time.time() - start_time
+    # start_time = time.time()
     TPE['agriculture'] = agriculture(lever_setting, years_setting, interface)
     runtime['Execution time Agriculture'] = time.time() - start_time
     start_time = time.time()
-    TPE['ammonia'] = ammonia(lever_setting, years_setting, interface)
-    runtime['Execution time Ammonia'] = time.time() - start_time
-    start_time = time.time()
+    # TPE['ammonia'] = ammonia(lever_setting, years_setting, interface)
+    # runtime['Execution time Ammonia'] = time.time() - start_time
+    # start_time = time.time()
     TPE['power'] = power(lever_setting, years_setting, interface)
     runtime['Execution time Power'] = time.time() - start_time
     start_time = time.time()
@@ -61,9 +61,9 @@ def interactions(lever_setting, years_setting):
     TPE['land-use'] = land_use(lever_setting, years_setting, interface)
     runtime['Execution time Land-Use'] = time.time() - start_time
     start_time = time.time()
-    TPE['minerals'], TPE['minerals_EU'] = minerals(interface)
-    runtime['Execution time Minerals'] = time.time() - start_time
-    start_time = time.time()
+    # TPE['minerals'], TPE['minerals_EU'] = minerals(interface)
+    # runtime['Execution time Minerals'] = time.time() - start_time
+    # start_time = time.time()
     TPE['emissions'] = emissions(lever_setting, years_setting, interface)
     runtime['Execution time Emissions'] = time.time() - start_time
     start_time = time.time()
@@ -96,7 +96,7 @@ def local_interactions_run():
     return results_run, runtime
 
 # run local
-# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/interactions_localrun.py"
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/interactions_localrun.py"
 results_run, runtime = local_interactions_run()
 
 # # checks
