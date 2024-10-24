@@ -384,6 +384,9 @@ def compute_fts_tech_split(dm_mode, dm_tech, cols, years_setting):
         dm_tech.array[:, idx_t[t], idx_t[waste_col], ...] = waste_t
         dm_tech.array[:, idx_t[t], idx_t[eff_tot_col], ...] = eff_tot_t
         dm_tech.array[:, idx_t[t], idx_t[tech_tot_col], ...] = tech_tot_t
+        
+        tmn = t
+        
     return
 
 
