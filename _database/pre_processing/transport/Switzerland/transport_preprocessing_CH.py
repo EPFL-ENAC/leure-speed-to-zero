@@ -12,6 +12,9 @@ import pickle
 import os
 import requests
 
+print('In order for this routine to run you need to download a couple of files and save them locally in ./data/:'
+      '- Aviation demand data (pkm) from  "Our World in Data": https://ourworldindata.org/grapher/aviation-demand-efficiency'
+      '- Microrecensement analysis for 2005 and 2000 from EUCalc drive PathwayCalc/_database/pre-processing/transport/Switzerland/data/')
 
 def fill_var_nans_based_on_var_curve(dm, var_nan, var_ref):
     # Fills nan in a variable dm based on another variable curve
@@ -1466,6 +1469,10 @@ def fix_freight_tech_shares(DM_transport_new):
         dm_tech.normalise(dim='Categories2')
     return
 
+print('In order for this routine to run you need to download a couple of files and save them locally:'
+      '- Aviation demand data (pkm) from  "Our World in Data": https://ourworldindata.org/grapher/aviation-demand-efficiency'
+      '- Microrecensement analysis for 2005 and 2000 from EUCalc drive')
+
 
 #################################################
 #######    PRE-PROCESS TRANSPORT DATA     #######
@@ -2004,12 +2011,9 @@ for lev in [1, 2, 3, 4]:
     DM_transport_new['fts']['freight_modal-share'][lev] = dm_modal_all.filter({'Years': years_fts})
 
 
-
 current_file_directory = os.path.dirname(os.path.abspath(__file__))
 f = os.path.join(current_file_directory, 'data/transport_CH_VD.pickle')
 with open(f, 'wb') as handle:
     pickle.dump(DM_transport_new, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-
-
-print('Hello')
+# print('Hello')
