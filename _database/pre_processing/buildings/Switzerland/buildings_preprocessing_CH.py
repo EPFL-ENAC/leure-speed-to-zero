@@ -7,6 +7,7 @@ from model.common.auxiliary_functions import moving_average, linear_fitting, cre
 from model.common.io_database import update_database_from_dm, csv_database_reformat, read_database_to_dm
 from _database.pre_processing.api_routines_CH import get_data_api_CH
 from model.common.data_matrix_class import DataMatrix
+from model.common.constant_data_matrix_class import ConstantDataMatrix
 
 import math
 import requests
@@ -350,28 +351,82 @@ def compute_bld_floor_area_new(dm_bld_new_buildings_1, dm_bld_new_buildings_2, d
     return dm_bld_area_new
 
 
-def compute_bld_demolition_rate(dm):
+def compute_bld_demolition_rate(dm_in, cat_map):
 
-    #window_size = 3  # Change window size to control the smoothing effect
-    #data_smooth = moving_average( dm_bld_area_stock.array, window_size, axis= dm_bld_area_stock.dim_labels.index('Years'))
-    #dm_bld_area_stock.array[:, 1:-1, ...] = data_smooth
+    dm = dm_in.filter({'Variables': ['bld_floor-area_stock', 'bld_floor-area_new']})
 
-    #dm = dm_bld_area_stock.copy()
-    #dm.append(dm_bld_area_new, dim='Variables')
+    # You cannot have stock of a future construction period (i.e. envelope class / energy category)
+    idx = dm.idx
+    start_yr = dm.col_labels['Years'][0]
+    for cat, period in cat_map.items():
+        end_yr = period[0]
+        period_list = list(range(start_yr, end_yr))
+        idx_period = [idx[yr] for yr in period_list]
+        # Set stock to 0 until beginning of construction period
+        dm.array[:, idx_period, idx['bld_floor-area_stock'], :, idx[cat]] = 0
+        # Smooth data in the rest of the time frame
+        not_period = list(set(range(len(dm.col_labels['Years']))) - set(idx_period[:-1]))
+        not_period.sort()
+        if not_period is not None:
+            window_size = 3  # Change window size to control the smoothing effect
+            nb_c = len(dm.col_labels['Country'])
+            nb_y = len(not_period)
+            len_cat1 = len(dm.col_labels['Categories1'])
+            for i in range(2):
+                arr = dm.array[:, not_period, idx['bld_floor-area_stock'], :, idx[cat]].reshape((nb_y, nb_c, len_cat1))
+                data_smooth = moving_average(arr, window_size, axis=0)
+                dm.array[:, not_period[1:-1], idx['bld_floor-area_stock'], :, idx[cat]] = data_smooth
 
-    # w(t) = s(t-1) - s(t) + n(t)
+
+    # You can only have new buildings during the construction period
+    for cat, period in cat_map.items():
+        start_yr = period[0]
+        end_yr = period[1]
+        period_list = list(range(start_yr, end_yr))
+        idx_not_period = [idx[yr] for yr in dm.col_labels['Years'] if yr not in period_list]
+        dm.array[:, idx_not_period, idx['bld_floor-area_new'], :, idx[cat]] = 0
+        #period_list = list(range(start_yr-1, end_yr+1))
+        #idx_period = [idx[yr] for yr in period_list]
+        #if not_period is not None:
+        #    window_size = 3  # Change window size to control the smoothing effect
+        #    nb_c = len(dm.col_labels['Country'])
+        #    nb_y = len(idx_period)
+        #    len_cat1 = len(dm.col_labels['Categories1'])
+        #    for i in range(2):
+        #        arr = dm.array[:, idx_period, idx['bld_floor-area_new'], :, idx[cat]].reshape(
+        #            (nb_y, nb_c, len_cat1))
+        #        data_smooth = moving_average(arr, window_size, axis=0)
+        #        dm.array[:, idx_period[1:-1], idx['bld_floor-area_new'], :, idx[cat]] = data_smooth
+
+    # s(t) = s(t-1) + n(t) - w(t)
+    # w(t) = s(t-1) + n(t) + tr(t) + r(t) - s(t)
+    # r(t) = R s(t-1)
+    # I assume that the renovation is from the lowest class and it gains  class ?
+    dm.append(dm_in.filter({'Variables': ['bld_floor-area_transformed']}, inplace=False), dim='Variables')
+
     # dem-rate(t-1) = w(t) / s(t-1)
     dm.lag_variable('bld_floor-area_stock', shift=1, subfix='_tm1')
-    dm.operation('bld_floor-area_stock_tm1', '-', 'bld_floor-area_stock',
-                                out_col='bld_delta-stock', unit='m2')
-    dm.operation('bld_delta-stock', '+', 'bld_floor-area_new',
-                                out_col='bld_floor-area_waste', unit='m2')
+    arr_waste = dm.array[:, :, idx['bld_floor-area_stock_tm1'], ...] \
+                + dm.array[:, :, idx['bld_floor-area_new'], ...] \
+                + dm.array[:, :, idx['bld_floor-area_transformed'], ...] \
+                - dm.array[:, :, idx['bld_floor-area_stock'], ...]
+
+    dm.operation('bld_floor-area_stock_tm1', '-', 'bld_floor-area_stock', out_col='bld_floor-area_deltas', unit='m2')
+    dm.add(arr_waste, dim='Variables', unit='m2', col_label='bld_floor-area_waste')
+
+    idx = dm.idx
+    start_yr = dm.col_labels['Years'][0]
+    for cat, period in cat_map.items():
+        end_yr = min(period[1] + 3, dm.col_labels['Years'][-1]+1)
+        period_list = list(range(start_yr, end_yr))
+        idx_period = [idx[yr] for yr in period_list]
+        dm.array[:, idx_period, idx['bld_floor-area_waste'], :, idx[cat]] = 0
+
     dm.operation('bld_floor-area_waste', '/', 'bld_floor-area_stock_tm1',
                                 out_col='bld_demolition-rate_tm1', unit='%')
     dm.lag_variable('bld_demolition-rate_tm1', shift=-1, subfix='_tp1')
     dm.rename_col('bld_demolition-rate_tm1_tp1', 'bld_demolition-rate', dim='Variables')
 
-    dm.filter({'Variables': ['bld_demolition-rate']}, inplace=False).flatten().datamatrix_plot()
 
     # Compute demolition rate
     dm_demolition_rate = dm.filter({'Variables': ['bld_demolition-rate']}, inplace=False)
@@ -382,6 +437,14 @@ def compute_bld_demolition_rate(dm):
     data_smooth = moving_average(dm_demolition_rate.array, window_size, axis=dm_demolition_rate.dim_labels.index('Years'))
     dm_demolition_rate.array[:, 1:-1, ...] = data_smooth
 
+    idx = dm_demolition_rate.idx
+    start_yr = dm_demolition_rate.col_labels['Years'][0]
+    for cat, period in cat_map.items():
+        end_yr = min(period[1] + 3, dm_demolition_rate.col_labels['Years'][-1]+1)
+        period_list = list(range(start_yr, end_yr))
+        idx_period = [idx[yr] for yr in period_list]
+        dm_demolition_rate.array[:, idx_period, idx['bld_demolition-rate'], :, idx[cat]] = 0
+
     # Recompute new fleet so that it matches the demolition rate
     # n(t) = s(t) - s(t-1) + w(t)
     # w(t) = dem-rate(t-1) * s(t-1)
@@ -390,17 +453,41 @@ def compute_bld_demolition_rate(dm):
     dm.append(dm_demolition_rate, dim='Variables')
     dm.operation('bld_floor-area_stock', '-', 'bld_floor-area_stock_tm1', out_col='bld_delta-stock', unit='m2')
     dm.lag_variable('bld_demolition-rate', shift=1, subfix='_tm1')
-    dm.operation('bld_demolition-rate_tm1', '*', 'bld_floor-area_stock', out_col='bld_floor-area_waste', unit='m2')
+    dm.operation('bld_demolition-rate_tm1', '*', 'bld_floor-area_stock_tm1', out_col='bld_floor-area_waste', unit='m2')
     dm.operation('bld_delta-stock', '+', 'bld_floor-area_waste', out_col='bld_floor-area_new', unit='m2')
 
-    dm.filter({'Variables': ['bld_floor-area_stock', 'bld_floor-area_new', 'bld_demolition-rate']}, inplace=True)
-    idx = dm.idx
-    dm.array[:, 0, idx['bld_floor-area_new'], ...] = np.nan
-    dm.fill_nans(dim_to_interp='Years')
+    # Where new < 0 -> new(t) = s(t) - s(t-1) - w(t) e.g  -2 = 8 - 10 + 0
+    # change waste so that new = 0
+    dm_new = dm.filter({'Variables': ['bld_floor-area_new']})
+    dm_waste = dm.filter({'Variables': ['bld_floor-area_waste']})
+    dm_stock = dm.filter({'Variables': ['bld_floor-area_stock']})
+    dm_rate_tm1 = dm.filter({'Variables': ['bld_demolition-rate_tm1']})
 
-    dm.flatten().datamatrix_plot()
+    mask = dm_new.array < 0
+    dm_stock.array[mask] = dm_stock.array[mask] - dm_new.array[mask]
+    dm_new.array[mask] = 0
 
-    return dm
+    dm_out = dm_stock.copy()
+    dm_out.append(dm_new, dim='Variables')
+    dm_out.lag_variable('bld_floor-area_stock', shift=1, subfix='_tm1')
+    dm_out.operation('bld_floor-area_stock_tm1', '-', 'bld_floor-area_stock', out_col='bld_delta-stock', unit='m2')
+    dm_out.operation('bld_delta-stock', '+', 'bld_floor-area_new', out_col='bld_floor-area_waste', unit='m2')
+    dm_out.operation('bld_floor-area_waste', '/', 'bld_floor-area_stock_tm1', out_col='bld_demolition-rate_tm1', unit='%')
+    dm_out.lag_variable('bld_demolition-rate_tm1', shift=-1, subfix='_tp1')
+    dm_out.rename_col('bld_demolition-rate_tm1_tp1', 'bld_demolition-rate', dim='Variables')
+
+    #dm_stock_tm1.array[mask] = dm_stock_tm1.array[mask] * dm_rate_tm1.array[mask]
+    #dm_stock_tm1.lag_variable('bld_floor-area_stock_tm1', shift=-1, subfix='_tp1')
+    #dm_stock_tm1.filter({'Variables': ['bld_floor-area_stock_tm1_tp1']}, inplace=True)
+    #dm.append(dm_stock_tm1, dim='Variables')
+
+    dm_out.filter({'Variables': ['bld_floor-area_stock', 'bld_floor-area_new',
+                                 'bld_demolition-rate', 'bld_floor-area_waste']}, inplace=True)
+    idx = dm_out.idx
+    dm_out.array[:, 0, idx['bld_floor-area_new'], ...] = np.nan
+    dm_out.fill_nans(dim_to_interp='Years')
+
+    return dm_out
 
 
 def extract_number_of_buildings(table_id, file):
@@ -656,6 +743,73 @@ def compute_new_area_by_energy_cat(dm_bld_area_new, dm_energy_cat, cat_map):
     return dm_energy_cat
 
 
+def extract_renovation_redistribuition(ren_map_out, ren_map_in, years_ots):
+    dm = DataMatrix(col_labels={'Country': ['Switzerland', 'Vaud'],
+                                            'Years': years_ots,
+                                            'Variables': ['bld_renovation-redistribution'],
+                                            'Categories1': ['B', 'C', 'D', 'E', 'F']},
+                    units={'bld_renovation-redistribution': '%'})
+    dm.array = np.nan * np.ones((len(dm.col_labels['Country']),
+                                 len(dm.col_labels['Years']),
+                                 len(dm.col_labels['Variables']),
+                                 len(dm.col_labels['Categories1'])))
+    idx = dm.idx
+    for year_period, map_values in ren_map_out.items():
+        for key, val in map_values.items():
+            dm.array[:, idx[year_period[1]], idx['bld_renovation-redistribution'], idx[key]] = val
+    dm.array[:, idx[1990], ...] = dm.array[:, idx[2000], ...]
+
+    dm.fill_nans(dim_to_interp='Years')
+    dm.normalise('Categories1')
+    idx = dm.idx
+    for year_period, map_values in ren_map_in.items():
+        idx_year_period = [idx[yr] for yr in range(year_period[0], year_period[1]+1)]
+        for key, val in map_values.items():
+            arr = dm.array[:, idx_year_period, idx['bld_renovation-redistribution'], idx[key]]
+            dm.array[:, idx_year_period, idx['bld_renovation-redistribution'], idx[key]] = val + arr
+
+    return dm
+
+
+def adjust_based_on_renovation(dm_in, dm_rr, dm_renov_distr):
+
+    dm = dm_in.copy()
+
+    idx_s = dm.idx
+    idx_r = dm_rr.idx
+    arr_tot_ren = np.nansum(dm.array[:, :, idx_s['bld_floor-area_stock'], :, :]
+                            * dm_rr.array[:, :, idx_r['bld_renovation-rate'], :, np.newaxis], axis=-1)
+    idx_d = dm_renov_distr.idx
+    arr = arr_tot_ren[..., np.newaxis] * dm_renov_distr.array[:, :, idx_d['bld_renovation-redistribution'], np.newaxis, :]
+    dm.add(arr, dim='Variables', unit='m2', col_label='bld_floor-area_renovated')
+
+    dm_rr.add(arr_tot_ren, dim='Variables', col_label='bld_floor-area_renovated', unit='m2')
+
+    # s(t) = s(t-1) + n(t) + r(t) - w(t) -> s(t-1) = s(t) - n(t) - r(t) + w(t)
+    idx = dm.idx
+    for ti in dm.col_labels['Years'][-1:0:-1]:
+        for cat in []:
+            stock_t = dm.array[:, idx[ti], idx['bld_floor-area_stock'], :, idx[cat]]
+            new_t = dm.array[:, idx[ti], idx['bld_floor-area_new'], :, idx[cat]]
+            ren_t = dm.array[:, idx[ti], idx['bld_floor-area_renovated'], :, idx[cat]]
+            waste_t = dm.array[:, idx[ti], idx['bld_floor-area_waste'], :, idx[cat]]
+            stock_tm1 = stock_t - new_t + waste_t - ren_t
+            dm.array[:, idx[ti - 1], idx['bld_floor-area_stock'], :, idx[cat]] = stock_tm1
+            dm.array[:, idx[ti - 1], idx['bld_demolition-rate'], :, idx[cat]] = waste_t / stock_tm1
+
+    for ti in dm.col_labels['Years'][1:]:
+        for cat in ['F', 'E', 'D', 'C', 'B']:
+            stock_tm1 = dm.array[:, idx[ti-1], idx['bld_floor-area_stock'], :, idx[cat]]
+            new_t = dm.array[:, idx[ti], idx['bld_floor-area_new'], :, idx[cat]]
+            ren_t = dm.array[:, idx[ti], idx['bld_floor-area_renovated'], :, idx[cat]]
+            waste_t = dm.array[:, idx[ti], idx['bld_floor-area_waste'], :, idx[cat]]
+            stock_t = stock_tm1 + new_t - waste_t + ren_t
+            dm.array[:, idx[ti], idx['bld_floor-area_stock'], :, idx[cat]] = stock_t
+            dm.array[:, idx[ti - 1], idx['bld_demolition-rate'], :, idx[cat]] = waste_t / stock_tm1
+
+    return dm
+
+
 # Stock
 years_ots = create_years_list(1990, 2023, 1)
 
@@ -697,23 +851,10 @@ del dm_bld_new_buildings_2, dm_bld_new_buildings_1
 
 dm_energy_cat = compute_new_area_by_energy_cat(dm_bld_area_new, dm_energy_cat, envelope_cat_new)
 
-dm_energy_cat_old = dm_energy_cat.copy()
-dm_energy_cat.group_all('Categories2')
-# Check what to do for the demolition rate-not clear where the spikes come from
-dm_all = compute_bld_demolition_rate(dm_energy_cat)
-
-df = dm_all.write_df()
-
-dm = dm_energy_cat_old.filter({'Variables': ['bld_floor-area_stock']}, inplace=False)
-df_cat = dm.write_df()
-
-del dm_bld_area_new, dm_bld_area_stock
-
 # Empty apartments
 # Logements vacants selon la grande région, le canton, la commune, le nombre de pièces d'habitation
 # et le type de logement vacant
 # https://www.pxweb.bfs.admin.ch/pxweb/fr/px-x-0902020300_101/-/px-x-0902020300_101.px/
-
 
 
 # Number of buildings
@@ -740,10 +881,35 @@ VD_share = {2014: 0.11, 2015: 0.11, 2016: 0.11, 2017: 0.110, 2018: 0.103,
             2019: 0.154, 2020: 0.16, 2021: 0.193, 2022: 0.15}
 share_by_bld = {'single-family-households': 0.55, 'multi-family-households': 0.35, 'other': 0.1}
 dm_renovation = compute_renovated_buildings(dm_bld, nb_buildings_renovated, VD_share, share_by_bld)
+
 # Compute renovation-rate
 dm_renovation = compute_renovation_rate(dm_renovation, years_ots)
 
-df_renovation = dm_renovation.write_df()
+# According to the Programme Batiments the assenissment is
+# Amélioration de +1 classes CECB 57%
+# Amélioration de +2 classes CECB 15%
+# Amélioration de +3 classes CECB 15%
+# Amélioration de +4 classes CECB 13%
+
+ren_map_out = {(1990, 2000): {'F': 0, 'E': 0.7, 'D': 0.3, 'C': 0, 'B': 0},
+               (2001, 2010): {'F': 0, 'E': 0.57, 'D': 0.28, 'C': 0.15, 'B': 0},
+               (2011, 2023): {'F': 0, 'E': 0.44, 'D': 0.28, 'C': 0.15, 'B': 0.13}}
+ren_map_in = {(1990, 2000): {'F': -0.7, 'E': -0.3, 'D': 0, 'C': 0, 'B': 0},
+               (2001, 2010): {'F': -0.7, 'E': -0.3, 'D': 0, 'C': 0, 'B': 0},
+               (2011, 2023): {'F': -0.7, 'E': -0.3, 'D': 0, 'C': 0, 'B': 0}}
+dm_renov_distr = extract_renovation_redistribuition(ren_map_out, ren_map_in, years_ots)
+
+# Harmonise floor-area stock, new and demolition rate
+dm_cat = compute_bld_demolition_rate(dm_energy_cat, envelope_cat_new)
+
+# The analysis before accounts for the stock, new, demolition-rate of building stock construction period.
+# the equation I have been working with is: s(t) = s(t-1) + n(t) - w(t)
+# Now I want to account for the renovation that redistributes the energy categories.
+# The total equation does not change but for each energy class we have
+# s_c(t) = s_c(t-1) + n_c(t) - w_c(t) + r_c(t), where r_c(t) can be positive or negative
+# I want to assume that n_c, w_c and r_c are given as well as s_c(t), and I compute s_c(t-1).
+# I will need to re-compute the demolition rate
+dm_all = adjust_based_on_renovation(dm_cat, dm_renovation, dm_renov_distr)
 
 # px-x-0902020100_111 / Structure des bâtiments: bâtiments selon le canton, le type de bâtiment,
 # le nombre d'étages et de logements, l'époque de construction et de rénovation, 1990 et 2000
@@ -786,12 +952,6 @@ energy_saving_TWh = {2022: 2.2, 2021: 2.2, 2020: 2.2, 2019: 2.6, 2018: 2.5, 2017
 # Definition of Building Archetypes Based on the Swiss Energy Performance Certificates Database
 # by Alessandro Pongelli et al.
 # U-value is computed as the average of the house element u-value (roof, wall, windows, ..) weighted by their area
-construction_period_envelope_cat = {'F': ['Avant 1919', '1919-1945', '1946-1960', '1961-1970'],
-                                    'E': ['1971-1980'],
-                                    'D': ['1981-1990', '1991-2000'],
-                                    'C': ['2001-2005', '2006-2010'],
-                                    'B': ['2011-2015', '2016-2020', '2021-2023']}
-envelope_cat_new = {'D': (1990, 2000), 'C': (2001, 2010), 'B': (2011, 2023)}
 # U-value in: W/m^2 K
 envelope_cat_u_value = {'F': 0.82, 'E': 0.69, 'D': 0.53, 'C': 0.41, 'B': 0.25}
 # Energy heating kWh/m^2
