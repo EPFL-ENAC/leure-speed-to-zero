@@ -2,6 +2,7 @@ import pandas as pd
 from model.common.data_matrix_class import DataMatrix
 import numpy as np
 from model.common.auxiliary_functions import linear_fitting, linear_forecast_BAU, moving_average, create_years_list
+from model.common.auxiliary_functions import eurostat_iso2_dict
 from model.common.io_database import read_database_to_dm, edit_database, update_database_from_dm
 import eurostat
 import json
@@ -358,9 +359,10 @@ def get_household_area_eustat(EU27_cntr_list, dict_iso2):
     return dm_size
 
 
-def estimate_average_room_size(dm_rooms, dm_area_2020, dm_pop, dm_pop_bld_type):
+def estimate_stock_res_from_average_room_size(dm_rooms, dm_area_2020, dm_pop, dm_pop_bld_type):
     # 1) lfs_rooms-cap [rooms/cap] x lfs_pop-by-bld-type [habitants] = lfs_rooms [rooms] (by bld type)
     # 2) bld_floor-area_2020 [m2] / lfs_rooms [rooms] (t=2020) = lfs_avg-room-size [m2/rooms] (t=2020)
+    # 3) bld_floor-area_stock_tmp [m2] = lfs_rooms [rooms] x lfs_avg-room-size [m2/rooms]
     # (by bld type, value applied to all years)
 
     # lfs_pop-by-bld-type = pop_bld_type_share x dm_pop
@@ -533,26 +535,27 @@ def solve_optimisation_problem(dm_area_res, country, cat):
     return
 
 
-def estimate_demolition_rate_res(dm_area_stock_tmp, dm_area_new):
+def estimate_demolition_rates_fix_stock(dm_area_stock_tmp, dm_area_new):
     # Filter & join residential households data
     dm_area_new.drop('Years', 2023)
-    dm_area_res = dm_area_new.filter_w_regex({'Categories1': '.*households'}, inplace=False)
-    dm_area_res.append(dm_area_stock_tmp, dim='Variables')
+    dm_area = dm_area_new.copy()
+    dm_area.append(dm_area_stock_tmp, dim='Variables')
 
     # Demolition rate
-    dm_area_out = dm_area_res.copy()
+    dm_area_out = dm_area.copy()
     # Set the demolition rate at 0.2% by default
     dm_area_out.add(0.002, dummy=True, dim='Variables', col_label='bld_demolition-rates', unit='m2')
     idx = dm_area_out.idx
-    x = np.array(dm_area_res.col_labels['Years'])
+    x = np.array(dm_area.col_labels['Years'])
     #breakpoints = x[::5]
-    for cntr in dm_area_res.col_labels['Country']:
-        for cat in dm_area_res.col_labels['Categories1']:
-            y = dm_area_res.array[idx[cntr], :, idx['bld_floor-area_stock_tmp'], idx[cat]]
+    # Improved initial guess for demolition-rate
+    for cntr in dm_area.col_labels['Country']:
+        for cat in dm_area.col_labels['Categories1']:
+            y = dm_area.array[idx[cntr], :, idx['bld_floor-area_stock_tmp'], idx[cat]]
             ds, q = np.polyfit(x, y, 1)  # 1 is for a linear fit (degree 1)
             s0 = np.polyfit(x, y, 0)
             # ds = stock(t) - stock(t-1) = new(t) - waste(t)
-            n = dm_area_res.array[idx[cntr], :, idx['bld_floor-area_new'], idx[cat]]
+            n = dm_area.array[idx[cntr], :, idx['bld_floor-area_new'], idx[cat]]
             n0 = np.polyfit(x, n, 0)
             if n0 > ds:
                 # new = n0
@@ -585,7 +588,7 @@ def estimate_demolition_rate_res(dm_area_stock_tmp, dm_area_new):
             stock_tm1 = (stock_t - new_t)/(1-dem_rate_t)
             dm_area_out.array[:, idx[ti - 1], idx['bld_floor-area_stock'], idx[c]] = stock_tm1
 
-    #dm_area_stock_orig = dm_area_res.filter({'Variables': ['bld_floor-area_stock']}, inplace=False)
+    #dm_area_stock_orig = dm_area.filter({'Variables': ['bld_floor-area_stock']}, inplace=False)
     #dm_area_stock_orig.rename_col('bld_floor-area_stock', 'bld_floor-area_stock_orig', dim='Variables')
     #dm_area_out.append(dm_area_stock_orig, dim='Variables')
 
@@ -632,57 +635,53 @@ def get_pop_by_bld_type(code_eustat, dict_iso2, years_ots):
 
 def recompute_floor_area_per_capita(dm_all, dm_pop):
 
-    dm_floor_stock = dm_all.filter({'Variables': ['bld_floor-area_stock']}, inplace=False)
+    dm_floor_stock = dm_all.filter({'Variables': ['bld_floor-area_stock'],
+                                    'Categories': {'single-family-households', 'multi-family-households'}}, inplace=False)
 
     # Computer m2/cap for lifestyles
     dm_floor_stock.group_all(dim='Categories1')
     dm_floor_stock.append(dm_pop, dim='Variables')
 
-    dm_floor_stock.operation('bld_floor-area_stock', '/', 'lfs_population_total', out_col='lfs_floor-intensity_space-cap', unit='m2/cap')
+    dm_floor_stock.operation('bld_floor-area_stock', '/', 'lfs_population_total',
+                             out_col='lfs_floor-intensity_space-cap', unit='m2/cap')
 
     dm_floor_stock.filter({'Variables': ['lfs_floor-intensity_space-cap']}, inplace=True)
 
-    return dm_floor_stock, dm_all
+    return dm_floor_stock
 
 
-def compute_stock_share_all_types(dm_area_2020, dm_area_stock):
+def estimate_stock_non_res(dm_area_2020, dm_stock_res):
 
     dm_area_2020.sort('Country')
-    dm_area_stock.sort('Country')
+    dm_stock_res.sort('Country')
     dm_area_2020.sort('Categories1')
-    dm_area_stock.sort('Categories1')
+    dm_stock_res.sort('Categories1')
     dm_area_2020.normalise('Categories1', inplace=True,  keep_original=True)
 
     dm_2020 = dm_area_2020.copy()
     dm_2020.groupby({'residential': '.*households'}, dim='Categories1', regex=True, inplace=True)
-    dm_area_stock_share = dm_area_stock.filter({'Variables': ['bld_floor-area_stock']})
-    dm_area_stock_share.groupby({'residential': '.*households'}, dim='Categories1', regex=True, inplace=True)
+    dm_stock = dm_stock_res.filter({'Variables': ['bld_floor-area_stock_tmp']})
+    dm_stock.groupby({'residential': '.*households'}, dim='Categories1', regex=True, inplace=True)
     # Compute floor-stock share
     cats = ['education', 'health', 'hotels', 'offices', 'other', 'trade']
-    dm_area_stock_share.add(0, dummy=True, dim='Categories1', col_label=cats)
+    dm_stock.add(0, dummy=True, dim='Categories1', col_label=cats)
     idx = dm_2020.idx
-    idx_a = dm_area_stock_share.idx
-
-    for year in dm_area_stock_share.col_labels['Years']:
-        arr_tot_area_y = dm_area_stock_share.array[:, idx_a[year], idx_a['bld_floor-area_stock'], idx_a['residential']] \
+    idx_a = dm_stock.idx
+    # stock_tot (t) = stock_res(t) / share_res(t)
+    # stock_non-res (t) = stock_tot(t)*share_non-res(t)
+    # for share res and non-res we use the 2020 values
+    for year in dm_stock.col_labels['Years']:
+        arr_tot_area_y = dm_stock.array[:, idx_a[year], idx_a['bld_floor-area_stock_tmp'], idx_a['residential']] \
                          / dm_2020.array[:, idx[2020], idx['bld_floor-area_share'], idx['residential']]
         for cat in cats:
-            dm_area_stock_share.array[:, idx_a[year], idx_a['bld_floor-area_stock'], idx_a[cat]] = \
+            dm_stock.array[:, idx_a[year], idx_a['bld_floor-area_stock_tmp'], idx_a[cat]] = \
                 arr_tot_area_y * dm_2020.array[:, idx[2020], idx['bld_floor-area_share'], idx[cat]]
 
-    dm_area_stock_share.drop(dim='Categories1', col_label='residential')
-    dm_area_stock_share.append(dm_area_stock.filter_w_regex({'Variables': 'bld_floor-area_stock',
-                                                         'Categories1': '.*households'}), dim='Categories1')
-    # Normalise to compute shares
-    dm_area_stock_share.normalise(dim='Categories1', keep_original=True)
+    dm_stock.drop(dim='Categories1', col_label='residential')
+    dm_stock.append(dm_stock_res.filter_w_regex({'Variables': 'bld_floor-area_stock_tmp',
+                                                'Categories1': '.*households'}), dim='Categories1')
 
-    #idx_a = dm_area_stock_share.idx
-    #idx_2 = dm_area_2020.idx
-    #dm_area_stock_share.array[:, idx_a[2020], idx_a['bld_floor-area_stock_share'], :] \
-    #    = dm_area_2020.array[:, idx_2[2020], idx_2['bld_floor-area_share'], :]
-    #dm_area_stock_share.datamatrix_plot({'Variables': 'bld_floor-area_stock_share'})
-
-    return dm_area_stock_share
+    return dm_stock
 
 
 def forecast_floor_int_fts_from_ots(dm_floor_ots, years_ots, years_fts):
@@ -724,8 +723,7 @@ def forecast_floor_int_fts_from_ots(dm_floor_ots, years_ots, years_fts):
 years_ots = create_years_list(start_year=1990, end_year=2023, step=1, astype=int)
 years_fts = create_years_list(start_year=2025, end_year=2050, step=5, astype=int)
 
-f = open('../../country_codes_iso2.json')
-dict_iso2 = json.load(f)
+dict_iso2 = eurostat_iso2_dict()
 dict_iso2.pop('CH')  # Remove Switzerland
 
 
@@ -746,17 +744,15 @@ dm_pop_bld_type = get_pop_by_bld_type('ilc_lvho01', dict_iso2, years_ots)
 dict_lfs, tmp = read_database_to_dm('lifestyles_population.csv', num_cat=0, level=0)
 dm_pop = dict_lfs['pop'].filter({'Variables': ['lfs_population_total'], 'Country': list(dict_iso2.values())}, inplace=False)
 del dict_lfs, tmp
-# Compute floor-area stock (tmp) from avg room size and nb of rooms
-dm_area_stock_tmp = estimate_average_room_size(dm_rooms, dm_area_2020, dm_pop, dm_pop_bld_type)
+# Compute floor-area stock (tmp) from avg room size and nb of rooms (sfh, mfh)
+dm_residential_stock_tmp = estimate_stock_res_from_average_room_size(dm_rooms, dm_area_2020, dm_pop, dm_pop_bld_type)
+dm_all_stock_tmp = estimate_stock_non_res(dm_area_2020, dm_residential_stock_tmp)
 del dm_rooms, dm_pop_bld_type
-# dm_area_cap_res = compute_floor_area_per_capita(dm_room_size_2020, dm_rooms)
-# Determine demolition rate and adjust floor-area stock
-dm_all = estimate_demolition_rate_res(dm_area_stock_tmp, dm_area_new)
-del dm_area_stock_tmp, dm_area_new
+# Determine demolition rate and adjust floor-area stock (sfh, mfh)
+dm_all = estimate_demolition_rates_fix_stock(dm_all_stock_tmp, dm_area_new)
+del dm_residential_stock_tmp, dm_area_new, dm_area_2020
 # Floor area per capita and share of stock
-dm_area_cap, dm_all = recompute_floor_area_per_capita(dm_all, dm_pop)
-# Floor area shares for all building types
-dm_floor_shares = compute_stock_share_all_types(dm_area_2020, dm_all)
+dm_res_area_cap = recompute_floor_area_per_capita(dm_all, dm_pop)
 
 # Update floor-intensity space-cap data
 update_floor_intensity = False
@@ -764,35 +760,15 @@ if update_floor_intensity:
     file = 'lifestyles_floor-intensity.csv'
     years_ots = create_years_list(start_year=1990, end_year=2022, step=1, astype=int)
     # csv_database_reformat(file)
-    update_database_from_dm(dm_area_cap, filename=file, lever='floor-intensity', level=0, module='lifestyles')
+    update_database_from_dm(dm_res_area_cap, filename=file, lever='floor-intensity', level=0, module='lifestyles')
     # It uses EUcalc rates for level 2, 3, 4
-    dict_dm_floor_int_fts = forecast_floor_int_fts_from_ots(dm_area_cap, years_ots, years_fts)
+    dict_dm_floor_int_fts = forecast_floor_int_fts_from_ots(dm_res_area_cap, years_ots, years_fts)
     for lev, dm_fts in dict_dm_floor_int_fts.items():
         update_database_from_dm(dm_fts, filename=file, lever='floor-intensity', level=lev, module='lifestyles')
-    #for level in range(4):
-    #    level = level + 1
-    #    dm_all = dm_area_cap.copy()
-    #    dm_all.append(dict_dm_floor_int_fts[level], dim='Years')
-    #    dm_all.datamatrix_plot()
 
 
-# Extract population data
-#edit_database('lifestyles_population.csv', 'pop', column='geoscale', pattern='Paris|Norway|United Kingdom', mode='remove')
+# Let us load historical data for population and average m2/cap to compute the demolition-rate.
 
-
-
-
-# I currently have u_new(t), u_stock(t0), stock(2020), new(t), ren-rate(t), cdd(t), hdd(t)
-# Problem 1: I'm missing some countries: Switzerland, Vaud, Paris, (Norway), (EU27)
-# Problem 2: what I actually need as input is demolition-rate(t), [stock(t) from Lifestyle for resident
-# + I can use stock(2020) to determine floor-area for non-residential], ren-rate(t)
-# (this is to obtain new(t), waste/demolition(t), renovated(t), unrenovated(t)).
-# Problem 3: But to determine the u_stock(t) I also need: u_decrease per renovation type, and alpha
-# (the share of renovation-rate per each renovation type) per renovation type.
-# Problem 4: For calibration I could use stock(2020), but we also need the energy demand per building type.
-# Problem 5: We need the number of days with temperatures above 24 and below 15
-# + to create a variable for T_int_h and T_int_c and set it to 20 for all countries for ots,
-# and explore different T_int for fts
-# Problem 6: determine fts for all
-
-# Let us load historical data for population and average m2/cap to compute the the demolition-rate.
+dm_rr.normalise('Categories1', keep_original=True)
+dm_rr.flatten().datamatrix_plot({'Country': ['Austria']})
+print('Hello')

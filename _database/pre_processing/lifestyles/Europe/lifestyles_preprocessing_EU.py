@@ -4,6 +4,7 @@ import eurostat
 import pandas as pd
 from model.common.data_matrix_class import DataMatrix
 from model.common.auxiliary_functions import linear_fitting, linear_forecast_BAU, moving_average, create_years_list
+from model.common.auxiliary_functions import eurostat_iso2_dict
 from model.common.io_database import update_database_from_dm, csv_database_reformat, read_database_to_dm
 from _database.pre_processing.api_routine_Eurostat import get_data_api_eurostat
 
@@ -281,8 +282,7 @@ def estimate_household_size_fts_from_ots(dm_ots, start_t):
 years_ots = create_years_list(start_year=1990, end_year=2023, step=1, astype=int)
 years_fts = create_years_list(start_year=2025, end_year=2050, step=5, astype=int)
 
-f = open('../../country_codes_iso2.json')
-dict_iso2 = json.load(f)
+dict_iso2 = eurostat_iso2_dict()
 dict_iso2.pop('CH')  # Remove Switzerland
 
 # Use following line to explore EUROSTAT database
