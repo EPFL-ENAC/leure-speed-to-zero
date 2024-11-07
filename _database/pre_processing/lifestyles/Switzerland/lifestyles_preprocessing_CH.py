@@ -267,7 +267,7 @@ def add_vaud_fts_pop(dm_lfs_age, dm_lfs_tot_pop, dict_lfs_age_fts, dict_lfs_tot_
     vaud_share = dm_lfs_tot_pop.array[idx['Vaud'], -1, ...] / dm_lfs_tot_pop.array[idx['Switzerland'], -1, ...]
     # Check that ots and fts are harmonised
     for l, dm_fts in dict_lfs_tot_pop_fts.items():
-        vaud_arr = vaud_share[np.newaxis, np.newaxis, ...] * dm_fts.array
+        vaud_arr = vaud_share * dm_fts.array
         dm_fts.add(vaud_arr, dim='Country', col_label='Vaud')
         # Remove comment to check smoothness
         # dm_fts.append(dm_lfs_tot_pop, dim='Years')
@@ -337,13 +337,13 @@ def extract_lfs_floor_space(years_ots, dm_lfs_tot_pop, table_id):
 
     # Extract buildings floor area
     filter = {'Année': structure['Année'],
-              'Canton (-) / District (>>) / Commune (......)': ['Suisse', ' - Vaud'],
+              'Canton (-) / District (>>) / Commune (......)': ['Suisse', '- Vaud'],
               'Catégorie de bâtiment': structure['Catégorie de bâtiment'],
               'Surface du logement': structure['Surface du logement'],
-              'Epoque de construction': structure['Epoque de construction']}
+              'Époque de construction': structure['Époque de construction']}
     mapping_dim = {'Country': 'Canton (-) / District (>>) / Commune (......)', 'Years': 'Année',
                    'Variables': 'Catégorie de bâtiment', 'Categories1': 'Surface du logement',
-                   'Categories2': 'Epoque de construction'}
+                   'Categories2': 'Époque de construction'}
     unit_all = ['number'] * len(structure['Catégorie de bâtiment'])
     # Get api data
     dm_floor_area = get_data_api_CH(table_id, mode='extract', filter=filter, mapping_dims=mapping_dim, units=unit_all,
@@ -352,7 +352,7 @@ def extract_lfs_floor_space(years_ots, dm_lfs_tot_pop, table_id):
     # Pre-processing
 
     ## Rename & Group
-    dm_floor_area.rename_col(['Suisse', ' - Vaud'], ['Switzerland', 'Vaud'], dim='Country')
+    dm_floor_area.rename_col(['Suisse', '- Vaud'], ['Switzerland', 'Vaud'], dim='Country')
     dm_floor_area.group_all('Categories2')
     dm_floor_area.groupby({'lfs_dwellings': '.*'}, dim='Variables', regex=True, inplace=True)
     dm_num_bld = dm_floor_area.group_all('Categories1', inplace=False)
@@ -513,7 +513,7 @@ def extract_per_capita_gdp_ppp():
 years_setting = [1990, 2023, 2050, 5]  # Set the timestep for historical years & scenarios
 years_ots = create_years_list(start_year=1990, end_year=2023, step=1)
 years_fts = create_years_list(start_year=2025, end_year=2050, step=5)
-update_pop = False
+update_pop = True
 if update_pop:
     # Get population total and by age group (ots)
     dm_lfs_age, dm_lfs_tot_pop = extract_lfs_pop(years_ots, table_id='px-x-0102020000_104')

@@ -705,7 +705,7 @@ def linear_fitting(dm, years_ots, max_t0=None, max_tb=None, min_t0=None, min_tb=
         filtered_years = np.array(years)[mask]
 
         # If it's all nan
-        if filtered_arr.size < 3:
+        if filtered_arr.size < 2:
             extrapolated_value = np.nan*target_year
             return extrapolated_value
 
@@ -714,52 +714,54 @@ def linear_fitting(dm, years_ots, max_t0=None, max_tb=None, min_t0=None, min_tb=
 
         return extrapolated_value
 
-    if based_on is not None:
-        dm_tmp = dm.copy()
-        dm_tmp.drop('Years', col_label=based_on)
-        dm.filter({'Years': based_on}, inplace=True)
+    years_tot = set(dm.col_labels['Years']) | set(years_ots)
+    years_missing = list(set(years_tot) - set(dm.col_labels['Years']))
+    dm.add(np.nan, dim='Years', col_label=years_missing, dummy=True)
+    dm.sort('Years')
 
-    start_year = int(years_ots[0])
-    base_year = int(years_ots[-1])
+    if based_on is not None:
+        dm_orig = dm.copy()
+        idx = dm.idx
+        # Set dm to nan everywhere except in based on
+        idx_nan = [idx[y] for y in years_tot if y not in based_on]
+        dm.array[:, idx_nan, ...] = np.nan
+
+    start_year = int(dm.col_labels['Years'][0])
+    end_year = int(dm.col_labels['Years'][-1])
     # Check if start_year has value different than nan, else extrapolate
 
     # extrapolated array values at year = start_year
-    for year_target in [start_year, base_year]:
+    for year_target in [start_year, end_year]:
         # Apply the function along the last axis (years axis)
         array_reshaped = np.moveaxis(dm.array, 1, -1)
         extrapolated_year = np.apply_along_axis(extrapolate_to_year, axis=-1, arr=array_reshaped,
                                                 years=dm.col_labels['Years'], target_year=year_target)
 
         # If start_year is not in dm, set dm value at start_year to extrapolated value
-        if year_target not in dm.col_labels['Years']:
-            if year_target == start_year:
-                if min_t0 is not None:
-                    extrapolated_year = np.maximum(extrapolated_year, min_t0)
-                if max_t0 is not None:
-                    extrapolated_year = np.minimum(extrapolated_year, max_t0)
-            if year_target == base_year:
-                if min_tb is not None:
-                    extrapolated_year = np.maximum(extrapolated_year, min_tb)
-                if max_tb is not None:
-                    extrapolated_year = np.minimum(extrapolated_year, max_tb)
-            dm.add(extrapolated_year, dim='Years', col_label=[year_target])
-            dm.sort('Years')
-        else:
-            idx = dm.idx
-            dm.array = np.moveaxis(dm.array, 1, 0)
-            mask_nan = np.isnan(dm.array[idx[year_target], ...])
-            dm.array[idx[year_target], mask_nan] = extrapolated_year[mask_nan]
-            dm.array = np.moveaxis(dm.array, 0, 1)
-
-    # Add missing ots years as nan
-    dm = add_missing_ots_years(dm, startyear=start_year, baseyear=base_year)
+        if year_target == start_year:
+            if min_t0 is not None:
+                extrapolated_year = np.maximum(extrapolated_year, min_t0)
+            if max_t0 is not None:
+                extrapolated_year = np.minimum(extrapolated_year, max_t0)
+        if year_target == end_year:
+            if min_tb is not None:
+                extrapolated_year = np.maximum(extrapolated_year, min_tb)
+            if max_tb is not None:
+                extrapolated_year = np.minimum(extrapolated_year, max_tb)
+        # Where dm is nan replace with extrapolated value
+        idx = dm.idx
+        dm.array = np.moveaxis(dm.array, 1, 0)
+        mask_nan = np.isnan(dm.array[idx[year_target], ...])
+        dm.array[idx[year_target], mask_nan] = extrapolated_year[mask_nan]
+        dm.array = np.moveaxis(dm.array, 0, 1)
 
     # Fill nan
     dm.fill_nans(dim_to_interp='Years')
 
     if based_on is not None:
-        dm.append(dm_tmp, dim='Years')
-        dm.sort('Years')
+
+        mask_orig = ~np.isnan(dm_orig.array)
+        dm.array[mask_orig] = dm_orig.array[mask_orig]
 
     return dm
 
