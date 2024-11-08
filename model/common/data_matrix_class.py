@@ -887,7 +887,10 @@ class DataMatrix:
             raise ValueError(f'Only * and / operators are possible in change_unit')
         return
 
-    def datamatrix_plot(self, selected_cols={}, title='title'):
+    def datamatrix_plot(self, selected_cols={}, title='title', stacked=None):
+
+        if stacked is not None:
+            stacked = 'one'
 
         dims = len(self.dim_labels)
         if (dims != 3) & (dims != 4):
@@ -913,14 +916,14 @@ class DataMatrix:
                 for v in plot_cols['Variables']:
                     y_values = self.array[i[c], years_idx, i[v]]
                     label = c + "_" + v
-                    fig.add_scatter(x=plot_cols['Years'], y=y_values, name=label, mode='lines')
+                    fig.add_scatter(x=plot_cols['Years'], y=y_values, name=label, mode='lines', stackgroup=stacked)
         if dims == 4:
             for c in plot_cols['Country']:
                 for v in plot_cols['Variables']:
                     for cat in plot_cols['Categories1']:
                         y_values = self.array[i[c], years_idx, i[v], i[cat]]
                         label = c + "_" + v + "_" + cat
-                        fig.add_scatter(x=plot_cols['Years'], y=y_values, name=label, mode='lines')
+                        fig.add_scatter(x=plot_cols['Years'], y=y_values, name=label, mode='lines', stackgroup=stacked)
 
         fig.show()
 
