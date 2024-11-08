@@ -8,7 +8,7 @@ from model.common.io_database import update_database_from_dm, csv_database_refor
 from _database.pre_processing.api_routines_CH import get_data_api_CH
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
-
+import eurostat
 import math
 import requests
 
@@ -774,40 +774,94 @@ def extract_renovation_redistribuition(ren_map_out, ren_map_in, years_ots):
 def adjust_based_on_renovation(dm_in, dm_rr, dm_renov_distr):
 
     dm = dm_in.copy()
-
-    idx_s = dm.idx
     idx_r = dm_rr.idx
-    arr_tot_ren = np.nansum(dm.array[:, :, idx_s['bld_floor-area_stock'], :, :]
-                            * dm_rr.array[:, :, idx_r['bld_renovation-rate'], :, np.newaxis], axis=-1)
     idx_d = dm_renov_distr.idx
-    arr = arr_tot_ren[..., np.newaxis] * dm_renov_distr.array[:, :, idx_d['bld_renovation-redistribution'], np.newaxis, :]
-    dm.add(arr, dim='Variables', unit='m2', col_label='bld_floor-area_renovated')
 
-    dm_rr.add(arr_tot_ren, dim='Variables', col_label='bld_floor-area_renovated', unit='m2')
+    #arr_tot_ren = np.nansum(dm.array[:, :, idx_s['bld_floor-area_stock'], :, :]
+    #                        * dm_rr.array[:, :, idx_r['bld_renovation-rate'], :, np.newaxis], axis=-1)
+    #arr = arr_tot_ren[..., np.newaxis] * dm_renov_distr.array[:, :, idx_d['bld_renovation-redistribution'], np.newaxis, :]
+    #dm.add(arr, dim='Variables', unit='m2', col_label='bld_floor-area_renovated')
+    #dm_rr.add(arr_tot_ren, dim='Variables', col_label='bld_floor-area_renovated', unit='m2')
 
-    # s(t) = s(t-1) + n(t) + r(t) - w(t) -> s(t-1) = s(t) - n(t) - r(t) + w(t)
+    # s(t) = s(t-1) + R(t)s(t-1) + n(t) - w(t) -> s(t-1) = s(t) - n(t) - r(t) + w(t)
     idx = dm.idx
-    for ti in dm.col_labels['Years'][-1:0:-1]:
-        for cat in []:
-            stock_t = dm.array[:, idx[ti], idx['bld_floor-area_stock'], :, idx[cat]]
-            new_t = dm.array[:, idx[ti], idx['bld_floor-area_new'], :, idx[cat]]
-            ren_t = dm.array[:, idx[ti], idx['bld_floor-area_renovated'], :, idx[cat]]
-            waste_t = dm.array[:, idx[ti], idx['bld_floor-area_waste'], :, idx[cat]]
-            stock_tm1 = stock_t - new_t + waste_t - ren_t
-            dm.array[:, idx[ti - 1], idx['bld_floor-area_stock'], :, idx[cat]] = stock_tm1
-            dm.array[:, idx[ti - 1], idx['bld_demolition-rate'], :, idx[cat]] = waste_t / stock_tm1
-
     for ti in dm.col_labels['Years'][1:]:
-        for cat in ['F', 'E', 'D', 'C', 'B']:
-            stock_tm1 = dm.array[:, idx[ti-1], idx['bld_floor-area_stock'], :, idx[cat]]
-            new_t = dm.array[:, idx[ti], idx['bld_floor-area_new'], :, idx[cat]]
-            ren_t = dm.array[:, idx[ti], idx['bld_floor-area_renovated'], :, idx[cat]]
-            waste_t = dm.array[:, idx[ti], idx['bld_floor-area_waste'], :, idx[cat]]
-            stock_t = stock_tm1 + new_t - waste_t + ren_t
-            dm.array[:, idx[ti], idx['bld_floor-area_stock'], :, idx[cat]] = stock_t
-            dm.array[:, idx[ti - 1], idx['bld_demolition-rate'], :, idx[cat]] = waste_t / stock_tm1
+        stock_tm1 = dm.array[:, idx[ti-1], idx['bld_floor-area_stock'], :, :]
+        new_t = dm.array[:, idx[ti], idx['bld_floor-area_new'], :, :]
+        ren_t = np.nansum(dm.array[:, idx[ti-1], idx['bld_floor-area_stock'], :, :]
+                          * dm_rr.array[:, idx_r[ti], idx_r['bld_renovation-rate'], :, np.newaxis], axis=-1, keepdims=True) \
+                * dm_renov_distr.array[:, idx_d[ti], idx_d['bld_renovation-redistribution'], np.newaxis, :]
+        waste_t = dm.array[:, idx[ti], idx['bld_floor-area_waste'], :, :]
+        stock_t = stock_tm1 + new_t - waste_t + ren_t
+        dm.array[:, idx[ti], idx['bld_floor-area_stock'], :, :] = stock_t
+        dm.array[:, idx[ti - 1], idx['bld_demolition-rate'], :, :] = waste_t / stock_tm1
+
 
     return dm
+
+
+def recompute_floor_area_per_capita(dm_all, dm_pop):
+
+    dm_floor_stock = dm_all.filter({'Variables': ['bld_floor-area_stock'],
+                                    'Categories': {'single-family-households', 'multi-family-households'}}, inplace=False)
+
+    # Computer m2/cap for lifestyles
+    dm_floor_stock.group_all(dim='Categories2')
+    dm_floor_stock.group_all(dim='Categories1')
+    dm_floor_stock.append(dm_pop, dim='Variables')
+
+    dm_floor_stock.operation('bld_floor-area_stock', '/', 'lfs_population_total',
+                             out_col='lfs_floor-intensity_space-cap', unit='m2/cap')
+
+    dm_floor_stock.filter({'Variables': ['lfs_floor-intensity_space-cap']}, inplace=True)
+
+    return dm_floor_stock
+
+
+def compute_building_mix(dm_all):
+
+    dm_building_mix = dm_all.filter({'Variables': ['bld_floor-area_stock', 'bld_floor-area_new']}, inplace=False).flatten()
+    dm_building_mix.normalise('Categories1', keep_original=True)
+    dm_building_mix.deepen()
+    dm_building_mix.rename_col(['bld_floor-area_stock_share', 'bld_floor-area_new_share'],
+                               ['bld_building-mix_stock', 'bld_building-mix_new'], dim='Variables')
+    dm_building_mix.filter({'Variables': ['bld_building-mix_stock', 'bld_building-mix_new']}, inplace=True)
+
+    return dm_building_mix
+
+
+
+######################
+### HOUSEHOLD-SIZE ###
+######################
+def extract_lfs_household_size(years_ots, table_id):
+    structure, title = get_data_api_CH(table_id, mode='example')
+    # Extract buildings floor area
+    filter = {'Year': structure['Year'],
+              'Canton (-) / District (>>) / Commune (......)': ['Schweiz / Suisse / Svizzera / Switzerland', '- Vaud'],
+              'Household size': ['1 person', '2 persons', '3 persons', '4 persons', '5 persons', '6 persons or more']}
+    mapping_dim = {'Country': 'Canton (-) / District (>>) / Commune (......)', 'Years': 'Year',
+                   'Variables': 'Household size'}
+    unit_all = ['people'] * len(filter['Household size'])
+    # Get api data
+    dm_household = get_data_api_CH(table_id, mode='extract', filter=filter, mapping_dims=mapping_dim, units=unit_all)
+
+    dm_household.rename_col(['Schweiz / Suisse / Svizzera / Switzerland', '- Vaud'], ['Switzerland', 'Vaud'],
+                            dim='Country')
+    drop_strings = [' persons or more', ' persons', ' person']
+    for drop_str in drop_strings:
+        dm_household.rename_col_regex(drop_str, '', dim='Variables')
+    # dm_household contains the number of household per each household-size
+    # Compute the average household size by doing the weighted average
+    sizes = np.array([int(num_ppl) for num_ppl in dm_household.col_labels['Variables']])
+    arr_weighted_size = dm_household.array * sizes[np.newaxis, np.newaxis, :]
+    arr_avg_size = np.nansum(arr_weighted_size, axis=-1, keepdims=True) / np.nansum(dm_household.array, axis=-1,
+                                                                                    keepdims=True)
+    # Create new datamatrix
+    dm_household_size = DataMatrix.based_on(arr_avg_size, dm_household, change={'Variables': ['lfs_household-size']},
+                                            units={'lfs_household-size': 'people'})
+    linear_fitting(dm_household_size, years_ots)
+    return dm_household_size
 
 
 # Stock
@@ -817,6 +871,8 @@ dict_lfs_ots, dict_lfs_fts = read_database_to_dm('lifestyles_population.csv', fi
                                                  baseyear=years_ots[-1], num_cat=0, level='all')
 dm_pop = dict_lfs_ots['pop'].filter({'Variables': ['lfs_population_total']}, inplace=False)
 dm_pop.sort('Country')
+
+dm_lfs_household_size = extract_lfs_household_size(years_ots, table_id='px-x-0102020000_402')
 
 construction_period_envelope_cat = {'F': ['Avant 1919', '1919-1945', '1946-1960', '1961-1970'],
                                     'E': ['1971-1980'],
@@ -920,16 +976,27 @@ file = 'data/bld_renovation-rate_1990_2000.pickle'
 share_thermal_isolation = 0.33
 dm_renovation_old = extract_renovation_1990_2000(table_id, file, share_thermal_isolation)
 
+# Definition of Building Archetypes Based on the Swiss Energy Performance Certificates Database
+# by Alessandro Pongelli et al.
+# U-value is computed as the average of the house element u-value (roof, wall, windows, ..) weighted by their area
+# U-value in: W/m^2 K
+envelope_cat_u_value = {'F': 0.82, 'E': 0.69, 'D': 0.53, 'C': 0.41, 'B': 0.25}
+cdm_u_value = ConstantDataMatrix(col_labels={'Variables': ['bld_u-value'], 'Categories1': ['B', 'C', 'D', 'E', 'F']},
+                                 units={'bld_u-value': 'W/m2K'})
+arr = np.zeros((len(cdm_u_value.col_labels['Variables']), len(cdm_u_value.col_labels['Categories1'])))
+cdm_u_value.array = arr
+idx = cdm_u_value.idx
+for cat, value in envelope_cat_u_value.items():
+    cdm_u_value.array[idx['bld_u-value'], idx[cat]] = value
+
+
+# Energy heating kWh/m^2
+envelope_cat_heating_demand = {'F': 175, 'E': 147, 'D': 92, 'C': 66, 'B': 19}
+
 # 2018: Type of renovation 4% windows, 51% roof, 38% facade, 2% floor, 5% other
 # shallow: 11% (windows, floor, other) -> uvalue improvement 15%
 # medium; 51% (roof) -> uvalue improvement 41%
 # deep: 38% (facade) -> uvalue improvement 66%
-
-
-# 54% sfh, 35% mfh, 11% other
-# 2022: 60% sfh, 32% mfh, 8% other
-# 2020: 55% sfh, 35% mfh, 10% other
-
 
 # Energy demand for heating in building sector
 table_id = 'px-x-0204000000_106'
@@ -937,86 +1004,64 @@ file = 'data/bld_heating-energy-demand.pickle'
 dm_heating = extract_heating_demand(table_id, file)
 
 # Compute the average kWh/m2 (~5)
-dm_tot_area = dm_all.filter({'Variables': ['bld_floor-area_stock']})
-dm_tot_area.group_all(dim='Categories1', inplace=True)
-dm_tot_area.filter({'Years': dm_heating.col_labels['Years'], 'Country': ['Switzerland']}, inplace=True)
-dm_heating.append(dm_tot_area, dim='Variables')
-dm_heating.operation('bld_heating-demand', '/', 'bld_floor-area_stock', out_col='bld_energy-intensity', unit='TWh/m2')
-dm_heating.change_unit('bld_energy-intensity', factor=1e9, old_unit='TWh/m2', new_unit='kWh/m2')
-
-df_heating = dm_heating.write_df()
-
 energy_saving_TWh = {2022: 2.2, 2021: 2.2, 2020: 2.2, 2019: 2.6, 2018: 2.5, 2017: 3.0}
-
-
-# Definition of Building Archetypes Based on the Swiss Energy Performance Certificates Database
-# by Alessandro Pongelli et al.
-# U-value is computed as the average of the house element u-value (roof, wall, windows, ..) weighted by their area
-# U-value in: W/m^2 K
-envelope_cat_u_value = {'F': 0.82, 'E': 0.69, 'D': 0.53, 'C': 0.41, 'B': 0.25}
-# Energy heating kWh/m^2
-envelope_cat_heating_demand = {'F': 175, 'E': 147, 'D': 92, 'C': 66, 'B': 19}
 
 # if I want to save 2.2 TWh, and the maximum improvement I can do is 150 kWh/m2, I need to renovate 15 million m2.
 # The current park is 137 + 337 = 474 million m2
 # If I want to fix the renovation at 1%, then you renovate 4.7 million m2, in order to save 2.2 TWh,
 # you need to save: 470 kWh/m2
+file = '../../../data/datamatrix/buildings.pickle'
+with open(file, 'rb') as handle:
+    DM_buildings_old = pickle.load(handle)
 
-# Floor area stock by construction period / energy / Uvalue category
-# Logements selon les niveaux géographiques institutionnels, la catégorie de bâtiment,
-# la surface du logement et l'époque de construction
-# https://www.pxweb.bfs.admin.ch/pxweb/fr/px-x-0902020200_103/-/px-x-0902020200_103.px/
-table_id = 'px-x-0902020200_103'
-file = 'data/bld_floor-area_stock.pickle'
-dm_energy_cat = extract_bld_floor_area_stock_envelope_cat(table_id, file, dm_pop, years_ots, construction_period_envelope_cat)
+file = '../../../data/datamatrix/lifestyles.pickle'
+with open(file, 'rb') as handle:
+    DM_lifestyles_old = pickle.load(handle)
+
+DM_buildings = {'ots': dict(), 'fts': dict(), 'fxa': dict(), 'constant': dict()}
+
+#########################################
+#####  FLOOR INTENSITY - SPACE/CAP  #####
+#########################################
+dm_space_cap = recompute_floor_area_per_capita(dm_all, dm_pop)
+dm_space_cap.append(dm_lfs_household_size, dim='Variables')
+DM_buildings['ots']['floor-intensity'] = dm_space_cap
+
+#########################################
+#####        BUILDING MIX          ######
+#########################################
+# Used to go from m2/cap to m2 of floor area
+# building-mix_stock -> fxa, building-mix_new -> fts
+dm_building_mix = compute_building_mix(dm_all)
+DM_buildings['fxa']['bld_type'] = dm_building_mix.filter({'Variables': ['bld_building-mix_stock']})
+DM_buildings['ots']['building-renovation-rate'] = {'bld_building-mix': dm_building_mix.filter({'Variables': ['bld_building-mix_new']})}
+
+
+#########################################
+#####         RENOVATION           ######
+#########################################
+dm_rr = dm_renovation.filter({'Variables': ['bld_renovation-rate']})
+DM_buildings['ots']['building-renovation-rate'] = {'bld_renovation-rate': dm_rr}
+DM_buildings['ots']['building-renovation-rate'] = {'bld_renovation-redistribution': dm_renov_distr}
+
+
+#########################################
+#####         DEMOLITION          #######
+#########################################
+dm_demolition_rate = dm_all.filter({'Variables': ['bld_demolition-rate']})
+DM_buildings['ots']['building-renovation-rate'] = {'bld_demolition-rate': dm_demolition_rate}
+
+
+#########################################
+#####          U-VALUE            #######
+#########################################
+DM_buildings['constant']['u-value'] = cdm_u_value
 
 
 
-# New buildings energy categories
-dm_energy_cat.add(0, dummy=True, dim='Variables',
-                      col_label=['bld_floor-area_new_share', 'bld_floor-area_renov_share'], unit=['%', '%'])
-years_missing = list(set(years_ots) - set(dm_energy_cat.col_labels['Years']))
-dm_energy_cat.add(0, dim='Years', dummy=True, col_label=years_missing)
-dm_energy_cat.sort('Years')
-idx = dm_energy_cat.idx
-for cat, yrs_range in envelope_cat_new.items():
-    for yr in range(yrs_range[0], yrs_range[1]):
-        dm_energy_cat.array[:, idx[yr], idx['bld_floor-area_new_share'], :, idx[cat]] = 1
-        dm_energy_cat.array[:, idx[yr], idx['bld_floor-area_renov_share'], :, idx[cat]] = 0.5
-        dm_energy_cat.array[:, idx[yr], idx['bld_floor-area_renov_share'], :, idx['C']] = 0.5
-        dm_energy_cat.array[:, idx[yr], idx['bld_floor-area_renov_share'], :, idx['F']] = -0.5
-        dm_energy_cat.array[:, idx[yr], idx['bld_floor-area_renov_share'], :, idx['E']] = -0.5
-
-
-# From share to absolute values:
-idx = dm_all.idx
-idx_c = dm_energy_cat.idx
-idx_r = dm_bld.idx
-arr_new = dm_all.array[:, :, idx['bld_floor-area_new'], :, np.newaxis] \
-          * dm_energy_cat.array[:, :, idx_c['bld_floor-area_new_share'], :, :]
-dm_energy_cat.add(arr_new, dim='Variables', col_label='bld_floor-area_new', unit='m2')
-arr_stock = dm_all.array[:, :, idx['bld_floor-area_stock'], :, np.newaxis] \
-          * dm_energy_cat.array[:, :, idx_c['bld_floor-area_stock_share'], :, :]
-dm_energy_cat.add(arr_stock, dim='Variables', col_label='bld_floor-area_stock', unit='m2')
-arr_renov = dm_all.array[:, :, idx['bld_floor-area_stock'], :, np.newaxis] \
-            * dm_bld.array[:, :, idx_r['bld_renovation-rate'], :, np.newaxis]\
-            * dm_energy_cat.array[:, :, idx_c['bld_floor-area_renov_share'], :, :]
-dm_energy_cat.add(arr_renov, dim='Variables', col_label='bld_floor-area_renovated', unit='m2')
-
-dm_energy_cat.lag_variable('bld_floor-area_stock', shift=1, subfix='_tm1')
-dm_energy_cat.operation('bld_floor-area_stock_tm1', '-', 'bld_floor-area_stock', out_col='bld_floor-area_deltas', unit='m2')
-dm_energy_cat.operation('bld_floor-area_deltas', '+', 'bld_floor-area_new', out_col='bld_floor-area_tmp', unit='m2')
-dm_energy_cat.operation('bld_floor-area_tmp', '+', 'bld_floor-area_renovated', out_col='bld_floor-area_waste', unit='m2')
-
-dm_tmp = dm_energy_cat.group_all('Categories2', inplace=False)
-dm_tmp.datamatrix_plot({'Variables': 'bld_floor-area_waste'})
-
-print('Hello')
-
-df.to_csv('data/out_floor-area.csv')
-df_cat.to_csv('data/out_floor-area_by-cat.csv')
-df_heating.to_csv('data/out_heating-demand.csv')
-df_renovation.to_csv('data/out_renovation-rate.csv')
-
-df_pop = dm_pop.write_df()
-df_pop.to_csv('data/out_pop.csv')
+## I need to think about how things work. Say we are in 2023. And I need to predict stuff for 2024.
+# I need to know how many m2 are needed in 2024. Then I look at 2023 and I know the stock split in 2023.
+# I also apply the demolition rate and obtain the waste generated. I can obtain the total new m2 per mfh and sfh.
+# You can take the new m2 and apply the share by energy cat. Now I have the s_c(t-1), n_c(t), w_c(t)
+# I take s_c(t-1), I apply the renovation-rate and I obtain the renovated stock r_c(t). I can now use the following:
+# s_c(t) = s_c(t-1) + n_c(t) - w_c(t) + r_c(t)
