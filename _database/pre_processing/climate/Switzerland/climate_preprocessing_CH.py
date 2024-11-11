@@ -129,7 +129,7 @@ def dummy_update_DM_module_baseyear(DM_old):
             DM_new['fts'][lever][dm_name] = dict()
             for level in range(4):
                 level = level + 1
-                dm_fts_old = DM_climate_old['fts'][lever][dm_name][level]
+                dm_fts_old = DM_old['fts'][lever][dm_name][level]
                 DM_new['fts'][lever][dm_name][level] = dm_fts_old.filter({'Years': years_fts})
 
     return DM_new
