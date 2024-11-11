@@ -24,7 +24,7 @@ from model.common.auxiliary_functions import filter_geoscale
 
 def init_years_lever():
     # function that can be used when running the module as standalone to initialise years and levers
-    years_setting = [1990, 2015, 2050, 5]
+    years_setting = [1990, 2023, 2050, 5]
     f = open('../config/lever_position.json')
     lever_setting = json.load(f)[0]
     return years_setting, lever_setting
@@ -112,7 +112,7 @@ def climate_power_interface(DM_ots_fts):
     return dm
 
 # CORE module
-def climate(lever_setting, years_setting, interface = Interface(), calibration = False):
+def climate(lever_setting, interface = Interface(), calibration = False):
     
     # climate data file
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -153,7 +153,7 @@ def local_climate_run():
 # # local
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/climate_module.py"
 # database_from_csv_to_datamatrix()
-# results_run = local_climate_run()
+#results_run = local_climate_run()
 
 
 
