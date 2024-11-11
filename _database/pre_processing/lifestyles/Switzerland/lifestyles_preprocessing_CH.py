@@ -115,27 +115,38 @@ def deprecated_extract_lfs_demography_age():
 ###    POPULATION    ###
 ### tot & by age new ###
 ########################
-def extract_lfs_pop(years_ots, table_id):
-    # Demographic balance by age and canton
-    structure, title = get_data_api_CH(table_id, mode='example')
+def extract_lfs_pop(years_ots, table_id, file):
 
-    # Extract all age classes
-    years_ots_str = [str(y) for y in years_ots]
-    filter = {'Year': years_ots_str,
-              'Canton': ['Switzerland', 'Vaud'],
-              'Citizenship (category)': 'Citizenship (category) - total',  # Swiss and non-Swiss resident
-              'Sex': ['Male', 'Female'],
-              'Age': structure['Age'],
-              'Demographic component': 'Population on 1 January'}
+    try:
+        with open(file, 'rb') as handle:
+            dm_lfs_pop_age = pickle.load(handle)
+    except OSError:
+        # Demographic balance by age and canton
+        structure, title = get_data_api_CH(table_id, mode='example')
 
-    mapping_dim = {'Country': 'Canton',
-                   'Years': 'Year',
-                   'Variables': 'Demographic component',
-                   'Categories1': 'Sex',
-                   'Categories2': 'Age'}
-    # Extract population by age group data
-    dm_lfs_pop_age = get_data_api_CH(table_id, mode='extract', filter=filter, mapping_dims=mapping_dim,
-                                     units=['inhabitants'])
+        # Extract all age classes
+        years_ots_str = [str(y) for y in years_ots]
+        filter = {'Year': years_ots_str,
+                  'Canton': ['Switzerland', 'Vaud'],
+                  'Citizenship (category)': 'Citizenship (category) - total',  # Swiss and non-Swiss resident
+                  'Sex': ['Male', 'Female'],
+                  'Age': structure['Age'],
+                  'Demographic component': 'Population on 1 January'}
+
+        mapping_dim = {'Country': 'Canton',
+                       'Years': 'Year',
+                       'Variables': 'Demographic component',
+                       'Categories1': 'Sex',
+                       'Categories2': 'Age'}
+        # Extract population by age group data
+        dm_lfs_pop_age = get_data_api_CH(table_id, mode='extract', filter=filter, mapping_dims=mapping_dim,
+                                         units=['inhabitants'])
+
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        f = os.path.join(current_file_directory, file)
+        with open(f, 'wb') as handle:
+            pickle.dump(dm_lfs_pop_age, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
 
     dm_lfs_pop_tot = dm_lfs_pop_age.filter({'Categories2': ['Age - total']})
     dm_lfs_pop_age.drop(dim='Categories2', col_label='Age - total')
@@ -182,24 +193,33 @@ def extract_lfs_pop(years_ots, table_id):
     return dm_lfs_pop_age, dm_lfs_pop_tot
 
 
-def extract_lfs_pop_fts(years_fts, table_id):
+def extract_lfs_pop_fts(years_fts, table_id, file):
 
-    structure, title = get_data_api_CH(table_id, mode='example', language='fr')
-    # Extract buildings floor area
-    scenarios = ['Scénario de référence A-00-2020', "Scénario B-00-2020 'haut'",
-                 "Variante A-03-2020 'plus haute espérance de vie à la naissance'", "Scénario C-00-2020 'bas'"]
-    filter = {'Scénario-variante': scenarios,
-              'Nationalité (catégorie)': ['Nationalité - total'],
-              'Sexe': ['Homme', 'Femme'],
-              "Classe d'âge": structure["Classe d'âge"],
-              "Unité d'observation": ['Population au 1er janvier'],
-              "Année": structure["Année"]}
-    mapping_dim = {'Country': 'Nationalité (catégorie)', 'Years': "Année", 'Variables': 'Scénario-variante',
-                   'Categories1': 'Sexe', 'Categories2': "Classe d'âge"}
-    unit_all = ['inhabitants'] * len(filter['Scénario-variante'])
-    # Get api data
-    dm_pop_fts = get_data_api_CH(table_id, mode='extract', filter=filter, mapping_dims=mapping_dim, units=unit_all,
-                                 language='fr')
+    try:
+        with open(file, 'rb') as handle:
+            dm_pop_fts = pickle.load(handle)
+    except OSError:
+        structure, title = get_data_api_CH(table_id, mode='example', language='fr')
+        # Extract buildings floor area
+        scenarios = ['Scénario de référence A-00-2020', "Scénario B-00-2020 'haut'",
+                     "Variante A-03-2020 'plus haute espérance de vie à la naissance'", "Scénario C-00-2020 'bas'"]
+        filter = {'Scénario-variante': scenarios,
+                  'Nationalité (catégorie)': ['Nationalité - total'],
+                  'Sexe': ['Homme', 'Femme'],
+                  "Classe d'âge": structure["Classe d'âge"],
+                  "Unité d'observation": ['Population au 1er janvier'],
+                  "Année": structure["Année"]}
+        mapping_dim = {'Country': 'Nationalité (catégorie)', 'Years': "Année", 'Variables': 'Scénario-variante',
+                       'Categories1': 'Sexe', 'Categories2': "Classe d'âge"}
+        unit_all = ['inhabitants'] * len(filter['Scénario-variante'])
+        # Get api data
+        dm_pop_fts = get_data_api_CH(table_id, mode='extract', filter=filter, mapping_dims=mapping_dim, units=unit_all,
+                                     language='fr')
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        f = os.path.join(current_file_directory, file)
+        with open(f, 'wb') as handle:
+            pickle.dump(dm_pop_fts, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
 
     # Rename
     dm_pop_fts.rename_col('Nationalité - total', 'Switzerland', dim='Country')
@@ -510,17 +530,111 @@ def extract_per_capita_gdp_ppp():
     return dm_GDP
 
 
+def dummy_update_DM_module_baseyear(DM_old, years_ots, years_fts):
+
+    def dummy_update_dm_ots_baseyear(dm_ots, dm_fts, years_ots):
+        years_ots_missing = list(set(years_ots) - set(dm_ots.col_labels['Years']))
+        dm_ots.add(np.nan, dummy=True, dim='Years', col_label=years_ots_missing)
+        dm_ots.sort('Years')
+        first_fts_year = dm_fts.col_labels['Years'][0]
+        if first_fts_year in years_ots:
+            idx = dm_ots.idx
+            dm_ots.array[:, idx[first_fts_year], ...] = dm_fts.array[:, 0, ...]
+        linear_fitting(dm_ots, dm_ots.col_labels['Years'])
+        return dm_ots
+
+
+    DM_new = dict()
+    for key, value in DM_old.items():
+        if isinstance(value, dict):
+            DM_new[key] = dict()
+    # key = 'fts', 'ots'
+    # Update ots to new baseyear using old fts value (usually 2020)
+    for lever in DM_old['ots']:
+        DM_new['ots'][lever] = dict()
+        DM_new['fts'][lever] = dict()
+        var = DM_old['ots'][lever]
+        # If it is a dictionary
+        if isinstance(var, dict):
+            for dm_name in DM_old['ots'][lever]:
+                dm_ots = DM_old['ots'][lever][dm_name].copy()
+                dm_fts = DM_old['fts'][lever][dm_name][1]
+                dm_ots = dummy_update_dm_ots_baseyear(dm_ots, dm_fts, years_ots)
+                DM_new['ots'][lever][dm_name] = dm_ots
+                DM_new['fts'][lever][dm_name] = dict()
+                for level in range(4):
+                    level = level + 1
+                    dm_fts_old = DM_old['fts'][lever][dm_name][level]
+                    DM_new['fts'][lever][dm_name][level] = dm_fts_old.filter({'Years': years_fts})
+        else:
+            dm_ots = DM_old['ots'][lever].copy()
+            dm_fts = DM_old['fts'][lever][1]
+            dm_ots = dummy_update_dm_ots_baseyear(dm_ots, dm_fts, years_ots)
+            DM_new['ots'][lever] = dm_ots
+            DM_new['fts'][lever] = dict()
+            for level in range(4):
+                level = level + 1
+                dm_fts_old = DM_old['fts'][lever][level]
+                DM_new['fts'][lever][level] = dm_fts_old.filter({'Years': years_fts})
+
+    if 'fxa' in DM_old.keys():
+        for name in DM_old['fxa'].keys():
+            dm_new = DM_old['fxa'][name].copy()
+            linear_fitting(dm_new, years_ots+years_fts)
+            DM_new['fxa'][name] = dm_new
+
+    if 'constant' in DM_old.keys():
+        DM_new['constant'] = DM_old['constant']
+
+    return DM_new
+
+
+def filter_country_DM(cntr_list, DM):
+
+    for lever in DM['ots'].keys():
+        if isinstance(DM['ots'][lever], dict):
+            for dm_name in DM['ots'][lever].keys():
+                dm_ots = DM['ots'][lever][dm_name]
+                dm_ots.filter({'Country': cntr_list}, inplace=True)
+                DM['ots'][lever][dm_name] = dm_ots
+                for level in range(4):
+                    level = level + 1
+                    dm_fts = DM['fts'][lever][dm_name][level]
+                    dm_fts.filter({'Country': cntr_list}, inplace=True)
+                    DM['fts'][lever][dm_name][level] = dm_fts
+        else:
+            dm_ots = DM['ots'][lever]
+            dm_ots.filter({'Country': cntr_list}, inplace=True)
+            DM['ots'][lever]= dm_ots
+            for level in range(4):
+                level = level + 1
+                dm_fts = DM['fts'][lever][level]
+                dm_fts.filter({'Country': cntr_list}, inplace=True)
+                DM['fts'][lever][level] = dm_fts
+
+    if 'fxa' in DM.keys():
+        for name in DM['fxa'].keys():
+            dm = DM['fxa'][name]
+            dm.filter({'Country': cntr_list}, inplace=True)
+            DM['fxa'][name] = dm
+
+    return DM
+
+
 years_setting = [1990, 2023, 2050, 5]  # Set the timestep for historical years & scenarios
 years_ots = create_years_list(start_year=1990, end_year=2023, step=1)
 years_fts = create_years_list(start_year=2025, end_year=2050, step=5)
-update_pop = True
+
+# Get population total and by age group (ots)
+filename = 'data/lfs_pop_ots.pickle'
+dm_lfs_age, dm_lfs_tot_pop = extract_lfs_pop(years_ots, table_id='px-x-0102020000_104', file=filename)
+# Get raw fts pop data (fts)
+filename = 'data/lfs_pop_fts.pickle'
+dict_lfs_age_fts, dict_lfs_tot_pop_fts = extract_lfs_pop_fts(years_fts, table_id='px-x-0104000000_101', file=filename)
+add_vaud_fts_pop(dm_lfs_age, dm_lfs_tot_pop, dict_lfs_age_fts, dict_lfs_tot_pop_fts)
+update_pop = False
 if update_pop:
-    # Get population total and by age group (ots)
-    dm_lfs_age, dm_lfs_tot_pop = extract_lfs_pop(years_ots, table_id='px-x-0102020000_104')
-    # Get raw fts pop data (fts)
-    dict_lfs_age_fts, dict_lfs_tot_pop_fts = extract_lfs_pop_fts(years_fts, table_id='px-x-0104000000_101')
     # Add Vaud
-    add_vaud_fts_pop(dm_lfs_age, dm_lfs_tot_pop, dict_lfs_age_fts, dict_lfs_tot_pop_fts)
     # Update lifestyles_population.csv data
     file = 'lifestyles_population.csv'
     update_database_from_dm(dm_lfs_tot_pop, filename=file, lever='pop', level=0, module='lifestyles')
@@ -530,16 +644,47 @@ if update_pop:
     for lev, dm_fts in dict_lfs_tot_pop_fts.items():
         update_database_from_dm(dm_fts, filename=file, lever='pop', level=lev, module='lifestyles')
 
-# Get urban share (ots)
-dm_lfs_urban_pop = extract_lfs_urban_share(years_ots, table_id='px-x-2105000000_404')
-# Get floor area (ots)
-dm_lfs_floor_area = extract_lfs_floor_space(years_ots, dm_lfs_tot_pop, table_id='px-x-0902020200_103')
-# Get lfs_household-size (ots)
-dm_lfs_household_size = extract_lfs_household_size(years_ots, table_id='px-x-0102020000_402')
+file = '../../../data/datamatrix/lifestyles.pickle'
+with open(file, 'rb') as handle:
+    DM_lifestyles_old = pickle.load(handle)
 
+# Remove levers that have to go in buildings and transport
+levers_to_remove = ['pkm', 'urbpop', 'heatcool-behaviour', 'floor-intensity', 'floor-area-fraction', 'appliance-use',
+                    'appliance-own', 'product-substitution-rate']
+for lever in levers_to_remove:
+    if lever in DM_lifestyles_old['ots'].keys():
+        del DM_lifestyles_old['ots'][lever]
+        del DM_lifestyles_old['fts'][lever]
 
+if 'fxa' in DM_lifestyles_old.keys():
+    fxa_to_remove = ['caf_food', 'caf_intensity']
+    for fxa in fxa_to_remove:
+        if fxa in DM_lifestyles_old['fxa'].keys():
+            del DM_lifestyles_old['fxa'][fxa]
+    # if the DM is empty delete it
+    if not bool(DM_lifestyles_old['fxa']):
+        del DM_lifestyles_old['fxa']
 
-#table_id = 'px-x-0204000000_106'
-#structure, title = get_data_api_CH(table_id, mode='example')
+const_to_remove = ['cp_appliances_charging-time-share', 'cp_time_days-per-year']
+for col in const_to_remove:
+    DM_lifestyles_old['constant'].drop(col_label=col, dim='Variables')
+
+DM_lfs_new = dummy_update_DM_module_baseyear(DM_lifestyles_old, years_ots, years_fts)
+
+DM_lfs_new = filter_country_DM(['Switzerland', 'Vaud'], DM_lfs_new)
+
+DM_lfs_new['ots']['pop']['lfs_demography_'] = dm_lfs_age
+for lev in range(4):
+    lev = lev + 1
+    DM_lfs_new['fts']['pop']['lfs_demography_'][lev] = dict_lfs_age_fts[lev]
+
+DM_lfs_new['ots']['pop']['lfs_population_'] = dm_lfs_tot_pop
+for lev in range(4):
+    lev = lev + 1
+    DM_lfs_new['fts']['pop']['lfs_population_'][lev] = dict_lfs_tot_pop_fts[lev]
+
+file = '../../../data/datamatrix/lifestyles.pickle'
+with open(file, 'wb') as handle:
+    pickle.dump(DM_lfs_new, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 print('Hello')
