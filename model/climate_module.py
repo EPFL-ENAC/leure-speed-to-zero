@@ -146,7 +146,7 @@ def local_climate_run():
     filter_geoscale(global_vars)
 
     # run
-    results_run = climate(lever_setting, years_setting)
+    results_run = climate(lever_setting)
 
     return results_run
 
