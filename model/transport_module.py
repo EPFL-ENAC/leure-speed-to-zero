@@ -5,7 +5,7 @@ from model.common.interface_class import Interface
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database, read_database_fxa, read_database_to_ots_fts_dict
 from model.common.auxiliary_functions import compute_stock, filter_geoscale
-from model.common.auxiliary_functions import read_level_data
+from model.common.auxiliary_functions import read_level_data, create_years_list, linear_fitting
 import pickle
 import json
 import os
@@ -20,8 +20,9 @@ def database_from_csv_to_datamatrix():
     years_setting = [1990, 2015, 2050, 5]
     startyear = years_setting[0]
     baseyear = years_setting[1]
-    lastyear = years_setting[2]
-    step_fts = years_setting[3]
+    firstyear = years_setting[2]
+    lastyear = years_setting[3]
+    step_fts = years_setting[4]
     years_ots = list(np.linspace(start=startyear, stop=baseyear, num=(baseyear-startyear)+1).astype(int))
     years_fts = list(np.linspace(start=baseyear+step_fts, stop=lastyear, num=int((lastyear-baseyear)/step_fts)).astype(int))
     years_all = years_ots + years_fts
@@ -211,22 +212,29 @@ def read_data(data_file, lever_setting):
     dict_fxa = DM_transport['fxa']
     dm_freight_tech = dict_fxa['freight_tech']
     dm_passenger_tech = dict_fxa['passenger_tech']
-    dm_passenger_mode_road = dict_fxa['passenger_mode_road']
-    dm_passenger_mode_other = dict_fxa['passenger_mode_other']
+    dm_passenger_public = dict_fxa['passenger_renewal-rate']
+    dm_passenger_public.append(dict_fxa['passenger_avg-pkm-by-veh'], dim='Variables')
+    dm_passenger_veh_lifetime = dict_fxa['passenger_vehicle-lifetime']
     dm_freight_mode_other = dict_fxa['freight_mode_other']
     dm_freight_mode_road = dict_fxa['freight_mode_road']
 
     # Read fts based on lever_setting
     DM_ots_fts = read_level_data(DM_transport, lever_setting)
 
+    DM_lfs = {
+        'lfs_pop': DM_ots_fts['pop'].filter({'Variables': ['lfs_population_total']}),
+        'lfs_passenger_demand': DM_ots_fts['pkm']  #pkm/cap
+    }
 
     # PASSENGER
-    dm_passenger_aviation = DM_ots_fts['passenger-aviation-pkm']
+    dm_passenger_aviation = DM_ots_fts['passenger_aviation-pkm']
     dm_passenger_tech.append(DM_ots_fts['passenger_veh-efficiency_new'], dim='Variables')
     dm_passenger_tech.append(DM_ots_fts['passenger_technology-share_new'], dim='Variables')
     dm_passenger_modal = DM_ots_fts['passenger_modal-share']
-    dm_passenger_mode_road.append(DM_ots_fts['passenger_occupancy'], dim='Variables')
-    dm_passenger_mode_road.append(DM_ots_fts['passenger_utilization-rate'], dim='Variables')
+    dm_passenger_private = DM_ots_fts['passenger_occupancy']
+    dm_passenger_private.append(DM_ots_fts['passenger_utilization-rate'], dim='Variables')
+    dm_passenger_private.append(dm_passenger_veh_lifetime, dim='Variables')
+
     # FREIGHT
     dm_freight_tech.append(DM_ots_fts['freight_vehicle-efficiency_new'], dim='Variables')
     dm_freight_tech.append(DM_ots_fts['freight_technology-share_new'], dim='Variables')
@@ -238,10 +246,10 @@ def read_data(data_file, lever_setting):
 
     DM_passenger = {
         'passenger_tech': dm_passenger_tech,
-        'passenger_mode_other': dm_passenger_mode_other,
+        'passenger_mode_public': dm_passenger_public,
         'passenger_aviation': dm_passenger_aviation,
         'passenger_modal_split': dm_passenger_modal,
-        'passenger_mode_road': dm_passenger_mode_road
+        'passenger_mode_private': dm_passenger_private
         }
 
     DM_freight = {
@@ -258,7 +266,7 @@ def read_data(data_file, lever_setting):
 
     cdm_const = DM_transport['constant']
 
-    return DM_passenger, DM_freight, DM_other, cdm_const
+    return DM_passenger, DM_freight, DM_other, cdm_const, DM_lfs
 
 
 def simulate_lifestyles_input():
@@ -325,10 +333,11 @@ def compute_fts_tech_split(dm_mode, dm_tech, cols, years_setting):
 
     startyear = years_setting[0]
     baseyear = years_setting[1]
-    lastyear = years_setting[2]
-    step_fts = years_setting[3]
+    firstyear = years_setting[2]
+    lastyear = years_setting[3]
+    step_fts = years_setting[4]
     years_fts = list(
-        np.linspace(start=baseyear + step_fts, stop=lastyear, num=int((lastyear - baseyear) / step_fts)).astype(int))
+        np.linspace(start=firstyear, stop=lastyear, num=int((lastyear - firstyear) / step_fts)+1).astype(int))
     tmn = baseyear
     idx_m = dm_mode.index_all()
     idx_t = dm_tech.index_all()
@@ -344,7 +353,8 @@ def compute_fts_tech_split(dm_mode, dm_tech, cols, years_setting):
         tmlife = np.where(rr_tmn > 0, t - (1/rr_tmn).astype(int), startyear)
         tmlife[tmlife < startyear] = startyear  # do not allow years before start year
         # make sure future years fall on correct time spacing
-        tmlife[tmlife > baseyear] = np.floor_divide(tmlife[tmlife > baseyear], step_fts) * step_fts
+        tmlife[(startyear < tmlife) & (tmlife < firstyear)] = startyear
+        tmlife[tmlife >= firstyear] = np.floor_divide(tmlife[tmlife >= firstyear], step_fts) * step_fts
         # The tech share at tmlife corresponds to the tech share of waste at time t
         tech_share_waste_t = evaluate_at_tmlife(dm_tech, tmlife, tech_tot_col)
         eff_waste_t = evaluate_at_tmlife(dm_tech, tmlife, eff_tot_col)
@@ -384,9 +394,7 @@ def compute_fts_tech_split(dm_mode, dm_tech, cols, years_setting):
         dm_tech.array[:, idx_t[t], idx_t[waste_col], ...] = waste_t
         dm_tech.array[:, idx_t[t], idx_t[eff_tot_col], ...] = eff_tot_t
         dm_tech.array[:, idx_t[t], idx_t[tech_tot_col], ...] = tech_tot_t
-        
         tmn = t
-        
     return
 
 
@@ -474,7 +482,10 @@ def passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const, years_sett
     # dm_demand_by_mode [pkm] = modal_shares(urban) * demand_pkm(urban) + modal_shares(non-urban) * demand_pkm(non-urban)
     dm_modal_split = DM_passenger['passenger_modal_split']
     dm_lfs_demand = DM_lfs['lfs_passenger_demand']
-    dm_demand_by_mode = compute_pkm_demand(dm_modal_split, dm_lfs_demand)
+    arr = dm_lfs_demand.array[:, :, :, np.newaxis]*dm_modal_split.array
+    dm_demand_by_mode = DataMatrix.based_on(arr, dm_modal_split, change={'Variables': ['tra_passenger_transport-demand']},
+                                            units={'tra_passenger_transport-demand': 'pkm'})
+    #dm_demand_by_mode = compute_pkm_demand(dm_modal_split, dm_lfs_demand)
     del dm_modal_split, dm_lfs_demand
     # Remove walking and biking
     dm_demand_by_mode.drop(dim='Categories1', col_label='walk|bike')
@@ -483,41 +494,44 @@ def passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const, years_sett
     # demand_aviation [pkm] = demand aviation [pkm/cap] * pop
     dm_aviation_pkm = DM_passenger['passenger_aviation']
     dm_pop = DM_lfs['lfs_pop']
-    tmp_aviation = dm_aviation_pkm.array[..., 0] * dm_pop.array[...]
-    dm_demand_by_mode.add(tmp_aviation, dim='Categories1', col_label='aviation')
-    del dm_aviation_pkm, tmp_aviation
+    arr_av_pkm = dm_aviation_pkm.array * dm_pop.array[..., np.newaxis]
+    dm_aviation_pkm.add(arr_av_pkm, dim='Variables', unit='pkm', col_label='tra_passenger_transport-demand')
+    dm_aviation_pkm.drop(col_label='tra_pkm-cap', dim='Variables')
+    #tmp_aviation = dm_aviation_pkm.array[..., 0] * dm_pop.array[...]
+    #dm_demand_by_mode.add(tmp_aviation, dim='Categories1', col_label='aviation')
+    del dm_aviation_pkm, arr_av_pkm
 
     # Split between road and other passenger transport data
-    dm_demand_road = dm_demand_by_mode.filter_w_regex(dict_dim_pattern={'Categories1': 'LDV|bus|2W'})
-    dm_demand_other = dm_demand_by_mode.filter_w_regex(dict_dim_pattern={'Categories1': 'aviation|metrotram|rail'})
+    dm_demand_private = dm_demand_by_mode.filter_w_regex(dict_dim_pattern={'Categories1': 'LDV|2W'})
+    dm_demand_public = dm_demand_by_mode.filter_w_regex(dict_dim_pattern={'Categories1': 'bus|metrotram|rail'})
 
-    dm_road = DM_passenger['passenger_mode_road']
-    dm_road.append(dm_demand_road, dim='Variables')
-    del dm_demand_road, dm_demand_by_mode
+    dm_private = DM_passenger['passenger_mode_private']
+    dm_private.append(dm_demand_private, dim='Variables')
+    del dm_demand_private, dm_demand_by_mode
 
     # demand [vkm] = demand [pkm] / occupancy [pkm/vkm]
-    dm_road.operation('tra_passenger_transport-demand', '/', 'tra_passenger_occupancy',
-                      dim="Variables", out_col='tra_passenger_transport-demand-vkm', unit='vkm', div0="error")
+    dm_private.operation('tra_passenger_transport-demand', '/', 'tra_passenger_occupancy',
+                         dim="Variables", out_col='tra_passenger_transport-demand-vkm', unit='vkm', div0="error")
     # vehicle-fleet [number] = demand [vkm] / utilisation-rate [vkm/veh/year]
-    dm_road.operation('tra_passenger_transport-demand-vkm', '/', 'tra_passenger_utilisation-rate',
-                      dim="Variables", out_col='tra_passenger_vehicle-fleet', unit='number', div0="error", type=int)
+    dm_private.operation('tra_passenger_transport-demand-vkm', '/', 'tra_passenger_utilisation-rate',
+                         dim="Variables", out_col='tra_passenger_vehicle-fleet', unit='number', div0="error", type=int)
     # renewal-rate [%] = utilisation-rate [vkm/veh/year] /  vehicle-lifetime [years]
-    dm_road.operation('tra_passenger_utilisation-rate', '/', 'tra_passenger_vehicle-lifetime',
-                      dim="Variables", out_col='tra_passenger_renewal-rate', unit='%', div0="error")
+    dm_private.operation('tra_passenger_utilisation-rate', '/', 'tra_passenger_vehicle-lifetime',
+                         dim="Variables", out_col='tra_passenger_renewal-rate', unit='%', div0="error")
 
-    dm_other = DM_passenger['passenger_mode_other']
-    dm_other.append(dm_demand_other, dim='Variables')
-    del dm_demand_other
+    dm_public = DM_passenger['passenger_mode_public']
+    dm_public.append(dm_demand_public, dim='Variables')
+    del dm_demand_public
 
     # vehicle-fleet[number] = demand [pkm] / avg-pkm-by-veh [pkm/veh]
-    dm_other.operation('tra_passenger_transport-demand', '/', 'tra_passenger_avg-pkm-by-veh',
-                       dim="Variables", out_col='tra_passenger_vehicle-fleet', unit='number', div0="error", type=int)
+    dm_public.operation('tra_passenger_transport-demand', '/', 'tra_passenger_avg-pkm-by-veh',
+                        dim="Variables", out_col='tra_passenger_vehicle-fleet', unit='number', div0="error", type=int)
 
     # Compute vehicle waste and new vehicles for both road and other
-    dm_other_tmp = dm_other.filter_w_regex(dict_dim_pattern={'Variables': '.*vehicle-fleet|.*renewal-rate'})
-    dm_mode = dm_road.filter_w_regex(dict_dim_pattern={'Variables': '.*vehicle-fleet|.*renewal-rate'})
-    dm_other.drop(dim='Variables', col_label='.*vehicle-fleet|.*renewal-rate')
-    dm_road.drop(dim='Variables', col_label='.*vehicle-fleet|.*renewal-rate')
+    dm_other_tmp = dm_public.filter_w_regex(dict_dim_pattern={'Variables': '.*vehicle-fleet|.*renewal-rate'})
+    dm_mode = dm_private.filter_w_regex(dict_dim_pattern={'Variables': '.*vehicle-fleet|.*renewal-rate'})
+    dm_public.drop(dim='Variables', col_label='.*vehicle-fleet|.*renewal-rate')
+    dm_private.drop(dim='Variables', col_label='.*vehicle-fleet|.*renewal-rate')
 
     dm_mode.append(dm_other_tmp, dim='Categories1')
     del dm_other_tmp
@@ -553,8 +567,8 @@ def passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const, years_sett
     compute_fts_tech_split(dm_mode, dm_tech, cols, years_setting)
 
     # Extract passenger transport demand vkm for road and pkm for others, join and compute transport demand by technology
-    dm_demand_km = dm_road.filter(selected_cols={'Variables': ['tra_passenger_transport-demand-vkm']})
-    dm_demand_km_other = dm_other.filter(selected_cols={'Variables': ['tra_passenger_transport-demand']})
+    dm_demand_km = dm_private.filter(selected_cols={'Variables': ['tra_passenger_transport-demand-vkm']})
+    dm_demand_km_other = dm_public.filter(selected_cols={'Variables': ['tra_passenger_transport-demand']})
     dm_demand_km_other.units['tra_passenger_transport-demand'] = 'km'
     dm_demand_km.units['tra_passenger_transport-demand-vkm'] = 'km'
     dm_demand_km.rename_col('tra_passenger_transport-demand-vkm', 'tra_passenger_transport-demand', dim='Variables')
@@ -570,10 +584,35 @@ def passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const, years_sett
                       out_col='tra_passenger_energy-demand', unit='MJ')
 
     # Add e-fuel and bio-fuel to energy consumption
-    dm_fuel = DM_other['fuels']
-    mapping_cat = {'road': ['LDV', '2W', 'rail', 'metrotram', 'bus'], 'aviation': ['aviation']}
+    dm_fuel = DM_other['fuels'].copy()
+    dm_fuel.drop(col_label='aviation', dim='Categories2')
+    mapping_cat = {'road': ['LDV', '2W', 'rail', 'metrotram', 'bus']}
     dm_energy = dm_tech.filter({'Variables': ['tra_passenger_energy-demand']})
     add_biofuel_efuel(dm_energy, dm_fuel, mapping_cat)
+
+    # Compute emissions by fuel for fossil fuels, mode, GHG
+    cdm_const.drop(col_label=['marinefueloil', 'kerosene'], dim='Categories2')
+    dm_emissions = dm_energy.copy()
+    dm_emissions.filter({'Categories2': cdm_const.col_labels['Categories2']}, inplace=True)
+    dm_emissions.sort('Categories2')
+    cdm_const.sort('Categories2')
+    arr_emis_mode_GHG_fuel = dm_emissions.array[:, :, :, :, np.newaxis, :] \
+                             * cdm_const.array[np.newaxis, np.newaxis, :, np.newaxis, :, :]
+    arr_emis_mode_GHG_fuel = np.moveaxis(arr_emis_mode_GHG_fuel, -2, -1)  # Move GHG to end
+    dm_emissions_all = DataMatrix.based_on(arr_emis_mode_GHG_fuel, dm_emissions,
+                                           change={'Variables': ['tra_passenger_emissions'],
+                                                   'Categories3': cdm_const.col_labels['Categories1']},
+                                           units={'tra_passenger_emissions': 'g'})
+    dm_emissions_all.change_unit('tra_passenger_emissions', 1e-12, 'g', 'Mt')
+
+    dm_emissions_by_mode = dm_emissions_all.group_all('Categories2', inplace=False)
+    dm_emissions_by_fuel = dm_emissions_all.group_all('Categories1', inplace=False)
+    dm_emissions_by_fuel.groupby({'diesel': '.*diesel', 'gasoline': '.*gasoline', 'gas': '.*gas'}, dim='Categories1', regex=True, inplace=True)
+    dm_emissions_by_GHG = dm_emissions_all.group_all('Categories2', inplace=False)
+    dm_emissions_by_GHG.group_all('Categories1')
+
+    #
+    dm_energy.change_unit('tra_passenger_energy-demand', 2.77778e-10, old_unit='MJ', new_unit='TWh')
 
     # Deal with PHEV and electricity. For each mode of transport,
     # sum PHEV energy demand and multiply it by 0.1 to obtain a new category, the PHEV_elec
@@ -581,24 +620,32 @@ def passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const, years_sett
     PHEV_elec = 0.1 * np.nansum(dm_energy_phev.array, axis=-1)
     dm_energy.add(PHEV_elec, dim='Categories2', col_label='PHEV-elec')
 
-    dm_energy.change_unit('tra_passenger_energy-demand', 2.77778e-10, old_unit='MJ', new_unit='TWh')
+    # Rename and group fuel types
+    dm_energy.groupby({'biodiesel': '.*dieselbio', 'biogas': '.*gasbio',
+                       'biogasoline': '.*gasolinebio', 'efuel': '.*efuel'},
+                      dim='Categories2', regex=True, inplace=True)
+    dm_energy.groupby({'diesel': '.*-diesel', 'gasoline': '.*-gasoline', 'hydrogen': 'FCEV',
+                       'gas': '.*-gas', 'electricity': 'BEV|CEV|PHEV-elec|mt'},
+                      dim='Categories2', regex=True, inplace=True)
+
+    # Compute energy demand by mode
+    idx = dm_energy.idx
+    tmp = np.nansum(dm_energy.array[:, :, idx['tra_passenger_energy-demand'], :, :], axis=-1)
+    dm_mode.add(tmp, dim='Variables', col_label='tra_passenger_energy-demand-by-mode', unit='TWh')
 
     # Prepare output for energy
-    dm_electricity = dm_energy.groupby({'power-demand': ['BEV', 'CEV', 'PHEV-elec', 'mt']}, dim='Categories2')
-    dm_electricity.groupby({'road': ['2W', 'bus', 'LDV'], 'rail': ['metrotram', 'rail'], 'other': ['aviation']},
+    dm_electricity = dm_energy.filter({'Categories2': ['electricity']})
+    dm_electricity.group_all(dim='Categories2')
+    dm_electricity.groupby({'road': ['2W', 'bus', 'LDV'], 'rail': ['metrotram', 'rail']},
                            dim='Categories1', inplace=True)
-    dm_electricity.switch_categories_order()
-    dm_electricity.rename_col('tra_passenger_energy-demand', 'tra', dim='Variables')
-    dm_electricity = dm_electricity.flatten()
-    dm_electricity = dm_electricity.flatten()
-    dm_electricity.deepen()
+    dm_electricity.rename_col('tra_passenger_energy-demand', 'tra_power-demand', dim='Variables')
 
-    dm_efuel = dm_energy.groupby({'efuel': '.*efuel'}, dim='Categories2', regex=True)
-    dm_efuel.groupby({'power-demand': '.*'}, dim='Categories1', inplace=True, regex=True)
-    dm_efuel.rename_col('tra_passenger_energy-demand', 'tra', dim='Variables')
-    dm_efuel = dm_efuel.flatten()
-    dm_efuel = dm_efuel.flatten()
-    dm_efuel.deepen()
+    # Drop mode split in energy
+    dm_energy.group_all('Categories1')
+
+    # Prepare efuel output
+    dm_efuel = dm_energy.filter({'Categories1': ['efuel']})
+    dm_efuel.rename_col('tra_passenger_energy-demand', 'tra_power-demand', dim='Variables')
 
     dm_electricity.append(dm_efuel, dim='Categories1')
     dm_electricity.change_unit('tra_power-demand', 1e3, old_unit='TWh', new_unit='GWh')
@@ -606,117 +653,39 @@ def passenger_fleet_energy(DM_passenger, DM_lfs, DM_other, cdm_const, years_sett
     DM_passenger_out = {
         'power': {'electricity': dm_electricity.flatten()},
     }
-    # end energy output
 
-    dict1 = {'FCEV': 'FCV-hydrogen', 'BEV': 'BEV-elec', 'CEV': 'CEV-elec', 'metrotram_mt': 'metrotram_elec',
-             'aviation_ICEefuel': 'aviation_ejetfuel', 'aviation_ICEbio': 'aviation_biojetfuel',
-             'aviation_ICE': 'aviation_kerosene', 'PHEVbio': 'dieselbio', 'PHEVefuel': 'dieselefuel'}
-
-    dm_energy_new_cat = dm_energy.flatten()
-    # Rename the columns based on the substring mapping
-    for substring, replacement in dict1.items():
-        dm_energy_new_cat.rename_col_regex(substring, replacement, dim='Categories1')
-    dm_energy_new_cat.rename_col('2W_PHEV', '2W_diesel', dim='Categories1')
-
-    grouping = ['dieselbio', 'gasolinebio', 'gasbio', 'gasoline', 'diesel', 'gas', 'dieselefuel', 'gasolineefuel',
-                'gasefuel', 'hydrogen', "elec", 'biojetfuel', 'kerosene', 'ejetfuel']
-    dict2 = {'dieselbio': 'biodiesel', 'gasolinebio': 'bioethanol', 'gasbio': 'biogas', 'dieselefuel': 'ediesel',
-             'gasolineefuel': 'egasoline', 'gasefuel': 'egas', 'elec': 'electricity'}
-
-    dm_tot_energy = rename_and_group(dm_energy_new_cat, grouping, dict2, grouped_var='tra_passenger_total-energy')
-
-    # Power output
-    dm_pow_hydrogen = dm_tot_energy.filter({'Categories1': ['hydrogen']})
-    dm_pow_hydrogen.rename_col('tra_passenger_total-energy', 'tra_power-demand', dim='Variables')
+    # Power output (tra_power_demand _ hydrogen)
+    dm_pow_hydrogen = dm_energy.filter({'Categories1': ['hydrogen']})
+    dm_pow_hydrogen.rename_col('tra_passenger_energy-demand', 'tra_power-demand', dim='Variables')
     dm_pow_hydrogen.change_unit('tra_power-demand', factor=1e3, old_unit='TWh', new_unit='GWh')
     DM_passenger_out['power']['hydrogen'] = dm_pow_hydrogen.flatten()
 
-    DM_passenger_out['oil-refinery'] = dm_tot_energy.filter({'Categories1': ['gasoline', 'diesel', 'gas', 'kerosene']})
+    #DM_passenger_out['oil-refinery'] = dm_tot_energy.filter({'Categories1': ['gasoline', 'diesel', 'gas', 'kerosene']})
+    DM_passenger_out['oil-refinery'] = dm_energy.filter({'Categories1': ['gasoline', 'diesel', 'gas']})
 
-    dm_biogas = dm_tot_energy.filter({'Categories1': ['biogas']})
-
-    # Compute emission by fuel
-    # Filter fuels for which we have emissions
-    cdm_const.drop(col_label='marinefueloil', dim='Categories2')
-    dm_energy_em = dm_tot_energy.filter({'Categories1': cdm_const.col_labels['Categories2']})
-    # Sort categories to make sure they match
-    dm_energy_em.sort(dim='Categories1')
-    cdm_const.sort(dim='Categories2')
-    idx_e = dm_energy_em.idx
-    idx_c = cdm_const.idx
-    # emissions = energy * emission-factor
-    tmp = dm_energy_em.array[:, :, idx_e['tra_passenger_total-energy'], np.newaxis, :] \
-          * cdm_const.array[np.newaxis, np.newaxis, idx_c['cp_tra_emission-factor'], :, :]
-    tmp = np.moveaxis(tmp, -2, -1)
-    # Save emissions by fuel in a datamatrix
-    col_labels = dm_energy_em.col_labels.copy()
-    col_labels['Variables'] = ['tra_passenger_emissions']
-    col_labels['Categories2'] = cdm_const.col_labels['Categories1'].copy()  # GHG category
-    unit = {'tra_passenger_emissions': 'Mt'}
-    dm_emissions_by_fuel = DataMatrix(col_labels=col_labels, units=unit)
-    dm_emissions_by_fuel.array = tmp[:, :, np.newaxis, :, :]  # The variable dimension was lost when doing nansum
-    del dm_energy_em, tmp, col_labels, unit
-
-    # Compute emissions by mode
-    dm_energy_em = dm_energy_new_cat.filter({'Categories3': cdm_const.col_labels['Categories2']})
-    dm_energy_em.sort(dim='Categories3')
-    cdm_const.sort(dim='Categories2')
-    idx_e = dm_energy_em.idx
-    idx_c = cdm_const.idx
-    tmp_en = np.nansum(dm_energy_em.array, axis=-2)  # remove technology split
-    tmp = tmp_en[:, :, idx_e['tra_passenger_energy-demand'], :, np.newaxis, :] \
-          * cdm_const.array[np.newaxis, np.newaxis, idx_c['cp_tra_emission-factor'], np.newaxis, :, :]
-    tmp = np.nansum(tmp, axis=-1)  # Remove split by fuel
-    col_labels = dm_energy_em.col_labels.copy()
-    col_labels.pop('Categories3')
-    col_labels['Categories2'] = cdm_const.col_labels['Categories1'].copy()  # GHG category
-    col_labels['Variables'] = ['tra_passenger_emissions']
-    unit = {'tra_passenger_emissions': 'Mt'}
-    dm_emissions_by_mode = DataMatrix(col_labels=col_labels, units=unit)
-    dm_emissions_by_mode.array = tmp[:, :, np.newaxis, :, :]  # The variable dimension was lost when doing nansum
-    del tmp, unit, col_labels, idx_e, idx_c, tmp_en, dm_energy_em
-
-    # Group emissions by GHG gas
-    tmp = np.nansum(dm_emissions_by_mode.array, axis=-2)
-    col_labels = dm_emissions_by_mode.col_labels.copy()
-    col_labels['Categories1'] = col_labels['Categories2'].copy()
-    col_labels.pop('Categories2')
-    unit = dm_emissions_by_mode.units
-    dm_emissions_by_GHG = DataMatrix(col_labels=col_labels, units=unit)
-    dm_emissions_by_GHG.array = tmp[:, :, np.newaxis, :]
-    del tmp, unit, col_labels
-
-    tmp = np.nansum(dm_energy.array, axis=(-1,-2))
-    col_labels = dm_energy.col_labels.copy()
-    col_labels.pop('Categories1')
-    col_labels.pop('Categories2')
-    dm_no_cat = DataMatrix(col_labels=col_labels, units=dm_energy.units.copy())
-    dm_no_cat.array = tmp[:, :, np.newaxis]
+    # (tra_power_demand _ hydrogen)
+    dm_biogas = dm_energy.filter({'Categories1': ['biogas']})
 
     dm_tech.rename_col('tra_passenger_technology-share_fleet', 'tra_passenger_technology-share-fleet', dim='Variables')
 
+    # Compute passenger demand by mode
     idx = dm_tech.idx
     tmp = np.nansum(dm_tech.array[:, :, idx['tra_passenger_transport-demand'], :, :], axis=-1)
     dm_mode.add(tmp, dim='Variables', col_label='tra_passenger_transport-demand-by-mode', unit='pkm')
-
-    # Compute passenger demand by mode
-    idx = dm_energy.idx
-    tmp = np.nansum(dm_energy.array[:, :, idx['tra_passenger_energy-demand'], :, :], axis=-1)
-    dm_mode.add(tmp, dim='Variables', col_label='tra_passenger_energy-demand-by-mode', unit='TWh')
 
     # Compute CO2 emissions by mode
     idx = dm_emissions_by_mode.idx
     tmp = dm_emissions_by_mode.array[:, :, idx['tra_passenger_emissions'], :, idx['CO2']]
     dm_mode.add(tmp, dim='Variables', col_label='tra_passenger_emissions-by-mode_CO2', unit='Mt')
 
-    dm_tot_energy.rename_col(col_in='tra_passenger_total-energy', col_out='tra_passenger_energy-demand-by-fuel', dim='Variables')
+    dm_energy.rename_col(col_in='tra_passenger_energy-demand', col_out='tra_passenger_energy-demand-by-fuel', dim='Variables')
 
     DM_passenger_out['mode'] = dm_mode
     DM_passenger_out['tech'] = dm_tech
     DM_passenger_out['fuel'] = dm_fuel
     DM_passenger_out['agriculture'] = dm_biogas
     DM_passenger_out['emissions'] = dm_emissions_by_mode
-    DM_passenger_out['energy'] = dm_tot_energy
+    DM_passenger_out['energy'] = dm_energy
 
     return DM_passenger_out
 
@@ -879,6 +848,11 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
 
     # Compute emission by fuel
     # Filter fuels for which we have emissions
+    cdm_const.drop('Categories2', ['PHEV-diesel', 'PHEV-gasoline'])
+    cdm_const.rename_col('ICE-diesel', 'diesel', dim='Categories2')
+    cdm_const.rename_col('ICE-gasoline', 'gasoline', dim='Categories2')
+    cdm_const.rename_col('ICE-gas', 'gas', dim='Categories2')
+
     dm_energy_em = dm_total_energy.filter({'Categories1': cdm_const.col_labels['Categories2']})
     # Sort categories to make sure they match
     dm_energy_em.sort(dim='Categories1')
@@ -946,7 +920,9 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
 def tra_industry_interface(dm_freight_veh, dm_passenger_veh, dm_infrastructure,
                            write_xls = False):
     # Filter cars only and rename technology as ICE, FCV and EV
-    dm_passenger_new_veh = dm_passenger_veh.filter({'Variables' : ['tra_passenger_new-vehicles']})
+    if 'aviation' not in dm_passenger_veh.col_labels['Categories1']:
+        dm_passenger_veh.add(np.nan, dim='Categories1', col_label='aviation', dummy=True)
+    dm_passenger_new_veh = dm_passenger_veh.filter({'Variables': ['tra_passenger_new-vehicles']})
     dm_cars = dm_passenger_new_veh.filter({'Categories1': ['LDV']})
     dm_cars.group_all(dim='Categories1', inplace=True)
     dm_cars.groupby({'cars-ICE': 'ICE.*|PHEV.*', 'cars-FCV': 'FCEV', 'cars-EV': 'BEV'}, dim='Categories1', regex=True, inplace=True)
@@ -967,6 +943,8 @@ def tra_industry_interface(dm_freight_veh, dm_passenger_veh, dm_infrastructure,
     dm_freight_new_veh.filter({'Categories1': ['aviation', 'marine', 'rail']}, inplace=True)  # keep only rail, aviation, marine
     dm_passenger_new_veh.filter({'Categories1': ['aviation', 'marine', 'rail']}, inplace=True)  # keep only rail, aviation, marine
     dm_product_demand = dm_passenger_new_veh
+    if 'aviation' not in dm_product_demand.col_labels['Categories1']:
+        dm_product_demand.add(0, dummy=True, dim='Categories1', col_label='aviation')
     dm_product_demand.append(dm_freight_new_veh, dim='Variables')  # merge passenger and freight
     dm_product_demand.groupby({'tra_product-demand': '.*'}, dim='Variables', regex=True, inplace=True)
     # Rename aviation, marine, rail to planes, ships, trains
@@ -1034,56 +1012,57 @@ def tra_industry_interface(dm_freight_veh, dm_passenger_veh, dm_infrastructure,
 
     # ! FIXME add infrastructure in km
     DM_industry = {
-        'tra-veh-demand': dm_product_demand,
-        'tra-infra-demand': dm_infra_ind,
-        'tra-veh-waste': dm_waste,
-        'tra-veh-stock': dm_stock
+        'tra-veh': dm_product_demand,
+        'tra-infra': dm_infra_ind,
+        'tra-waste': dm_waste,
+        'tra-stock': dm_stock
     }
     return DM_industry
 
 
-# def tra_minerals_interface(dm_freight_new_veh, dm_passenger_new_veh, DM_industry, dm_infrastructure, write_xls=False):
+def tra_minerals_interface(dm_freight_new_veh, dm_passenger_new_veh, DM_industry, dm_infrastructure, write_xls=False):
 
-#     # Group technologies as PHEV, ICE, EV and FCEV
-#     dm_freight_new_veh.groupby({'PHEV': 'PHEV.*', 'ICE': 'ICE.*', 'EV': 'BEV|CEV'}, regex=True, inplace=True, dim='Categories2')
-#     # note that mt is later dropped
-#     dm_passenger_new_veh.groupby({'PHEV': 'PHEV.*', 'ICE': 'ICE.*', 'EV': 'BEV|CEV|mt'}, regex=True, inplace=True, dim='Categories2')
-#     # keep only certain vehicles
-#     keep_veh = 'HDV.*|2W|LDV|bus'
-#     dm_keep_new_veh = dm_passenger_new_veh.filter_w_regex({'Categories1': keep_veh})
-#     dm_keep_new_veh.rename_col('tra_passenger_new-vehicles', 'tra_product-demand', dim='Variables')
-#     dm_keep_freight_new_veh = dm_freight_new_veh.filter_w_regex({'Categories1': keep_veh})
-#     dm_keep_freight_new_veh.rename_col('tra_freight_new-vehicles', 'tra_product-demand', dim='Variables')
-#     dm_keep_freight_new_veh.rename_col('tra_freight_vehicle-fleet', 'tra_vehicle-fleet', dim='Variables')
-#     dm_keep_freight_new_veh.rename_col('tra_freight_vehicle-waste', 'tra_vehicle-waste', dim='Variables')
-#     # join passenger and freight
-#     dm_keep_new_veh.rename_col('tra_passenger_vehicle-fleet', 'tra_vehicle-fleet', dim='Variables')
-#     dm_keep_new_veh.rename_col('tra_passenger_vehicle-waste', 'tra_vehicle-waste', dim='Variables')
-#     dm_keep_new_veh.append(dm_keep_freight_new_veh, dim='Categories1')
-#     # flatten to obtain e.g. LDV-EV or HDVL-FCEV
-#     dm_keep_new_veh = dm_keep_new_veh.flatten()
-#     dm_keep_new_veh.rename_col_regex('_', '-', 'Categories1')
-#     dm_other = DM_industry['tra-veh'].filter({'Categories1': ['planes', 'ships', 'trains']})
-#     dm_other.groupby({'other-planes': ['planes'], 'other-ships': ['ships'], 'other-trains': ['trains']}, dim='Categories1', inplace=True)
-#     dm_keep_new_veh.append(dm_other, dim='Categories1')
-#     dm_keep_new_veh.rename_col('tra_product-demand', 'product-demand', dim='Variables')
+    # Group technologies as PHEV, ICE, EV and FCEV
+    dm_freight_new_veh.groupby({'PHEV': 'PHEV.*', 'ICE': 'ICE.*', 'EV': 'BEV|CEV'}, regex=True, inplace=True, dim='Categories2')
+    # note that mt is later dropped
+    dm_passenger_new_veh.groupby({'PHEV': 'PHEV.*', 'ICE': 'ICE.*', 'EV': 'BEV|CEV|mt'}, regex=True, inplace=True, dim='Categories2')
+    # keep only certain vehicles
+    keep_veh = 'HDV.*|2W|LDV|bus'
+    dm_keep_new_veh = dm_passenger_new_veh.filter_w_regex({'Categories1': keep_veh})
+    dm_keep_new_veh.rename_col('tra_new-vehicles', 'tra_product-demand', dim='Variables')
+    dm_keep_freight_new_veh = dm_freight_new_veh.filter_w_regex({'Categories1': keep_veh})
+    dm_keep_freight_new_veh.rename_col('tra_new-vehicles', 'tra_product-demand', dim='Variables')
+    # join passenger and freight
 
-#     DM_minerals = {
-#         'tra_veh': dm_keep_new_veh,
-#         'tra_infra': dm_infrastructure
-#     }
+    dm_keep_new_veh.append(dm_keep_freight_new_veh, dim='Categories1')
+    # flatten to obtain e.g. LDV-EV or HDVL-FCEV
+    dm_keep_new_veh = dm_keep_new_veh.flatten()
+    dm_keep_new_veh.rename_col_regex('_', '-', 'Categories1')
 
-#     if write_xls:
-#         df1 = DM_minerals['tra_veh'].write_df()
-#         df2 = DM_minerals['tra_infra'].write_df()
-#         df = pd.concat([df1, df2.drop(columns=['Country', 'Years'])], axis=1)
-#         df.to_excel('../_database/data/xls/All-Countries-interface_from-transport-to-minerals.xlsx', index=False)
+    dm_other = DM_industry['tra-veh'].filter({'Categories1': ['planes', 'ships', 'trains']})
+    dm_other.groupby({'other-planes': ['planes'], 'other-ships': ['ships'], 'other-trains': ['trains']}, dim='Categories1', inplace=True)
 
-#     return DM_minerals
+    dm_keep_new_veh.append(dm_other, dim='Categories1')
+    dm_keep_new_veh.rename_col('tra_product-demand', 'product-demand', dim='Variables')
+
+    DM_minerals = {
+        'tra_veh': dm_keep_new_veh,
+        'tra_infra': dm_infrastructure
+    }
+
+    if write_xls:
+        df1 = DM_minerals['tra_veh'].write_df()
+        df2 = DM_minerals['tra_infra'].write_df()
+        df = pd.concat([df1, df2.drop(columns=['Country', 'Years'])], axis=1)
+        df.to_excel('../_database/data/xls/All-Countries-interface_from-transport-to-minerals.xlsx', index=False)
+
+    return DM_minerals
 
 def tra_oilrefinery_interface(dm_pass_energy, dm_freight_energy):
-
-    dm_pass_energy.add(0, dummy=True, col_label='marinefueloil', dim='Categories1')
+    cat_missing = ['kerosene', 'marinefueloil']
+    for cat in cat_missing:
+        if cat not in dm_pass_energy.col_labels['Categories1']:
+            dm_pass_energy.add(0, dummy=True, col_label=cat, dim='Categories1')
     dm_pass_energy.append(dm_freight_energy, dim='Variables')
     dm_tot_energy = dm_pass_energy.groupby({'tra_energy-demand': '.*'}, dim='Variables', inplace=False, regex=True)
     dict_rename = {'diesel': 'liquid-ff-diesel', 'marinefueloil': 'liquid-ff-fuel-oil', 'gasoline': 'liquid-ff-gasoline',
@@ -1106,7 +1085,7 @@ def prepare_TPE_output(DM_passenger_out, DM_freight_out):
     dm_keep_fuel = DM_passenger_out['fuel']
 
     dm_keep_energy = DM_passenger_out['energy'].copy()
-    dm_keep_energy.drop(dim='Categories1', col_label=['egasoline', 'ediesel', 'egas', 'ejetfuel'])
+    dm_keep_energy.drop(dim='Categories1', col_label=['efuel'])
 
     dm_freight_energy_by_mode = DM_freight_out['mode'].filter({'Variables': ['tra_freight_energy-demand']})
     dm_freight_energy_by_mode.rename_col('tra_freight_energy-demand', 'tra_freight_energy-demand-by-mode', dim='Variables')
@@ -1198,7 +1177,7 @@ def transport(lever_setting, years_setting, interface=Interface()):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     transport_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/transport.pickle')
-    DM_passenger, DM_freight, DM_other, cdm_const = read_data(transport_data_file, lever_setting)
+    DM_passenger, DM_freight, DM_other, cdm_const, DM_lfs = read_data(transport_data_file, lever_setting)
 
     cntr_list = DM_passenger['passenger_modal_split'].col_labels['Country']
 
@@ -1206,11 +1185,14 @@ def transport(lever_setting, years_setting, interface=Interface()):
     if interface.has_link(from_sector='lifestyles', to_sector='transport'):
         DM_lfs = interface.get_link(from_sector='lifestyles', to_sector='transport')
     else:
-        if len(interface.list_link()) != 0:
-            print('You are missing lifestyles to oil-refinery interface')
-        DM_lfs = simulate_lifestyles_input()
-        for key in DM_lfs.keys():
-            DM_lfs[key] = DM_lfs[key].filter({'Country': cntr_list})
+        DM_lfs['lfs_passenger_demand'].array = DM_lfs['lfs_passenger_demand'].array * DM_lfs['lfs_pop'].array
+        DM_lfs['lfs_passenger_demand'].rename_col('tra_pkm-cap', 'tra_passenger_transport-demand', dim='Variables')
+        DM_lfs['lfs_passenger_demand'].change_unit('tra_passenger_transport-demand', 1, 'pkm/cap', 'pkm')
+#        if len(interface.list_link()) != 0:
+#            print('You are missing lifestyles to oil-refinery interface')
+#        DM_lfs = simulate_lifestyles_input()
+#        for key in DM_lfs.keys():
+#            DM_lfs[key] = DM_lfs[key].filter({'Country': cntr_list})
 
     # PASSENGER
     cdm_const_passenger = cdm_const.copy()
@@ -1222,6 +1204,9 @@ def transport(lever_setting, years_setting, interface=Interface()):
     # Power-module
     DM_power = DM_passenger_out['power']
     DM_power['hydrogen'].array = DM_power['hydrogen'].array + DM_freight_out['power']['hydrogen'].array
+    DM_power['electricity'].add(np.nan, dim='Variables', dummy=True, col_label='tra_power-demand_other', unit='GWh')
+    DM_power['electricity'].sort('Variables')
+    DM_freight_out['power']['electricity'].sort('Variables')
     DM_power['electricity'].array = DM_power['electricity'].array + DM_freight_out['power']['electricity'].array
     interface.add_link(from_sector='transport', to_sector='power', dm=DM_power)
     # df = dm_power.write_df()
@@ -1243,13 +1228,12 @@ def transport(lever_setting, years_setting, interface=Interface()):
     dm_freight_veh = DM_freight_out['tech'].filter({'Variables': ['tra_freight_new-vehicles','tra_freight_vehicle-waste','tra_freight_vehicle-fleet']})
     dm_passenger_veh = DM_passenger_out['tech'].filter({'Variables': ['tra_passenger_new-vehicles','tra_passenger_vehicle-waste', 'tra_passenger_vehicle-fleet']})
     dm_infrastructure = dummy_tra_infrastructure_workflow(DM_lfs['lfs_pop'])
-    DM_industry = tra_industry_interface(dm_freight_veh.copy(), dm_passenger_veh.copy(), dm_infrastructure, write_xls=False)
-    # DM_minerals = tra_minerals_interface(dm_freight_veh, dm_passenger_veh, DM_industry, dm_infrastructure, write_xls=False)
-    DM_minerals = DM_industry.copy()
+    DM_industry = tra_industry_interface(dm_freight_veh.copy(), dm_passenger_veh.copy(), dm_infrastructure)
+    #DM_minerals = tra_minerals_interface(dm_freight_veh, dm_passenger_veh, DM_industry, dm_infrastructure, write_xls=False)
     # !FIXME: add km infrastructure data, using compute_stock with tot_km and renovation rate as input.
     #  data for ch ok, data for eu, backcalculation? dummy based on swiss pop?
     interface.add_link(from_sector='transport', to_sector='industry', dm=DM_industry)
-    interface.add_link(from_sector='transport', to_sector='minerals', dm=DM_minerals)
+    #interface.add_link(from_sector='transport', to_sector='minerals', dm=DM_minerals)
 
     # Emissions
     dm_emissions = tra_emissions_interface(DM_passenger_out['emissions'], DM_freight_out['emissions'], write_xls=False)
@@ -1261,18 +1245,18 @@ def transport(lever_setting, years_setting, interface=Interface()):
 
 def local_transport_run():
     # Function to run only transport module without converter and tpe
-    years_setting = [1990, 2015, 2050, 5]
+    years_setting = [1990, 2023, 2025, 2050, 5]
     f = open('../config/lever_position.json')
     lever_setting = json.load(f)[0]
 
-    global_vars = {'geoscale': '.*'}
+    global_vars = {'geoscale': 'Switzerland|Vaud'}
     filter_geoscale(global_vars)
 
     results_run = transport(lever_setting, years_setting)
 
     return results_run
 
-# # database_from_csv_to_datamatrix()
-# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/transport_module.py"
-# results_run = local_transport_run()
+# database_from_csv_to_datamatrix()
+print('In transport, the share of waste by fuel/tech type does not seem right. Fix it.')
+results_run = local_transport_run()
 

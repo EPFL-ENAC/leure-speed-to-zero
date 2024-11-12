@@ -754,7 +754,7 @@ export const levers = [
     "type": "num"
   },
   {
-    "code": "lever_passenger-aviation-pkm",
+    "code": "lever_passenger_aviation-pkm",
     "title": "Aviation travel",
     "group": "Travel",
     "headline": "Key behaviours",
