@@ -20,8 +20,8 @@ import time
 
 # filtering the constants & read csv and prepares it for the pickle format
 
-# Lever setting for local purpose
 
+# Lever setting for local purpose
 def database_pre_processing():
     # Changes to the EUcalc version
     file = 'lifestyles_floor-intensity'
@@ -200,10 +200,8 @@ def read_data(data_file, lever_setting):
     dm_population = DM_ots_fts['pop']['lfs_population_']
 
     # Industry sub-flow data
-    dm_population = DM_ots_fts['pop']['lfs_population_']
     dm_macro = DM_ots_fts['pop']['lfs_macro-scenarii_']
     dm_packaging = DM_ots_fts['paperpack']
-
 
 
     # Aggregate datamatrix by theme/flow
@@ -222,8 +220,6 @@ def read_data(data_file, lever_setting):
         'population': dm_population,
         'paperpack': dm_packaging
     }
-
-
 
     cdm_const = DM_lifestyles['constant']
     return DM_food, DM_industry, cdm_const
@@ -299,8 +295,7 @@ def appliances_workflow(DM_appliance, cdm_const):
     idx_h = dm_household.idx
     ay_appliance_household = dm_household.array[:, :, idx_h['lfs_households'], np.newaxis] \
                              * dm_appliance.array[:, :, idx_a['lfs_appliance-own'], :]
-    dm_appliance.add(ay_appliance_household, dim='Variables', col_label='lfs_households-appliance-ownership',
-                         unit='#')
+    dm_appliance.add(ay_appliance_household, dim='Variables', col_label='lfs_households-appliance-ownership', unit='#')
 
     # Phone use
     idx_const = cdm_const.idx
@@ -400,6 +395,7 @@ def industry_workflow(DM_industry, cdm_const):
 
     return dm_packaging
 
+
 # Calculation tree - Building (Functions)
 def building_workflow(DM_building):
 
@@ -423,6 +419,7 @@ def building_workflow(DM_building):
 
     return DM_building_out
 
+
 def lfs_agriculture_interface(dm_agriculture):
 
     cat_lfs = ['afats', 'beer', 'bev-alc', 'bev-fer', 'bov', 'cereals', 'coffee', 'dfish', 'egg', 'ffish', 'fruits', \
@@ -440,6 +437,7 @@ def lfs_agriculture_interface(dm_agriculture):
 
     return dm_agriculture
 
+
 def lifestyles_TPE_interface(dm_diet):
 
     df_diet = dm_diet.write_df()
@@ -455,6 +453,7 @@ def lifestyles_TPE_interface(dm_diet):
     #df = pd.concat([df, df_use.drop(columns=['Country', 'Years'])], axis=1)
 
     return df_diet
+
 
 # CORE module
 def lifestyles(lever_setting, years_setting, interface=Interface()):
@@ -491,7 +490,7 @@ def local_lifestyles_run():
     # Initiate the year & lever setting
     years_setting, lever_setting = init_years_lever()
 
-    global_vars = {'geoscale': '.*'}
+    global_vars = {'geoscale': 'Switzerland|Vaud'}
     filter_geoscale(global_vars)
 
     lifestyles(lever_setting, years_setting)
@@ -499,5 +498,5 @@ def local_lifestyles_run():
 
 # Update/Create the Pickle
 #database_from_csv_to_datamatrix()  # un-comment to update
-# local_lifestyles_run()  # to un-comment to run in local
+#local_lifestyles_run()  # to un-comment to run in local
 
