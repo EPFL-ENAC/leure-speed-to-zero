@@ -376,6 +376,7 @@ def get_passenger_transport_demand_SweetCROSS(file_url, local_filename, years_ot
     return dm_demand_ots, dict_demand_fts
 
 
+
 def get_public_transport_data(file_url, local_filename, years_ots):
 
     def get_excel_file_sheets(file_url, local_filename):
@@ -1395,12 +1396,13 @@ def replace_LDV_efficiency_with_new(dm_veh_eff, dm_veh_new_eff, dm_veh_eff_LDV, 
     DM = {'veh-eff': dm_veh_eff, 'veh-eff-new': dm_veh_new_eff}
     for key, dm in DM.items():
         dm = dm.flatten()
-        dm_tmp = dm.filter({'Categories1': ['2W_PHEV']})
-        dm.rename_col('2W_PHEV', '2W_PHEV-diesel', dim='Categories1')
-        dm_tmp.rename_col('2W_PHEV', '2W_PHEV-gasoline', dim='Categories1')
-        dm.append(dm_tmp, dim='Categories1')
-        dm.deepen()
-        DM[key] = dm
+        if '2W_PHEV' in dm.col_labels['Categories1']:
+            dm_tmp = dm.filter({'Categories1': ['2W_PHEV']})
+            dm.rename_col('2W_PHEV', '2W_PHEV-diesel', dim='Categories1')
+            dm_tmp.rename_col('2W_PHEV', '2W_PHEV-gasoline', dim='Categories1')
+            dm.append(dm_tmp, dim='Categories1')
+            dm.deepen()
+            DM[key] = dm
 
     dm_veh_eff = DM['veh-eff']
     dm_veh_new_eff = DM['veh-eff-new']
@@ -1939,11 +1941,21 @@ for lev in range(4):
 # CONSTANT
 DM_transport_new['constant'] = cdm_emissions_factors
 
-# Lifestyles data:
-dict_pop_ots, dict_pop_fts = read_database_to_dm('lifestyles_population.csv', baseyear=years_ots[-1], num_cat=0,
-                                                 filter={'geoscale': ['Vaud', 'Switzerland']})
-DM_transport_new['ots']['pop'] = dict_pop_ots['pop']
-DM_transport_new['fts']['pop'] = dict_pop_fts['pop']
+# LIFESTYLES - TRANSPORT  INTERFACE
+file = '../../../data/datamatrix/lifestyles.pickle'
+with open(file, 'rb') as handle:
+    DM_lifestyles = pickle.load(handle)
+
+dm_pop_ots = DM_lifestyles['ots']['pop']['lfs_population_'].copy()
+dm_pop_fts = DM_lifestyles['fts']['pop']['lfs_population_'][1]
+
+dm_pop_ots.append(dm_pop_fts, dim='Years')
+
+DM_interface_lfs_to_tra = {'pop': dm_pop_ots}
+
+file = '../../../data/interface/lifestyles_to_transport.pickle'
+with open(file, 'wb') as handle:
+    pickle.dump(DM_interface_lfs_to_tra, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 # tot pkm-cap
 dm_pkm_cap_tot = dm_pkm_cap.group_all(dim='Categories1', inplace=False)
@@ -2009,6 +2021,7 @@ for lev in [1, 2, 3, 4]:
     linear_fitting(dm_modal_all, years_ots+years_fts)
     dm_modal_all.normalise('Categories1')
     DM_transport_new['fts']['freight_modal-share'][lev] = dm_modal_all.filter({'Years': years_fts})
+
 
 
 current_file_directory = os.path.dirname(os.path.abspath(__file__))
