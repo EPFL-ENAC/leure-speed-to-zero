@@ -112,7 +112,7 @@ def climate_power_interface(DM_ots_fts):
     return dm
 
 # CORE module
-def climate(lever_setting, interface = Interface(), calibration = False):
+def climate(lever_setting, years_setting, interface = Interface(), calibration = False):
     
     # climate data file
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -146,7 +146,7 @@ def local_climate_run():
     filter_geoscale(global_vars)
 
     # run
-    results_run = climate(lever_setting)
+    results_run = climate(lever_setting, years_setting)
 
     return results_run
 
