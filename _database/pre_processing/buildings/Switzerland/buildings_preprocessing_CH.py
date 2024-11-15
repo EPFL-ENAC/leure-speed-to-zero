@@ -17,7 +17,48 @@ from _database.pre_processing.WorldBank_data_extract import get_WB_data
 import os
 
 
-def compute_new_area_transformed(dm_floor_area, years_ots, cat_map):
+def df_excel_to_dm(df, names_dict, var_name, unit, num_cat, keep_first=False, country='Switzerland'):
+    # df from excel to dm
+    # Remove nans and empty columns/rows
+    if np.nan in df.columns:
+        df.drop(columns=np.nan, inplace=True)
+    # Change headers
+    df.rename(columns={df.columns[0]: 'Variables'}, inplace=True)
+    df.set_index('Variables', inplace=True)
+    df.dropna(axis=0, how='all', inplace=True)
+    df.dropna(axis=1, how='all', inplace=True)
+    # Filter rows that contain at least one number (integer or float)
+    df = df[df.apply(lambda row: row.map(pd.api.types.is_number), axis=1).any(axis=1)]
+    df_clean = df.loc[:, df.apply(lambda col: col.map(pd.api.types.is_number)).any(axis=0)].copy()
+    # Extract only the data we are interested in:
+    df_filter = df_clean.loc[names_dict.keys()].copy()
+    df_filter = df_filter.apply(lambda col: pd.to_numeric(col, errors='coerce'))
+    #df_filter = df_filter.applymap(lambda x: pd.to_numeric(x, errors='coerce'))
+    df_filter.reset_index(inplace=True)
+    # Keep only first 10 caracters
+    df_filter['Variables'] = df_filter['Variables'].replace(names_dict)
+    if keep_first:
+        df_filter = df_filter.drop_duplicates(subset=['Variables'], keep='first')
+    df_filter = df_filter.groupby(['Variables']).sum()
+    df_filter.reset_index(inplace=True)
+
+    # Pivot the dataframe
+    df_filter['Country'] = country
+    df_T = pd.melt(df_filter, id_vars=['Variables', 'Country'], var_name='Years', value_name='values')
+    df_pivot = df_T.pivot_table(index=['Country', 'Years'], columns=['Variables'], values='values', aggfunc='sum')
+    df_pivot = df_pivot.add_suffix('[' + unit + ']')
+    df_pivot = df_pivot.add_prefix(var_name + '_')
+    df_pivot.reset_index(inplace=True)
+
+    # Drop non numeric values in Years col
+    df_pivot['Years'] = pd.to_numeric(df_pivot['Years'], errors='coerce')
+    df_pivot = df_pivot.dropna(subset=['Years'])
+
+    dm = DataMatrix.create_from_df(df_pivot, num_cat=num_cat)
+    return dm
+
+
+def compute_new_area_transformed(dm_floor_area, years_ots, cat_map_sfh, cat_map_mfh):
 
     dm = dm_floor_area.copy()
     # removing 2010 value because it is off
@@ -65,7 +106,13 @@ def compute_new_area_transformed(dm_floor_area, years_ots, cat_map):
             if yr in dm.col_labels['Years']:
                 dm.array[:, idx[yr], :, :, idx[period]] = 0
 
-    dm.groupby(cat_map, dim='Categories2', inplace=True)
+    dm_sfh = dm.filter({'Categories1': ['single-family-households']})
+    dm_sfh.groupby(cat_map_sfh, dim='Categories2', inplace=True)
+    dm_mfh = dm.filter({'Categories1': ['multi-family-households']})
+    dm_mfh.groupby(cat_map_mfh, dim='Categories2', inplace=True)
+
+    dm = dm_mfh
+    dm.append(dm_sfh, dim='Categories1')
 
     return dm
 
@@ -103,7 +150,7 @@ def compute_avg_floor_area(dm_floor_area, years_ots):
     return dm
 
 
-def extrapolate_energy_categories_to_missing_years(dm_floor_area, cat_map):
+def extrapolate_energy_categories_to_missing_years(dm_floor_area, cat_map_sfh, cat_map_mfh):
 
     dm = dm_floor_area.copy()
     dm.filter({'Variables': ['bld_floor-area_stock']}, inplace=True)
@@ -142,7 +189,13 @@ def extrapolate_energy_categories_to_missing_years(dm_floor_area, cat_map):
 
     dm.fill_nans(dim_to_interp='Years')
 
-    dm.groupby(cat_map, dim='Categories2', inplace=True)
+    dm_sfh = dm.filter({'Categories1': ['single-family-households']})
+    dm_sfh.groupby(cat_map_sfh, dim='Categories2', inplace=True)
+    dm_mfh = dm.filter({'Categories1': ['multi-family-households']})
+    dm_mfh.groupby(cat_map_mfh, dim='Categories2', inplace=True)
+
+    dm = dm_mfh
+    dm.append(dm_sfh, dim='Categories1')
     dm.normalise(dim='Categories2', inplace=True, keep_original=True)
     dm.drop(col_label=['bld_floor-area_stock'], dim='Variables')
 
@@ -168,7 +221,7 @@ def extrapolate_floor_area_to_missing_years(dm):
 
     return dm
 
-def extract_bld_floor_area_stock(table_id, file, dm_pop, years_ots, cat_map):
+def extract_bld_floor_area_stock(table_id, file, dm_pop, years_ots, cat_map_sfh, cat_map_mfh):
 
     try:
         with open(file, 'rb') as handle:
@@ -221,7 +274,7 @@ def extract_bld_floor_area_stock(table_id, file, dm_pop, years_ots, cat_map):
     dm_floor_area.change_unit('bld_floor-area_stock', 1, 'number', 'm2')
 
     #### Section to look into what happens to old buildings in recent years: i.e. renovation by going from mfh to sfh
-    dm_area_transformed = compute_new_area_transformed(dm_floor_area, years_ots, cat_map)
+    dm_area_transformed = compute_new_area_transformed(dm_floor_area, years_ots, cat_map_sfh, cat_map_mfh)
 
     dm_floor_area.append(dm_num_bld, dim='Variables')
     dm_floor_area.operation('bld_floor-area_stock', '/', 'bld_stock-number-bld',
@@ -233,7 +286,7 @@ def extract_bld_floor_area_stock(table_id, file, dm_pop, years_ots, cat_map):
 
     # Drop split by construction year for floor-area stock
     # Add missing years
-    dm_energy_cat = extrapolate_energy_categories_to_missing_years(dm_floor_area, cat_map)
+    dm_energy_cat = extrapolate_energy_categories_to_missing_years(dm_floor_area, cat_map_sfh, cat_map_mfh)
     dm_energy_cat.append(dm_area_transformed, dim='Variables')
 
     dm_floor_area = extrapolate_floor_area_to_missing_years(dm_floor_area)
@@ -543,6 +596,7 @@ def extract_renovation_1990_2000(table_id, file, share_thermal):
     except OSError:
         structure, title = get_data_api_CH(table_id, mode='example', language='fr')
 
+        dm_renovation = None
         for e in structure['Epoque de construction']:
             filter = {'Canton': ['Suisse', 'Vaud'],
                       'Type de bâtiment': structure['Type de bâtiment'],
@@ -561,7 +615,8 @@ def extract_renovation_1990_2000(table_id, file, share_thermal):
             unit = ['number']
             dm_renovation_e = get_data_api_CH(table_id, mode='extract', filter=filter, mapping_dims=mapping, units=unit,
                                             language='fr')
-            if 'dm_renovation' in locals():
+
+            if dm_renovation is not None:
                 dm_renovation.array = dm_renovation.array + dm_renovation_e.array
             else:
                 dm_renovation = dm_renovation_e.groupby({'bld_nb-bld-renovated': '.*'}, regex=True, inplace=False, dim='Variables')
@@ -834,51 +889,197 @@ def compute_building_mix(dm_all):
 ######################
 ### HOUSEHOLD-SIZE ###
 ######################
-def extract_lfs_household_size(years_ots, table_id):
-    structure, title = get_data_api_CH(table_id, mode='example')
-    # Extract buildings floor area
-    filter = {'Year': structure['Year'],
-              'Canton (-) / District (>>) / Commune (......)': ['Schweiz / Suisse / Svizzera / Switzerland', '- Vaud'],
-              'Household size': ['1 person', '2 persons', '3 persons', '4 persons', '5 persons', '6 persons or more']}
-    mapping_dim = {'Country': 'Canton (-) / District (>>) / Commune (......)', 'Years': 'Year',
-                   'Variables': 'Household size'}
-    unit_all = ['people'] * len(filter['Household size'])
-    # Get api data
-    dm_household = get_data_api_CH(table_id, mode='extract', filter=filter, mapping_dims=mapping_dim, units=unit_all)
+def extract_lfs_household_size(years_ots, table_id, file):
+    try:
+        with open(file, 'rb') as handle:
+            dm_household_size = pickle.load(handle)
+    except OSError:
+        structure, title = get_data_api_CH(table_id, mode='example')
+        # Extract buildings floor area
+        filter = {'Year': structure['Year'],
+                  'Canton (-) / District (>>) / Commune (......)': ['Schweiz / Suisse / Svizzera / Switzerland', '- Vaud'],
+                  'Household size': ['1 person', '2 persons', '3 persons', '4 persons', '5 persons', '6 persons or more']}
+        mapping_dim = {'Country': 'Canton (-) / District (>>) / Commune (......)', 'Years': 'Year',
+                       'Variables': 'Household size'}
+        unit_all = ['people'] * len(filter['Household size'])
+        # Get api data
+        dm_household = get_data_api_CH(table_id, mode='extract', filter=filter, mapping_dims=mapping_dim, units=unit_all)
 
-    dm_household.rename_col(['Schweiz / Suisse / Svizzera / Switzerland', '- Vaud'], ['Switzerland', 'Vaud'],
-                            dim='Country')
-    drop_strings = [' persons or more', ' persons', ' person']
-    for drop_str in drop_strings:
-        dm_household.rename_col_regex(drop_str, '', dim='Variables')
-    # dm_household contains the number of household per each household-size
-    # Compute the average household size by doing the weighted average
-    sizes = np.array([int(num_ppl) for num_ppl in dm_household.col_labels['Variables']])
-    arr_weighted_size = dm_household.array * sizes[np.newaxis, np.newaxis, :]
-    arr_avg_size = np.nansum(arr_weighted_size, axis=-1, keepdims=True) / np.nansum(dm_household.array, axis=-1,
-                                                                                    keepdims=True)
-    # Create new datamatrix
-    dm_household_size = DataMatrix.based_on(arr_avg_size, dm_household, change={'Variables': ['lfs_household-size']},
-                                            units={'lfs_household-size': 'people'})
-    linear_fitting(dm_household_size, years_ots)
+        dm_household.rename_col(['Schweiz / Suisse / Svizzera / Switzerland', '- Vaud'], ['Switzerland', 'Vaud'],
+                                dim='Country')
+        drop_strings = [' persons or more', ' persons', ' person']
+        for drop_str in drop_strings:
+            dm_household.rename_col_regex(drop_str, '', dim='Variables')
+        # dm_household contains the number of household per each household-size
+        # Compute the average household size by doing the weighted average
+        sizes = np.array([int(num_ppl) for num_ppl in dm_household.col_labels['Variables']])
+        arr_weighted_size = dm_household.array * sizes[np.newaxis, np.newaxis, :]
+        arr_avg_size = np.nansum(arr_weighted_size, axis=-1, keepdims=True) / np.nansum(dm_household.array, axis=-1,
+                                                                                        keepdims=True)
+        # Create new datamatrix
+        dm_household_size = DataMatrix.based_on(arr_avg_size, dm_household, change={'Variables': ['lfs_household-size']},
+                                                units={'lfs_household-size': 'people'})
+        linear_fitting(dm_household_size, years_ots)
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        f = os.path.join(current_file_directory, file)
+        with open(f, 'wb') as handle:
+            pickle.dump(dm_household_size, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
     return dm_household_size
+
+def extract_heating_technologies_old(table_id, file):
+    # Domaine de l'énergie: bâtiments selon le canton, le type de bâtiment, l'époque de construction, le type de chauffage,
+    # la production d'eau chaude, les agents énergétiques utilisés pour le chauffage et l'eau chaude, 1990 et 2000
+    try:
+        with open(file, 'rb') as handle:
+            dm_heating_old = pickle.load(handle)
+    except OSError:
+        structure, title = get_data_api_CH(table_id, mode='example', language='fr')
+        # Extract buildings floor area
+        filter = structure.copy()
+        filter['Canton'] = ['Suisse', 'Vaud']
+        mapping_dim = {'Country': 'Canton', 'Years': 'Année',
+                       'Variables': 'Epoque de construction', 'Categories1': 'Type de bâtiment',
+                       'Categories2': 'Agent énergétique pour le chauffage'}
+        dm_heating_old = None
+        tot_bld = 0
+        for t in structure['Type de chauffage']:
+            for a in structure["Agent énergétique pour l'eau chaude"]:
+                filter['Type de chauffage'] = [t]
+                filter["Agent énergétique pour l'eau chaude"] = [a]
+                unit_all = ['number'] * len(structure['Epoque de construction'])
+                dm_heating_old_t = get_data_api_CH(table_id, mode='extract', filter=filter,
+                                                mapping_dims=mapping_dim, units=unit_all, language='fr')
+                if dm_heating_old is None:
+                    dm_heating_old = dm_heating_old_t.copy()
+                else:
+                    dm_heating_old.array = dm_heating_old_t.array + dm_heating_old.array
+                partial_bld = np.nansum(dm_heating_old_t.array[0, 0, ...])
+                tot_bld = tot_bld + partial_bld
+                print(t, a, partial_bld, tot_bld)
+
+        dm_heating_old.rename_col(['Suisse'], ['Switzerland'], dim='Country')
+        dm_heating_old.groupby({'single-family-households': ['Maisons individuelles'],
+                               'multi-family-households': ['Maisons à plusieurs logements',
+                                                           "Bâtiments d'habitation avec usage annexe",
+                                                           "Bâtiments partiellement à usage d'habitation"]},
+                                dim='Categories1', inplace=True)
+        dm_heating_old.groupby({'bld_heating-mix': '.*'}, dim='Variables', regex=True, inplace=True)
+
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        f = os.path.join(current_file_directory, file)
+        with open(f, 'wb') as handle:
+            pickle.dump(dm_heating_old, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    dm_heating_old.groupby({'other': ['Autre agent énergétique (chauf.)', 'Sans chauffage']},
+                           dim='Categories2', inplace=True)
+    dm_heating_old.rename_col(['Mazout (chauf.)', 'Bois (chauf.)', 'Pompe à chaleur (chauf.)',
+                               'Electricité (chauf.)', 'Gaz (chauf.)', 'Chaleur à distance (chauf.)',
+                               'Charbon (chauf.)', 'Capteur solaire (chauf.)'],
+                              ['heating-oil', 'wood', 'heat-pump', 'electricity', 'gas', 'district-heating', 'coal', 'solar'],
+                              dim='Categories2')
+
+    return dm_heating_old
+
+
+
+def extract_heating_technologies(table_id, file):
+    try:
+        with open(file, 'rb') as handle:
+            dm_heating = pickle.load(handle)
+    except OSError:
+        structure, title = get_data_api_CH(table_id, mode='example', language='fr')
+        # Extract buildings floor area
+        filter = {'Année': structure['Année'],
+                  'Canton': ['Suisse', 'Vaud'],
+                  "Source d'énergie du chauffage": structure["Source d'énergie du chauffage"],
+                  "Source d'énergie de l'eau chaude": structure["Source d'énergie de l'eau chaude"],
+                  'Époque de construction': structure['Époque de construction'],
+                  'Catégorie de bâtiment': structure['Catégorie de bâtiment']}
+        mapping_dim = {'Country': 'Canton', 'Years': 'Année',
+                       'Variables': 'Époque de construction', 'Categories1': 'Catégorie de bâtiment',
+                       'Categories2': "Source d'énergie du chauffage"}
+        unit_all = ['number'] * len(structure['Époque de construction'])
+        # Get api data
+        dm_heating = get_data_api_CH(table_id, mode='extract', filter=filter,
+                                        mapping_dims=mapping_dim, units=unit_all, language='fr')
+        dm_heating.rename_col(['Suisse'], ['Switzerland'], dim='Country')
+        dm_heating.groupby({'single-family-households': ['Maisons individuelles'],
+                               'multi-family-households': ['Maisons à plusieurs logements',
+                                                           "Bâtiments d'habitation avec usage annexe",
+                                                           "Bâtiments partiellement à usage d'habitation"]},
+                              dim='Categories1', inplace=True)
+
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        f = os.path.join(current_file_directory, file)
+        with open(f, 'wb') as handle:
+            pickle.dump(dm_heating, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    dm_heating.groupby({'bld_heating-mix': '.*'}, dim='Variables', regex=True, inplace=True)
+    dm_heating.groupby({'Other': ['Autre', 'Aucune']}, dim='Categories2', inplace=True)
+    dm_heating.rename_col(
+        ['Bois', 'Chaleur produite à distance', 'Electricité', 'Gaz', 'Mazout', 'Other', 'Pompe à chaleur', 'Soleil (thermique)'],
+        ['wood', 'district-heating', 'electricity', 'gas', 'heating-oil', 'other', 'heat-pump', 'solar'], dim='Categories2')
+
+    return dm_heating
+
+
+def computer_heating_tech_mix_fts(dm_heating_tech):
+    # dm_heating_tech.add(np.nan, dim='Years', dummy=True, col_label=years_fts)
+    dm_heating_tech_ots = dm_heating_tech.filter({'Years': years_ots})
+    linear_fitting(dm_heating_tech, years_fts, based_on=[2021, 2022, 2023])
+    dm_heating_tech.array = np.maximum(dm_heating_tech.array, 0)
+    dm_heating_tech.normalise('Categories2')
+    dm_heating_tech_fts = dm_heating_tech.filter({'Years': [years_ots[-1]] + years_fts})
+    for i in range(3):
+        window_size = 3  # Change window size to control the smoothing effect
+        data_smooth = moving_average(dm_heating_tech_fts.array, window_size,
+                                     axis=dm_heating_tech.dim_labels.index('Years'))
+        dm_heating_tech_fts.array[:, 1:-1, ...] = data_smooth
+    idx = dm_heating_tech_fts.idx
+    dm_heating_tech_fts.array[:, idx[2025], ...] = np.nan
+    dm_heating_tech_fts.fill_nans(dim_to_interp='Years')
+    dm_heating_tech_fts.filter({'Years': years_fts}, inplace=True)
+    dm_heating_tech_fts.normalise('Categories2')
+    #dm_heating_tech_ots.append(dm_heating_tech_fts, dim='Years')
+    #dm_heating_tech_ots.flatten().datamatrix_plot()
+    return dm_heating_tech_fts
+
+
+def calculate_heating_eff_fts(dm_heating_eff, years_fts, maximum_eff):
+    dm_heat_pump = dm_heating_eff.filter({'Categories1': ['heat-pump']})
+    dm_heating_eff.drop(dim='Categories1', col_label='heat-pump')
+    linear_fitting(dm_heating_eff, years_fts)
+    dm_heating_eff.array = np.minimum(dm_heating_eff.array, maximum_eff)
+    linear_fitting(dm_heat_pump, years_fts)
+    dm_heating_eff.append(dm_heat_pump, dim='Categories1')
+    dm_heating_eff_fts = dm_heating_eff.filter({'Years': years_fts})
+
+    return dm_heating_eff_fts
 
 
 # Stock
 years_ots = create_years_list(1990, 2023, 1)
+years_fts = create_years_list(2025, 2050, 5)
 
 dict_lfs_ots, dict_lfs_fts = read_database_to_dm('lifestyles_population.csv', filter={'geoscale': ['Vaud', 'Switzerland']},
                                                  baseyear=years_ots[-1], num_cat=0, level='all')
 dm_pop = dict_lfs_ots['pop'].filter({'Variables': ['lfs_population_total']}, inplace=False)
 dm_pop.sort('Country')
 
-dm_lfs_household_size = extract_lfs_household_size(years_ots, table_id='px-x-0102020000_402')
+filename = 'data/bld_household_size.pickle'
+dm_lfs_household_size = extract_lfs_household_size(years_ots, table_id='px-x-0102020000_402', file=filename)
 
-construction_period_envelope_cat = {'F': ['Avant 1919', '1919-1945', '1946-1960', '1961-1970'],
-                                    'E': ['1971-1980'],
-                                    'D': ['1981-1990', '1991-2000'],
-                                    'C': ['2001-2005', '2006-2010'],
-                                    'B': ['2011-2015', '2016-2020', '2021-2023']}
+construction_period_envelope_cat_sfh = {'F': ['Avant 1919', '1919-1945', '1946-1960', '1961-1970'],
+                                        'E': ['1971-1980'],
+                                        'D': ['1981-1990', '1991-2000'],
+                                        'C': ['2001-2005', '2006-2010'],
+                                        'B': ['2011-2015', '2016-2020', '2021-2023']}
+construction_period_envelope_cat_mfh = {'F': ['Avant 1919', '1919-1945', '1946-1960', '1961-1970', '1971-1980'],
+                                        'E': ['1981-1990'],
+                                        'D': ['1991-2000'],
+                                        'C': ['2001-2005', '2006-2010'],
+                                        'B': ['2011-2015', '2016-2020', '2021-2023']}
 envelope_cat_new = {'D': (1990, 2000), 'C': (2001, 2010), 'B': (2011, 2023)}
 
 # Floor area stock
@@ -888,7 +1089,8 @@ envelope_cat_new = {'D': (1990, 2000), 'C': (2001, 2010), 'B': (2011, 2023)}
 table_id = 'px-x-0902020200_103'
 file = 'data/bld_floor-area_stock.pickle'
 dm_bld_area_stock, dm_energy_cat = extract_bld_floor_area_stock(table_id, file, dm_pop,
-                                                                years_ots, construction_period_envelope_cat)
+                                                                years_ots, construction_period_envelope_cat_sfh,
+                                                                construction_period_envelope_cat_mfh)
 
 # New residential buildings by sfh, mfh
 # Nouveaux logements selon la grande région, le canton, la commune et le type de bâtiment, depuis 2013
@@ -980,15 +1182,31 @@ dm_renovation_old = extract_renovation_1990_2000(table_id, file, share_thermal_i
 # by Alessandro Pongelli et al.
 # U-value is computed as the average of the house element u-value (roof, wall, windows, ..) weighted by their area
 # U-value in: W/m^2 K
-envelope_cat_u_value = {'F': 0.82, 'E': 0.69, 'D': 0.53, 'C': 0.41, 'B': 0.25}
-cdm_u_value = ConstantDataMatrix(col_labels={'Variables': ['bld_u-value'], 'Categories1': ['B', 'C', 'D', 'E', 'F']},
+# Single-family-households
+envelope_cat_u_value = {'single-family-households':
+                            {'F': 0.82, 'E': 0.69, 'D': 0.53, 'C': 0.41, 'B': 0.25},
+                        'multi-family-households':
+                            {'F': 0.93, 'E': 0.70, 'D': 0.63, 'C': 0.48, 'B': 0.29}}
+cdm_u_value = ConstantDataMatrix(col_labels={'Variables': ['bld_u-value'],
+                                             'Categories1': ['multi-family-households', 'single-family-households'],
+                                             'Categories2': ['B', 'C', 'D', 'E', 'F']},
                                  units={'bld_u-value': 'W/m2K'})
-arr = np.zeros((len(cdm_u_value.col_labels['Variables']), len(cdm_u_value.col_labels['Categories1'])))
+arr = np.zeros((len(cdm_u_value.col_labels['Variables']), len(cdm_u_value.col_labels['Categories1']), len(cdm_u_value.col_labels['Categories2'])))
 cdm_u_value.array = arr
 idx = cdm_u_value.idx
-for cat, value in envelope_cat_u_value.items():
-    cdm_u_value.array[idx['bld_u-value'], idx[cat]] = value
+for bld, dict_val in envelope_cat_u_value.items():
+    for cat, val in dict_val.items():
+        cdm_u_value.array[idx['bld_u-value'], idx[bld], idx[cat]] = val
 
+# From the same dataset we obtain also the floor to surface area
+surface_to_floorarea = {'single-family-households': 2.0, 'multi-family-households': 1.3}
+cdm_s2f = ConstantDataMatrix(col_labels={'Variables': ['bld_surface-to-floorarea'],
+                                        'Categories1': ['multi-family-households', 'single-family-households']})
+arr = np.zeros((len(cdm_s2f.col_labels['Variables']), len(cdm_s2f.col_labels['Categories1'])))
+cdm_s2f.array = arr
+idx = cdm_s2f.idx
+for cat, val in surface_to_floorarea.items():
+    cdm_s2f.array[idx['bld_surface-to-floorarea'], idx[cat]] = val
 
 # Energy heating kWh/m^2
 envelope_cat_heating_demand = {'F': 175, 'E': 147, 'D': 92, 'C': 66, 'B': 19}
@@ -1010,7 +1228,7 @@ energy_saving_TWh = {2022: 2.2, 2021: 2.2, 2020: 2.2, 2019: 2.6, 2018: 2.5, 2017
 # The current park is 137 + 337 = 474 million m2
 # If I want to fix the renovation at 1%, then you renovate 4.7 million m2, in order to save 2.2 TWh,
 # you need to save: 470 kWh/m2
-file = '../../../data/datamatrix/buildings.pickle'
+file = '../../../data/datamatrix/buildings_old.pickle'
 with open(file, 'rb') as handle:
     DM_buildings_old = pickle.load(handle)
 
@@ -1020,12 +1238,92 @@ with open(file, 'rb') as handle:
 
 DM_buildings = {'ots': dict(), 'fts': dict(), 'fxa': dict(), 'constant': dict()}
 
+
+##########   HEATING TECHNOLOGY     #########
+
+# You need to extract the heating technology (you only have the last 3 years
+# but you have the energy mix for the historical period)
+# https://www.pxweb.bfs.admin.ch/pxweb/fr/px-x-0902010000_102/-/px-x-0902010000_102.px/
+# Use JRC data
+
+table_id = 'px-x-0902010000_102'
+file = 'data/bld_heating_technology.pickle'
+dm_heating_tech = extract_heating_technologies(table_id, file)
+if 'gaz' in dm_heating_tech.col_labels['Categories2']:
+    dm_heating_tech.rename_col('gaz', 'gas', 'Categories2')
+dm_heating_tech.add(0, dummy=True, dim='Categories2', col_label='coal')
+
+table_id = 'px-x-0902020100_112'
+file = 'data//bld_heating_technology_1990-2000.pickle'
+dm_heating_tech_old = extract_heating_technologies_old(table_id, file)
+
+dm_heating_tech.append(dm_heating_tech_old, dim='Years')
+dm_heating_tech.sort('Years')
+
+dm_heating_tech.normalise(dim='Categories2')
+years_missing = list(set(years_ots)-set(dm_heating_tech.col_labels['Years']))
+dm_heating_tech.add(np.nan, dim='Years', col_label=years_missing, dummy=True)
+dm_heating_tech.sort('Years')
+dm_heating_tech.fill_nans(dim_to_interp='Years')
+dm_heating_tech.normalise(dim='Categories2')
+
+#######      HEATING EFFICIENCY     ###########
+file = '../Europe/data/JRC-IDEES-2021_Residential_EU27.xlsx'
+df = pd.read_excel(file, sheet_name='RES_hh_eff')
+df = df[0:13].copy()
+names_map = {'Ratio of energy service to energy consumption': 'remove', 'Space heating': 'other', 'Solids': 'coal',
+             'Liquified petroleum gas (LPG)': 'remove', 'Diesel oil': 'heating-oil', 'Natural gas': 'gas',
+             'Biomass': 'wood', 'Geothermal': 'geothermal', 'Distributed heat': 'district-heating',
+             'Advanced electric heating': 'heat-pump', 'Conventional electric heating': 'electricity',
+             'Electricity in circulation': 'remove'}
+dm_heating_eff = df_excel_to_dm(df, names_map, var_name='bld_heating-efficiency', unit='%', num_cat=1)
+dm_heating_eff.drop(col_label='remove', dim='Categories1')
+dm_heating_eff.add(0.8, dim='Categories1', col_label='solar', dummy=True)
+
+
+#########################################
+#####   INTERFACE: LFS to BLD     #######
+#########################################
+file = '../../../data/datamatrix/lifestyles.pickle'
+with open(file, 'rb') as handle:
+    DM_lifestyles = pickle.load(handle)
+
+dm_pop_ots = DM_lifestyles['ots']['pop']['lfs_population_'].copy()
+dm_pop_fts = DM_lifestyles['fts']['pop']['lfs_population_'][1]
+dm_pop_ots.append(dm_pop_fts, dim='Years')
+DM_interface_lfs_to_bld = {'pop': dm_pop_ots}
+
+file = '../../../data/interface/lifestyles_to_buildings.pickle'
+with open(file, 'wb') as handle:
+    pickle.dump(DM_interface_lfs_to_bld, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+#########################################
+#####   INTERFACE: CLM to BLD     #######
+#########################################
+file = '../../../data/datamatrix/climate.pickle'
+with open(file, 'rb') as handle:
+    DM_clm = pickle.load(handle)
+
+dm_clm_ots = DM_clm['ots']['temp']['bld_climate-impact-space'].copy()
+dm_clm_fts = DM_clm['fts']['temp']['bld_climate-impact-space'][1]
+dm_clm_ots.append(dm_clm_fts, dim='Years')
+DM_interface_clm_to_bld = {'cdd-hdd': dm_clm_ots}
+
+file = '../../../data/interface/climate_to_buildings.pickle'
+with open(file, 'wb') as handle:
+    pickle.dump(DM_interface_clm_to_bld, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
 #########################################
 #####  FLOOR INTENSITY - SPACE/CAP  #####
 #########################################
 dm_space_cap = recompute_floor_area_per_capita(dm_all, dm_pop)
 dm_space_cap.append(dm_lfs_household_size, dim='Variables')
-DM_buildings['ots']['floor-intensity'] = dm_space_cap
+DM_buildings['ots']['floor-intensity'] = dm_space_cap.copy()
+linear_fitting(dm_space_cap, years_fts)
+DM_buildings['fts']['floor-intensity'] = dict()
+for lev in range(4):
+    lev = lev + 1
+    DM_buildings['fts']['floor-intensity'][lev] = dm_space_cap.filter({'Years': years_fts})
 
 #########################################
 #####        BUILDING MIX          ######
@@ -1033,31 +1331,101 @@ DM_buildings['ots']['floor-intensity'] = dm_space_cap
 # Used to go from m2/cap to m2 of floor area
 # building-mix_stock -> fxa, building-mix_new -> fts
 dm_building_mix = compute_building_mix(dm_all)
+dm_building_mix.add(np.nan, dummy=True, dim='Years', col_label=years_fts)
 DM_buildings['fxa']['bld_type'] = dm_building_mix.filter({'Variables': ['bld_building-mix_stock']})
-DM_buildings['ots']['building-renovation-rate'] = {'bld_building-mix': dm_building_mix.filter({'Variables': ['bld_building-mix_new']})}
-
+DM_buildings['ots']['building-renovation-rate'] = dict()
+dm_building_new = dm_building_mix.filter({'Variables': ['bld_building-mix_new']})
+DM_buildings['ots']['building-renovation-rate']['bld_building-mix'] = dm_building_new.filter({'Years': years_ots})
+# FTS
+dm_building_new.fill_nans(dim_to_interp='Years')
+DM_buildings['fts']['building-renovation-rate'] = dict()
+DM_buildings['fts']['building-renovation-rate']['bld_building-mix'] = dict()
+for lev in range(4):
+    lev = lev + 1
+    DM_buildings['fts']['building-renovation-rate']['bld_building-mix'][lev] = dm_building_new.filter({'Years': years_fts})
 
 #########################################
 #####         RENOVATION           ######
 #########################################
 dm_rr = dm_renovation.filter({'Variables': ['bld_renovation-rate']})
-DM_buildings['ots']['building-renovation-rate'] = {'bld_renovation-rate': dm_rr}
-DM_buildings['ots']['building-renovation-rate'] = {'bld_renovation-redistribution': dm_renov_distr}
-
+DM_buildings['ots']['building-renovation-rate']['bld_renovation-rate'] = dm_rr.copy()
+# FTS
+DM_buildings['fts']['building-renovation-rate']['bld_renovation-rate'] = dict()
+dm_rr.add(np.nan, dim='Years', dummy=True, col_label=years_fts)
+dm_rr.fill_nans(dim_to_interp='Years')
+for lev in range(4):
+    lev = lev + 1
+    DM_buildings['fts']['building-renovation-rate']['bld_renovation-rate'][lev] = dm_rr.filter({'Years': years_fts})
+##
+DM_buildings['ots']['building-renovation-rate']['bld_renovation-redistrib   ution'] = dm_renov_distr.copy()
+# FTS
+DM_buildings['fts']['building-renovation-rate']['bld_renovation-redistribution'] = dict()
+dm_renov_distr.add(np.nan, dim='Years', dummy=True, col_label=years_fts)
+dm_renov_distr.fill_nans(dim_to_interp='Years')
+for lev in range(4):
+    lev = lev + 1
+    DM_buildings['fts']['building-renovation-rate']['bld_renovation-redistribution'][lev] = \
+        dm_renov_distr.filter({'Years': years_fts})
 
 #########################################
 #####         DEMOLITION          #######
 #########################################
 dm_demolition_rate = dm_all.filter({'Variables': ['bld_demolition-rate']})
-DM_buildings['ots']['building-renovation-rate'] = {'bld_demolition-rate': dm_demolition_rate}
-
+DM_buildings['ots']['building-renovation-rate']['bld_demolition-rate'] = dm_demolition_rate.copy()
+idx = dm_demolition_rate.idx
+idx_yrs = [idx[yr] for yr in create_years_list(2012, 2023, 1)]
+val_mean = np.mean(dm_demolition_rate.array[:, idx_yrs, ...], axis=1)
+dm_demolition_rate.add(np.nan, dim='Years', dummy=True, col_label=years_fts)
+for yr in years_fts:
+    dm_demolition_rate.array[:, idx[yr], ...] = val_mean
+# FTS
+DM_buildings['fts']['building-renovation-rate']['bld_demolition-rate'] = dict()
+for lev in range(4):
+    lev = lev + 1
+    DM_buildings['fts']['building-renovation-rate']['bld_demolition-rate'][lev] = \
+        dm_demolition_rate.filter({'Years': years_fts})
 
 #########################################
 #####          U-VALUE            #######
 #########################################
 DM_buildings['constant']['u-value'] = cdm_u_value
 
+#########################################
+#####       SURFACE-2-FLOOR       #######
+#########################################
+DM_buildings['constant']['surface-to-floorarea'] = cdm_s2f
 
+###########################################
+#####    HEATING TECHNOLOGY MIX     #######
+###########################################
+DM_buildings['ots']['heating-technology-fuel'] = dict()
+if 'gaz' in dm_heating_tech.col_labels['Categories2']:
+    dm_heating_tech.rename_col('gaz', 'gas', 'Categories2')
+DM_buildings['ots']['heating-technology-fuel']['bld_heating-technology'] = dm_heating_tech.copy()
+dm_heating_tech_fts = computer_heating_tech_mix_fts(dm_heating_tech)
+DM_buildings['fts']['heating-technology-fuel'] = dict()
+DM_buildings['fts']['heating-technology-fuel']['bld_heating-technology'] = dict()
+for lev in range(4):
+    lev = lev + 1
+    DM_buildings['fts']['heating-technology-fuel']['bld_heating-technology'][lev] = dm_heating_tech_fts
+
+############################################
+######       HEATING EFFICIENCY       ######
+############################################
+dm_heating_eff.filter({'Categories1': dm_heating_tech.col_labels['Categories2']}, inplace=True)
+DM_buildings['ots']['heating-efficiency'] = dm_heating_eff.copy()
+dm_heating_eff_fts = calculate_heating_eff_fts(dm_heating_eff, years_fts, maximum_eff=0.98)
+DM_buildings['fts']['heating-efficiency'] = dict()
+for lev in range(4):
+    lev = lev + 1
+    DM_buildings['fts']['heating-efficiency'][lev] = dm_heating_eff_fts
+
+file = '../../../data/datamatrix/buildings.pickle'
+with open(file, 'wb') as handle:
+    pickle.dump(DM_buildings, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+# dm_heating_eff.filter({'Years': years_ots}, inplace=True)
+print('Hello')
 
 ## I need to think about how things work. Say we are in 2023. And I need to predict stuff for 2024.
 # I need to know how many m2 are needed in 2024. Then I look at 2023 and I know the stock split in 2023.
