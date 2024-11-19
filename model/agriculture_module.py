@@ -132,6 +132,15 @@ def database_from_csv_to_datamatrix():
 
     # CalibrationFactorsToDatamatrix
     # Data - Fixed assumptions
+    file = 'lifestyles_calibration-factors'
+    lever = 'none'
+    # Data - Fixed assumptions - Calibration factors - Lifestyle
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_lfs_food-wastes|caf_lfs_diet'})
+    dm_caf_food = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['caf_food'] = dm_caf_food
+
+
+    # Data - Fixed assumptions
     file = 'agriculture_calibration-factors'
     lever = 'none'
     # Renaming to correct format : Calibration factors - Livestock domestic production
@@ -161,6 +170,8 @@ def database_from_csv_to_datamatrix():
     #edit_database(file, lever, column='eucalc-name', mode='rename', pattern={'bioenergy-liquid_': 'bioenergy-liquid-',
     #                                                                        'bioenergy-gas_':'bioenergy-gas-'})
     #carefule creates bugs do not use edit_database(file, lever, column='eucalc-name', mode='rename', pattern={'caf_agr_emissions-': 'caf_agr_emissions_'})
+
+
 
     # Data - Fixed assumptions - Calibration factors - Livestock domestic production
     df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_domestic-production-liv.*'})
@@ -227,6 +238,7 @@ def database_from_csv_to_datamatrix():
 
     # Create a dictionnay with all the fixed assumptions
     dict_fxa = {
+        'caf_food': dm_caf_food,
         'caf_agr_domestic-production-liv': dm_caf_liv_dom_prod,
         'caf_agr_liv-population': dm_caf_liv_pop,
         'caf_agr_liv_CH4-emission': dm_caf_liv_CH4,
@@ -265,7 +277,39 @@ def database_from_csv_to_datamatrix():
     dict_ots = {}
     dict_fts = {}
 
-    # Read self-sufficiency
+    # [TUTORIAL] Data - Lever - Population
+    file = 'lifestyles_population'  # File name to read
+    lever = 'pop'  # Lever name to match the JSON?
+
+    # Creates the datamatrix for lifestyles population
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 0, 0], baseyear=baseyear,
+                                                                years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
+                                                                column='eucalc-name',
+                                                                group_list=['lfs_demography_.*',
+                                                                            'lfs_macro-scenarii_.*',
+                                                                            'lfs_population_.*'])
+
+
+    # Data - Lever - Diet
+    file = 'lifestyles_diet'
+    lever = 'diet'
+    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1], baseyear=baseyear,
+                                                                years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
+                                                                column='eucalc-name',
+                                                                group_list=['lfs_consumers-diet_.*', 'share_.*'])
+
+    # Data - Lever - Energy requirements
+    file = 'lifestyles_energy-requirement'
+    lever = 'kcal-req'
+    dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=0, baseyear=baseyear,
+                                                       years=years_all, dict_ots=dict_ots, dict_fts=dict_fts)
+    # Data - Lever - Food wastes
+    file = 'lifestyles_food-wastes'
+    lever = 'fwaste'
+    dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1, baseyear=baseyear,
+                                                       years=years_all, dict_ots=dict_ots, dict_fts=dict_fts)
+
+    # Data - Lever - self-sufficiency
     file = 'agriculture_self-sufficiency'
     lever = 'food-net-import'
     # Rename to correct format
@@ -274,7 +318,7 @@ def database_from_csv_to_datamatrix():
     dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1, baseyear=baseyear, years=years_all,
                                                            dict_ots=dict_ots, dict_fts=dict_fts)
 
-    # Read climate smart livestock
+    # Data - Lever - climate smart livestock
     file = 'agriculture_climate-smart-livestock'
     lever = 'climate-smart-livestock'
     #edit_database(file,lever,column='eucalc-name',pattern={'_CH4-emission':''},mode='rename')
@@ -287,7 +331,7 @@ def database_from_csv_to_datamatrix():
                                                                             'climate-smart-livestock_enteric.*', 'climate-smart-livestock_manure.*',
                                                                             'climate-smart-livestock_ration.*', 'agr_climate-smart-livestock_ef_agroforestry.*'])
 
-    # Read biomass hierarchy
+    # Data - Lever - biomass hierarchy
     file = 'agriculture_biomass-use-hierarchy'
     lever = 'biomass-hierarchy'
     # Rename to correct format
@@ -306,7 +350,7 @@ def database_from_csv_to_datamatrix():
                                                                             'biomass-hierarchy_bioenergy_liquid_biojetkerosene.*',
                                                                             'biomass-hierarchy_crop_cereal.*'])
 
-    # Read bioenergy capacity
+    # Data - Lever - bioenergy capacity
     file = 'agriculture_bioenergy-capacity'
     lever = 'bioenergy-capacity'
     # Rename to correct format
@@ -317,7 +361,7 @@ def database_from_csv_to_datamatrix():
                                                                 group_list=['bioenergy-capacity_load-factor.*', 'bioenergy-capacity_bgs-mix.*',
                                                                             'bioenergy-capacity_efficiency.*', 'bioenergy-capacity_liq_b.*', 'bioenergy-capacity_elec.*'])
 
-    # Read livestock protein meals
+    # Data - Lever - livestock protein meals
     file = 'agriculture_livestock-protein-meals'
     lever = 'alt-protein'
     #edit_database(file,lever,column='eucalc-name',pattern={'meat_':'meat-', 'abp_':'abp-'},mode='rename')
@@ -327,7 +371,7 @@ def database_from_csv_to_datamatrix():
                                                                 column='eucalc-name',
                                                                 group_list=['agr_alt-protein.*'])
 
-    # Read climate smart crop
+    # Data - Lever - climate smart crop
     file = 'agriculture_climate-smart-crop'
     lever = 'climate-smart-crop'
     #edit_database(file,lever,column='eucalc-name',pattern={'meat_':'meat-', 'abp_':'abp-'},mode='rename')
@@ -348,13 +392,17 @@ def database_from_csv_to_datamatrix():
     # ConstantsToDatamatrix
     # Data - Read Constants (use 'xx|xx|xx' to add)
     cdm_const = ConstantDataMatrix.extract_constant('interactions_constants',
-                                                    pattern='cp_ibp_liv_.*_brf_fdk_afat|cp_ibp_liv_.*_brf_fdk_offal|cp_ibp_bev_.*|cp_liquid_tec.*|cp_load_hours|cp_ibp_aps_insect.*|cp_ibp_aps_algae.*|cp_efficiency_liv.*|cp_ibp_processed.*|cp_ef_urea.*|cp_ef_liming|cp_emission-factor_CO2.*',
+                                                    pattern='cp_time_days-per-year.*|cp_ibp_liv_.*_brf_fdk_afat|cp_ibp_liv_.*_brf_fdk_offal|cp_ibp_bev_.*|cp_liquid_tec.*|cp_load_hours|cp_ibp_aps_insect.*|cp_ibp_aps_algae.*|cp_efficiency_liv.*|cp_ibp_processed.*|cp_ef_urea.*|cp_ef_liming|cp_emission-factor_CO2.*',
                                                     num_cat=0)
 
 
     # Constant pre-processing ------------------------------------------------------------------------------------------
     # Creating a dictionnay with contants
     dict_const = {}
+
+    # Time per year
+    cdm_lifestyle = cdm_const.filter({'Variables': ['cp_time_days-per-year']})
+    dict_const['cdm_lifestyle'] = cdm_lifestyle
 
     # Filter ibp constants for offal
     cdm_cp_ibp_offal = cdm_const.filter_w_regex({'Variables': 'cp_ibp_liv_.*_brf_fdk_offal'})
@@ -505,6 +553,7 @@ def read_data(data_file, lever_setting):
     DM_ots_fts = read_level_data(DM_agriculture, lever_setting)
 
     # FXA data matrix
+    dm_fxa_caf_food = DM_agriculture['fxa']['caf_food']
     dm_fxa_caf_liv_prod = DM_agriculture['fxa']['caf_agr_domestic-production-liv']
     dm_fxa_caf_liv_pop = DM_agriculture['fxa']['caf_agr_liv-population']
     dm_fxa_caf_liv_CH4 = DM_agriculture['fxa']['caf_agr_liv_CH4-emission']
@@ -515,6 +564,14 @@ def read_data(data_file, lever_setting):
     dm_fxa_liv_nstock = DM_agriculture['fxa']['liv_manure_n-stock']
 
     # Extract sub-data-matrices according to the flow
+    # Sub-matrix for LIFESTYLE
+    dm_demography = DM_ots_fts['pop']['lfs_demography_']
+    dm_diet_requirement = DM_ots_fts['kcal-req']
+    dm_diet_split = DM_ots_fts['diet']['lfs_consumers-diet_']
+    dm_diet_share = DM_ots_fts['diet']['share_']
+    dm_diet_fwaste = DM_ots_fts['fwaste']
+    dm_population = DM_ots_fts['pop']['lfs_population_']
+
     # Sub-matrix for the FOOD DEMAND
     dm_food_net_import_pro = DM_ots_fts['food-net-import'].filter_w_regex({'Categories1': 'pro-.*', 'Variables': 'agr_food-net-import'})
 
@@ -588,7 +645,17 @@ def read_data(data_file, lever_setting):
         'GHG': dm_caf_GHG
     }
 
-    # Aggregate datamatrix by theme/flow
+    # Aggregate Data Matrix - LIFESTYLE
+    DM_lifestyle = {
+        'energy-requirement': dm_diet_requirement,
+        'diet-split': dm_diet_split,
+        'diet-share': dm_diet_share,
+        'diet-fwaste': dm_diet_fwaste,
+        'demography': dm_demography,
+        'population': dm_population,
+        'food-caf': dm_fxa_caf_food
+    }
+
     # Aggregated Data Matrix - FOOD DEMAND
     DM_food_demand = {
         'food-net-import-pro': dm_food_net_import_pro
@@ -666,7 +733,7 @@ def read_data(data_file, lever_setting):
 
     CDM_const = DM_agriculture['constant']
 
-    return DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, CDM_const
+    return DM_ots_fts, DM_lifestyle, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, CDM_const
 
 # SimulateInteractions
 def simulate_lifestyles_to_agriculture_input():
@@ -779,6 +846,89 @@ def simulate_transport_to_agriculture_input():
     dm_tra = DataMatrix.create_from_df(df, num_cat=1)
 
     return dm_tra
+# CalculationLeaf LIFESTYLE TO DIET --------------------------------------------------------------
+def lifestyle_workflow(DM_lifestyle, CDM_const):
+    # Total kcal consumed
+    dm_diet_split = DM_lifestyle['diet-split']
+    ay_diet_intake = dm_diet_split.array[:, :, 0, :].sum(axis=-1)
+
+    # [TUTORIAL] Gap from healthy diet (Tree Parallel)
+    dm_diet_requirement = DM_lifestyle['energy-requirement']
+    dm_diet_requirement.add(ay_diet_intake, dim='Variables', col_label='lfs_energy-intake_total', unit='kcal/cap/day')
+    dm_diet_requirement.operation('lfs_kcal-req_req', '-', 'lfs_energy-intake_total',
+                                  dim="Variables", out_col='lfs_healthy-gap', unit='kcal/cap/day')
+
+    dm_population = DM_lifestyle['population']
+    idx_p = dm_population.idx
+    # [TUTORIAL] Consumer diet (operation with matrices with different structure/array specs)
+    dm_diet_share = DM_lifestyle['diet-share']
+    idx = dm_diet_requirement.idx
+    ay_diet_consumers = dm_diet_share.array[:, :, 0, :] * dm_diet_requirement.array[:, :, idx['lfs_healthy-gap'],
+                                                          np.newaxis]
+    dm_diet_share.add(ay_diet_consumers, dim='Variables', col_label='lfs_consumers-diet', unit='kcal/cap/day')
+    idx_d = dm_diet_share.idx
+    # Calculate ay_total_diet
+    ay_total_diet = dm_diet_share.array[:, :, idx_d['lfs_consumers-diet'], :] * \
+                    dm_population.array[:, :, idx_p['lfs_population_total'], np.newaxis] * 365
+    start = time.time()
+    dm_diet_tmp = DataMatrix.based_on(ay_total_diet[:, :, np.newaxis, :], dm_diet_share,
+                                      change={'Variables': ['lfs_diet_raw']}, units={'lfs_diet_raw': 'kcal'})
+
+    # Total Consumers food wastes
+    dm_diet_fwaste = DM_lifestyle['diet-fwaste']
+    cdm_lifestyle = CDM_const['cdm_lifestyle']
+    idx = dm_population.idx
+    idx_const = cdm_lifestyle.idx
+    ay_total_fwaste = dm_diet_fwaste.array[:, :, 0, :] * dm_population.array[:, :, idx['lfs_population_total'],
+                                                         np.newaxis] \
+                      * cdm_lifestyle.array[idx_const['cp_time_days-per-year']]
+    dm_diet_fwaste.add(ay_total_fwaste, dim='Variables', col_label='lfs_food-wastes_raw', unit='kcal')
+
+    # Total Consumers food supply (Total food intake)
+    ay_total_food = dm_diet_split.array[:, :, 0, :] * dm_population.array[:, :, idx['lfs_population_total'], np.newaxis] \
+                    * cdm_lifestyle.array[idx_const['cp_time_days-per-year']]
+    dm_diet_food = DataMatrix.based_on(ay_total_food[:, :, np.newaxis, :], dm_diet_split,
+                                       change={'Variables': ['lfs_diet_raw']}, units={'lfs_diet_raw': 'kcal'})
+    # Calibration factors
+    dm_fxa_caf_food = DM_lifestyle['food-caf']
+    # Add dummy caf for afats and rice
+    dm_fxa_caf_food.add(1, dummy=True, col_label=['afats', 'rice'], dim='Categories1')
+
+    # Calibration - Food supply
+    dm_diet_food.append(dm_diet_tmp, dim='Categories1')
+    dm_diet_food.append(dm_fxa_caf_food, dim='Variables')
+    dm_diet_food.operation('lfs_diet_raw', '*', 'caf_lfs_diet',
+                            dim="Variables", out_col='lfs_diet', unit='kcal')
+    dm_diet_food.filter({'Variables': ['lfs_diet']}, inplace=True)
+
+    # Calibration - Food wastes
+    dm_diet_fwaste.append(dm_fxa_caf_food, dim='Variables')
+    dm_diet_fwaste.operation('lfs_food-wastes_raw', '*', 'caf_lfs_food-wastes',
+                             dim="Variables", out_col='lfs_food-wastes', unit='kcal')
+    dm_diet_fwaste.filter({'Variables': ['lfs_food-wastes']}, inplace=True)
+
+    # Data to return to the TPE
+    dm_diet_food.append(dm_diet_fwaste, dim='Variables')
+
+    #Create copy
+    dm_lfs = dm_diet_food.copy()
+
+    # Format for same categories as rest Agriculture module
+    cat_lfs = ['afats', 'beer', 'bev-alc', 'bev-fer', 'bov', 'cereals', 'coffee', 'dfish', 'egg', 'ffish', 'fruits', \
+               'milk', 'offal', 'oilcrops', 'oth-animals', 'oth-aq-animals', 'pfish', 'pigs', 'poultry', 'pulses',
+               'rice', 'seafood', 'sheep', 'starch', 'stm', 'sugar', 'sweet', 'veg', 'voil', 'wine']
+    cat_agr = ['pro-liv-abp-processed-afat', 'pro-bev-beer', 'pro-bev-bev-alc', 'pro-bev-bev-fer', 'pro-liv-meat-bovine',
+               'crop-cereal', 'coffee', 'dfish', 'pro-liv-abp-hens-egg', 'ffish', 'crop-fruit', 'pro-liv-abp-dairy-milk',
+               'pro-liv-abp-processed-offal', 'crop-oilcrop', 'pro-liv-meat-oth-animals', 'oth-aq-animals', 'pfish',
+               'pro-liv-meat-pig', 'pro-liv-meat-poultry', 'crop-pulse', 'rice', 'seafood', 'pro-liv-meat-sheep',
+               'crop-starch', 'stm', 'pro-crop-processed-sugar', 'pro-crop-processed-sweet', 'crop-veg',
+               'pro-crop-processed-voil', 'pro-bev-wine']
+
+    dm_lfs.rename_col(cat_lfs, cat_agr, 'Categories1')
+    dm_lfs.sort('Categories1')
+
+
+    return dm_lfs
 
 # CalculationLeaf FOOD DEMAND TO DOMESTIC FOOD PRODUCTION --------------------------------------------------------------
 def food_demand_workflow(DM_food_demand, dm_lfs):
@@ -2387,7 +2537,7 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     agriculture_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/agriculture.pickle')
-    DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, CDM_const = read_data(agriculture_data_file, lever_setting)
+    DM_ots_fts, DM_lifestyle, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, CDM_const = read_data(agriculture_data_file, lever_setting)
 
     cntr_list = DM_food_demand['food-net-import-pro'].col_labels['Country']
 
@@ -2427,6 +2577,7 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
 
     # CalculationTree AGRICULTURE
 
+    dm_lfs = lifestyle_workflow(DM_lifestyle, CDM_const)
     dm_lfs, dm_lfs_pro = food_demand_workflow(DM_food_demand, dm_lfs)
     DM_livestock, dm_liv_ibp, dm_liv_ibp= livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro)
     DM_alc_bev, dm_bev_ibp_cereal_feed = alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro)
@@ -2475,6 +2626,8 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     return results_run
 
 def agriculture_local_run():
+    global_vars = {'geoscale': '.*'}
+    filter_geoscale(global_vars)
     years_setting, lever_setting = init_years_lever()
     agriculture(lever_setting, years_setting)
     return
