@@ -278,16 +278,16 @@ def database_from_csv_to_datamatrix():
     dict_fts = {}
 
     # [TUTORIAL] Data - Lever - Population
-    file = 'lifestyles_population'  # File name to read
-    lever = 'pop'  # Lever name to match the JSON?
+    #file = 'lifestyles_population'  # File name to read
+    #lever = 'pop'  # Lever name to match the JSON?
 
     # Creates the datamatrix for lifestyles population
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 0, 0], baseyear=baseyear,
-                                                                years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
-                                                                column='eucalc-name',
-                                                                group_list=['lfs_demography_.*',
-                                                                            'lfs_macro-scenarii_.*',
-                                                                            'lfs_population_.*'])
+    #dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 0, 0], baseyear=baseyear,
+    #                                                            years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
+    #                                                            column='eucalc-name',
+    #                                                            group_list=['lfs_demography_.*',
+    #                                                                        'lfs_macro-scenarii_.*',
+    #                                                                        'lfs_population_.*'])
 
 
     # Data - Lever - Diet
@@ -501,7 +501,7 @@ def database_from_csv_to_datamatrix():
     cdm_CO2.deepen()
     dict_const['cdm_CO2'] = cdm_CO2
 
-    # Eectricity
+    # Electricity
     cdm_load = cdm_const.filter({'Variables': ['cp_load_hours-per-year-twh']})
     dict_const['cdm_load'] = cdm_load
 
@@ -741,7 +741,13 @@ def simulate_lifestyles_to_agriculture_input():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     f = os.path.join(current_file_directory, "../_database/data/xls/All-Countries-interface_from-lifestyles-to-agriculture_EUCALC.xlsx")
     df = pd.read_excel(f, sheet_name="default")
+    df_population = df.copy()
+    df = df.drop(columns=['lfs_population_total[inhabitants]'])
     dm_lfs = DataMatrix.create_from_df(df, num_cat=1)
+
+    # Read input from lifestyle : population
+    df_population = df_population[['Years', 'Country', 'lfs_population_total[inhabitants]']] # keep only population
+    dm_population = DataMatrix.create_from_df(df_population, num_cat=0)
 
     # other way to do the step before but does not add it to the dm
     #idx = dm_lfs.idx
@@ -804,7 +810,8 @@ def simulate_lifestyles_to_agriculture_input():
 
     dm_lfs.sort('Categories1')
 
-    return dm_lfs
+
+    return dm_population
 
 def simulate_buildings_to_agriculture_input():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -846,8 +853,8 @@ def simulate_transport_to_agriculture_input():
     dm_tra = DataMatrix.create_from_df(df, num_cat=1)
 
     return dm_tra
-# CalculationLeaf LIFESTYLE TO DIET --------------------------------------------------------------
-def lifestyle_workflow(DM_lifestyle, CDM_const):
+# CalculationLeaf LIFESTYLE TO DIET/FOOD DEMAND --------------------------------------------------------------
+def lifestyle_workflow(DM_lifestyle, dm_population, CDM_const):
     # Total kcal consumed
     dm_diet_split = DM_lifestyle['diet-split']
     ay_diet_intake = dm_diet_split.array[:, :, 0, :].sum(axis=-1)
@@ -858,7 +865,7 @@ def lifestyle_workflow(DM_lifestyle, CDM_const):
     dm_diet_requirement.operation('lfs_kcal-req_req', '-', 'lfs_energy-intake_total',
                                   dim="Variables", out_col='lfs_healthy-gap', unit='kcal/cap/day')
 
-    dm_population = DM_lifestyle['population']
+    #dm_population = DM_lifestyle['population']
     idx_p = dm_population.idx
     # [TUTORIAL] Consumer diet (operation with matrices with different structure/array specs)
     dm_diet_share = DM_lifestyle['diet-share']
@@ -2534,21 +2541,21 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
 # ----------------------------------------------------------------------------------------------------------------------
 def agriculture(lever_setting, years_setting, interface = Interface()):
 
-
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     agriculture_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/agriculture.pickle')
     DM_ots_fts, DM_lifestyle, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, CDM_const = read_data(agriculture_data_file, lever_setting)
 
     cntr_list = DM_food_demand['food-net-import-pro'].col_labels['Country']
 
-    # Simulate data from other modules
+    # Link interface or Simulate data from other modules
     if interface.has_link(from_sector='lifestyles', to_sector='agriculture'):
-        dm_lfs = interface.get_link(from_sector='lifestyles', to_sector='agriculture')
+        dm_population = interface.get_link(from_sector='lifestyles', to_sector='agriculture')
+        #FIXME ajouter lien pour la population dm_population
     else:
         if len(interface.list_link()) != 0:
             print('You are missing lifestyles to agriculture interface')
-        dm_lfs = simulate_lifestyles_to_agriculture_input()
-        dm_lfs.filter({'Country': cntr_list}, inplace=True)
+        dm_population = simulate_lifestyles_to_agriculture_input()
+        dm_population.filter({'Country': cntr_list}, inplace=True)
         
     if interface.has_link(from_sector='buildings', to_sector='agriculture'):
         dm_bld = interface.get_link(from_sector='buildings', to_sector='agriculture')
@@ -2577,7 +2584,7 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
 
     # CalculationTree AGRICULTURE
 
-    dm_lfs = lifestyle_workflow(DM_lifestyle, CDM_const)
+    dm_lfs = lifestyle_workflow(DM_lifestyle, dm_population, CDM_const)
     dm_lfs, dm_lfs_pro = food_demand_workflow(DM_food_demand, dm_lfs)
     DM_livestock, dm_liv_ibp, dm_liv_ibp= livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro)
     DM_alc_bev, dm_bev_ibp_cereal_feed = alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro)
@@ -2638,7 +2645,7 @@ def agriculture_local_run():
 
 # # Run the code in local
 #start = time.time()
-#results_run = agriculture_local_run()
+results_run = agriculture_local_run()
 #end = time.time()
 #print(end-start)
 
