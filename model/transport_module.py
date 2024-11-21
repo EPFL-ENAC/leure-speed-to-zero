@@ -1278,5 +1278,5 @@ def local_transport_run():
 print('In transport, the share of waste by fuel/tech type does not seem right. Fix it.')
 print('Apply technology shares before computing the stock')
 print('For the efficiency, use the new methodology developped for Building (see overleaf on U-value)')
-results_run = local_transport_run()
+#results_run = local_transport_run()
 
