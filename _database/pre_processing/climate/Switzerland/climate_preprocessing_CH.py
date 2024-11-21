@@ -88,7 +88,7 @@ def extract_days_Tbase_from_Yasser_dataset(years_fts):
                           'Vaud': (canton_file_Nabove, canton_file_Nabove_fts)},
                'Nbelow': {'Switzerland': (swiss_file_Nbelow, swiss_file_Nbelow_fts),
                           'Vaud': (canton_file_Nbelow, canton_file_Nbelow_fts)}}
-    name_var = {'Nabove': 'clm_days-below-15[days]', 'Nbelow': 'clm_days-above-24[days]'}
+    name_var = {'Nabove': 'clm_days-above-24[days]', 'Nbelow': 'clm_days-below-15[days]'}
 
     for N, country_file in mapping.items():
         for country, files in country_file.items():
@@ -150,6 +150,58 @@ def filter_country_DM(cntr_list, DM):
 
     return DM
 
+
+def compute_cooling_uptake(dm_CDD_ots, dict_CDD_fts):
+    def strictly_increasing(dm):
+        idx = dm.idx
+        for yr in dm.col_labels['Years'][0:-1]:
+            dm.array[:, idx[yr]+1, ...] = np.maximum(dm.array[:, idx[yr]+1, ...], dm.array[:, idx[yr], ...])
+        return dm
+
+    ####   Cooling uptake   ####
+    # uptake = 0.95/ (1 + e−((CDD−700) / 150))
+    # uptake = 0.815 x (1 − e−0.00225 CDD)
+    # arr = 0.95/(1 + np.exp(-(dm_clm.array[:, :, idx_c['clm_CDD']] - 700)/150))
+    idx = dm_CDD_ots.idx
+    arr = 0.815 * (1 - np.exp(-0.00225 * dm_CDD_ots.array[:, :, idx['clm_CDD']]))
+    idx_ots = [idx[yr] for yr in years_ots]
+    arr_ots = arr[:, idx_ots]
+    for i in range(10):
+        window_size = 5
+        data_smooth = moving_average(arr_ots, window_size, axis=1)
+        arr_ots[:, 2:-2, ...] = data_smooth
+        arr_ots[:, 0, ...] = data_smooth[:, 0]
+        arr_ots[:, 1, ...] = data_smooth[:, 0]
+        arr_ots[:, -1, ...] = data_smooth[:, -1]
+        arr_ots[:, -2, ...] = data_smooth[:, -1]
+    arr[:, idx_ots[2:-2]] = arr_ots[:, 2:-2, ...]
+    for i in [0, 1, -1, -2]:
+        arr[:, idx_ots[i]] = np.nan
+    dm_CDD_ots.add(arr, dim='Variables', col_label='clm_AC-uptake', dummy=True, unit='%')
+    linear_fitting(dm_CDD_ots, dm_CDD_ots.col_labels['Years'])
+    dm_uptake_ots = dm_CDD_ots.filter({'Variables': ['clm_AC-uptake']})
+    dm_uptake_ots = strictly_increasing(dm_uptake_ots)
+
+    dict_uptake_fts = dict()
+    for lev in range(4):
+        lev = lev + 1
+        dm_CDD_fts = dict_CDD_fts[lev].copy()
+        idx = dm_CDD_fts.idx
+        arr = 0.815 * (1 - np.exp(-0.00225 * dm_CDD_fts.array[:, :, idx['clm_CDD']]))
+        arr[:, 0:-1] = np.nan
+        dm_CDD_fts.add(arr, dim='Variables', col_label='clm_AC-uptake', unit='%')
+        dm_uptake_fts = dm_CDD_fts.filter({'Variables': ['clm_AC-uptake']})
+        dm_uptake_fts.append(dm_uptake_ots, dim='Years')
+        dm_uptake_fts.sort('Years')
+        dm_uptake_fts.fill_nans('Years')
+        dm_uptake_fts = strictly_increasing(dm_uptake_fts)
+        dm_uptake_fts.filter({'Years': years_fts}, inplace=True)
+        dict_uptake_fts[lev] = dm_uptake_fts
+
+    return dm_uptake_ots, dict_uptake_fts
+
+
+
 years_ots = create_years_list(1990, 2023, 1)
 years_fts = create_years_list(2025, 2050, 5)
 
@@ -159,6 +211,7 @@ dm_N = extract_days_Tbase_from_Yasser_dataset(years_fts)
 
 dm_all = dm_HCDD.copy()
 dm_all.append(dm_N, dim='Variables')
+
 
 file = '../../../data/datamatrix/climate.pickle'
 with open(file, 'rb') as handle:
@@ -172,6 +225,17 @@ DM_climate_new['ots']['temp']['bld_climate-impact-space'] = dm_all.filter({'Year
 for lev in range(4):
     lev = lev + 1
     DM_climate_new['fts']['temp']['bld_climate-impact-space'][lev] = dm_all.filter({'Years': years_fts})
+
+#########################
+####    AC UPTAKE    ####
+#########################
+dict_fts = DM_climate_new['fts']['temp']['bld_climate-impact-space'].copy()
+dm_ots = DM_climate_new['ots']['temp']['bld_climate-impact-space'].copy()
+dm_uptake_ots, dict_uptake_fts = compute_cooling_uptake(dm_ots, dict_fts)
+DM_climate_new['ots']['temp']['bld_climate-impact-space'].append(dm_uptake_ots, dim='Variables')
+for lev in range(4):
+    lev = lev + 1
+    DM_climate_new['fts']['temp']['bld_climate-impact-space'][lev].append(dict_uptake_fts[lev], dim='Variables')
 
 file = '../../../data/datamatrix/climate.pickle'
 with open(file, 'wb') as handle:
