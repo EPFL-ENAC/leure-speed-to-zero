@@ -5,6 +5,7 @@ from scipy.stats import linregress
 import pandas as pd
 import faostat
 import os
+import re
 import eurostat
 from model.common.io_database import database_to_dm
 
@@ -43,6 +44,184 @@ def create_ots_years_list(years_setting):
     years_ots = list(
         np.linspace(start=startyear, stop=baseyear, num=(baseyear - startyear) + 1).astype(int).astype(str))
     return years_ots
+# CalculationLeaf DIET (LIFESTYLE) ------------------------------------------------------------------------------------
+def diet_processing():
+    # ----------------------------------------------------------------------------------------------------------------------
+    # CONSUMER DIET (FOR MEAT & FISH)
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # Read data ------------------------------------------------------------------------------------------------------------
+
+    # Common for all
+    # List of countries
+    list_countries = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czechia', 'Denmark',
+                      'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
+                      'Lithuania', 'Luxembourg', 'Malta', 'Netherlands (Kingdom of the)', 'Poland', 'Portugal',
+                      'Romania', 'Slovakia',
+                      'Slovenia', 'Spain', 'Sweden', 'Switzerland',
+                      'United Kingdom of Great Britain and Northern Ireland']
+
+    # FOOD BALANCE SHEETS (FBS) - -------------------------------------------------
+    # List of elements
+    list_elements = ['Food supply (kcal/capita/day)']
+
+    list_items = ['Cereals - Excluding Beer + (Total)', 'Fruits - Excluding Wine + (Total)', 'Oilcrops + (Total)',
+                  'Pulses + (Total)', 'Rice (Milled Equivalent)',
+                  'Starchy Roots + (Total)', 'Stimulants + (Total)', 'Sugar Crops + (Total)', 'Vegetables + (Total)',
+                  'Demersal Fish', 'Freshwater Fish',
+                  'Aquatic Animals, Others', 'Pelagic Fish', 'Beer', 'Beverages, Alcoholic', 'Beverages, Fermented',
+                  'Wine', 'Sugar (Raw Equivalent)', 'Sweeteners, Other', 'Vegetable Oils + (Total)',
+                  'Milk - Excluding Butter + (Total)', 'Eggs + (Total)', 'Animal fats + (Total)', 'Offals + (Total)',
+                  'Bovine Meat', 'Meat, Other', 'Pigmeat',
+                  'Poultry Meat', 'Mutton & Goat Meat', 'Fish, Seafood + (Total)', 'Coffee and products',
+                  'Grand Total + (Total)']
+
+    # 1990 - 2013
+    ld = faostat.list_datasets()
+    code = 'FBSH'
+    pars = faostat.list_pars(code)
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
+                  '2002',
+                  '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_diet_1990_2013 = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # 2010-2022
+    list_items = ['Cereals - Excluding Beer + (Total)', 'Fruits - Excluding Wine + (Total)', 'Oilcrops + (Total)',
+                  'Pulses + (Total)', 'Rice and products',
+                  'Starchy Roots + (Total)', 'Stimulants + (Total)', 'Sugar Crops + (Total)', 'Vegetables + (Total)',
+                  'Demersal Fish', 'Freshwater Fish',
+                  'Aquatic Animals, Others', 'Pelagic Fish', 'Beer', 'Beverages, Alcoholic', 'Beverages, Fermented',
+                  'Wine', 'Sugar (Raw Equivalent)', 'Sweeteners, Other', 'Vegetable Oils + (Total)',
+                  'Milk - Excluding Butter + (Total)', 'Eggs + (Total)', 'Animal fats + (Total)', 'Offals + (Total)',
+                  'Bovine Meat', 'Meat, Other', 'Pigmeat',
+                  'Poultry Meat', 'Mutton & Goat Meat', 'Fish, Seafood + (Total)', 'Coffee and products',
+                  'Grand Total + (Total)']
+    code = 'FBS'
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021',
+                  '2022']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_diet_2010_2022 = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # Renaming the items for name matching
+    df_diet_1990_2013.loc[
+        df_diet_1990_2013['Item'].str.contains('Rice \(Milled Equivalent\)', case=False,
+                                               na=False), 'Element'] = 'Rice and products'
+
+    # Concatenating all the years together
+    df_diet = pd.concat([df_diet_1990_2013, df_diet_2010_2022])
+
+    # Filtering to keep wanted columns
+    columns_to_filter = ['Area', 'Element', 'Item', 'Year', 'Value']
+    df_diet = df_diet[columns_to_filter]
+
+    # Filter to only have meat, fish, sugar, sweet, veg, fruits (the rest goes to share for further pre-processing)
+    list_consumers_diet = ['Fruits - Excluding Wine', 'Vegetables',
+                           'Demersal Fish', 'Freshwater Fish',
+                           'Aquatic Animals, Others', 'Pelagic Fish',
+                           'Sugar (Raw Equivalent)', 'Sweeteners, Other',
+                           'Bovine Meat', 'Meat, Other', 'Pigmeat',
+                           'Poultry Meat', 'Mutton & Goat Meat', 'Fish, Seafood']
+    pattern_consumers_diet = '|'.join(re.escape(item) for item in list_consumers_diet)
+    list_share = ['Cereals - Excluding Beer', 'Oilcrops',
+                  'Pulses', 'Rice and products',
+                  'Starchy Roots', 'Stimulants',
+                  'Beer', 'Beverages, Alcoholic', 'Beverages, Fermented',
+                  'Wine', 'Vegetable Oils',
+                  'Milk - Excluding Butter', 'Eggs',
+                  'Animal fats', 'Offals', 'Coffee and products', 'Grand Total']
+    pattern_share = '|'.join(re.escape(item) for item in list_share)
+    df_consumers_diet = df_diet[df_diet['Item'].str.contains(pattern_consumers_diet, case=False)]
+    df_share = df_diet[df_diet['Item'].str.contains(pattern_share, case=False)]
+
+    # Pivot the df
+    pivot_df_consumers_diet = df_consumers_diet.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
+                                                            values='Value').reset_index()
+    # Rename columns
+    pivot_df_consumers_diet.rename(columns={'Food supply (kcal/capita/day)': 'value'}, inplace=True)
+
+    # ----------------------------------------------------------------------------------------------------------------------
+    # SHARE (FOR OTHER PRODUCTS)
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # Pivot the df
+    pivot_df_share = df_share.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
+                                          values='Value').reset_index()
+
+    # Creating a column with the Grand Total kcal/cap/day
+    # Step 1: Extract Grand Total for each Year and Area
+    grand_totals = pivot_df_share[pivot_df_share['Item'] == 'Grand Total'][
+        ['Area', 'Year', 'Food supply (kcal/capita/day)']]
+    grand_totals.rename(columns={'Food supply (kcal/capita/day)': 'Grand Total'}, inplace=True)
+    # Step 2: Merge the Grand Total back into the original DataFrame
+    pivot_df_share = pivot_df_share.merge(grand_totals, on=['Area', 'Year'], how='left')
+    # Step 3: Drop rows where Item is 'Grand Total'
+    pivot_df_share = pivot_df_share[pivot_df_share['Item'] != 'Grand Total']
+
+    # Divide the consumption by the total kcal to obtain the share
+    pivot_df_share['value'] = pivot_df_share['Food supply (kcal/capita/day)'] / pivot_df_share['Grand Total']
+
+    # Drop the columns
+    pivot_df_share = pivot_df_share.drop(columns=['Food supply (kcal/capita/day)', 'Grand Total'])
+
+    # Concatenating consumer diet & share
+    pivot_df_diet = pd.concat([pivot_df_consumers_diet, pivot_df_share])
+
+    # PathwayCalc formatting -----------------------------------------------------------------------------------------------
+    # Food item name matching with dictionary
+    # Read excel file
+    df_dict_diet = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        sheet_name='diet_lifestyle')
+
+    # Merge based on 'Item'
+    df_diet_pathwaycalc = pd.merge(df_dict_diet, pivot_df_diet, on='Item')
+
+    # Drop the 'Item' column
+    df_diet_pathwaycalc = df_diet_pathwaycalc.drop(columns=['Item'])
+
+    # Renaming existing columns (geoscale, timsecale, value)
+    df_diet_pathwaycalc.rename(columns={'Area': 'geoscale', 'Year': 'timescale'}, inplace=True)
+
+    # Adding the columns module, lever, level and string-pivot at the correct places
+    df_diet_pathwaycalc['module'] = 'agriculture'
+    df_diet_pathwaycalc['lever'] = 'diet'
+    df_diet_pathwaycalc['level'] = 0
+    cols = df_diet_pathwaycalc.columns.tolist()
+    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    df_diet_pathwaycalc = df_diet_pathwaycalc[cols]
+
+    # Rename countries to Pathaywcalc name
+    df_diet_pathwaycalc['geoscale'] = df_diet_pathwaycalc['geoscale'].replace(
+        'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+    df_diet_pathwaycalc['geoscale'] = df_diet_pathwaycalc['geoscale'].replace('Netherlands (Kingdom of the)',
+                                                                              'Netherlands')
+    df_diet_pathwaycalc['geoscale'] = df_diet_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
+
+    return df_diet_pathwaycalc
+
 
 
 # CalculationLeaf SELF-SUFFICIENCY CROP & LIVESTOCK ------------------------------------------------------------------------------
@@ -2308,7 +2487,8 @@ def land_management_processing():
 
 # CalculationTree RUNNING PRE-PROCESSING -----------------------------------------------------------------------------------------------
 
-df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing()
+df_diet_pathwaycalc = diet_processing()
+#df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing()
 #df_climate_smart_crop = climate_smart_crop_processing()
 #df_climate_smart_livestock = climate_smart_livestock_processing(df_csl_feed)
 #df_csf, csf_managed = climate_smart_forestry_processing()
@@ -2388,6 +2568,21 @@ df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biojetkerosene_
 df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biojetkerosene_hvo[%]'] = 1.0
 
 
+# Melt df
+df_biomass_hierarchy_pathwaycalc = pd.melt(df_biomass_hierarchy_all, id_vars=['Area', 'Year'],
+                                      var_name='variables', value_name='value')
+
+# PathwayCalc formatting
+df_biomass_hierarchy_pathwaycalc['module'] = 'agriculture'
+df_biomass_hierarchy_pathwaycalc['lever'] = 'biomass-hierarchy'
+df_biomass_hierarchy_pathwaycalc['level'] = 0
+cols = df_biomass_hierarchy_pathwaycalc.columns.tolist()
+cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+df_biomass_hierarchy_pathwaycalc = df_biomass_hierarchy_pathwaycalc[cols]
+
+
 # CalculationLeaf LIVESTOCK PROTEIN MEALS ------------------------------------------------------------------------------------
 
 # Using and formatting df_csl_feed as a structural basis for constant ots values across all countries
@@ -2412,8 +2607,10 @@ df_protein_meals_all['agr_alt-protein_meat-poultry_insect[%]'] = 0.0
 df_protein_meals_all['agr_alt-protein_meat-sheep_algae[%]'] = 0.0
 df_protein_meals_all['agr_alt-protein_meat-sheep_insect[%]'] = 0.0
 
-# Creating a copy
-df_protein_meals_pathwaycalc = df_protein_meals_all.copy()
+
+# Melt df
+df_protein_meals_pathwaycalc = pd.melt(df_protein_meals_all, id_vars=['Area', 'Year'],
+                                      var_name='variables', value_name='value')
 
 # PathwayCalc formatting
 df_protein_meals_pathwaycalc['module'] = 'agriculture'
@@ -2464,6 +2661,7 @@ my_pars = {
     'year': my_years
 }
 df_bioenergy_mix_1990_2022 = faostat.get_data_df(code, pars=my_pars, strval=False)
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 # INTERACTIONS CONSTANTS
