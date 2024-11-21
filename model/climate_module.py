@@ -89,13 +89,10 @@ def read_data(data_file, lever_setting):
 def climate_buildings_interface(DM_ots_fts, write_xls = False):
     
     # append
-    DM_bld = {
-        'climate-impact-space': DM_ots_fts["temp"]["bld_climate-impact-space"],
-        'climate-impact-average': DM_ots_fts["temp"]["bld_climate-impact_average"]
-    }
+    dm_bld = DM_ots_fts["temp"]["bld_climate-impact-space"]
 
     # return
-    return DM_bld
+    return dm_bld
 
 def variables_to_tpe(DM_ots_fts):
     
@@ -123,8 +120,8 @@ def climate(lever_setting, years_setting, interface = Interface(), calibration =
     results_run = variables_to_tpe(DM_ots_fts)
     
     # interface buildings
-    DM_bld = climate_buildings_interface(DM_ots_fts)
-    interface.add_link(from_sector='climate', to_sector='buildings', dm=DM_bld)
+    dm_bld = climate_buildings_interface(DM_ots_fts)
+    interface.add_link(from_sector='climate', to_sector='buildings', dm=dm_bld)
     
     # interface power
     dm_pow = climate_power_interface(DM_ots_fts)
