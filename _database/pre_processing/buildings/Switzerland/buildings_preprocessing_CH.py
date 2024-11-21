@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pickle
+import faostat
 
 
 from model.common.auxiliary_functions import moving_average, linear_fitting, create_years_list
@@ -851,6 +852,10 @@ def adjust_based_on_renovation(dm_in, dm_rr, dm_renov_distr):
         dm.array[:, idx[ti], idx['bld_floor-area_stock'], :, :] = stock_t
         dm.array[:, idx[ti - 1], idx['bld_demolition-rate'], :, :] = waste_t / stock_tm1
 
+    dm_dem_rate = dm.filter({'Variables': ['bld_demolition-rate']})
+    mask = np.isnan(dm_dem_rate.array)
+    dm_dem_rate.array[mask] = 0
+    dm.array[:, :, idx['bld_demolition-rate'], :, :] = dm_dem_rate.array[:, :, 0, ...]
 
     return dm
 
@@ -1049,9 +1054,9 @@ def computer_heating_tech_mix_fts(dm_heating_tech):
 def calculate_heating_eff_fts(dm_heating_eff, years_fts, maximum_eff):
     dm_heat_pump = dm_heating_eff.filter({'Categories1': ['heat-pump']})
     dm_heating_eff.drop(dim='Categories1', col_label='heat-pump')
-    linear_fitting(dm_heating_eff, years_fts)
+    linear_fitting(dm_heating_eff, years_fts, based_on=list(range(2015, 2023)))
     dm_heating_eff.array = np.minimum(dm_heating_eff.array, maximum_eff)
-    linear_fitting(dm_heat_pump, years_fts)
+    linear_fitting(dm_heat_pump, years_fts, based_on=list(range(2015, 2023)))
     dm_heating_eff.append(dm_heat_pump, dim='Categories1')
     dm_heating_eff_fts = dm_heating_eff.filter({'Years': years_fts})
 
@@ -1279,6 +1284,60 @@ names_map = {'Ratio of energy service to energy consumption': 'remove', 'Space h
 dm_heating_eff = df_excel_to_dm(df, names_map, var_name='bld_heating-efficiency', unit='%', num_cat=1)
 dm_heating_eff.drop(col_label='remove', dim='Categories1')
 dm_heating_eff.add(0.8, dim='Categories1', col_label='solar', dummy=True)
+years_missing = list(set(years_ots) - set(dm_heating_eff.col_labels['Years']))
+years_missing_e = [yr for yr in years_missing if yr > dm_heating_eff.col_labels['Years'][0]]
+years_missing_i = [yr for yr in years_missing if yr < dm_heating_eff.col_labels['Years'][0]]
+linear_fitting(dm_heating_eff, years_missing_e, based_on=list(range(2015, dm_heating_eff.col_labels['Years'][-1]+1)))
+dm_heating_eff.add(np.nan, dim='Years', col_label=years_missing_i,  dummy=True)
+dm_heating_eff.sort('Years')
+dm_heating_eff.fill_nans('Years')
+# Add Vaud
+arr = dm_heating_eff.array
+dm_heating_eff.add(arr, dim='Country', col_label='Vaud')
+dm_heating_eff.sort('Country')
+
+# Read data ------------------------------------------------------------------------------------------------------------
+
+# Common for all
+# List of countries
+list_countries = ['Switzerland']
+
+# FOOD BALANCE SHEETS (FBS) - For everything except molasses and cakes -------------------------------------------------
+# List of elements
+list_elements = ['Production Quantity', 'Import Quantity', 'Export Quantity']
+
+list_items = ['Wood fuel, coniferous', 'Wood fuel, non-coniferous', 'Wood fuel, all species (export/import, 1961-2016)']
+
+# 1990 - 2013
+ld = faostat.list_datasets()
+code = 'FO'
+pars = faostat.list_pars(code)
+my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+list_years = list(map(str, create_years_list(1990, 2022, 1)))
+my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+my_pars = {
+    'area': my_countries,
+    'element': my_elements,
+    'item': my_items,
+    'year': my_years
+}
+df_wood = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+cols_to_keep = ['Area', 'Element', 'Year', 'Unit', 'Value']
+df_wood = df_wood[cols_to_keep]
+df_wood.groupby(['Area', 'Element', 'Year', 'Unit']).sum()
+
+df_pivot = df_wood.pivot_table(index=['Area', 'Year'], columns=['Element'], values='Value', aggfunc='sum')
+df_pivot = df_pivot.add_suffix('[m3]')
+df_pivot = df_pivot.add_prefix('bld_wood-industry' + '_')
+df_pivot.columns = df_pivot.columns.str.replace(' ', '_')
+df_pivot.columns = df_pivot.columns.str.replace('_Quantity', '')
+df_pivot.reset_index(inplace=True)
+df_pivot.rename(columns={'Area': 'Country', 'Year': 'Years'}, inplace=True)
+dm_wood = DataMatrix.create_from_df(df_pivot, num_cat=1)
 
 
 #########################################
@@ -1326,6 +1385,18 @@ for lev in range(4):
     DM_buildings['fts']['floor-intensity'][lev] = dm_space_cap.filter({'Years': years_fts})
 
 #########################################
+#####   HEATING-COOLING BEHAVIOUR   #####
+#########################################
+arr = 20*dm_space_cap.array/dm_space_cap.array
+dm_Tint_heat = DataMatrix.based_on(arr, dm_space_cap, change={'Variables': ['bld_Tint-heating', 'bld_Tint-cooling']},
+                                   units={'bld_Tint-heating': 'C', 'bld_Tint-cooling': 'C'})
+DM_buildings['ots']['heatcool-behaviour'] = dm_Tint_heat.filter({'Years': years_ots})
+DM_buildings['fts']['heatcool-behaviour'] = dict()
+for lev in range(4):
+    lev = lev + 1
+    DM_buildings['fts']['heatcool-behaviour'][lev] = dm_Tint_heat.filter({'Years': years_fts})
+
+#########################################
 #####        BUILDING MIX          ######
 #########################################
 # Used to go from m2/cap to m2 of floor area
@@ -1357,7 +1428,7 @@ for lev in range(4):
     lev = lev + 1
     DM_buildings['fts']['building-renovation-rate']['bld_renovation-rate'][lev] = dm_rr.filter({'Years': years_fts})
 ##
-DM_buildings['ots']['building-renovation-rate']['bld_renovation-redistrib   ution'] = dm_renov_distr.copy()
+DM_buildings['ots']['building-renovation-rate']['bld_renovation-redistribution'] = dm_renov_distr.copy()
 # FTS
 DM_buildings['fts']['building-renovation-rate']['bld_renovation-redistribution'] = dict()
 dm_renov_distr.add(np.nan, dim='Years', dummy=True, col_label=years_fts)
@@ -1401,6 +1472,7 @@ DM_buildings['constant']['surface-to-floorarea'] = cdm_s2f
 DM_buildings['ots']['heating-technology-fuel'] = dict()
 if 'gaz' in dm_heating_tech.col_labels['Categories2']:
     dm_heating_tech.rename_col('gaz', 'gas', 'Categories2')
+dm_heating_tech.sort('Categories2')
 DM_buildings['ots']['heating-technology-fuel']['bld_heating-technology'] = dm_heating_tech.copy()
 dm_heating_tech_fts = computer_heating_tech_mix_fts(dm_heating_tech)
 DM_buildings['fts']['heating-technology-fuel'] = dict()
@@ -1413,12 +1485,30 @@ for lev in range(4):
 ######       HEATING EFFICIENCY       ######
 ############################################
 dm_heating_eff.filter({'Categories1': dm_heating_tech.col_labels['Categories2']}, inplace=True)
+dm_heating_eff.sort('Categories1')
 DM_buildings['ots']['heating-efficiency'] = dm_heating_eff.copy()
 dm_heating_eff_fts = calculate_heating_eff_fts(dm_heating_eff, years_fts, maximum_eff=0.98)
 DM_buildings['fts']['heating-efficiency'] = dict()
 for lev in range(4):
     lev = lev + 1
     DM_buildings['fts']['heating-efficiency'][lev] = dm_heating_eff_fts
+
+####################################
+#####     EMISSION FACTORS    ######
+####################################
+# Obtained dividing emission by energy demand in file file = '../Europe/data/JRC-IDEES-2021_Residential_EU27.xlsx'
+JRC_emissions_fact = {'coal': 350, 'heating-oil': 267, 'gas': 200, 'wood': 0, 'solar': 0}
+cdm_emission_fact = ConstantDataMatrix(col_labels={'Variables': ['bld_CO2-factors'],
+                                                   'Categories1': ['coal', 'heating-oil', 'gas', 'wood', 'solar']},
+                                       units={'bld_CO2-factors': 'kt/TWh'})
+cdm_emission_fact.array = np.zeros((len(cdm_emission_fact.col_labels['Variables']),
+                                    len(cdm_emission_fact.col_labels['Categories1'])))
+idx = cdm_emission_fact.idx
+for key, value in JRC_emissions_fact.items():
+    cdm_emission_fact.array[0, idx[key]] = value
+
+cdm_emission_fact.sort('Categories1')
+DM_buildings['constant']['emissions'] = cdm_emission_fact
 
 file = '../../../data/datamatrix/buildings.pickle'
 with open(file, 'wb') as handle:
