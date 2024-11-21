@@ -126,7 +126,7 @@ def diet_processing():
     # Renaming the items for name matching
     df_diet_1990_2013.loc[
         df_diet_1990_2013['Item'].str.contains('Rice \(Milled Equivalent\)', case=False,
-                                               na=False), 'Element'] = 'Rice and products'
+                                               na=False), 'Item'] = 'Rice and products'
 
     # Concatenating all the years together
     df_diet = pd.concat([df_diet_1990_2013, df_diet_2010_2022])
@@ -220,9 +220,52 @@ def diet_processing():
                                                                               'Netherlands')
     df_diet_pathwaycalc['geoscale'] = df_diet_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
 
-    return df_diet_pathwaycalc
+    return df_diet_pathwaycalc, df_diet
+# CalculationLeaf FOOD WASTE (LIFESTYLE) -----------------------------------------------------------------------------------
 
+def food_waste_processing(df_diet):
+    # Pivot the df
+    pivot_df_diet = df_diet.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
+                                        values='Value').reset_index()
 
+    # Food item name matching with dictionary
+    # Read excel file
+    df_dict_waste = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        sheet_name='food-waste_lifestyle')
+
+    # Merge based on 'Item'
+    df_waste_pathwaycalc = pd.merge(df_dict_waste, pivot_df_diet, on='Item')
+
+    # Food waste [kcal/cap/day] = food supply [kcal/cap/day] * food waste [%]
+    df_waste_pathwaycalc['value'] = df_waste_pathwaycalc['Food supply (kcal/capita/day)'] * df_waste_pathwaycalc[
+        'Proportion']
+
+    # Drop the unused columns
+    df_waste_pathwaycalc = df_waste_pathwaycalc.drop(columns=['Item', 'Food supply (kcal/capita/day)', 'Proportion'])
+
+    # PathwayCalc formatting -----------------------------------------------------------------------------------------------
+    # Renaming existing columns (geoscale, timsecale, value)
+    df_waste_pathwaycalc.rename(columns={'Area': 'geoscale', 'Year': 'timescale'}, inplace=True)
+
+    # Adding the columns module, lever, level and string-pivot at the correct places
+    df_waste_pathwaycalc['module'] = 'agriculture'
+    df_waste_pathwaycalc['lever'] = 'fwaste'
+    df_waste_pathwaycalc['level'] = 0
+    cols = df_waste_pathwaycalc.columns.tolist()
+    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    df_waste_pathwaycalc = df_waste_pathwaycalc[cols]
+
+    # Rename countries to Pathaywcalc name
+    df_waste_pathwaycalc['geoscale'] = df_waste_pathwaycalc['geoscale'].replace(
+        'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+    df_waste_pathwaycalc['geoscale'] = df_waste_pathwaycalc['geoscale'].replace('Netherlands (Kingdom of the)',
+                                                                                'Netherlands')
+    df_waste_pathwaycalc['geoscale'] = df_waste_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
+
+    return df_waste_pathwaycalc
 
 # CalculationLeaf SELF-SUFFICIENCY CROP & LIVESTOCK ------------------------------------------------------------------------------
 def self_sufficiency_processing():
@@ -2487,13 +2530,17 @@ def land_management_processing():
 
 # CalculationTree RUNNING PRE-PROCESSING -----------------------------------------------------------------------------------------------
 
-df_diet_pathwaycalc = diet_processing()
+df_diet_pathwaycalc, df_diet = diet_processing()
+df_waste_pathwaycalc = food_waste_processing(df_diet)
 #df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing()
 #df_climate_smart_crop = climate_smart_crop_processing()
 #df_climate_smart_livestock = climate_smart_livestock_processing(df_csl_feed)
 #df_csf, csf_managed = climate_smart_forestry_processing()
 
 #df_climate_smart_livestock.to_csv('climate-smart-livestock_29-07-24.csv', index=False)
+
+
+
 
 
 # CalculationLeaf BIOENERGY CAPACITY -----------------------------------------------------------------------------------
