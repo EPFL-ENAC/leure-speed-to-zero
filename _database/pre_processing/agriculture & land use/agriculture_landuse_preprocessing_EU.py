@@ -2539,8 +2539,106 @@ df_waste_pathwaycalc = food_waste_processing(df_diet)
 
 #df_climate_smart_livestock.to_csv('climate-smart-livestock_29-07-24.csv', index=False)
 
+# CalculationLeaf ENERGY REQUIREMENTS -----------------------------------------------------------------------------------
 
 
+
+# Calorie requirements [kcal/cap/day] = BMR * PAL = ( C(age, sex) + S (age,sex) * BW(age,sex)) * PAL
+# BMR : Basal Metabolic Rate, PAL : Physical Activity Level (kept constant), BW : Body Weight
+# C constant, S Slope (depend on age and sex groups)
+
+# Computing average PAL of US adult non overweight
+# SOURCE : TABLE 5.10 https://openknowledge.fao.org/server/api/core/bitstreams/62ae7aeb-9536-4e43-b2d0-55120e662824/content
+men_mean_PAL = (1.75 + 1.78 + 1.84 + 1.60 + 1.61 + 1.62 + 1.17 + 1.38) / 8
+women_mean_PAL = (1.79 + 1.83 + 1.89 + 1.75 + 1.69 + 1.55 + 1.21 + 1.17) / 8
+mean_PAL = (men_mean_PAL + women_mean_PAL) / 2
+
+# Compute the calorie requirements per demography (age and gender)
+# PAL is constant
+# C and S come from https://pubs.acs.org/doi/10.1021/acs.est.5b05088 Table 1
+# Body Weight (constant through years) comes from https://pubs.acs.org/doi/10.1021/acs.est.5b05088 supplementary information
+
+# Read and format body weight
+df_body_weight= pd.read_excel(
+    '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/body_weight.xlsx',
+    sheet_name='body-weight')
+df_body_weight_melted = pd.melt(
+    df_body_weight,
+    id_vars=['geoscale', 'sex'],  # Columns to keep
+    value_vars=['age20-29', 'age30-59', 'age60-79', 'above80'],  # Columns to unpivot
+    var_name='age',  # Name for the new 'age' column
+    value_name='body weight'  # Name for the new 'body weight' column
+)
+df_body_weight_melted.sort_values(by=['geoscale', 'sex'], inplace=True)
+
+# Read and format C and S
+df_S_C= pd.read_excel(
+    '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/body_weight.xlsx',
+    sheet_name='S_C')
+
+# Merge df based on columns age and sex
+df_kcal_req = pd.merge(
+    df_body_weight_melted,
+    df_S_C,
+    on=['age', 'sex'],  # Columns to merge on
+    how='inner'  # Merge method: 'inner' will keep only matching rows
+)
+df_kcal_req.sort_values(by=['geoscale', 'sex'], inplace=True)
+
+# Add the column with the constant PAL value
+df_kcal_req['PAL'] = mean_PAL
+
+# Compute the calorie requirements per demography (age and gender)
+df_kcal_req['Calorie requirement per demography [kcal/person/day]'] = \
+    (df_kcal_req['C (kcal)'] + df_kcal_req['S (kcal/kg)'] * df_kcal_req['body weight']) * df_kcal_req['PAL']
+
+# Create a new column combining age and sex and merging it with the variable names
+df_kcal_req['sex_age'] = df_kcal_req['sex'] + '_' + df_kcal_req['age']
+df_kcal_req = df_kcal_req[['geoscale', 'sex_age', 'Calorie requirement per demography [kcal/person/day]']]
+df_dict_kcal = pd.read_excel(
+    '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+    sheet_name='energy-req_lifestyle')
+df_kcal_req = pd.merge(df_dict_kcal, df_kcal_req, on='sex_age')
+df_kcal_req = df_kcal_req.drop(columns=['sex_age'])
+
+# Read lifestyle population
+df_population = pd.read_csv(
+    '/Users/crosnier/Documents/PathwayCalc/_database/data/csv/lifestyles_population.csv', sep=';')
+# Format population
+df_population = df_population[['geoscale', 'timescale', 'eucalc-name', 'value']]
+df_population = df_population[df_population['eucalc-name'].str.contains('demography', case=False, na=False)]
+df_population.rename(columns={'value': 'population', 'eucalc-name':'variables'}, inplace=True)
+
+# Merge with population based on geoscale and eucalc-name
+df_kcal_req_pathwaycalc = pd.merge(
+    df_kcal_req,
+    df_population,
+    on=['variables', 'geoscale'],  # Columns to merge on
+    how='inner'  # Merge method: 'inner' will keep only matching rows
+)
+
+# Multiply the kcal requirement of each group with the demography
+df_kcal_req_pathwaycalc['Calorie requirement per demography [kcal/day]'] = df_kcal_req_pathwaycalc['population'] * \
+                         df_kcal_req_pathwaycalc['Calorie requirement per demography [kcal/person/day]']
+df_kcal_req_pathwaycalc.sort_values(by=['geoscale', 'timescale'], inplace=True)
+
+# Add a column with the total population
+# Calculate the total population for each geoscale and timescale
+total_pop = df_kcal_req_pathwaycalc.groupby(['geoscale', 'timescale'])['population'].sum().reset_index()
+# Rename the column for clarity
+total_pop.rename(columns={'population': 'total_population'}, inplace=True)
+# Merge the total_population back into the original DataFrame
+df_kcal_req_pathwaycalc = df_kcal_req_pathwaycalc.merge(total_pop, on=['geoscale', 'timescale'], how='left')
+
+# Then compute the average based on the demography per country and year
+
+# rename correctly
+df_kcal_req_pathwaycalc['variables'] = df_kcal_req_pathwaycalc['variables'].str.replace('demography', 'kcal-req', case=False)
+df_kcal_req_pathwaycalc['variables'] = df_kcal_req_pathwaycalc['variables'].str.replace('inhabitants', 'kcal/cap/day', case=False)
+
+
+
+# PathwayCalc formatting --------------------------------------------------------------------------------
 
 
 # CalculationLeaf BIOENERGY CAPACITY -----------------------------------------------------------------------------------
