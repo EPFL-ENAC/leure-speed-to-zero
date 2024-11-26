@@ -1,5 +1,5 @@
 import numpy as np
-from model.common.auxiliary_functions import interpolate_nans, add_missing_ots_years
+from model.common.auxiliary_functions import interpolate_nans, add_missing_ots_years, linear_fitting_ots_db
 #from _database.pre_processing.api_routines_CH import get_data_api_CH
 from scipy.stats import linregress
 import pandas as pd
@@ -221,6 +221,8 @@ def diet_processing():
     df_diet_pathwaycalc['geoscale'] = df_diet_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
 
     return df_diet_pathwaycalc, df_diet
+
+
 # CalculationLeaf FOOD WASTE (LIFESTYLE) -----------------------------------------------------------------------------------
 def food_waste_processing(df_diet):
     # Pivot the df
@@ -378,7 +380,7 @@ def energy_requirements_processing():
     return df_kcal_req_pathwaycalc
 
 # CalculationLeaf SELF-SUFFICIENCY CROP & LIVESTOCK ------------------------------------------------------------------------------
-def self_sufficiency_processing():
+def self_sufficiency_processing(years_ots):
 
     # Read data ------------------------------------------------------------------------------------------------------------
 
@@ -468,7 +470,7 @@ def self_sufficiency_processing():
 
     # COMMODITY BALANCES (NON-FOOD) (OLD METHODOLOGY) - For molasse and cakes ----------------------------------------------
     # 1990 - 2013
-    list_elements = ['Production Quantity', 'Import Quantity', 'Export Quantity', 'Feed']
+    list_elements = ['Production Quantity', 'Import quantity', 'Export quantity', 'Feed']
     list_items = ['Copra Cake', 'Cottonseed Cake', 'Groundnut Cake', 'Oilseed Cakes, Other', 'Palmkernel Cake',
                   'Rape and Mustard Cake', 'Sesameseed Cake', 'Soyabean Cake', 'Sunflowerseed Cake']
     code = 'CBH'
@@ -491,7 +493,7 @@ def self_sufficiency_processing():
     df_ssr_1990_2013_cake.loc[
         df_ssr_1990_2013_cake['Element'].str.contains('Production Quantity', case=False, na=False), 'Element'] = 'Production'
     df_ssr_1990_2013_cake.loc[
-        df_ssr_1990_2013_cake['Element'].str.contains('Import Quantity', case=False, na=False), 'Element'] = 'Import'
+        df_ssr_1990_2013_cake['Element'].str.contains('Import quantity', case=False, na=False), 'Element'] = 'Import'
     df_ssr_1990_2013_cake.loc[
         df_ssr_1990_2013_cake['Element'].str.contains('Export Quantity', case=False, na=False), 'Element'] = 'Export'
 
@@ -607,7 +609,8 @@ def self_sufficiency_processing():
                                                                             'Netherlands')
     df_ssr_pathwaycalc['geoscale'] = df_ssr_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
 
-    # Vaud, Paris & EU27 ---------------------------------------------------------------------------------------------------
+    # Extrapolation
+    df_ssr_pathwaycalc = linear_fitting_ots_db(df_ssr_pathwaycalc, years_ots, countries='all')
 
     return df_ssr_pathwaycalc, df_csl_feed
 
@@ -789,10 +792,6 @@ def climate_smart_crop_processing():
     # Drop the columns
     pivot_df_pesticides_nitrogen = pivot_df.drop(columns=['Use per area of cropland'])
 
-    # Extrapolating RFB for 1990 to 2001 and other missing values ----------------------------------------------------------
-
-    # Extrapolating everything for 2022
-
     # PathwayCalc formatting -----------------------------------------------------------------------------------------------
 
     # Concatenating
@@ -939,6 +938,9 @@ def climate_smart_crop_processing():
     }
     df_losses_2010_2021 = faostat.get_data_df(code, pars=my_pars, strval=False)
 
+    # Renanming rice to have same name with other df
+    df_losses_1990_2013['Item'] = df_losses_1990_2013['Item'].replace('Rice (Milled Equivalent)', 'Rice and products')
+
     # Concatenating
     df_losses = pd.concat([df_losses_1990_2013, df_losses_2010_2021])
 
@@ -953,8 +955,6 @@ def climate_smart_crop_processing():
 
     # Drop the columns Production, Import Quantity and Export Quantity
     pivot_df = pivot_df.drop(columns=['Production', 'Losses'])
-
-    # Extrapolating for 2022 -----------------------------------------------------------------------------------------------
 
     # PathwayCalc formatting -----------------------------------------------------------------------------------------------
 
@@ -1113,7 +1113,67 @@ def climate_smart_crop_processing():
     df_climate_smart_crop = pd.concat([df_climate_smart_crop, agroforestry_crop_pathwaycalc])
     df_climate_smart_crop = pd.concat([df_climate_smart_crop, yield_aps_pathwaycalc])
 
-    return df_climate_smart_crop
+    # Rename countries to Pathaywcalc name
+    df_climate_smart_crop['geoscale'] = df_climate_smart_crop['geoscale'].replace(
+        'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+    df_climate_smart_crop['geoscale'] = df_climate_smart_crop['geoscale'].replace(
+       'Netherlands (Kingdom of the)', 'Netherlands')
+    df_climate_smart_crop['geoscale'] = df_climate_smart_crop['geoscale'].replace('Czechia', 'Czech Republic')
+
+    df_ireland = df_climate_smart_crop[df_climate_smart_crop['geoscale'].str.contains("Ireland", case=False, na=False)]
+    df_portugal = df_climate_smart_crop[df_climate_smart_crop['geoscale'].str.contains("Portugal", case=False, na=False)]
+    df_switzerland = df_climate_smart_crop[
+        df_climate_smart_crop['geoscale'].str.contains("Switzerland", case=False, na=False)]
+
+    # Merge the two DataFrames on 'variables' and 'timescale' to align them for comparison
+    comparison_df = df_ireland.merge(
+        df_portugal,
+        on=['variables', 'timescale'],
+        how='outer',
+        indicator=True
+    )
+    # Extract unique variable names from each DataFrame
+    variables_ireland = set(df_ireland['variables'])
+    variables_portugal = set(df_portugal['variables'])
+    variables_switzerland = set(df_switzerland['variables'])
+
+    # Find mismatching variables
+    variables_only_in_ireland = variables_ireland - variables_portugal
+    variables_only_in_portugal = variables_portugal - variables_ireland
+    variables_only_in_switzerland = variables_switzerland - variables_portugal
+
+    # Identify rows that are different (exist only in one DataFrame)
+    different_rows = comparison_df[comparison_df['_merge'] != 'both']
+
+    # Ensure structure coherence
+    def ensure_structure(df):
+        # Get unique values for geoscale, timescale, and variables
+        df = df.drop_duplicates(subset=['geoscale', 'timescale', 'level', 'variables'])
+        lever_name = list(set(df['lever']))[0]
+        countries = df['geoscale'].unique()
+        years = df['timescale'].unique()
+        variables = df['variables'].unique()
+        level = df['level'].unique()
+        lever = df['lever'].unique()
+        module = df['module'].unique()
+        # Create a complete multi-index from all combinations of unique values
+        full_index = pd.MultiIndex.from_product(
+            [countries, years, variables, level, lever, module],
+            names=['geoscale', 'timescale', 'variables', 'level', 'lever', 'module']
+        )
+        # Reindex the DataFrame to include all combinations, filling missing values with NaN
+        df = df.set_index(['geoscale', 'timescale', 'variables', 'level', 'lever', 'module'])
+        df = df.reindex(full_index, fill_value=np.nan).reset_index()
+        #df['lever'] = lever_name
+        #df['lever'] = lever_name
+        return df
+
+    # Extrapolating
+
+    df_climate_smart_crop= ensure_structure(df_climate_smart_crop)
+    df_climate_smart_crop_pathwaycalc = linear_fitting_ots_db(df_climate_smart_crop, years_ots, countries='all')
+
+    return df_climate_smart_crop_pathwaycalc
 
 # CalculationLeaf CLIMATE SMART LIVESTOCK ------------------------------------------------------------------------------
 def climate_smart_livestock_processing(df_csl_feed):
@@ -2271,18 +2331,16 @@ def land_management_processing():
     # LAND MATRIX & LAND MAN USE----------------------------------------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------------------------------------------
 
-    # 1990 to 2020 , to update !
-
     # Importing UNFCCC excel files and reading them with a loop (only for Switzerland) Table 4.1 ---------------------------
     # Putting in a df in 3 dimensions (from, to, year)
     # Define the path where the Excel files are located
-    folder_path = '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_unfccc'
+    folder_path = '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_unfccc_2023'
 
     # List all files in the folder
     files = os.listdir(folder_path)
 
     # Filter and sort files by the year (1990 to 2020)
-    sorted_files = sorted([f for f in files if f.startswith('CHE_2022_') and int(f.split('_')[2]) in range(1990, 2021)],
+    sorted_files = sorted([f for f in files if f.startswith('CHE_2023_') and int(f.split('_')[2]) in range(1990, 2021)],
                           key=lambda x: int(x.split('_')[2]))
 
     # Initialize a list to store DataFrames
@@ -2607,12 +2665,13 @@ def land_management_processing():
     df_land_gap[numeric_cols] = df_land_gap[numeric_cols].apply(pd.to_numeric,
                                                                 errors='coerce')
 
-    # Computing the difference
-    df_land_gap['agr_land-man_gap_cropland[ha]'] = df_land_gap['agr_land-man_use_cropland[ha]'] - df_land_gap[
-        'Cropland']
-    df_land_gap['agr_land-man_gap_forest[ha]'] = df_land_gap['agr_land-man_use_forest[ha]'] - df_land_gap['Forest land']
-    df_land_gap['agr_land-man_gap_grassland[ha]'] = df_land_gap['agr_land-man_use_grassland[ha]'] - df_land_gap[
-        'Permanent meadows and pastures']
+    # Computing the difference & Unit conversion [kha] => [ha]
+    df_land_gap['agr_land-man_gap_cropland[ha]'] = 1000 * (df_land_gap['agr_land-man_use_cropland[ha]'] -
+                                                          df_land_gap['Cropland'])
+    df_land_gap['agr_land-man_gap_forest[ha]'] = 1000 * (df_land_gap['agr_land-man_use_forest[ha]'] -
+                                                        df_land_gap['Forest land'])
+    df_land_gap['agr_land-man_gap_grassland[ha]'] = 1000 * (df_land_gap['agr_land-man_use_grassland[ha]'] -
+                                                           df_land_gap['Permanent meadows and pastures'])
     # df_land_gap['agr_land-man_gap_other[ha]'] = df_land_gap[''] - df_land_gap['']
     # df_land_gap['agr_land-man_gap_settlement[ha]'] = df_land_gap[''] - df_land_gap['']
     # df_land_gap['agr_land-man_gap_wetland[ha]'] = df_land_gap[''] - df_land_gap['']
@@ -2621,32 +2680,56 @@ def land_management_processing():
     df_land_gap = df_land_gap[['timescale', 'agr_land-man_gap_cropland[ha]', 'agr_land-man_gap_forest[ha]',
                                'agr_land-man_gap_grassland[ha]']]
 
-    # Melt the df
+    # Add a column geoscale for Switzerland
+    df_land_gap['geoscale'] = 'Switzerland'
 
-    # Unit conversion [kha] => [ha]
+    # Melt the df
+    df_land_gap = pd.melt(df_land_gap, id_vars=['timescale'],
+                                          var_name='variables', value_name='value')
 
     # PathwayCalc formatting
+    df_land_gap['module'] = 'land-use'
+    df_land_gap['lever'] = 'land-man'
+    df_land_gap['level'] = 0
+    cols = df_land_gap.columns.tolist()
+    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    cols.insert(cols.index('timescale'), cols.pop(cols.index('variables')))
+    df_land_gap = df_land_gap[cols]
+
+    # Rename countries to Pathaywcalc name
+    #df_land_gap['geoscale'] = df_land_gap['geoscale'].replace(
+    #    'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+    #df_land_gap['geoscale'] = df_land_gap['geoscale'].replace(
+    #    'Netherlands (Kingdom of the)', 'Netherlands')
+    #df_land_gap['geoscale'] = df_land_gap['geoscale'].replace('Czechia', 'Czech Republic')
 
     # ----------------------------------------------------------------------------------------------------------------------
     # FINAL RESULTS --------------------------------------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------------------------------------------
-
     # Concatenating all dfs
+    df_land_management_pathwaycalc = pd.concat([df_land_matrix_pathwaycalc, df_land_use_pathwaycalc])
+    df_land_management_pathwaycalc = pd.concat([df_land_management_pathwaycalc, df_land_dyn])
+    df_land_management_pathwaycalc = pd.concat([df_land_management_pathwaycalc, df_land_gap])
 
-    return
+    # Extrapolating
 
-#years_setting = [1990, 2022, 2050, 5]  # Set the timestep for historical years & scenarios
-#years_ots = create_ots_years_list(years_setting)
+    return df_land_management_pathwaycalc
+
+years_setting = [1990, 2022, 2050, 5]  # Set the timestep for historical years & scenarios
+years_ots = list(range(1990,2023))
 
 # CalculationTree RUNNING PRE-PROCESSING -----------------------------------------------------------------------------------------------
 
-df_diet_pathwaycalc, df_diet = diet_processing()
-df_waste_pathwaycalc = food_waste_processing(df_diet)
-df_kcal_req_pathwaycalc = energy_requirements_processing()
-#df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing()
-#df_climate_smart_crop = climate_smart_crop_processing()
+#df_diet_pathwaycalc, df_diet = diet_processing()
+#df_waste_pathwaycalc = food_waste_processing(df_diet)
+#df_kcal_req_pathwaycalc = energy_requirements_processing()
+#df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing(years_ots)
+df_climate_smart_crop_pathwaycalc = climate_smart_crop_processing()
 #df_climate_smart_livestock = climate_smart_livestock_processing(df_csl_feed)
 #df_csf, csf_managed = climate_smart_forestry_processing()
+#df_land_management_pathwaycalc = land_management_processing()
 
 #df_climate_smart_livestock.to_csv('climate-smart-livestock_29-07-24.csv', index=False)
 
