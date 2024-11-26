@@ -768,6 +768,7 @@ def linear_fitting(dm, years_ots, max_t0=None, max_tb=None, min_t0=None, min_tb=
 
 
 def linear_fitting_ots_db(df_db, years_ots, countries='all'):
+    df_db['timescale'] = df_db['timescale'].astype(int)
     levers = list(set(df_db['lever']))
     if len(levers) > 1:
         raise ValueError('There is more than one lever in the file, use only one lever per file')
