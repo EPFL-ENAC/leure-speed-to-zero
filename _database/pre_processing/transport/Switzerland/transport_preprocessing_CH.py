@@ -1601,6 +1601,26 @@ for year in local_filename_dict.keys():
         dm_pkm_cap_raw = dm.copy()
     else:
         dm_pkm_cap_raw.append(dm, dim='Years')
+dm_pkm_cap_raw.sort('Years')
+
+# For Vaud, adjust pkm/cap for 2015 and 2021 with actual values (split unchanged)
+VD_pkm_day = {2015: 38.2, 2021: 32.1}
+idx = dm_pkm_cap_raw.idx
+arr_tot_pkm_cap_raw = np.nansum(dm_pkm_cap_raw.array, axis=-1)
+corr_fact = dict()
+for yr in VD_pkm_day.keys():
+    corr_fact[yr] = arr_tot_pkm_cap_raw[idx['Vaud'], idx[yr], idx['tra_pkm-cap']] / (VD_pkm_day[yr]*365)
+avg_fact = sum(corr_fact.values())/len(corr_fact.values())
+
+for yr in dm_pkm_cap_raw.col_labels['Years']:
+    if yr not in VD_pkm_day.keys():
+        corr_fact[yr] = avg_fact
+    dm_pkm_cap_raw.array[idx['Vaud'], idx[yr], idx['tra_pkm-cap'], :] = \
+        dm_pkm_cap_raw.array[idx['Vaud'], idx[yr], idx['tra_pkm-cap'], :] / corr_fact[yr]
+
+dm_tot = dm_pkm_cap_raw.copy()
+dm_tot.change_unit('tra_pkm-cap', 365, 'pkm/cap', 'pkm/cap/day', operator='/')
+dm_tot.group_all('Categories1')
 
 # For the missing years extrapolate the pkm/cap value base on the pkm curve of Switzerland
 dm_pkm_cap = extrapolate_missing_pkm_cap_based_on_pkm_CH(dm_pkm_cap_raw, dm_pkm_CH, dm_pop)
