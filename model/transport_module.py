@@ -213,7 +213,7 @@ def read_data(data_file, lever_setting):
     dm_freight_tech = dict_fxa['freight_tech']
     dm_passenger_tech = dict_fxa['passenger_tech']
     dm_passenger_public = dict_fxa['passenger_renewal-rate']
-    dm_passenger_public.append(dict_fxa['passenger_avg-pkm-by-veh'], dim='Variables')
+    #dm_passenger_public.append(dict_fxa['passenger_avg-pkm-by-veh'], dim='Variables')
     dm_passenger_veh_lifetime = dict_fxa['passenger_vehicle-lifetime']
     dm_freight_mode_other = dict_fxa['freight_mode_other']
     dm_freight_mode_road = dict_fxa['freight_mode_road']
@@ -226,9 +226,8 @@ def read_data(data_file, lever_setting):
     dm_passenger_tech.append(DM_ots_fts['passenger_veh-efficiency_new'], dim='Variables')
     dm_passenger_tech.append(DM_ots_fts['passenger_technology-share_new'], dim='Variables')
     dm_passenger_modal = DM_ots_fts['passenger_modal-share']
-    dm_passenger_private = DM_ots_fts['passenger_occupancy']
-    dm_passenger_private.append(DM_ots_fts['passenger_utilization-rate'], dim='Variables')
-    dm_passenger_private.append(dm_passenger_veh_lifetime, dim='Variables')
+    dm_passenger = DM_ots_fts['passenger_occupancy']
+    dm_passenger.append(DM_ots_fts['passenger_utilization-rate'], dim='Variables')
 
     # FREIGHT
     dm_freight_tech.append(DM_ots_fts['freight_vehicle-efficiency_new'], dim='Variables')
@@ -244,7 +243,8 @@ def read_data(data_file, lever_setting):
         'passenger_mode_public': dm_passenger_public,
         'passenger_aviation': dm_passenger_aviation,
         'passenger_modal_split': dm_passenger_modal,
-        'passenger_mode_private': dm_passenger_private,
+        'passenger_all': dm_passenger,
+        'passenger_lifetime': dm_passenger_veh_lifetime,
         'passenger_pkm_demand': DM_ots_fts['pkm']   # pkm/cap
         }
 
@@ -499,30 +499,25 @@ def passenger_fleet_energy(DM_passenger, dm_lfs, DM_other, cdm_const, years_sett
     del arr_av_pkm
 
     # Split between road and other passenger transport data
-    dm_demand_private = dm_demand_by_mode.filter_w_regex(dict_dim_pattern={'Categories1': 'LDV|2W'})
-    dm_demand_public = dm_demand_by_mode.filter_w_regex(dict_dim_pattern={'Categories1': 'bus|metrotram|rail'})
-
-    dm_private = DM_passenger['passenger_mode_private']
-    dm_private.append(dm_demand_private, dim='Variables')
-    del dm_demand_private, dm_demand_by_mode
+    dm_demand = dm_demand_by_mode.filter({'Categories1': ['LDV', '2W', 'bus', 'metrotram', 'rail']})
+    dm_all = DM_passenger['passenger_all']
+    dm_all.append(dm_demand, dim='Variables')
+    del dm_demand
 
     # demand [vkm] = demand [pkm] / occupancy [pkm/vkm]
-    dm_private.operation('tra_passenger_transport-demand', '/', 'tra_passenger_occupancy',
+    dm_all.operation('tra_passenger_transport-demand', '/', 'tra_passenger_occupancy',
                          dim="Variables", out_col='tra_passenger_transport-demand-vkm', unit='vkm', div0="error")
     # vehicle-fleet [number] = demand [vkm] / utilisation-rate [vkm/veh/year]
-    dm_private.operation('tra_passenger_transport-demand-vkm', '/', 'tra_passenger_utilisation-rate',
+    dm_all.operation('tra_passenger_transport-demand-vkm', '/', 'tra_passenger_utilisation-rate',
                          dim="Variables", out_col='tra_passenger_vehicle-fleet', unit='number', div0="error", type=int)
+    dm_private = dm_all.filter({'Categories1': ['LDV', '2W']})
+    dm_private.append(DM_passenger['passenger_lifetime'], dim='Variables')
     # renewal-rate [%] = utilisation-rate [vkm/veh/year] /  vehicle-lifetime [years]
     dm_private.operation('tra_passenger_utilisation-rate', '/', 'tra_passenger_vehicle-lifetime',
                          dim="Variables", out_col='tra_passenger_renewal-rate', unit='%', div0="error")
 
     dm_public = DM_passenger['passenger_mode_public']
-    dm_public.append(dm_demand_public, dim='Variables')
-    del dm_demand_public
-
-    # vehicle-fleet[number] = demand [pkm] / avg-pkm-by-veh [pkm/veh]
-    dm_public.operation('tra_passenger_transport-demand', '/', 'tra_passenger_avg-pkm-by-veh',
-                        dim="Variables", out_col='tra_passenger_vehicle-fleet', unit='number', div0="error", type=int)
+    dm_public.append(dm_all.filter({'Categories1': ['bus', 'metrotram', 'rail']}), dim='Variables')
 
     # Compute vehicle waste and new vehicles for both road and other
     dm_other_tmp = dm_public.filter_w_regex(dict_dim_pattern={'Variables': '.*vehicle-fleet|.*renewal-rate'})
@@ -564,20 +559,16 @@ def passenger_fleet_energy(DM_passenger, dm_lfs, DM_other, cdm_const, years_sett
     compute_fts_tech_split(dm_mode, dm_tech, cols, years_setting)
 
     # Extract passenger transport demand vkm for road and pkm for others, join and compute transport demand by technology
-    dm_demand_km = dm_private.filter(selected_cols={'Variables': ['tra_passenger_transport-demand-vkm']})
-    dm_demand_km_other = dm_public.filter(selected_cols={'Variables': ['tra_passenger_transport-demand']})
-    dm_demand_km_other.units['tra_passenger_transport-demand'] = 'km'
-    dm_demand_km.units['tra_passenger_transport-demand-vkm'] = 'km'
-    dm_demand_km.rename_col('tra_passenger_transport-demand-vkm', 'tra_passenger_transport-demand', dim='Variables')
-    dm_demand_km.append(dm_demand_km_other, dim='Categories1')
-    dm_demand_km.sort(dim='Categories1')
+    dm_demand_vkm = dm_all.filter(selected_cols={'Variables': ['tra_passenger_transport-demand-vkm']})
+    dm_demand_vkm.sort(dim='Categories1')
+    dm_tech.sort(dim='Categories1')
     idx_t = dm_tech.index_all()
-    tmp = dm_demand_km.array[:, :, 0, :, np.newaxis] \
+    tmp = dm_demand_vkm.array[:, :, 0, :, np.newaxis] \
           * dm_tech.array[:, :, idx_t['tra_passenger_technology-share_fleet'], ...]
-    dm_tech.add(tmp, dim='Variables', col_label='tra_passenger_transport-demand', unit='km')
-    del tmp, dm_demand_km, dm_demand_km_other
+    dm_tech.add(tmp, dim='Variables', col_label='tra_passenger_transport-demand-vkm', unit='km')
+    del tmp
     # Compute energy consumption
-    dm_tech.operation('tra_passenger_veh-efficiency_fleet', '*', 'tra_passenger_transport-demand',
+    dm_tech.operation('tra_passenger_veh-efficiency_fleet', '*', 'tra_passenger_transport-demand-vkm',
                       out_col='tra_passenger_energy-demand', unit='MJ')
 
     # Add e-fuel and bio-fuel to energy consumption
@@ -666,9 +657,8 @@ def passenger_fleet_energy(DM_passenger, dm_lfs, DM_other, cdm_const, years_sett
     dm_tech.rename_col('tra_passenger_technology-share_fleet', 'tra_passenger_technology-share-fleet', dim='Variables')
 
     # Compute passenger demand by mode
-    idx = dm_tech.idx
-    tmp = np.nansum(dm_tech.array[:, :, idx['tra_passenger_transport-demand'], :, :], axis=-1)
-    dm_mode.add(tmp, dim='Variables', col_label='tra_passenger_transport-demand-by-mode', unit='pkm')
+    dm_mode.append(dm_demand_by_mode, dim='Variables')
+    dm_mode.rename_col(['tra_passenger_transport-demand'], ['tra_passenger_transport-demand-by-mode'], dim='Variables')
 
     # Compute CO2 emissions by mode
     idx = dm_emissions_by_mode.idx
@@ -1191,7 +1181,7 @@ def transport(lever_setting, years_setting, interface=Interface()):
         dm_lfs = interface.get_link(from_sector='lifestyles', to_sector='transport')
     else:
         lfs_interface_data_file = os.path.join(current_file_directory,
-                                           '../_database/data/interface/lifestyles_to_transport.pickle')
+                                               '../_database/data/interface/lifestyles_to_transport.pickle')
         with open(lfs_interface_data_file, 'rb') as handle:
             DM_lfs = pickle.load(handle)
         dm_lfs = DM_lfs['pop']
@@ -1275,8 +1265,8 @@ def local_transport_run():
     return results_run
 
 # database_from_csv_to_datamatrix()
-print('In transport, the share of waste by fuel/tech type does not seem right. Fix it.')
-print('Apply technology shares before computing the stock')
-print('For the efficiency, use the new methodology developped for Building (see overleaf on U-value)')
+#print('In transport, the share of waste by fuel/tech type does not seem right. Fix it.')
+#print('Apply technology shares before computing the stock')
+#print('For the efficiency, use the new methodology developped for Building (see overleaf on U-value)')
 #results_run = local_transport_run()
 
