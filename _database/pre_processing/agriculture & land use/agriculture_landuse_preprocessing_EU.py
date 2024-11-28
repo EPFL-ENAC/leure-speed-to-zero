@@ -34,7 +34,27 @@ def linear_fitting(dm, years_ots):
     dm.fill_nans(dim_to_interp='Years')
 
     return
+# Ensure structure coherence
+def ensure_structure(df):
+    # Get unique values for geoscale, timescale, and variables
+    df = df.drop_duplicates(subset=['geoscale', 'timescale', 'level', 'variables'])
+    lever_name = list(set(df['lever']))[0]
+    countries = df['geoscale'].unique()
+    years = df['timescale'].unique()
+    variables = df['variables'].unique()
+    level = df['level'].unique()
+    lever = df['lever'].unique()
+    module = df['module'].unique()
+    # Create a complete multi-index from all combinations of unique values
+    full_index = pd.MultiIndex.from_product(
+         [countries, years, variables, level, lever, module],
+            names=['geoscale', 'timescale', 'variables', 'level', 'lever', 'module']
+        )
+    # Reindex the DataFrame to include all combinations, filling missing values with NaN
+    df = df.set_index(['geoscale', 'timescale', 'variables', 'level', 'lever', 'module'])
+    df = df.reindex(full_index, fill_value=np.nan).reset_index()
 
+    return df
 
 def create_ots_years_list(years_setting):
     startyear: int = years_setting[0]  # Start year is argument [0], i.e., 1990
@@ -85,7 +105,7 @@ def diet_processing():
     my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
     list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
                   '2002',
-                  '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013']
+                  '2003', '2004', '2005', '2006', '2007', '2008', '2009']
     my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
 
     my_pars = {
@@ -220,6 +240,10 @@ def diet_processing():
                                                                               'Netherlands')
     df_diet_pathwaycalc['geoscale'] = df_diet_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
 
+    # Extrapolating
+    df_diet_pathwaycalc = ensure_structure(df_diet_pathwaycalc)
+    df_diet_pathwaycalc = linear_fitting_ots_db(df_diet_pathwaycalc, years_ots,
+                                                                 countries='all')
     return df_diet_pathwaycalc, df_diet
 
 
@@ -416,7 +440,7 @@ def self_sufficiency_processing(years_ots):
     my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
     list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
                   '2002',
-                  '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013']
+                  '2003', '2004', '2005', '2006', '2007', '2008', '2009']
     my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
 
     my_pars = {
@@ -479,7 +503,7 @@ def self_sufficiency_processing(years_ots):
     my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
     list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
                   '2002',
-                  '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013']
+                  '2003', '2004', '2005', '2006', '2007', '2008', '2009']
     my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
 
     my_pars = {
@@ -907,7 +931,7 @@ def climate_smart_crop_processing():
     my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
     my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
     list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
-                  '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013']
+                  '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009']
     my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
 
     my_pars = {
@@ -1132,44 +1156,8 @@ def climate_smart_crop_processing():
         how='outer',
         indicator=True
     )
-    # Extract unique variable names from each DataFrame
-    variables_ireland = set(df_ireland['variables'])
-    variables_portugal = set(df_portugal['variables'])
-    variables_switzerland = set(df_switzerland['variables'])
-
-    # Find mismatching variables
-    variables_only_in_ireland = variables_ireland - variables_portugal
-    variables_only_in_portugal = variables_portugal - variables_ireland
-    variables_only_in_switzerland = variables_switzerland - variables_portugal
-
-    # Identify rows that are different (exist only in one DataFrame)
-    different_rows = comparison_df[comparison_df['_merge'] != 'both']
-
-    # Ensure structure coherence
-    def ensure_structure(df):
-        # Get unique values for geoscale, timescale, and variables
-        df = df.drop_duplicates(subset=['geoscale', 'timescale', 'level', 'variables'])
-        lever_name = list(set(df['lever']))[0]
-        countries = df['geoscale'].unique()
-        years = df['timescale'].unique()
-        variables = df['variables'].unique()
-        level = df['level'].unique()
-        lever = df['lever'].unique()
-        module = df['module'].unique()
-        # Create a complete multi-index from all combinations of unique values
-        full_index = pd.MultiIndex.from_product(
-            [countries, years, variables, level, lever, module],
-            names=['geoscale', 'timescale', 'variables', 'level', 'lever', 'module']
-        )
-        # Reindex the DataFrame to include all combinations, filling missing values with NaN
-        df = df.set_index(['geoscale', 'timescale', 'variables', 'level', 'lever', 'module'])
-        df = df.reindex(full_index, fill_value=np.nan).reset_index()
-        #df['lever'] = lever_name
-        #df['lever'] = lever_name
-        return df
 
     # Extrapolating
-
     df_climate_smart_crop= ensure_structure(df_climate_smart_crop)
     df_climate_smart_crop_pathwaycalc = linear_fitting_ots_db(df_climate_smart_crop, years_ots, countries='all')
 
@@ -1348,7 +1336,7 @@ def climate_smart_livestock_processing(df_csl_feed):
 
     # PathwayCalc formatting --------------------------------------------------------------------------------------------
     agroforestry_liv_pathwaycalc['module'] = 'agriculture'
-    agroforestry_liv_pathwaycalc['lever'] = 'climate-smart-crop'
+    agroforestry_liv_pathwaycalc['lever'] = 'climate-smart-livestock'
     agroforestry_liv_pathwaycalc['level'] = 0
     cols = agroforestry_liv_pathwaycalc.columns.tolist()
     cols.insert(cols.index('value'), cols.pop(cols.index('module')))
@@ -1610,7 +1598,7 @@ def climate_smart_livestock_processing(df_csl_feed):
     my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
     my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
     list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
-                  '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013']
+                  '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009']
     my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
 
     my_pars = {
@@ -1991,7 +1979,12 @@ def climate_smart_livestock_processing(df_csl_feed):
     df_csl = pd.concat([df_csl, df_yield_slau_liv_pathwaycalc])
     df_csl = pd.concat([df_csl, agroforestry_liv_pathwaycalc])
 
-    return df_csl
+    # Extrapolating
+    df_climate_smart_livestock_pathwaycalc = ensure_structure(df_csl)
+    df_climate_smart_livestock_pathwaycalc = linear_fitting_ots_db(df_climate_smart_livestock_pathwaycalc, years_ots, countries='all')
+
+
+    return df_climate_smart_livestock_pathwaycalc
 
 # CalculationLeaf CLIMATE SMART FORESTRY -------------------------------------------------------------------------------
 def climate_smart_forestry_processing():
@@ -2202,6 +2195,12 @@ def climate_smart_forestry_processing():
         '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_forestry.xlsx',
         sheet_name='h-rate')
 
+    # Replace - with Na
+    # List of columns to modify
+    columns_to_replace = [1990, 2000, 2010, 2015]
+    # Replace '-' with NaN in the specified columns
+    h_rate[columns_to_replace] = h_rate[columns_to_replace].replace('-', np.nan)
+
     # Format correctly
     # Melting the dfs to have the relevant format (geoscale, year, value)
     h_rate = pd.melt(h_rate, id_vars=['geoscale'], var_name='timescale', value_name='value')
@@ -2322,10 +2321,16 @@ def climate_smart_forestry_processing():
     df_csf = pd.concat([df_csf, gstock_pathwaycalc])
     df_csf = pd.concat([df_csf, h_rate_pathwaycalc])
     df_csf = pd.concat([df_csf, nat_losses_pathwaycalc])
-    return df_csf, csf_managed
+
+    # Extrapolating
+    df_climate_smart_forestry_pathwaycalc = ensure_structure(df_csf)
+    df_climate_smart_forestry_pathwaycalc = linear_fitting_ots_db(df_climate_smart_forestry_pathwaycalc, years_ots,
+                                                                   countries='all')
+
+    return df_climate_smart_forestry_pathwaycalc, csf_managed
 
 # CalculationLeaf LAND MANAGEMENT --------------------------------------------------------------------------------------
-def land_management_processing():
+def land_management_processing(csf_managed):
 
     # ----------------------------------------------------------------------------------------------------------------------
     # LAND MATRIX & LAND MAN USE----------------------------------------------------------------------------------------------------------
@@ -2680,9 +2685,6 @@ def land_management_processing():
     df_land_gap = df_land_gap[['timescale', 'agr_land-man_gap_cropland[ha]', 'agr_land-man_gap_forest[ha]',
                                'agr_land-man_gap_grassland[ha]']]
 
-    # Add a column geoscale for Switzerland
-    df_land_gap['geoscale'] = 'Switzerland'
-
     # Melt the df
     df_land_gap = pd.melt(df_land_gap, id_vars=['timescale'],
                                           var_name='variables', value_name='value')
@@ -2691,6 +2693,7 @@ def land_management_processing():
     df_land_gap['module'] = 'land-use'
     df_land_gap['lever'] = 'land-man'
     df_land_gap['level'] = 0
+    df_land_gap['geoscale'] = 'Switzerland' # Setting the geoscale for CH
     cols = df_land_gap.columns.tolist()
     cols.insert(cols.index('value'), cols.pop(cols.index('module')))
     cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
@@ -2714,152 +2717,214 @@ def land_management_processing():
     df_land_management_pathwaycalc = pd.concat([df_land_management_pathwaycalc, df_land_gap])
 
     # Extrapolating
+    df_land_management_pathwaycalc = ensure_structure(df_land_management_pathwaycalc)
+    df_land_management_pathwaycalc = linear_fitting_ots_db(df_land_management_pathwaycalc, years_ots, countries='all')
 
     return df_land_management_pathwaycalc
 
 years_setting = [1990, 2022, 2050, 5]  # Set the timestep for historical years & scenarios
 years_ots = list(range(1990,2023))
 
+# CalculationLeaf BIOENERGY CAPACITY -----------------------------------------------------------------------------------
+
+def bioernergy_capacity_processing(df_csl_feed):
+    # Using and formatting df_csl_feed as a structural basis for constant ots values across all countries
+    df_bioenergy_capacity_all = df_csl_feed.copy()
+    df_bioenergy_capacity_all = df_bioenergy_capacity_all.drop(columns=['Item', 'Feed'])
+    # Dropping duplicate rows
+    df_bioenergy_capacity_all = df_bioenergy_capacity_all.drop_duplicates()
+
+    # Using and formatting df_csl_feed as a structural basis for constant ots values in Switzerland
+    df_bioenergy_capacity_CH = df_bioenergy_capacity_all.copy()
+    # Keeping only the rows where geoscale = Switzerland
+    df_bioenergy_capacity_CH = df_bioenergy_capacity_CH[df_bioenergy_capacity_CH['Area'] == 'Switzerland']
+
+    # Adding the constant ots values
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_elec_biogases-hf[GW]'] = 0.0
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_elec_biogases[GW]'] = 0.0
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_elec_solid-biofuel-hf[GW]'] = 0.0
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_elec_solid-biofuel[GW]'] = 0.0
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_efficiency_biogases-hf[%]'] = 1.0
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_efficiency_biogases[%]'] = 1.0
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_efficiency_solid-biofuel-hf[%]'] = 1.0
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_efficiency_solid-biofuel[%]'] = 1.0
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_liq_biodiesel[TWh]'] = 0.0
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_liq_biogasoline[TWh]'] = 0.0
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_liq_biojetkerosene[TWh]'] = 0.0
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_liq_other-liquid-biofuel[TWh]'] = 0.0
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_load-factor_biogases-hf[%]'] = 0.0
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_load-factor_biogases[%]'] = 0.0
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_load-factor_solid-biofuel-hf[%]'] = 0.0
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_load-factor_solid-biofuel[%]'] = 0.0
+
+    # Melting
+    df_bioenergy_capacity_CH_pathwaycalc= pd.melt(df_bioenergy_capacity_CH, id_vars=['Area', 'Year'],
+                                          var_name='variables', value_name='value')
+
+    # Renaming columns
+    df_bioenergy_capacity_CH_pathwaycalc.rename(columns={'Area': 'geoscale', 'Year': 'timescale'}, inplace=True)
+
+    # PathwayCalc formatting
+    df_bioenergy_capacity_CH_pathwaycalc['module'] = 'land-use'
+    df_bioenergy_capacity_CH_pathwaycalc['lever'] = 'land-man'
+    df_bioenergy_capacity_CH_pathwaycalc['level'] = 0
+    cols = df_bioenergy_capacity_CH_pathwaycalc.columns.tolist()
+    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    cols.insert(cols.index('timescale'), cols.pop(cols.index('variables')))
+    df_bioenergy_capacity_CH_pathwaycalc = df_bioenergy_capacity_CH_pathwaycalc[cols]
+
+    # Rename countries to Pathaywcalc name
+    df_bioenergy_capacity_CH_pathwaycalc['geoscale'] = df_bioenergy_capacity_CH_pathwaycalc['geoscale'].replace(
+        'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+    df_bioenergy_capacity_CH_pathwaycalc['geoscale'] = df_bioenergy_capacity_CH_pathwaycalc['geoscale'].replace(
+        'Netherlands (Kingdom of the)', 'Netherlands')
+    df_bioenergy_capacity_CH_pathwaycalc['geoscale'] = df_bioenergy_capacity_CH_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
+
+    # Extrapolating
+    df_bioenergy_capacity_CH_pathwaycalc = ensure_structure(df_bioenergy_capacity_CH_pathwaycalc)
+    df_bioenergy_capacity_CH_pathwaycalc = linear_fitting_ots_db(df_bioenergy_capacity_CH_pathwaycalc, years_ots, countries='all')
+
+    return df_bioenergy_capacity_CH_pathwaycalc
+
+# CalculationLeaf BIOMASS HIERARCHY ------------------------------------------------------------------------------------
+
+def biomass_bioernergy_hierarchy_processing(df_csl_feed):
+    # Using and formatting df_csl_feed as a structural basis for constant ots values across all countries
+    df_biomass_hierarchy_all = df_csl_feed.copy()
+    df_biomass_hierarchy_all = df_biomass_hierarchy_all.drop(columns=['Item', 'Feed'])
+    # Dropping duplicate rows
+    df_biomass_hierarchy_all = df_biomass_hierarchy_all.drop_duplicates()
+
+    # Using and formatting df_csl_feed as a structural basis for constant ots values in Switzerland
+    df_biomass_hierarchy_CH = df_biomass_hierarchy_all.copy()
+    # Keeping only the rows where geoscale = Switzerland
+    df_biomass_hierarchy_CH = df_biomass_hierarchy_CH[df_biomass_hierarchy_CH['Area'] == 'Switzerland']
+
+    # Renaming columns
+    df_biomass_hierarchy_CH.rename(columns={'Area': 'geoscale', 'Year': 'timescale'}, inplace=True)
+    df_biomass_hierarchy_all.rename(columns={'Area': 'geoscale', 'Year': 'timescale'}, inplace=True)
+
+    # Adding ots values
+    df_biomass_hierarchy_all['agr_biomass-hierarchy-bev-ibp-use-oth_fertilizer[%]'] = 0.05
+    df_biomass_hierarchy_all['agr_biomass-hierarchy-bev-ibp-use-oth_solid-bioenergy[%]'] = 0.8
+    df_biomass_hierarchy_all['agr_biomass-hierarchy-bev-ibp-use-oth_biogasoline[%]'] = 0.05
+    df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_ibp_fdk[%]'] = 0.1
+    df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_fdk-demand_eth_mix_cereal[%]'] = 0.5
+    df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_fdk-demand_eth_mix_sugarcrop[%]'] = 0.5
+    df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_fdk-demand_oil_mix_voil[%]'] = 1.0
+    df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biodiesel_btl[%]'] = 0.0
+    df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biodiesel_est[%]'] = 1.0
+    df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biodiesel_hvo[%]'] = 0.0
+    df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biogasoline_ezm[%]'] = 0.0
+    df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biogasoline_fer[%]'] = 1.0
+    df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biojetkerosene_btl[%]'] = 0.0
+    df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biojetkerosene_hvo[%]'] = 1.0
+
+    # Melt df
+    df_biomass_hierarchy_pathwaycalc = pd.melt(df_biomass_hierarchy_all, id_vars=['geoscale', 'timescale'],
+                                               var_name='variables', value_name='value')
+
+    # PathwayCalc formatting
+    df_biomass_hierarchy_pathwaycalc['module'] = 'agriculture'
+    df_biomass_hierarchy_pathwaycalc['lever'] = 'biomass-hierarchy'
+    df_biomass_hierarchy_pathwaycalc['level'] = 0
+    cols = df_biomass_hierarchy_pathwaycalc.columns.tolist()
+    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    df_biomass_hierarchy_pathwaycalc = df_biomass_hierarchy_pathwaycalc[cols]
+
+    # Extrapolating
+    df_biomass_hierarchy_pathwaycalc = ensure_structure(df_biomass_hierarchy_pathwaycalc)
+    df_biomass_hierarchy_pathwaycalc = linear_fitting_ots_db(df_biomass_hierarchy_pathwaycalc, years_ots, countries='all')
+
+    return df_biomass_hierarchy_pathwaycalc
+
+# CalculationLeaf LIVESTOCK PROTEIN MEALS ------------------------------------------------------------------------------------
+def livestock_protein_meals_processing(df_csl_feed):
+
+    # Using and formatting df_csl_feed as a structural basis for constant ots values across all countries
+    df_protein_meals_all = df_csl_feed.copy()
+    df_protein_meals_all = df_protein_meals_all.drop(columns=['Item', 'Feed'])
+    # Dropping duplicate rows
+    df_protein_meals_all = df_protein_meals_all.drop_duplicates()
+
+    # Adding ots values
+    df_protein_meals_all['agr_alt-protein_abp-dairy-milk_algae[%]'] = 0.0
+    df_protein_meals_all['agr_alt-protein_abp-dairy-milk_insect[%]'] = 0.0
+    df_protein_meals_all['agr_alt-protein_abp-hens-egg_algae[%]'] = 0.0
+    df_protein_meals_all['agr_alt-protein_abp-hens-egg_insect[%]'] = 0.0
+    df_protein_meals_all['agr_alt-protein_meat-bovine_algae[%]'] = 0.0
+    df_protein_meals_all['agr_alt-protein_meat-bovine_insect[%]'] = 0.0
+    df_protein_meals_all['agr_alt-protein_meat-oth-animals_algae[%]'] = 0.0
+    df_protein_meals_all['agr_alt-protein_meat-oth-animals_insect[%]'] = 0.0
+    df_protein_meals_all['agr_alt-protein_meat-pig_algae[%]'] = 0.0
+    df_protein_meals_all['agr_alt-protein_meat-pig_insect[%]'] = 0.0
+    df_protein_meals_all['agr_alt-protein_meat-poultry_algae[%]'] = 0.0
+    df_protein_meals_all['agr_alt-protein_meat-poultry_insect[%]'] = 0.0
+    df_protein_meals_all['agr_alt-protein_meat-sheep_algae[%]'] = 0.0
+    df_protein_meals_all['agr_alt-protein_meat-sheep_insect[%]'] = 0.0
+
+    # Melt df
+    df_protein_meals_pathwaycalc = pd.melt(df_protein_meals_all, id_vars=['Area', 'Year'],
+                                           var_name='variables', value_name='value')
+
+    # Renaming columns
+    df_protein_meals_pathwaycalc.rename(columns={'Area': 'geoscale', 'Year': 'timescale'}, inplace=True)
+
+    # PathwayCalc formatting
+    df_protein_meals_pathwaycalc['module'] = 'agriculture'
+    df_protein_meals_pathwaycalc['lever'] = 'alt-protein'
+    df_protein_meals_pathwaycalc['level'] = 0
+    cols = df_protein_meals_pathwaycalc.columns.tolist()
+    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    df_protein_meals_pathwaycalc = df_protein_meals_pathwaycalc[cols]
+
+    # Rename countries to Pathaywcalc name
+    df_protein_meals_pathwaycalc['geoscale'] = df_protein_meals_pathwaycalc['geoscale'].replace(
+        'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+    df_protein_meals_pathwaycalc['geoscale'] = df_protein_meals_pathwaycalc['geoscale'].replace(
+        'Netherlands (Kingdom of the)', 'Netherlands')
+    df_protein_meals_pathwaycalc['geoscale'] = df_protein_meals_pathwaycalc['geoscale'].replace(
+        'Czechia', 'Czech Republic')
+
+    # Extrapolating
+    df_protein_meals_pathwaycalc = ensure_structure(df_protein_meals_pathwaycalc)
+    df_protein_meals_pathwaycalc = linear_fitting_ots_db(df_protein_meals_pathwaycalc, years_ots,
+                                                                 countries='all')
+
+    return df_protein_meals_pathwaycalc
+
+
 # CalculationTree RUNNING PRE-PROCESSING -----------------------------------------------------------------------------------------------
 
-#df_diet_pathwaycalc, df_diet = diet_processing()
+df_diet_pathwaycalc, df_diet = diet_processing()
 #df_waste_pathwaycalc = food_waste_processing(df_diet)
 #df_kcal_req_pathwaycalc = energy_requirements_processing()
 #df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing(years_ots)
-df_climate_smart_crop_pathwaycalc = climate_smart_crop_processing()
-#df_climate_smart_livestock = climate_smart_livestock_processing(df_csl_feed)
-#df_csf, csf_managed = climate_smart_forestry_processing()
-#df_land_management_pathwaycalc = land_management_processing()
+#df_climate_smart_crop_pathwaycalc = climate_smart_crop_processing()
+#df_climate_smart_livestock_pathwaycalc = climate_smart_livestock_processing(df_csl_feed)
+#df_climate_smart_forestry_pathwaycalc, csf_managed = climate_smart_forestry_processing()
+#df_land_management_pathwaycalc = land_management_processing(csf_managed)
+#df_bioenergy_capacity_CH_pathwaycalc = bioernergy_capacity_processing(df_csl_feed)
+#df_biomass_hierarchy_pathwaycalc = biomass_bioernergy_hierarchy_processing(df_csl_feed)
+#df_protein_meals_pathwaycalc = livestock_protein_meals_processing(df_csl_feed)
+
+# CREATING CSV FILES
 
 #df_climate_smart_livestock.to_csv('climate-smart-livestock_29-07-24.csv', index=False)
 
 
 
-# CalculationLeaf BIOENERGY CAPACITY -----------------------------------------------------------------------------------
-
-# Using and formatting df_csl_feed as a structural basis for constant ots values across all countries
-df_bioenergy_capacity_all = df_csl_feed.copy()
-df_bioenergy_capacity_all = df_bioenergy_capacity_all.drop(columns=['Item', 'Feed'])
-# Dropping duplicate rows
-df_bioenergy_capacity_all = df_bioenergy_capacity_all.drop_duplicates()
-
-# Using and formatting df_csl_feed as a structural basis for constant ots values in Switzerland
-df_bioenergy_capacity_CH = df_bioenergy_capacity_all.copy()
-# Keeping only the rows where geoscale = Switzerland
-df_bioenergy_capacity_CH = df_bioenergy_capacity_CH[df_bioenergy_capacity_CH['Area'] == 'Switzerland']
-
-# Adding the constant ots values
-df_bioenergy_capacity_CH['agr_bioenergy-capacity_elec_biogases-hf[GW]'] = 0.0
-df_bioenergy_capacity_CH['agr_bioenergy-capacity_elec_biogases[GW]'] = 0.0
-df_bioenergy_capacity_CH['agr_bioenergy-capacity_elec_solid-biofuel-hf[GW]'] = 0.0
-df_bioenergy_capacity_CH['agr_bioenergy-capacity_elec_solid-biofuel[GW]'] = 0.0
-df_bioenergy_capacity_CH['agr_bioenergy-capacity_efficiency_biogases-hf[%]'] = 1.0
-df_bioenergy_capacity_CH['agr_bioenergy-capacity_efficiency_biogases[%]'] = 1.0
-df_bioenergy_capacity_CH['agr_bioenergy-capacity_efficiency_solid-biofuel-hf[%]'] = 1.0
-df_bioenergy_capacity_CH['agr_bioenergy-capacity_efficiency_solid-biofuel[%]'] = 1.0
-df_bioenergy_capacity_CH['agr_bioenergy-capacity_liq_biodiesel[TWh]'] = 0.0
-df_bioenergy_capacity_CH['agr_bioenergy-capacity_liq_biogasoline[TWh]'] = 0.0
-df_bioenergy_capacity_CH['agr_bioenergy-capacity_liq_biojetkerosene[TWh]'] = 0.0
-df_bioenergy_capacity_CH['agr_bioenergy-capacity_liq_other-liquid-biofuel[TWh]'] = 0.0
-df_bioenergy_capacity_CH['agr_bioenergy-capacity_load-factor_biogases-hf[%]'] = 0.0
-df_bioenergy_capacity_CH['agr_bioenergy-capacity_load-factor_biogases[%]'] = 0.0
-df_bioenergy_capacity_CH['agr_bioenergy-capacity_load-factor_solid-biofuel-hf[%]'] = 0.0
-df_bioenergy_capacity_CH['agr_bioenergy-capacity_load-factor_solid-biofuel[%]'] = 0.0
-
-# Melting
-df_bioenergy_capacity_CH_PC = pd.melt(df_bioenergy_capacity_CH, id_vars=['Area', 'Year'],
-                                      var_name='variables', value_name='value')
 
 
-# Renaming columns
-df_bioenergy_capacity_CH_PC.rename(columns={'Area': 'geoscale', 'Year': 'timescale'}, inplace=True)
-
-# PathwayCalc Formatting
 
 
-# CalculationLeaf BIOMASS HIERARCHY ------------------------------------------------------------------------------------
 
-# Using and formatting df_csl_feed as a structural basis for constant ots values across all countries
-df_biomass_hierarchy_all = df_csl_feed.copy()
-df_biomass_hierarchy_all = df_biomass_hierarchy_all.drop(columns=['Item', 'Feed'])
-# Dropping duplicate rows
-df_biomass_hierarchy_all = df_biomass_hierarchy_all.drop_duplicates()
-
-# Using and formatting df_csl_feed as a structural basis for constant ots values in Switzerland
-df_biomass_hierarchy_CH = df_biomass_hierarchy_all.copy()
-# Keeping only the rows where geoscale = Switzerland
-df_biomass_hierarchy_CH = df_biomass_hierarchy_CH[df_biomass_hierarchy_CH['Area'] == 'Switzerland']
-
-# Adding ots values
-df_biomass_hierarchy_all['agr_biomass-hierarchy-bev-ibp-use-oth_fertilizer[%]'] = 0.05
-df_biomass_hierarchy_all['agr_biomass-hierarchy-bev-ibp-use-oth_solid-bioenergy[%]'] = 0.8
-df_biomass_hierarchy_all['agr_biomass-hierarchy-bev-ibp-use-oth_biogasoline[%]'] = 0.05
-df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_ibp_fdk[%]'] = 0.1
-df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_fdk-demand_eth_mix_cereal[%]'] = 0.5
-df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_fdk-demand_eth_mix_sugarcrop[%]'] = 0.5
-df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_fdk-demand_oil_mix_voil[%]'] = 1.0
-df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biodiesel_btl[%]'] = 0.0
-df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biodiesel_est[%]'] = 1.0
-df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biodiesel_hvo[%]'] = 0.0
-df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biogasoline_ezm[%]'] = 0.0
-df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biogasoline_fer[%]'] = 1.0
-df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biojetkerosene_btl[%]'] = 0.0
-df_biomass_hierarchy_all['agr_biomass-hierarchy_bioenergy_liquid_biojetkerosene_hvo[%]'] = 1.0
-
-
-# Melt df
-df_biomass_hierarchy_pathwaycalc = pd.melt(df_biomass_hierarchy_all, id_vars=['Area', 'Year'],
-                                      var_name='variables', value_name='value')
-
-# PathwayCalc formatting
-df_biomass_hierarchy_pathwaycalc['module'] = 'agriculture'
-df_biomass_hierarchy_pathwaycalc['lever'] = 'biomass-hierarchy'
-df_biomass_hierarchy_pathwaycalc['level'] = 0
-cols = df_biomass_hierarchy_pathwaycalc.columns.tolist()
-cols.insert(cols.index('value'), cols.pop(cols.index('module')))
-cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
-cols.insert(cols.index('value'), cols.pop(cols.index('level')))
-df_biomass_hierarchy_pathwaycalc = df_biomass_hierarchy_pathwaycalc[cols]
-
-
-# CalculationLeaf LIVESTOCK PROTEIN MEALS ------------------------------------------------------------------------------------
-
-# Using and formatting df_csl_feed as a structural basis for constant ots values across all countries
-df_protein_meals_all = df_csl_feed.copy()
-df_protein_meals_all = df_protein_meals_all.drop(columns=['Item', 'Feed'])
-# Dropping duplicate rows
-df_protein_meals_all = df_protein_meals_all.drop_duplicates()
-
-# Adding ots values
-df_protein_meals_all['agr_alt-protein_abp-dairy-milk_algae[%]'] = 0.0
-df_protein_meals_all['agr_alt-protein_abp-dairy-milk_insect[%]'] = 0.0
-df_protein_meals_all['agr_alt-protein_abp-hens-egg_algae[%]'] = 0.0
-df_protein_meals_all['agr_alt-protein_abp-hens-egg_insect[%]'] = 0.0
-df_protein_meals_all['agr_alt-protein_meat-bovine_algae[%]'] = 0.0
-df_protein_meals_all['agr_alt-protein_meat-bovine_insect[%]'] = 0.0
-df_protein_meals_all['agr_alt-protein_meat-oth-animals_algae[%]'] = 0.0
-df_protein_meals_all['agr_alt-protein_meat-oth-animals_insect[%]'] = 0.0
-df_protein_meals_all['agr_alt-protein_meat-pig_algae[%]'] = 0.0
-df_protein_meals_all['agr_alt-protein_meat-pig_insect[%]'] = 0.0
-df_protein_meals_all['agr_alt-protein_meat-poultry_algae[%]'] = 0.0
-df_protein_meals_all['agr_alt-protein_meat-poultry_insect[%]'] = 0.0
-df_protein_meals_all['agr_alt-protein_meat-sheep_algae[%]'] = 0.0
-df_protein_meals_all['agr_alt-protein_meat-sheep_insect[%]'] = 0.0
-
-
-# Melt df
-df_protein_meals_pathwaycalc = pd.melt(df_protein_meals_all, id_vars=['Area', 'Year'],
-                                      var_name='variables', value_name='value')
-
-# PathwayCalc formatting
-df_protein_meals_pathwaycalc['module'] = 'agriculture'
-df_protein_meals_pathwaycalc['lever'] = 'alt-protein'
-df_protein_meals_pathwaycalc['level'] = 0
-cols = df_protein_meals_pathwaycalc.columns.tolist()
-cols.insert(cols.index('value'), cols.pop(cols.index('module')))
-cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
-cols.insert(cols.index('value'), cols.pop(cols.index('level')))
-df_protein_meals_pathwaycalc = df_protein_meals_pathwaycalc[cols]
 
 
 # ----------------------------------------------------------------------------------------------------------------------
