@@ -2756,6 +2756,12 @@ def bioernergy_capacity_processing(df_csl_feed):
     df_bioenergy_capacity_CH['agr_bioenergy-capacity_load-factor_biogases[%]'] = 0.0
     df_bioenergy_capacity_CH['agr_bioenergy-capacity_load-factor_solid-biofuel-hf[%]'] = 0.0
     df_bioenergy_capacity_CH['agr_bioenergy-capacity_load-factor_solid-biofuel[%]'] = 0.0
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_bgs-mix_digestor[%]'] = 1.0
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_bgs-mix_landfill[%]'] = 0.3647531014351739
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_bgs-mix_other-biogases[%]'] = 0.0
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_bgs-mix_ren-mun-wastes[%]'] = 0.3567258574556069
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_bgs-mix_sewage[%]'] = 0.6352468985648261
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_bgs-mix_themal-biogases[%]'] = 0.0
 
     # Melting
     df_bioenergy_capacity_CH_pathwaycalc= pd.melt(df_bioenergy_capacity_CH, id_vars=['Area', 'Year'],
@@ -2902,10 +2908,10 @@ def livestock_protein_meals_processing(df_csl_feed):
 
 # CalculationTree RUNNING PRE-PROCESSING -----------------------------------------------------------------------------------------------
 
-df_diet_pathwaycalc, df_diet = diet_processing()
+#df_diet_pathwaycalc, df_diet = diet_processing()
 #df_waste_pathwaycalc = food_waste_processing(df_diet)
 #df_kcal_req_pathwaycalc = energy_requirements_processing()
-#df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing(years_ots)
+df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing(years_ots)
 #df_climate_smart_crop_pathwaycalc = climate_smart_crop_processing()
 #df_climate_smart_livestock_pathwaycalc = climate_smart_livestock_processing(df_csl_feed)
 #df_climate_smart_forestry_pathwaycalc, csf_managed = climate_smart_forestry_processing()
@@ -2915,23 +2921,23 @@ df_diet_pathwaycalc, df_diet = diet_processing()
 #df_protein_meals_pathwaycalc = livestock_protein_meals_processing(df_csl_feed)
 
 # CREATING CSV FILES
-
-#df_climate_smart_livestock.to_csv('climate-smart-livestock_29-07-24.csv', index=False)
-
-
-
-
-
-
-
-
-
+#df_diet_pathwaycalc.to_csv('lifestyles_diet_pathwaycalc.csv', index=False)
+#df_waste_pathwaycalc.to_csv('lifestyles_food-wastes_pathwaycalc.csv', index=False)
+#df_kcal_req_pathwaycalc.to_csv('lifestyles_energy-requirement_pathwaycalc.csv', index=False)
+#df_ssr_pathwaycalc.to_csv('agriculture_self-sufficiency_pathwaycalc.csv', index=False)
+#df_climate_smart_crop_pathwaycalc.to_csv('agriculture_climate-smart-crop_pathwaycalc.csv', index=False)
+#df_climate_smart_livestock_pathwaycalc.to_csv('agriculture_climate-smart-livestock_pathwaycalc.csv', index=False)
+#df_climate_smart_forestry_pathwaycalc.to_csv('agriculture_climate-smart-forestry_pathwaycalc.csv', index=False)
+#df_land_management_pathwaycalc.to_csv('agriculture_land-management_pathwaycalc.csv', index=False)
+#df_bioenergy_capacity_CH_pathwaycalc.to_csv('agriculture_bioenergy-capacity_pathwaycalc.csv', index=False)
+#df_biomass_hierarchy_pathwaycalc.to_csv('agriculture_biomass-hierarchy_pathwaycalc.csv', index=False)
+#df_protein_meals_pathwaycalc.to_csv('agriculture_livestock-protein-meals_pathwaycalc.csv', index=False)
 
 # ----------------------------------------------------------------------------------------------------------------------
 # BIOMASS MIX ----------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 
-# API EUROSTAT (DOES NOT CORK FOR CH)
+# API EUROSTAT (DOES NOT WORK FOR CH)
 #code_eurostat = 'nrg_cb_rw'
 #list_test = ['LI']
 #list_countries_eurostat = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE',
