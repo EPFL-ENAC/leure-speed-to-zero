@@ -3170,9 +3170,122 @@ def livestock_crop_calibration():
 
 # CalculationLeaf CAL - LIVESTOCK MANURE -----------------------------------------------------------------------------------
 
-# ----------------------------------------------------------------------------------------------------------------------
-# MANURE EMISSIONS ---------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------------
+def manure_calibration():
+    # ----------------------------------------------------------------------------------------------------------------------
+    # MANURE EMISSIONS ---------------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+    # Read data ------------------------------------------------------------------------------------------------------------
+
+    # Common for all
+    # List of countries
+    list_countries = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czechia', 'Denmark',
+                      'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
+                      'Lithuania', 'Luxembourg', 'Malta', 'Netherlands (Kingdom of the)', 'Poland', 'Portugal',
+                      'Romania', 'Slovakia',
+                      'Slovenia', 'Spain', 'Sweden', 'Switzerland',
+                      'United Kingdom of Great Britain and Northern Ireland']
+
+    # EMISSIONS FROM LIVESTOCK (GLE) - -------------------------------------------------
+    # List of elements
+    list_elements = ['Enteric fermentation (Emissions CH4)', 'Manure management (Emissions CH4)',
+                     'Manure management (Emissions N2O)', 'Manure left on pasture (Emissions N2O)',
+                     'Emissions (N2O) (Manure applied)']
+
+    list_items = ['Swine + (Total)','Sheep and Goats + (Total)', 'Cattle, dairy', 'Cattle, non-dairy', 'Chickens, layers']
+
+    list_items_poultry = ['Chickens, broilers', 'Ducks', 'Turkeys']
+
+    list_items_others = ['Asses', 'Buffalo','Camels', 'Horses', 'Llamas', 'Mules and hinnies']
+
+    # 1990 - 2022
+    ld = faostat.list_datasets()
+    code = 'GLE'
+    pars = faostat.list_pars(code)
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
+                  '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
+                  '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021','2022']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_liv_emissions = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    my_items_poultry = [faostat.get_par(code, 'item')[i] for i in list_items_poultry]
+    my_pars_poultry = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items_poultry,
+        'year': my_years
+    }
+    df_liv_emissions_poultry = faostat.get_data_df(code, pars=my_pars_poultry, strval=False)
+
+    my_items_others = [faostat.get_par(code, 'item')[i] for i in list_items_others]
+    my_pars_others = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items_others,
+        'year': my_years
+    }
+    df_liv_emissions_others = faostat.get_data_df(code, pars=my_pars_others, strval=False)
+
+    # Filtering to keep wanted columns
+    columns_to_filter = ['Area', 'Element', 'Item', 'Year', 'Value']
+    df_liv_emissions = df_liv_emissions[columns_to_filter]
+    df_liv_emissions_poultry = df_liv_emissions_poultry[columns_to_filter]
+    df_liv_emissions_others = df_liv_emissions_others[columns_to_filter]
+
+    # Creating one column with Item and Element
+    df_liv_emissions['Item'] = df_liv_emissions['Item'] + ' ' + df_liv_emissions['Element']
+    df_liv_emissions = df_liv_emissions.drop(columns=['Element'])
+
+    # Aggregating for other animals
+    df_liv_emissions_others = df_liv_emissions_others.groupby(['Area', 'Element', 'Year'], as_index=False)['Value'].sum()
+    # Prepend "Others" to each value in the 'Element' column
+    df_liv_emissions_others['Element'] = df_liv_emissions_others['Element'].apply(lambda x: f"Others {x}")
+    # Rename column
+    df_liv_emissions_others.rename(
+        columns={'Element': 'Item'}, inplace=True)
+
+    # Aggregating for poultry
+    df_liv_emissions_poultry = df_liv_emissions_poultry.groupby(['Area', 'Element', 'Year'], as_index=False)[
+        'Value'].sum()
+    # Prepend "Poultry" to each value in the 'Element' column
+    df_liv_emissions_poultry['Element'] = df_liv_emissions_poultry['Element'].apply(lambda x: f"Poultry {x}")
+    # Rename column
+    df_liv_emissions_poultry.rename(
+        columns={'Element': 'Item'}, inplace=True)
+
+    # Concatenating
+    df_liv_emissions = pd.concat([df_liv_emissions, df_liv_emissions_others])
+    df_liv_emissions = pd.concat([df_liv_emissions, df_liv_emissions_poultry])
+
+    # PathwayCalc formatting -----------------------------------------------------------------------------------------------
+    # Food item name matching with dictionary
+    # Read excel file
+    df_dict_calibration = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        sheet_name='calibration')
+
+    # Merge based on 'Item'
+    df_liv_emissions_calibration = pd.merge(df_dict_calibration, df_liv_emissions, on='Item')
+
+    # Drop the 'Item' column
+    df_liv_emissions_calibration = df_liv_emissions_calibration.drop(columns=['Item'])
+
+    # Renaming existing columns (geoscale, timsecale, value)
+    df_liv_emissions_calibration.rename(
+        columns={'Area': 'geoscale', 'Year': 'timescale', 'Food supply (kcal/capita/day)': 'value'},
+        inplace=True)
+
+
+    return df_liv_emissions_calibration
 
 
 # CalculationLeaf CAL - ENERGY & GHG -----------------------------------------------------------------------------------
@@ -3329,10 +3442,14 @@ def nitrogen_calibration():
 
     return df_nitrogen_calibration
 
+
+
+
 # CalculationTree RUNNING CALIBRATION ----------------------------------------------------------------------------------
 #df_diet_calibration = lifestyle_calibration()
 #df_domestic_supply_calibration = livestock_crop_calibration()
-df_nitrogen_calibration = nitrogen_calibration()
+#df_nitrogen_calibration = nitrogen_calibration()
+#df_liv_emissions_calibration = manure_calibration()
 df_emissions_calibration = energy_ghg_calibration()
 
 
