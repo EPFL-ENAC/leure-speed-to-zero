@@ -3050,9 +3050,125 @@ def lifestyle_calibration():
 
     return df_diet_calibration
 
-# CalculationTree RUNNING CALIBRATION ----------------------------------------------------------------------------------
 
-df_diet_calibration = lifestyle_calibration()
+# CalculationLeaf CAL - LIVESTOCK & CROP -----------------------------------------------------------------------------------
+def livestock_crop_calibration():
+    # ----------------------------------------------------------------------------------------------------------------------
+    # LIVESTOCK POPULATION -------------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------------------------------------------------------
+    # DOMESTIC PRODUCTION (CROP & LIVESTOCK PRODUCTS) ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+    # Read data ------------------------------------------------------------------------------------------------------------
+
+    # Common for all
+    # List of countries
+    list_countries = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czechia', 'Denmark',
+                      'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
+                      'Lithuania', 'Luxembourg', 'Malta', 'Netherlands (Kingdom of the)', 'Poland', 'Portugal',
+                      'Romania', 'Slovakia',
+                      'Slovenia', 'Spain', 'Sweden', 'Switzerland',
+                      'United Kingdom of Great Britain and Northern Ireland']
+
+    # FOOD BALANCE SHEETS (FBS) - -------------------------------------------------
+    # List of elements
+    list_elements = ['Domestic supply quantity']
+
+    list_items = ['Cereals - Excluding Beer + (Total)', 'Fruits - Excluding Wine + (Total)', 'Oilcrops + (Total)',
+                  'Pulses + (Total)', 'Rice (Milled Equivalent)',
+                  'Starchy Roots + (Total)', 'Sugar Crops + (Total)', 'Vegetables + (Total)',
+                  'Milk - Excluding Butter + (Total)', 'Eggs + (Total)',
+                  'Bovine Meat', 'Meat, Other', 'Pigmeat',
+                  'Poultry Meat', 'Mutton & Goat Meat']
+
+    # 1990 - 2013
+    ld = faostat.list_datasets()
+    code = 'FBSH'
+    pars = faostat.list_pars(code)
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
+                  '2002',
+                  '2003', '2004', '2005', '2006', '2007', '2008', '2009']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_domestic_supply_1990_2013 = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # 2010-2022
+    list_items = ['Cereals - Excluding Beer + (Total)', 'Fruits - Excluding Wine + (Total)', 'Oilcrops + (Total)',
+                  'Pulses + (Total)', 'Rice and products',
+                  'Starchy Roots + (Total)', 'Sugar Crops + (Total)', 'Vegetables + (Total)',
+                  'Milk - Excluding Butter + (Total)', 'Eggs + (Total)',
+                  'Bovine Meat', 'Meat, Other', 'Pigmeat',
+                  'Poultry Meat', 'Mutton & Goat Meat']
+    code = 'FBS'
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021',
+                  '2022']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_domestic_supply_2010_2022 = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # Renaming the items for name matching
+    df_domestic_supply_1990_2013.loc[
+        df_domestic_supply_1990_2013['Item'].str.contains('Rice \(Milled Equivalent\)', case=False,
+                                               na=False), 'Item'] = 'Rice and products'
+
+    # Concatenating all the years together
+    df_domestic_supply = pd.concat([df_domestic_supply_1990_2013, df_domestic_supply_2010_2022])
+
+    # Filtering to keep wanted columns
+    columns_to_filter = ['Area', 'Element', 'Item', 'Year', 'Value']
+    df_domestic_supply = df_domestic_supply[columns_to_filter]
+
+    # Pivot the df
+    pivot_df_domestic_supply = df_domestic_supply.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
+                                        values='Value').reset_index()
+
+    # Unit conversion [kt] => [t]
+    pivot_df_domestic_supply['Domestic supply quantity'] = 1000 * pivot_df_domestic_supply['Domestic supply quantity']
+
+    # PathwayCalc formatting -----------------------------------------------------------------------------------------------
+    # Food item name matching with dictionary
+    # Read excel file
+    df_dict_calibration = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        sheet_name='calibration')
+
+    # Prepend "Diet" to each value in the 'Item' column
+    pivot_df_domestic_supply['Item'] = pivot_df_domestic_supply['Item'].apply(lambda x: f"Domestic Supply {x}")
+
+    # Merge based on 'Item'
+    df_domestic_supply_calibration = pd.merge(df_dict_calibration, pivot_df_domestic_supply, on='Item')
+
+    # Drop the 'Item' column
+    df_domestic_supply_calibration = df_domestic_supply_calibration.drop(columns=['Item'])
+
+    # Renaming existing columns (geoscale, timsecale, value)
+    df_domestic_supply_calibration.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Food supply (kcal/capita/day)': 'value'},
+                               inplace=True)
+
+    return df_domestic_supply_calibration
+
+# CalculationTree RUNNING CALIBRATION ----------------------------------------------------------------------------------
+#df_diet_calibration = lifestyle_calibration()
+df_domestic_supply_calibration = livestock_crop_calibration()
 
 # ----------------------------------------------------------------------------------------------------------------------
 # BIOMASS MIX ----------------------------------------------------------------------------------------------------------
