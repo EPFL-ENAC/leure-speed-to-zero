@@ -3572,14 +3572,199 @@ def nitrogen_calibration():
 
     return df_nitrogen_calibration
 
+# CalculationLeaf CAL FEED DEMAND ----------------------------------------------------------------------------------
 
+def feed_calibration():
+    # ----------------------------------------------------------------------------------------------------------------------
+    # FEED DEMAND PART I --------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # Read data ------------------------------------------------------------------------------------------------------------
+    # Common for all
+    # List of countries
+    list_countries = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czechia', 'Denmark',
+                      'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
+                      'Lithuania', 'Luxembourg', 'Malta', 'Netherlands (Kingdom of the)', 'Poland', 'Portugal',
+                      'Romania', 'Slovakia',
+                      'Slovenia', 'Spain', 'Sweden', 'Switzerland',
+                      'United Kingdom of Great Britain and Northern Ireland']
+
+    # FOOD BALANCE SHEETS (FBS) - -------------------------------------------------
+    # List of elements
+    list_elements = ['Feed']
+
+    list_items = ['Cereals - Excluding Beer + (Total)', 'Fruits - Excluding Wine + (Total)', 'Oilcrops + (Total)',
+                  'Pulses + (Total)', 'Rice (Milled Equivalent)',
+                  'Starchy Roots + (Total)', 'Sugar Crops + (Total)', 'Vegetables + (Total)',
+                  'Fish, Seafood + (Total)', 'Animal Products + (Total)', 'Vegetable Oils + (Total)',
+                  'Sugar & Sweeteners + (Total)']
+
+    # 1990 - 2013
+    ld = faostat.list_datasets()
+    code = 'FBSH'
+    pars = faostat.list_pars(code)
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
+                  '2002',
+                  '2003', '2004', '2005', '2006', '2007', '2008', '2009']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_feed_1990_2013 = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # 2010-2022
+    list_items = ['Cereals - Excluding Beer + (Total)', 'Fruits - Excluding Wine + (Total)', 'Oilcrops + (Total)',
+                  'Pulses + (Total)', 'Rice and products',
+                  'Starchy Roots + (Total)', 'Sugar Crops + (Total)', 'Vegetables + (Total)',
+                  'Fish, Seafood + (Total)', 'Animal Products + (Total)', 'Vegetable Oils + (Total)',
+                  'Sugar & Sweeteners + (Total)']
+    code = 'FBS'
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021',
+                  '2022']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_feed_2010_2022 = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # Renaming the items for name matching
+    df_feed_1990_2013.loc[
+        df_feed_1990_2013['Item'].str.contains('Rice \(Milled Equivalent\)', case=False,
+                                                          na=False), 'Item'] = 'Rice and products'
+
+    # Concatenating all the years together
+    df_feed = pd.concat([df_feed_1990_2013, df_feed_2010_2022])
+
+
+
+    # ----------------------------------------------------------------------------------------------------------------------
+    # FEED DEMAND PART II (molasse & cake) --------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # COMMODITY BALANCES (NON-FOOD) (OLD METHODOLOGY) - For molasse and cakes ----------------------------------------------
+    # 1990 - 2013
+    list_elements = ['Feed']
+    list_items = ['Copra Cake', 'Cottonseed Cake', 'Groundnut Cake', 'Oilseed Cakes, Other', 'Palmkernel Cake',
+                  'Rape and Mustard Cake', 'Sesameseed Cake', 'Soyabean Cake', 'Sunflowerseed Cake']
+    code = 'CBH'
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
+                  '2002',
+                  '2003', '2004', '2005', '2006', '2007', '2008', '2009']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_feed_1990_2013_cake = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # SUPPLY UTILIZATION ACCOUNTS (SCl) - For molasse and cakes ----------------------------------------------------------
+    # 2010 - 2022
+    list_elements = ['Feed']
+    list_items = ['Molasses', 'Cake of  linseed', 'Cake of  soya beans', 'Cake of copra', 'Cake of cottonseed',
+                  'Cake of groundnuts', 'Cake of hempseed', 'Cake of kapok', 'Cake of maize', 'Cake of mustard seed',
+                  'Cake of palm kernel', 'Cake of rapeseed', 'Cake of rice bran', 'Cake of safflowerseed',
+                  'Cake of sesame seed', 'Cake of sunflower seed', 'Cake, oilseeds nes', 'Cake, poppy seed',
+                  'Cocoa powder and cake']
+    code = 'SCL'
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_feed_2010_2021_molasse_cake = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # Aggregating cakes
+    df_feed_cake = pd.concat([df_feed_1990_2013_cake, df_feed_2010_2021_molasse_cake])
+    # Filtering
+    filtered_df = df_feed_cake[df_feed_cake['Item'].str.contains('cake', case=False)]
+    # Groupby Area, Year and Element and sum the Value
+    grouped_df = filtered_df.groupby(['Area', 'Element', 'Year'])['Value'].sum().reset_index()
+    # Unit conversion [t] => [kt]
+    grouped_df['Value'] = grouped_df['Value'] / 1000
+    # Adding a column 'Item' containing 'Cakes' for all row, before the 'Value' column
+    grouped_df['Item'] = 'Cakes'
+    cols = grouped_df.columns.tolist()
+    cols.insert(cols.index('Value'), cols.pop(cols.index('Item')))
+    df_feed_cake = grouped_df[cols]
+
+    # Filtering for molasse
+    df_feed_molasses = df_feed_2010_2021_molasse_cake[
+        df_feed_2010_2021_molasse_cake['Item'].str.contains('Molasses', case=False)]
+    df_feed_molasses = df_feed_molasses.copy()
+
+    # Unit conversion [t] => [kt]
+    df_feed_molasses['Value'] = df_feed_molasses['Value'] / 1000
+
+    # Concatenating
+    df_feed = pd.concat([df_feed, df_feed_molasses])
+    df_feed = pd.concat([df_feed, df_feed_cake])
+
+    # Filtering to keep wanted columns
+    columns_to_filter = ['Area', 'Element', 'Item', 'Year', 'Value']
+    df_feed = df_feed[columns_to_filter]
+
+    # Pivot the df
+    pivot_df_feed = df_feed.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
+                                        values='Value').reset_index()
+
+
+    # PathwayCalc formatting -----------------------------------------------------------------------------------------------
+    # Food item name matching with dictionary
+    # Read excel file
+    df_dict_calibration = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        sheet_name='calibration')
+
+    # Prepend "Diet" to each value in the 'Item' column
+    pivot_df_feed['Item'] = pivot_df_feed['Item'].apply(lambda x: f"Feed {x}")
+
+    # Merge based on 'Item'
+    df_feed_calibration = pd.merge(df_dict_calibration, pivot_df_feed, on='Item')
+
+    # Drop the 'Item' column
+    df_feed_calibration = df_feed_calibration.drop(columns=['Item'])
+
+    # Renaming existing columns (geoscale, timesecale, value)
+    df_feed_calibration.rename(
+        columns={'Area': 'geoscale', 'Year': 'timescale', 'Domestic supply quantity': 'value'},
+        inplace=True)
+
+    return df_feed_calibration
 
 
 # CalculationTree RUNNING CALIBRATION ----------------------------------------------------------------------------------
 #df_diet_calibration = lifestyle_calibration()
-df_domestic_supply_calibration, df_liv_population_calibration = livestock_crop_calibration()
+#df_domestic_supply_calibration, df_liv_population_calibration = livestock_crop_calibration()
 #df_nitrogen_calibration = nitrogen_calibration()
 #df_liv_emissions_calibration = manure_calibration()
+#df_feed_calibration = feed_calibration()
 df_emissions_calibration = energy_ghg_calibration()
 
 
