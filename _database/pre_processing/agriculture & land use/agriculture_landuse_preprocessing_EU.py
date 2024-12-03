@@ -3474,12 +3474,61 @@ def energy_ghg_calibration():
     # Rename column
     df_emissions.rename(columns={'Element': 'Item'}, inplace=True)
 
+    # ----------------------------------------------------------------------------------------------------------------------
+    # ENERGY DEMAND (electricity, gas, coal, heat) ---------------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # Read FAO Values (for Switzerland) --------------------------------------------------------------------------------------------
+    # List of countries
+    list_countries = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czechia', 'Denmark',
+                      'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
+                      'Lithuania', 'Luxembourg', 'Malta', 'Netherlands (Kingdom of the)', 'Poland', 'Portugal',
+                      'Romania', 'Slovakia',
+                      'Slovenia', 'Spain', 'Sweden', 'Switzerland',
+                      'United Kingdom of Great Britain and Northern Ireland']
+
+    # List of elements
+    list_elements = ['Energy use in agriculture']
+
+    list_items = ['Natural gas', 'Electricity', 'Coal', 'Heat']
+
+    # 1990 - 2022
+    ld = faostat.list_datasets()
+    code = 'GN'
+    pars = faostat.list_pars(code)
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
+                  '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
+                  '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_energy_fao = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # Filtering to keep wanted columns
+    columns_to_filter = ['Area', 'Item', 'Year', 'Value']
+    df_energy_fao = df_energy_fao[columns_to_filter]
+
+    # Pivot the df
+    df_energy_fao = df_energy_fao.pivot_table(index=['Area', 'Year', 'Item'],
+                                                  values='Value').reset_index()
+
     # PathwayCalc formatting -----------------------------------------------------------------------------------------------
     # Food item name matching with dictionary
     # Read excel file
     df_dict_calibration = pd.read_excel(
         '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='calibration')
+
+    # Concat
+    df_emissions = pd.concat([df_emissions, df_energy_fao])
 
     # Merge based on 'Item'
     df_emissions_calibration = pd.merge(df_dict_calibration, df_emissions, on='Item')
@@ -3488,7 +3537,7 @@ def energy_ghg_calibration():
     df_emissions_calibration = df_emissions_calibration.drop(columns=['Item'])
 
     # Renaming existing columns (geoscale, timsecale, value)
-    df_emissions_calibration.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Food supply (kcal/capita/day)': 'value'},
+    df_emissions_calibration.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Value': 'value'},
                                inplace=True)
 
     return df_emissions_calibration
@@ -3828,6 +3877,86 @@ def land_calibration():
 
     return df_land_use_fao_calibration
 
+# CalculationLeaf CAL - LIMING & UREA CO2 EMISSIONS -----------------------------------------------------------------------------------
+
+def CO2_emissions():
+    # ----------------------------------------------------------------------------------------------------------------------
+    # LIMING & URA CO2 EMISSIONS ----------------------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # Importing UNFCCC excel files and reading them with a loop (only for Switzerland) Table 4.1 ---------------------------
+    # Putting in a df in 3 dimensions (from, to, year)
+    # Define the path where the Excel files are located
+    folder_path = '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_unfccc_2023'
+
+    # List all files in the folder
+    files = os.listdir(folder_path)
+
+    # Filter and sort files by the year (1990 to 2020)
+    sorted_files = sorted([f for f in files if f.startswith('CHE_2023_') and int(f.split('_')[2]) in range(1990, 2021)],
+                          key=lambda x: int(x.split('_')[2]))
+
+    # Initialize a list to store DataFrames
+    data_frames = []
+
+    # Loop through sorted files, read the required rows, and append to the list
+    for file in sorted_files:
+        # Extract the year from the filename
+        year = int(file.split('_')[2])
+
+        # Full path to the file
+        file_path = os.path.join(folder_path, file)
+
+        # Read the specific rows and sheet from the Excel file
+        df = pd.read_excel(file_path, sheet_name='Table3s2', skiprows=10, nrows=2, header=None)
+
+        # Add a column for the year to the DataFrame
+        df['Year'] = year
+
+        # Append to the list of DataFrames
+        data_frames.append(df)
+
+    # Combine all DataFrames into a single DataFrame with a multi-index
+    combined_df = pd.concat(data_frames, axis=0).set_index(['Year'])
+
+    # Filter the second and third columns (index 1 and 2)
+    df_liming_urea = combined_df.iloc[:, [0, 1]]
+
+    # Rename the columns to 'Year' and 'Item'
+    df_liming_urea.columns = ['Item', 'Value']
+
+    # Reset the index and rename it to 'Year'
+    df_liming_urea = df_liming_urea.reset_index()
+    df_liming_urea.rename(columns={'index': 'Year'}, inplace=True)
+
+
+
+    # PathwayCalc formatting -----------------------------------------------------------------------------------------------
+    # Food item name matching with dictionary
+    # Read excel file
+    df_dict_calibration = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        sheet_name='calibration')
+
+    # Adding a column geoscale
+    df_liming_urea['geoscale'] = 'Switzerland'
+
+    # Prepend "Diet" to each value in the 'Item' column
+    #df_liming_urea['Item'] = df_liming_urea['Item'].apply(lambda x: f"Diet {x}")
+
+    # Merge based on 'Item'
+    df_liming_urea_calibration = pd.merge(df_dict_calibration, df_liming_urea, on='Item')
+
+    # Drop the 'Item' column
+    df_liming_urea_calibration = df_liming_urea_calibration.drop(columns=['Item'])
+
+    # Renaming existing columns (geoscale, timsecale, value)
+    df_liming_urea_calibration.rename(
+        columns={'Area': 'geoscale', 'Year': 'timescale', 'Value': 'value'}, inplace=True)
+
+    return df_liming_urea_calibration
+
+
 # CalculationTree RUNNING CALIBRATION ----------------------------------------------------------------------------------
 #df_diet_calibration = lifestyle_calibration()
 #df_domestic_supply_calibration, df_liv_population_calibration = livestock_crop_calibration()
@@ -3835,6 +3964,7 @@ def land_calibration():
 #df_liv_emissions_calibration = manure_calibration()
 #df_feed_calibration = feed_calibration()
 #df_land_use_fao_calibration = land_calibration()
+df_liming_urea_calibration = CO2_emissions()
 df_emissions_calibration = energy_ghg_calibration()
 
 
