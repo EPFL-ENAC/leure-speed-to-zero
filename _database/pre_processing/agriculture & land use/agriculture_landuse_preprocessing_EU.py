@@ -3520,6 +3520,52 @@ def energy_ghg_calibration():
     df_energy_fao = df_energy_fao.pivot_table(index=['Area', 'Year', 'Item'],
                                                   values='Value').reset_index()
 
+    # ----------------------------------------------------------------------------------------------------------------------
+    # CO2 EMISSIONS FROM ENERGY USE ---------------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # Read FAO Values (for Switzerland) --------------------------------------------------------------------------------------------
+    # List of countries
+    list_countries = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czechia', 'Denmark',
+                      'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
+                      'Lithuania', 'Luxembourg', 'Malta', 'Netherlands (Kingdom of the)', 'Poland', 'Portugal',
+                      'Romania', 'Slovakia',
+                      'Slovenia', 'Spain', 'Sweden', 'Switzerland',
+                      'United Kingdom of Great Britain and Northern Ireland']
+
+    # List of elements
+    list_elements = ['Emissions (CO2)']
+
+    list_items = ['Total Energy + (Total)']
+
+    # 1990 - 2022
+    ld = faostat.list_datasets()
+    code = 'GN'
+    pars = faostat.list_pars(code)
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
+                  '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
+                  '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_energy_use = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # Filtering to keep wanted columns
+    columns_to_filter = ['Area', 'Item', 'Year', 'Value']
+    df_energy_use = df_energy_use[columns_to_filter]
+
+    # Pivot the df
+    df_energy_use = df_energy_use.pivot_table(index=['Area', 'Year', 'Item'],
+                                              values='Value').reset_index()
+
     # PathwayCalc formatting -----------------------------------------------------------------------------------------------
     # Food item name matching with dictionary
     # Read excel file
@@ -3529,6 +3575,7 @@ def energy_ghg_calibration():
 
     # Concat
     df_emissions = pd.concat([df_emissions, df_energy_fao])
+    df_emissions = pd.concat([df_emissions, df_energy_use])
 
     # Merge based on 'Item'
     df_emissions_calibration = pd.merge(df_dict_calibration, df_emissions, on='Item')
@@ -3964,7 +4011,7 @@ def CO2_emissions():
 #df_liv_emissions_calibration = manure_calibration()
 #df_feed_calibration = feed_calibration()
 #df_land_use_fao_calibration = land_calibration()
-df_liming_urea_calibration = CO2_emissions()
+#df_liming_urea_calibration = CO2_emissions()
 df_emissions_calibration = energy_ghg_calibration()
 
 
