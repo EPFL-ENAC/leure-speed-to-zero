@@ -1471,6 +1471,91 @@ def fix_freight_tech_shares(DM_transport_new):
         dm_tech.normalise(dim='Categories2')
     return
 
+
+def compute_renewal_rate_and_adjust(dm, var_names, max_rr):
+    """
+    It computes the renewal rate and it adjusts the new-vehicles before 2005, where the fleet split was not known
+    """
+    # Extract variable names
+    s_col = var_names['stock']
+    new_col = var_names['new']
+    waste_col = var_names['waste']
+    rr_col = var_names['renewal-rate']
+
+    stock_unit = dm.units[s_col]
+
+    # COMPUTE RENEWAL-RATE
+    # Lag stock
+    dm.lag_variable(pattern=s_col, shift=1, subfix='_tm1')
+    # waste(t) = fleet(t-1) - fleet(t) + new-veh(t)
+    dm.operation(s_col + '_tm1', '-', s_col, out_col='tra_delta_stock', unit=stock_unit)
+    dm.operation('tra_delta_stock', '+', new_col, out_col=waste_col,
+                 unit=stock_unit)
+    # rr(t-1) = waste(t) / fleet(t-1)
+    dm.operation(waste_col, '/', s_col + '_tm1', out_col='tmp', unit='%')
+    dm.lag_variable(pattern='tmp', shift=-1, subfix='_rr')
+    dm.rename_col('tmp_rr', rr_col, dim='Variables')
+    dm.filter({'Variables': [s_col, s_col + '_tm1', rr_col]}, inplace=True)
+
+    # FIX RENEWAL-RATE
+    # move variables col to end
+    dm_rr = dm.filter({'Variables': [rr_col]}, inplace=False)
+    mask = (dm_rr.array < 0) | (dm_rr.array > max_rr)
+    dm_rr.array[mask] = np.nan
+    dm_rr.fill_nans('Years')
+    dm.drop(dim='Variables', col_label=rr_col)
+    dm.append(dm_rr, dim='Variables')
+
+    # RECOMPUTE NEW FLEET
+    dm.lag_variable(pattern=rr_col, shift=1, subfix='_tm1')
+    # waste(t) = rr(t-1) * fleet(t-1)
+    dm.operation(rr_col + '_tm1', '*', s_col + '_tm1', out_col=waste_col, unit=stock_unit)
+    # new(t) = fleet(t) - fleet(t-1) + waste(t)
+    dm.operation(s_col, '-', s_col + '_tm1', out_col='tra_delta_stock', unit=stock_unit)
+    dm.operation('tra_delta_stock', '+', waste_col, out_col=new_col, unit=stock_unit)
+    dm.filter({'Variables': [s_col, new_col, waste_col, rr_col]}, inplace=True)
+
+    # FIX NEW FLEET
+    dm_new = dm.filter({'Variables': [new_col]}, inplace=False)
+    mask = (dm_new.array < 0)
+    dm_new.array[mask] = np.nan
+    dm_new.fill_nans('Years')
+    dm.drop(dim='Variables', col_label=new_col)
+    dm.append(dm_new, dim='Variables')
+
+    # RECOMPUTE STOCK
+    idx = dm.idx
+    for t in dm.col_labels['Years'][1:]:
+        s_tm1 = dm.array[:, idx[t-1], idx[s_col], ...]
+        new_t = dm.array[:, idx[t], idx[new_col], ...]
+        waste_t = dm.array[:, idx[t], idx[waste_col], ...]
+        s_t = s_tm1 + new_t - waste_t
+        dm.array[:, idx[t], idx[s_col], ...] = s_t
+
+    return
+
+def compute_new_public_fleet_ots(dm, var_names):
+    # Extract variable names
+    s_col = var_names['stock']
+    new_col = var_names['new']
+    waste_col = var_names['waste']
+    rr_col = var_names['renewal-rate']
+
+    stock_unit = dm.units[s_col]
+
+    # COMPUTE RENEWAL-RATE
+    # Lag stock
+    dm.lag_variable(pattern=s_col, shift=1, subfix='_tm1')
+    dm.lag_variable(pattern=rr_col, shift=1, subfix='_tm1')
+    # waste(t) = rr(t-1) * fleet(t-1)
+    dm.operation(rr_col + '_tm1', '*', s_col + '_tm1', out_col=waste_col, unit=stock_unit)
+    # new(t) = fleet(t) - fleet(t-1) + waste(t)
+    dm.operation(s_col, '-', s_col + '_tm1', out_col='tra_delta_stock', unit=stock_unit)
+    dm.operation('tra_delta_stock', '+', waste_col, out_col=new_col, unit=stock_unit)
+    dm.filter({'Variables': [s_col, new_col, waste_col, rr_col]}, inplace=True)
+
+    return
+
 print('In order for this routine to run you need to download a couple of files and save them locally:'
       '- Aviation demand data (pkm) from  "Our World in Data": https://ourworldindata.org/grapher/aviation-demand-efficiency'
       '- Microrecensement analysis for 2005 and 2000 from EUCalc drive')
@@ -1481,6 +1566,7 @@ print('In order for this routine to run you need to download a couple of files a
 #################################################
 
 years_ots = create_years_list(start_year=1990, end_year=2023, step=1, astype=int)
+years_fts = create_years_list(start_year=2025, end_year=2050, step=5)
 
 ##### Population
 dict_lfs_ots, dict_lfs_fts = read_database_to_dm('lifestyles_population.csv', filter={'geoscale': ['Vaud', 'Switzerland']},
@@ -1635,7 +1721,7 @@ del dm_pkm_CH, dm_vkm_CH
 ################################
 #####   VEHICLE FLEET  #########
 ################################
-# SECTION vehicle fleet and technology share ots
+# SECTION New vehicle fleet and technology share LDV, 2W ots
 ##### New passenger fleet by technology LDV, 2W
 table_id_new_veh = 'px-x-1103020200_120'
 # file is created if it doesn't exist
@@ -1646,6 +1732,7 @@ file_new_veh_ots2 = 'data/tra_new-vehicles_CH_1990-2023.csv'
 dm_pass_new_fleet, dm_new_tech = compute_passenger_new_fleet(table_id_new_veh, file_new_veh_ots1, file_new_veh_ots2)
 del table_id_new_veh, file_new_veh_ots1, file_new_veh_ots2
 
+# SECTION Vehicle fleet and technology share LDV, 2W ots
 #### Passenger fleet by technology (stock) LDV, 2W
 table_id_tot_veh = 'px-x-1103020100_101'
 file_tot_veh = 'data/tra_tot_fleet.pickle'
@@ -1654,6 +1741,7 @@ dm_pass_fleet_raw = get_passenger_stock_fleet_by_tech_raw(table_id_tot_veh, file
 dm_pass_fleet = allocate_other_to_new_technologies(dm_pass_fleet_raw, dm_new_tech)
 del table_id_tot_veh, file_tot_veh, dm_pass_fleet_raw, dm_new_tech
 
+# SECTION Vehicle fleet bus, rail, metrotram ots
 #### Passenger fleet by technology (stock) bus, rail, metrotram - Switzerland only
 # Note that this data are better for ots than
 file_url = 'https://dam-api.bfs.admin.ch/hub/api/dam/assets/32253175/master'
@@ -1665,6 +1753,53 @@ del file_url, local_filename, DM_public
 
 #### Passenger fleet by technology (stock) bus, rail, metrotram - Downscale to Vaud
 dm_public_fleet = downscale_public_fleet_VD(dm_public_fleet, dm_pkm)
+
+# SECTION Renewal-rate % - New-vehicles - vehicles Waste (2W, LDV) ots
+dm_fleet_private = dm_pass_fleet.filter({'Years': years_ots})
+dm_fleet_private.append(dm_pass_new_fleet.filter({'Years': years_ots}), dim='Variables')
+var_names = {'stock': 'tra_passenger_vehicle-fleet', 'new': 'tra_passenger_new-vehicles',
+             'waste': 'tra_passenger_vehicle-waste', 'renewal-rate': 'tra_passenger_renewal-rate'}
+compute_renewal_rate_and_adjust(dm_fleet_private, var_names, max_rr=0.1)
+dm_pass_fleet = dm_fleet_private.filter({'Variables': [var_names['stock']]})
+dm_new_private_fleet = dm_fleet_private.filter({'Variables': [var_names['new']]})
+dm_renewal_rate = dm_fleet_private.filter({'Variables': [var_names['renewal-rate']]})
+dm_waste_private = dm_fleet_private.filter({'Variables': [var_names['waste']]})
+
+# SECTION Renewal-rate % - New vehicles - vehicles Waste (bus, rail, metrotram) ots
+# Use renewal-rate (1/lifetime) to compute the new public fleet
+missing_cat = set(dm_public_fleet.col_labels['Categories2']) - set(dm_renewal_rate.col_labels['Categories2'])
+dm_renewal_rate.add(np.nan, dim='Categories2', col_label=missing_cat, dummy=True)
+dm_renewal_rate.add(np.nan, dim='Categories1', col_label=dm_public_fleet.col_labels['Categories1'], dummy=True)
+idx = dm_renewal_rate.idx
+idx_cat2_public = [idx[cat] for cat in dm_public_fleet.col_labels['Categories2']]
+dm_renewal_rate.array[:, :, idx['tra_passenger_renewal-rate'], idx['rail'], idx_cat2_public] = 1/30
+dm_renewal_rate.array[:, :, idx['tra_passenger_renewal-rate'], idx['metrotram'], idx['mt']] = 1/20
+dm_renewal_rate.array[:, :, idx['tra_passenger_renewal-rate'], idx['bus'], idx_cat2_public] = 1/10
+
+dm_public_fleet.append(dm_renewal_rate.filter({'Categories1': dm_public_fleet.col_labels['Categories1'],
+                                               'Categories2': dm_public_fleet.col_labels['Categories2']}), dim='Variables')
+var_names = {'renewal-rate': 'tra_passenger_renewal-rate', 'stock': 'tra_passenger_vehicle-fleet',
+             'new': 'tra_passenger_new-vehicles', 'waste': 'tra_passenger_vehicle-waste'}
+compute_new_public_fleet_ots(dm_public_fleet, var_names)
+dm_new_public_fleet = dm_public_fleet.filter({'Variables': [var_names['new']]})
+dm_waste_public = dm_public_fleet.filter({'Variables': [var_names['waste']]})
+dm_public_fleet.filter({'Variables': [var_names['stock']]}, inplace=True)
+
+# Join private and public fleet new and waste
+cat_private_only = list(set(dm_new_private_fleet.col_labels['Categories2'])
+                        - set(dm_new_public_fleet.col_labels['Categories2']))
+cat_public_only = list(set(dm_new_public_fleet.col_labels['Categories2'])
+                       - set(dm_new_private_fleet.col_labels['Categories2']))
+dm_new_fleet = dm_new_private_fleet.copy()
+dm_new_fleet.add(np.nan, dummy=True, dim='Categories2', col_label=cat_public_only)
+dm_new_public_fleet.add(np.nan, dummy=True, dim='Categories2', col_label=cat_private_only)
+dm_new_fleet.append(dm_new_public_fleet, dim='Categories1')
+
+dm_waste_fleet = dm_waste_private.copy()
+dm_waste_fleet.add(np.nan, dummy=True, dim='Categories2', col_label=cat_public_only)
+dm_waste_public.add(np.nan, dummy=True, dim='Categories2', col_label=cat_private_only)
+dm_waste_fleet.append(dm_waste_public, dim='Categories1')
+
 
 ################################
 ####    EMISSION FACTORS   #####
@@ -1693,7 +1828,7 @@ cdm_emissions_factors = create_emissions_factors_cdm(emis, mapping_cat)
 ###################################
 #####  VEHICLE EFFICIENCY LDV  ####
 ###################################
-# SECTION vehicle efficiency LDV, stock and new, ots
+# SECTION Vehicle efficiency LDV, stock and new, ots
 #### Vehicle efficiency - LDV - CO2/km
 # FCEV (Hydrogen) data are off - BEV too
 # !!! Attention: The data are bad before 2016 and after 2020, backcasting to 1990 from 2016 done with linear fitting.
@@ -1748,7 +1883,6 @@ del dm_veh_new_eff_LDV, dm_veh_eff_LDV, mapping_cat, emis
 
 #######################################################################
 
-years_fts = create_years_list(start_year=2025, end_year=2050, step=5)
 
 # SECTION Modal-share and Transport demand pkm fts
 based_on_years = create_years_list(1990, 2019, 1)
@@ -1783,22 +1917,18 @@ dm_public_tech_share = dm_public_fleet_cap.normalise('Categories2', inplace=Fals
 
 dm_public_tech_share.rename_col('tra_passenger_vehicle-fleet_cap_share', 'tra_passenger_technology-share_fleet', dim='Variables')
 # Join private and public technology
-cat_private_only = list(set(dm_fleet_tech_share.col_labels['Categories2'])
-                        - set(dm_public_tech_share.col_labels['Categories2']))
-cat_public_only = list(set(dm_public_tech_share.col_labels['Categories2'])
-                       - set(dm_fleet_tech_share.col_labels['Categories2']))
 dm_public_tech_share.add(np.nan, dummy=True, dim='Categories2', col_label=cat_private_only)
 dm_fleet_tech_share.add(np.nan, dummy=True, dim='Categories2', col_label=cat_public_only)
 dm_fleet_tech_share.append(dm_public_tech_share, dim='Categories1')
 del dm_public_tech_share
 
 # SECTION Technology share new fleet fts
-# Normalise new-fleet
-arr_fleet_cap = dm_pass_new_fleet.array / dm_pop.array[..., np.newaxis, np.newaxis]
-dm_pass_fleet_new_cap = DataMatrix.based_on(arr_fleet_cap, dm_pass_new_fleet,
+# Compute per capita values
+arr_fleet_cap = dm_new_fleet.array / dm_pop.array[..., np.newaxis, np.newaxis]
+dm_pass_fleet_new_cap = DataMatrix.based_on(arr_fleet_cap, dm_new_fleet,
                                             change={'Variables': ['tra_passenger_new-vehicles_cap']},
                                             units={'tra_passenger_new-vehicles_cap': 'number/cap'})
-dm_pass_fleet_new_cap_std = dm_pass_fleet_new_cap.filter_w_regex({'Categories2': 'ICE'})
+dm_pass_fleet_new_cap_std = dm_pass_fleet_new_cap.filter_w_regex({'Categories2': 'ICE|CEV|mt'})
 dm_pass_fleet_new_cap_alt = dm_pass_fleet_new_cap.filter_w_regex({'Categories2': 'BEV|FCEV|PHEV'})
 based_on_years_std = create_years_list(2010, 2022, 1)
 linear_fitting(dm_pass_fleet_new_cap_std, years_fts, based_on=based_on_years_std)
@@ -1807,19 +1937,69 @@ linear_fitting(dm_pass_fleet_new_cap_alt, years_fts, based_on=based_on_years_alt
 dm_pass_fleet_new_cap_std.append(dm_pass_fleet_new_cap_alt, dim='Categories2')
 dm_pass_fleet_new_cap = dm_pass_fleet_new_cap_std
 dm_pass_fleet_new_cap.array = np.maximum(dm_pass_fleet_new_cap.array, 0)
-
+# Normalise to obtain new-tech-share
 dm_fleet_new_tech_share = dm_pass_fleet_new_cap.normalise(dim='Categories2', inplace=False)
 dm_fleet_new_tech_share.rename_col('tra_passenger_new-vehicles_cap_share', 'tra_passenger_technology-share_new',
                                    dim='Variables')
-# Add bus, metrotram, rail to new tech-share (=fleet tech-share)
-dm_fleet_new_tech_share.add(np.nan, dummy=True, dim='Categories2', col_label=cat_public_only)
-dm_tmp = dm_fleet_tech_share.filter({'Categories1': ['bus', 'metrotram', 'rail']})
-dm_tmp.rename_col('tra_passenger_technology-share_fleet', 'tra_passenger_technology-share_new', 'Variables')
-dm_fleet_new_tech_share.append(dm_tmp, dim='Categories1')
+dm_fleet_new_tech_share.fill_nans('Years')
+# For rail, use 2021 values
+idx = dm_fleet_new_tech_share.idx
+idx_fts = [idx[y] for y in years_fts]
+dm_fleet_new_tech_share.array[:, idx_fts, idx['tra_passenger_technology-share_new'], idx['rail'], :] = \
+    dm_fleet_new_tech_share.array[:, idx[2021], np.newaxis, idx['tra_passenger_technology-share_new'], idx['rail'], :]
+
 
 ##### Compute pkm and fleet based on per capita fts values
 dm_pop_all = dm_pop.copy()
 dm_pop_all.append(dm_pop_fts, dim='Years')
+
+
+#region Reflection on the renewal-rate
+# When the stock is constant, the renewal-rate is 1/lifetime. This gives a logical sense to the renewal-rate.
+# For the ots, the renewal-rate is simply computed as waste/stock, and its value is often far from what we believe
+# is a realistic 1/lifetime value, for an average lifetime of 1/13 years the renewal-rate should be 7.6%, and instead we
+# find values oscillating between 2% to 9%. This can be due to many things, if for example we are talking about a new
+# technology like BEV, FCEV etc the waste is still relatively small because the car that were put on the market have
+# not yet arrived to their end-of-life. For thecnologies that are going out of production the renewal rate can be high
+# (a lot of waste from previous years and the stock going to zero). To complicate matters though there is the fact that
+# the boundary are not closed, cars can be moved across borders before reaching their end of life. But we could assume
+# that this is random noise on top of the data that should cancel out. But still in a scenario where we are trying to
+# reproduce drastical changes to the vehicle stock, it does not make sense to use a constant renewal-rate for forecasting.
+# For forecasting we could assume that the waste is equal to the new vehicles that were put on the market 13 years ago.
+# This could create discontinuities between ots and fts... But we can try. So let's assume that for fts the renewal-rate
+# is 1/lifetime and instead of computing the waste / stock vehicle fleet in the classic way we use the renewal-rate to go
+# in time and determine the waste.
+# In order to chose the average lifetime, we look at the trends of LDV ICE-diesel, where the trends show an average
+# lifetime of 13.5 years. For EV the current lifetime seems to be rather 5.5 years.
+# We could start with 5.5 years and then increase the lifetime to reach 13.5 years after 10 years. For 2W we use 8 years.
+#endregion and lif and lifetime
+
+# SECTION Lifetime ots fts
+# ots are not used
+arr = dm_fleet_new_tech_share.array*np.nan
+dm_lifetime = DataMatrix.based_on(arr, format=dm_fleet_new_tech_share, change={'Variables': ['tra_passenger_lifetime']},
+                                  units={'tra_passenger_lifetime': 'years'})
+idx = dm_lifetime.idx
+# LDV: ICE and PHEV vehicles have lifetime of 13.5 years
+idx_fts = [idx[yr] for yr in years_fts]
+for cat in dm_lifetime.col_labels['Categories2']:
+    if ("ICE" in cat) or ('PHEV' in cat):
+        dm_lifetime.array[:, idx_fts, idx['tra_passenger_lifetime'], idx['LDV'], idx[cat]] = 14
+# LDV: New technology like BEV and PHEV have lifetimes initially of 5.5, and the 13.5
+for cat in dm_lifetime.col_labels['Categories2']:
+    if ("BEV" in cat) or ('FCEV' in cat):
+        dm_lifetime.array[:, idx[years_fts[0]], idx['tra_passenger_lifetime'], idx['LDV'], idx[cat]] = 5.5
+        dm_lifetime.array[:, idx[2035], idx['tra_passenger_lifetime'], idx['LDV'], idx[cat]] = 14
+        dm_lifetime.array[:, idx[years_fts[-1]], idx['tra_passenger_lifetime'], idx['LDV'], idx[cat]] = 14
+# 2W: 8 years
+dm_lifetime.array[:, idx_fts, idx['tra_passenger_lifetime'], idx['2W'], :] = 8
+# We assume rail lifetime is 30 years, metrotram lifetime is 20 years and bus lifetime is 10 years
+idx_cat2_public = [idx[cat] for cat in dm_public_fleet.col_labels['Categories2']]
+dm_lifetime.array[:, :, idx['tra_passenger_lifetime'], idx['rail'], idx_cat2_public] = 30
+dm_lifetime.array[:, :, idx['tra_passenger_lifetime'], idx['metrotram'], idx['mt']] = 20
+dm_lifetime.array[:, :, idx['tra_passenger_lifetime'], idx['bus'], idx_cat2_public] = 10
+dm_lifetime.fill_nans('Years')
+
 
 # SECTION Transport demand vkm fts
 arr_vkm_cap = dm_vkm.array / dm_pop.array[..., np.newaxis]
@@ -1836,24 +2016,6 @@ dm_vkm_cap.array[idx['Switzerland'], idx[2025]:idx[2050]+1, idx['tra_vkm-cap'], 
 idx_p = dm_pkm_cap.idx
 mask = dm_vkm_cap.array[:, :, idx['tra_vkm-cap'], idx['2W']] > dm_pkm_cap.array[:, :, idx_p['tra_pkm-cap'], idx_p['2W']]
 dm_vkm_cap.array[:, :, idx['tra_vkm-cap'], idx['2W']][mask] = dm_pkm_cap.array[:, :, idx_p['tra_pkm-cap'], idx_p['2W']][mask]
-
-# SECTION Public fleet fts
-arr_public_fleet = dm_public_fleet_cap.array * dm_pop_all.array[..., np.newaxis, np.newaxis]
-dm_public_fleet = DataMatrix.based_on(arr_public_fleet, dm_public_fleet_cap,
-                                          change={'Variables': ['tra_passenger_vehicle-fleet']},
-                                          units={'tra_passenger_vehicle-fleet': 'number'})
-
-# SECTION Private fleet fts
-arr_pass_fleet = dm_pass_fleet_cap.array * dm_pop_all.array[..., np.newaxis, np.newaxis]
-dm_pass_fleet = DataMatrix.based_on(arr_pass_fleet, dm_pass_fleet_cap,
-                                    change={'Variables': ['tra_passenger_vehicle-fleet']},
-                                    units={'tra_passenger_vehicle-fleet': 'number'})
-
-# SECTION New private fleet fts
-arr_private_fleet = dm_pass_fleet_new_cap.array * dm_pop_all.array[..., np.newaxis, np.newaxis]
-dm_pass_new_fleet = DataMatrix.based_on(arr_private_fleet, dm_pass_fleet_new_cap,
-                                        change={'Variables': ['tra_passenger_new-vehicles']},
-                                        units={'tra_passenger_new-vehicles': 'number'})
 
 
 # SECTION Public fleet avg-pkm-veh [pkm/veh] (bus, metrotram, rail) fts
@@ -1885,48 +2047,23 @@ dm_km.operation('tra_vkm-cap', '/', 'tra_passenger_vehicle-fleet_cap',
 dm_utilisation = dm_km.filter({'Variables': ['tra_passenger_utilisation-rate']})
 del dm_km
 
-# SECTION Renewal-rate % (2W, LDV) fts
-# !! Attention: The renewal-rate is a bit low
-dm_fleet_private = dm_pass_fleet.group_all(dim='Categories2', inplace=False)
-dm_fleet_private.append(dm_pass_new_fleet.group_all(dim='Categories2', inplace=False), dim='Variables')
-dm_fleet_private.lag_variable(pattern='tra_passenger_vehicle-fleet', shift=1, subfix='_tmn')
-# Compute 'tra_passenger_vehicle-fleet_tm1' using the interpolation (needed for fts)
-idx = dm_fleet_private.idx
-years = np.array(dm_fleet_private.col_labels['Years'])
-n = np.diff(years)
-n = np.concatenate((np.array([n[0]]), n))
-tot_col = 'tra_passenger_vehicle-fleet'
-dm_fleet_private.array = np.moveaxis(dm_fleet_private.array, 1, -1)
-arr_stock_tm1 = ((n - 1) / n * dm_fleet_private.array[:, idx[tot_col], ...]
-                 + 1 / n * dm_fleet_private.array[:, idx[tot_col + '_tmn'], ...])
-arr_stock_tm1 = np.moveaxis(arr_stock_tm1, -1, 1)
-dm_fleet_private.array = np.moveaxis(dm_fleet_private.array, -1, 1)
-dm_fleet_private.add(arr_stock_tm1, dim='Variables', col_label='tra_passenger_vehicle-fleet_tm1', unit='number')
-## waste(t) = fleet(t-1) - fleet(t) + new-veh(t)
-dm_fleet_private.operation('tra_passenger_vehicle-fleet_tm1', '-', 'tra_passenger_vehicle-fleet',
-                           out_col='tra_delta_stock', unit='number')
-dm_fleet_private.operation('tra_delta_stock', '+', 'tra_passenger_new-vehicles', out_col='tra_vehicle-waste', unit='number')
-## ren-rate(t-1) = waste(t) / fleet(t-1)
-dm_fleet_private.operation('tra_vehicle-waste', '/', 'tra_passenger_vehicle-fleet_tm1', out_col='tra_passenger_renewal', unit='%')
-dm_fleet_private.lag_variable(pattern='tra_passenger_renewal', shift=-1, subfix='-rate')
-dm_renewal_rate = dm_fleet_private.filter({'Variables': ['tra_passenger_renewal-rate']})
-del dm_tmp, dm_fleet_private
-
-# SECTION Renewal-rate % (bus, rail, metrotram) fts
-# We assume rail lifetime is 30 years, metrotram lifetime is 20 years and bus lifetime is 10 years
-dm_renewal_rate.add(1/30, col_label='rail', dummy=True, dim='Categories1')
-dm_renewal_rate.add(1/20, col_label='metrotram', dummy=True, dim='Categories1')
-dm_renewal_rate.add(1/10, col_label='bus', dummy=True, dim='Categories1')
 
 # SECTION Efficiency fleet
 # For veh-fleet efficiency we can leave the fts to nan because this get re-computed
 dm_veh_eff.add(np.nan, dim='Years', dummy=True, col_label=years_fts)
 dm_fleet_tech_share.append(dm_veh_eff, dim='Variables')
-
 dm_veh_new_eff_fts = dm_veh_new_eff.copy()
 dm_veh_new_eff_fts.add(np.nan, dim='Years', dummy=True, col_label=years_fts)
 dm_veh_new_eff_fts.fill_nans(dim_to_interp='Years')
 dm_veh_new_eff_fts.filter({'Years': years_fts}, inplace=True)
+
+# SECTION New Fleet dummy fts
+dm_new_fleet.add(np.nan, dim='Years', col_label=years_fts, dummy=True)
+dm_fleet_tech_share.append(dm_new_fleet, dim='Variables')
+
+# SECTION Waste Fleet dummy fts
+dm_waste_fleet.add(np.nan, dim='Years', col_label=years_fts, dummy=True)
+dm_fleet_tech_share.append(dm_waste_fleet, dim='Variables')
 
 # SECTION Aviation
 dm_pkm_cap_aviation_fts = dm_pkm_cap_aviation.copy()
@@ -1935,22 +2072,41 @@ linear_fitting(dm_pkm_cap_aviation_fts, years_fts)
 dm_pkm_cap_aviation_fts.filter({'Years': years_fts}, inplace=True)
 
 # Compute vehicle lifetime in vkm for LDV and 2W instead of renewal rate
-dm_tmp = dm_utilisation.filter({'Categories1': ['2W', 'LDV']})
-dm_tmp.append(dm_renewal_rate.filter({'Categories1': ['2W', 'LDV']}), dim='Variables')
-dm_tmp.operation('tra_passenger_utilisation-rate', '/', 'tra_passenger_renewal-rate',
-                             out_col='tra_passenger_vehicle-lifetime', unit='vkm')
-dm_veh_lifetime = dm_tmp.filter({'Variables': ['tra_passenger_vehicle-lifetime']}, inplace=False)
-dm_renewal_rate.drop(col_label=['2W', 'LDV'], dim='Categories1')
+#dm_tmp = dm_utilisation.filter({'Categories1': ['2W', 'LDV']})
+#dm_tmp.append(dm_renewal_rate.filter({'Categories1': ['2W', 'LDV']}), dim='Variables')
+#dm_tmp.operation('tra_passenger_utilisation-rate', '/', 'tra_passenger_renewal-rate',
+#                             out_col='tra_passenger_vehicle-lifetime', unit='vkm')
+#dm_veh_lifetime = dm_tmp.filter({'Variables': ['tra_passenger_vehicle-lifetime']}, inplace=False)
+#dm_renewal_rate.drop(col_label=['2W', 'LDV'], dim='Categories1')
 ## Compute the avg veh-lifetime from 2009-2019
 #linear_fitting(dm_veh_lifetime, years_fts, based_on=create_years_list(2004, 2019, 1))
+
+# SECTION Electricity emission factor
+col_dict = {
+    'Country': ['Vaud', 'Switzerland'],
+    'Years': years_ots+years_fts,
+    'Variables': ['tra_emission-factor'],
+    'Categories1': ['CH4', 'CO2', 'N2O'],
+    'Categories2': ['electricity']
+}
+dm_elec = DataMatrix(col_labels=col_dict, units={'tra_emission-factor': 'g/MJ'})
+
+arr_elec = np.zeros((2, 40, 1, 3, 1))
+idx = dm_elec.idx
+arr_elec[:, idx[1990]: idx[2023]+1, 0, idx['CO2'], 0] = 31.1
+arr_elec[:, idx[2025]: idx[2050], 0, idx['CO2'], 0] = np.nan
+arr_elec[:, idx[2050], 0, idx['CO2'], 0] = 0
+dm_elec.array = arr_elec
+dm_elec.fill_nans(dim_to_interp="Years")
 
 
 # FXA
 DM_transport_new = {'fxa': dict(), 'ots': dict(), 'fts': dict(), 'constant': dict()}
-DM_transport_new['fxa']['passenger_renewal-rate'] = dm_renewal_rate
+#DM_transport_new['fxa']['passenger_renewal-rate'] = dm_renewal_rate
 #DM_transport_new['fxa']['passenger_avg-pkm-by-veh'] = dm_public_avg_pkm
 DM_transport_new['fxa']['passenger_tech'] = dm_fleet_tech_share
-DM_transport_new['fxa']['passenger_vehicle-lifetime'] = dm_veh_lifetime
+DM_transport_new['fxa']['passenger_vehicle-lifetime'] = dm_lifetime
+DM_transport_new['fxa']['emission-factor-electricity'] = dm_elec
 
 # OTS
 # Filter aviation pkm/cap and rename
@@ -1981,6 +2137,7 @@ for lev in range(4):
 
 # CONSTANT
 DM_transport_new['constant'] = cdm_emissions_factors
+
 
 # LIFESTYLES - TRANSPORT  INTERFACE
 file = '../../../data/datamatrix/lifestyles.pickle'
@@ -2064,9 +2221,8 @@ for lev in [1, 2, 3, 4]:
     DM_transport_new['fts']['freight_modal-share'][lev] = dm_modal_all.filter({'Years': years_fts})
 
 
-
 current_file_directory = os.path.dirname(os.path.abspath(__file__))
-f = os.path.join(current_file_directory, 'data/transport_CH_VD.pickle')
+f = os.path.join(current_file_directory, '../../../data/datamatrix/transport.pickle')
 with open(f, 'wb') as handle:
     pickle.dump(DM_transport_new, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
