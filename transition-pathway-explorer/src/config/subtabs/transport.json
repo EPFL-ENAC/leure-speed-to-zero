@@ -106,16 +106,16 @@
       "unit": "TWh",
       "type": "StackedArea",
       "outputs": [
-        "tra_passenger_energy-demand-by-fuel_diesel[TWh]",
-        "tra_passenger_energy-demand-by-fuel_gasoline[TWh]",
-        "tra_passenger_energy-demand-by-fuel_gas[TWh]",
+        "tra_passenger_energy-demand-by-fuel_electricity[TWh]",
+        "tra_passenger_energy-demand-by-fuel_hydrogen[TWh]",
         "tra_passenger_energy-demand-by-fuel_biodiesel[TWh]",
         "tra_passenger_energy-demand-by-fuel_bioethanol[TWh]",
         "tra_passenger_energy-demand-by-fuel_biogas[TWh]",
-        "tra_passenger_energy-demand-by-fuel_kerosene[TWh]",
         "tra_passenger_energy-demand-by-fuel_biojetfuel[TWh]",
-        "tra_passenger_energy-demand-by-fuel_electricity[TWh]",
-        "tra_passenger_energy-demand-by-fuel_hydrogen[TWh]"
+        "tra_passenger_energy-demand-by-fuel_gas[TWh]",
+        "tra_passenger_energy-demand-by-fuel_diesel[TWh]",
+        "tra_passenger_energy-demand-by-fuel_gasoline[TWh]",
+        "tra_passenger_energy-demand-by-fuel_kerosene[TWh]"
       ]
     },
     "PassengerVehiclesFleet": {
@@ -152,18 +152,18 @@
       "unit": "TWh",
       "type": "StackedArea",
       "outputs": [
-        "tra_freight_energy-demand-by-fuel_diesel[TWh]",
-        "tra_freight_energy-demand-by-fuel_gasoline[TWh]",
-        "tra_freight_energy-demand-by-fuel_gas[TWh]",
+        "tra_freight_energy-demand-by-fuel_electricity[TWh]",
+        "tra_freight_energy-demand-by-fuel_hydrogen[TWh]",
         "tra_freight_energy-demand-by-fuel_biodiesel[TWh]",
         "tra_freight_energy-demand-by-fuel_bioethanol[TWh]",
         "tra_freight_energy-demand-by-fuel_biogas[TWh]",
-        "tra_freight_energy-demand-by-fuel_kerosene[TWh]",
-        "tra_freight_energy-demand-by-fuel_biojetfuel[TWh]",
-        "tra_freight_energy-demand-by-fuel_marinefueloil[TWh]",
         "tra_freight_energy-demand-by-fuel_biomarinefueloil[TWh]",
-        "tra_freight_energy-demand-by-fuel_electricity[TWh]",
-        "tra_freight_energy-demand-by-fuel_hydrogen[TWh]"
+        "tra_freight_energy-demand-by-fuel_biojetfuel[TWh]",
+        "tra_freight_energy-demand-by-fuel_gas[TWh]",
+        "tra_freight_energy-demand-by-fuel_diesel[TWh]",
+        "tra_freight_energy-demand-by-fuel_gasoline[TWh]",
+        "tra_freight_energy-demand-by-fuel_kerosene[TWh]",
+        "tra_freight_energy-demand-by-fuel_marinefueloil[TWh]"
       ]
     },
     "TrucksTechnologyShare": {
