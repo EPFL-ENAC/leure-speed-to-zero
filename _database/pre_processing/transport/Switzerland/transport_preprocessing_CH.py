@@ -1554,6 +1554,23 @@ def compute_new_public_fleet_ots(dm, var_names):
     dm.operation('tra_delta_stock', '+', waste_col, out_col=new_col, unit=stock_unit)
     dm.filter({'Variables': [s_col, new_col, waste_col, rr_col]}, inplace=True)
 
+    # FIX NEW FLEET
+    dm_new = dm.filter({'Variables': [new_col]}, inplace=False)
+    mask = (dm_new.array < 0)
+    dm_new.array[mask] = np.nan
+    dm_new.fill_nans('Years')
+    dm.drop(dim='Variables', col_label=new_col)
+    dm.append(dm_new, dim='Variables')
+
+    # RECOMPUTE STOCK
+    idx = dm.idx
+    for t in dm.col_labels['Years'][1:]:
+        s_tm1 = dm.array[:, idx[t-1], idx[s_col], ...]
+        new_t = dm.array[:, idx[t], idx[new_col], ...]
+        waste_t = dm.array[:, idx[t], idx[waste_col], ...]
+        s_t = s_tm1 + new_t - waste_t
+        dm.array[:, idx[t], idx[s_col], ...] = s_t
+
     return
 
 print('In order for this routine to run you need to download a couple of files and save them locally:'
@@ -1567,6 +1584,9 @@ print('In order for this routine to run you need to download a couple of files a
 
 years_ots = create_years_list(start_year=1990, end_year=2023, step=1, astype=int)
 years_fts = create_years_list(start_year=2025, end_year=2050, step=5)
+
+new_tech_linear_fts = False
+new_tech_flat_fts = True
 
 ##### Population
 dict_lfs_ots, dict_lfs_fts = read_database_to_dm('lifestyles_population.csv', filter={'geoscale': ['Vaud', 'Switzerland']},
@@ -1923,25 +1943,45 @@ dm_fleet_tech_share.append(dm_public_tech_share, dim='Categories1')
 del dm_public_tech_share
 
 # SECTION Technology share new fleet fts
-# Compute per capita values
-arr_fleet_cap = dm_new_fleet.array / dm_pop.array[..., np.newaxis, np.newaxis]
-dm_pass_fleet_new_cap = DataMatrix.based_on(arr_fleet_cap, dm_new_fleet,
-                                            change={'Variables': ['tra_passenger_new-vehicles_cap']},
-                                            units={'tra_passenger_new-vehicles_cap': 'number/cap'})
-dm_pass_fleet_new_cap_std = dm_pass_fleet_new_cap.filter_w_regex({'Categories2': 'ICE|CEV|mt'})
-dm_pass_fleet_new_cap_alt = dm_pass_fleet_new_cap.filter_w_regex({'Categories2': 'BEV|FCEV|PHEV'})
-based_on_years_std = create_years_list(2010, 2022, 1)
-linear_fitting(dm_pass_fleet_new_cap_std, years_fts, based_on=based_on_years_std)
-based_on_years_alt = create_years_list(2015, 2022, 1)
-linear_fitting(dm_pass_fleet_new_cap_alt, years_fts, based_on=based_on_years_alt)
-dm_pass_fleet_new_cap_std.append(dm_pass_fleet_new_cap_alt, dim='Categories2')
-dm_pass_fleet_new_cap = dm_pass_fleet_new_cap_std
-dm_pass_fleet_new_cap.array = np.maximum(dm_pass_fleet_new_cap.array, 0)
-# Normalise to obtain new-tech-share
-dm_fleet_new_tech_share = dm_pass_fleet_new_cap.normalise(dim='Categories2', inplace=False)
-dm_fleet_new_tech_share.rename_col('tra_passenger_new-vehicles_cap_share', 'tra_passenger_technology-share_new',
-                                   dim='Variables')
-dm_fleet_new_tech_share.fill_nans('Years')
+if new_tech_linear_fts:
+    # Compute per capita values
+    arr_fleet_cap = dm_new_fleet.array / dm_pop.array[..., np.newaxis, np.newaxis]
+    dm_pass_fleet_new_cap = DataMatrix.based_on(arr_fleet_cap, dm_new_fleet,
+                                                change={'Variables': ['tra_passenger_new-vehicles_cap']},
+                                                units={'tra_passenger_new-vehicles_cap': 'number/cap'})
+    # Data source (https://www.bfs.admin.ch/bfs/en/home/news/whats-new.assetdetail.32306059.html)
+    #BEV_2024_cap = 36506/10*12/8921981
+    #PHEV_gasoline_2024_cap = 17109/10*12/8921981
+
+    dm_pass_fleet_new_cap_std = dm_pass_fleet_new_cap.filter_w_regex({'Categories2': 'ICE|CEV|mt'})
+    dm_pass_fleet_new_cap_alt = dm_pass_fleet_new_cap.filter_w_regex({'Categories2': 'BEV|FCEV|PHEV'})
+    based_on_years_std = create_years_list(2010, 2022, 1)
+    linear_fitting(dm_pass_fleet_new_cap_std, years_fts, based_on=based_on_years_std)
+    based_on_years_alt = create_years_list(2015, 2024, 1)
+    idx = dm_pass_fleet_new_cap_alt.idx
+    var = 'tra_passenger_new-vehicles_cap'
+    dm_pass_fleet_new_cap_alt.add(np.nan, dim='Years', col_label=[2024], dummy=True)
+    #dm_pass_fleet_new_cap_alt.array[idx['Switzerland'], idx[2024], idx[var], idx['LDV'], idx['BEV']] = BEV_2024_cap
+    #dm_pass_fleet_new_cap_alt.array[idx['Switzerland'], idx[2024], idx[var], idx['LDV'], idx['BEV']] = PHEV_gasoline_2024_cap
+    linear_fitting(dm_pass_fleet_new_cap_alt, years_fts, based_on=based_on_years_alt)
+    dm_pass_fleet_new_cap_alt.filter({'Years': years_ots + years_fts}, inplace=True)
+    dm_pass_fleet_new_cap_std.append(dm_pass_fleet_new_cap_alt, dim='Categories2')
+    dm_pass_fleet_new_cap = dm_pass_fleet_new_cap_std
+    dm_pass_fleet_new_cap.array = np.maximum(dm_pass_fleet_new_cap.array, 0)
+
+    # Normalise to obtain new-tech-share
+    dm_fleet_new_tech_share = dm_pass_fleet_new_cap.normalise(dim='Categories2', inplace=False)
+    dm_fleet_new_tech_share.rename_col('tra_passenger_new-vehicles_cap_share', 'tra_passenger_technology-share_new',
+                                       dim='Variables')
+    dm_fleet_new_tech_share.fill_nans('Years')
+
+if new_tech_flat_fts:
+    dm_fleet_new_tech_share = dm_new_fleet.normalise(dim='Categories2', inplace=False)
+    dm_fleet_new_tech_share.rename_col('tra_passenger_new-vehicles_share', 'tra_passenger_technology-share_new',
+                                       dim='Variables')
+    dm_fleet_new_tech_share.add(np.nan, dim='Years', col_label=years_fts, dummy=True)
+    dm_fleet_new_tech_share.fill_nans('Years')
+
 # For rail, use 2021 values
 idx = dm_fleet_new_tech_share.idx
 idx_fts = [idx[y] for y in years_fts]
