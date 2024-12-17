@@ -4004,6 +4004,74 @@ def CO2_emissions():
     return df_liming_urea_calibration
 
 
+# CalculationLeaf CAL - WOOD ------------------------------
+
+def wood_calibration():
+    # ----------------------------------------------------------------------------------------------------------------------
+    # WOOD DEMAND ---------------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # Read FAO Values (for Switzerland) --------------------------------------------------------------------------------------------
+    # List of countries
+    list_countries = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czechia', 'Denmark',
+                      'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
+                      'Lithuania', 'Luxembourg', 'Malta', 'Netherlands (Kingdom of the)', 'Poland', 'Portugal',
+                      'Romania', 'Slovakia',
+                      'Slovenia', 'Spain', 'Sweden', 'Switzerland',
+                      'United Kingdom of Great Britain and Northern Ireland']
+
+    # List of elements
+    list_elements = ['Production Quantity']
+
+    list_items = ['Roundwood + (Total)']
+
+    # 1990 - 2022
+    ld = faostat.list_datasets()
+    code = 'FO'
+    pars = faostat.list_pars(code)
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
+                  '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
+                  '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_wood = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # Filtering to keep wanted columns
+    columns_to_filter = ['Area', 'Item', 'Year', 'Value']
+    df_wood = df_wood[columns_to_filter]
+
+    # Pivot the df
+    df_wood = df_wood.pivot_table(index=['Area', 'Year', 'Item'],
+                                              values='Value').reset_index()
+
+    # PathwayCalc formatting -----------------------------------------------------------------------------------------------
+    # Food item name matching with dictionary
+    # Read excel file
+    df_dict_calibration = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        sheet_name='calibration')
+
+    # Merge based on 'Item'
+    df_wood_calibration = pd.merge(df_dict_calibration, df_wood, on='Item')
+
+    # Drop the 'Item' column
+    df_wood_calibration = df_wood_calibration.drop(columns=['Item'])
+
+    # Renaming existing columns (geoscale, timsecale, value)
+    df_wood_calibration.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Value': 'value'},
+                                    inplace=True)
+
+    return df_wood_calibration
+
 # CalculationTree RUNNING CALIBRATION ----------------------------------------------------------------------------------
 #df_diet_calibration = lifestyle_calibration()
 #df_domestic_supply_calibration, df_liv_population_calibration = livestock_crop_calibration()
@@ -4012,6 +4080,7 @@ def CO2_emissions():
 #df_feed_calibration = feed_calibration()
 #df_land_use_fao_calibration = land_calibration()
 #df_liming_urea_calibration = CO2_emissions()
+#df_wood_calibration = wood_calibration()
 df_emissions_calibration = energy_ghg_calibration()
 
 
