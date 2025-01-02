@@ -811,12 +811,13 @@ def compute_new_area_by_energy_cat(dm_bld_area_new, dm_energy_cat, cat_map):
     return dm_energy_cat
 
 
-def extract_renovation_redistribuition(ren_map_out, ren_map_in, years_ots):
+def extract_renovation_redistribuition(ren_map_in, ren_map_out, years_ots):
     dm = DataMatrix(col_labels={'Country': ['Switzerland', 'Vaud'],
                                             'Years': years_ots,
-                                            'Variables': ['bld_renovation-redistribution'],
+                                            'Variables': ['bld_renovation-redistribution-in',
+                                                          'bld_renovation-redistribution-out'],
                                             'Categories1': ['B', 'C', 'D', 'E', 'F']},
-                    units={'bld_renovation-redistribution': '%'})
+                    units={'bld_renovation-redistribution-in': '%', 'bld_renovation-redistribution-out': '%'})
     dm.array = np.nan * np.ones((len(dm.col_labels['Country']),
                                  len(dm.col_labels['Years']),
                                  len(dm.col_labels['Variables']),
@@ -824,17 +825,17 @@ def extract_renovation_redistribuition(ren_map_out, ren_map_in, years_ots):
     idx = dm.idx
     for year_period, map_values in ren_map_out.items():
         for key, val in map_values.items():
-            dm.array[:, idx[year_period[1]], idx['bld_renovation-redistribution'], idx[key]] = val
+            dm.array[:, idx[year_period[1]], idx['bld_renovation-redistribution-out'], idx[key]] = val
     dm.array[:, idx[1990], ...] = dm.array[:, idx[2000], ...]
 
-    dm.fill_nans(dim_to_interp='Years')
-    dm.normalise('Categories1')
     idx = dm.idx
     for year_period, map_values in ren_map_in.items():
         idx_year_period = [idx[yr] for yr in range(year_period[0], year_period[1]+1)]
         for key, val in map_values.items():
-            arr = dm.array[:, idx_year_period, idx['bld_renovation-redistribution'], idx[key]]
-            dm.array[:, idx_year_period, idx['bld_renovation-redistribution'], idx[key]] = val + arr
+            dm.array[:, idx_year_period, idx['bld_renovation-redistribution-in'], idx[key]] = val
+
+    dm.fill_nans(dim_to_interp='Years')
+    dm.normalise('Categories1')
 
     return dm
 
@@ -862,7 +863,8 @@ def adjust_based_on_renovation(dm_in, dm_rr, dm_renov_distr):
         waste_t = dm.array[:, idx[ti], idx['bld_floor-area_waste'], :, :]
         tmp_t = stock_t - new_t + waste_t
         stock_tm1 = tmp_t / (1 + dm_rr.array[:, idx_r[ti], idx_r['bld_renovation-rate'], :, np.newaxis]
-                               * dm_renov_distr.array[:, idx_d[ti], idx_d['bld_renovation-redistribution'], np.newaxis, :])
+                               * (- dm_renov_distr.array[:, idx_d[ti], idx_d['bld_renovation-redistribution-out'], np.newaxis, :]
+                                + dm_renov_distr.array[:, idx_d[ti], idx_d['bld_renovation-redistribution-in'], np.newaxis, :]))
         dm.array[:, idx[ti - 1], idx['bld_floor-area_stock'], :, :] = stock_tm1
         dm.array[:, idx[ti - 1], idx['bld_demolition-rate'], :, :] = waste_t / stock_tm1
 
@@ -903,7 +905,6 @@ def compute_building_mix(dm_all):
     dm_building_mix.filter({'Variables': ['bld_building-mix_stock', 'bld_building-mix_new']}, inplace=True)
 
     return dm_building_mix
-
 
 
 ######################
@@ -1046,7 +1047,7 @@ def extract_heating_technologies(table_id, file):
 
 def compute_heating_tech_mix_fts(dm_heating_tech):
     # dm_heating_tech.add(np.nan, dim='Years', dummy=True, col_label=years_fts)
-    dm_heating_tech_ots = dm_heating_tech.filter({'Years': years_ots})
+    #dm_heating_tech_ots = dm_heating_tech.filter({'Years': years_ots})
     linear_fitting(dm_heating_tech, years_fts, based_on=[2021, 2022, 2023])
     dm_heating_tech.array = np.maximum(dm_heating_tech.array, 0)
     dm_heating_tech.normalise('Categories2')
@@ -1093,7 +1094,8 @@ def harmonise_stock_new_renovated_transformed(dm, dm_rr, dm_renov_distr, cat_map
     idx_d = dm_renov_distr.idx
     ren_t = np.nansum(dm.array[:, :, idx['bld_floor-area_stock_tm1'], :, :]
                       * dm_rr.array[:, :, idx_r['bld_renovation-rate'], :, np.newaxis], axis=-1, keepdims=True) \
-            * dm_renov_distr.array[:, :, idx_d['bld_renovation-redistribution'], np.newaxis, :]
+            * ( - dm_renov_distr.array[:, :, idx_d['bld_renovation-redistribution-out'], np.newaxis, :] +
+                dm_renov_distr.array[:, :, idx_d['bld_renovation-redistribution-in'], np.newaxis, :])
     dm.add(ren_t, dim='Variables', unit='m2', col_label='bld_floor-area_renovated')
 
     # compute waste
@@ -1242,7 +1244,8 @@ def compute_floor_area_renovated(dm_stock_tot, dm_renovation, dm_renov_distr):
     idx = dm.idx
     idx_d = dm_renov_distr.idx
     arr = dm.array[:, :, idx['bld_floor-area_renovated'], :, np.newaxis] \
-          * dm_renov_distr.array[:, :, idx_d['bld_renovation-redistribution'], np.newaxis, :]
+          * (- dm_renov_distr.array[:, :, idx_d['bld_renovation-redistribution-out'], np.newaxis, :] +
+             dm_renov_distr.array[:, :, idx_d['bld_renovation-redistribution-in'], np.newaxis, :] )
     dm_renovated_cat = DataMatrix.based_on(arr[:, :, np.newaxis, ...], dm, change={'Variables': ['bld_floor-area_renovated'],
                                                             'Categories2': dm_renov_distr.col_labels['Categories1']},
                                            units={'bld_floor-area_renovated': 'm2'})
@@ -1462,19 +1465,61 @@ def compute_heating_mix_by_category(dm_heating_tech, cdm_heating_archetypes, dm_
     return dm_heating_mix
 
 def clean_heating_cat(dm_heating_cat, envelope_cat_new):
-    # !FIXME: something is off
-    print('you are here')
+
     years_all = dm_heating_cat.col_labels['Years']
     idx = dm_heating_cat.idx
     for cat, period in envelope_cat_new.items():
-        years_period = list(set(period[0],period[1]))
+        years_period = list(range(period[0], period[1]+1))
         years_not_in_period = list(set(years_all) - set(years_period))
         idx_yrs = [idx[yr] for yr in years_not_in_period]
         dm_heating_cat.array[:, idx_yrs, idx['bld_heating-mix'], :, idx[cat], :] = np.nan
+    dm_heating_cat.fill_nans('Years')
+
+    return dm_heating_cat
 
 
+def compute_building_age(dm_stock_cat, years_fts, first_bld_sfh, first_bld_mfh):
+    dm_age = dm_stock_cat.filter({'Variables': ['bld_floor-area_stock']})
+    dm_age.rename_col('bld_floor-area_stock', 'bld_age', dim='Variables')
+    dm_age.change_unit('bld_age', 1, 'm2', 'years')
+    dm_age.add(np.nan, dim='Years', col_label=years_fts, dummy=True)
+    years_all = np.array(dm_age.col_labels['Years'])
+    nb_cntr = len(dm_age.col_labels['Country'])
+    idx = dm_age.idx
+    for cat, start_yr in first_bld_sfh.items():
+        arr_age = years_all - start_yr
+        arr_age = np.maximum(arr_age, 0)
+        for idx_c in range(nb_cntr):
+            dm_age.array[idx_c, :, idx['bld_age'], idx['single-family-households'], idx[cat]] = arr_age
+    for cat, start_yr in first_bld_mfh.items():
+        arr_age = years_all - start_yr
+        arr_age = np.maximum(arr_age, 0)
+        for idx_c in range(nb_cntr):
+            dm_age.array[idx_c, :, idx['bld_age'], idx['multi-family-households'], idx[cat]] = arr_age
+    return dm_age
 
-    return
+def compute_renovation_loi_energie(dm_stock_area, dm_num_bld, dm_stock_cat, env_cat_mfh, env_cat_sfh, DM_buildings):
+    dm_num_bld.append(dm_stock_area, dim='Variables')
+    dm_num_bld_sfh = dm_num_bld.filter({'Categories1': ['single-family-households']})
+    dm_num_bld_sfh.groupby(env_cat_sfh, dim='Categories2', inplace=True)
+    dm_num_bld_mfh = dm_num_bld.filter({'Categories1': ['multi-family-households']})
+    dm_num_bld_mfh.groupby(env_cat_mfh, dim='Categories2', inplace=True)
+    dm_bld = dm_num_bld_sfh
+    dm_bld.append(dm_num_bld_mfh, dim='Categories1')
+    dm_bld_adj = dm_stock_cat.filter({'Variables': ['bld_floor-area_stock']}, inplace=False)
+    dm_bld_adj.rename_col('bld_floor-area_stock', 'bld_floor-area_stock_adj', dim='Variables')
+    dm_bld.append(dm_bld_adj.filter({'Years': dm_bld.col_labels['Years']}), dim='Variables')
+    dm_bld.operation('bld_floor-area_stock_adj', '/', 'bld_floor-area_stock', out_col='ratio_area', unit='%')
+    dm_bld.operation('bld_stock-number-bld', '*', 'ratio_area', out_col='bld_stock-number-bld_adj', unit='number')
+    idx = dm_bld.idx
+    ren_goal_2035 = 90000/np.sum(dm_bld.array[idx['Vaud'], -1, idx['bld_stock-number-bld_adj'], idx['multi-family-households'], :])
+    dm_rr_fts_2 = DM_buildings['fts']['building-renovation-rate']['bld_renovation-rate'][2].copy()
+    idx = dm_rr_fts_2.idx
+    yrs_fts = [yr for yr in dm_rr_fts_2.col_labels['Years'] if yr <= 2035]
+    idx_fts = [idx[yr] for yr in yrs_fts]
+    dm_rr_fts_2.array[idx['Vaud'], idx_fts, idx['bld_renovation-rate'], idx['multi-family-households']] = \
+        ren_goal_2035/(yrs_fts[-1] - yrs_fts[0]+1)
+    return dm_rr_fts_2
 
 # Stock
 years_ots = create_years_list(1990, 2023, 1)
@@ -1578,13 +1623,13 @@ dm_renovation = compute_renovation_rate(dm_renovation, years_ots)
 # Amélioration de +2 classes CECB 15%
 # Amélioration de +3 classes CECB 15%
 # Amélioration de +4 classes CECB 13%
-ren_map_out = {(1990, 2000): {'F': 0, 'E': 0.85, 'D': 0.15, 'C': 0, 'B': 0},
+ren_map_in = {(1990, 2000): {'F': 0, 'E': 0.85, 'D': 0.15, 'C': 0, 'B': 0},
                (2001, 2010): {'F': 0, 'E': 0.69, 'D': 0.16, 'C': 0.15, 'B': 0},
                (2011, 2023): {'F': 0, 'E': 0.46, 'D': 0.23, 'C': 0.16, 'B': 0.15}}
-ren_map_in = {(1990, 2000): {'F': -0.8, 'E': -0.2, 'D': 0, 'C': 0, 'B': 0},
-               (2001, 2010): {'F': -0.8, 'E': -0.2, 'D': 0, 'C': 0, 'B': 0},
-               (2011, 2023): {'F': -0.8, 'E': -0.2, 'D': 0, 'C': 0, 'B': 0}}
-dm_renov_distr = extract_renovation_redistribuition(ren_map_out, ren_map_in, years_ots)
+ren_map_out = {(1990, 2000): {'F': -0.8, 'E': -0.2, 'D': 0, 'C': 0, 'B': 0},
+              (2001, 2010): {'F': -0.8, 'E': -0.2, 'D': 0, 'C': 0, 'B': 0},
+              (2011, 2023): {'F': -0.8, 'E': -0.2, 'D': 0, 'C': 0, 'B': 0}}
+dm_renov_distr = extract_renovation_redistribuition(ren_map_in, ren_map_out, years_ots)
 
 # Harmonise floor-area stock, new and demolition rate
 #dm_cat = compute_bld_demolition_rate(dm_energy_cat, envelope_cat_new)
@@ -1656,12 +1701,13 @@ with open(file, 'rb') as handle:
     dm_energy = pickle.load(handle)
 dm_energy.group_all('Categories2')
 dm_energy.group_all('Categories1')
-dm_energy.filter({'Variables': ['bld_heating'], 'Country': ['Switzerland']}, inplace=True)
+dm_energy.filter({'Country': ['Switzerland']}, inplace=True)
 matching_cat = list(set(dm_energy.col_labels['Categories1']).intersection(set(dm_heating.col_labels['Categories1'])))
 dm_energy.filter({'Categories1': matching_cat, 'Years': dm_heating.col_labels['Years']}, inplace=True)
 dm_heating.filter({'Categories1': matching_cat}, inplace=True)
 dm_energy.append(dm_heating, dim='Variables')
-
+dm_energy.operation('bld_heating-demand', '/', 'bld_energy-demand_heating', out_col='bld_calibration', unit='%')
+#dm_energy.datamatrix_plot()
 # if I want to save 2.2 TWh, and the maximum improvement I can do is 150 kWh/m2, I need to renovate 15 million m2.
 # The current park is 137 + 337 = 474 million m2
 # If I want to fix the renovation at 1%, then you renovate 4.7 million m2, in order to save 2.2 TWh,
@@ -1681,7 +1727,9 @@ DM_buildings = {'ots': dict(), 'fts': dict(), 'fxa': dict(), 'constant': dict()}
 # You need to extract the heating technology (you only have the last 3 years
 # but you have the energy mix for the historical period)
 # https://www.pxweb.bfs.admin.ch/pxweb/fr/px-x-0902010000_102/-/px-x-0902010000_102.px/
-# Use JRC data
+# In order to check the result the things I can validate are the 2000 value and the 2021-2023 values
+# You can run the check to see if the allocation by envelope category is well done and matches with the original data
+# The problem is that at the end the energy demand decreases.
 
 table_id = 'px-x-0902010000_102'
 file = 'data/bld_heating_technology.pickle'
@@ -1712,6 +1760,15 @@ dm_heating_cat = compute_heating_mix_by_category(dm_heating_tech, cdm_heating_ar
 # Before and after construction period keep shares flat
 dm_heating_cat = clean_heating_cat(dm_heating_cat, envelope_cat_new)
 
+# CHECK:
+check = False
+if check:
+    arr_tmp = dm_heating_cat.array[:, :, 0, ...] * dm_stock_cat.array[:, :, -1, :, :, np.newaxis]
+    dm_heating_cat.add(arr_tmp, dim='Variables', unit='m2', col_label='bld_heating-mix-area')
+    dm_heating_new = dm_heating_cat.filter({'Variables': ['bld_heating-mix-area']})
+    dm_heating_new.group_all('Categories2')
+    dm_heating_new.normalise('Categories2')
+
 # SECTION: Heating efficiency
 #######      HEATING EFFICIENCY     ###########
 file = '../Europe/data/JRC-IDEES-2021_Residential_EU27.xlsx'
@@ -1736,6 +1793,12 @@ dm_heating_eff.fill_nans('Years')
 arr = dm_heating_eff.array
 dm_heating_eff.add(arr, dim='Country', col_label='Vaud')
 dm_heating_eff.sort('Country')
+#idx = dm_heating_eff.idx
+#idx_years = [idx[yr] for yr in dm_heating_eff.col_labels['Years'] if yr > 2005]
+#idx_fuel = [idx[f] for f in dm_heating_eff.col_labels['Categories1'] if f != 'heating-oil']
+#for yr in idx_years:
+#    for f in idx_fuel:
+#        dm_heating_eff.array[:, yr, :, f] = dm_heating_eff.array[:, idx[2005], :, f]
 
 # SECTION: Lifestyles to Buildings intereface
 #########################################
@@ -1788,9 +1851,21 @@ for lev in range(4):
 #########################################
 #####   HEATING-COOLING BEHAVIOUR   #####
 #########################################
-arr = 20*dm_space_cap.array/dm_space_cap.array
-dm_Tint_heat = DataMatrix.based_on(arr, dm_space_cap, change={'Variables': ['bld_Tint-heating', 'bld_Tint-cooling']},
-                                   units={'bld_Tint-heating': 'C', 'bld_Tint-cooling': 'C'})
+col_label = {'Country': dm_stock_tot.col_labels['Country'],
+             'Years': years_ots+years_fts,
+             'Variables': ['bld_Tint-heating', 'bld_Tint-cooling'],
+             'Categories1': dm_stock_tot.col_labels['Categories1'],
+             'Categories2': dm_stock_cat.col_labels['Categories2']}
+dm_Tint_heat = DataMatrix(col_labels=col_label, units={'bld_Tint-heating': 'C', 'bld_Tint-cooling': 'C'})
+arr_shape = (len(dm_Tint_heat.col_labels['Country']), len(years_ots+years_fts),
+             len(dm_Tint_heat.col_labels['Variables']), len(dm_Tint_heat.col_labels['Categories1']),
+             len(dm_stock_cat.col_labels['Categories2']))
+dm_Tint_heat.array = 20*np.ones(arr_shape)
+idx = dm_Tint_heat.idx
+cat_Tint = {'F': 20, 'D': 21, 'E': 22, 'C': 23, 'B': 24}
+for cat, tint in cat_Tint.items():
+    dm_Tint_heat.array[:, :, idx['bld_Tint-heating'], idx['multi-family-households'], idx[cat]] = tint
+    dm_Tint_heat.array[:, :, idx['bld_Tint-heating'], idx['single-family-households'], idx[cat]] = tint - 1
 DM_buildings['ots']['heatcool-behaviour'] = dm_Tint_heat.filter({'Years': years_ots})
 DM_buildings['fts']['heatcool-behaviour'] = dict()
 for lev in range(4):
@@ -1807,20 +1882,21 @@ dm_building_mix = compute_building_mix(dm_all)
 dm_building_mix.add(np.nan, dummy=True, dim='Years', col_label=years_fts)
 DM_buildings['fxa']['bld_type'] = dm_building_mix.filter({'Variables': ['bld_building-mix_stock']})
 DM_buildings['ots']['building-renovation-rate'] = dict()
-dm_building_new = dm_building_mix.filter({'Variables': ['bld_building-mix_new']})
-DM_buildings['ots']['building-renovation-rate']['bld_building-mix'] = dm_building_new.filter({'Years': years_ots})
+dm_tmp = dm_building_mix.filter({'Variables': ['bld_building-mix_new']})
+DM_buildings['ots']['building-renovation-rate']['bld_building-mix'] = dm_tmp.filter({'Years': years_ots})
 # FTS
-dm_building_new.fill_nans(dim_to_interp='Years')
+dm_tmp.fill_nans(dim_to_interp='Years')
 DM_buildings['fts']['building-renovation-rate'] = dict()
 DM_buildings['fts']['building-renovation-rate']['bld_building-mix'] = dict()
 for lev in range(4):
     lev = lev + 1
-    DM_buildings['fts']['building-renovation-rate']['bld_building-mix'][lev] = dm_building_new.filter({'Years': years_fts})
+    DM_buildings['fts']['building-renovation-rate']['bld_building-mix'][lev] = dm_tmp.filter({'Years': years_fts})
 
-# SECTION: Renovation rate
+# SECTION: Renovation rate fts
 #########################################
 #####         RENOVATION           ######
 #########################################
+
 dm_rr = dm_renovation.filter({'Variables': ['bld_renovation-rate']})
 DM_buildings['ots']['building-renovation-rate']['bld_renovation-rate'] = dm_rr.copy()
 # FTS
@@ -1841,12 +1917,29 @@ for lev in range(4):
     DM_buildings['fts']['building-renovation-rate']['bld_renovation-redistribution'][lev] = \
         dm_renov_distr.filter({'Years': years_fts})
 
-# SECTION: Demolition rate
+# SECTION: Loi Energie - Renovation fts
+# LEVEL 2 Vaud: Loi Energie + Plan Climat
+# According to the Loi Energie, buildings in categories F,G > 750 m2 will have to be renovated before 2035,
+# and the other F,G before 2040. They estimate this corresponds to 90'000 multi-family-households being renovated before 2035.
+table_id = 'px-x-0902020200_103'
+file = 'data/bld_floor-area_stock.pickle'
+dm_stock_area, dm_num_bld = extract_stock_floor_area(table_id, file)
+env_cat_mfh = construction_period_envelope_cat_mfh
+env_cat_sfh = construction_period_envelope_cat_sfh
+dm_rr_fts_2 = compute_renovation_loi_energie(dm_stock_area, dm_num_bld, dm_stock_cat, env_cat_mfh, env_cat_sfh, DM_buildings)
+DM_buildings['fts']['building-renovation-rate']['bld_renovation-rate'][2] = dm_rr_fts_2
+
+# SECTION: Demolition rate fts
 #########################################
 #####         DEMOLITION          #######
 #########################################
-dm_demolition_rate = dm_all.filter({'Variables': ['bld_demolition-rate']})
+# Compute demolition rate by bld type
+dm_tot = dm_stock_tot.copy()
+dm_tot.append(dm_waste_tot, dim='Variables')
+dm_tot.operation('bld_floor-area_waste', '/', 'bld_floor-area_stock', out_col='bld_demolition-rate', unit='%')
+dm_demolition_rate = dm_tot.filter({'Variables': ['bld_demolition-rate']})
 DM_buildings['ots']['building-renovation-rate']['bld_demolition-rate'] = dm_demolition_rate.copy()
+# Compute average demolition rate in the last 10 years and forecast to future
 idx = dm_demolition_rate.idx
 idx_yrs = [idx[yr] for yr in create_years_list(2012, 2023, 1)]
 val_mean = np.mean(dm_demolition_rate.array[:, idx_yrs, ...], axis=1)
@@ -1860,6 +1953,12 @@ for lev in range(4):
     DM_buildings['fts']['building-renovation-rate']['bld_demolition-rate'][lev] = \
         dm_demolition_rate.filter({'Years': years_fts})
 
+# Create a bld age matrix to be used with demolition-rate
+first_bld_sfh = {'F': 1900, 'E': 1971, 'D': 1981, 'C': 2001, 'B': 2011}
+first_bld_mfh = {'F': 1900, 'E': 1981, 'D': 1991, 'C': 2001, 'B': 2011}
+dm_age = compute_building_age(dm_stock_cat, years_fts, first_bld_sfh, first_bld_mfh)
+DM_buildings['fxa']['bld_age'] = dm_age
+
 #########################################
 #####          U-VALUE            #######
 #########################################
@@ -1870,6 +1969,7 @@ DM_buildings['constant']['u-value'] = cdm_u_value
 #########################################
 DM_buildings['constant']['surface-to-floorarea'] = cdm_s2f
 
+
 # SECTION: Heating technology mix fts
 ###########################################
 #####    HEATING TECHNOLOGY MIX     #######
@@ -1877,19 +1977,32 @@ DM_buildings['constant']['surface-to-floorarea'] = cdm_s2f
 DM_buildings['ots']['heating-technology-fuel'] = dict()
 dm_heating_cat.sort('Categories3')
 DM_buildings['ots']['heating-technology-fuel']['bld_heating-technology'] = dm_heating_cat.copy()
-print('ERROR')
-dm_heating_cat_fts = compute_heating_tech_mix_fts(dm_heating_tech)
+dm_heating_cat.add(np.nan, dim='Years', dummy=True, col_label=years_fts)
+dm_heating_cat.fill_nans('Years')
+dm_heating_cat_fts = dm_heating_cat.filter({'Years': years_fts}, inplace=False)
+#dm_heating_cat_fts = compute_heating_tech_mix_fts(dm_heating_cat)
 DM_buildings['fts']['heating-technology-fuel'] = dict()
 DM_buildings['fts']['heating-technology-fuel']['bld_heating-technology'] = dict()
 for lev in range(4):
     lev = lev + 1
-    DM_buildings['fts']['heating-technology-fuel']['bld_heating-technology'][lev] = dm_heating_tech_fts
+    DM_buildings['fts']['heating-technology-fuel']['bld_heating-technology'][lev] = dm_heating_cat_fts
+# SECTION: Loi energy - Heating tech
+# Plus de gaz, mazout, charbon dans les prochain 15-20 ans. Pas de gaz, mazout, charbon dans les nouvelles constructions
+dm_heating_cat_fts_2 = DM_buildings['fts']['heating-technology-fuel']['bld_heating-technology'][2].copy()
+idx = dm_heating_cat_fts_2.idx
+idx_fossil = [idx['coal'], idx['heating-oil'], idx['gas'], idx['electricity']]
+dm_heating_cat_fts_2.array[idx['Vaud'], :, idx['bld_heating-mix'], :, idx['B'], idx_fossil] = 0
+dm_heating_cat_fts_2.array[idx['Vaud'], 1:idx[2045], idx['bld_heating-mix'], :, :, idx_fossil] = np.nan
+dm_heating_cat_fts_2.array[idx['Vaud'], idx[2045]:, idx['bld_heating-mix'], :, :, idx_fossil] = 0
+dm_heating_cat_fts_2.fill_nans('Years')
+dm_heating_cat_fts_2.normalise('Categories3')
+DM_buildings['fts']['heating-technology-fuel']['bld_heating-technology'][2] = dm_heating_cat_fts_2
 
 # SECTION: Heating efficiency fts
 ############################################
 ######       HEATING EFFICIENCY       ######
 ############################################
-dm_heating_eff.filter({'Categories1': dm_heating_tech.col_labels['Categories2']}, inplace=True)
+dm_heating_eff.filter({'Categories1': dm_heating_cat.col_labels['Categories3']}, inplace=True)
 dm_heating_eff.sort('Categories1')
 DM_buildings['ots']['heating-efficiency'] = dm_heating_eff.copy()
 dm_heating_eff_fts = calculate_heating_eff_fts(dm_heating_eff, years_fts, maximum_eff=0.98)
@@ -1929,3 +2042,8 @@ print('Hello')
 # You can take the new m2 and apply the share by energy cat. Now I have the s_c(t-1), n_c(t), w_c(t)
 # I take s_c(t-1), I apply the renovation-rate and I obtain the renovated stock r_c(t). I can now use the following:
 # s_c(t) = s_c(t-1) + n_c(t) - w_c(t) + r_c(t)
+
+
+# I'm going to try new temperature settings, but in case that doesn't work, something that works is keeping efficiency
+# constants to 2005 values for all fuels except heating-oil + setting Tin to 23 for multi-family-households and to 19 for
+# single-family-households
