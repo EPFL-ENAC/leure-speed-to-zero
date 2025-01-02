@@ -215,6 +215,7 @@ def read_data(data_file, lever_setting):
     DM_floor_area = DM_ots_fts['building-renovation-rate']
 
     DM_floor_area['bld_type'] = DM_buildings['fxa']['bld_type']
+    DM_floor_area['bld_age'] = DM_buildings['fxa']['bld_age']
     DM_floor_area['floor-intensity'] = DM_ots_fts['floor-intensity']
 
     DM_energy = {'heating-efficiency': DM_ots_fts['heating-efficiency'],
@@ -310,12 +311,15 @@ def compute_stock_fts(DM, years_ots, years_fts):
     dm_demand = DM['total-stock']
 
     dm.append(DM['building-mix-new'], dim='Variables')
-    dm.append(DM['demolition-rate'], dim='Variables')
+    dm_dem_rate = DM['demolition-rate']
+    dm_dem_distr = DM['demolition-distribution']
 
     idx = dm.idx
     idx_r = dm_rr.idx
-    idx_d = dm_renov_distr.idx
+    idx_rd = dm_renov_distr.idx
     idx_s = dm_demand.idx
+    idx_d = dm_dem_rate.idx
+    idx_dr = dm_dem_distr.idx
 
     future_years = list(set(dm.col_labels['Years']) - set(years_ots))
     future_years.sort()
@@ -324,14 +328,30 @@ def compute_stock_fts(DM, years_ots, years_fts):
         # s_tm1 = ((ni - 1) / ni * s_t + 1 / n * s_tmn
         s_t_tot = dm_demand.array[:, idx_s[ti], idx_s['bld_floor-area_total']]
         s_tm1 = dm.array[:, idx[ti-1], idx['bld_floor-area_stock'], ...]
-        dem_tm1 = dm.array[:, idx[ti-1], idx['bld_demolition-rate'], ...]
-        w_t = s_tm1 * dem_tm1
-        r_t = np.nansum(s_tm1 * dm_rr.array[:, idx_r[ti], idx_r['bld_renovation-rate'], :, np.newaxis], axis=-1, keepdims=True) \
-              * dm_renov_distr.array[:, idx_d[ti], idx_d['bld_renovation-redistribution'], np.newaxis, :]
+        dem_tm1 = dm_dem_rate.array[:, idx_d[ti-1], idx_d['bld_demolition-rate'], ...]
+        dem_distr_tm1 = dm_dem_distr.array[:, idx_dr[ti-1], idx_dr['bld_to-demolish'], :, :] * s_tm1
+        dem_distr_tm1 = dem_distr_tm1/np.nansum(dem_distr_tm1, axis=-1, keepdims=True)
+        w_t = np.nansum(s_tm1, axis=-1, keepdims=True) * dem_tm1[..., np.newaxis] * dem_distr_tm1
+        s_tm1_w_t = s_tm1 - w_t
+        arr_rr = np.nansum(s_tm1_w_t * dm_rr.array[:, idx_r[ti], idx_r['bld_renovation-rate'], :, np.newaxis], axis=-1,
+                           keepdims=True)
+        r_t = arr_rr \
+              * (dm_renov_distr.array[:, idx_rd[ti], idx_rd['bld_renovation-redistribution-in'], np.newaxis, :] +
+                 - dm_renov_distr.array[:, idx_rd[ti], idx_rd['bld_renovation-redistribution-out'], np.newaxis, :])
+        # check for s_tm1 + r_t < 0 ( I'm renovating more building than what is available)
+        mask_negative = np.any(s_tm1_w_t + r_t < 0, axis=2, keepdims=True)
+        if mask_negative.any():
+            mask_negative = mask_negative.repeat(r_t.shape[-1], axis=-1)
+            # this most likely mean that I have renovated/demolished all cat.F buildings
+            ren_distr_in = dm_renov_distr.array[:, idx_rd[ti], idx_rd['bld_renovation-redistribution-in'], np.newaxis, :]
+            ren_distr_in = ren_distr_in.repeat(r_t.shape[1], axis=1)
+            arr_rr = arr_rr.repeat(ren_distr_in.shape[-1], axis=-1)
+            r_t[mask_negative] = arr_rr[mask_negative]*(-dem_distr_tm1[mask_negative] + ren_distr_in[mask_negative])
+
         # TOTAL: n_t = s(t) - s(t-1) + w(t) (without cat split)
-        n_t_tot = s_t_tot - np.nansum(s_tm1 + w_t, axis=(-1, -2))
+        n_t_tot = s_t_tot - np.nansum(s_tm1_w_t, axis=(-1, -2))
         n_t = n_t_tot[..., np.newaxis, np.newaxis] * dm.array[:, idx[ti], idx['bld_building-mix_new'], ...]
-        s_t = s_tm1 + n_t - w_t + r_t
+        s_t = s_tm1_w_t + n_t + r_t
         dm.array[:, idx[ti], idx['bld_floor-area_stock'], ...] = s_t
         dm.array[:, idx[ti], idx['bld_floor-area_renovated'], ...] = r_t
         dm.array[:, idx[ti], idx['bld_floor-area_new'], ...] = n_t
@@ -343,46 +363,81 @@ def compute_stock_fts(DM, years_ots, years_fts):
 
 
 def bld_floor_area_workflow(DM_floor_area, dm_lfs, cdm_const, years_ots, years_fts):
+    # SECTION FLOOR AREA
+    # SECTION Floor demand = pop x floor-intensity
     # Floor area and material workflow
+    # s(t)[m2] = pop(t)[ppl] x area-demand(t)[m2/cap]
     dm_floor_demand = DM_floor_area['floor-intensity'].filter({'Variables': ['lfs_floor-intensity_space-cap']},
                                                               inplace=False)
     dm_floor_demand.append(dm_lfs, dim='Variables')
     dm_floor_demand.operation('lfs_population_total', '*', 'lfs_floor-intensity_space-cap',
                               out_col='bld_floor-area_total', unit='m2')
 
+    # SECTION OTS
     #################
     ####   OTS   ####
     #################
+    # SECTION Floor area stock by bld type and cat = floor demand x building-mix
     # Compute building stock by energy category as floor-area m2 x building-stock-mix
-    # s(t)[m2] = pop(t)[ppl] x area-demand(t)[m2/cap]
     dm_floor_demand_ots = dm_floor_demand.filter({'Years': years_ots})
     dm_bld_ots = DM_floor_area['bld_type'].filter({'Years': years_ots})
     idx_d = dm_floor_demand_ots.idx
     idx_b = dm_bld_ots.idx
     arr = dm_floor_demand_ots.array[:, :, idx_d['bld_floor-area_total'], np.newaxis, np.newaxis] \
-          * dm_bld_ots.array[:, :, idx_b['bld_building-mix_stock'], :]
+          * dm_bld_ots.array[:, :, idx_b['bld_building-mix_stock'], :, :]
     dm_bld_ots.add(arr, dim='Variables', col_label='bld_floor-area_stock', unit='m2')
 
     # compute waste
+    # SECTION Waste = dem-rate x Stock
+    # I want to distribute the demolition rate based on the construction year of the envelope.
+    # first I do dem-rate_b(t-1) x s_b(t-1) = w_b(t) (b = sfh, mfh)
+    # Then I distribute the waste by energy category, based on stock, but only for those categories built at least
+    # 50 years ago ( I need this matrix in fxa )
     # w(t) = dem-rate(t-1) x s(t-1)
-    dm_demolition_rate = DM_floor_area['bld_demolition-rate']
-    dm_bld_ots.append(dm_demolition_rate.filter({'Years': years_ots}), dim='Variables')
-    dm_bld_ots.lag_variable('bld_demolition-rate', shift=1, subfix='_tm1')
-    dm_bld_ots.lag_variable('bld_floor-area_stock', shift=1, subfix='_tm1')
-    dm_bld_ots.operation('bld_floor-area_stock_tm1', '*', 'bld_demolition-rate_tm1', out_col='bld_floor-area_waste',
-                         unit='m2')
+    dm_demolition = DM_floor_area['bld_demolition-rate'].filter({'Years': years_ots})
+    dm_stock_cat = dm_bld_ots.filter({'Variables': ['bld_floor-area_stock']})
+    dm_stock_tot = dm_stock_cat.group_all('Categories2', inplace=False)
+    dm_demolition.append(dm_stock_tot, dim='Variables')
+    #dm_bld_ots.append(dm_demolition_rate.filter({'Years': years_ots}), dim='Variables')
+    dm_demolition.lag_variable('bld_demolition-rate', shift=1, subfix='_tm1')
+    dm_demolition.lag_variable('bld_floor-area_stock', shift=1, subfix='_tm1')
+    dm_demolition.operation('bld_floor-area_stock_tm1', '*', 'bld_demolition-rate_tm1', out_col='bld_floor-area_waste',
+                            unit='m2')
+    # !FIXME consider moving this to pre-processing if it is only for ots
+    # Create 0/1 array of bld that can be demolished for each year, bld-type, energy category
+    dm_dem_distr = DM_floor_area['bld_age']
+    dm_dem_distr.rename_col('bld_age', 'bld_to-demolish', 'Variables')
+    mask_gt_50 = (dm_dem_distr.array > 50)
+    dm_dem_distr.array[mask_gt_50] = 1
+    dm_dem_distr.array[~mask_gt_50] = 0
+    dm_demolished = dm_dem_distr.filter({'Years': years_ots})
+    # distribute waste by envelope category based on stock available of bld that can be demolished
+    dm_demolished.append(dm_stock_cat, dim='Variables')
+    dm_demolished.operation('bld_to-demolish', '*', 'bld_floor-area_stock', out_col='bld_demolition-distribution', unit='m2')
+    dm_demolished.filter({'Variables': ['bld_demolition-distribution']}, inplace=True)
+    dm_demolished.normalise(dim='Categories2')
+    idx_1 = dm_demolished.idx
+    idx_2 = dm_demolition.idx
+    arr = dm_demolished.array[:, :, idx_1['bld_demolition-distribution'], ...] \
+          * dm_demolition.array[:, :, idx_2['bld_floor-area_waste'], :, np.newaxis]
+    dm_bld_ots.add(arr, dim='Variables', col_label='bld_floor-area_waste', unit='m2')
 
+
+    # SECTION Renovated = rr x Redistribution x Stock
     # r(t) = R(t) x s(t-1)
     dm_rr_ots = DM_floor_area['bld_renovation-rate'].filter({'Years': years_ots})
     dm_renov_redistr_ots = DM_floor_area['bld_renovation-redistribution'].filter({'Years': years_ots})
     idx = dm_bld_ots.idx
     idx_r = dm_rr_ots.idx
     idx_d = dm_renov_redistr_ots.idx
+    dm_bld_ots.lag_variable('bld_floor-area_stock', shift=1, subfix='_tm1')
     arr = np.nansum(dm_bld_ots.array[:, :, idx['bld_floor-area_stock_tm1'], :, :]
                     * dm_rr_ots.array[:, :, idx_r['bld_renovation-rate'], :, np.newaxis], axis=-1, keepdims=True) \
-          * dm_renov_redistr_ots.array[:, :, idx_d['bld_renovation-redistribution'], np.newaxis, :]
+          * (dm_renov_redistr_ots.array[:, :, idx_d['bld_renovation-redistribution-in'], np.newaxis, :]
+             - dm_renov_redistr_ots.array[:, :, idx_d['bld_renovation-redistribution-out'], np.newaxis, :] )
     dm_bld_ots.add(arr, dim='Variables', col_label='bld_floor-area_renovated', unit='m2')
 
+    # SECTION New(t) = Stock(t) - Stock(t-1) + Waste(t) - Renovated(t)
     # s(t) = s(t-1) + n(t) - w(t) + r(t)
     # n(t) = s(t) - s(t-1) + w(t) - r(t)
     idx = dm_bld_ots.idx
@@ -392,16 +447,19 @@ def bld_floor_area_workflow(DM_floor_area, dm_lfs, cdm_const, years_ots, years_f
               - dm_bld_ots.array[:, :, idx['bld_floor-area_renovated'], ...]
     dm_bld_ots.add(arr_new, dim='Variables', unit='m2', col_label='bld_floor-area_new')
 
+    # SECTION FTS
     #################
     ####   FTS   ####
     #################
+    # SECTION Stock fts
     # I need to know how many m2 are needed in 2024. Then I look at 2023 and I know the stock split in 2023.
     # I also apply the demolition rate and obtain the waste generated. I can obtain the total new m2 per mfh and sfh.
     # You can take the new m2 and apply the share by energy cat. Now I have the s_c(t-1), n_c(t), w_c(t)
     # I take s_c(t-1), I apply the renovation-rate and I obtain the renovated stock r_c(t). I can now use the following:
     # s_c(t) = s_c(t-1) + n_c(t) - w_c(t) + r_c(t)
     DM = {'ots': dm_bld_ots,
-          'demolition-rate': dm_demolition_rate,
+          'demolition-rate': DM_floor_area['bld_demolition-rate'],
+          'demolition-distribution': dm_dem_distr,
           'building-mix-new': DM_floor_area['bld_building-mix'],
           'renovation-rate': DM_floor_area['bld_renovation-rate'],
           'renovation-distribution': DM_floor_area['bld_renovation-redistribution'],
@@ -413,6 +471,7 @@ def bld_floor_area_workflow(DM_floor_area, dm_lfs, cdm_const, years_ots, years_f
     ########################
     ####   CUMULATED    ####
     ########################
+    # SECTION Cumulated floor area
     dm_cumulated = dm_bld_tot.filter(
         {'Variables': ['bld_floor-area_stock', 'bld_floor-area_new', 'bld_floor-area_renovated']})
     # Interpolate to have data every year
@@ -436,6 +495,7 @@ def bld_floor_area_workflow(DM_floor_area, dm_lfs, cdm_const, years_ots, years_f
 
     dm_bld_tot.filter({'Years': years_ots + years_fts}, inplace=True)
 
+    # SECTION Prepare output
     dm_industry = dm_bld_tot.filter({'Variables': ['bld_floor-area_new', 'bld_floor-area_renovated', 'bld_floor-area_waste']})
     dm_industry.group_all('Categories2')
     dm_industry.groupby({'residential': '.*'}, dim='Categories1', regex=True, inplace=True)
@@ -452,19 +512,24 @@ def bld_floor_area_workflow(DM_floor_area, dm_lfs, cdm_const, years_ots, years_f
 
 
 def bld_energy_workflow(DM_energy, dm_clm, dm_floor_area, cdm_const):
+    # SECTION ENERGY
+    # SECTION Adjusted HDD, CDD
     ####    Modify HDD and CDD   ####
     dm_Tint = DM_energy['heatcool-behaviour']
     idx_t = dm_Tint.idx
     idx_c = dm_clm.idx
     # HDD = HDD_ref + N_15 x (Tint - 18)
-    arr = dm_clm.array[:, :, idx_c['clm_HDD']] + dm_clm.array[:, :, idx_c['clm_days-below-15']]\
-          * (dm_Tint.array[:, :, idx_t['bld_Tint-heating']] - 18)
-    dm_clm.add(arr, dim='Variables', col_label='bld_HDD-adj', dummy=True, unit='daysK')
+    arr = dm_clm.array[:, :, idx_c['clm_HDD'], np.newaxis, np.newaxis] \
+          + dm_clm.array[:, :, idx_c['clm_days-below-15'], np.newaxis, np.newaxis]\
+          * (dm_Tint.array[:, :, idx_t['bld_Tint-heating'], :, :] - 18)
+    dm_Tint.add(arr, dim='Variables', col_label='bld_HDD-adj', dummy=True, unit='daysK')
     # CDD = CDD_ref + N_24 x (21 - Tint)
-    arr = dm_clm.array[:, :, idx_c['clm_CDD']] + dm_clm.array[:, :, idx_c['clm_days-above-24']]\
-          * (21 - dm_Tint.array[:, :, idx_t['bld_Tint-cooling']])
-    dm_clm.add(arr, dim='Variables', col_label='bld_CDD-adj', dummy=True, unit='daysK')
+    arr = dm_clm.array[:, :, idx_c['clm_CDD'], np.newaxis, np.newaxis] \
+          + dm_clm.array[:, :, idx_c['clm_days-above-24'], np.newaxis, np.newaxis]\
+          * (21 - dm_Tint.array[:, :, idx_t['bld_Tint-cooling'], :, :])
+    dm_Tint.add(arr, dim='Variables', col_label='bld_CDD-adj', dummy=True, unit='daysK')
 
+    # SECTION Heating energy demand
     # dH = kH (24 HDD Us A − IG)
     cdm_uvalue = cdm_const['u-value']
     cdm_A = cdm_const['surface-to-floorarea']
@@ -480,11 +545,12 @@ def bld_energy_workflow(DM_energy, dm_clm, dm_floor_area, cdm_const):
     # Yearly heating energy demand
     # W/K x HDD x 24
     idx = dm_floor_area.idx
-    idx_c = dm_clm.idx
+    idx_c = dm_Tint.idx
     arr_energy = dm_floor_area.array[:, :, idx['bld_power-per-K'], :, :] \
-                 * dm_clm.array[:, :, idx_c['bld_HDD-adj'], np.newaxis, np.newaxis] * 24
+                 * dm_Tint.array[:, :, idx_c['bld_HDD-adj'], :, :] * 24
     dm_floor_area.add(arr_energy, dim='Variables', col_label='bld_heating', unit='Wh')
     dm_floor_area.change_unit('bld_heating', 1e-3, 'Wh', 'kWh')
+    # SECTION Energy demand = heating demand x tech x efficiency
     # Energy demand
     # heating demand x tech x efficiency
     dm_tech = DM_energy['heating-technology']
@@ -493,7 +559,7 @@ def bld_energy_workflow(DM_energy, dm_clm, dm_floor_area, cdm_const):
     idx_e = dm_eff.idx
     idx_t = dm_tech.idx
     arr = dm_floor_area.array[:, :, idx['bld_heating'], :, :, np.newaxis]\
-          * dm_tech.array[:, :, idx_t['bld_heating-mix'], :, np.newaxis, :]
+          * dm_tech.array[:, :, idx_t['bld_heating-mix'], :, :, :]
     dm_energy = DataMatrix.based_on(arr[:, :, np.newaxis, ...], dm_floor_area,
                                     change={'Variables': ['bld_heating'], 'Categories3': dm_eff.col_labels['Categories1']},
                                     units={'bld_heating': 'kWh'})
@@ -502,18 +568,26 @@ def bld_energy_workflow(DM_energy, dm_clm, dm_floor_area, cdm_const):
     arr = dm_energy.array[:, :, idx['bld_heating'], :, :, :] /\
           dm_eff.array[:, :, idx_e['bld_heating-efficiency'], np.newaxis, np.newaxis, :]
     dm_energy.add(arr, dim='Variables', col_label='bld_energy-demand_heating', unit='TWh')
+    # write datamatrix to pickle
+    #current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    #f = os.path.join(current_file_directory, '../_database/pre_processing/buildings/Switzerland/data/heating_energy.pickle')
+    #with open(f, 'wb') as handle:
+    #    pickle.dump(dm_energy, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+    # SECTION Cooling
     # dC = gamma kC (24 CDD Us A − IG)
     # gamma x W/K x CDD x 24
     idx = dm_floor_area.idx
-    idx_c = dm_clm.idx
+    idx_c = dm_Tint.idx
+    idx_m = dm_clm.idx
     arr_energy = dm_floor_area.array[:, :, idx['bld_power-per-K'], :, :] \
-                 * dm_clm.array[:, :, idx_c['bld_CDD-adj'], np.newaxis, np.newaxis] * 24 \
-                 * dm_clm.array[:, :, idx_c['clm_AC-uptake'], np.newaxis, np.newaxis]
+                 * dm_Tint.array[:, :, idx_c['bld_CDD-adj'], :, :] * 24 \
+                 * dm_clm.array[:, :, idx_m['clm_AC-uptake'], np.newaxis, np.newaxis]
     dm_floor_area.add(arr_energy, dim='Variables', col_label='bld_cooling', unit='Wh')
     dm_floor_area.change_unit('bld_cooling', 1e-3, 'Wh', 'kWh')
+
     # Energy demand
-    # heating demand x tech x efficiency (we assume the technology is the heat-pump)
+    # cooling demand x tech x efficiency (we assume the technology is the heat-pump)
     idx = dm_floor_area.idx
     arr = dm_floor_area.array[:, :, idx['bld_cooling'], :, :] \
           / dm_eff.array[:, :, idx_e['bld_heating-efficiency'], np.newaxis, np.newaxis, idx_e['heat-pump']]
@@ -522,6 +596,8 @@ def bld_energy_workflow(DM_energy, dm_clm, dm_floor_area, cdm_const):
     dm_energy.array[:, :, idx['bld_energy-demand_cooling'], :, :, idx['heat-pump']] = arr
     dm_energy.change_unit('bld_energy-demand_cooling', 1e-9, 'kWh', 'TWh')
 
+
+    # SECTION Emissions
     ###################
     ###  EMISSIONS  ###
     ###################
@@ -544,6 +620,7 @@ def bld_energy_workflow(DM_energy, dm_clm, dm_floor_area, cdm_const):
     dm_emissions.group_all('Categories2')
     dm_emissions.group_all('Categories1')
 
+    # SECTION Prepare output
     #########################
     ###   PREPARE OUTPUT  ###
     #########################
@@ -1157,7 +1234,7 @@ def buildings(lever_setting, years_setting, interface=Interface()):
             dm_lfs = pickle.load(handle)
         dm_lfs = dm_lfs['pop']
         cntr_list = DM_floor_area['floor-intensity'].col_labels['Country']
-        dm_lfs.filter({'Country': cntr_list})
+        dm_lfs.filter({'Country': cntr_list}, inplace=True)
 
     if interface.has_link(from_sector='climate', to_sector='buildings'):
         dm_clm = interface.get_link(from_sector='climate', to_sector='buildings')
@@ -1169,7 +1246,7 @@ def buildings(lever_setting, years_setting, interface=Interface()):
             dm_clm = pickle.load(handle)
         dm_clm = dm_clm['cdd-hdd']
         cntr_list = DM_floor_area['floor-intensity'].col_labels['Country']
-        dm_clm.filter({'Country': cntr_list})
+        dm_clm.filter({'Country': cntr_list}, inplace=True)
 
     # Floor Area, Comulated floor area, Construction material
     DM_floor_out = bld_floor_area_workflow(DM_floor_area, dm_lfs, cdm_const, years_ots, years_fts)
@@ -1209,7 +1286,7 @@ def buildings_local_run():
     years_setting, lever_setting = init_years_lever()
     # Function to run only transport module without converter and tpe
 
-    global_vars = {'geoscale': 'Switzerland|Vaud'}
+    global_vars = {'geoscale': 'Vaud'}
     filter_geoscale(global_vars)
 
     buildings(lever_setting, years_setting)
@@ -1217,4 +1294,4 @@ def buildings_local_run():
 
 
 # database_from_csv_to_datamatrix()
-#buildings_local_run()
+# buildings_local_run()
