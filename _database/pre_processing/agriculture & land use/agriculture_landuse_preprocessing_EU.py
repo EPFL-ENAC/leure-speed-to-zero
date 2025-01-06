@@ -3411,7 +3411,7 @@ def manure_calibration():
 
     # Renaming existing columns (geoscale, timsecale, value)
     df_liv_emissions_calibration.rename(
-        columns={'Area': 'geoscale', 'Year': 'timescale', 'Food supply (kcal/capita/day)': 'value'},
+        columns={'Area': 'geoscale', 'Year': 'timescale', 'Value': 'value'},
         inplace=True)
 
 
@@ -3849,7 +3849,7 @@ def feed_calibration():
 
     # Renaming existing columns (geoscale, timesecale, value)
     df_feed_calibration.rename(
-        columns={'Area': 'geoscale', 'Year': 'timescale', 'Domestic supply quantity': 'value'},
+        columns={'Area': 'geoscale', 'Year': 'timescale', 'Feed': 'value'},
         inplace=True)
 
     return df_feed_calibration
@@ -4072,16 +4072,58 @@ def wood_calibration():
 
     return df_wood_calibration
 
+# CalculationLeaf CALIBRATION FORMATTING
+def calibration_formatting(df_diet_calibration, df_domestic_supply_calibration, df_liv_population_calibration,
+                     df_nitrogen_calibration, df_liv_emissions_calibration, df_feed_calibration,
+                     df_land_use_fao_calibration, df_liming_urea_calibration, df_wood_calibration,
+                     df_emissions_calibration):
+    # Concatenate dfs
+    df_calibration = pd.concat([df_diet_calibration, df_domestic_supply_calibration], axis=0)
+    df_calibration = pd.concat([df_calibration, df_liv_population_calibration], axis=0)
+    df_calibration = pd.concat([df_calibration, df_nitrogen_calibration], axis=0)
+    df_calibration = pd.concat([df_calibration, df_liv_emissions_calibration], axis=0)
+    df_calibration = pd.concat([df_calibration, df_feed_calibration], axis=0)
+    df_calibration = pd.concat([df_calibration, df_land_use_fao_calibration], axis=0)
+    df_calibration = pd.concat([df_calibration, df_liming_urea_calibration], axis=0)
+    df_calibration = pd.concat([df_calibration, df_wood_calibration], axis=0)
+    df_calibration = pd.concat([df_calibration, df_emissions_calibration], axis=0)
+
+    # Adding the columns module, lever, level and string-pivot at the correct places
+    df_calibration['module'] = 'agriculture'
+    df_calibration['lever'] = 'none'
+    df_calibration['level'] = 0
+    cols = df_calibration.columns.tolist()
+    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    df_calibration = df_calibration[cols]
+
+    # Rename countries to Pathaywcalc name
+    df_calibration['geoscale'] = df_calibration['geoscale'].replace(
+        'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+    df_calibration['geoscale'] = df_calibration['geoscale'].replace('Netherlands (Kingdom of the)',
+                                                                                'Netherlands')
+    df_calibration['geoscale'] = df_calibration['geoscale'].replace('Czechia', 'Czech Republic')
+
+    # Exporting to csv
+    df_calibration.to_csv('agriculture_calibration.csv', index=False)
+
+    return df_calibration
+
 # CalculationTree RUNNING CALIBRATION ----------------------------------------------------------------------------------
-#df_diet_calibration = lifestyle_calibration()
-#df_domestic_supply_calibration, df_liv_population_calibration = livestock_crop_calibration()
-#df_nitrogen_calibration = nitrogen_calibration()
-#df_liv_emissions_calibration = manure_calibration()
-#df_feed_calibration = feed_calibration()
-#df_land_use_fao_calibration = land_calibration()
-#df_liming_urea_calibration = CO2_emissions()
-#df_wood_calibration = wood_calibration()
+df_diet_calibration = lifestyle_calibration()
+df_domestic_supply_calibration, df_liv_population_calibration = livestock_crop_calibration()
+df_nitrogen_calibration = nitrogen_calibration()
+df_liv_emissions_calibration = manure_calibration()
+df_feed_calibration = feed_calibration()
+df_land_use_fao_calibration = land_calibration()
+df_liming_urea_calibration = CO2_emissions()
+df_wood_calibration = wood_calibration()
 df_emissions_calibration = energy_ghg_calibration()
+df_calibration = calibration_formatting(df_diet_calibration, df_domestic_supply_calibration, df_liv_population_calibration,
+                     df_nitrogen_calibration, df_liv_emissions_calibration, df_feed_calibration,
+                     df_land_use_fao_calibration, df_liming_urea_calibration, df_wood_calibration,
+                     df_emissions_calibration)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
