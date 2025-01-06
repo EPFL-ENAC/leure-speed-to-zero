@@ -194,7 +194,6 @@ def read_data(data_file, lever_setting):
 
     # Extract sub-data-matrices according to the flow (parallel)
     # Diet sub-matrix for the lifestyles dietary behaviour sub-flow
-
     dm_demography = DM_ots_fts['pop']['lfs_demography_']
     dm_diet_requirement = DM_ots_fts['kcal-req']
     dm_diet_split = DM_ots_fts['diet']['lfs_consumers-diet_']
@@ -536,7 +535,8 @@ def lifestyles(lever_setting, years_setting, interface=Interface()):
 
     # !FIXME: currently agriculture renames all of the lifestyles categories, we should rather keep lifestyles categories and rework agriculture
     dm_agriculture = lfs_agriculture_interface(dm_agriculture_out)
-    interface.add_link(from_sector='lifestyles', to_sector='agriculture', dm=dm_agriculture)
+    dm_population = DM_food['population']
+    interface.add_link(from_sector='lifestyles', to_sector='agriculture', dm=dm_population)
     interface.add_link(from_sector='lifestyles', to_sector='transport', dm=DM_transport_out['transport'])
     DM_building_out['appliance'] = DM_appliance_out['buildings']
     interface.add_link(from_sector='lifestyles', to_sector='buildings', dm=DM_building_out)
@@ -562,5 +562,5 @@ def local_lifestyles_run():
 
 # Update/Create the Pickle
 # database_from_csv_to_datamatrix()  # un-comment to update
-# local_lifestyles_run()  # to un-comment to run in local
+local_lifestyles_run()  # to un-comment to run in local
 

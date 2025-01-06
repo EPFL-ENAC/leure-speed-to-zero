@@ -9,7 +9,7 @@ list_countries = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czechi
                      'Slovenia', 'Spain', 'Sweden', 'Switzerland', 'United Kingdom of Great Britain and Northern Ireland']
 
 ld = faostat.list_datasets()
-code = 'FBS'
+code = 'CBH'
 pars = faostat.list_pars(code)
 my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
 my_pars = {
