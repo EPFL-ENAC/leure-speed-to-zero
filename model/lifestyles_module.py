@@ -562,10 +562,7 @@ def local_lifestyles_run():
 
 # Update/Create the Pickle
 # database_from_csv_to_datamatrix()  # un-comment to update
-<<<<<<< Updated upstream
 local_lifestyles_run()  # to un-comment to run in local
-=======
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/transport_module.py"
 # local_lifestyles_run()  # to un-comment to run in local
->>>>>>> Stashed changes
 
