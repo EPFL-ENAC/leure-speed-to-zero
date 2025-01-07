@@ -922,7 +922,7 @@ def fix_jumps(ts, mad_multiple = 3, consec_do_nothing = False, consec_fill_with_
     # consec_do_nothing = True and consec_fill_with_nan = True: if there are consecutive jumps, do nothing and susbtitute with nan
     
     # force float
-    ts = ts.astype(np.float)
+    ts = ts.astype(float)
 
     if (not all(np.isnan(ts))) and (not all(ts == 0)):
         
