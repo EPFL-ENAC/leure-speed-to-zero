@@ -713,7 +713,7 @@ def product_production(dm_demand_bld_pipe, dm_demand_bld_floor, dm_demand_bld_do
     return DM_production
 
 def apply_material_decomposition(dm_production_bld_pipe, dm_production_bld_floor, dm_production_bld_domapp,  
-                                 dm_production_tra_infra, df_production_tra_veh, dm_production_lfs,
+                                 dm_production_tra_infra, dm_production_tra_veh, dm_production_lfs,
                                  cdm_matdec_pipe, cdm_matdec_floor, cdm_matdec_domapp,
                                  cdm_matdec_tra_infra, cdm_matdec_tra_veh, cdm_matdec_lfs):
     
@@ -740,7 +740,7 @@ def apply_material_decomposition(dm_production_bld_pipe, dm_production_bld_floor
     dm_tra_infra_matdec = material_decomposition(dm=dm_production_tra_infra, cdm=cdm_matdec_tra_infra)
 
     # veh
-    dm_tra_veh_matdec = material_decomposition(dm=df_production_tra_veh, cdm=cdm_matdec_tra_veh)
+    dm_tra_veh_matdec = material_decomposition(dm=dm_production_tra_veh, cdm=cdm_matdec_tra_veh)
 
     ######################
     ##### LIFESTYLES #####
