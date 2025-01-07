@@ -4105,8 +4105,31 @@ def calibration_formatting(df_diet_calibration, df_domestic_supply_calibration, 
                                                                                 'Netherlands')
     df_calibration['geoscale'] = df_calibration['geoscale'].replace('Czechia', 'Czech Republic')
 
+    # Extrapolation for missing data
+    df_calibration_struct = ensure_structure(df_calibration)
+    df_calibration_ext = linear_fitting_ots_db(df_calibration_struct, years_ots,
+                                                countries='all')
+
+    # Add dummy values for EU27, Vaud and Paris, copied respectively on Germany, Switzerland and France
+    # EU27
+    duplicated_rows = df_calibration_ext[df_calibration_ext['geoscale'] == 'Germany'].copy() # Duplicate rows where geoscale is 'Germany'
+    duplicated_rows['geoscale'] = 'EU27' # Change geoscale value to 'EU27' in duplicated rows
+    df_calibration_ext = pd.concat([df_calibration_ext, duplicated_rows], ignore_index=True) # Append duplicated rows back to the original DataFrame
+    # Vaud
+    duplicated_rows = df_calibration_ext[
+        df_calibration_ext['geoscale'] == 'Switzerland'].copy()  # Duplicate rows where geoscale is 'Germany'
+    duplicated_rows['geoscale'] = 'Vaud'  # Change geoscale value to 'EU27' in duplicated rows
+    df_calibration_ext = pd.concat([df_calibration_ext, duplicated_rows],
+                                   ignore_index=True)  # Append duplicated rows back to the original DataFrame
+    # Paris
+    duplicated_rows = df_calibration_ext[
+        df_calibration_ext['geoscale'] == 'France'].copy()  # Duplicate rows where geoscale is 'Germany'
+    duplicated_rows['geoscale'] = 'Paris'  # Change geoscale value to 'EU27' in duplicated rows
+    df_calibration_ext = pd.concat([df_calibration_ext, duplicated_rows],
+                                   ignore_index=True)  # Append duplicated rows back to the original DataFrame
+
     # Exporting to csv
-    df_calibration.to_csv('agriculture_calibration.csv', index=False)
+    df_calibration_ext.to_csv('agriculture_calibration.csv', index=False)
 
     return df_calibration
 
