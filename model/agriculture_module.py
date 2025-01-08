@@ -985,38 +985,41 @@ def livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro):
     #DM_livestock['cal_liv_prod'].operation('caf_agr_domestic-production-liv', '*', 'agr_domestic_production_liv_afw',
     #                                       dim="Variables", out_col='cal_agr_domestic_production_liv_afw', unit='kcal')
 
-    # Livestock slaughtered [lsu] = meat demand [kcal] / livestock meat content [kcal/lsu] FIXME use calibrated domestic production
+    # Livestock slaughtered [lsu] = meat demand [kcal] / livestock meat content [kcal/lsu]
     dm_liv_slau = dm_liv_prod.filter({'Variables': ['agr_domestic_production_liv_afw']})
     DM_livestock['yield'].append(dm_liv_slau, dim='Variables')  # Append cal_agr_domestic_production_liv_afw in yield
     DM_livestock['yield'].operation('agr_domestic_production_liv_afw', '/', 'agr_climate-smart-livestock_yield',
-                                    dim="Variables", out_col='agr_liv_population', unit='lsu')
+                                    dim="Variables", out_col='agr_liv_population_raw', unit='lsu')
 
     # Livestock population for meat [lsu] = Livestock slaughtered [lsu] / slaughter rate [%]
-    dm_liv_slau_meat = DM_livestock['yield'].filter({'Variables': ['agr_liv_population'],
+    dm_liv_slau_meat = DM_livestock['yield'].filter({'Variables': ['agr_liv_population_raw'],
                                                      'Categories1': ['meat-bovine', 'meat-pig', 'meat-poultry',
                                                                      'meat-sheep', 'meat-oth-animals']})
     DM_livestock['liv_slaughtered_rate'].append(dm_liv_slau_meat, dim='Variables')
-    DM_livestock['liv_slaughtered_rate'].operation('agr_liv_population', '/', 'agr_climate-smart-livestock_slaughtered',
+    DM_livestock['liv_slaughtered_rate'].operation('agr_liv_population_raw', '/', 'agr_climate-smart-livestock_slaughtered',
                                                    dim="Variables", out_col='agr_liv_population_meat', unit='lsu')
 
     # Processing for calibration: Livestock population for meat, eggs and dairy ( meat pop & slaughtered livestock for eggs and dairy)
     # Filtering eggs, dairy and meat
     dm_liv_slau_egg_dairy = DM_livestock['yield'].filter(
-        {'Variables': ['agr_liv_population'], 'Categories1': ['abp-dairy-milk', 'abp-hens-egg']})
+        {'Variables': ['agr_liv_population_raw'], 'Categories1': ['abp-dairy-milk', 'abp-hens-egg']})
     dm_liv_slau_meat = DM_livestock['liv_slaughtered_rate'].filter({'Variables': ['agr_liv_population_meat']})
     # Rename dm_liv_slau_meat variable to match with dm_liv_slau_egg_dairy
-    dm_liv_slau_meat.rename_col('agr_liv_population_meat', 'agr_liv_population', dim='Variables')
+    dm_liv_slau_meat.rename_col('agr_liv_population_meat', 'agr_liv_population_raw', dim='Variables')
     # Appending between livestock population
     dm_liv_slau_egg_dairy.append(dm_liv_slau_meat, dim='Categories1')
 
     # Calibration Livestock population
-    DM_livestock['caf_liv_population'].append(dm_liv_slau_egg_dairy, dim='Variables')  # Append to caf
-    DM_livestock['caf_liv_population'].operation('caf_agr_liv-population', '*', 'agr_liv_population',
-                                                 dim="Variables", out_col='cal_agr_liv_population', unit='lsu')
+    dm_cal_liv_pop = DM_livestock['cal_liv_population']
+    dm_cal_rates_liv_pop = calibration_rates(dm_liv_slau_egg_dairy, dm_cal_liv_pop, calibration_start_year=1990,
+                                          calibration_end_year=2015, years_setting=[1990, 2015, 2050, 5])
+    dm_liv_slau_egg_dairy.append(dm_cal_rates_liv_pop, dim='Variables')
+    dm_liv_slau_egg_dairy.operation('agr_liv_population_raw', '*', 'cal_rate', dim='Variables', out_col='agr_liv_population', unit='lsu')
+    df_cal_rates_liv_pop = dm_to_database(dm_cal_rates_liv_pop, 'none', 'agriculture', level=0)
 
     # GRAZING LIVESTOCK
-    # Filtering ruminants (bovine & sheep) FIXME change to calibrated population
-    dm_liv_ruminants = DM_livestock['caf_liv_population'].filter(
+    # Filtering ruminants (bovine & sheep)
+    dm_liv_ruminants = dm_liv_slau_egg_dairy.filter(
         {'Variables': ['agr_liv_population'], 'Categories1': ['meat-bovine', 'meat-sheep']})
     # Ruminant livestock [lsu] = population bovine + population sheep
     dm_liv_ruminants.operation('meat-bovine', '+', 'meat-sheep', dim="Categories1", out_col='ruminant')
@@ -1033,37 +1036,34 @@ def livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro):
     # Filter ibp constants for offal
     cdm_cp_ibp_offal = CDM_const['cdm_cp_ibp_offal']
 
-
     # Filter ibp constants for afat
     cdm_cp_ibp_afat = CDM_const['cdm_cp_ibp_afat']
 
     # Filter cal_agr_liv_population for meat
-    cal_liv_population_meat = DM_livestock['caf_liv_population'].filter_w_regex(
-        {'Variables': 'cal_agr_liv_population', 'Categories1': 'meat'})
-    DM_livestock['liv_slaughtered_rate'].append(cal_liv_population_meat,
-                                                dim='Variables')  # Appending to the dm that has the same categories
+    cal_liv_population_meat = dm_liv_slau_egg_dairy.filter_w_regex(
+        {'Variables': 'agr_liv_population', 'Categories1': 'meat'})
+    #DM_livestock['liv_slaughtered_rate'].append(cal_liv_population_meat,
+    #                                            dim='Variables')  # Appending to the dm that has the same categories
 
-    # Sort categories ?? already in correct order
-
-    # Offal per livestock type [kcal] = livestock population meat [lsu] * yield offal [kcal/lsu] FIXME change cal
-    idx_liv_pop = DM_livestock['liv_slaughtered_rate'].idx
+    # Offal per livestock type [kcal] = livestock population meat [lsu] * yield offal [kcal/lsu]
+    idx_liv_pop = cal_liv_population_meat.idx
     idx_cdm_offal = cdm_cp_ibp_offal.idx
-    agr_ibp_offal = DM_livestock['liv_slaughtered_rate'].array[:, :, idx_liv_pop['agr_liv_population'], :] \
+    agr_ibp_offal = cal_liv_population_meat.array[:, :, idx_liv_pop['agr_liv_population'], :] \
                     * cdm_cp_ibp_offal.array[idx_cdm_offal['cp_ibp_liv']]
-    DM_livestock['liv_slaughtered_rate'].add(agr_ibp_offal, dim='Variables', col_label='agr_ibp_offal', unit='kcal')
+    cal_liv_population_meat.add(agr_ibp_offal, dim='Variables', col_label='agr_ibp_offal', unit='kcal')
 
-    # Afat per livestock type [kcal] = livestock population meat [lsu] * yield afat [kcal/lsu] FIXME cal liv pop
-    idx_liv_pop = DM_livestock['liv_slaughtered_rate'].idx
+    # Afat per livestock type [kcal] = livestock population meat [lsu] * yield afat [kcal/lsu]
+    idx_liv_pop = cal_liv_population_meat.idx
     idx_cdm_afat = cdm_cp_ibp_afat.idx
-    agr_ibp_afat = DM_livestock['liv_slaughtered_rate'].array[:, :, idx_liv_pop['agr_liv_population'], :] \
+    agr_ibp_afat = cal_liv_population_meat.array[:, :, idx_liv_pop['agr_liv_population'], :] \
                    * cdm_cp_ibp_afat.array[idx_cdm_afat['cp_ibp_liv']]
-    DM_livestock['liv_slaughtered_rate'].add(agr_ibp_afat, dim='Variables', col_label='agr_ibp_afat', unit='kcal')
+    cal_liv_population_meat.add(agr_ibp_afat, dim='Variables', col_label='agr_ibp_afat', unit='kcal')
 
     # Totals offal/afat [kcal] = sum (Offal/afat per livestock type [kcal])
-    dm_offal = DM_livestock['liv_slaughtered_rate'].filter({'Variables': ['agr_ibp_offal']})
+    dm_offal = cal_liv_population_meat.filter({'Variables': ['agr_ibp_offal']})
     dm_liv_ibp = dm_offal.copy()
     dm_liv_ibp.groupby({'offal': '.*'}, dim='Categories1', regex=True, inplace=True)
-    dm_afat = DM_livestock['liv_slaughtered_rate'].filter({'Variables': ['agr_ibp_afat']})
+    dm_afat = cal_liv_population_meat.filter({'Variables': ['agr_ibp_afat']})
     dm_total_afat = dm_afat.copy()
     dm_total_afat.groupby({'afat': '.*'}, dim='Categories1', regex=True, inplace=True)
 
@@ -1074,21 +1074,21 @@ def livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro):
     dm_liv_ibp.rename_col('agr_ibp', 'agr_ibp_total', dim='Variables')
 
     # Filter Processed offal/afats afw (not calibrated), rename and append with dm_liv_ibp
-    dm_processed_offal_afat = DM_livestock['losses'].filter({'Variables': ['agr_domestic_production_liv_afw'],
+    dm_processed_offal_afat = DM_livestock['losses'].filter({'Variables': ['agr_domestic_production_liv_afw_raw'],
                                                              'Categories1': ['abp-processed-offal',
                                                                              'abp-processed-afat']})
     dm_processed_offal_afat.rename_col_regex(str1="abp-processed-", str2="", dim="Categories1")
     dm_liv_ibp.append(dm_processed_offal_afat, dim='Variables')
 
     # Offal/afats for feedstock [kcal] = produced offal/afats [kcal] - processed offal/afat [kcal]
-    dm_liv_ibp.operation('agr_ibp_total', '-', 'agr_domestic_production_liv_afw', out_col='agr_ibp_liv_fdk',
+    dm_liv_ibp.operation('agr_ibp_total', '-', 'agr_domestic_production_liv_afw_raw', out_col='agr_ibp_liv_fdk',
                          unit='kcal')
 
     # Total offal and afats for feedstock [kcal] = Offal for feedstock [kcal] + Afats for feedstock [kcal]
     dm_ibp_fdk = dm_liv_ibp.filter({'Variables': ['agr_ibp_liv_fdk']})
     dm_liv_ibp.groupby({'total': '.*'}, dim='Categories1', regex=True, inplace=True)
 
-    return DM_livestock, dm_liv_ibp, dm_liv_ibp
+    return DM_livestock, dm_liv_ibp, dm_liv_ibp, dm_liv_slau_egg_dairy,  df_cal_rates_liv_prod, df_cal_rates_liv_pop
 
 # CalculationLeaf ALCOHOLIC BEVERAGES INDUSTRY -------------------------------------------------------------------------
 def alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro):
@@ -1465,16 +1465,16 @@ def bioenergy_workflow(DM_bioenergy, CDM_const, DM_ind, dm_bld, dm_tra):
     return DM_bioenergy, dm_oil, dm_lgn, dm_eth, dm_biofuel_fdk
 
 # CalculationLeaf LIVESTOCK MANURE MANAGEMENT & GHG EMISSIONS ----------------------------------------------------------
-def livestock_manure_workflow(DM_manure, DM_livestock,  cdm_const):
+def livestock_manure_workflow(DM_manure, DM_livestock, dm_liv_slau_egg_dairy,  cdm_const):
 
-    # Pre processing livestock population FIXME cal liv pop
-    dm_liv_pop = DM_livestock['caf_liv_population'].filter({'Variables': ['agr_liv_population']})
+    # Pre processing livestock population
+    dm_liv_pop = dm_liv_slau_egg_dairy.filter({'Variables': ['agr_liv_population']})
     DM_manure['liv_n-stock'].append(dm_liv_pop, dim='Variables')
     DM_manure['enteric_emission'].append(dm_liv_pop, dim='Variables')
     DM_manure['ef_liv_CH4_treated'].append(dm_liv_pop, dim='Variables')
 
     # N2O
-    # Manure production [tN] = livestock population [lsu] * Manure yield [t/lsu] FIXME cal liv pop
+    # Manure production [tN] = livestock population [lsu] * Manure yield [t/lsu]
     DM_manure['liv_n-stock'].operation('fxa_liv_manure_n-stock', '*', 'agr_liv_population',
                                        out_col='agr_liv_n-stock', unit='t')
 
@@ -1488,35 +1488,41 @@ def livestock_manure_workflow(DM_manure, DM_livestock,  cdm_const):
 
     # Manure emission [MtN2O] = Manure management practices [MtN] * emission factors per practices [MtN2O/Mt]
     DM_manure['ef_liv_N2O'].operation('agr_liv_n-stock_split', '*', 'fxa_ef_liv_N2O-emission_ef',
-                                      out_col='agr_liv_N2O-emission', unit='t')
+                                      out_col='agr_liv_N2O-emission_raw', unit='t')
 
     dm_temp = DM_manure['ef_liv_N2O'].copy()
     df_temp = dm_temp.write_df()
 
     # Calibration N2O
-    dm_liv_N2O = DM_manure['ef_liv_N2O'].filter({'Variables': ['agr_liv_N2O-emission']})
-    DM_manure['caf_liv_N2O'].append(dm_liv_N2O, dim='Variables')  # Append to caf
-    DM_manure['caf_liv_N2O'].operation('caf_agr_liv_N2O-emission', '*', 'agr_liv_N2O-emission',
-                                       dim="Variables", out_col='cal_agr_liv_N2O-emission', unit='t')
+    dm_liv_N2O = DM_manure['ef_liv_N2O'].filter({'Variables': ['agr_liv_N2O-emission_raw']})
+    dm_cal_liv_N2O = DM_manure['cal_liv_N2O']
+    dm_cal_liv_N2O.switch_categories_order(cat1='Categories2', cat2='Categories1')# Switch categories
+    dm_cal_liv_N2O.change_unit('cal_agr_liv_N2O-emission', factor=1e3, old_unit='kt', new_unit='t')
+    dm_cal_rates_liv_N2O = calibration_rates(dm_liv_N2O, dm_cal_liv_N2O, calibration_start_year=1990,
+                                          calibration_end_year=2015, years_setting=[1990, 2015, 2050, 5])
+    dm_liv_N2O.append(dm_cal_rates_liv_N2O, dim='Variables')
+    dm_liv_N2O.operation('agr_liv_N2O-emission_raw', '*', 'cal_rate', dim='Variables', out_col='agr_liv_N2O-emission', unit='t')
+    df_cal_rates_liv_N2O = dm_to_database(dm_cal_rates_liv_N2O, 'none', 'agriculture', level=0)
+
 
     # CH4
-    # Enteric emission [tCH4] = livestock population [lsu] * enteric emission factor [tCH4/lsu] FIXME cal liv pop
+    # Enteric emission [tCH4] = livestock population [lsu] * enteric emission factor [tCH4/lsu]
     DM_manure['enteric_emission'].operation('agr_climate-smart-livestock_enteric', '*', 'agr_liv_population',
-                                            dim="Variables", out_col='agr_liv_CH4-emission', unit='t')
+                                            dim="Variables", out_col='agr_liv_CH4-emission_raw', unit='t')
 
-    # Manure emission [tCH4] = livestock population [lsu] * emission factors treated manure [tCH4/lsu] FIXME cal liv pop
+    # Manure emission [tCH4] = livestock population [lsu] * emission factors treated manure [tCH4/lsu]
     DM_manure['ef_liv_CH4_treated'].operation('fxa_ef_liv_CH4-emission_treated', '*', 'agr_liv_population',
-                                              dim="Variables", out_col='agr_liv_CH4-emission', unit='t')
+                                              dim="Variables", out_col='agr_liv_CH4-emission_raw', unit='t')
 
     # Processing for calibration (putting enteric and treated CH4 emission in the same dm)
     # Treated
-    dm_CH4 = DM_manure['ef_liv_CH4_treated'].filter({'Variables': ['agr_liv_CH4-emission']})
+    dm_CH4 = DM_manure['ef_liv_CH4_treated'].filter({'Variables': ['agr_liv_CH4-emission_raw']})
     dm_CH4.rename_col_regex(str1="meat", str2="treated_meat", dim="Categories1")
     dm_CH4.rename_col_regex(str1="abp", str2="treated_abp", dim="Categories1")
     dm_CH4.deepen()
     dm_CH4.switch_categories_order(cat1='Categories2', cat2='Categories1')
     # Enteric
-    dm_CH4_enteric = DM_manure['enteric_emission'].filter({'Variables': ['agr_liv_CH4-emission']})
+    dm_CH4_enteric = DM_manure['enteric_emission'].filter({'Variables': ['agr_liv_CH4-emission_raw']})
     dm_CH4_enteric.rename_col_regex(str1="meat", str2="enteric_meat", dim="Categories1")
     dm_CH4_enteric.rename_col_regex(str1="abp", str2="enteric_abp", dim="Categories1")
     dm_CH4_enteric.deepen()
@@ -1525,10 +1531,17 @@ def livestock_manure_workflow(DM_manure, DM_livestock,  cdm_const):
     dm_CH4.append(dm_CH4_enteric, dim='Categories2')
 
     # Calibration CH4
-    DM_manure['caf_liv_CH4'].append(dm_CH4, dim='Variables')  # Append to caf
-    DM_manure['caf_liv_CH4'].operation('caf_agr_liv_CH4-emission', '*', 'agr_liv_CH4-emission',
-                                       dim="Variables", out_col='cal_agr_liv_CH4-emission', unit='t')
-    return DM_manure
+    dm_cal_liv_CH4 = DM_manure['cal_liv_CH4']
+    dm_cal_liv_CH4.switch_categories_order(cat1='Categories2', cat2='Categories1')  # Switch categories
+    dm_cal_liv_CH4.change_unit('cal_agr_liv_CH4-emission', factor=1e3, old_unit='kt', new_unit='t')
+    dm_cal_rates_liv_CH4 = calibration_rates(dm_CH4, dm_cal_liv_CH4, calibration_start_year=1990,
+                                             calibration_end_year=2015, years_setting=[1990, 2015, 2050, 5])
+    dm_CH4.append(dm_cal_rates_liv_CH4, dim='Variables')
+    dm_CH4.operation('agr_liv_CH4-emission_raw', '*', 'cal_rate', dim='Variables', out_col='agr_liv_CH4-emission',
+                         unit='t')
+    df_cal_rates_liv_CH4 = dm_to_database(dm_cal_rates_liv_CH4, 'none', 'agriculture', level=0)
+
+    return DM_manure, df_cal_rates_liv_N2O, df_cal_rates_liv_CH4
 
 # CalculationLeaf FEED -------------------------------------------------------------------------------------------------
 def feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, CDM_const):
@@ -2569,10 +2582,10 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
 
     dm_lfs, df_cal_rates_diet = lifestyle_workflow(DM_lifestyle, dm_population, CDM_const)
     dm_lfs, dm_lfs_pro = food_demand_workflow(DM_food_demand, dm_lfs)
-    DM_livestock, dm_liv_ibp, dm_liv_ibp= livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro)
+    DM_livestock, dm_liv_ibp, dm_liv_ibp, dm_liv_slau_egg_dairy, df_cal_rates_liv_prod, df_cal_rates_liv_pop= livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro)
     DM_alc_bev, dm_bev_ibp_cereal_feed = alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro)
     DM_bioenergy, dm_oil, dm_lgn, dm_eth, dm_biofuel_fdk = bioenergy_workflow(DM_bioenergy, CDM_const, DM_ind, dm_bld, dm_tra)
-    DM_manure = livestock_manure_workflow(DM_manure, DM_livestock, CDM_const)
+    DM_manure, df_cal_rates_liv_N2O, df_cal_rates_liv_CH4 = livestock_manure_workflow(DM_manure, DM_livestock, dm_liv_slau_egg_dairy, CDM_const)
     DM_feed, dm_aps_ibp, dm_feed_req, dm_aps = feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, CDM_const)
     dm_voil, dm_aps_ibp_oil, dm_voil_tpe = biomass_allocation_workflow(dm_aps_ibp, dm_oil)
     DM_crop, dm_crop_other, dm_feed_processed, dm_food_processed = crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const, dm_oil)
