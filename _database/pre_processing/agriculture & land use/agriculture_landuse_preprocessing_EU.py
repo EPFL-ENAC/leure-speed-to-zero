@@ -3035,7 +3035,6 @@ def lifestyle_calibration():
     }
     df_diet_2010_2022 = faostat.get_data_df(code, pars=my_pars, strval=False)
 
-    # Renaming the items for name matching
     df_diet_1990_2013.loc[
         df_diet_1990_2013['Item'].str.contains('Rice \(Milled Equivalent\)', case=False,
                                                na=False), 'Item'] = 'Rice and products'
@@ -3061,7 +3060,7 @@ def lifestyle_calibration():
     )
 
     # Multiplying population [capita] with food supply [kcal/capita/day] to have food supply [kcal] (per year implicitely)
-    merged_df['Food supply (kcal)'] = 365.25 * 1000* merged_df['Total Population - Both sexes'] * merged_df['Food supply (kcal/capita/day)']
+    merged_df['Food supply (kcal)'] = 365.25 * 1000 * merged_df['Total Population - Both sexes'] * merged_df['Food supply (kcal/capita/day)']
     merged_df = merged_df[['Area', 'Year', 'Item', 'Food supply (kcal)']]
 
     # Concatenating all the years together
@@ -3162,7 +3161,7 @@ def livestock_crop_calibration():
     df_liv_population_others = df_liv_population_others[columns_to_filter]
 
     # Creating one column with Item and Element
-    df_liv_population['Item'] = df_liv_population['Item'] + ' ' + df_liv_population['Element']
+    #df_liv_population['Item'] = df_liv_population['Item'] + ' ' + df_liv_population['Element']
     df_liv_population = df_liv_population.drop(columns=['Element'])
 
     # Reading excel lsu equivalent
@@ -3327,6 +3326,7 @@ def livestock_crop_calibration():
     # Operation
     merged_df['Domestic supply quantity [kcal]'] = merged_df['Domestic supply quantity [t]'] * merged_df['kcal per t']
     pivot_df_domestic_supply = merged_df[['Area', 'Year', 'Item', 'Domestic supply quantity [kcal]']]
+    pivot_df_domestic_supply = pivot_df_domestic_supply.copy()
 
     # PathwayCalc formatting -----------------------------------------------------------------------------------------------
     # Food item name matching with dictionary
