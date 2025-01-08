@@ -2956,7 +2956,6 @@ def lifestyle_calibration():
     # FOOD BALANCE SHEETS (FBS) - -------------------------------------------------
     # List of elements
     list_elements = ['Food supply (kcal/capita/day)']
-
     list_items = ['Cereals - Excluding Beer + (Total)', 'Fruits - Excluding Wine + (Total)', 'Oilcrops + (Total)',
                   'Pulses + (Total)', 'Rice (Milled Equivalent)',
                   'Starchy Roots + (Total)', 'Stimulants + (Total)', 'Sugar Crops + (Total)', 'Vegetables + (Total)',
@@ -2967,7 +2966,7 @@ def lifestyle_calibration():
                   'Bovine Meat', 'Meat, Other', 'Pigmeat',
                   'Poultry Meat', 'Mutton & Goat Meat', 'Fish, Seafood + (Total)', 'Coffee and products']
 
-    # 1990 - 2013
+    # 1990 - 2013 - Food supply
     ld = faostat.list_datasets()
     code = 'FBSH'
     pars = faostat.list_pars(code)
@@ -2987,7 +2986,30 @@ def lifestyle_calibration():
     }
     df_diet_1990_2013 = faostat.get_data_df(code, pars=my_pars, strval=False)
 
+    # 1990 - 2013 - Population
+    list_elements = ['Total Population - Both sexes']
+    list_items = ['Population']
+    ld = faostat.list_datasets()
+    code = 'FBSH'
+    pars = faostat.list_pars(code)
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
+                  '2002',
+                  '2003', '2004', '2005', '2006', '2007', '2008', '2009']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_population_1990_2013 = faostat.get_data_df(code, pars=my_pars, strval=False)
+
     # 2010-2022
+    list_elements = ['Food supply (kcal)']
     list_items = ['Cereals - Excluding Beer + (Total)', 'Fruits - Excluding Wine + (Total)', 'Oilcrops + (Total)',
                   'Pulses + (Total)', 'Rice and products',
                   'Starchy Roots + (Total)', 'Stimulants + (Total)', 'Sugar Crops + (Total)', 'Vegetables + (Total)',
@@ -3018,16 +3040,32 @@ def lifestyle_calibration():
         df_diet_1990_2013['Item'].str.contains('Rice \(Milled Equivalent\)', case=False,
                                                na=False), 'Item'] = 'Rice and products'
 
-    # Concatenating all the years together
-    df_diet = pd.concat([df_diet_1990_2013, df_diet_2010_2022])
-
     # Filtering to keep wanted columns
     columns_to_filter = ['Area', 'Element', 'Item', 'Year', 'Value']
-    df_diet = df_diet[columns_to_filter]
+    df_diet_1990_2013 = df_diet_1990_2013[columns_to_filter]
+    df_population_1990_2013 = df_population_1990_2013[columns_to_filter]
+    df_diet_2010_2022 = df_diet_2010_2022[columns_to_filter]
 
     # Pivot the df
-    pivot_df_diet = df_diet.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
+    pivot_df_diet_1990_2013 = df_diet_1990_2013.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
                                           values='Value').reset_index()
+    pivot_df_population_1990_2013 = df_population_1990_2013.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
+                                                            values='Value').reset_index()
+    pivot_df_diet_2010_2022 = df_diet_2010_2022.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
+                                                            values='Value').reset_index()
+    # Merge the DataFrames on 'Area' and 'Year'
+    merged_df = pd.merge(
+        pivot_df_diet_1990_2013,
+        pivot_df_population_1990_2013[['Area', 'Year', 'Total Population - Both sexes']],  # Only keep the needed columns
+        on=['Area', 'Year']
+    )
+
+    # Multiplying population [capita] with food supply [kcal/capita/day] to have food supply [kcal] (per year implicitely)
+    merged_df['Food supply (kcal)'] = 365.25 * 1000* merged_df['Total Population - Both sexes'] * merged_df['Food supply (kcal/capita/day)']
+    merged_df = merged_df[['Area', 'Year', 'Item', 'Food supply (kcal)']]
+
+    # Concatenating all the years together
+    pivot_df_diet = pd.concat([merged_df, pivot_df_diet_2010_2022])
 
     # PathwayCalc formatting -----------------------------------------------------------------------------------------------
     # Food item name matching with dictionary
@@ -3046,7 +3084,7 @@ def lifestyle_calibration():
     df_diet_calibration = df_diet_calibration.drop(columns=['Item'])
 
     # Renaming existing columns (geoscale, timsecale, value)
-    df_diet_calibration.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Food supply (kcal/capita/day)': 'value'}, inplace=True)
+    df_diet_calibration.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Food supply (kcal)': 'value'}, inplace=True)
 
     return df_diet_calibration
 
@@ -3272,7 +3310,23 @@ def livestock_crop_calibration():
                                         values='Value').reset_index()
 
     # Unit conversion [kt] => [t]
-    pivot_df_domestic_supply['Domestic supply quantity'] = 1000 * pivot_df_domestic_supply['Domestic supply quantity']
+    pivot_df_domestic_supply['Domestic supply quantity [t]'] = 1000 * pivot_df_domestic_supply['Domestic supply quantity']
+
+    # Unit conversion [t] => [kcal]
+    # Read excel
+    df_kcal_t = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/kcal_to_t.xlsx',
+        sheet_name='kcal_per_100g')
+    df_kcal_t = df_kcal_t[['Item', 'kcal per t']]
+    # Merge
+    merged_df = pd.merge(
+        df_kcal_t,
+        pivot_df_domestic_supply,  # Only keep the needed columns
+        on=['Item']
+    )
+    # Operation
+    merged_df['Domestic supply quantity [kcal]'] = merged_df['Domestic supply quantity [t]'] * merged_df['kcal per t']
+    pivot_df_domestic_supply = merged_df[['Area', 'Year', 'Item', 'Domestic supply quantity [kcal]']]
 
     # PathwayCalc formatting -----------------------------------------------------------------------------------------------
     # Food item name matching with dictionary
@@ -3291,7 +3345,7 @@ def livestock_crop_calibration():
     df_domestic_supply_calibration = df_domestic_supply_calibration.drop(columns=['Item'])
 
     # Renaming existing columns (geoscale, timsecale, value)
-    df_domestic_supply_calibration.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Domestic supply quantity': 'value'},
+    df_domestic_supply_calibration.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Domestic supply quantity [kcal]': 'value'},
                                inplace=True)
 
     return df_domestic_supply_calibration, df_liv_population_calibration
