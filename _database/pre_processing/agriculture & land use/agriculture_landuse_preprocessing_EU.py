@@ -3884,6 +3884,29 @@ def feed_calibration():
     pivot_df_feed = df_feed.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
                                         values='Value').reset_index()
 
+    # Univ conversion [kt] => [kcal]
+    # Read excel
+    df_kcal_t = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/kcal_to_t.xlsx',
+        sheet_name='kcal_per_100g')
+    df_kcal_t = df_kcal_t[['Item', 'kcal per t']]
+    # Merge
+    merged_df = pd.merge(
+        df_kcal_t,
+        pivot_df_feed,
+    )
+    # Operation
+    merged_df['Feed [kcal]'] = 1000 * merged_df['Feed'] * merged_df['kcal per t']
+    pivot_df_feed = merged_df[['Area', 'Year', 'Item', 'Feed [kcal]']]
+    pivot_df_feed = pivot_df_feed.copy()
+
+    # Adding meat products with 0 everywhere (no meat used as feed from FAOSTAT)
+    duplicated_rows = pivot_df_feed[
+        pivot_df_feed['Item'] == 'Pulses'].copy()  # Duplicate rows for random item
+    duplicated_rows['Item'] = 'Animal Products'  # Change geoscale value to 'EU27' in duplicated rows
+    duplicated_rows['Feed [kcal]'] = 0 # Set the value to 0
+    pivot_df_feed = pd.concat([pivot_df_feed, duplicated_rows],
+                                   ignore_index=True)  # Append duplicated rows back to the original DataFrame
 
     # PathwayCalc formatting -----------------------------------------------------------------------------------------------
     # Food item name matching with dictionary
@@ -3903,7 +3926,7 @@ def feed_calibration():
 
     # Renaming existing columns (geoscale, timesecale, value)
     df_feed_calibration.rename(
-        columns={'Area': 'geoscale', 'Year': 'timescale', 'Feed': 'value'},
+        columns={'Area': 'geoscale', 'Year': 'timescale', 'Feed [kcal]': 'value'},
         inplace=True)
 
     return df_feed_calibration
@@ -4228,6 +4251,7 @@ list_items = ['Total Bioenergy > (List)']
 code = 'BE'
 my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
 my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+
 my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
 list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
               '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
