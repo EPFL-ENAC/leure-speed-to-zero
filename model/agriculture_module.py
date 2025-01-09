@@ -1088,7 +1088,7 @@ def livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro):
     dm_ibp_fdk = dm_liv_ibp.filter({'Variables': ['agr_ibp_liv_fdk']})
     dm_liv_ibp.groupby({'total': '.*'}, dim='Categories1', regex=True, inplace=True)
 
-    return DM_livestock, dm_liv_ibp, dm_liv_ibp, dm_liv_slau_egg_dairy,  df_cal_rates_liv_prod, df_cal_rates_liv_pop
+    return DM_livestock, dm_liv_ibp, dm_liv_ibp, dm_liv_prod, dm_liv_slau_egg_dairy,  df_cal_rates_liv_prod, df_cal_rates_liv_pop
 
 # CalculationLeaf ALCOHOLIC BEVERAGES INDUSTRY -------------------------------------------------------------------------
 def alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro):
@@ -1544,15 +1544,14 @@ def livestock_manure_workflow(DM_manure, DM_livestock, dm_liv_slau_egg_dairy,  c
     return DM_manure, df_cal_rates_liv_N2O, df_cal_rates_liv_CH4
 
 # CalculationLeaf FEED -------------------------------------------------------------------------------------------------
-def feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, CDM_const):
+def feed_workflow(DM_feed, dm_liv_prod, dm_bev_ibp_cereal_feed, CDM_const):
 
     # FEED REQUIREMENTS
     # Filter protein conversion efficiency constant
     cdm_cp_efficiency = CDM_const['cdm_cp_efficiency']
 
     # Pre processing domestic ASF prod accounting for waste [kcal]
-    dm_feed_req = DM_livestock['losses'].filter({'Variables': ['agr_domestic_production_liv_afw']})
-    dm_feed_req.drop(dim='Categories1', col_label=['abp-processed-afat', 'abp-processed-offal'])
+    dm_feed_req = dm_liv_prod.filter({'Variables': ['agr_domestic_production_liv_afw']})
 
     # Feed req per livestock type [kcal] = domestic ASF prod accounting for waste [kcal] / protein conversion efficiency [%]
     idx_cdm = cdm_cp_efficiency.idx
@@ -1622,13 +1621,19 @@ def feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, CDM_const):
     idx_ration = DM_feed['ration'].idx
     dm_temp = dm_feed_req_total.array[:, :, idx_feed['agr_feed-demand'], np.newaxis] \
               * DM_feed['ration'].array[:, :, idx_ration['agr_climate-smart-livestock_ration'], :]
-    DM_feed['ration'].add(dm_temp, dim='Variables', col_label='agr_demand_feed', unit='kcal')
+    DM_feed['ration'].add(dm_temp, dim='Variables', col_label='agr_demand_feed_raw', unit='kcal')
 
     # Calibration Feed demand
-    dm_feed_demand = DM_feed['ration'].filter({'Variables': ['agr_demand_feed']})
-    DM_feed['caf_agr_demand_feed'].append(dm_feed_demand, dim='Variables')
-    DM_feed['caf_agr_demand_feed'].operation('agr_demand_feed', '*', 'caf_agr_demand_feed',
-                                             out_col='cal_agr_feed-demand', unit='kcal')
+    dm_feed_demand = DM_feed['ration'].filter({'Variables': ['agr_demand_feed_raw']})
+    dm_cal_feed = DM_feed['cal_agr_demand_feed']
+    dm_cal_rates_feed = calibration_rates(dm_feed_demand, dm_cal_feed, calibration_start_year=1990,
+                                          calibration_end_year=2015,
+                                          years_setting=[1990, 2015, 2050, 5])
+    dm_feed_demand.append(dm_cal_rates_feed, dim='Variables')
+    dm_feed_demand.operation('agr_demand_feed_raw', '*', 'cal_rate', dim='Variables', out_col='agr_demand_feed', unit='kcal')
+    df_cal_rates_feed = dm_to_database(dm_cal_rates_feed, 'none', 'agriculture',
+                                       level=0)  # Exporting calibration rates to check at the end
+
     return DM_feed, dm_aps_ibp, dm_feed_req, dm_aps
 
  # CalculationLeaf BIOMASS USE ALLOCATION ---------------------------------------------------------------------------
@@ -2582,11 +2587,11 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
 
     dm_lfs, df_cal_rates_diet = lifestyle_workflow(DM_lifestyle, dm_population, CDM_const)
     dm_lfs, dm_lfs_pro = food_demand_workflow(DM_food_demand, dm_lfs)
-    DM_livestock, dm_liv_ibp, dm_liv_ibp, dm_liv_slau_egg_dairy, df_cal_rates_liv_prod, df_cal_rates_liv_pop= livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro)
+    DM_livestock, dm_liv_ibp, dm_liv_ibp, dm_liv_prod, dm_liv_slau_egg_dairy, df_cal_rates_liv_prod, df_cal_rates_liv_pop= livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro)
     DM_alc_bev, dm_bev_ibp_cereal_feed = alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro)
     DM_bioenergy, dm_oil, dm_lgn, dm_eth, dm_biofuel_fdk = bioenergy_workflow(DM_bioenergy, CDM_const, DM_ind, dm_bld, dm_tra)
     DM_manure, df_cal_rates_liv_N2O, df_cal_rates_liv_CH4 = livestock_manure_workflow(DM_manure, DM_livestock, dm_liv_slau_egg_dairy, CDM_const)
-    DM_feed, dm_aps_ibp, dm_feed_req, dm_aps = feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, CDM_const)
+    DM_feed, dm_aps_ibp, dm_feed_req, dm_aps = feed_workflow(DM_feed, dm_liv_prod, dm_bev_ibp_cereal_feed, CDM_const)
     dm_voil, dm_aps_ibp_oil, dm_voil_tpe = biomass_allocation_workflow(dm_aps_ibp, dm_oil)
     DM_crop, dm_crop_other, dm_feed_processed, dm_food_processed = crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const, dm_oil)
     DM_land, dm_land_use, dm_fiber = land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, DM_ind)
