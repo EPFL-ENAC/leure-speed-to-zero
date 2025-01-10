@@ -3522,8 +3522,8 @@ def energy_ghg_calibration():
     df_emissions = df_emissions.pivot_table(index=['Area', 'Year', 'Element'],
                                           values='Value').reset_index()
 
-    # Unit conversion [kt] => [Mt]
-    df_emissions['Value'] = df_emissions['Value'] * 10**(-3)
+    # Unit conversion [kt] => [t]
+    df_emissions['Value'] = df_emissions['Value'] * 10**(3)
 
     # Rename column
     df_emissions.rename(columns={'Element': 'Item'}, inplace=True)
