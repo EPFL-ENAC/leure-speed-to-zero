@@ -2159,7 +2159,7 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_
     DM_energy_ghg['cal_GHG'].rename_col('CO2', 'CO2-emission', dim='Categories1')
     DM_energy_ghg['cal_GHG'].rename_col('N2O', 'N2O-emission', dim='Categories1')
 
-    # Calibration GHG emissions :overall CO2, CH4, NO2
+    # Calibration GHG emissions: overall CO2, CH4, NO2
     dm_cal_ghg = DM_energy_ghg['cal_GHG']
     #dm_cal_ghg.change_unit('cal_agr_input-use_emissions-CO2', 10 ** 3, old_unit='kt',
     #                             new_unit='t')  # Unit conversion [kt] => [t]
@@ -2172,12 +2172,12 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_
     df_cal_rates_ghg = dm_to_database(dm_cal_rates_ghg, 'none', 'agriculture', level=0)
 
     # FORMATTING FOR TPE & INTERFACE -----------------------------------------------------------------------------------
-    # CO2 emissions from fertilizer & energy FIXME change for cal
+    # CO2 emissions from fertilizer & energy
     dm_input_use_CO2 = dm_CO2.filter({'Variables': ['agr_input-use_emissions-CO2']})
     dm_input_use_CO2.change_unit('agr_input-use_emissions-CO2', 1e-6, old_unit='t', new_unit='Mt')
     dm_input_use_CO2 = dm_input_use_CO2.flatten()
 
-    # Fertizer emissions N2O FIXME change for cal
+    # Fertilizer emissions N2O
     dm_fertilizer_N2O = dm_n.filter({'Variables': ['agr_crop_emission_N2O-emission_fertilizer']})
     dm_fertilizer_N2O.change_unit('agr_crop_emission_N2O-emission', 1e-6, old_unit='t', new_unit='Mt')
     #dm_fertilizer_N2O.rename_col('agr_crop_emission_N2O-emission', 'agr_emissions-N2O_crop_fertilizer', 'Variables')
@@ -2196,8 +2196,8 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_
     dm_crop_residues = dm_crop_residues.flatten().flatten()
     dm_crop_residues.drop("Variables", ['agr_emissions-CH4_crop_soil-residues'])
 
-    # Livestock emissions CH4 (manure & enteric)  FIXME change for cal
-    dm_CH4_liv = DM_manure['caf_liv_CH4'].filter({'Variables': ['agr_liv_CH4-emission']})
+    # Livestock emissions CH4 (manure & enteric)
+    #dm_CH4_liv = DM_manure['caf_liv_CH4'].filter({'Variables': ['agr_liv_CH4-emission']})
     dm_CH4_liv.change_unit('agr_liv_CH4-emission', 1e-6, old_unit='t', new_unit='Mt')
     dm_CH4_liv.switch_categories_order(cat1='Categories2', cat2='Categories1')
     dm_CH4_liv.rename_col("agr_liv_CH4-emission", "agr_emissions-CH4_liv", "Variables")
@@ -2205,7 +2205,7 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_
     dm_CH4_liv = dm_CH4_liv.flatten()
 
     # Livestock emissions N2O (manure)  FIXME change for cal
-    dm_N2O_liv = DM_manure['caf_liv_N2O'].filter({'Variables': ['agr_liv_N2O-emission']})
+    #dm_N2O_liv = DM_manure['caf_liv_N2O'].filter({'Variables': ['agr_liv_N2O-emission']})
     dm_N2O_liv.change_unit('agr_liv_N2O-emission', 1e-6, old_unit='t', new_unit='Mt')
     dm_N2O_liv.switch_categories_order(cat1='Categories2', cat2='Categories1')
     dm_N2O_liv.rename_col("agr_liv_N2O-emission", "agr_emissions-N2O_liv", "Variables")

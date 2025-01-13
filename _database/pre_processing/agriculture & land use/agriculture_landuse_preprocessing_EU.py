@@ -4154,6 +4154,9 @@ def calibration_formatting(df_diet_calibration, df_domestic_supply_calibration, 
                      df_nitrogen_calibration, df_liv_emissions_calibration, df_feed_calibration,
                      df_land_use_fao_calibration, df_liming_urea_calibration, df_wood_calibration,
                      df_emissions_calibration):
+
+    # AGRICULTURE MODULE -----------------------------------------------------------------------------------------------
+
     # Concatenate dfs
     df_calibration = pd.concat([df_diet_calibration, df_domestic_supply_calibration], axis=0)
     df_calibration = pd.concat([df_calibration, df_liv_population_calibration], axis=0)
@@ -4162,7 +4165,7 @@ def calibration_formatting(df_diet_calibration, df_domestic_supply_calibration, 
     df_calibration = pd.concat([df_calibration, df_feed_calibration], axis=0)
     df_calibration = pd.concat([df_calibration, df_land_use_fao_calibration], axis=0)
     df_calibration = pd.concat([df_calibration, df_liming_urea_calibration], axis=0)
-    df_calibration = pd.concat([df_calibration, df_wood_calibration], axis=0)
+    #df_calibration = pd.concat([df_calibration, df_wood_calibration], axis=0)
     df_calibration = pd.concat([df_calibration, df_emissions_calibration], axis=0)
 
     # Adding the columns module, lever, level and string-pivot at the correct places
@@ -4202,13 +4205,61 @@ def calibration_formatting(df_diet_calibration, df_domestic_supply_calibration, 
     duplicated_rows = df_calibration_ext[
         df_calibration_ext['geoscale'] == 'France'].copy()  # Duplicate rows where geoscale is 'Germany'
     duplicated_rows['geoscale'] = 'Paris'  # Change geoscale value to 'EU27' in duplicated rows
-    df_calibration_ext = pd.concat([df_calibration_ext, duplicated_rows],
+    df_calibration_ext_agr = pd.concat([df_calibration_ext, duplicated_rows],
                                    ignore_index=True)  # Append duplicated rows back to the original DataFrame
 
     # Exporting to csv
-    df_calibration_ext.to_csv('agriculture_calibration.csv', index=False)
+    df_calibration_ext_agr.to_csv('agriculture_calibration.csv', index=False)
 
-    return df_calibration
+    # LANDUSE MODULE ---------------------------------------------------------------------------------------------------
+    # Concatenate dfs
+    df_calibration = df_wood_calibration
+
+    # Adding the columns module, lever, level and string-pivot at the correct places
+    df_calibration['module'] = 'land-use'
+    df_calibration['lever'] = 'none'
+    df_calibration['level'] = 0
+    cols = df_calibration.columns.tolist()
+    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    df_calibration = df_calibration[cols]
+
+    # Rename countries to Pathaywcalc name
+    df_calibration['geoscale'] = df_calibration['geoscale'].replace(
+        'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+    df_calibration['geoscale'] = df_calibration['geoscale'].replace('Netherlands (Kingdom of the)',
+                                                                                'Netherlands')
+    df_calibration['geoscale'] = df_calibration['geoscale'].replace('Czechia', 'Czech Republic')
+
+    # Extrapolation for missing data
+    df_calibration_struct = ensure_structure(df_calibration)
+    df_calibration_ext = linear_fitting_ots_db(df_calibration_struct, years_ots,
+                                                countries='all')
+
+    # Add dummy values for EU27, Vaud and Paris, copied respectively on Germany, Switzerland and France
+    # EU27
+    duplicated_rows = df_calibration_ext[df_calibration_ext['geoscale'] == 'Germany'].copy() # Duplicate rows where geoscale is 'Germany'
+    duplicated_rows['geoscale'] = 'EU27' # Change geoscale value to 'EU27' in duplicated rows
+    df_calibration_ext = pd.concat([df_calibration_ext, duplicated_rows], ignore_index=True) # Append duplicated rows back to the original DataFrame
+    # Vaud
+    duplicated_rows = df_calibration_ext[
+        df_calibration_ext['geoscale'] == 'Switzerland'].copy()  # Duplicate rows where geoscale is 'Germany'
+    duplicated_rows['geoscale'] = 'Vaud'  # Change geoscale value to 'EU27' in duplicated rows
+    df_calibration_ext = pd.concat([df_calibration_ext, duplicated_rows],
+                                   ignore_index=True)  # Append duplicated rows back to the original DataFrame
+    # Paris
+    duplicated_rows = df_calibration_ext[
+        df_calibration_ext['geoscale'] == 'France'].copy()  # Duplicate rows where geoscale is 'Germany'
+    duplicated_rows['geoscale'] = 'Paris'  # Change geoscale value to 'EU27' in duplicated rows
+    df_calibration_ext_agr = pd.concat([df_calibration_ext, duplicated_rows],
+                                   ignore_index=True)  # Append duplicated rows back to the original DataFrame
+
+    # Exporting to csv
+    df_calibration_ext_agr.to_csv('land-use_calibration.csv', index=False)
+
+
+    return df_calibration_ext_agr
 
 # CalculationTree RUNNING CALIBRATION ----------------------------------------------------------------------------------
 df_diet_calibration = lifestyle_calibration()
