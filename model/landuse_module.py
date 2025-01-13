@@ -12,7 +12,7 @@ from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database_fxa, read_database_to_ots_fts_dict_w_groups, edit_database, database_to_df, dm_to_database
 from model.common.interface_class import Interface
-from model.common.auxiliary_functions import filter_geoscale
+from model.common.auxiliary_functions import filter_geoscale, calibration_rates
 from model.common.auxiliary_functions import read_level_data, simulate_input
 from scipy.optimize import linprog
 import pickle
@@ -118,7 +118,7 @@ def database_from_csv_to_datamatrix():
     dm_cal = DataMatrix.create_from_df(df_ots, num_cat=0)
 
     # Data - Fixed assumptions - Calibration factors - Wood
-    dm_cal_wood = dm_cal.filter_w_regex({'Variables': 'cal_land-use_wood.*'})
+    dm_cal_wood = dm_cal.filter_w_regex({'Variables': 'cal_lus_fst_demand_rwe.*'})
     dm_cal_wood.deepen(based_on='Variables')
     dict_fxa['cal_wood'] = dm_cal_wood
 
@@ -306,15 +306,23 @@ def wood_workflow(dm_wood, dm_lgn, DM_ind, dm_cal_wood):
     dm_wood.append(dm_biomaterial, dim='Variables')
     dm_wood.deepen()
 
-    # Creating a copy for the TPE
-    dm_wood_TPE = dm_wood.copy()
-
     # Total wood demand [m3] = Wood-fuel demand + Timber + Woodpulp + Wood for other uses
-    dm_wood.groupby({'total': '.*'}, dim='Categories1', regex=True, inplace=True)
+    dm_wood_total = dm_wood.copy()
+    dm_wood_total.groupby({'total': '.*'}, dim='Categories1', regex=True, inplace=True)
+    dm_wood.append(dm_wood_total, dim='Categories1')
 
     # Calibration Wood demand
+    dm_cal_rates_wood = calibration_rates(dm_wood, dm_cal_wood, calibration_start_year=1990,
+                                         calibration_end_year=2015, years_setting=[1990, 2015, 2050, 5])
+    dm_wood.append(dm_cal_rates_wood, dim='Variables')
+    dm_wood.operation('lus_fst_demand_rwe_raw', '*', 'cal_rate', dim='Variables',
+                     out_col='lus_fst_demand_rwe', unit='m3')
+    df_cal_rates_wood = dm_to_database(dm_cal_rates_wood, 'none', 'agriculture', level=0)
 
-    return dm_wood, dm_wood_TPE
+    # Creating a copy for the TPE
+    dm_wood_TPE = dm_wood.filter({'Variables': ['lus_fst_demand_rwe']}).copy()
+
+    return dm_wood, dm_wood_TPE, df_cal_rates_wood
 
 # CalculationLeaf LAND ALLOCATION
 def land_allocation_workflow(DM_land_use, dm_land_use):
@@ -921,7 +929,7 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
             DM_agr[key].filter({'Country': cntr_list}, inplace=True)
 
     # CalculationTree LAND USE
-    dm_wood, dm_wood_TPE = wood_workflow(DM_agr["wood"], DM_agr["lgn"], DM_ind, DM_land_use["cal_wood"])
+    dm_wood, dm_wood_TPE, df_cal_rates_wood = wood_workflow(DM_agr["wood"], DM_agr["lgn"], DM_ind, DM_land_use["cal_wood"])
     DM_land_use = land_allocation_workflow(DM_land_use, DM_agr["landuse"])
     DM_land_use = land_matrix_workflow(DM_land_use)
     DM_land_use = land_carbon_dynamics_workflow(DM_land_use)

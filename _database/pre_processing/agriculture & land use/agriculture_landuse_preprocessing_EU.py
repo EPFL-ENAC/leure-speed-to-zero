@@ -4100,7 +4100,8 @@ def wood_calibration():
     # List of elements
     list_elements = ['Production Quantity']
 
-    list_items = ['Roundwood + (Total)']
+    list_items = ['Wood fuel + (Total)', 'Industrial roundwood + (Total)',
+                  'Pulpwood, round and split (production) + (Total)', 'Sawlogs and veneer logs + (Total)']
 
     # 1990 - 2022
     ld = faostat.list_datasets()
@@ -4121,6 +4122,30 @@ def wood_calibration():
         'year': my_years
     }
     df_wood = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # 1990 - 2022 ROUNDWOOD
+    list_items = ['Roundwood + (Total)']
+    ld = faostat.list_datasets()
+    code = 'FO'
+    pars = faostat.list_pars(code)
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
+                  '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
+                  '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_roundwood = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # Concatenating dfs
+    df_wood = pd.concat([df_wood, df_roundwood], axis=0)
 
     # Filtering to keep wanted columns
     columns_to_filter = ['Area', 'Item', 'Year', 'Value']
