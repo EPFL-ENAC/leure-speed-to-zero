@@ -1022,6 +1022,8 @@ def fix_jumps(ts, mad_multiple = 3, consec_do_nothing = False, consec_fill_with_
 def fix_jumps_in_dm(dm, mad_multiple = 3, consec_do_nothing = False, consec_fill_with_nan = False):
 
     # flatten
+    if len(dm.dim_labels) == 3:
+        dm_temp = dm.copy()
     if len(dm.dim_labels) == 4:
         dm_temp = dm.flatten()
     if len(dm.dim_labels) == 5:
