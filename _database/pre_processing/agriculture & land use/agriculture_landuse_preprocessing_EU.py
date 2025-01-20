@@ -654,6 +654,54 @@ def climate_smart_crop_processing():
 
     # ENERGY DEMAND --------------------------------------------------------------------------------------------------------
 
+    # BIOENERGIES
+    # Read excel
+    df_bioenergy = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/statistiques_energie_2023.xlsx',
+        sheet_name='T34b',
+        skiprows = 7,
+        nrows = 27
+    )
+    df_bioenergy = df_bioenergy[['timescale', 'Biodiesel', 'Bioéthanol / Biométhanol', "Biocarburants d'aviation", 'Huiles vég. / anim.']]
+
+    # convert from [TJ] to [ktoe]
+
+    # PETROLEUM PRODUCTS
+    df_petroleum = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/statistiques_energie_2023.xlsx',
+        sheet_name='T20',
+        skiprows=6,
+        nrows=51
+    )
+
+    # convert from [kt] to [ktoe]
+
+    # OTHER ENERGIES
+    df_oth_energy = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/statistiques_energie_2023.xlsx',
+        sheet_name='T17d',
+        skiprows=10,
+        nrows=44
+    )
+    df_oth_energy = df_oth_energy[
+        ['timescale', 'Energie du bois', 'Electricité', 'Gaz', 'Chaleur à distance', 'Charbon']]
+
+    # convert from [TJ] to [ktoe]
+
+
+    # Pivot & Concat
+
+    # Add geoscale column
+
+    # convert from TJ to ktoe
+
+    # Create copy for calibration
+
+    # convert from ktoe to ktoe/ha (divide by total agricultural area)
+
+    # Add 0 for other categories
+
+
     # ----------------------------------------------------------------------------------------------------------------------
     # INPUT USE ------------------------------------------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------------------------------------------
