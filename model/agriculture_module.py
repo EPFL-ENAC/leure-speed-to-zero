@@ -2218,7 +2218,7 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_
     dm_CH4_rice.rename_col('agr_rice_crop_CH4-emission', 'agr_emissions-CH4_crop_rice', 'Variables')
 
 
-    return DM_energy_ghg, dm_CO2, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O
+    return DM_energy_ghg, dm_CO2, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O, df_cal_rates_ghg
 
 
 def agriculture_landuse_interface(DM_bioenergy, dm_lgn, dm_land_use, write_xls = False):
@@ -2634,7 +2634,7 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     DM_crop, dm_crop, dm_crop_other, dm_feed_processed, dm_food_processed, df_cal_rates_crop = crop_workflow(DM_crop, dm_feed_demand, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const, dm_oil)
     DM_land, dm_land, dm_land_use, dm_fiber, df_cal_rates_land = land_workflow(DM_land, dm_crop, DM_livestock, dm_crop_other, DM_ind)
     dm_n, dm_fertilizer_co, dm_mineral_fertilizer, df_cal_rates_n = nitrogen_workflow(DM_nitrogen, dm_land, CDM_const)
-    DM_energy_ghg, dm_CO2, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O = energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_co, dm_liv_N2O, dm_CH4, CDM_const, dm_n)
+    DM_energy_ghg, dm_CO2, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O, df_cal_rates_ghg = energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_co, dm_liv_N2O, dm_CH4, CDM_const, dm_n)
 
     # INTERFACES OUT ---------------------------------------------------------------------------------------------------
 

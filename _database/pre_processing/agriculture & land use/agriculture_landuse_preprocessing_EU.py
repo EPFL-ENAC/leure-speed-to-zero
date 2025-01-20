@@ -2797,6 +2797,34 @@ def bioernergy_capacity_processing(df_csl_feed):
 # CalculationLeaf BIOMASS HIERARCHY ------------------------------------------------------------------------------------
 
 def biomass_bioernergy_hierarchy_processing(df_csl_feed):
+    # ------------------------------------------------------------------------------------------------------------------
+    # BIOMASS MIX
+    # ------------------------------------------------------------------------------------------------------------------
+    # Load from previous EuCalc Data
+    df_biomass_mix_data = pd.read_csv(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/agriculture_biomass-use-hierarchy_eucalc.csv', sep=';')
+
+    # Filter columns
+    df_filtered_columns = df_biomass_mix_data[['geoscale', 'timescale', 'eucalc-name', 'value']]
+
+    # rename col 'eucalc-name' in 'variables'
+    df_filtered_columns = df_filtered_columns.rename(columns={'eucalc-name': 'variables'})
+
+    # Filter rows that contains biomass-mix
+    df_filtered_rows = df_filtered_columns[
+        df_filtered_columns['variables'].str.contains('ots_agr_biomass-hierarchy_biomass-mix', case=False, na=False)
+    ]
+
+    # Drop rows where 'variables' contains '%_1'
+    df_biomass_mix = df_filtered_rows[~df_filtered_rows['variables'].str.contains('%_1', na=False)]
+
+    # Rename from ots_agr to agr
+    df_biomass_mix['variables'] = df_biomass_mix['variables'].str.replace('ots_agr', 'agr', regex=False)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # BIOMASS HIERARCHY
+    # ------------------------------------------------------------------------------------------------------------------
+
     # Using and formatting df_csl_feed as a structural basis for constant ots values across all countries
     df_biomass_hierarchy_all = df_csl_feed.copy()
     df_biomass_hierarchy_all = df_biomass_hierarchy_all.drop(columns=['Item', 'Feed'])
@@ -2831,6 +2859,9 @@ def biomass_bioernergy_hierarchy_processing(df_csl_feed):
     # Melt df
     df_biomass_hierarchy_pathwaycalc = pd.melt(df_biomass_hierarchy_all, id_vars=['geoscale', 'timescale'],
                                                var_name='variables', value_name='value')
+
+    # Concat dfs
+    df_biomass_hierarchy_pathwaycalc = pd.concat([df_biomass_hierarchy_pathwaycalc, df_biomass_mix])
 
     # PathwayCalc formatting
     df_biomass_hierarchy_pathwaycalc['module'] = 'agriculture'
@@ -2908,16 +2939,16 @@ def livestock_protein_meals_processing(df_csl_feed):
 
 # CalculationTree RUNNING PRE-PROCESSING -----------------------------------------------------------------------------------------------
 
-#df_diet_pathwaycalc, df_diet = diet_processing()
-#df_waste_pathwaycalc = food_waste_processing(df_diet)
-#df_kcal_req_pathwaycalc = energy_requirements_processing()
-#df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing(years_ots)
+df_diet_pathwaycalc, df_diet = diet_processing()
+df_waste_pathwaycalc = food_waste_processing(df_diet)
+df_kcal_req_pathwaycalc = energy_requirements_processing()
+df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing(years_ots)
 #df_climate_smart_crop_pathwaycalc = climate_smart_crop_processing()
 #df_climate_smart_livestock_pathwaycalc = climate_smart_livestock_processing(df_csl_feed)
 #df_climate_smart_forestry_pathwaycalc, csf_managed = climate_smart_forestry_processing()
 #df_land_management_pathwaycalc = land_management_processing(csf_managed)
 #df_bioenergy_capacity_CH_pathwaycalc = bioernergy_capacity_processing(df_csl_feed)
-#df_biomass_hierarchy_pathwaycalc = biomass_bioernergy_hierarchy_processing(df_csl_feed)
+df_biomass_hierarchy_pathwaycalc = biomass_bioernergy_hierarchy_processing(df_csl_feed)
 #df_protein_meals_pathwaycalc = livestock_protein_meals_processing(df_csl_feed)
 
 # CREATING CSV FILES
