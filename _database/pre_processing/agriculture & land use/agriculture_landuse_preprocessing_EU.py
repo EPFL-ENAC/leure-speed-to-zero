@@ -665,16 +665,8 @@ def climate_smart_crop_processing():
     df_bioenergy = df_bioenergy[['timescale', 'Biodiesel', 'Bioéthanol / Biométhanol', "Biocarburants d'aviation", 'Huiles vég. / anim.']]
 
     # convert from [TJ] to [ktoe]
-
-    # PETROLEUM PRODUCTS
-    df_petroleum = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/statistiques_energie_2023.xlsx',
-        sheet_name='T20',
-        skiprows=6,
-        nrows=51
-    )
-
-    # convert from [kt] to [ktoe]
+    tj_to_ktoe = 0.02388458966275 # source https://www.unitjuggler.com/convertir-energy-de-TJ-en-ktoe.html
+    df_bioenergy.loc[:, df_bioenergy.columns != 'timescale'] *= tj_to_ktoe
 
     # OTHER ENERGIES
     df_oth_energy = pd.read_excel(
@@ -684,23 +676,140 @@ def climate_smart_crop_processing():
         nrows=44
     )
     df_oth_energy = df_oth_energy[
-        ['timescale', 'Energie du bois', 'Electricité', 'Gaz', 'Chaleur à distance', 'Charbon']]
+        ['timescale', 'Energie du bois', 'Electricité', 'Gaz', 'Chaleur à distance', 'Charbon', 'Autres énergies renouvelables']]
+
+    # Replace all occurrences of '-' with 0.0
+    df_oth_energy = df_oth_energy.replace('-', 0.0)
+
+    # Convert numeric columns to float (if necessary)
+    df_oth_energy.iloc[:, 1:] = df_oth_energy.iloc[:, 1:].astype(float)
 
     # convert from [TJ] to [ktoe]
+    tj_to_ktoe = 0.02388458966275  # source https://www.unitjuggler.com/convertir-energy-de-TJ-en-ktoe.html
+    df_oth_energy.loc[:, df_oth_energy.columns != 'timescale'] *= tj_to_ktoe
 
+    # PETROLEUM PRODUCTS
+    df_petroleum = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/statistiques_energie_2023.xlsx',
+        sheet_name='T20',
+        skiprows=6,
+        nrows=51
+    )
+    # convert from [kt] to [ktoe]
+    kt_to_ktoe = 1.05  # https://enerteam.org/conversion-to-toe.html
+    df_petroleum.loc[:, df_petroleum.columns != 'timescale'] *= kt_to_ktoe
 
-    # Pivot & Concat
+    # BIOGAS
+    df_biogas = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/statistiques_energie_2023.xlsx',
+        sheet_name='T34a',
+        skiprows=6,
+        nrows=35
+    )
+    df_biogas = df_biogas[
+        ['timescale', 'Biogas cons. Agr']]
 
-    # Add geoscale column
+    # convert from [GWh] to [ktoe]
+    gwh_to_ktoe = 0.085984522785899 # source https://www.unitjuggler.com/convertir-energy-de-TJ-en-ktoe.html
+    df_biogas.loc[:, df_biogas.columns != 'timescale'] *= gwh_to_ktoe
 
-    # convert from TJ to ktoe
+    # Merge (concat not possible due to different years)
+    df_energy_demand = pd.merge(df_bioenergy, df_oth_energy, on='timescale', how='outer')
+    df_energy_demand = pd.merge(df_energy_demand, df_petroleum, on='timescale', how='outer')
+    df_energy_demand = pd.merge(df_energy_demand, df_biogas, on='timescale', how='outer')
+
+    # Biodisel = huiles végétales animales + biodiesel
+    df_energy_demand['Biodiesel'] = df_energy_demand['Biodiesel'] + df_energy_demand['Huiles vég. / anim.']
+
+    # Oth energies = renouvelables energies - bioenergies considered
+    df_energy_demand['Other energies'] = df_energy_demand['Autres énergies renouvelables'] -\
+                                         df_energy_demand['Biodiesel'] - \
+                                         df_energy_demand['Bioéthanol / Biométhanol'] - \
+                                         df_energy_demand['Biogas cons. Agr']
+
+    # Ajouter colonnes avec 0
+    df_energy_demand['LPG'] = 0.0
+    df_energy_demand['Other bioenergy liquids'] = 0.0
+
+    # Pivot
+    df_energy_demand = df_energy_demand.melt(
+        id_vars='timescale',  # Columns to keep fixed
+        var_name='Item',  # Name for the new 'item' column
+        value_name='value'  # Name for the new 'value' column
+    )
 
     # Create copy for calibration
+    df_energy_demand_cal = df_energy_demand.copy()
+    df_energy_demand_cal['geoscale'] = 'Switzerland'
 
-    # convert from ktoe to ktoe/ha (divide by total agricultural area)
+    # convert from ktoe to ktoe/ha (divide by total agricultural area) -------------------------------------------------
+    # Read FAO Values (for Switzerland)
+    # List of countries
+    list_countries = ['Switzerland']
 
-    # Add 0 for other categories
+    # List of elements
+    list_elements = ['Area']
 
+    list_items = ['-- Cropland', '-- Permanent meadows and pastures']
+
+    # 1990 - 2022
+    ld = faostat.list_datasets()
+    code = 'RL'
+    pars = faostat.list_pars(code)
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+    my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+    list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
+                  '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
+                  '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022']
+    my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+    my_pars = {
+        'area': my_countries,
+        'element': my_elements,
+        'item': my_items,
+        'year': my_years
+    }
+    df_land_use = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+    # Filtering to keep wanted columns
+    columns_to_filter = ['Area', 'Item', 'Year', 'Value']
+    df_land_use = df_land_use[columns_to_filter]
+
+    # Sum to get total agricultural land
+    df_land_use = df_land_use.groupby(['Area', 'Year'], as_index=False)['Value'].sum()
+    df_land_use = df_land_use.rename(columns={'Value': 'Agricultural land [kha]', 'Area': 'geoscale', 'Year': 'timescale'})
+
+    # Merge and divide [kha]
+    df_land_use['timescale'] = df_land_use['timescale'].astype(str)  # Convert to string
+    df_energy_demand['timescale'] = df_energy_demand['timescale'].astype(str)  # Convert to string
+    df_combined = pd.merge(
+        df_energy_demand,
+        df_land_use,
+        on='timescale',
+        how='inner'  # Use 'inner' to keep only matching rows
+    )
+    df_combined['value'] = df_combined['value'] / (df_combined['Agricultural land [kha]'] * 1000)
+    # Read excel file
+    df_dict_csc = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        sheet_name='climate-smart-crops')
+
+    # Merge based on 'Item'
+    df_energy_pathwaycalc = pd.merge(df_dict_csc, df_combined, on='Item')
+
+    # Drop the 'Item' column
+    df_energy_pathwaycalc = df_energy_pathwaycalc.drop(columns=['Item', 'Agricultural land [kha]'])
+
+    # Adding the columns module, lever, level and string-pivot at the correct places
+    df_energy_pathwaycalc['module'] = 'agriculture'
+    df_energy_pathwaycalc['lever'] = 'climate-smart-crop'
+    df_energy_pathwaycalc['level'] = 0
+    cols = df_energy_pathwaycalc.columns.tolist()
+    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
+    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
+    df_energy_pathwaycalc = df_energy_pathwaycalc[cols]
 
     # ----------------------------------------------------------------------------------------------------------------------
     # INPUT USE ------------------------------------------------------------------------------------------------------------
@@ -1184,6 +1293,7 @@ def climate_smart_crop_processing():
     df_climate_smart_crop = pd.concat([df_climate_smart_crop, df_yield_pathwaycalc])
     df_climate_smart_crop = pd.concat([df_climate_smart_crop, agroforestry_crop_pathwaycalc])
     df_climate_smart_crop = pd.concat([df_climate_smart_crop, yield_aps_pathwaycalc])
+    df_climate_smart_crop = pd.concat([df_climate_smart_crop, df_energy_pathwaycalc])
 
     # Rename countries to Pathaywcalc name
     df_climate_smart_crop['geoscale'] = df_climate_smart_crop['geoscale'].replace(
@@ -1192,24 +1302,11 @@ def climate_smart_crop_processing():
        'Netherlands (Kingdom of the)', 'Netherlands')
     df_climate_smart_crop['geoscale'] = df_climate_smart_crop['geoscale'].replace('Czechia', 'Czech Republic')
 
-    df_ireland = df_climate_smart_crop[df_climate_smart_crop['geoscale'].str.contains("Ireland", case=False, na=False)]
-    df_portugal = df_climate_smart_crop[df_climate_smart_crop['geoscale'].str.contains("Portugal", case=False, na=False)]
-    df_switzerland = df_climate_smart_crop[
-        df_climate_smart_crop['geoscale'].str.contains("Switzerland", case=False, na=False)]
-
-    # Merge the two DataFrames on 'variables' and 'timescale' to align them for comparison
-    comparison_df = df_ireland.merge(
-        df_portugal,
-        on=['variables', 'timescale'],
-        how='outer',
-        indicator=True
-    )
-
     # Extrapolating
     df_climate_smart_crop= ensure_structure(df_climate_smart_crop)
     df_climate_smart_crop_pathwaycalc = linear_fitting_ots_db(df_climate_smart_crop, years_ots, countries='all')
 
-    return df_climate_smart_crop_pathwaycalc
+    return df_climate_smart_crop_pathwaycalc, df_energy_demand_cal
 
 # CalculationLeaf CLIMATE SMART LIVESTOCK ------------------------------------------------------------------------------
 def climate_smart_livestock_processing(df_csl_feed):
@@ -2987,16 +3084,16 @@ def livestock_protein_meals_processing(df_csl_feed):
 
 # CalculationTree RUNNING PRE-PROCESSING -----------------------------------------------------------------------------------------------
 
-df_diet_pathwaycalc, df_diet = diet_processing()
-df_waste_pathwaycalc = food_waste_processing(df_diet)
-df_kcal_req_pathwaycalc = energy_requirements_processing()
-df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing(years_ots)
-#df_climate_smart_crop_pathwaycalc = climate_smart_crop_processing()
+#df_diet_pathwaycalc, df_diet = diet_processing()
+#df_waste_pathwaycalc = food_waste_processing(df_diet)
+#df_kcal_req_pathwaycalc = energy_requirements_processing()
+#df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing(years_ots)
+df_climate_smart_crop_pathwaycalc, df_energy_demand_cal = climate_smart_crop_processing()
 #df_climate_smart_livestock_pathwaycalc = climate_smart_livestock_processing(df_csl_feed)
 #df_climate_smart_forestry_pathwaycalc, csf_managed = climate_smart_forestry_processing()
 #df_land_management_pathwaycalc = land_management_processing(csf_managed)
 #df_bioenergy_capacity_CH_pathwaycalc = bioernergy_capacity_processing(df_csl_feed)
-df_biomass_hierarchy_pathwaycalc = biomass_bioernergy_hierarchy_processing(df_csl_feed)
+#df_biomass_hierarchy_pathwaycalc = biomass_bioernergy_hierarchy_processing(df_csl_feed)
 #df_protein_meals_pathwaycalc = livestock_protein_meals_processing(df_csl_feed)
 
 # CREATING CSV FILES
@@ -3168,7 +3265,7 @@ def lifestyle_calibration():
 
 
 # CalculationLeaf CAL - LIVESTOCK & CROP -----------------------------------------------------------------------------------
-def livestock_crop_calibration():
+def livestock_crop_calibration(df_energy_demand_cal):
     # ----------------------------------------------------------------------------------------------------------------------
     # LIVESTOCK POPULATION -------------------------------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------------------------------------------
@@ -3417,15 +3514,19 @@ def livestock_crop_calibration():
     # Prepend "Diet" to each value in the 'Item' column
     pivot_df_domestic_supply['Item'] = pivot_df_domestic_supply['Item'].apply(lambda x: f"Domestic Supply {x}")
 
+    # Renaming existing columns (geoscale, timsecale, value)
+    pivot_df_domestic_supply.rename(
+        columns={'Area': 'geoscale', 'Year': 'timescale', 'Domestic supply quantity [kcal]': 'value'},
+        inplace=True)
+
+    # Concat with energy demand
+    df_supply_and_energy = pd.concat([pivot_df_domestic_supply, df_energy_demand_cal])
+
     # Merge based on 'Item'
-    df_domestic_supply_calibration = pd.merge(df_dict_calibration, pivot_df_domestic_supply, on='Item')
+    df_domestic_supply_calibration = pd.merge(df_dict_calibration, df_supply_and_energy, on='Item')
 
     # Drop the 'Item' column
     df_domestic_supply_calibration = df_domestic_supply_calibration.drop(columns=['Item'])
-
-    # Renaming existing columns (geoscale, timsecale, value)
-    df_domestic_supply_calibration.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Domestic supply quantity [kcal]': 'value'},
-                               inplace=True)
 
     return df_domestic_supply_calibration, df_liv_population_calibration
 
@@ -4367,7 +4468,7 @@ def calibration_formatting(df_diet_calibration, df_domestic_supply_calibration, 
 
 # CalculationTree RUNNING CALIBRATION ----------------------------------------------------------------------------------
 df_diet_calibration = lifestyle_calibration()
-df_domestic_supply_calibration, df_liv_population_calibration = livestock_crop_calibration()
+df_domestic_supply_calibration, df_liv_population_calibration = livestock_crop_calibration(df_energy_demand_cal)
 df_nitrogen_calibration = nitrogen_calibration()
 df_liv_emissions_calibration = manure_calibration()
 df_feed_calibration = feed_calibration()
