@@ -821,6 +821,13 @@ def climate_smart_crop_processing():
     list_elements = ['Use per area of cropland']
 
     list_items = ['Nutrient nitrogen N (total)', 'Nutrient phosphate P2O5 (total)', 'Nutrient potash K2O (total)']
+    # List of countries
+    list_countries = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czechia', 'Denmark',
+                      'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
+                      'Lithuania', 'Luxembourg', 'Malta', 'Netherlands (Kingdom of the)', 'Poland', 'Portugal',
+                      'Romania', 'Slovakia',
+                      'Slovenia', 'Spain', 'Sweden', 'Switzerland',
+                      'United Kingdom of Great Britain and Northern Ireland']
 
     # 1990 - 2021
     ld = faostat.list_datasets()
@@ -1204,17 +1211,28 @@ def climate_smart_crop_processing():
     }
     df_yield_1990_2022 = faostat.get_data_df(code, pars=my_pars, strval=False)
 
-    # Unit conversion from [100g/ha] to [t/ha]  ----------------------------------------------------------------------------
+    # Unit conversion from [100g/ha] to [kcal/ha]  ----------------------------------------------------------------------------
 
-    # Step 1: Pivot the DataFrame
+    # Pivot the DataFrame
     pivot_df = df_yield_1990_2022.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
                                               values='Value').reset_index()
 
-    # Step 2: Compute the Yield [t/ha]
-    pivot_df['Yield[t/ha]'] = pivot_df['Yield'] * 0.0001
-
-    # Drop the columns Yield
-    pivot_df = pivot_df.drop(columns=['Yield'])
+    # Read excel
+    df_kcal_t = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/kcal_to_t.xlsx',
+        sheet_name='kcal_per_100g')
+    df_kcal_g = df_kcal_t[['Item crop yield', 'kcal per 100g']]
+    # Merge
+    merged_df = pd.merge(
+        df_kcal_g,
+        pivot_df,  # Only keep the needed columns
+        left_on=['Item crop yield'],
+        right_on=['Item']
+    )
+    # Operation
+    merged_df['Yield'] = merged_df['Yield'] * merged_df['kcal per 100g']
+    pivot_df_yield = merged_df[['Area', 'Year', 'Item', 'Yield']]
+    pivot_df_yield = pivot_df_yield.copy()
 
     # PathwayCalc formatting -----------------------------------------------------------------------------------------------
 
@@ -1225,13 +1243,13 @@ def climate_smart_crop_processing():
         sheet_name='climate-smart-crops')
 
     # Merge based on 'Item'
-    df_yield_pathwaycalc = pd.merge(df_dict_csc, pivot_df, on='Item')
+    df_yield_pathwaycalc = pd.merge(df_dict_csc, pivot_df_yield, on='Item')
 
     # Drop the 'Item' column
     df_yield_pathwaycalc = df_yield_pathwaycalc.drop(columns=['Item'])
 
     # Renaming existing columns (geoscale, timsecale, value)
-    df_yield_pathwaycalc.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Yield[t/ha]': 'value'}, inplace=True)
+    df_yield_pathwaycalc.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Yield': 'value'}, inplace=True)
 
     # Adding the columns module, lever, level and string-pivot at the correct places
     df_yield_pathwaycalc['module'] = 'agriculture'
@@ -1403,6 +1421,7 @@ def climate_smart_livestock_processing(df_csl_feed):
 
     # Adding an Item column for name
     grouped_df['Item'] = 'Density'
+
 
     # PathwayCalc formatting -----------------------------------------------------------------------------------------------
 
@@ -2073,6 +2092,23 @@ def climate_smart_livestock_processing(df_csl_feed):
 
     # Concatenating yield (meat, milk & eggs)
     df_yield_liv = pd.concat([df_yield_meat, pivot_df])
+
+    # Read excel
+    df_kcal_t = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/kcal_to_t.xlsx',
+        sheet_name='kcal_per_100g')
+    df_kcal_g = df_kcal_t[['Item livestock yield', 'kcal per t']]
+    # Merge
+    merged_df = pd.merge(
+        df_kcal_g,
+        df_yield_liv,  # Only keep the needed columns
+        left_on=['Item livestock yield'],
+    right_on=['Aggregation']
+    )
+    # Operation
+    merged_df['value'] = merged_df['value'] * merged_df['kcal per t']
+    df_yield_liv = merged_df[['geoscale', 'timescale', 'Aggregation', 'value']]
+    df_yield_liv = df_yield_liv.copy()
 
     # Food item name matching with dictionary
     # Read excel file
@@ -3087,9 +3123,9 @@ def livestock_protein_meals_processing(df_csl_feed):
 #df_diet_pathwaycalc, df_diet = diet_processing()
 #df_waste_pathwaycalc = food_waste_processing(df_diet)
 #df_kcal_req_pathwaycalc = energy_requirements_processing()
-#df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing(years_ots)
-df_climate_smart_crop_pathwaycalc, df_energy_demand_cal = climate_smart_crop_processing()
-#df_climate_smart_livestock_pathwaycalc = climate_smart_livestock_processing(df_csl_feed)
+df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing(years_ots)
+#df_climate_smart_crop_pathwaycalc, df_energy_demand_cal = climate_smart_crop_processing()
+df_climate_smart_livestock_pathwaycalc = climate_smart_livestock_processing(df_csl_feed)
 #df_climate_smart_forestry_pathwaycalc, csf_managed = climate_smart_forestry_processing()
 #df_land_management_pathwaycalc = land_management_processing(csf_managed)
 #df_bioenergy_capacity_CH_pathwaycalc = bioernergy_capacity_processing(df_csl_feed)
