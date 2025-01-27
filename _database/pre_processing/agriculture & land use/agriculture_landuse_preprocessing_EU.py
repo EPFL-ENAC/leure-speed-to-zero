@@ -1184,7 +1184,7 @@ def climate_smart_crop_processing():
     # YIELD ----------------------------------------------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------------------------------------------
 
-    # CROPS AND LIVESTOCK PRODUCTS (QCL) (for everything except lgn-energycrop, gas-energycrop, algae and insect)
+    # CROPS  (QCL) (for everything except lgn-energycrop, gas-energycrop, algae and insect)
     # List of elements
     list_elements = ['Yield']
 
@@ -1271,20 +1271,46 @@ def climate_smart_crop_processing():
     # ------------------------------------------------------------------------------------------------------------------
     # YIELD ALGAE & INSECT ---------------------------------------------------------------------------------------------
     # ------------------------------------------------------------------------------------------------------------------
-    # Is constant for all ots for all countries
 
     # Use (agroforestry_crop) as a structural basis
     yield_aps = agroforestry_crop[['timescale', 'geoscale']].copy()
 
-    # Add the variables with a value of 0
+    # Add the variables with values based on EuCalc for those constant
     yield_aps['agr_climate-smart-crop_yield_algae[kcal/ha]'] = 119866666.666667
     yield_aps['agr_climate-smart-crop_yield_insect[kcal/ha]'] = 675000000.0
+    yield_aps['agr_climate-smart-crop_yield_lgn-energycrop[kcal/ha]'] = 77387400.0
 
     # Melt the df
     yield_aps_pathwaycalc = pd.melt(yield_aps, id_vars=['timescale', 'geoscale'],
                                            value_vars=['agr_climate-smart-crop_yield_algae[kcal/ha]',
-                                                       'agr_climate-smart-crop_yield_insect[kcal/ha]'],
+                                                       'agr_climate-smart-crop_yield_insect[kcal/ha]',
+                                                       'agr_climate-smart-crop_yield_lgn-energycrop[kcal/ha]'],
                                            var_name='variables', value_name='value')
+
+
+    # For other value : gas-energycrop
+    # Load from previous EuCalc Data
+    df_yield_data = pd.read_csv(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/agriculture_climate-smart-crop_eucalc.csv',
+        sep=';')
+
+    # Filter columns
+    df_filtered_columns = df_yield_data[['geoscale', 'timescale', 'eucalc-name', 'value']]
+
+    # rename col 'eucalc-name' in 'variables'
+    df_filtered_columns = df_filtered_columns.rename(columns={'eucalc-name': 'variables'})
+
+    # Filter rows that contains biomass-mix
+    df_filtered_rows = df_filtered_columns[
+        df_filtered_columns['variables'].str.contains('ots_agr_climate-smart-crop_yield_gas-energycrop', case=False, na=False)
+    ]
+
+    # Rename from ots_agr to agr
+    df_filtered_rows['variables'] = df_filtered_rows['variables'].str.replace('ots_agr', 'agr', regex=False)
+    df_filtered_rows = df_filtered_rows.copy()
+
+    # Concat
+    yield_aps_pathwaycalc = pd.concat([yield_aps_pathwaycalc, df_filtered_rows])
 
     # PathwayCalc formatting --------------------------------------------------------------------------------------------
     yield_aps_pathwaycalc['module'] = 'agriculture'
@@ -3123,9 +3149,9 @@ def livestock_protein_meals_processing(df_csl_feed):
 #df_diet_pathwaycalc, df_diet = diet_processing()
 #df_waste_pathwaycalc = food_waste_processing(df_diet)
 #df_kcal_req_pathwaycalc = energy_requirements_processing()
-df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing(years_ots)
-#df_climate_smart_crop_pathwaycalc, df_energy_demand_cal = climate_smart_crop_processing()
-df_climate_smart_livestock_pathwaycalc = climate_smart_livestock_processing(df_csl_feed)
+#df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing(years_ots)
+df_climate_smart_crop_pathwaycalc, df_energy_demand_cal = climate_smart_crop_processing()
+#df_climate_smart_livestock_pathwaycalc = climate_smart_livestock_processing(df_csl_feed)
 #df_climate_smart_forestry_pathwaycalc, csf_managed = climate_smart_forestry_processing()
 #df_land_management_pathwaycalc = land_management_processing(csf_managed)
 #df_bioenergy_capacity_CH_pathwaycalc = bioernergy_capacity_processing(df_csl_feed)
