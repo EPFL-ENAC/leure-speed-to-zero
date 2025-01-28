@@ -2025,6 +2025,7 @@ idx_fts = [idx[yr] for yr in years_fts]
 for cat in dm_lifetime.col_labels['Categories2']:
     if ("ICE" in cat) or ('PHEV' in cat):
         dm_lifetime.array[:, idx_fts, idx['tra_passenger_lifetime'], idx['LDV'], idx[cat]] = 14
+dm_lifetime.array[:, idx_fts, idx['tra_passenger_lifetime'], idx['LDV'], idx['ICE-gasoline']] = 15
 # LDV: New technology like BEV and PHEV have lifetimes initially of 5.5, and the 13.5
 for cat in dm_lifetime.col_labels['Categories2']:
     if ("BEV" in cat) or ('FCEV' in cat):
