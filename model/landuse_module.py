@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Jun  6 15:11:12 2024
 
-@author: echiarot
-"""
 
 import pandas as pd
 
@@ -12,7 +8,7 @@ from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database_fxa, read_database_to_ots_fts_dict_w_groups, edit_database, database_to_df, dm_to_database
 from model.common.interface_class import Interface
-from model.common.auxiliary_functions import filter_geoscale, calibration_rates
+from model.common.auxiliary_functions import filter_geoscale, calibration_rates, create_years_list
 from model.common.auxiliary_functions import read_level_data, simulate_input
 from scipy.optimize import linprog
 import pickle
@@ -23,7 +19,7 @@ import time
 
 def init_years_lever():
     # function that can be used when running the module as standalone to initialise years and levers
-    years_setting = [1990, 2015, 2050, 5]
+    years_setting = [1990, 2015, 2020, 2050, 5]
     f = open('../config/lever_position.json')
     lever_setting = json.load(f)[0]
     return years_setting, lever_setting
@@ -489,7 +485,7 @@ def land_use_change_old(dm_need, dm_excess, dm_matrix):
     return dm_land_use_change
 
 # CalculationLeaf LAND USE MATRIX
-def land_matrix_workflow(DM_land_use):
+def land_matrix_workflow(DM_land_use, years_setting):
 
     # LAND USE INITIAL AREA --------------------------------------------------------------------------------------------
 
@@ -601,6 +597,18 @@ def land_matrix_workflow(DM_land_use):
                                          dim="Variables", out_col='lus_land_matrix', unit='ha')
 
     DM_land_use['land_matrix'].filter({'Variables': ['lus_land_matrix']}, inplace=True)
+
+    # Replace so that ots values are data and fts are computed
+
+    # dm = new data with lland matrix ots in [ha] from unfccc
+
+    #years_fts = create_years_list(years_setting[2], years_setting[3], years_setting[-1], astype=int)
+    #dm_temp = DM_land_use['land_matrix'].filter({'Years': years_fts}, inplace=False)
+    #idx = dm.idx
+    #idx_fts = [idx[y] for y in years_fts]
+    #dm.array[:, idx_fts, ...] = dm_temp
+
+
 
     return DM_land_use
 
@@ -931,7 +939,7 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
     # CalculationTree LAND USE
     dm_wood, dm_wood_TPE, df_cal_rates_wood = wood_workflow(DM_agr["wood"], DM_agr["lgn"], DM_ind, DM_land_use["cal_wood"])
     DM_land_use = land_allocation_workflow(DM_land_use, DM_agr["landuse"])
-    DM_land_use = land_matrix_workflow(DM_land_use)
+    DM_land_use = land_matrix_workflow(DM_land_use, years_setting)
     DM_land_use = land_carbon_dynamics_workflow(DM_land_use)
     DM_land_use = forestry_workflow(DM_land_use, dm_wood, DM_agr["landuse"])
     DM_land_use = forestry_biomass_emissions_workflow(DM_land_use, CDM_const)
