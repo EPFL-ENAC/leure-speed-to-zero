@@ -487,17 +487,17 @@ def rename_and_group(dm_new_cat, groups, dict_end, grouped_var='tra_total-energy
 
 
 def compute_stock_from_lifetime(dm_mode, dm_tech, var_names, years_setting):
-    # dm_mode contains the vehicle-fleet (fts)
+    # dm_mode contains the vehicle-fleet (fts) by mode (computed from demand, occupancy etc)
     # dm_tech contains: the tech-share of the vehicle fleet (ots), the new vehicles (ots), the vehicle waste (ots),
     #   the lifetime (fts), the tech-share of the new vehicles (fts), the efficiency of new (fts) and of the fleet (ots)
 
     # I need to do a for loop over the fts years (every year):
     #     - STEP0: fill_nans to have all the fts years
     #     - STEP1: compute waste(t) = new(t-lifetime) by tech
+    #     - STEPx: compute eff_w(t) = eff_n(t-lifetime) by tech
     #     - STEP2: compute new(t) = s(t) - s(t-1) + waste(t) by mode
     #     - STEP3: compute new(t) by tech (using new tech shares(t)
     #     - STEP4: compute s(t) = s(t-1) + new(t) - waste(t) by tech
-    #     - STEP5: compute eff_w(t) = eff_n(t-lifetime) by tech
     #     - STEP6: compute eff_s(t) = eff_s(t-1) * s(t-1) + eff_n(t) * new(t) + eff_w(t) * w(t)
 
     stock_col = var_names['stock']
@@ -547,17 +547,60 @@ def compute_stock_from_lifetime(dm_mode, dm_tech, var_names, years_setting):
         country_idx, cat1_idx, cat2_idx = np.indices(np.shape(tmlife))
         # Use advanced indexing to extract new(t-lifetime)
         new_tmlife = dm_tech.array[country_idx, idx_tmlife, idx_t[new_col], cat1_idx, cat2_idx]
+        # Sanity check
         # waste_t = min(new(t-lifetime), stock(t-1)), as the waste can't be higher than what you have in stock
         s_tm1 = dm_tech.array[:, idx_t[t - 1], idx_t[stock_col], :, :]
+        # check for new_tmlife > s_tm1 (you want to throw away cars but there aren't any left)
         waste_t = np.minimum(new_tmlife, s_tm1)
         dm_tech.array[:, idx_t[t], idx_t[waste_col], ...] = waste_t
 
+        # section STEPx: compute eff_w(t) =  waste(t) * eff_n(t-lifetime) + extra_waste(t) * (eff_s(t-1)*s_tm1 - eff_n(t-lifetime)  by tech
+        # This is wrong now
+        eff_new_tmlife = dm_tech.array[country_idx, idx_tmlife, idx_t[eff_new_col], cat1_idx, cat2_idx]
+        eff_waste_t = eff_new_tmlife.copy()
+        eff_stock_tm1 = dm_tech.array[:, idx_t[t-1], idx_t[eff_stock_col], :, :]
+        #if (eff_waste_t < 0).any():
+        #    print('Problem')
+        #if (eff_stock_tm1 < 0).any():
+        #    print('Problem')
+
+        # This is so that vehicle fleet matches the demand.
         # section STEP2: compute new(t) = s(t) - s(t-1) + waste(t) by mode
         waste_t_mode = np.nansum(waste_t, axis=-1)
         new_t_mode = dm_stock.array[:, idx_s[t], idx_s[stock_col], :] \
                      - dm_stock.array[:, idx_s[t-1], idx_s[stock_col], :] + waste_t_mode
+        # If the demand is drastically reduced, you need to throw away vehicles earlier than their lifetime
+        mask = new_t_mode < 0
+        if mask.any():
+            new_t_mode[mask] = 0
+            # delta_s[mask] is the new waste
+            delta_s = dm_stock.array[:, idx_s[t-1], idx_s[stock_col], :] \
+                    - dm_stock.array[:, idx_s[t], idx_s[stock_col], :]
+            extra_waste_mode = 0*waste_t_mode
+            extra_waste_mode[mask] = delta_s[mask] - waste_t_mode[mask]
+            waste_t_mode[mask] = delta_s[mask]
+            # assign the exrta waste based on the technology split of s_tm1 - waste_t
+            denominator = np.nansum((s_tm1 - waste_t), axis=-1, keepdims=True)
+            denominator[denominator == 0] = 1
+            tech_share_extra_waste = (s_tm1 - waste_t)/denominator
+            eff_extra_waste = eff_waste_t.copy()
+            mask2 = s_tm1 - waste_t > 0
+            eff_extra_waste[mask2] = (s_tm1[mask2] * eff_stock_tm1[mask2] - waste_t[mask2] * eff_waste_t[mask2])\
+                              /(s_tm1[mask2] - waste_t[mask2])
+            extra_waste_t = extra_waste_mode[..., np.newaxis] * tech_share_extra_waste
+            mask1 = waste_t + extra_waste_t > 0
+            eff_waste_t_tmp = eff_waste_t.copy()
+            eff_waste_t_tmp[mask1] = (waste_t[mask1] * eff_waste_t[mask1] + extra_waste_t[mask1] * eff_extra_waste[mask1])\
+                                     /(waste_t[mask1] + extra_waste_t[mask1])
+            eff_waste_t_tmp = np.maximum(eff_waste_t_tmp, np.minimum(eff_waste_t, extra_waste_t))
+            eff_waste_t_tmp  = np.minimum(eff_waste_t_tmp, np.maximum(eff_waste_t, extra_waste_t))
+            eff_waste_t = eff_waste_t_tmp
+            waste_t = waste_t + extra_waste_t
 
-        # section STEP3: compute new(t) by tech (using new tech shares(t)
+        #if (eff_waste_t < 0).any():
+        #    print('Problem')
+
+        # section STEP3: compute new(t) by tech (using new tech shares(t))
         new_t = new_t_mode[..., np.newaxis] * dm_tech.array[:, idx_t[t], idx_t[tech_new_col], :, :]
         dm_tech.array[:, idx_t[t], idx_t[new_col], :, :] = new_t
 
@@ -566,19 +609,19 @@ def compute_stock_from_lifetime(dm_mode, dm_tech, var_names, years_setting):
         dm_tech.array[:, idx_t[t], idx_t[stock_col], :, :] = s_t
         dm_tech.array[:, idx_t[t], idx_t[tech_stock_col], :, :] = s_t/np.nansum(s_t, axis=-1, keepdims=True)
 
-        # section STEP5: compute eff_w(t) = eff_n(t-lifetime) by tech
-        eff_new_tmlife = dm_tech.array[country_idx, idx_tmlife, idx_t[eff_new_col], cat1_idx, cat2_idx]
-        eff_waste_t = eff_new_tmlife
-
         # section STEP6: compute eff_s(t) = (eff_s(t-1) * s(t-1) + eff_n(t) * new(t) - eff_w(t) * w(t))/s(t)
-        eff_stock_tm1 = dm_tech.array[:, idx_t[t-1], idx_t[eff_stock_col], :, :]
         eff_new_t = dm_tech.array[:, idx_t[t], idx_t[eff_new_col], :, :]
         mask = s_t > 0
-        eff_stock_t = eff_stock_tm1  # If stock = 0 then eff(t) = eff(t-1)
+        eff_stock_t = eff_stock_tm1.copy()  # If stock = 0 then eff(t) = eff(t-1)
         eff_stock_t[mask] = (eff_stock_tm1[mask] * s_tm1[mask]
                              + eff_new_t[mask] * new_t[mask]
                              - eff_waste_t[mask] * waste_t[mask])/s_t[mask]
+        # The stock efficiency cannot be lower than the existing efficiency or the new efficiency
+        eff_stock_t = np.maximum(eff_stock_t, np.minimum(eff_new_t, eff_stock_tm1))
+        eff_stock_t = np.minimum(eff_stock_t, np.maximum(eff_new_t, eff_stock_tm1))
         dm_tech.array[:, idx_t[t], idx_t[eff_stock_col], :, :] = eff_stock_t
+        #if (eff_stock_t < 0).any():
+        #    print('Problem')
 
     dm_tech.filter({'Years': years_orig}, inplace=True)
 
@@ -1378,5 +1421,5 @@ def local_transport_run():
 #print('In transport, the share of waste by fuel/tech type does not seem right. Fix it.')
 #print('Apply technology shares before computing the stock')
 #print('For the efficiency, use the new methodology developped for Building (see overleaf on U-value)')
-#results_run = local_transport_run()
+# results_run = local_transport_run()
 
