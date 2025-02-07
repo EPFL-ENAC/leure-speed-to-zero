@@ -785,7 +785,7 @@ class DataMatrix:
         a1 = self.dim_labels.index(cat1)
         a2 = self.dim_labels.index(cat2)
         # Switch axis in array
-        self.array = np.moveaxis(self.array, a1, a2)
+        self.array = np.swapaxes(self.array, a1, a2)
         # Switch col_labels
         col1 = self.col_labels[cat1]
         col2 = self.col_labels[cat2]
