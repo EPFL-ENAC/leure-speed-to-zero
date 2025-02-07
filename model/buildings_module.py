@@ -220,7 +220,9 @@ def read_data(data_file, lever_setting):
 
     DM_energy = {'heating-efficiency': DM_ots_fts['heating-efficiency'],
                  'heating-technology': DM_ots_fts['heating-technology-fuel']['bld_heating-technology'],
-                 'heatcool-behaviour': DM_ots_fts['heatcool-behaviour']}
+                 'heatcool-behaviour': DM_ots_fts['heatcool-behaviour'],
+                 'heating-calibration': DM_buildings['fxa']['heating-energy-calibration'],
+                 'electricity-emission': DM_buildings['fxa']['emission-factor-electricity']}
 
     cdm_const = DM_buildings['constant']
 
@@ -550,6 +552,7 @@ def bld_energy_workflow(DM_energy, dm_clm, dm_floor_area, cdm_const):
                  * dm_Tint.array[:, :, idx_c['bld_HDD-adj'], :, :] * 24
     dm_floor_area.add(arr_energy, dim='Variables', col_label='bld_heating', unit='Wh')
     dm_floor_area.change_unit('bld_heating', 1e-3, 'Wh', 'kWh')
+
     # SECTION Energy demand = heating demand x tech x efficiency
     # Energy demand
     # heating demand x tech x efficiency
@@ -561,18 +564,25 @@ def bld_energy_workflow(DM_energy, dm_clm, dm_floor_area, cdm_const):
     arr = dm_floor_area.array[:, :, idx['bld_heating'], :, :, np.newaxis]\
           * dm_tech.array[:, :, idx_t['bld_heating-mix'], :, :, :]
     dm_energy = DataMatrix.based_on(arr[:, :, np.newaxis, ...], dm_floor_area,
-                                    change={'Variables': ['bld_heating'], 'Categories3': dm_eff.col_labels['Categories1']},
+                                    change={'Variables': ['bld_heating'], 'Categories3': dm_tech.col_labels['Categories3']},
                                     units={'bld_heating': 'kWh'})
     dm_energy.change_unit('bld_heating', 1e-9, 'kWh', 'TWh')
+
     idx = dm_energy.idx
     arr = dm_energy.array[:, :, idx['bld_heating'], :, :, :] /\
-          dm_eff.array[:, :, idx_e['bld_heating-efficiency'], np.newaxis, np.newaxis, :]
+          dm_eff.array[:, :, idx_e['bld_heating-efficiency'], np.newaxis, :, :]
     dm_energy.add(arr, dim='Variables', col_label='bld_energy-demand_heating', unit='TWh')
+
+    # SECTION Calibrate heating energy demand
+    dm_calib = DM_energy['heating-calibration']
+    dm_calib.sort('Categories1')
+    dm_energy.array[...] = dm_energy.array[...] * dm_calib.array[:, :, :, np.newaxis, np.newaxis, :]
+
     # write datamatrix to pickle
-    #current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    #f = os.path.join(current_file_directory, '../_database/pre_processing/buildings/Switzerland/data/heating_energy.pickle')
-    #with open(f, 'wb') as handle:
-    #    pickle.dump(dm_energy, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(current_file_directory, '../_database/pre_processing/buildings/Switzerland/data/heating_energy.pickle')
+    with open(f, 'wb') as handle:
+        pickle.dump(dm_energy, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     # SECTION Cooling
     # dC = gamma kC (24 CDD Us A − IG)
@@ -590,7 +600,7 @@ def bld_energy_workflow(DM_energy, dm_clm, dm_floor_area, cdm_const):
     # cooling demand x tech x efficiency (we assume the technology is the heat-pump)
     idx = dm_floor_area.idx
     arr = dm_floor_area.array[:, :, idx['bld_cooling'], :, :] \
-          / dm_eff.array[:, :, idx_e['bld_heating-efficiency'], np.newaxis, np.newaxis, idx_e['heat-pump']]
+          / dm_eff.array[:, :, idx_e['bld_heating-efficiency'], np.newaxis, :, idx_e['heat-pump']]
     idx = dm_energy.idx
     dm_energy.add(np.nan, dim='Variables', dummy=True, col_label='bld_energy-demand_cooling', unit='kWh')
     dm_energy.array[:, :, idx['bld_energy-demand_cooling'], :, :, idx['heat-pump']] = arr
@@ -605,7 +615,7 @@ def bld_energy_workflow(DM_energy, dm_clm, dm_floor_area, cdm_const):
     cdm_emission = cdm_const['emissions']
     dm_emissions = dm_energy.filter({'Categories3': cdm_emission.col_labels['Categories1'],
                                      'Variables': ['bld_energy-demand_heating']})
-    # Compute emissions
+    # Compute emissions fossil fuels
     dm_emissions.sort('Categories3')
     cdm_emission.sort('Categories1')
     idx = dm_emissions.idx
@@ -615,6 +625,22 @@ def bld_energy_workflow(DM_energy, dm_clm, dm_floor_area, cdm_const):
     dm_emissions.add(arr, dim='Variables', col_label='bld_CO2-emissions_heating', unit='kt')
     dm_emissions.change_unit('bld_CO2-emissions_heating', 1e-3, 'kt', 'Mt')
     dm_emissions.filter({'Variables': ['bld_CO2-emissions_heating']}, inplace=True)
+
+    # Compute emissions electricity and heat-pump
+    dm_elec = dm_energy.filter({'Categories3': ['electricity', 'heat-pump'],
+                                'Variables': ['bld_energy-demand_heating']})
+    dm_emis_elec = DM_energy['electricity-emission']
+    idx = dm_elec.idx
+    idx_e = dm_emis_elec.idx
+    arr = dm_elec.array[:, :, idx['bld_energy-demand_heating'], :, :, :] \
+          * dm_emis_elec.array[:, :, idx_e['bld_CO2-factor'], idx_e['electricity'], np.newaxis, np.newaxis, np.newaxis]
+    dm_elec.add(arr, dim='Variables', col_label='bld_CO2-emissions_heating', unit='kt')
+    dm_elec.change_unit('bld_CO2-emissions_heating', 1e-3, 'kt', 'Mt')
+    dm_elec.filter({'Variables': ['bld_CO2-emissions_heating']}, inplace=True)
+
+    # Join fossil and electricity
+    dm_emissions.append(dm_elec, dim='Categories3')
+
     dm_emiss_by_class = dm_emissions.group_all('Categories3', inplace=False)
     dm_emiss_by_class.group_all('Categories1')
     dm_emissions.group_all('Categories2')
@@ -1286,7 +1312,7 @@ def buildings_local_run():
     years_setting, lever_setting = init_years_lever()
     # Function to run only transport module without converter and tpe
 
-    global_vars = {'geoscale': 'Vaud'}
+    global_vars = {'geoscale': 'Switzerland'}
     filter_geoscale(global_vars)
 
     buildings(lever_setting, years_setting)
@@ -1294,4 +1320,4 @@ def buildings_local_run():
 
 
 # database_from_csv_to_datamatrix()
-# buildings_local_run()
+#buildings_local_run()
