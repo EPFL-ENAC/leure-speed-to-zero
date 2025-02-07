@@ -98,11 +98,11 @@
       "type": "StackedArea",
       "unit": "Mt",
       "outputs": [
-        "bld_CO2-emissions_heating_B[Mt]",
-        "bld_CO2-emissions_heating_C[Mt]",
-        "bld_CO2-emissions_heating_D[Mt]",
-        "bld_CO2-emissions_heating_E[Mt]",
-        "bld_CO2-emissions_heating_F[Mt]"
+        {"id":"bld_CO2-emissions_heating_B[Mt]", "color": "#388E3C"},
+        {"id":"bld_CO2-emissions_heating_C[Mt]", "color": "#8BC34A"},
+        {"id":"bld_CO2-emissions_heating_D[Mt]", "color": "#FBC02D"},
+        {"id":"bld_CO2-emissions_heating_E[Mt]", "color": "#F57C00"},
+        {"id":"bld_CO2-emissions_heating_F[Mt]", "color": "#D32F2F"}
       ]
     },
 	"GHGEmissionsPerCarrier": {
@@ -112,8 +112,8 @@
       "outputs": [
 		{"id":"bld_CO2-emissions_heating_solar[Mt]", "color": "#e4d354"},
         {"id":"bld_CO2-emissions_heating_other[Mt]", "color": "#f7a35c"},
-        {"id":"bld_CO2-emissions_heating_heat-pump[TWh]", "color": "#aee791"},
-		{"id":"bld_CO2-emissions_heating_district-heatTWh]", "color": "#f45b5b"},
+        {"id":"bld_CO2-emissions_heating_heat-pump[Mt]", "color": "#aee791"},
+		{"id":"bld_CO2-emissions_heating_district-heat[Mt]", "color": "#f45b5b"},
         {"id":"bld_CO2-emissions_heating_wood[Mt]", "color": "#5d4037"},
 		{"id":"bld_CO2-emissions_heating_gas[Mt]", "color": "#e4d354"},
 		{"id":"bld_CO2-emissions_heating_heating-oil[Mt]", "color": "#2b908f"},
