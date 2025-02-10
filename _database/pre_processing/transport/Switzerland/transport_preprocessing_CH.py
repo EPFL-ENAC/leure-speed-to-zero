@@ -1589,13 +1589,15 @@ new_tech_linear_fts = False
 new_tech_flat_fts = True
 
 ##### Population
-dict_lfs_ots, dict_lfs_fts = read_database_to_dm('lifestyles_population.csv', filter={'geoscale': ['Vaud', 'Switzerland']},
-                                    baseyear=years_ots[-1], num_cat=0, level='all')
-dm_pop = dict_lfs_ots['pop'].filter({'Variables': ['lfs_population_total']}, inplace=False)
-dm_pop.sort('Country')
-dm_pop_fts = dict_lfs_fts['pop'][1].filter({'Variables': ['lfs_population_total']}, inplace=False)
-del dict_lfs_ots, dict_lfs_fts
+file = '../../../data/datamatrix/lifestyles.pickle'
+with open(file, 'rb') as handle:
+    DM_lifestyles = pickle.load(handle)
 
+dm_pop = DM_lifestyles['ots']['pop']['lfs_population_'].copy()
+dm_pop.sort('Country')
+dm_pop.filter({'Country': ['Switzerland', 'Vaud']}, inplace=True)
+dm_pop_fts = DM_lifestyles['fts']['pop']['lfs_population_'][1].copy()
+dm_pop_fts.filter({'Country': ['Switzerland', 'Vaud']}, inplace=True)
 
 #################################
 ########    AVIATION    #########
@@ -2181,16 +2183,9 @@ DM_transport_new['constant'] = cdm_emissions_factors
 
 
 # LIFESTYLES - TRANSPORT  INTERFACE
-file = '../../../data/datamatrix/lifestyles.pickle'
-with open(file, 'rb') as handle:
-    DM_lifestyles = pickle.load(handle)
+dm_pop.append(dm_pop_fts, dim='Years')
 
-dm_pop_ots = DM_lifestyles['ots']['pop']['lfs_population_'].copy()
-dm_pop_fts = DM_lifestyles['fts']['pop']['lfs_population_'][1]
-
-dm_pop_ots.append(dm_pop_fts, dim='Years')
-
-DM_interface_lfs_to_tra = {'pop': dm_pop_ots}
+DM_interface_lfs_to_tra = {'pop': dm_pop}
 
 file = '../../../data/interface/lifestyles_to_transport.pickle'
 with open(file, 'wb') as handle:
