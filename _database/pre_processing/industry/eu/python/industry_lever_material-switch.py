@@ -50,9 +50,27 @@ for c in countries_oth:
             dm.array[idx[c],idx[y],idx[v]] = np.nan
 df = dm.write_df()
 
+# rename
+variabs = dm.col_labels["Variables"]
+for v in variabs:
+    dm.rename_col(v, "material-switch_" + v, "Variables")
+
 # save
+years_ots = list(range(1990,2023+1))
+years_fts = list(range(2025,2055,5))
+dm_ots = dm.filter({"Years" : years_ots})
+dm_fts = dm.filter({"Years" : years_fts})
+DM_fts = {1: dm_fts, 2: dm_fts, 3: dm_fts, 4: dm_fts} # for now we set all levels to be the same
+DM = {"ots" : dm_ots,
+      "fts" : DM_fts}
 f = os.path.join(current_file_directory, '../data/datamatrix/lever_material-switch.pickle')
 with open(f, 'wb') as handle:
-    pickle.dump(dm, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    pickle.dump(DM, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-
+# df = dm.write_df()
+# import pandas as pd
+# df_temp = pd.melt(df, id_vars = ['Country', 'Years'], var_name='variable')
+# df_temp = df_temp.loc[df_temp["Country"].isin(["Austria","France"]),:]
+# df_temp = df_temp.loc[df_temp["Years"]==1990,:]
+# name = "_temp.xlsx"
+# df_temp.to_excel("~/Desktop/" + name)
