@@ -2139,13 +2139,13 @@ def local_minerals_run():
     return results_run
 
 
-# run local
-#__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/minerals_module.py"
+# # run local
+# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/minerals_module.py"
 # database_from_csv_to_datamatrix()
-#import time
-#start = time.time()
+# import time
+# start = time.time()
 # results_run = local_minerals_run()
-#end = time.time()
-#print(end - start)
+# end = time.time()
+# print(end - start)
 
 
