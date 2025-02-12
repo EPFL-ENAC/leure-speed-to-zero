@@ -208,7 +208,7 @@ def filter_geoscale(global_vars):
             with open(join(mypath, file), 'rb') as handle:
                 DM_module = pickle.load(handle)
 
-            DM_module_geo = {'fxa': {}, 'fts': {}, 'ots': {}}
+            DM_module_geo = {'fxa': {}, 'fts': {}, 'ots': {}, 'calibration': {}, 'constant': {}}
 
             for key in DM_module.keys():
                 if key in ['fxa', 'calibration']:
