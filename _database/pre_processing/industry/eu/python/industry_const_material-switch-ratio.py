@@ -30,6 +30,9 @@ const = {
 # make cdm
 cdm = ConstantDataMatrix.create_from_constant(const, 0)
 
+# rename
+cdm.rename_col_regex("tec_", "", "Variables")
+
 # save
 f = os.path.join(current_file_directory, '../data/datamatrix/const_material-switch-ratios.pickle')
 with open(f, 'wb') as handle:
