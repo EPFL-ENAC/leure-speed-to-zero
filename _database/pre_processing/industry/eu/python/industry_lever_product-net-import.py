@@ -540,10 +540,10 @@ for v in variabs:
 dm_trade_netshare = fix_jumps_in_dm(dm_trade_netshare)
 
 # check
-# ['aluminium-pack', 'glass-pack', 'paper-pack', 'paper-print', 'paper-san', 'plastic-pack']
-# ['cars-EV', 'cars-FCV', 'cars-ICE', 'planes', 'ships', 'trains', 'trucks-EV', 'trucks-FCV', 'trucks-ICE']
-# ['computer', 'dishwasher', 'dryer', 'freezer', 'fridge', 'phone', 'tv', 'wmachine']
-# product = 'ships'
+['aluminium-pack', 'glass-pack', 'paper-pack', 'paper-print', 'paper-san', 'plastic-pack']
+['cars-EV', 'cars-FCV', 'cars-ICE', 'planes', 'ships', 'trains', 'trucks-EV', 'trucks-FCV', 'trucks-ICE']
+['computer', 'dishwasher', 'dryer', 'freezer', 'fridge', 'phone', 'tv', 'wmachine']
+product = 'trains'
 # DM_trade["tra-veh"].datamatrix_plot(selected_cols={"Country" : ["EU27"], 
 #                                                   "Variables" : ["product-export","product-import"],
 #                                                   "Categories1" : [product]})
@@ -558,11 +558,33 @@ dm_trade_netshare = fix_jumps_in_dm(dm_trade_netshare)
 #   DM_trade["domapp"].array[idx["EU27"],idx[1990],idx["product-export"],idx["phone"]])/
 #   DM_trade["domapp"].array[idx["EU27"],idx[1990],idx["product-demand"],idx["phone"]])
 
+# Should having values above and below, respectively, 1 and -1 be a problem? probably
+# it is if it's larger than 1, as it would mean that we are importing more than the demand ... the
+# only reason why that could be is that a the EU27 is importing just to re-export, though
+# I guess this is not the norm, and I would probably rule out this situation ...
+# on the other hand if it's less than -1 should be fine, as it would mean we are producing
+# more than the local demand, and the rest is exported.
+# for trains, we have values well above and below, respectively, 1 and -1.
+# For computers, we have values well above 1.
+# For dryer, we have values below -1 (gets to -3.5).
+# For freezer, fridge, phone, we have values well above 1.
+
+# Let's cap everything to max 1
+dm_trade_netshare.array[dm_trade_netshare.array>1]=1
+
+
 ################
 ##### SAVE #####
 ################
 
 # save
+years_ots = list(range(1990,2023+1))
+years_fts = list(range(2025,2055,5))
+dm_ots = dm_trade_netshare.filter({"Years" : years_ots})
+dm_fts = dm_trade_netshare.filter({"Years" : years_fts})
+DM_fts = {1: dm_fts, 2: dm_fts, 3: dm_fts, 4: dm_fts} # for now we set all levels to be the same
+DM = {"ots" : dm_ots,
+      "fts" : DM_fts}
 f = os.path.join(current_file_directory, '../data/datamatrix/lever_product-net-import.pickle')
 with open(f, 'wb') as handle:
-    pickle.dump(dm_trade_netshare, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    pickle.dump(DM, handle, protocol=pickle.HIGHEST_PROTOCOL)
