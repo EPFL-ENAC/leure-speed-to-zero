@@ -55,9 +55,18 @@ df = dm.write_df()
 # deepen
 dm.deepen()
 
+# split between ots and fts
+years_ots = list(range(1990,2023+1))
+years_fts = list(range(2025,2055,5))
+dm_ots = dm.filter({"Years" : years_ots})
+dm_fts = dm.filter({"Years" : years_fts})
+DM_fts = {1: dm_fts, 2: dm_fts, 3: dm_fts, 4: dm_fts} # for now we set all levels to be the same
+DM = {"ots" : dm_ots,
+      "fts" : DM_fts}
+
 # save
 f = os.path.join(current_file_directory, '../data/datamatrix/lever_material-efficiency.pickle')
 with open(f, 'wb') as handle:
-    pickle.dump(dm, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    pickle.dump(DM, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
