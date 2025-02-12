@@ -1023,6 +1023,10 @@ def end_of_life(dm_transport_waste, dm_waste_management, dm_matrec_veh,
 def material_production_by_technology(dm_technology_share, dm_material_production_bymat, 
                                       dm_material_recovered):
     
+    # TODO: new assumption is that the shares of aluminium-secondary and steel-scrap-EAF
+    # are all pre consumer. So we will subtract whatever recovered material from post consumer,
+    # and then we'll apply these percentages to whatever is left.
+    
     # create dm_material_production_bytech
     dm_material_production_bytech = dm_material_production_bymat.copy()
     names_present = dm_material_production_bytech.col_labels["Categories1"]
@@ -1356,6 +1360,9 @@ def apply_energy_switch(dm_energy_carrier_mix, dm_energy_demand_bytechcarr):
 
 def add_specific_energy_demands(dm_fxa_liquid, dm_energy_demand_bytechcarr, 
                                 dm_energy_demand_feedstock_bytechcarr, DM_energy_demand):
+    
+    # TODO: now the split between diesel and oil will come directly in the energy
+    # demand constants, so update this part of the code
     
     # get demand by material and carrier
     dm_energy_demand_bymatcarr = sum_over_techs(dm = dm_energy_demand_bytechcarr, 
@@ -2470,13 +2477,13 @@ def local_industry_run():
     # return
     return results_run
 
-# # run local
-# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module_new.py"
-# # database_from_csv_to_datamatrix()
-# start = time.time()
-# results_run = local_industry_run()
-# end = time.time()
-# print(end-start)
+# run local
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
+# database_from_csv_to_datamatrix()
+start = time.time()
+results_run = local_industry_run()
+end = time.time()
+print(end-start)
 
 
 
