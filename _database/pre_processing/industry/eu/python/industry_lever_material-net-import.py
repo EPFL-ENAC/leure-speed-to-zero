@@ -48,7 +48,7 @@ df_map_sub = df_map.filter(items=['prccode', 'calc_industry_material'])
 df_map_sub = df_map_sub.dropna()
 df_map_sub["calc_industry_material"].unique()
 materials = ['aluminium', 'ammonia', 'cement', 'chem', 'copper', 'glass', 'lime', 'paper', 'steel', 'timber',
-             'fbt', 'mae', 'ois', 'tra-equip', 'wwp']
+             'fbt', 'mae', 'ois', 'textiles', 'tra-equip', 'wwp']
 # note: 
 # for (food, beverages and tobacco), machinery equipment (mae)
 # transport equipment (tra-equip), textiles and leather (textiles), wood and wood products (wwp),
@@ -99,13 +99,14 @@ df_sub = pd.merge(df_sub, df_sub_unit.loc[:,keep], how="left", on=indexes)
 
 # fix unit
 df_sub["unit"].unique()
-old_unit = ['kg ', 'p/st ', 'l ', 'l alc 100% ', 'm3 ', 'm2 ', 'm ',
+df_sub["calc_industry_material"].unique()
+old_unit = ['kg ', 'p/st ', 'l ', 'l alc 100% ', 'm3 ', 'pa ', 'm2 ', 'm ',
             'kg TiO2 ', 'kg HCl ', 'kg P2O5 ', 'kg HF ', 'kg SiO2 ', 'kg SO2 ',
             'kg NaOH ', 'kg Al2O3 ', 'kg Cl ', 'kg Na2S2O5 ', 'kg Na2CO3 ',
             'kg B2O3 ', 'kg H2O2 ', 'g ', 'kg N ', 'kg act.subst ', 'km ',
             'c/k ', 'pa ', 'kg act. subst. ', 'kW ', 'l alc. 100% ', 'kg KOH ',
             'kg H2SO4 ', 'NA ', 'kg act.subst. ', 'kg F ']
-new_unit = ['kg', 'p/st', 'l', 'l alc 100%', 'm3', 'm2', 'm',
+new_unit = ['kg', 'p/st', 'l', 'l alc 100%', 'm3', 'pa', 'm2', 'm',
             'kg TiO2', 'kg HCl', 'kg P2O5', 'kg HF', 'kg SiO2', 'kg SO2',
             'kg NaOH', 'kg Al2O3', 'kg Cl', 'kg Na2S2O5', 'kg Na2CO3',
             'kg B2O3', 'kg H2O2', 'g', 'kg N', 'kg act.subst', 'km',
@@ -137,12 +138,12 @@ df_sub = df_sub.groupby(indexes, as_index=False)['value'].agg(sum)
 # keep right units
 df_sub["calc_industry_material"].unique()
 df_sub["unit"].unique()
-df_check = df_sub.loc[df_sub["calc_industry_material"] == "ammonia",:]
+df_check = df_sub.loc[df_sub["calc_industry_material"] == "textiles",:]
 df_check["unit"].unique()
 units_dict = {'aluminium' : ['kg'], 'ammonia' : ["kg N"], 'cement' : ["kg"], 
               'copper' : ['kg'], 'glass' : ['kg'], 
               'lime' : ['kg'], 'mae' : ['kg'], 'ois' : ['kg'],
-              'paper' : ['kg'], 'steel' : ['kg'], 
+              'paper' : ['kg'], 'steel' : ['kg'], "textiles" : ['kg'],
               'tra-equip' : ['kg']}
 # NOTE: for large groups of materials, we consider only kg, but 
 # we are missing other products in other categories (for example for ois, there are 
@@ -440,16 +441,18 @@ dm_trade_netshare.add(np.nan, col_label="ammonia", dummy=True, dim='Categories1'
 dm_trade_netshare.sort("Categories1")
 
 # # check
-# material = 'aluminium'
-# dm_mat.datamatrix_plot(selected_cols={"Country" : ["EU27"], 
-#                                                   "Variables" : ["material-export","material-import"],
-#                                                   "Categories1" : [material]})
-# dm_mat.datamatrix_plot(selected_cols={"Country" : ["EU27"], 
-#                                                   "Variables" : ["material-demand"],
-#                                                   "Categories1" : [material]})
+# material = 'timber'
+# # dm_mat.datamatrix_plot(selected_cols={"Country" : ["EU27"], 
+# #                                                   "Variables" : ["material-export","material-import"],
+# #                                                   "Categories1" : [material]})
+# # dm_mat.datamatrix_plot(selected_cols={"Country" : ["EU27"], 
+# #                                                   "Variables" : ["material-demand"],
+# #                                                   "Categories1" : [material]})
 # dm_trade_netshare.datamatrix_plot(selected_cols={"Country" : ["EU27"], 
 #                                                   "Variables" : ["material-net-import"],
 #                                                   "Categories1" : [material]})
+
+# NOTE: material-net-import is never above 1, so no correction is needed
 
 
 ####################################
@@ -505,7 +508,7 @@ dm_matprod.array = dm_matprod.array * 0.001
 dm_matprod.units["material-production"] = "t"
 
 # make fxa for non-modelled sectors
-dm_matprod_fxa = dm_matprod.filter({"Categories1" : ["fbt","mae","ois","tra-equip", "wwp"]})
+dm_matprod_fxa = dm_matprod.filter({"Categories1" : ["fbt","mae","ois","textiles","tra-equip", "wwp"]})
 
 # make calibration data
 dm_matprod_calib = dm_matprod.filter({"Years" : years_ots})
@@ -516,15 +519,24 @@ dm_matprod_calib = dm_matprod.filter({"Years" : years_ots})
 ##### SAVE #####
 ################
 
-# save
+# lever: trade net share
+years_ots = list(range(1990,2023+1))
+years_fts = list(range(2025,2055,5))
+dm_ots = dm_trade_netshare.filter({"Years" : years_ots})
+dm_fts = dm_trade_netshare.filter({"Years" : years_fts})
+DM_fts = {1: dm_fts, 2: dm_fts, 3: dm_fts, 4: dm_fts} # for now we set all levels to be the same
+DM = {"ots" : dm_ots,
+      "fts" : DM_fts}
 f = os.path.join(current_file_directory, '../data/datamatrix/lever_material-net-import.pickle')
 with open(f, 'wb') as handle:
-    pickle.dump(dm_trade_netshare, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    
+    pickle.dump(DM, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+# fxa material production
 f = os.path.join(current_file_directory, '../data/datamatrix/fxa_material-production.pickle')
 with open(f, 'wb') as handle:
     pickle.dump(dm_matprod_fxa, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    
+
+# calib material production
 f = os.path.join(current_file_directory, '../data/datamatrix/calibration_material-production.pickle')
 with open(f, 'wb') as handle:
     pickle.dump(dm_matprod_calib, handle, protocol=pickle.HIGHEST_PROTOCOL)
