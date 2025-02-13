@@ -1174,9 +1174,9 @@ def bld_industry_interface(DM_floor, dm_appliances, dm_pipes):
     dm_appliances.rename_col('comp', 'computer', dim='Categories1')
 
     DM_industry = {
-        'bld-pipe-demand': dm_pipes,
-        'bld-floor-demand': dm_constructed,
-        'bld-domapp-demand': dm_appliances
+        'bld-pipe': dm_pipes,
+        'bld-floor': dm_constructed,
+        'bld-domapp': dm_appliances
     }
 
     return DM_industry
@@ -1184,12 +1184,12 @@ def bld_industry_interface(DM_floor, dm_appliances, dm_pipes):
 
 def bld_minerals_interface(DM_industry, write_xls):
     # Pipe
-    dm_pipe = DM_industry['bld-pipe-demand'].copy()
+    dm_pipe = DM_industry['bld-pipe'].copy()
     dm_pipe.rename_col('bld_product-demand', 'product-demand', dim='Variables')
     dm_pipe.rename_col('new-dhg-pipe', 'infra-pipe', dim='Categories1')
 
     # Appliances
-    dm_appliances = DM_industry['bld-domapp-demand'].copy()
+    dm_appliances = DM_industry['bld-domapp'].copy()
     dm_appliances.rename_col('bld_product-demand', 'product-demand', dim='Variables')
     cols_in = ['dishwasher', 'dryer', 'freezer', 'fridge', 'wmachine', 'computer', 'phone', 'tv']
     cols_out = ['dom-appliance-dishwasher', 'dom-appliance-dryer', 'dom-appliance-freezer', 'dom-appliance-fridge',
@@ -1199,7 +1199,7 @@ def bld_minerals_interface(DM_industry, write_xls):
     dm_appliances.filter_w_regex({'Categories1': 'dom-appliance.*'}, inplace=True)
 
     # Floor
-    dm_floor = DM_industry['bld-floor-demand'].copy()
+    dm_floor = DM_industry['bld-floor'].copy()
     dm_floor.rename_col('bld_product-demand', 'product-demand', dim='Variables')
 
     DM_minerals = {
