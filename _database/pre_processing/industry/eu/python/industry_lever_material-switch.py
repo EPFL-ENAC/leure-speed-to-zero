@@ -54,6 +54,7 @@ df = dm.write_df()
 variabs = dm.col_labels["Variables"]
 for v in variabs:
     dm.rename_col(v, "material-switch_" + v, "Variables")
+dm.deepen()
 
 # save
 years_ots = list(range(1990,2023+1))
