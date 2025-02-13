@@ -433,10 +433,44 @@ idx = dm_elv_tot.idx
 arr_temp = dm_elv_tot.array[idx["Germany"],:,:]
 dm_elv_tot.add(arr_temp[np.newaxis,...], dim = "Country", col_label = "United Kingdom")
 
+# create industry products for vehicles (use same rates for all products)
+products = ['cars-EV', 'cars-FCV', 'cars-ICE', 'trucks-EV', 'trucks-FCV', 'trucks-ICE']
+
+dm_temp = dm_elv_tot.copy()
+variabs = dm_temp.col_labels["Variables"]
+for v in variabs:
+    dm_temp.rename_col(v, products[0] + "_" + v, "Variables")
+dm_temp.deepen()
+dm_elv_tot_new = dm_temp.copy()
+for i in range(1, len(products)):
+    dm_temp = dm_elv_tot.copy()
+    variabs = dm_temp.col_labels["Variables"]
+    for v in variabs:
+        dm_temp.rename_col(v, products[i] + "_" + v, "Variables")
+    dm_temp.deepen()
+    dm_elv_tot_new.append(dm_temp, "Variables")
+dm_elv_tot = dm_elv_tot_new.copy()
+
+dm_temp = dm_elv_col.copy()
+variabs = dm_temp.col_labels["Variables"]
+for v in variabs:
+    dm_temp.rename_col(v, products[0] + "_" + v, "Variables")
+dm_temp.deepen()
+dm_elv_col_new = dm_temp.copy()
+for i in range(1, len(products)):
+    dm_temp = dm_elv_col.copy()
+    variabs = dm_temp.col_labels["Variables"]
+    for v in variabs:
+        dm_temp.rename_col(v, products[i] + "_" + v, "Variables")
+    dm_temp.deepen()
+    dm_elv_col_new.append(dm_temp, "Variables")
+dm_elv_col = dm_elv_col_new.copy()
+
 # clean
 del arr_temp, baseyear, baseyear_end, baseyear_start, c, countries, dm_elv,\
     dm_temp, idx, lastyear, startyear, step_fts, v, years_all, \
-    years_fts, years_ots, years_setting, y
+    years_fts, years_ots, years_setting, y, dm_elv_col_new, dm_elv_tot_new, \
+    products, i, variabs
 
 ################
 ##### SAVE #####
@@ -1395,30 +1429,32 @@ del dm_pack_tot, dm_pack_col
 ################### RENAME VARIABLES ###################
 ########################################################
 
-# rename elv
-variabs = ['waste-collected', 'export', 'waste-uncollected', 'littered']
-for v in variabs:
-    DM_wst_mgt["elv-total"].rename_col(v,"waste-mgt_elv_" + v,"Variables")
-DM_wst_mgt["elv-total"].deepen()
-variabs = ['energy-recovery', 'incineration', 'landfill', 'recycling', 'reuse']
-for v in variabs:
-    DM_wst_mgt["elv-col"].rename_col(v,"waste-mgt_elv_" + v,"Variables")
-DM_wst_mgt["elv-col"].deepen()
+# # rename elv
+# variabs = ['waste-collected', 'export', 'waste-uncollected', 'littered']
+# for v in variabs:
+#     DM_wst_mgt["elv-total"].rename_col(v,"waste-mgt_elv_" + v,"Variables")
+# DM_wst_mgt["elv-total"].deepen()
+# variabs = ['energy-recovery', 'incineration', 'landfill', 'recycling', 'reuse']
+# for v in variabs:
+#     DM_wst_mgt["elv-col"].rename_col(v,"waste-mgt_elv_" + v,"Variables")
+# DM_wst_mgt["elv-col"].deepen()
 
-# rename rest
-DM_wst_mgt["domapp-total"].rename_col("domapp","waste-mgt_domapp","Variables")
-DM_wst_mgt["domapp-col"].rename_col("domapp","waste-mgt_domapp","Variables")
-DM_wst_mgt["electronics-total"].rename_col("electronics","waste-mgt_electronics","Variables")
-DM_wst_mgt["electronics-col"].rename_col("electronics","waste-mgt_electronics","Variables")
-variabs = ['aluminium-pack', 'glass-pack', 'paper-pack', 'plastic-pack']
-for v in variabs:
-    DM_wst_mgt["pack-total"].rename_col(v,"waste-mgt_" + v,"Variables")
-    DM_wst_mgt["pack-col"].rename_col(v,"waste-mgt_" + v,"Variables")
+# # rename rest
+# DM_wst_mgt["domapp-total"].rename_col("domapp","waste-mgt_domapp","Variables")
+# DM_wst_mgt["domapp-col"].rename_col("domapp","waste-mgt_domapp","Variables")
+# DM_wst_mgt["electronics-total"].rename_col("electronics","waste-mgt_electronics","Variables")
+# DM_wst_mgt["electronics-col"].rename_col("electronics","waste-mgt_electronics","Variables")
+# variabs = ['aluminium-pack', 'glass-pack', 'paper-pack', 'plastic-pack']
+# for v in variabs:
+#     DM_wst_mgt["pack-total"].rename_col(v,"waste-mgt_" + v,"Variables")
+#     DM_wst_mgt["pack-col"].rename_col(v,"waste-mgt_" + v,"Variables")
 
 # order
 keys = ['elv-total','elv-col','domapp-total','domapp-col','electronics-total','electronics-col','pack-total','pack-col']
 for k in keys:
+    DM_wst_mgt[k].sort("Variables")
     DM_wst_mgt[k].sort("Categories1")
+
 
 # keys = ['elv-total','elv-col','domapp-total','domapp-col','electronics-total','electronics-col','pack-total','pack-col']
 # for k in keys:
