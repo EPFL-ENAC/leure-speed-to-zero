@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+Created on Thu Jun  6 15:11:12 2024
 
+@author: echiarot
+"""
 
 import pandas as pd
 
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
-from model.common.io_database import read_database_fxa, read_database_to_ots_fts_dict_w_groups, edit_database, database_to_df, dm_to_database
+from model.common.io_database import read_database_fxa, read_database_to_ots_fts_dict_w_groups, edit_database
 from model.common.interface_class import Interface
-from model.common.auxiliary_functions import filter_geoscale, calibration_rates, create_years_list
+from model.common.auxiliary_functions import filter_geoscale
 from model.common.auxiliary_functions import read_level_data, simulate_input
 from scipy.optimize import linprog
 import pickle
@@ -19,7 +23,7 @@ import time
 
 def init_years_lever():
     # function that can be used when running the module as standalone to initialise years and levers
-    years_setting = [1990, 2015, 2020, 2050, 5]
+    years_setting = [1990, 2015, 2050, 5]
     f = open('../config/lever_position.json')
     lever_setting = json.load(f)[0]
     return years_setting, lever_setting
@@ -103,20 +107,18 @@ def database_from_csv_to_datamatrix():
                                                                 column='eucalc-name',
                                                                 group_list=['agr_climate-smart-forestry.*'])
 
-    # CalibrationDataToDatamatrix
+    #######################
+    ##### CALIBRATION #####
+    #######################
 
-    # Data - Calibration
-    file = '/Users/crosnier/Documents/PathwayCalc/_database/data/csv/land-use_calibration.csv'
-    lever = 'none'
-    df_db = pd.read_csv(file)
-    df_ots, df_fts = database_to_df(df_db, lever, level='all')
-    df_ots = df_ots.drop(columns=['none'])  # Drop column 'none'
-    dm_cal = DataMatrix.create_from_df(df_ots, num_cat=0)
+    # # Read calibration
+    # df = read_database_fxa('industry_calibration')
+    # dm_cal = DataMatrix.create_from_df(df, num_cat=0)
 
-    # Data - Fixed assumptions - Calibration factors - Wood
-    dm_cal_wood = dm_cal.filter_w_regex({'Variables': 'cal_lus_fst_demand_rwe.*'})
-    dm_cal_wood.deepen(based_on='Variables')
-    dict_fxa['cal_wood'] = dm_cal_wood
+    #####################
+    ##### CONSTANTS #####
+    #####################
+    # ConstantsToDatamatrix
 
     # get constants
     cdm_const = ConstantDataMatrix.extract_constant('interactions_constants',
@@ -147,7 +149,7 @@ def database_from_csv_to_datamatrix():
     # Levers pre-processing --------------------------------------------------------------------------------------------
 
     # Dropping variable that creates a problem (we only need the structure of the matrix 6x6)
-    #DM_landuse['ots']['land-man']['agr_land-man_matrix'].drop(dim='Variables', col_label=['agr_land-man_matrix'])
+    DM_landuse['ots']['land-man']['agr_land-man_matrix'].drop(dim='Variables', col_label=['agr_land-man_matrix'])
 
     # Land matrix OTS
     DM_landuse['ots']['land-man']['agr_land-man_matrix'].rename_col_regex(str1="agr_land-man_matrix", str2="agr_matrix",
@@ -214,9 +216,6 @@ def read_data(data_file, lever_setting):
     dm_fxa_forestry = DM_landuse['fxa']['agr_climate-smart-forestry']
     dm_forestry.append(dm_fxa_forestry, dim='Variables')
 
-    # Calibration
-    dm_cal_wood = DM_landuse['fxa']['cal_wood']
-
     # Aggregated Data Matrix - LAND USE
     DM_land_use = {
         'land_man_use': dm_land_man_use,
@@ -228,8 +227,7 @@ def read_data(data_file, lever_setting):
         'land_soil-type' : dm_soil_type,
         'crop_ef_agroforestry': dm_agroforestry_crop,
         'liv_ef_agroforestry': dm_agroforestry_liv,
-        'forestry': dm_forestry,
-        'cal_wood': dm_cal_wood
+        'forestry': dm_forestry
     }
 
     CDM_const = DM_landuse['constant']
@@ -238,7 +236,7 @@ def read_data(data_file, lever_setting):
     return DM_ots_fts, DM_land_use, CDM_const
 
 # CalculationLeaf WOOD
-def wood_workflow(dm_wood, dm_lgn, DM_ind, dm_cal_wood):
+def wood_workflow(dm_wood, dm_lgn, DM_ind):
     # WOOD FUEL DEMAND  ------------------------------------------------------------------------------------------------
     # Unit conversion : bioenergy biomass demand [kcal] => [TWh]
     dm_lgn.add(0.00000000000116222, dummy=True, col_label='kcal_to_TWh', dim='Variables', unit='TWh')
@@ -267,8 +265,8 @@ def wood_workflow(dm_wood, dm_lgn, DM_ind, dm_cal_wood):
     # Unit conversion : Wood-fuel demand [TWh] => [m3]
     dm_wood.add(174420.0, dummy=True, col_label='TWh_to_cubic_m', dim='Variables', unit='m3')
     dm_wood.operation('lus_fst_demand_rwe_wood-fuel_temp', '*', 'TWh_to_cubic_m',
-                      out_col='lus_fst_demand_rwe_raw_wood-fuel', unit='m3')
-    dm_wood = dm_wood.filter({'Variables': ['lus_fst_demand_rwe_raw_wood-fuel']})
+                      out_col='lus_fst_demand_rwe_wood-fuel', unit='m3')
+    dm_wood = dm_wood.filter({'Variables': ['lus_fst_demand_rwe_wood-fuel']})
 
     # WOOD PRODUCT CONVERSION ------------------------------------------------------------------------------------------
     # Timber, Woodpulp & Biomaterial from Industry module : Unit conversion to m3 and renaming
@@ -277,24 +275,24 @@ def wood_workflow(dm_wood, dm_lgn, DM_ind, dm_cal_wood):
     dm_timber.rename_col('ind_material-production_timber', 'lus_fst_demand_rwe_ind-sawlog_temp', dim='Variables')
     dm_timber.add(1500.0, dummy=True, col_label='kt_to_cubic_m', dim='Variables', unit='m3')
     dm_timber.operation('lus_fst_demand_rwe_ind-sawlog_temp', '*', 'kt_to_cubic_m',
-                        out_col='lus_fst_demand_rwe_raw_ind-sawlog', unit='m3')
-    dm_timber = dm_timber.filter({'Variables': ['lus_fst_demand_rwe_raw_ind-sawlog']})
+                        out_col='lus_fst_demand_rwe_ind-sawlog', unit='m3')
+    dm_timber = dm_timber.filter({'Variables': ['lus_fst_demand_rwe_ind-sawlog']})
 
     # Woodpulp
     dm_woodpulp = DM_ind["woodpulp"].copy()
     dm_woodpulp.rename_col('ind_material-production_paper_woodpulp', 'lus_fst_demand_rwe_pulp_temp', dim='Variables')
     dm_woodpulp.add(4500000.0, dummy=True, col_label='Mt_to_cubic_m', dim='Variables', unit='m3')
     dm_woodpulp.operation('lus_fst_demand_rwe_pulp_temp', '*', 'Mt_to_cubic_m',
-                          out_col='lus_fst_demand_rwe_raw_pulp', unit='m3')
-    dm_woodpulp = dm_woodpulp.filter({'Variables': ['lus_fst_demand_rwe_raw_pulp']})
+                          out_col='lus_fst_demand_rwe_pulp', unit='m3')
+    dm_woodpulp = dm_woodpulp.filter({'Variables': ['lus_fst_demand_rwe_pulp']})
 
     # Biomaterial
     dm_biomaterial = DM_ind["biomaterial"].copy()
     dm_biomaterial.rename_col('ind_biomaterial_solid-bio', 'lus_fst_demand_rwe_oth-ind-wood_temp', dim='Variables')
     dm_biomaterial.add(174420.0, dummy=True, col_label='TWh_to_cubic_m', dim='Variables', unit='m3')
     dm_biomaterial.operation('lus_fst_demand_rwe_oth-ind-wood_temp', '*', 'TWh_to_cubic_m',
-                             out_col='lus_fst_demand_rwe_raw_oth-ind-wood', unit='m3')
-    dm_biomaterial = dm_biomaterial.filter({'Variables': ['lus_fst_demand_rwe_raw_oth-ind-wood']})
+                             out_col='lus_fst_demand_rwe_oth-ind-wood', unit='m3')
+    dm_biomaterial = dm_biomaterial.filter({'Variables': ['lus_fst_demand_rwe_oth-ind-wood']})
 
     # Appending to dm_wood & deepen
     dm_wood.append(dm_timber, dim='Variables')
@@ -302,23 +300,15 @@ def wood_workflow(dm_wood, dm_lgn, DM_ind, dm_cal_wood):
     dm_wood.append(dm_biomaterial, dim='Variables')
     dm_wood.deepen()
 
+    # Creating a copy for the TPE
+    dm_wood_TPE = dm_wood.copy()
+
     # Total wood demand [m3] = Wood-fuel demand + Timber + Woodpulp + Wood for other uses
-    dm_wood_total = dm_wood.copy()
-    dm_wood_total.groupby({'total': '.*'}, dim='Categories1', regex=True, inplace=True)
-    dm_wood.append(dm_wood_total, dim='Categories1')
+    dm_wood.groupby({'total': '.*'}, dim='Categories1', regex=True, inplace=True)
 
     # Calibration Wood demand
-    dm_cal_rates_wood = calibration_rates(dm_wood, dm_cal_wood, calibration_start_year=1990,
-                                         calibration_end_year=2015, years_setting=[1990, 2015, 2050, 5])
-    dm_wood.append(dm_cal_rates_wood, dim='Variables')
-    dm_wood.operation('lus_fst_demand_rwe_raw', '*', 'cal_rate', dim='Variables',
-                     out_col='lus_fst_demand_rwe', unit='m3')
-    df_cal_rates_wood = dm_to_database(dm_cal_rates_wood, 'none', 'agriculture', level=0)
 
-    # Creating a copy for the TPE
-    dm_wood_TPE = dm_wood.filter({'Variables': ['lus_fst_demand_rwe']}).copy()
-
-    return dm_wood, dm_wood_TPE, df_cal_rates_wood
+    return dm_wood, dm_wood_TPE
 
 # CalculationLeaf LAND ALLOCATION
 def land_allocation_workflow(DM_land_use, dm_land_use):
@@ -485,7 +475,7 @@ def land_use_change_old(dm_need, dm_excess, dm_matrix):
     return dm_land_use_change
 
 # CalculationLeaf LAND USE MATRIX
-def land_matrix_workflow(DM_land_use, years_setting):
+def land_matrix_workflow(DM_land_use):
 
     # LAND USE INITIAL AREA --------------------------------------------------------------------------------------------
 
@@ -597,18 +587,6 @@ def land_matrix_workflow(DM_land_use, years_setting):
                                          dim="Variables", out_col='lus_land_matrix', unit='ha')
 
     DM_land_use['land_matrix'].filter({'Variables': ['lus_land_matrix']}, inplace=True)
-
-    # Replace so that ots values are data and fts are computed
-
-    # dm = new data with lland matrix ots in [ha] from unfccc
-
-    #years_fts = create_years_list(years_setting[2], years_setting[3], years_setting[-1], astype=int)
-    #dm_temp = DM_land_use['land_matrix'].filter({'Years': years_fts}, inplace=False)
-    #idx = dm.idx
-    #idx_fts = [idx[y] for y in years_fts]
-    #dm.array[:, idx_fts, ...] = dm_temp
-
-
 
     return DM_land_use
 
@@ -937,9 +915,9 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
             DM_agr[key].filter({'Country': cntr_list}, inplace=True)
 
     # CalculationTree LAND USE
-    dm_wood, dm_wood_TPE, df_cal_rates_wood = wood_workflow(DM_agr["wood"], DM_agr["lgn"], DM_ind, DM_land_use["cal_wood"])
+    dm_wood, dm_wood_TPE = wood_workflow(DM_agr["wood"], DM_agr["lgn"], DM_ind)
     DM_land_use = land_allocation_workflow(DM_land_use, DM_agr["landuse"])
-    DM_land_use = land_matrix_workflow(DM_land_use, years_setting)
+    DM_land_use = land_matrix_workflow(DM_land_use)
     DM_land_use = land_carbon_dynamics_workflow(DM_land_use)
     DM_land_use = forestry_workflow(DM_land_use, dm_wood, DM_agr["landuse"])
     DM_land_use = forestry_biomass_emissions_workflow(DM_land_use, CDM_const)
@@ -974,7 +952,7 @@ def land_use_local_run():
 #__file__ = "/Users/crosnier/DocumentsPathwayCalc/model/landuse_module.py"
 #database_from_csv_to_datamatrix()
 #start = time.time()
-results_run = local_land_use_run()
+#results_run = local_land_use_run()
 #end = time.time()
 #print(end-start)
 

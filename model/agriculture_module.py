@@ -2,10 +2,10 @@ import pandas as pd
 
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
-from model.common.io_database import read_database, read_database_fxa, edit_database, database_to_df, dm_to_database
+from model.common.io_database import read_database, read_database_fxa, edit_database
 from model.common.io_database import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups
 from model.common.interface_class import Interface
-from model.common.auxiliary_functions import compute_stock,  filter_geoscale, calibration_rates
+from model.common.auxiliary_functions import compute_stock,  filter_geoscale
 from model.common.auxiliary_functions import read_level_data, simulate_input
 from scipy.optimize import linprog
 import pickle
@@ -130,101 +130,116 @@ def database_from_csv_to_datamatrix():
 
 
 
-    # CalibrationDataToDatamatrix
-
-    # Data - Calibration
-    file = '/Users/crosnier/Documents/PathwayCalc/_database/data/csv/agriculture_calibration.csv'
+    # CalibrationFactorsToDatamatrix
+    # Data - Fixed assumptions
+    file = 'agriculture_calibration-factors'
     lever = 'none'
-    df_db = pd.read_csv(file)
-    df_ots, df_fts = database_to_df(df_db, lever, level='all')
-    df_ots = df_ots.drop(columns=['none']) # Drop column 'none'
-    dm_cal = DataMatrix.create_from_df(df_ots, num_cat=0)
-
-    # Data - Fixed assumptions - Calibration factors - Diet
-    dm_cal_diet = dm_cal.filter_w_regex({'Variables': 'cal_agr_diet.*'})
-    dm_cal_diet.deepen(based_on='Variables')
-    dict_fxa['cal_diet'] = dm_cal_diet
-
-    # Data - Fixed assumptions - Calibration factors - Food waste
-    #dm_cal_food_waste = dm_cal.filter_w_regex({'Variables': 'cal_agr_food-wastes.*'})
-    #dm_cal_food_waste.deepen(based_on='Variables')
-    #dict_fxa['cal_food_waste'] = dm_cal_food_waste
+    # Renaming to correct format : Calibration factors - Livestock domestic production
+    #edit_database(file, lever, column='eucalc-name', mode='rename', pattern={'production_liv': 'production-liv',
+    #                                                                         'abp_': 'abp-', 'meat_': 'meat-',
+     #                                                                        'liv-population_liv-population': 'liv-population'})
+    # Renaming to correct format : Calibration factors - Livestock CH4 emissions
+    #edit_database(file, lever, column='eucalc-name', mode='rename', pattern={'enteric_meat-bovine': 'meat-bovine_enteric',
+    #                                                                         'enteric_meat-oth-animals': 'meat-oth-animals_enteric',
+    #                                                                         'enteric_meat-pig': 'meat-pig_enteric',
+    #                                                                         'enteric_meat-poultry': 'meat-poultry_enteric',
+    #                                                                         'enteric_meat-sheep': 'meat-sheep_enteric',
+    #                                                                         'enteric_abp-dairy-milk': 'abp-dairy-milk_enteric',
+    #                                                                         'enteric_abp-hens-egg': 'abp-hens-egg_enteric'})
+    #edit_database(file, lever, column='eucalc-name', mode='rename',
+    #              pattern={'treated_meat-bovine': 'meat-bovine_treated',
+    #                       'treated_meat-oth-animals': 'meat-oth-animals_treated',
+    #                       'treated_meat-pig': 'meat-pig_treated',
+    #                       'treated_meat-poultry': 'meat-poultry_treated',
+    #                       'treated_meat-sheep': 'meat-sheep_treated',
+    #                       'treated_abp-dairy-milk': 'abp-dairy-milk_treated',
+    #                       'treated_abp-hens-egg': 'abp-hens-egg_treated',
+    ##                       'meat-abp': 'abp'})
+    #edit_database(file, lever, column='eucalc-name', mode='rename', pattern={'processed_': 'processed-',
+    #                                                                        'feed_crop_':'feed_crop-',
+    #                                                                        'feed_liv_':'feed_liv-'})
+    #edit_database(file, lever, column='eucalc-name', mode='rename', pattern={'bioenergy-liquid_': 'bioenergy-liquid-',
+    #                                                                        'bioenergy-gas_':'bioenergy-gas-'})
+    #carefule creates bugs do not use edit_database(file, lever, column='eucalc-name', mode='rename', pattern={'caf_agr_emissions-': 'caf_agr_emissions_'})
 
     # Data - Fixed assumptions - Calibration factors - Livestock domestic production
-    dm_cal_liv_dom_prod = dm_cal.filter_w_regex({'Variables': 'cal_agr_domestic-production-liv.*'})
-    dm_cal_liv_dom_prod.deepen(based_on='Variables')
-    dict_fxa['cal_agr_domestic-production-liv'] = dm_cal_liv_dom_prod
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_domestic-production-liv.*'})
+    dm_caf_liv_dom_prod = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['caf_agr_domestic-production-liv'] = dm_caf_liv_dom_prod
 
     # Data - Fixed assumptions - Calibration factors - Livestock population
-    dm_cal_liv_pop = dm_cal.filter_w_regex({'Variables': 'cal_agr_liv-population.*'})
-    dm_cal_liv_pop.deepen(based_on='Variables')
-    dict_fxa['cal_agr_liv-population'] = dm_cal_liv_pop
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_liv-population.*'})
+    dm_caf_liv_pop = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['caf_agr_liv-population'] = dm_caf_liv_pop
 
     # Data - Fixed assumptions - Calibration factors - Livestock CH4 emissions
-    dm_cal_liv_CH4 = dm_cal.filter_w_regex({'Variables': 'cal_agr_liv_CH4-emission.*'})
-    dm_cal_liv_CH4.deepen(based_on='Variables')
-    dm_cal_liv_CH4.deepen(based_on='Variables')
-    dict_fxa['cal_agr_liv_CH4-emission'] = dm_cal_liv_CH4
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_liv_CH4-emission.*'})
+    dm_caf_liv_CH4 = DataMatrix.create_from_df(df, num_cat=2)
+    dict_fxa['caf_agr_liv_CH4-emission'] = dm_caf_liv_CH4
+
 
     # Data - Fixed assumptions - Calibration factors - Livestock N2O emissions
-    dm_cal_liv_N2O = dm_cal.filter_w_regex({'Variables': 'cal_agr_liv_N2O-emission.*'})
-    dm_cal_liv_N2O.deepen(based_on='Variables')
-    dm_cal_liv_N2O.deepen(based_on='Variables')
-    dict_fxa['cal_agr_liv_N2O-emission'] = dm_cal_liv_N2O
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_liv_N2O-emission.*'})
+    dm_caf_liv_N2O = DataMatrix.create_from_df(df, num_cat=2)
+    dict_fxa['caf_agr_liv_N2O-emission'] = dm_caf_liv_N2O
 
     # Data - Fixed assumptions - Calibration factors - Feed demand
-    dm_cal_feed = dm_cal.filter_w_regex({'Variables': 'cal_agr_demand_feed.*'})
-    dm_cal_feed.deepen(based_on='Variables')
-    dict_fxa['cal_agr_demand_feed'] = dm_cal_feed
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_demand_feed.*'})
+    dm_caf_feed = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['caf_agr_demand_feed'] = dm_caf_feed
 
     # Data - Fixed assumptions - Calibration factors - Crop production
-    dm_cal_crop = dm_cal.filter_w_regex({'Variables': 'cal_agr_domestic-production_food.*'})
-    dm_cal_crop.deepen(based_on='Variables')
-    dict_fxa['cal_agr_domestic-production_food'] = dm_cal_crop
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_domestic-production_food.*'})
+    dm_caf_crop = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['caf_agr_domestic-production_food'] = dm_caf_crop
 
     # Data - Fixed assumptions - Calibration factors - Land
-    dm_cal_land = dm_cal.filter_w_regex({'Variables': 'cal_agr_lus_land.*'})
-    dm_cal_land.deepen(based_on='Variables')
-    dict_fxa['cal_agr_lus_land'] = dm_cal_land
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_lus_land.*'})
+    dm_caf_land = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['caf_agr_lus_land'] = dm_caf_land
 
     # Data - Fixed assumptions - Calibration factors - Nitrogen balance
-    dm_cal_n = dm_cal.filter_w_regex({'Variables': 'cal_agr_crop_emission_N2O-emission_fertilizer.*'})
-    dict_fxa['cal_agr_crop_emission_N2O-emission_fertilizer'] = dm_cal_n
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_crop_emission_N2O-emission_fertilizer.*'})
+    dm_caf_n = DataMatrix.create_from_df(df, num_cat=0)
+    dict_fxa['caf_agr_crop_emission_N2O-emission_fertilizer'] = dm_caf_n
 
     # Data - Fixed assumptions - Calibration factors - Energy demand for agricultural land
-    dm_cal_energy_demand = dm_cal.filter_w_regex({'Variables': 'cal_agr_energy-demand.*'})
-    dm_cal_energy_demand.deepen(based_on='Variables')
-    dict_fxa['cal_agr_energy-demand'] = dm_cal_energy_demand
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_energy-demand.*'})
+    dm_caf_energy_demand = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['caf_agr_energy-demand'] = dm_caf_energy_demand
 
     # Data - Fixed assumptions - Calibration factors - Agricultural emissions total (CH4, N2O, CO2)
-    dm_cal_CH4 = dm_cal.filter_w_regex({'Variables': 'cal_agr_emissions-CH4'})
-    dict_fxa['cal_agr_emissions_CH4'] = dm_cal_CH4
-    dm_cal_N2O = dm_cal.filter_w_regex({'Variables': 'cal_agr_emissions-N2O'})
-    dict_fxa['cal_agr_emissions_N2O'] = dm_cal_N2O
-    dm_cal_CO2 = dm_cal.filter_w_regex({'Variables': 'cal_agr_emissions-CO2'})
-    dict_fxa['cal_agr_emissions_CO2'] = dm_cal_CO2
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_emissions-CH4'})
+    dm_caf_CH4 = DataMatrix.create_from_df(df, num_cat=0)
+    dict_fxa['caf_agr_emissions_CH4'] = dm_caf_CH4
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_emissions-N2O'})
+    dm_caf_N2O = DataMatrix.create_from_df(df, num_cat=0)
+    dict_fxa['caf_agr_emissions_N2O'] = dm_caf_N2O
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_emissions-CO2'})
+    dm_caf_CO2 = DataMatrix.create_from_df(df, num_cat=0)
+    dict_fxa['caf_agr_emissions_CO2'] = dm_caf_CO2
 
     # Data - Fixed assumptions - Calibration factors - CO2 emissions (fuel, liming, urea)
-    dm_cal_input = dm_cal.filter_w_regex({'Variables': 'cal_agr_input-use_emissions-CO2.*'})
-    dm_cal_input.deepen(based_on='Variables')
-    dict_fxa['cal_agr_input-use_emissions-CO2'] = dm_cal_input
+    df = read_database_fxa(file, filter_dict={'eucalc-name': 'caf_agr_input-use_emissions-CO2.*'})
+    dm_caf_input = DataMatrix.create_from_df(df, num_cat=1)
+    dict_fxa['caf_agr_input-use_emissions-CO2'] = dm_caf_input
+
 
     # Create a dictionnay with all the fixed assumptions
     dict_fxa = {
-        'cal_agr_diet': dm_cal_diet,
-        'cal_agr_domestic-production-liv': dm_cal_liv_dom_prod,
-        'cal_agr_liv-population': dm_cal_liv_pop,
-        'cal_agr_liv_CH4-emission': dm_cal_liv_CH4,
-        'cal_agr_liv_N2O-emission': dm_cal_liv_N2O,
-        'cal_agr_domestic-production_food': dm_cal_crop,
-        'cal_agr_demand_feed': dm_cal_feed,
-        'cal_agr_lus_land': dm_cal_land,
-        'cal_agr_crop_emission_N2O-emission_fertilizer': dm_cal_n,
-        'cal_agr_emission_CH4': dm_cal_CH4,
-        'cal_agr_emission_N2O': dm_cal_N2O,
-        'cal_agr_emission_CO2': dm_cal_CO2,
-        'cal_agr_energy-demand': dm_cal_energy_demand,
-        'cal_input': dm_cal_input,
+        'caf_agr_domestic-production-liv': dm_caf_liv_dom_prod,
+        'caf_agr_liv-population': dm_caf_liv_pop,
+        'caf_agr_liv_CH4-emission': dm_caf_liv_CH4,
+        'caf_agr_liv_N2O-emission': dm_caf_liv_N2O,
+        'caf_agr_domestic-production_food': dm_caf_crop,
+        'caf_agr_demand_feed': dm_caf_feed,
+        'caf_agr_lus_land': dm_caf_land,
+        'caf_agr_crop_emission_N2O-emission_fertilizer': dm_caf_n,
+        'caf_agr_emission_CH4': dm_caf_CH4,
+        'caf_agr_emission_N2O': dm_caf_N2O,
+        'caf_agr_emission_CO2': dm_caf_CO2,
+        'caf_agr_energy-demand': dm_caf_energy_demand,
+        'caf_input': dm_caf_input,
         'ef_liv_N2O-emission': dm_ef_N2O,
         'ef_liv_CH4-emission_treated': dm_ef_CH4,
         'liv_manure_n-stock': dm_nstock,
@@ -250,39 +265,7 @@ def database_from_csv_to_datamatrix():
     dict_ots = {}
     dict_fts = {}
 
-    # [TUTORIAL] Data - Lever - Population
-    #file = 'lifestyles_population'  # File name to read
-    #lever = 'pop'  # Lever name to match the JSON?
-
-    # Creates the datamatrix for lifestyles population
-    #dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 0, 0], baseyear=baseyear,
-    #                                                            years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
-    #                                                            column='eucalc-name',
-    #                                                            group_list=['lfs_demography_.*',
-    #                                                                        'lfs_macro-scenarii_.*',
-    #                                                                        'lfs_population_.*'])
-
-
-    # Data - Lever - Diet
-    file = 'lifestyles_diet'
-    lever = 'diet'
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1], baseyear=baseyear,
-                                                                years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
-                                                                column='eucalc-name',
-                                                                group_list=['lfs_consumers-diet_.*', 'share_.*'])
-
-    # Data - Lever - Energy requirements
-    file = 'lifestyles_energy-requirement'
-    lever = 'kcal-req'
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=0, baseyear=baseyear,
-                                                       years=years_all, dict_ots=dict_ots, dict_fts=dict_fts)
-    # Data - Lever - Food wastes
-    file = 'lifestyles_food-wastes'
-    lever = 'fwaste'
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1, baseyear=baseyear,
-                                                       years=years_all, dict_ots=dict_ots, dict_fts=dict_fts)
-
-    # Data - Lever - self-sufficiency
+    # Read self-sufficiency
     file = 'agriculture_self-sufficiency'
     lever = 'food-net-import'
     # Rename to correct format
@@ -291,7 +274,7 @@ def database_from_csv_to_datamatrix():
     dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1, baseyear=baseyear, years=years_all,
                                                            dict_ots=dict_ots, dict_fts=dict_fts)
 
-    # Data - Lever - climate smart livestock
+    # Read climate smart livestock
     file = 'agriculture_climate-smart-livestock'
     lever = 'climate-smart-livestock'
     #edit_database(file,lever,column='eucalc-name',pattern={'_CH4-emission':''},mode='rename')
@@ -304,7 +287,7 @@ def database_from_csv_to_datamatrix():
                                                                             'climate-smart-livestock_enteric.*', 'climate-smart-livestock_manure.*',
                                                                             'climate-smart-livestock_ration.*', 'agr_climate-smart-livestock_ef_agroforestry.*'])
 
-    # Data - Lever - biomass hierarchy
+    # Read biomass hierarchy
     file = 'agriculture_biomass-use-hierarchy'
     lever = 'biomass-hierarchy'
     # Rename to correct format
@@ -323,7 +306,7 @@ def database_from_csv_to_datamatrix():
                                                                             'biomass-hierarchy_bioenergy_liquid_biojetkerosene.*',
                                                                             'biomass-hierarchy_crop_cereal.*'])
 
-    # Data - Lever - bioenergy capacity
+    # Read bioenergy capacity
     file = 'agriculture_bioenergy-capacity'
     lever = 'bioenergy-capacity'
     # Rename to correct format
@@ -334,7 +317,7 @@ def database_from_csv_to_datamatrix():
                                                                 group_list=['bioenergy-capacity_load-factor.*', 'bioenergy-capacity_bgs-mix.*',
                                                                             'bioenergy-capacity_efficiency.*', 'bioenergy-capacity_liq_b.*', 'bioenergy-capacity_elec.*'])
 
-    # Data - Lever - livestock protein meals
+    # Read livestock protein meals
     file = 'agriculture_livestock-protein-meals'
     lever = 'alt-protein'
     #edit_database(file,lever,column='eucalc-name',pattern={'meat_':'meat-', 'abp_':'abp-'},mode='rename')
@@ -344,7 +327,7 @@ def database_from_csv_to_datamatrix():
                                                                 column='eucalc-name',
                                                                 group_list=['agr_alt-protein.*'])
 
-    # Data - Lever - climate smart crop
+    # Read climate smart crop
     file = 'agriculture_climate-smart-crop'
     lever = 'climate-smart-crop'
     #edit_database(file,lever,column='eucalc-name',pattern={'meat_':'meat-', 'abp_':'abp-'},mode='rename')
@@ -365,17 +348,13 @@ def database_from_csv_to_datamatrix():
     # ConstantsToDatamatrix
     # Data - Read Constants (use 'xx|xx|xx' to add)
     cdm_const = ConstantDataMatrix.extract_constant('interactions_constants',
-                                                    pattern='cp_time_days-per-year.*|cp_ibp_liv_.*_brf_fdk_afat|cp_ibp_liv_.*_brf_fdk_offal|cp_ibp_bev_.*|cp_liquid_tec.*|cp_load_hours|cp_ibp_aps_insect.*|cp_ibp_aps_algae.*|cp_efficiency_liv.*|cp_ibp_processed.*|cp_ef_urea.*|cp_ef_liming|cp_emission-factor_CO2.*',
+                                                    pattern='cp_ibp_liv_.*_brf_fdk_afat|cp_ibp_liv_.*_brf_fdk_offal|cp_ibp_bev_.*|cp_liquid_tec.*|cp_load_hours|cp_ibp_aps_insect.*|cp_ibp_aps_algae.*|cp_efficiency_liv.*|cp_ibp_processed.*|cp_ef_urea.*|cp_ef_liming|cp_emission-factor_CO2.*',
                                                     num_cat=0)
 
 
     # Constant pre-processing ------------------------------------------------------------------------------------------
     # Creating a dictionnay with contants
     dict_const = {}
-
-    # Time per year
-    cdm_lifestyle = cdm_const.filter({'Variables': ['cp_time_days-per-year']})
-    dict_const['cdm_lifestyle'] = cdm_lifestyle
 
     # Filter ibp constants for offal
     cdm_cp_ibp_offal = cdm_const.filter_w_regex({'Variables': 'cp_ibp_liv_.*_brf_fdk_offal'})
@@ -474,7 +453,7 @@ def database_from_csv_to_datamatrix():
     cdm_CO2.deepen()
     dict_const['cdm_CO2'] = cdm_CO2
 
-    # Electricity
+    # Eectricity
     cdm_load = cdm_const.filter({'Variables': ['cp_load_hours-per-year-twh']})
     dict_const['cdm_load'] = cdm_load
 
@@ -503,10 +482,10 @@ def database_from_csv_to_datamatrix():
     DM_agriculture['fxa']['ef_burnt-residues'].deepen()
 
     # caf GHG emissions
-    DM_agriculture['fxa']['cal_agr_emission_CH4'].append(DM_agriculture['fxa']['cal_agr_emission_N2O'], dim='Variables')
-    DM_agriculture['fxa']['cal_agr_emission_CH4'].append(DM_agriculture['fxa']['cal_agr_emission_CO2'], dim='Variables')
-    DM_agriculture['fxa']['cal_agr_emission_CH4'].rename_col_regex(str1='cal_agr_emissions-', str2='cal_agr_emissions_', dim='Variables')
-    DM_agriculture['fxa']['cal_agr_emission_CH4'].deepen()
+    DM_agriculture['fxa']['caf_agr_emission_CH4'].append(DM_agriculture['fxa']['caf_agr_emission_N2O'], dim='Variables')
+    DM_agriculture['fxa']['caf_agr_emission_CH4'].append(DM_agriculture['fxa']['caf_agr_emission_CO2'], dim='Variables')
+    DM_agriculture['fxa']['caf_agr_emission_CH4'].rename_col_regex(str1='caf_agr_emissions-', str2='caf_agr_emissions_', dim='Variables')
+    DM_agriculture['fxa']['caf_agr_emission_CH4'].deepen()
 
     # write datamatrix to pickle
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -526,26 +505,16 @@ def read_data(data_file, lever_setting):
     DM_ots_fts = read_level_data(DM_agriculture, lever_setting)
 
     # FXA data matrix
-    dm_fxa_cal_diet = DM_agriculture['fxa']['cal_agr_diet']
-    dm_fxa_cal_liv_prod = DM_agriculture['fxa']['cal_agr_domestic-production-liv']
-    dm_fxa_cal_liv_pop = DM_agriculture['fxa']['cal_agr_liv-population']
-    dm_fxa_cal_liv_CH4 = DM_agriculture['fxa']['cal_agr_liv_CH4-emission']
-    dm_fxa_cal_liv_N2O = DM_agriculture['fxa']['cal_agr_liv_N2O-emission']
-    dm_fxa_cal_demand_feed = DM_agriculture['fxa']['cal_agr_demand_feed']
-    #dm_fxa_cal_land = DM_agriculture['fxa']['cal_agr_lus_land']
+    dm_fxa_caf_liv_prod = DM_agriculture['fxa']['caf_agr_domestic-production-liv']
+    dm_fxa_caf_liv_pop = DM_agriculture['fxa']['caf_agr_liv-population']
+    dm_fxa_caf_liv_CH4 = DM_agriculture['fxa']['caf_agr_liv_CH4-emission']
+    dm_fxa_caf_liv_N2O = DM_agriculture['fxa']['caf_agr_liv_N2O-emission']
+    dm_fxa_caf_demand_feed = DM_agriculture['fxa']['caf_agr_demand_feed']
     dm_fxa_ef_liv_N2O = DM_agriculture['fxa']['ef_liv_N2O-emission']
     dm_fxa_ef_liv_CH4_treated = DM_agriculture['fxa']['ef_liv_CH4-emission_treated']
     dm_fxa_liv_nstock = DM_agriculture['fxa']['liv_manure_n-stock']
 
     # Extract sub-data-matrices according to the flow
-    # Sub-matrix for LIFESTYLE
-    #dm_demography = DM_ots_fts['pop']['lfs_demography_']
-    dm_diet_requirement = DM_ots_fts['kcal-req']
-    dm_diet_split = DM_ots_fts['diet']['lfs_consumers-diet_']
-    dm_diet_share = DM_ots_fts['diet']['share_']
-    dm_diet_fwaste = DM_ots_fts['fwaste']
-    #dm_population = DM_ots_fts['pop']['lfs_population_']
-
     # Sub-matrix for the FOOD DEMAND
     dm_food_net_import_pro = DM_ots_fts['food-net-import'].filter_w_regex({'Categories1': 'pro-.*', 'Variables': 'agr_food-net-import'})
 
@@ -589,12 +558,12 @@ def read_data(data_file, lever_setting):
     dm_crop.append(dm_food_net_import_crop, dim='Variables')
     dm_residues_yield = DM_agriculture['fxa']['residues_yield']
     dm_hierarchy_residues_cereals = DM_ots_fts['biomass-hierarchy']['biomass-hierarchy_crop_cereal']
-    dm_cal_crop = DM_agriculture['fxa']['cal_agr_domestic-production_food']
-    #dm_crop.append(dm_cal_crop, dim='Variables')
+    dm_caf_crop = DM_agriculture['fxa']['caf_agr_domestic-production_food']
+    dm_crop.append(dm_caf_crop, dim='Variables')
     dm_ef_residues = DM_agriculture['fxa']['ef_burnt-residues']
 
     # Sub-matrix for LAND
-    dm_cal_land = DM_agriculture['fxa']['cal_agr_lus_land']
+    dm_caf_land = DM_agriculture['fxa']['caf_agr_lus_land']
     dm_yield = DM_ots_fts['climate-smart-crop']['climate-smart-crop_yield']
     dm_fibers = DM_agriculture['fxa']['fibers']
     dm_rice = DM_agriculture['fxa']['rice']
@@ -602,34 +571,24 @@ def read_data(data_file, lever_setting):
     # Sub-matrix for NITROGEN BALANCE
     dm_input = DM_ots_fts['climate-smart-crop']['agr_climate-smart-crop_input-use']
     dm_fertilizer_emission = DM_agriculture['fxa']['agr_emission_fertilizer']
-    dm_cal_n = DM_agriculture['fxa']['cal_agr_crop_emission_N2O-emission_fertilizer']
-    #dm_fertilizer_emission.append(dm_cal_n, dim='Variables')
+    dm_caf_n = DM_agriculture['fxa']['caf_agr_crop_emission_N2O-emission_fertilizer']
+    dm_fertilizer_emission.append(dm_caf_n, dim='Variables')
 
     # Sub-matrix for ENERGY & GHG EMISSIONS
-    dm_cal_energy_demand = DM_agriculture['fxa']['cal_agr_energy-demand']
+    dm_caf_energy_demand = DM_agriculture['fxa']['caf_agr_energy-demand']
     dm_energy_demand = DM_ots_fts['climate-smart-crop']['agr_climate-smart-crop_energy-demand']
-    dm_cal_GHG = DM_agriculture['fxa']['cal_agr_emission_CH4']
-    dm_cal_input = DM_agriculture['fxa']['cal_input']
+    dm_caf_GHG = DM_agriculture['fxa']['caf_agr_emission_CH4']
+    dm_caf_input = DM_agriculture['fxa']['caf_input']
 
     # Aggregated Data Matrix - ENERGY & GHG EMISSIONS
     DM_energy_ghg = {
         'energy_demand': dm_energy_demand,
-        'cal_energy_demand': dm_cal_energy_demand,
-        'cal_input': dm_cal_input,
-        'cal_GHG': dm_cal_GHG
+        'caf_energy_demand': dm_caf_energy_demand,
+        'caf_input': dm_caf_input,
+        'GHG': dm_caf_GHG
     }
 
-    # Aggregate Data Matrix - LIFESTYLE
-    DM_lifestyle = {
-        'energy-requirement': dm_diet_requirement,
-        'diet-split': dm_diet_split,
-        'diet-share': dm_diet_share,
-        'diet-fwaste': dm_diet_fwaste,
-        #'demography': dm_demography,
-        #'population': dm_population,
-        'cal_diet': dm_fxa_cal_diet
-    }
-
+    # Aggregate datamatrix by theme/flow
     # Aggregated Data Matrix - FOOD DEMAND
     DM_food_demand = {
         'food-net-import-pro': dm_food_net_import_pro
@@ -640,8 +599,8 @@ def read_data(data_file, lever_setting):
         'losses': dm_livestock_losses,
         'yield': dm_livestock_yield,
         'liv_slaughtered_rate': dm_livestock_slaughtered,
-        'cal_liv_prod': dm_fxa_cal_liv_prod,
-        'cal_liv_population': dm_fxa_cal_liv_pop,
+        'caf_liv_prod': dm_fxa_caf_liv_prod,
+        'caf_liv_population': dm_fxa_caf_liv_pop,
         'ruminant_density': dm_livestock_density
     }
 
@@ -667,8 +626,8 @@ def read_data(data_file, lever_setting):
     DM_manure = {
         'enteric_emission': dm_livestock_enteric_emissions,
         'manure': dm_livestock_manure,
-        'cal_liv_CH4': dm_fxa_cal_liv_CH4,
-        'cal_liv_N2O': dm_fxa_cal_liv_N2O,
+        'caf_liv_CH4': dm_fxa_caf_liv_CH4,
+        'caf_liv_N2O': dm_fxa_caf_liv_N2O,
         'ef_liv_N2O': dm_fxa_ef_liv_N2O ,
         'ef_liv_CH4_treated': dm_fxa_ef_liv_CH4_treated,
         'liv_n-stock': dm_fxa_liv_nstock
@@ -678,13 +637,12 @@ def read_data(data_file, lever_setting):
     DM_feed = {
         'ration': dm_ration,
         'alt-protein': dm_alt_protein,
-        'cal_agr_demand_feed': dm_fxa_cal_demand_feed
+        'caf_agr_demand_feed': dm_fxa_caf_demand_feed
     }
 
     # Aggregated Data Matrix - CROP
     DM_crop = {
         'crop': dm_crop,
-        'cal_crop': dm_cal_crop,
         'ef_residues': dm_ef_residues,
         'residues_yield': dm_residues_yield,
         'hierarchy_residues_cereals': dm_hierarchy_residues_cereals
@@ -693,7 +651,7 @@ def read_data(data_file, lever_setting):
 
     # Aggregated Data Matrix - LAND
     DM_land = {
-        'cal_land': dm_cal_land,
+        'land': dm_caf_land,
         'yield': dm_yield,
         'fibers': dm_fibers,
         'rice': dm_rice
@@ -702,14 +660,13 @@ def read_data(data_file, lever_setting):
     # Aggregated Data Matrix - NITROGEN BALANCE
     DM_nitrogen = {
         'input': dm_input,
-        'emissions': dm_fertilizer_emission,
-        'cal_n': dm_cal_n
+        'emissions': dm_fertilizer_emission
     }
 
 
     CDM_const = DM_agriculture['constant']
 
-    return DM_ots_fts, DM_lifestyle, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, CDM_const
+    return DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, CDM_const
 
 # SimulateInteractions
 def simulate_lifestyles_to_agriculture_input():
@@ -717,13 +674,7 @@ def simulate_lifestyles_to_agriculture_input():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     f = os.path.join(current_file_directory, "../_database/data/xls/All-Countries-interface_from-lifestyles-to-agriculture_EUCALC.xlsx")
     df = pd.read_excel(f, sheet_name="default")
-    df_population = df.copy()
-    df = df.drop(columns=['lfs_population_total[inhabitants]'])
     dm_lfs = DataMatrix.create_from_df(df, num_cat=1)
-
-    # Read input from lifestyle : population
-    df_population = df_population[['Years', 'Country', 'lfs_population_total[inhabitants]']] # keep only population
-    dm_population = DataMatrix.create_from_df(df_population, num_cat=0)
 
     # other way to do the step before but does not add it to the dm
     #idx = dm_lfs.idx
@@ -786,8 +737,7 @@ def simulate_lifestyles_to_agriculture_input():
 
     dm_lfs.sort('Categories1')
 
-
-    return dm_population
+    return dm_lfs
 
 def simulate_buildings_to_agriculture_input():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -829,91 +779,6 @@ def simulate_transport_to_agriculture_input():
     dm_tra = DataMatrix.create_from_df(df, num_cat=1)
 
     return dm_tra
-
-# CalculationLeaf LIFESTYLE TO DIET/FOOD DEMAND --------------------------------------------------------------
-def lifestyle_workflow(DM_lifestyle, dm_population, CDM_const):
-    # Total kcal consumed
-    dm_diet_split = DM_lifestyle['diet-split']
-    ay_diet_intake = dm_diet_split.array[:, :, 0, :].sum(axis=-1)
-
-    # [TUTORIAL] Gap from healthy diet (Tree Parallel)
-    dm_diet_requirement = DM_lifestyle['energy-requirement']
-    dm_diet_requirement.add(ay_diet_intake, dim='Variables', col_label='lfs_energy-intake_total', unit='kcal/cap/day')
-    dm_diet_requirement.operation('lfs_kcal-req_req', '-', 'lfs_energy-intake_total',
-                                  dim="Variables", out_col='lfs_healthy-gap', unit='kcal/cap/day')
-
-    #dm_population = DM_lifestyle['population']
-    idx_p = dm_population.idx
-    # [TUTORIAL] Consumer diet (operation with matrices with different structure/array specs)
-    dm_diet_share = DM_lifestyle['diet-share']
-    idx = dm_diet_requirement.idx
-    ay_diet_consumers = dm_diet_share.array[:, :, 0, :] * dm_diet_requirement.array[:, :, idx['lfs_healthy-gap'],
-                                                          np.newaxis]
-    dm_diet_share.add(ay_diet_consumers, dim='Variables', col_label='lfs_consumers-diet', unit='kcal/cap/day')
-    idx_d = dm_diet_share.idx
-    # Calculate ay_total_diet
-    ay_total_diet = dm_diet_share.array[:, :, idx_d['lfs_consumers-diet'], :] * \
-                    dm_population.array[:, :, idx_p['lfs_population_total'], np.newaxis] * 365
-    start = time.time()
-    dm_diet_tmp = DataMatrix.based_on(ay_total_diet[:, :, np.newaxis, :], dm_diet_share,
-                                      change={'Variables': ['lfs_diet_raw']}, units={'lfs_diet_raw': 'kcal'})
-
-    # Total Consumers food wastes
-    dm_diet_fwaste = DM_lifestyle['diet-fwaste']
-    cdm_lifestyle = CDM_const['cdm_lifestyle']
-    idx = dm_population.idx
-    idx_const = cdm_lifestyle.idx
-    ay_total_fwaste = dm_diet_fwaste.array[:, :, 0, :] * dm_population.array[:, :, idx['lfs_population_total'],
-                                                         np.newaxis] \
-                      * cdm_lifestyle.array[idx_const['cp_time_days-per-year']]
-    dm_diet_fwaste.add(ay_total_fwaste, dim='Variables', col_label='lfs_food-wastes', unit='kcal') # to bypass calibration data missing
-    # dm_diet_fwaste.add(ay_total_fwaste, dim='Variables', col_label='lfs_food-wastes_raw', unit='kcal')
-
-    # Total Consumers food supply (Total food intake)
-    ay_total_food = dm_diet_split.array[:, :, 0, :] * dm_population.array[:, :, idx['lfs_population_total'], np.newaxis] \
-                    * cdm_lifestyle.array[idx_const['cp_time_days-per-year']]
-    dm_diet_food = DataMatrix.based_on(ay_total_food[:, :, np.newaxis, :], dm_diet_split,
-                                       change={'Variables': ['lfs_diet_raw']}, units={'lfs_diet_raw': 'kcal'})
-    # Calibration factors
-    dm_cal_diet = DM_lifestyle['cal_diet']
-    # Add dummy caf for afats and rice
-    #dm_cal_diet.add(1, dummy=True, col_label=['afats', 'rice'], dim='Categories1')
-
-    # Calibration - Food supply
-    dm_diet_food.append(dm_diet_tmp, dim='Categories1')
-    dm_cal_rates_diet = calibration_rates(dm_diet_food, dm_cal_diet, calibration_start_year=1990, calibration_end_year=2015,
-                      years_setting=[1990, 2015, 2050, 5])
-    dm_diet_food.append(dm_cal_rates_diet, dim='Variables')
-    dm_diet_food.operation('lfs_diet_raw', '*', 'cal_rate', dim='Variables', out_col='lfs_diet', unit='kcal')
-    df_cal_rates_diet = dm_to_database(dm_cal_rates_diet, 'none', 'agriculture', level=0) # Exporting calibration rates to check at the end
-
-    # Calibration - Food wastes
-    #dm_diet_fwaste.append(dm_fxa_caf_food, dim='Variables')
-    #dm_diet_fwaste.operation('lfs_food-wastes_raw', '*', 'caf_lfs_food-wastes',
-    #                         dim="Variables", out_col='lfs_food-wastes', unit='kcal')
-    #dm_diet_fwaste.filter({'Variables': ['lfs_food-wastes']}, inplace=True)
-
-    # Data to return to the TPE
-    dm_diet_food.append(dm_diet_fwaste, dim='Variables')
-
-    #Create copy
-    dm_lfs = dm_diet_food.copy()
-
-    # Format for same categories as rest Agriculture module
-    cat_lfs = ['afats', 'beer', 'bev-alc', 'bev-fer', 'bov', 'cereals', 'coffee', 'dfish', 'egg', 'ffish', 'fruits', \
-               'milk', 'offal', 'oilcrops', 'oth-animals', 'oth-aq-animals', 'pfish', 'pigs', 'poultry', 'pulses',
-               'rice', 'seafood', 'sheep', 'starch', 'stm', 'sugar', 'sweet', 'veg', 'voil', 'wine']
-    cat_agr = ['pro-liv-abp-processed-afat', 'pro-bev-beer', 'pro-bev-bev-alc', 'pro-bev-bev-fer', 'pro-liv-meat-bovine',
-               'crop-cereal', 'coffee', 'dfish', 'pro-liv-abp-hens-egg', 'ffish', 'crop-fruit', 'pro-liv-abp-dairy-milk',
-               'pro-liv-abp-processed-offal', 'crop-oilcrop', 'pro-liv-meat-oth-animals', 'oth-aq-animals', 'pfish',
-               'pro-liv-meat-pig', 'pro-liv-meat-poultry', 'crop-pulse', 'rice', 'seafood', 'pro-liv-meat-sheep',
-               'crop-starch', 'stm', 'pro-crop-processed-sugar', 'pro-crop-processed-sweet', 'crop-veg',
-               'pro-crop-processed-voil', 'pro-bev-wine']
-
-    dm_lfs.rename_col(cat_lfs, cat_agr, 'Categories1')
-    dm_lfs.sort('Categories1')
-
-    return dm_lfs, df_cal_rates_diet
 
 # CalculationLeaf FOOD DEMAND TO DOMESTIC FOOD PRODUCTION --------------------------------------------------------------
 def food_demand_workflow(DM_food_demand, dm_lfs):
@@ -969,58 +834,49 @@ def livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro):
 
     # Livestock domestic prod with losses [kcal] = livestock domestic prod [kcal] * Production losses livestock [%]
     DM_livestock['losses'].operation('agr_climate-smart-livestock_losses', '*', 'agr_domestic_production',
-                                     out_col='agr_domestic_production_liv_afw_raw', unit='kcal')
+                                     out_col='agr_domestic_production_liv_afw', unit='kcal')
 
-    # Calibration - Livestock domestic production
-    dm_cal_liv_prod = DM_livestock['cal_liv_prod']
-    dm_liv_prod = DM_livestock['losses'].filter({'Variables': ['agr_domestic_production_liv_afw_raw']})
+    # Calibration Livestock domestic production
+    dm_liv_prod = DM_livestock['losses'].filter({'Variables': ['agr_domestic_production_liv_afw']})
     dm_liv_prod.drop(dim='Categories1', col_label=['abp-processed-offal',
                                                    'abp-processed-afat'])  # Filter dm_liv_prod to drop offal & afats
-    dm_cal_rates_liv_prod = calibration_rates(dm_liv_prod, dm_cal_liv_prod, calibration_start_year=1990,
-                                          calibration_end_year=2015, years_setting=[1990, 2015, 2050, 5])
-    dm_liv_prod.append(dm_cal_rates_liv_prod, dim='Variables')
-    dm_liv_prod.operation('agr_domestic_production_liv_afw_raw', '*', 'cal_rate', dim='Variables', out_col='agr_domestic_production_liv_afw', unit='kcal')
-    df_cal_rates_liv_prod = dm_to_database(dm_cal_rates_liv_prod, 'none', 'agriculture', level=0)
+    DM_livestock['caf_liv_prod'].append(dm_liv_prod, dim='Variables')  # Append to caf
+    DM_livestock['caf_liv_prod'].operation('caf_agr_domestic-production-liv', '*', 'agr_domestic_production_liv_afw',
+                                           # Calibrate
+                                           dim="Variables", out_col='cal_agr_domestic_production_liv_afw', unit='kcal')
 
-    #DM_livestock['cal_liv_prod'].append(dm_cal_rates_liv_prod, dim='Variables')
-    #DM_livestock['cal_liv_prod'].operation('caf_agr_domestic-production-liv', '*', 'agr_domestic_production_liv_afw',
-    #                                       dim="Variables", out_col='cal_agr_domestic_production_liv_afw', unit='kcal')
-
-    # Livestock slaughtered [lsu] = meat demand [kcal] / livestock meat content [kcal/lsu]
-    dm_liv_slau = dm_liv_prod.filter({'Variables': ['agr_domestic_production_liv_afw']})
+    # Livestock slaughtered [lsu] = meat demand [kcal] / livestock meat content [kcal/lsu] FIXME use calibrated domestic production
+    dm_liv_slau = DM_livestock['caf_liv_prod'].filter({'Variables': ['agr_domestic_production_liv_afw']})
     DM_livestock['yield'].append(dm_liv_slau, dim='Variables')  # Append cal_agr_domestic_production_liv_afw in yield
     DM_livestock['yield'].operation('agr_domestic_production_liv_afw', '/', 'agr_climate-smart-livestock_yield',
-                                    dim="Variables", out_col='agr_liv_population_raw', unit='lsu')
+                                    dim="Variables", out_col='agr_liv_population', unit='lsu')
 
     # Livestock population for meat [lsu] = Livestock slaughtered [lsu] / slaughter rate [%]
-    dm_liv_slau_meat = DM_livestock['yield'].filter({'Variables': ['agr_liv_population_raw'],
+    dm_liv_slau_meat = DM_livestock['yield'].filter({'Variables': ['agr_liv_population'],
                                                      'Categories1': ['meat-bovine', 'meat-pig', 'meat-poultry',
                                                                      'meat-sheep', 'meat-oth-animals']})
     DM_livestock['liv_slaughtered_rate'].append(dm_liv_slau_meat, dim='Variables')
-    DM_livestock['liv_slaughtered_rate'].operation('agr_liv_population_raw', '/', 'agr_climate-smart-livestock_slaughtered',
+    DM_livestock['liv_slaughtered_rate'].operation('agr_liv_population', '/', 'agr_climate-smart-livestock_slaughtered',
                                                    dim="Variables", out_col='agr_liv_population_meat', unit='lsu')
 
     # Processing for calibration: Livestock population for meat, eggs and dairy ( meat pop & slaughtered livestock for eggs and dairy)
     # Filtering eggs, dairy and meat
     dm_liv_slau_egg_dairy = DM_livestock['yield'].filter(
-        {'Variables': ['agr_liv_population_raw'], 'Categories1': ['abp-dairy-milk', 'abp-hens-egg']})
+        {'Variables': ['agr_liv_population'], 'Categories1': ['abp-dairy-milk', 'abp-hens-egg']})
     dm_liv_slau_meat = DM_livestock['liv_slaughtered_rate'].filter({'Variables': ['agr_liv_population_meat']})
     # Rename dm_liv_slau_meat variable to match with dm_liv_slau_egg_dairy
-    dm_liv_slau_meat.rename_col('agr_liv_population_meat', 'agr_liv_population_raw', dim='Variables')
+    dm_liv_slau_meat.rename_col('agr_liv_population_meat', 'agr_liv_population', dim='Variables')
     # Appending between livestock population
     dm_liv_slau_egg_dairy.append(dm_liv_slau_meat, dim='Categories1')
 
     # Calibration Livestock population
-    dm_cal_liv_pop = DM_livestock['cal_liv_population']
-    dm_cal_rates_liv_pop = calibration_rates(dm_liv_slau_egg_dairy, dm_cal_liv_pop, calibration_start_year=1990,
-                                          calibration_end_year=2015, years_setting=[1990, 2015, 2050, 5])
-    dm_liv_slau_egg_dairy.append(dm_cal_rates_liv_pop, dim='Variables')
-    dm_liv_slau_egg_dairy.operation('agr_liv_population_raw', '*', 'cal_rate', dim='Variables', out_col='agr_liv_population', unit='lsu')
-    df_cal_rates_liv_pop = dm_to_database(dm_cal_rates_liv_pop, 'none', 'agriculture', level=0)
+    DM_livestock['caf_liv_population'].append(dm_liv_slau_egg_dairy, dim='Variables')  # Append to caf
+    DM_livestock['caf_liv_population'].operation('caf_agr_liv-population', '*', 'agr_liv_population',
+                                                 dim="Variables", out_col='cal_agr_liv_population', unit='lsu')
 
     # GRAZING LIVESTOCK
-    # Filtering ruminants (bovine & sheep)
-    dm_liv_ruminants = dm_liv_slau_egg_dairy.filter(
+    # Filtering ruminants (bovine & sheep) FIXME change to calibrated population
+    dm_liv_ruminants = DM_livestock['caf_liv_population'].filter(
         {'Variables': ['agr_liv_population'], 'Categories1': ['meat-bovine', 'meat-sheep']})
     # Ruminant livestock [lsu] = population bovine + population sheep
     dm_liv_ruminants.operation('meat-bovine', '+', 'meat-sheep', dim="Categories1", out_col='ruminant')
@@ -1031,40 +887,43 @@ def livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro):
     # Agriculture grassland [ha] = ruminant livestock [lsu] / livestock density [lsu/ha]
     DM_livestock['ruminant_density'].operation('agr_liv_population_ruminant', '/',
                                                'agr_climate-smart-livestock_density',
-                                               dim="Variables", out_col='agr_lus_land_raw_grassland', unit='ha')
+                                               dim="Variables", out_col='agr_lus_land_grassland', unit='ha')
 
     # LIVESTOCK BYPRODUCTS
     # Filter ibp constants for offal
     cdm_cp_ibp_offal = CDM_const['cdm_cp_ibp_offal']
 
+
     # Filter ibp constants for afat
     cdm_cp_ibp_afat = CDM_const['cdm_cp_ibp_afat']
 
     # Filter cal_agr_liv_population for meat
-    cal_liv_population_meat = dm_liv_slau_egg_dairy.filter_w_regex(
-        {'Variables': 'agr_liv_population', 'Categories1': 'meat'})
-    #DM_livestock['liv_slaughtered_rate'].append(cal_liv_population_meat,
-    #                                            dim='Variables')  # Appending to the dm that has the same categories
+    cal_liv_population_meat = DM_livestock['caf_liv_population'].filter_w_regex(
+        {'Variables': 'cal_agr_liv_population', 'Categories1': 'meat'})
+    DM_livestock['liv_slaughtered_rate'].append(cal_liv_population_meat,
+                                                dim='Variables')  # Appending to the dm that has the same categories
 
-    # Offal per livestock type [kcal] = livestock population meat [lsu] * yield offal [kcal/lsu]
-    idx_liv_pop = cal_liv_population_meat.idx
+    # Sort categories ?? already in correct order
+
+    # Offal per livestock type [kcal] = livestock population meat [lsu] * yield offal [kcal/lsu] FIXME change cal
+    idx_liv_pop = DM_livestock['liv_slaughtered_rate'].idx
     idx_cdm_offal = cdm_cp_ibp_offal.idx
-    agr_ibp_offal = cal_liv_population_meat.array[:, :, idx_liv_pop['agr_liv_population'], :] \
+    agr_ibp_offal = DM_livestock['liv_slaughtered_rate'].array[:, :, idx_liv_pop['agr_liv_population'], :] \
                     * cdm_cp_ibp_offal.array[idx_cdm_offal['cp_ibp_liv']]
-    cal_liv_population_meat.add(agr_ibp_offal, dim='Variables', col_label='agr_ibp_offal', unit='kcal')
+    DM_livestock['liv_slaughtered_rate'].add(agr_ibp_offal, dim='Variables', col_label='agr_ibp_offal', unit='kcal')
 
-    # Afat per livestock type [kcal] = livestock population meat [lsu] * yield afat [kcal/lsu]
-    idx_liv_pop = cal_liv_population_meat.idx
+    # Afat per livestock type [kcal] = livestock population meat [lsu] * yield afat [kcal/lsu] FIXME cal liv pop
+    idx_liv_pop = DM_livestock['liv_slaughtered_rate'].idx
     idx_cdm_afat = cdm_cp_ibp_afat.idx
-    agr_ibp_afat = cal_liv_population_meat.array[:, :, idx_liv_pop['agr_liv_population'], :] \
+    agr_ibp_afat = DM_livestock['liv_slaughtered_rate'].array[:, :, idx_liv_pop['agr_liv_population'], :] \
                    * cdm_cp_ibp_afat.array[idx_cdm_afat['cp_ibp_liv']]
-    cal_liv_population_meat.add(agr_ibp_afat, dim='Variables', col_label='agr_ibp_afat', unit='kcal')
+    DM_livestock['liv_slaughtered_rate'].add(agr_ibp_afat, dim='Variables', col_label='agr_ibp_afat', unit='kcal')
 
     # Totals offal/afat [kcal] = sum (Offal/afat per livestock type [kcal])
-    dm_offal = cal_liv_population_meat.filter({'Variables': ['agr_ibp_offal']})
+    dm_offal = DM_livestock['liv_slaughtered_rate'].filter({'Variables': ['agr_ibp_offal']})
     dm_liv_ibp = dm_offal.copy()
     dm_liv_ibp.groupby({'offal': '.*'}, dim='Categories1', regex=True, inplace=True)
-    dm_afat = cal_liv_population_meat.filter({'Variables': ['agr_ibp_afat']})
+    dm_afat = DM_livestock['liv_slaughtered_rate'].filter({'Variables': ['agr_ibp_afat']})
     dm_total_afat = dm_afat.copy()
     dm_total_afat.groupby({'afat': '.*'}, dim='Categories1', regex=True, inplace=True)
 
@@ -1075,21 +934,21 @@ def livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro):
     dm_liv_ibp.rename_col('agr_ibp', 'agr_ibp_total', dim='Variables')
 
     # Filter Processed offal/afats afw (not calibrated), rename and append with dm_liv_ibp
-    dm_processed_offal_afat = DM_livestock['losses'].filter({'Variables': ['agr_domestic_production_liv_afw_raw'],
+    dm_processed_offal_afat = DM_livestock['losses'].filter({'Variables': ['agr_domestic_production_liv_afw'],
                                                              'Categories1': ['abp-processed-offal',
                                                                              'abp-processed-afat']})
     dm_processed_offal_afat.rename_col_regex(str1="abp-processed-", str2="", dim="Categories1")
     dm_liv_ibp.append(dm_processed_offal_afat, dim='Variables')
 
     # Offal/afats for feedstock [kcal] = produced offal/afats [kcal] - processed offal/afat [kcal]
-    dm_liv_ibp.operation('agr_ibp_total', '-', 'agr_domestic_production_liv_afw_raw', out_col='agr_ibp_liv_fdk',
+    dm_liv_ibp.operation('agr_ibp_total', '-', 'agr_domestic_production_liv_afw', out_col='agr_ibp_liv_fdk',
                          unit='kcal')
 
     # Total offal and afats for feedstock [kcal] = Offal for feedstock [kcal] + Afats for feedstock [kcal]
     dm_ibp_fdk = dm_liv_ibp.filter({'Variables': ['agr_ibp_liv_fdk']})
     dm_liv_ibp.groupby({'total': '.*'}, dim='Categories1', regex=True, inplace=True)
 
-    return DM_livestock, dm_liv_ibp, dm_liv_ibp, dm_liv_prod, dm_liv_slau_egg_dairy,  df_cal_rates_liv_prod, df_cal_rates_liv_pop
+    return DM_livestock, dm_liv_ibp, dm_liv_ibp
 
 # CalculationLeaf ALCOHOLIC BEVERAGES INDUSTRY -------------------------------------------------------------------------
 def alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro):
@@ -1466,16 +1325,16 @@ def bioenergy_workflow(DM_bioenergy, CDM_const, DM_ind, dm_bld, dm_tra):
     return DM_bioenergy, dm_oil, dm_lgn, dm_eth, dm_biofuel_fdk
 
 # CalculationLeaf LIVESTOCK MANURE MANAGEMENT & GHG EMISSIONS ----------------------------------------------------------
-def livestock_manure_workflow(DM_manure, DM_livestock, dm_liv_slau_egg_dairy,  cdm_const):
+def livestock_manure_workflow(DM_manure, DM_livestock,  cdm_const):
 
-    # Pre processing livestock population
-    dm_liv_pop = dm_liv_slau_egg_dairy.filter({'Variables': ['agr_liv_population']})
+    # Pre processing livestock population FIXME cal liv pop
+    dm_liv_pop = DM_livestock['caf_liv_population'].filter({'Variables': ['agr_liv_population']})
     DM_manure['liv_n-stock'].append(dm_liv_pop, dim='Variables')
     DM_manure['enteric_emission'].append(dm_liv_pop, dim='Variables')
     DM_manure['ef_liv_CH4_treated'].append(dm_liv_pop, dim='Variables')
 
     # N2O
-    # Manure production [tN] = livestock population [lsu] * Manure yield [t/lsu]
+    # Manure production [tN] = livestock population [lsu] * Manure yield [t/lsu] FIXME cal liv pop
     DM_manure['liv_n-stock'].operation('fxa_liv_manure_n-stock', '*', 'agr_liv_population',
                                        out_col='agr_liv_n-stock', unit='t')
 
@@ -1489,41 +1348,35 @@ def livestock_manure_workflow(DM_manure, DM_livestock, dm_liv_slau_egg_dairy,  c
 
     # Manure emission [MtN2O] = Manure management practices [MtN] * emission factors per practices [MtN2O/Mt]
     DM_manure['ef_liv_N2O'].operation('agr_liv_n-stock_split', '*', 'fxa_ef_liv_N2O-emission_ef',
-                                      out_col='agr_liv_N2O-emission_raw', unit='t')
+                                      out_col='agr_liv_N2O-emission', unit='t')
 
     dm_temp = DM_manure['ef_liv_N2O'].copy()
     df_temp = dm_temp.write_df()
 
     # Calibration N2O
-    dm_liv_N2O = DM_manure['ef_liv_N2O'].filter({'Variables': ['agr_liv_N2O-emission_raw']})
-    dm_cal_liv_N2O = DM_manure['cal_liv_N2O']
-    dm_cal_liv_N2O.switch_categories_order(cat1='Categories2', cat2='Categories1')# Switch categories
-    dm_cal_liv_N2O.change_unit('cal_agr_liv_N2O-emission', factor=1e3, old_unit='kt', new_unit='t')
-    dm_cal_rates_liv_N2O = calibration_rates(dm_liv_N2O, dm_cal_liv_N2O, calibration_start_year=1990,
-                                          calibration_end_year=2015, years_setting=[1990, 2015, 2050, 5])
-    dm_liv_N2O.append(dm_cal_rates_liv_N2O, dim='Variables')
-    dm_liv_N2O.operation('agr_liv_N2O-emission_raw', '*', 'cal_rate', dim='Variables', out_col='agr_liv_N2O-emission', unit='t')
-    df_cal_rates_liv_N2O = dm_to_database(dm_cal_rates_liv_N2O, 'none', 'agriculture', level=0)
-
+    dm_liv_N2O = DM_manure['ef_liv_N2O'].filter({'Variables': ['agr_liv_N2O-emission']})
+    DM_manure['caf_liv_N2O'].append(dm_liv_N2O, dim='Variables')  # Append to caf
+    DM_manure['caf_liv_N2O'].operation('caf_agr_liv_N2O-emission', '*', 'agr_liv_N2O-emission',
+                                       dim="Variables", out_col='cal_agr_liv_N2O-emission', unit='t')
 
     # CH4
-    # Enteric emission [tCH4] = livestock population [lsu] * enteric emission factor [tCH4/lsu]
+    # Enteric emission [tCH4] = livestock population [lsu] * enteric emission factor [tCH4/lsu] FIXME cal liv pop
     DM_manure['enteric_emission'].operation('agr_climate-smart-livestock_enteric', '*', 'agr_liv_population',
-                                            dim="Variables", out_col='agr_liv_CH4-emission_raw', unit='t')
+                                            dim="Variables", out_col='agr_liv_CH4-emission', unit='t')
 
-    # Manure emission [tCH4] = livestock population [lsu] * emission factors treated manure [tCH4/lsu]
+    # Manure emission [tCH4] = livestock population [lsu] * emission factors treated manure [tCH4/lsu] FIXME cal liv pop
     DM_manure['ef_liv_CH4_treated'].operation('fxa_ef_liv_CH4-emission_treated', '*', 'agr_liv_population',
-                                              dim="Variables", out_col='agr_liv_CH4-emission_raw', unit='t')
+                                              dim="Variables", out_col='agr_liv_CH4-emission', unit='t')
 
     # Processing for calibration (putting enteric and treated CH4 emission in the same dm)
     # Treated
-    dm_CH4 = DM_manure['ef_liv_CH4_treated'].filter({'Variables': ['agr_liv_CH4-emission_raw']})
+    dm_CH4 = DM_manure['ef_liv_CH4_treated'].filter({'Variables': ['agr_liv_CH4-emission']})
     dm_CH4.rename_col_regex(str1="meat", str2="treated_meat", dim="Categories1")
     dm_CH4.rename_col_regex(str1="abp", str2="treated_abp", dim="Categories1")
     dm_CH4.deepen()
     dm_CH4.switch_categories_order(cat1='Categories2', cat2='Categories1')
     # Enteric
-    dm_CH4_enteric = DM_manure['enteric_emission'].filter({'Variables': ['agr_liv_CH4-emission_raw']})
+    dm_CH4_enteric = DM_manure['enteric_emission'].filter({'Variables': ['agr_liv_CH4-emission']})
     dm_CH4_enteric.rename_col_regex(str1="meat", str2="enteric_meat", dim="Categories1")
     dm_CH4_enteric.rename_col_regex(str1="abp", str2="enteric_abp", dim="Categories1")
     dm_CH4_enteric.deepen()
@@ -1532,27 +1385,21 @@ def livestock_manure_workflow(DM_manure, DM_livestock, dm_liv_slau_egg_dairy,  c
     dm_CH4.append(dm_CH4_enteric, dim='Categories2')
 
     # Calibration CH4
-    dm_cal_liv_CH4 = DM_manure['cal_liv_CH4']
-    dm_cal_liv_CH4.switch_categories_order(cat1='Categories2', cat2='Categories1')  # Switch categories
-    dm_cal_liv_CH4.change_unit('cal_agr_liv_CH4-emission', factor=1e3, old_unit='kt', new_unit='t')
-    dm_cal_rates_liv_CH4 = calibration_rates(dm_CH4, dm_cal_liv_CH4, calibration_start_year=1990,
-                                             calibration_end_year=2015, years_setting=[1990, 2015, 2050, 5])
-    dm_CH4.append(dm_cal_rates_liv_CH4, dim='Variables')
-    dm_CH4.operation('agr_liv_CH4-emission_raw', '*', 'cal_rate', dim='Variables', out_col='agr_liv_CH4-emission',
-                         unit='t')
-    df_cal_rates_liv_CH4 = dm_to_database(dm_cal_rates_liv_CH4, 'none', 'agriculture', level=0)
-
-    return dm_liv_N2O, dm_CH4, df_cal_rates_liv_N2O, df_cal_rates_liv_CH4
+    DM_manure['caf_liv_CH4'].append(dm_CH4, dim='Variables')  # Append to caf
+    DM_manure['caf_liv_CH4'].operation('caf_agr_liv_CH4-emission', '*', 'agr_liv_CH4-emission',
+                                       dim="Variables", out_col='cal_agr_liv_CH4-emission', unit='t')
+    return DM_manure
 
 # CalculationLeaf FEED -------------------------------------------------------------------------------------------------
-def feed_workflow(DM_feed, dm_liv_prod, dm_bev_ibp_cereal_feed, CDM_const):
+def feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, CDM_const):
 
     # FEED REQUIREMENTS
     # Filter protein conversion efficiency constant
     cdm_cp_efficiency = CDM_const['cdm_cp_efficiency']
 
     # Pre processing domestic ASF prod accounting for waste [kcal]
-    dm_feed_req = dm_liv_prod.filter({'Variables': ['agr_domestic_production_liv_afw']})
+    dm_feed_req = DM_livestock['losses'].filter({'Variables': ['agr_domestic_production_liv_afw']})
+    dm_feed_req.drop(dim='Categories1', col_label=['abp-processed-afat', 'abp-processed-offal'])
 
     # Feed req per livestock type [kcal] = domestic ASF prod accounting for waste [kcal] / protein conversion efficiency [%]
     idx_cdm = cdm_cp_efficiency.idx
@@ -1622,20 +1469,14 @@ def feed_workflow(DM_feed, dm_liv_prod, dm_bev_ibp_cereal_feed, CDM_const):
     idx_ration = DM_feed['ration'].idx
     dm_temp = dm_feed_req_total.array[:, :, idx_feed['agr_feed-demand'], np.newaxis] \
               * DM_feed['ration'].array[:, :, idx_ration['agr_climate-smart-livestock_ration'], :]
-    DM_feed['ration'].add(dm_temp, dim='Variables', col_label='agr_demand_feed_raw', unit='kcal')
+    DM_feed['ration'].add(dm_temp, dim='Variables', col_label='agr_demand_feed', unit='kcal')
 
     # Calibration Feed demand
-    dm_feed_demand = DM_feed['ration'].filter({'Variables': ['agr_demand_feed_raw']})
-    dm_cal_feed = DM_feed['cal_agr_demand_feed']
-    dm_cal_rates_feed = calibration_rates(dm_feed_demand, dm_cal_feed, calibration_start_year=1990,
-                                          calibration_end_year=2015,
-                                          years_setting=[1990, 2015, 2050, 5])
-    dm_feed_demand.append(dm_cal_rates_feed, dim='Variables')
-    dm_feed_demand.operation('agr_demand_feed_raw', '*', 'cal_rate', dim='Variables', out_col='agr_demand_feed', unit='kcal')
-    df_cal_rates_feed = dm_to_database(dm_cal_rates_feed, 'none', 'agriculture',
-                                       level=0)  # Exporting calibration rates to check at the end
-
-    return DM_feed, dm_aps_ibp, dm_feed_req, dm_aps, dm_feed_demand, df_cal_rates_feed
+    dm_feed_demand = DM_feed['ration'].filter({'Variables': ['agr_demand_feed']})
+    DM_feed['caf_agr_demand_feed'].append(dm_feed_demand, dim='Variables')
+    DM_feed['caf_agr_demand_feed'].operation('agr_demand_feed', '*', 'caf_agr_demand_feed',
+                                             out_col='cal_agr_feed-demand', unit='kcal')
+    return DM_feed, dm_aps_ibp, dm_feed_req, dm_aps
 
  # CalculationLeaf BIOMASS USE ALLOCATION ---------------------------------------------------------------------------
 def biomass_allocation_workflow(dm_aps_ibp, dm_oil):
@@ -1664,7 +1505,7 @@ def biomass_allocation_workflow(dm_aps_ibp, dm_oil):
     return dm_voil, dm_aps_ibp_oil, dm_voil_tpe
 
  # CalculationLeaf CROP PRODUCTION ----------------------------------------------------------------------------------
-def crop_workflow(DM_crop, dm_feed_demand, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const, dm_oil):
+def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const, dm_oil):
 
     # DOMESTIC PRODUCTION ACCOUNTING FOR LOSSES ------------------------------------------------------------------------
 
@@ -1674,15 +1515,15 @@ def crop_workflow(DM_crop, dm_feed_demand, DM_bioenergy, dm_voil, dm_lfs, dm_lfs
     cdm_feed_yield = CDM_const['cdm_feed_yield']
     cdm_food_yield = CDM_const['cdm_food_yield']
 
-    # Processed Feed pre-processing
-    dm_feed_processed = dm_feed_demand.filter(
-        {'Variables': ['agr_demand_feed'], 'Categories1': ['crop-processed-cake', 'crop-processed-molasse','crop-processed-sugar','crop-processed-voil']})
+    # Processed Feed pre-processing FIXME change to calibrated feed demand
+    dm_feed_processed = DM_feed['caf_agr_demand_feed'].filter_w_regex(
+        {'Variables': 'agr_demand_feed', 'Categories1': 'crop-processed'})
     dm_feed_processed.rename_col('crop-processed-cake', 'cake-to-oilcrop', dim='Categories1')
     dm_feed_processed.rename_col('crop-processed-molasse', 'molasse-to-sugarcrop', dim='Categories1')
     dm_feed_processed.rename_col('crop-processed-sugar', 'sugar-to-sugarcrop', dim='Categories1')
     dm_feed_processed.rename_col('crop-processed-voil', 'voil-to-oilcrop', dim='Categories1')
 
-    # Processed Feed crop demand [kcal] = processed crops [kcal] / processing yield [%]
+    # Processed Feed crop demand [kcal] = processed crops [kcal] / processing yield [%] FIXME change to calibrated feed demand
     idx_cdm = cdm_feed_yield.idx
     idx_feed = dm_feed_processed.idx
     dm_temp = dm_feed_processed.array[:, :, idx_feed['agr_demand_feed'], :] \
@@ -1729,7 +1570,7 @@ def crop_workflow(DM_crop, dm_feed_demand, DM_bioenergy, dm_voil, dm_lfs, dm_lfs
     dm_crop_demand.add(0.0, dummy=True, col_label='crop-insect', dim='Categories1', unit='kcal')
 
     # Pre processing total feed demand per category (with dummy categories when necessary)
-    dm_crop_feed_demand = dm_feed_demand.filter_w_regex(
+    dm_crop_feed_demand = DM_feed['caf_agr_demand_feed'].filter_w_regex(
         {'Variables': 'agr_demand_feed', 'Categories1': 'crop-'})
     # Dropping processed crops feed demand
     dm_crop_feed_demand.drop(dim='Categories1', col_label=['crop-processed-cake', 'crop-processed-molasse',
@@ -1741,7 +1582,7 @@ def crop_workflow(DM_crop, dm_feed_demand, DM_bioenergy, dm_voil, dm_lfs, dm_lfs
     dm_crop_feed_demand.operation('agr_demand_feed_processed', '+', 'agr_demand_feed', out_col='agr_demand_feed_temp',
                                   unit='kcal')
     dm_crop_feed_demand = dm_crop_feed_demand.filter({'Variables': ['agr_demand_feed_temp']})
-
+    # FIXME check what to do with crop-rice ? sum it with cereals? => it has it's own category with only food demand
     # Adding dummy categories
     dm_crop_feed_demand.add(0.0, dummy=True, col_label='crop-lgn-energycrop', dim='Categories1', unit='kcal')
     dm_crop_feed_demand.add(0.0, dummy=True, col_label='crop-algae', dim='Categories1', unit='kcal')
@@ -1836,26 +1677,16 @@ def crop_workflow(DM_crop, dm_feed_demand, DM_bioenergy, dm_voil, dm_lfs, dm_lfs
 
     # Domestic production with losses [kcal] = domestic prod * food losses [%]
     DM_crop['crop'].operation('agr_domestic-production_food', '*', 'agr_climate-smart-crop_losses',
-                              out_col='agr_domestic-production_afw_raw', unit='kcal')
+                              out_col='agr_domestic-production_afw', unit='kcal')
 
     # CALIBRATION CROP PRODUCTION --------------------------------------------------------------------------------------
-    dm_cal_crop = DM_crop['cal_crop']
-    dm_crop = DM_crop['crop'].filter({'Variables': ['agr_domestic-production_afw_raw']})
-    dm_cal_rates_crop = calibration_rates(dm_crop, dm_cal_crop, calibration_start_year=1990,
-                                          calibration_end_year=2015, years_setting=[1990, 2015, 2050, 5])
-    dm_crop.append(dm_cal_rates_crop, dim='Variables')
-    dm_crop.operation('agr_domestic-production_afw_raw', '*', 'cal_rate', dim='Variables', out_col='agr_domestic-production_afw', unit='kcal')
-    df_cal_rates_crop = dm_to_database(dm_cal_rates_crop, 'none', 'agriculture', level=0)
-    df_cal_crop = dm_to_database(dm_cal_crop, 'none', 'agriculture', level=0)
-    df_crop = dm_to_database(dm_crop.filter({'Variables': ['agr_domestic-production_afw_raw']}), 'none', 'agriculture', level=0)
-
-    #DM_crop['crop'].operation('agr_domestic-production_afw', '*', 'caf_agr_domestic-production_food',
-    #                          out_col='cal_agr_domestic-production_food', unit='kcal')
+    DM_crop['crop'].operation('agr_domestic-production_afw', '*', 'caf_agr_domestic-production_food',
+                              out_col='cal_agr_domestic-production_food', unit='kcal')
 
     # CROP RESIDUES ----------------------------------------------------------------------------------------------------
 
     # Crop residues per crop type (cereals, oilcrop, sugarcrop) = Domestic production with losses [kcal] * residue yield [kcal/kcal]
-    dm_residues = dm_crop.filter(
+    dm_residues = DM_crop['crop'].filter(
         {'Variables': ['agr_domestic-production_afw'], 'Categories1': ['cereal', 'oilcrop', 'sugarcrop']})
     DM_crop['residues_yield'].append(dm_residues, dim='Variables')
     DM_crop['residues_yield'].operation('agr_domestic-production_afw', '*', 'fxa_residues_yield',
@@ -1880,10 +1711,10 @@ def crop_workflow(DM_crop, dm_feed_demand, DM_bioenergy, dm_voil, dm_lfs, dm_lfs
                  * DM_crop['ef_residues'].array[:, :, idx_ef['ef'], :, :]
     DM_crop['ef_residues'].add(array_temp, dim='Variables', col_label='agr_crop_emission', unit='Mt')
 
-    return DM_crop, dm_crop, dm_crop_other, dm_feed_processed, dm_food_processed, df_cal_rates_crop
+    return DM_crop, dm_crop_other, dm_feed_processed, dm_food_processed
 
 # CalculationLeaf AGRICULTURAL LAND DEMAND -----------------------------------------------------------------------------
-def land_workflow(DM_land, dm_crop, DM_livestock, dm_crop_other, DM_ind):
+def land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, DM_ind):
 
     # FIBERS -----------------------------------------------------------------------------------------------------------
     # Converting industry fibers from [kt] to [t]
@@ -1915,8 +1746,8 @@ def land_workflow(DM_land, dm_crop, DM_livestock, dm_crop_other, DM_ind):
     # LAND DEMAND ------------------------------------------------------------------------------------------------------
 
     # Categories x11 : cereals, oilcrop, pulse, fruit, veg, starch, sugarcrop, rice , lgn, algae, insect FIXME gas energycrop in Knime but regex issue
-    # Calibrated crop demand (8 categories)
-    dm_crop_afw = dm_crop.filter({'Variables': ['agr_domestic-production_afw']})
+    # Calibrated crop demand (8 categories) FIXME calibration not considered, to change & de-comment rename
+    dm_crop_afw = DM_crop['crop'].filter({'Variables': ['agr_domestic-production_afw']})
     #dm_crop_afw.rename_col('cal_agr_domestic-production_food', 'agr_domestic-production_afw', dim='Variables')
     # Appending calibrated dom prod afw with lgn, algae, insect
     dm_crop_afw.append(dm_crop_other, dim='Categories1')
@@ -1939,25 +1770,22 @@ def land_workflow(DM_land, dm_crop, DM_livestock, dm_crop_other, DM_ind):
     # Overall cropland [ha] = sum of cropland by type [ha]
     dm_land = DM_land['yield'].copy()
     dm_land.groupby({'cropland': '.*'}, dim='Categories1', regex=True, inplace=True)
-    dm_land.rename_col('agr_land_cropland', 'agr_lus_land_raw', dim='Variables')
+    dm_land.rename_col('agr_land_cropland', 'agr_lus_land', dim='Variables')
 
     # Appending with grassland from feed
-    dm_grassland = DM_livestock['ruminant_density'].filter({'Variables': ['agr_lus_land_raw_grassland']})
+    dm_grassland = DM_livestock['ruminant_density'].filter({'Variables': ['agr_lus_land_grassland']})
     dm_grassland.deepen()
     dm_land.append(dm_grassland, dim='Categories1')
 
     # Calibration cropland & grassland
-    dm_cal_land = DM_land['cal_land']
-    dm_cal_rates_land = calibration_rates(dm_land, dm_cal_land, calibration_start_year=1990,
-                                          calibration_end_year=2015, years_setting=[1990, 2015, 2050, 5])
-    dm_land.append(dm_cal_rates_land, dim='Variables')
-    dm_land.operation('agr_lus_land_raw', '*', 'cal_rate', dim='Variables',
-                      out_col='agr_lus_land', unit='ha')
-    df_cal_rates_land = dm_to_database(dm_cal_rates_land, 'none', 'agriculture', level=0)
+    DM_land['land'].append(dm_land, dim='Variables')
+    DM_land['land'].operation('caf_agr_lus_land', '*',
+                              'agr_lus_land',
+                              out_col='cal_agr_lus_land', unit='ha')
 
     # Overall agricultural land [ha] = overall cropland + grasssland [ha]
-    dm_land_use = dm_land.filter({'Variables': ['agr_lus_land']}).copy() # copu for Land use module
-    dm_land.groupby({'agriculture': '.*'}, dim='Categories1', regex=True, inplace=True)
+    dm_land_use = DM_land['land'].copy() # copu for Land use module
+    DM_land['land'].groupby({'agriculture': '.*'}, dim='Categories1', regex=True, inplace=True)
 
     # RICE CH4 EMISSIONS -----------------------------------------------------------------------------------------------
     # Pre processing
@@ -1970,15 +1798,15 @@ def land_workflow(DM_land, dm_crop, DM_livestock, dm_crop_other, DM_ind):
                               'agr_land_cropland_rice',
                               out_col='agr_rice_crop_CH4-emission', unit='t')
 
-    return DM_land, dm_land, dm_land_use, dm_fiber, df_cal_rates_land
+    return DM_land, dm_land_use, dm_fiber
 
 # CalculationLeaf NITROGEN BALANCE -------------------------------------------------------------------------------------
-def nitrogen_workflow(DM_nitrogen, dm_land, CDM_const):
+def nitrogen_workflow(DM_nitrogen, DM_land, CDM_const):
 
     # FOR GRAPHS -------------------------------------------------------------------------------------------------------
 
     # Fertilizer application [t] = agricultural land [ha] * input use per type [t] FIXME use calibrated agr_lus_land
-    dm_agricultural_land = dm_land.filter({'Variables': ['agr_lus_land'], 'Categories1': ['agriculture']})
+    dm_agricultural_land = DM_land['land'].filter({'Variables': ['agr_lus_land'], 'Categories1': ['agriculture']})
     dm_agricultural_land = dm_agricultural_land.flatten()
     idx_land = dm_agricultural_land.idx
     idx_fert = DM_nitrogen['input'].idx
@@ -1997,23 +1825,18 @@ def nitrogen_workflow(DM_nitrogen, dm_land, CDM_const):
     dm_nitrogen = dm_nitrogen.flatten()
     DM_nitrogen['emissions'].append(dm_nitrogen, dim='Variables')
     DM_nitrogen['emissions'].operation('agr_input-use_nitrogen', '*', 'fxa_agr_emission_fertilizer',
-                                       out_col='agr_crop_emission_N2O-emission_fertilizer_raw', unit='t')
+                                       out_col='agr_crop_emission_N2O-emission_fertilizer', unit='t')
 
     # Calibration
-    dm_n = DM_nitrogen['emissions'].filter({'Variables': ['agr_crop_emission_N2O-emission_fertilizer_raw']})
-    dm_cal_n= DM_nitrogen['cal_n']
-    dm_cal_n.change_unit('cal_agr_crop_emission_N2O-emission_fertilizer', 10**6, old_unit='Mt', new_unit='t') # Unit conversion [Mt] => [t]
-    dm_cal_rates_n = calibration_rates(dm_n, dm_cal_n, calibration_start_year=1990,
-                                          calibration_end_year=2015, years_setting=[1990, 2015, 2050, 5])
-    dm_n.append(dm_cal_rates_n, dim='Variables')
-    dm_n.operation('agr_crop_emission_N2O-emission_fertilizer_raw', '*', 'cal_rate', dim='Variables',
-                      out_col='agr_crop_emission_N2O-emission_fertilizer', unit='t')
-    df_cal_rates_n = dm_to_database(dm_cal_rates_n, 'none', 'agriculture', level=0)
+    DM_nitrogen['emissions'].operation('agr_crop_emission_N2O-emission_fertilizer', '*',
+                                       'caf_agr_crop_emission_N2O-emission_fertilizer',
+                                       out_col='agr_crop_emission_N2O-emission', unit='t')
 
     # CO2 EMISSIONS ----------------------------------------------------------------------------------------------------
     # Pre processing
     dm_fertilizer_co = DM_nitrogen['input'].filter({'Variables': ['agr_input-use'], 'Categories1': ['liming', 'urea']})
     cdm_fertilizer_co = CDM_const['cdm_fertilizer_co']
+
 
     # For liming & urea: CO2 emissions [MtCO2] =  Fertilizer application[t] * emission factor [MtCO2/t]
     idx_cdm = cdm_fertilizer_co.idx
@@ -2022,41 +1845,40 @@ def nitrogen_workflow(DM_nitrogen, dm_land, CDM_const):
               * cdm_fertilizer_co.array[idx_cdm['cp_ef'], :]
     dm_fertilizer_co.add(dm_temp, dim='Variables', col_label='agr_input-use_emissions-CO2', unit='t')
 
-    return dm_n, dm_fertilizer_co, dm_mineral_fertilizer, df_cal_rates_n
+    return DM_nitrogen, dm_fertilizer_co, dm_mineral_fertilizer
 
  # CalculationLeaf ENERGY & GHG -------------------------------------------------------------------------------------
-def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_co, dm_liv_N2O, dm_CH4, CDM_const, dm_n):
+def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_manure, CDM_const, DM_nitrogen):
 
     # ENERGY DEMAND ----------------------------------------------------------------------------------------------------
     # Energy demand from agriculture [ktoe] = energy demand [ktoe/ha] * Agricultural land [ha] FIXME replace with calibration land
-    dm_agricultural_land = dm_land.filter({'Variables': ['agr_lus_land']})
+    dm_agricultural_land = DM_land['land'].filter({'Variables': ['agr_lus_land']})
     dm_agricultural_land = dm_agricultural_land.flatten()
     idx_land = dm_agricultural_land.idx
     idx_energy = DM_energy_ghg['energy_demand'].idx
     array_temp = dm_agricultural_land.array[:, :, idx_land['agr_lus_land_agriculture'], np.newaxis] \
                  * DM_energy_ghg['energy_demand'].array[:, :, idx_energy['agr_climate-smart-crop_energy-demand'], :]
-    DM_energy_ghg['energy_demand'].add(array_temp, dim='Variables', col_label='agr_energy-demand', unit='ktoe')
+    DM_energy_ghg['caf_energy_demand'].add(array_temp, dim='Variables', col_label='agr_energy-demand', unit='ktoe')
 
     # Calibration Energy demand
-    #DM_energy_ghg['cal_energy_demand'].add(array_temp, dim='Variables', col_label='agr_energy-demand', unit='ktoe')
-    #DM_energy_ghg['caf_energy_demand'].operation('caf_agr_energy-demand', '*', 'agr_energy-demand',
-    #                                             out_col='cal_agr_energy-demand', unit='ktoe')
+    DM_energy_ghg['caf_energy_demand'].operation('caf_agr_energy-demand', '*', 'agr_energy-demand',
+                                                 out_col='cal_agr_energy-demand', unit='ktoe')
 
     # CO2 EMISSIONS ----------------------------------------------------------------------------------------------------
     # Pre processing : filtering and deepening constants
     cdm_CO2 = CDM_const['cdm_CO2']
 
     # Energy direct emission [MtCO2] = energy demand [ktoe] * fertilizer use [MtCO2/ktoe] FIXME replace with calibrated energy demand
-    dm_energy = DM_energy_ghg['energy_demand']
+    dm_energy = DM_energy_ghg['caf_energy_demand']
     idx_energy = dm_energy.idx
     idx_cdm = cdm_CO2.idx
     array_temp = dm_energy.array[:, :, idx_energy['agr_energy-demand'], :] \
                  * cdm_CO2.array[idx_cdm['cp_emission-factor_CO2'], :]
-    DM_energy_ghg['energy_demand'].add(array_temp, dim='Variables', col_label='agr_input-use_emissions-CO2',
+    DM_energy_ghg['caf_energy_demand'].add(array_temp, dim='Variables', col_label='agr_input-use_emissions-CO2',
                                            unit='Mt')
 
     # Overall CO2 emission from fuel [Mt] = sum (Energy direct emission [MtCO2])
-    dm_CO2 = DM_energy_ghg['energy_demand'].filter({'Variables': ['agr_input-use_emissions-CO2']})
+    dm_CO2 = DM_energy_ghg['caf_energy_demand'].filter({'Variables': ['agr_input-use_emissions-CO2']})
     dm_CO2.groupby({'fuel': '.*'}, dim='Categories1', regex=True, inplace=True)
     dm_CO2 = dm_CO2.flatten()
 
@@ -2072,28 +1894,17 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_
     # Appending CO2 emissions: fuel, liming, urea from Nitrogen Balance workflow
     dm_CO2.append(dm_fertilizer_co.filter({'Variables': ['agr_input-use_emissions-CO2']}), dim='Categories1')
 
-    # Rename to _raw for calibration
-    dm_CO2.rename_col('agr_input-use_emissions-CO2', 'agr_input-use_emissions-CO2_raw', dim='Variables')
-
     # Calibration CO2 from fuel, liming, urea emissions FIXME check with gino if it makes sense to change the calibration order from KNIME to put it before summing
-    dm_cal_CO2_input= DM_energy_ghg['cal_input']
-    dm_cal_CO2_input.change_unit('cal_agr_input-use_emissions-CO2', 10 ** 3, old_unit='kt',
-                         new_unit='t')  # Unit conversion [kt] => [t]
-
-    dm_cal_rates_CO2_input = calibration_rates(dm_CO2, dm_cal_CO2_input, calibration_start_year=1990,
-                                          calibration_end_year=2015, years_setting=[1990, 2015, 2050, 5])
-    dm_CO2.append(dm_cal_rates_CO2_input, dim='Variables')
-    dm_CO2.operation('agr_input-use_emissions-CO2_raw', '*', 'cal_rate', dim='Variables',
-                      out_col='agr_input-use_emissions-CO2', unit='t')
-    df_cal_rates_CO2_input = dm_to_database(dm_cal_rates_CO2_input, 'none', 'agriculture', level=0)
+    DM_energy_ghg['caf_input'].append(dm_CO2, dim='Variables')
+    DM_energy_ghg['caf_input'].operation('agr_input-use_emissions-CO2', '*', 'caf_agr_input-use_emissions-CO2',
+                                         out_col='cal_agr_input-use_emissions-CO2', unit='t')
 
     # Overall CO2 emission [t] = sum (fuel, liming, urea)
-    dm_fuel_input = dm_CO2.filter({'Variables': ['agr_input-use_emissions-CO2']})
-    dm_fuel_input.groupby({'CO2-emission': '.*'}, dim='Categories1', regex=True, inplace=True)
+    DM_energy_ghg['caf_input'].groupby({'CO2-emission': '.*'}, dim='Categories1', regex=True, inplace=True)
 
     # Adding dummy columns
-    dm_fuel_input.add(0.0, dummy=True, col_label='N2O-emission', dim='Categories1', unit='t')
-    dm_fuel_input.add(0.0, dummy=True, col_label='CH4-emission', dim='Categories1', unit='t')
+    DM_energy_ghg['caf_input'].add(0.0, dummy=True, col_label='N2O-emission', dim='Categories1', unit='t')
+    DM_energy_ghg['caf_input'].add(0.0, dummy=True, col_label='CH4-emission', dim='Categories1', unit='t')
 
     # CROP RESIDUE EMISSIONS -------------------------------------------------------------------------------------------
     # Unit conversion : N2O, CH4 from crop residues [Mt] => [t]
@@ -2111,7 +1922,7 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_
 
     # LIVESTOCK EMISSIONS -------------------------------------------------------------------------------------------
     # Manure N2O emissions = sum (manure emission per livestock type & manure type) FIXME replace with calibrated N2O livestock emissions
-    dm_N2O_liv = dm_liv_N2O.filter({'Variables': ['agr_liv_N2O-emission']})
+    dm_N2O_liv = DM_manure['caf_liv_N2O'].filter({'Variables': ['agr_liv_N2O-emission']})
     dm_N2O_liv = dm_N2O_liv.flatten()
     dm_N2O_liv.groupby({'N2O-emission': '.*'}, dim='Categories1', regex=True, inplace=True)
     # Adding dummy columns
@@ -2119,7 +1930,7 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_
     dm_N2O_liv.add(0.0, dummy=True, col_label='CH4-emission', dim='Categories1', unit='t')
 
     # CH4 emissions = sum (manure & enteric emission per livestock type) FIXME replace with calibrated CH4 livestock emissions
-    dm_CH4_liv = dm_CH4.filter({'Variables': ['agr_liv_CH4-emission']})
+    dm_CH4_liv = DM_manure['caf_liv_CH4'].filter({'Variables': ['agr_liv_CH4-emission']})
     dm_CH4_liv = dm_CH4_liv.flatten()
     dm_CH4_liv.groupby({'CH4-emission': '.*'}, dim='Categories1', regex=True, inplace=True)
     # Adding dummy columns
@@ -2135,52 +1946,45 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_
     dm_CH4_rice.add(0.0, dummy=True, col_label='N2O-emission', dim='Categories1', unit='t')
 
     # TOTAL GHG EMISSIONS ----------------------------------------------------------------------------------------------
+    # Renaming for name matching
+    DM_energy_ghg['GHG'].rename_col('CH4', 'CH4-emission', dim='Categories1')
+    DM_energy_ghg['GHG'].rename_col('CO2', 'CO2-emission', dim='Categories1')
+    DM_energy_ghg['GHG'].rename_col('N2O', 'N2O-emission', dim='Categories1')
 
     # Appending crop + fuel + livestock + rice emissions
-    dm_ghg.append(dm_N2O_liv, dim='Variables')  # N2O, CH4 from crop residues with NO2 from livestock
-    dm_ghg.append(dm_CH4_liv, dim='Variables')  # CH4 from livestock
-    dm_ghg.append(dm_CH4_rice, dim='Variables')  # CH4 from rice
-    dm_ghg.append(dm_fuel_input, dim='Variables')  # CO2 from fuel, liming, urea
+    DM_energy_ghg['GHG'].append(dm_ghg, dim='Variables')  # N2O, CH4 from crop residues
+    DM_energy_ghg['GHG'].append(dm_N2O_liv, dim='Variables')  # with NO2 from livestock
+    DM_energy_ghg['GHG'].append(dm_CH4_liv, dim='Variables')  # CH4 from livestock
+    DM_energy_ghg['GHG'].append(dm_CH4_rice, dim='Variables')  # CH4 from rice
+    DM_energy_ghg['GHG'].append(DM_energy_ghg['caf_input'].filter({'Variables': ['agr_input-use_emissions-CO2']}),
+                                dim='Variables')  # CO2 from fuel, liming, urea FIXME replace with calibrated CO2 emissions
 
     # Agriculture GHG emissions per GHG [t] =  crop + fuel + livestock + rice emissions per GHG
-    dm_ghg.operation('agr_emission_residues', '+', 'agr_liv_N2O-emission',
-                                   out_col='residues_and_N2O_liv', unit='t')
-    dm_ghg.operation('residues_and_N2O_liv', '+', 'agr_liv_CH4-emission',
-                                   out_col='residues_and_N2O_liv_and_CH4_liv', unit='t')
-    dm_ghg.operation('residues_and_N2O_liv_and_CH4_liv', '+', 'agr_rice_crop',
+    DM_energy_ghg['GHG'].operation('agr_emission_residues', '+', 'agr_liv_N2O-emission',
+                                   out_col='residues_and_N2O_liv', unit='t') #FIXME replace with cal values N2O
+    DM_energy_ghg['GHG'].operation('residues_and_N2O_liv', '+', 'agr_liv_CH4-emission',
+                                   out_col='residues_and_N2O_liv_and_CH4_liv', unit='t') #FIXME replace with cal values CH4
+    DM_energy_ghg['GHG'].operation('residues_and_N2O_liv_and_CH4_liv', '+', 'agr_rice_crop',
                                    out_col='residues_and_N2O_liv_and_CH4_liv_and_rice', unit='t')
-    dm_ghg.operation('residues_and_N2O_liv_and_CH4_liv_and_rice', '+', 'agr_input-use_emissions-CO2',
-                                   out_col='agr_emissions_raw', unit='t')
+    DM_energy_ghg['GHG'].operation('residues_and_N2O_liv_and_CH4_liv_and_rice', '+', 'agr_input-use_emissions-CO2',
+                                   out_col='agr_emissions', unit='t') #FIXME replace with cal values CO2
     # Dropping the intermediate values
-    dm_ghg = dm_ghg.filter({'Variables': ['agr_emissions_raw']})
+    DM_energy_ghg['GHG'] = DM_energy_ghg['GHG'].filter({'Variables': ['agr_emissions', 'caf_agr_emissions']})
 
-    # Renaming for name matching
-    DM_energy_ghg['cal_GHG'].rename_col('CH4', 'CH4-emission', dim='Categories1')
-    DM_energy_ghg['cal_GHG'].rename_col('CO2', 'CO2-emission', dim='Categories1')
-    DM_energy_ghg['cal_GHG'].rename_col('N2O', 'N2O-emission', dim='Categories1')
-
-    # Calibration GHG emissions: overall CO2, CH4, NO2
-    dm_cal_ghg = DM_energy_ghg['cal_GHG']
-    #dm_cal_ghg.change_unit('cal_agr_input-use_emissions-CO2', 10 ** 3, old_unit='kt',
-    #                             new_unit='t')  # Unit conversion [kt] => [t]
-
-    dm_cal_rates_ghg = calibration_rates(dm_ghg, dm_cal_ghg, calibration_start_year=1990,
-                                               calibration_end_year=2015, years_setting=[1990, 2015, 2050, 5])
-    dm_ghg.append(dm_cal_rates_ghg, dim='Variables')
-    dm_ghg.operation('agr_emissions_raw', '*', 'cal_rate', dim='Variables',
-                     out_col='agr_emissions', unit='t')
-    df_cal_rates_ghg = dm_to_database(dm_cal_rates_ghg, 'none', 'agriculture', level=0)
+    # Calibration
+    DM_energy_ghg['GHG'].operation('agr_emissions', '*', 'caf_agr_emissions',
+                                   out_col='cal_agr_emissions', unit='t')
 
     # FORMATTING FOR TPE & INTERFACE -----------------------------------------------------------------------------------
-    # CO2 emissions from fertilizer & energy
+    # CO2 emissions from fertilizer & energy FIXME change for cal
     dm_input_use_CO2 = dm_CO2.filter({'Variables': ['agr_input-use_emissions-CO2']})
     dm_input_use_CO2.change_unit('agr_input-use_emissions-CO2', 1e-6, old_unit='t', new_unit='Mt')
     dm_input_use_CO2 = dm_input_use_CO2.flatten()
 
-    # Fertilizer emissions N2O
-    dm_fertilizer_N2O = dm_n.filter({'Variables': ['agr_crop_emission_N2O-emission_fertilizer']})
+    # Fertizer emissions N2O FIXME change for cal
+    dm_fertilizer_N2O = DM_nitrogen['emissions'].filter({'Variables': ['agr_crop_emission_N2O-emission']})
     dm_fertilizer_N2O.change_unit('agr_crop_emission_N2O-emission', 1e-6, old_unit='t', new_unit='Mt')
-    #dm_fertilizer_N2O.rename_col('agr_crop_emission_N2O-emission', 'agr_emissions-N2O_crop_fertilizer', 'Variables')
+    dm_fertilizer_N2O.rename_col('agr_crop_emission_N2O-emission', 'agr_emissions-N2O_crop_fertilizer', 'Variables')
 
     # Crop residue emissions
     dm_crop_residues = DM_crop['ef_residues'].filter({'Variables': ['agr_crop_emission'],
@@ -2196,8 +2000,8 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_
     dm_crop_residues = dm_crop_residues.flatten().flatten()
     dm_crop_residues.drop("Variables", ['agr_emissions-CH4_crop_soil-residues'])
 
-    # Livestock emissions CH4 (manure & enteric)
-    #dm_CH4_liv = DM_manure['caf_liv_CH4'].filter({'Variables': ['agr_liv_CH4-emission']})
+    # Livestock emissions CH4 (manure & enteric)  FIXME change for cal
+    dm_CH4_liv = DM_manure['caf_liv_CH4'].filter({'Variables': ['agr_liv_CH4-emission']})
     dm_CH4_liv.change_unit('agr_liv_CH4-emission', 1e-6, old_unit='t', new_unit='Mt')
     dm_CH4_liv.switch_categories_order(cat1='Categories2', cat2='Categories1')
     dm_CH4_liv.rename_col("agr_liv_CH4-emission", "agr_emissions-CH4_liv", "Variables")
@@ -2205,7 +2009,7 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_
     dm_CH4_liv = dm_CH4_liv.flatten()
 
     # Livestock emissions N2O (manure)  FIXME change for cal
-    #dm_N2O_liv = DM_manure['caf_liv_N2O'].filter({'Variables': ['agr_liv_N2O-emission']})
+    dm_N2O_liv = DM_manure['caf_liv_N2O'].filter({'Variables': ['agr_liv_N2O-emission']})
     dm_N2O_liv.change_unit('agr_liv_N2O-emission', 1e-6, old_unit='t', new_unit='Mt')
     dm_N2O_liv.switch_categories_order(cat1='Categories2', cat2='Categories1')
     dm_N2O_liv.rename_col("agr_liv_N2O-emission", "agr_emissions-N2O_liv", "Variables")
@@ -2218,7 +2022,7 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_
     dm_CH4_rice.rename_col('agr_rice_crop_CH4-emission', 'agr_emissions-CH4_crop_rice', 'Variables')
 
 
-    return DM_energy_ghg, dm_CO2, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O, df_cal_rates_ghg
+    return DM_energy_ghg, dm_CO2, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O
 
 
 def agriculture_landuse_interface(DM_bioenergy, dm_lgn, dm_land_use, write_xls = False):
@@ -2580,21 +2384,21 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
 # ----------------------------------------------------------------------------------------------------------------------
 def agriculture(lever_setting, years_setting, interface = Interface()):
 
+
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     agriculture_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/agriculture.pickle')
-    DM_ots_fts, DM_lifestyle, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, CDM_const = read_data(agriculture_data_file, lever_setting)
+    DM_ots_fts, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, CDM_const = read_data(agriculture_data_file, lever_setting)
 
     cntr_list = DM_food_demand['food-net-import-pro'].col_labels['Country']
 
-    # Link interface or Simulate data from other modules
+    # Simulate data from other modules
     if interface.has_link(from_sector='lifestyles', to_sector='agriculture'):
-        dm_population = interface.get_link(from_sector='lifestyles', to_sector='agriculture')
-        #FIXME ajouter lien pour la population dm_population
+        dm_lfs = interface.get_link(from_sector='lifestyles', to_sector='agriculture')
     else:
         if len(interface.list_link()) != 0:
             print('You are missing lifestyles to agriculture interface')
-        dm_population = simulate_lifestyles_to_agriculture_input()
-        dm_population.filter({'Country': cntr_list}, inplace=True)
+        dm_lfs = simulate_lifestyles_to_agriculture_input()
+        dm_lfs.filter({'Country': cntr_list}, inplace=True)
         
     if interface.has_link(from_sector='buildings', to_sector='agriculture'):
         dm_bld = interface.get_link(from_sector='buildings', to_sector='agriculture')
@@ -2623,18 +2427,17 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
 
     # CalculationTree AGRICULTURE
 
-    dm_lfs, df_cal_rates_diet = lifestyle_workflow(DM_lifestyle, dm_population, CDM_const)
     dm_lfs, dm_lfs_pro = food_demand_workflow(DM_food_demand, dm_lfs)
-    DM_livestock, dm_liv_ibp, dm_liv_ibp, dm_liv_prod, dm_liv_slau_egg_dairy, df_cal_rates_liv_prod, df_cal_rates_liv_pop= livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro)
+    DM_livestock, dm_liv_ibp, dm_liv_ibp= livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro)
     DM_alc_bev, dm_bev_ibp_cereal_feed = alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro)
     DM_bioenergy, dm_oil, dm_lgn, dm_eth, dm_biofuel_fdk = bioenergy_workflow(DM_bioenergy, CDM_const, DM_ind, dm_bld, dm_tra)
-    dm_liv_N2O, dm_CH4, df_cal_rates_liv_N2O, df_cal_rates_liv_CH4 = livestock_manure_workflow(DM_manure, DM_livestock, dm_liv_slau_egg_dairy, CDM_const)
-    DM_feed, dm_aps_ibp, dm_feed_req, dm_aps, dm_feed_demand, df_cal_rates_feed = feed_workflow(DM_feed, dm_liv_prod, dm_bev_ibp_cereal_feed, CDM_const)
+    DM_manure = livestock_manure_workflow(DM_manure, DM_livestock, CDM_const)
+    DM_feed, dm_aps_ibp, dm_feed_req, dm_aps = feed_workflow(DM_feed, DM_livestock, dm_bev_ibp_cereal_feed, CDM_const)
     dm_voil, dm_aps_ibp_oil, dm_voil_tpe = biomass_allocation_workflow(dm_aps_ibp, dm_oil)
-    DM_crop, dm_crop, dm_crop_other, dm_feed_processed, dm_food_processed, df_cal_rates_crop = crop_workflow(DM_crop, dm_feed_demand, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const, dm_oil)
-    DM_land, dm_land, dm_land_use, dm_fiber, df_cal_rates_land = land_workflow(DM_land, dm_crop, DM_livestock, dm_crop_other, DM_ind)
-    dm_n, dm_fertilizer_co, dm_mineral_fertilizer, df_cal_rates_n = nitrogen_workflow(DM_nitrogen, dm_land, CDM_const)
-    DM_energy_ghg, dm_CO2, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O, df_cal_rates_ghg = energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_co, dm_liv_N2O, dm_CH4, CDM_const, dm_n)
+    DM_crop, dm_crop_other, dm_feed_processed, dm_food_processed = crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const, dm_oil)
+    DM_land, dm_land_use, dm_fiber = land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, DM_ind)
+    DM_nitrogen, dm_fertilizer_co, dm_mineral_fertilizer = nitrogen_workflow(DM_nitrogen, DM_land, CDM_const)
+    DM_energy_ghg, dm_CO2, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O = energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_fertilizer_co, DM_manure, CDM_const, DM_nitrogen)
 
     # INTERFACES OUT ---------------------------------------------------------------------------------------------------
 
@@ -2672,8 +2475,6 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     return results_run
 
 def agriculture_local_run():
-    global_vars = {'geoscale': '.*'}
-    filter_geoscale(global_vars)
     years_setting, lever_setting = init_years_lever()
     agriculture(lever_setting, years_setting)
     return
@@ -2684,7 +2485,7 @@ def agriculture_local_run():
 
 # # Run the code in local
 #start = time.time()
-results_run = agriculture_local_run()
+#results_run = agriculture_local_run()
 #end = time.time()
 #print(end-start)
 

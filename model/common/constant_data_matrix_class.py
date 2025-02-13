@@ -24,18 +24,31 @@ from model.common.io_database import read_database
 
 class ConstantDataMatrix:
 
-    def __init__(self, col_labels={}, units={}):
+    def __init__(self, col_labels={}, units={}, idx={}):
         self.array = None
         self.dim_labels = ["Variables"]  # list
-        self.col_labels = copy.deepcopy(col_labels)  # dictionary with dim_labels[i] as key
-        if len(self.col_labels) == 2:
-            self.dim_labels = ["Variables", "Categories1"]
-        if len(self.col_labels) == 3:
-            self.dim_labels = ["Variables", "Categories1", "Categories2"]
-        self.units = copy.deepcopy(units)  # dictionary
-        if len(col_labels) > 0:
+        self.col_labels = {}
+        self.units = {}
+
+        for i in range(len(col_labels) - 1):
+            cat_num = str(i + 1)
+            self.dim_labels.append('Categories' + cat_num)
+
+        for k, v in col_labels.items():
+            self.col_labels[k] = v.copy()  # dictionary with dim_labels[i] as key
+
+        for k, v in units.items():
+            self.units[k] = v  # dictionary
+
+        if len(col_labels) > 0 and len(idx) == 0:
             self.idx = self.index_all()
-            
+
+        elif len(idx) > 0:
+            self.idx = {}
+            for k, v in idx.items():
+                self.idx[k] = v
+        return
+
     def __repr__(self):
         
         if len(self.col_labels) == 1:
