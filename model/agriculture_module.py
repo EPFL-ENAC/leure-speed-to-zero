@@ -2025,7 +2025,7 @@ def nitrogen_workflow(DM_nitrogen, dm_land, CDM_const):
     return dm_n, dm_fertilizer_co, dm_mineral_fertilizer, df_cal_rates_n
 
  # CalculationLeaf ENERGY & GHG -------------------------------------------------------------------------------------
-def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_co, dm_liv_N2O, dm_CH4, CDM_const, dm_n):
+def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, DM_manure, dm_land, dm_fertilizer_co, dm_liv_N2O, dm_CH4, CDM_const, dm_n):
 
     # ENERGY DEMAND ----------------------------------------------------------------------------------------------------
     # Energy demand from agriculture [ktoe] = energy demand [ktoe/ha] * Agricultural land [ha] FIXME replace with calibration land
@@ -2110,7 +2110,7 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_
     dm_ghg.add(0.0, dummy=True, col_label='CO2-emission', dim='Categories1', unit='t')
 
     # LIVESTOCK EMISSIONS -------------------------------------------------------------------------------------------
-    # Manure N2O emissions = sum (manure emission per livestock type & manure type) FIXME replace with calibrated N2O livestock emissions
+    # Manure N2O emissions = sum (manure emission per livestock type & manure type)
     dm_N2O_liv = dm_liv_N2O.filter({'Variables': ['agr_liv_N2O-emission']})
     dm_N2O_liv = dm_N2O_liv.flatten()
     dm_N2O_liv.groupby({'N2O-emission': '.*'}, dim='Categories1', regex=True, inplace=True)
@@ -2118,7 +2118,7 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_
     dm_N2O_liv.add(0.0, dummy=True, col_label='CO2-emission', dim='Categories1', unit='t')
     dm_N2O_liv.add(0.0, dummy=True, col_label='CH4-emission', dim='Categories1', unit='t')
 
-    # CH4 emissions = sum (manure & enteric emission per livestock type) FIXME replace with calibrated CH4 livestock emissions
+    # CH4 emissions = sum (manure & enteric emission per livestock type)
     dm_CH4_liv = dm_CH4.filter({'Variables': ['agr_liv_CH4-emission']})
     dm_CH4_liv = dm_CH4_liv.flatten()
     dm_CH4_liv.groupby({'CH4-emission': '.*'}, dim='Categories1', regex=True, inplace=True)
@@ -2179,7 +2179,7 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_
 
     # Fertilizer emissions N2O
     dm_fertilizer_N2O = dm_n.filter({'Variables': ['agr_crop_emission_N2O-emission_fertilizer']})
-    dm_fertilizer_N2O.change_unit('agr_crop_emission_N2O-emission', 1e-6, old_unit='t', new_unit='Mt')
+    dm_fertilizer_N2O.change_unit('agr_crop_emission_N2O-emission_fertilizer', 1e-6, old_unit='t', new_unit='Mt')
     #dm_fertilizer_N2O.rename_col('agr_crop_emission_N2O-emission', 'agr_emissions-N2O_crop_fertilizer', 'Variables')
 
     # Crop residue emissions
@@ -2197,20 +2197,20 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_
     dm_crop_residues.drop("Variables", ['agr_emissions-CH4_crop_soil-residues'])
 
     # Livestock emissions CH4 (manure & enteric)
-    #dm_CH4_liv = DM_manure['caf_liv_CH4'].filter({'Variables': ['agr_liv_CH4-emission']})
-    dm_CH4_liv.change_unit('agr_liv_CH4-emission', 1e-6, old_unit='t', new_unit='Mt')
-    dm_CH4_liv.switch_categories_order(cat1='Categories2', cat2='Categories1')
-    dm_CH4_liv.rename_col("agr_liv_CH4-emission", "agr_emissions-CH4_liv", "Variables")
-    dm_CH4_liv = dm_CH4_liv.flatten()
-    dm_CH4_liv = dm_CH4_liv.flatten()
+    dm_CH4_liv_tpe = dm_CH4.filter({'Variables': ['agr_liv_CH4-emission']})
+    dm_CH4_liv_tpe.change_unit('agr_liv_CH4-emission', 1e-6, old_unit='t', new_unit='Mt')
+    dm_CH4_liv_tpe.switch_categories_order(cat1='Categories2', cat2='Categories1')
+    dm_CH4_liv_tpe.rename_col("agr_liv_CH4-emission", "agr_emissions-CH4_liv", "Variables")
+    dm_CH4_liv_tpe = dm_CH4_liv.flatten()
+    dm_CH4_liv_tpe = dm_CH4_liv.flatten()
 
-    # Livestock emissions N2O (manure)  FIXME change for cal
-    #dm_N2O_liv = DM_manure['caf_liv_N2O'].filter({'Variables': ['agr_liv_N2O-emission']})
-    dm_N2O_liv.change_unit('agr_liv_N2O-emission', 1e-6, old_unit='t', new_unit='Mt')
-    dm_N2O_liv.switch_categories_order(cat1='Categories2', cat2='Categories1')
-    dm_N2O_liv.rename_col("agr_liv_N2O-emission", "agr_emissions-N2O_liv", "Variables")
-    dm_N2O_liv = dm_N2O_liv.flatten()
-    dm_N2O_liv = dm_N2O_liv.flatten()
+    # Livestock emissions N2O (manure)
+    dm_N2O_liv_tpe = dm_liv_N2O.filter({'Variables': ['agr_liv_N2O-emission']})
+    dm_N2O_liv_tpe.change_unit('agr_liv_N2O-emission', 1e-6, old_unit='t', new_unit='Mt')
+    dm_N2O_liv_tpe.switch_categories_order(cat1='Categories2', cat2='Categories1')
+    dm_N2O_liv_tpe.rename_col("agr_liv_N2O-emission", "agr_emissions-N2O_liv", "Variables")
+    dm_N2O_liv_tpe = dm_N2O_liv.flatten()
+    dm_N2O_liv_tpe = dm_N2O_liv.flatten()
 
     # Rice emissions
     dm_CH4_rice = DM_land['rice'].filter({'Variables': ['agr_rice_crop_CH4-emission']})
@@ -2218,7 +2218,7 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_
     dm_CH4_rice.rename_col('agr_rice_crop_CH4-emission', 'agr_emissions-CH4_crop_rice', 'Variables')
 
 
-    return DM_energy_ghg, dm_CO2, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O, df_cal_rates_ghg
+    return DM_energy_ghg, dm_CO2, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv_tpe, dm_N2O_liv_tpe, dm_CH4_rice, dm_fertilizer_N2O, df_cal_rates_ghg
 
 
 def agriculture_landuse_interface(DM_bioenergy, dm_lgn, dm_land_use, write_xls = False):
@@ -2634,7 +2634,7 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     DM_crop, dm_crop, dm_crop_other, dm_feed_processed, dm_food_processed, df_cal_rates_crop = crop_workflow(DM_crop, dm_feed_demand, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const, dm_oil)
     DM_land, dm_land, dm_land_use, dm_fiber, df_cal_rates_land = land_workflow(DM_land, dm_crop, DM_livestock, dm_crop_other, DM_ind)
     dm_n, dm_fertilizer_co, dm_mineral_fertilizer, df_cal_rates_n = nitrogen_workflow(DM_nitrogen, dm_land, CDM_const)
-    DM_energy_ghg, dm_CO2, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv, dm_N2O_liv, dm_CH4_rice, dm_fertilizer_N2O, df_cal_rates_ghg = energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, dm_land, dm_fertilizer_co, dm_liv_N2O, dm_CH4, CDM_const, dm_n)
+    DM_energy_ghg, dm_CO2, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv_tpe, dm_N2O_liv_tpe, dm_CH4_rice, dm_fertilizer_N2O, df_cal_rates_ghg = energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, DM_manure, dm_land, dm_fertilizer_co, dm_liv_N2O, dm_CH4, CDM_const, dm_n)
 
     # INTERFACES OUT ---------------------------------------------------------------------------------------------------
 
