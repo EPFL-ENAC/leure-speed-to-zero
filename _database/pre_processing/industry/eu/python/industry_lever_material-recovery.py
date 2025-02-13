@@ -130,6 +130,17 @@ dm.deepen()
 # divide everything by 100 (as in industry % is between 0 and 1)
 dm.array = dm.array/100
 
+# put the products of transport from industry
+products = ['cars-EV', 'cars-FCV', 'cars-ICE', 'trucks-EV', 'trucks-FCV', 'trucks-ICE']
+dm_temp = dm.copy()
+dm_temp.rename_col("waste-material-recovery_elv", products[0], "Variables")
+dm_new = dm_temp.copy()
+for i in range(1, len(products)):
+    dm_temp = dm.copy()
+    dm_temp.rename_col("waste-material-recovery_elv", products[i], "Variables")
+    dm_new.append(dm_temp, "Variables")
+dm = dm_new.copy()
+
 # save
 years_ots = list(range(1990,2023+1))
 years_fts = list(range(2025,2055,5))
