@@ -452,8 +452,8 @@ dm_trade_netshare.sort("Categories1")
 #                                                   "Variables" : ["material-net-import"],
 #                                                   "Categories1" : [material]})
 
-# NOTE: material-net-import is never above 1, so no correction is needed
-
+# let's cap everything to 1
+dm_trade_netshare.array[dm_trade_netshare.array > 1] = 1
 
 ####################################
 ##### MAKE MATERIAL PRODUCTION #####
@@ -503,9 +503,9 @@ dm_matprod.sort("Categories1")
 #                                           "Variables" : ["material-production"],
 #                                           "Categories1" : [material]})
 
-# make it in tonnes
-dm_matprod.array = dm_matprod.array * 0.001
-dm_matprod.units["material-production"] = "t"
+# make it in kilo tonnes
+dm_matprod.array = dm_matprod.array / 1000000
+dm_matprod.units["material-production"] = "kt"
 
 # make fxa for non-modelled sectors
 dm_matprod_fxa = dm_matprod.filter({"Categories1" : ["fbt","mae","ois","textiles","tra-equip", "wwp"]})
