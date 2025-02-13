@@ -58,6 +58,21 @@ for i in range(0, len(lever_files)):
     DM_ots[lever_names[i]] = DM["ots"]
     DM_fts[lever_names[i]] = DM["fts"]
 
+# drop ammonia
+lever_names = ['material-efficiency','material-net-import',
+               'eol-material-recovery']
+for n in lever_names:
+    DM_ots[n].drop("Categories1","ammonia")
+    for i in range(1,4+1):
+        DM_fts[n][i].drop("Categories1","ammonia")
+
+lever_names = ['technology-development','cc',
+               'technology-share','energy-carrier-mix']
+for n in lever_names:
+    DM_ots[n].drop("Categories1","ammonia-tech")
+    for i in range(1,4+1):
+        DM_fts[n][i].drop("Categories1","ammonia-tech")
+
 # save
 DM_industry["ots"] = DM_ots
 DM_industry["fts"] = DM_fts
@@ -134,9 +149,10 @@ with open(filepath, 'rb') as handle:
 CDM_const["emission-factor"] = CDM["combustion-emissions"]
 CDM_const["emission-factor-process"] = CDM["process-emissions"]
 
-################
-##### SAVE #####
-################
+
+########################
+##### PUT TOGETHER #####
+########################
 
 DM_industry = {
     'fxa': DM_fxa,
@@ -146,6 +162,40 @@ DM_industry = {
     "constant" : CDM_const
 }
 
+################################
+##### GENERATE SWITZERLAND #####
+################################
+
+for key in ['fxa', 'ots', 'calibration']:
+    
+    dm_names = list(DM_industry[key])
+    for name in dm_names:
+        
+        dm_temp = DM_industry[key][name]
+        if "Switzerland" not in dm_temp.col_labels["Country"]:
+            
+            idx = dm_temp.idx
+            arr_temp = dm_temp.array[idx["Austria"],...]
+            dm_temp.add(arr_temp[np.newaxis,...], "Country", "Switzerland")
+            dm_temp.sort("Country")
+
+
+dm_names = list(DM_industry["fts"])
+for name in dm_names:
+    
+    for i in range(1,4+1):
+        
+        dm_temp = DM_industry["fts"][name][i]
+        if "Switzerland" not in dm_temp.col_labels["Country"]:
+            
+            idx = dm_temp.idx
+            arr_temp = dm_temp.array[idx["Austria"],...]
+            dm_temp.add(arr_temp[np.newaxis,...], "Country", "Switzerland")
+            dm_temp.sort("Country")
+
+################
+##### SAVE #####
+################
 
 # save
 f = os.path.join(current_file_directory, '../../../../data/datamatrix/industry.pickle')
