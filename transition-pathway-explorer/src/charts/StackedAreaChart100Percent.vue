@@ -48,8 +48,8 @@ export default {
         tickmarkPlacement: 'on',
         plotBands: [{ // mark the weekend
           color: 'rgba(255,255,255,0.6)',
-          from: 2015,
-          to: 2019.91,
+          from: 2023,
+          to: 2024.91,
           zIndex: 4
         }],
         title: {

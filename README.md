@@ -40,13 +40,20 @@ Go to *knime2python/config/* if you don't see a *config_eu.yml*, copy & paste *c
 and rename it as config_eu.yml. Then, in the file you will find 3 paths that you need to change manually to match your local workspace.
 
 ### Step 4: Local server
-Download node js version v16.17.0 https://nodejs.org/download/release/v16.17.0/. Download the .msi file.
 Open a terminal, navigate to PathwayCalc/transition-pathway-explorer and run 
 
 ```
 npm run serve
 ```
-(One needs to install it when used for the very first time, i.e. Node JS and NPM)
+(One needs to install it when used for the very first time, i.e. Node JS and NPM.
+Download node js version v16.17.0 https://nodejs.org/download/release/v16.17.0/. Download the .msi file.
+Go to PathwayCalc/transition-pathway-explorer and run
+
+```
+npm install
+```
+
+)
 
 ### Step 5: Converter knime to python 
 In PyCHarm, run *knime2python/scripts/eucalc-app.py*

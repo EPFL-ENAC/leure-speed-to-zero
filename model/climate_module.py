@@ -24,7 +24,7 @@ from model.common.auxiliary_functions import filter_geoscale
 
 def init_years_lever():
     # function that can be used when running the module as standalone to initialise years and levers
-    years_setting = [1990, 2015, 2050, 5]
+    years_setting = [1990, 2023, 2050, 5]
     f = open('../config/lever_position.json')
     lever_setting = json.load(f)[0]
     return years_setting, lever_setting
@@ -89,13 +89,10 @@ def read_data(data_file, lever_setting):
 def climate_buildings_interface(DM_ots_fts, write_xls = False):
     
     # append
-    DM_bld = {
-        'climate-impact-space': DM_ots_fts["temp"]["bld_climate-impact-space"],
-        'climate-impact-average': DM_ots_fts["temp"]["bld_climate-impact_average"]
-    }
+    dm_bld = DM_ots_fts["temp"]["bld_climate-impact-space"]
 
     # return
-    return DM_bld
+    return dm_bld
 
 def variables_to_tpe(DM_ots_fts):
     
@@ -123,8 +120,8 @@ def climate(lever_setting, years_setting, interface = Interface(), calibration =
     results_run = variables_to_tpe(DM_ots_fts)
     
     # interface buildings
-    DM_bld = climate_buildings_interface(DM_ots_fts)
-    interface.add_link(from_sector='climate', to_sector='buildings', dm=DM_bld)
+    dm_bld = climate_buildings_interface(DM_ots_fts)
+    interface.add_link(from_sector='climate', to_sector='buildings', dm=dm_bld)
     
     # interface power
     dm_pow = climate_power_interface(DM_ots_fts)
@@ -153,7 +150,7 @@ def local_climate_run():
 # # local
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/climate_module.py"
 # database_from_csv_to_datamatrix()
-# results_run = local_climate_run()
+#results_run = local_climate_run()
 
 
 

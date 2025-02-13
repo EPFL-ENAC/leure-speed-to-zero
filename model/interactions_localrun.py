@@ -13,12 +13,13 @@ from model.industry_module import industry
 from model.power_module import power
 from model.landuse_module import land_use
 from model.oilrefinery_module import refinery
-
+from model.common.auxiliary_functions import filter_geoscale
 
 import math
 import time
 import os
 import json
+
 
 
 def interactions(lever_setting, years_setting):
@@ -40,39 +41,37 @@ def interactions(lever_setting, years_setting):
     TPE['buildings'] = buildings(lever_setting, years_setting, interface)
     runtime['Execution time Buldings'] = time.time() - start_time
     start_time = time.time()
-    TPE['industry'] = industry(lever_setting, years_setting, interface)
-    runtime['Execution time Industry'] = time.time() - start_time
-    start_time = time.time()
-    TPE['agriculture'] = agriculture(lever_setting, years_setting, interface)
-    runtime['Execution time Agriculture'] = time.time() - start_time
-    start_time = time.time()
-    # TPE['ammonia'] = ammonia(lever_setting, years_setting, interface)
-    # runtime['Execution time Ammonia'] = time.time() - start_time
-    # start_time = time.time()
-    TPE['power'] = power(lever_setting, years_setting, interface)
-    runtime['Execution time Power'] = time.time() - start_time
-    start_time = time.time()
-    TPE['oil-refinery'] = refinery(lever_setting, years_setting, interface)
-    runtime['Execution time Oil-Refinery'] = time.time() - start_time
-    start_time = time.time()
-    TPE['district-heating'] = district_heating(lever_setting, years_setting, interface)
-    runtime['Execution time District-Heating'] = time.time() - start_time
-    start_time = time.time()
-    TPE['land-use'] = land_use(lever_setting, years_setting, interface)
-    runtime['Execution time Land-Use'] = time.time() - start_time
-    start_time = time.time()
-    # TPE['minerals'], TPE['minerals_EU'] = minerals(interface)
-    # runtime['Execution time Minerals'] = time.time() - start_time
-    # start_time = time.time()
-    TPE['emissions'] = emissions(lever_setting, years_setting, interface)
-    runtime['Execution time Emissions'] = time.time() - start_time
+    #TPE['industry'] = industry(lever_setting, years_setting, interface)
+    #runtime['Execution time Industry'] = time.time() - start_time
+    #start_time = time.time()
+    #TPE['agriculture'] = agriculture(lever_setting, years_setting, interface)
+    #runtime['Execution time Agriculture'] = time.time() - start_time
+    #start_time = time.time()
+    #TPE['ammonia'] = ammonia(lever_setting, years_setting, interface)
+    #runtime['Execution time Ammonia'] = time.time() - start_time
+    #start_time = time.time()
+    #TPE['power'] = power(lever_setting, years_setting, interface)
+    #runtime['Execution time Power'] = time.time() - start_time
+    #start_time = time.time()
+    #TPE['oil-refinery'] = refinery(lever_setting, years_setting, interface)
+    #runtime['Execution time Oil-Refinery'] = time.time() - start_time
+    #start_time = time.time()
+    #TPE['district-heating'] = district_heating(lever_setting, years_setting, interface)
+    #runtime['Execution time District-Heating'] = time.time() - start_time
+    #start_time = time.time()
+    #TPE['land-use'] = land_use(lever_setting, years_setting, interface)
+    #runtime['Execution time Land-Use'] = time.time() - start_time
+    #start_time = time.time()
+    #TPE['minerals'], TPE['minerals_EU'] = minerals(interface)
+    #runtime['Execution time Minerals'] = time.time() - start_time
+    #start_time = time.time()
+    #TPE['emissions'] = emissions(lever_setting, years_setting, interface)
+    #runtime['Execution time Emissions'] = time.time() - start_time
     start_time = time.time()
     
     runtime['Execution time'] = time.time() - init_time
 
     return TPE, runtime
-
-from model.common.auxiliary_functions import filter_geoscale
 
 def local_interactions_run():
     
@@ -83,7 +82,7 @@ def local_interactions_run():
     lever_setting = {key: math.floor(value) for key, value in lever_setting.items()}
     
     # get years
-    years_setting = [1990, 2015, 2050, 5]
+    years_setting = [1990, 2023, 2025, 2050, 5]
     
     # geoscale
     global_vars = {'geoscale': '.*'}

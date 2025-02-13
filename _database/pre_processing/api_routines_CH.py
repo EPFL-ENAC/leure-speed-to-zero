@@ -105,6 +105,12 @@ def json_to_dm(data_json, mapping_dims, mapping_vars, units):
             final_order[i] = unmapped_axes.pop(0)
 
     arr = np.transpose(arr_raw, axes=final_order)
+    # Some over unmapped_axes
+    nb_axis_unmapped = len(final_order) - len(mapped_axes)
+    for i in range(nb_axis_unmapped):
+        i = i + 1
+        arr = np.nansum(arr, axis=-i, keepdims=True)
+
     arr = arr.reshape(tuple(arr_shape))
 
     dm.array = arr

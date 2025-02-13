@@ -20,8 +20,8 @@ import time
 
 # filtering the constants & read csv and prepares it for the pickle format
 
-# Lever setting for local purpose
 
+# Lever setting for local purpose
 def database_pre_processing():
     # Changes to the EUcalc version
     file = 'lifestyles_floor-intensity'
@@ -186,9 +186,6 @@ def database_from_csv_to_datamatrix():
 def read_data(data_file, lever_setting):
     with open(data_file, 'rb') as handle:  # read binary (rb)
         DM_lifestyles = pickle.load(handle)
-    # FXA data matrix
-    dm_fxa_caf_food = DM_lifestyles['fxa']['caf_food']
-    dm_fxa_caf_intensity = DM_lifestyles['fxa']['caf_intensity']
 
     DM_ots_fts = read_level_data(DM_lifestyles, lever_setting)  # creates the datamatrix according to the lever setting?
 
@@ -201,31 +198,9 @@ def read_data(data_file, lever_setting):
     dm_diet_fwaste = DM_ots_fts['fwaste']
     dm_population = DM_ots_fts['pop']['lfs_population_']
 
-    # Appliances sub-matrix for the lifestyles
-    dm_appliance_use = DM_ots_fts['appliance-use']
-    dm_appliance_own = DM_ots_fts['appliance-own']
-    dm_appliance_substitution = DM_ots_fts['product-substitution-rate']
-    dm_floor_intensity = DM_ots_fts['floor-intensity']
-    dm_household = dm_floor_intensity.filter({'Variables': ['household-size']})
-
-    # Transport sub-matrix for the lifestyles
-    dm_pop_urban = DM_ots_fts['urbpop']
-    dm_passenger_distance = DM_ots_fts['pkm']
-
     # Industry sub-flow data
-    dm_population = DM_ots_fts['pop']['lfs_population_']
     dm_macro = DM_ots_fts['pop']['lfs_macro-scenarii_']
     dm_packaging = DM_ots_fts['paperpack']
-
-    # Buildings
-    dm_population = DM_ots_fts['pop']['lfs_population_']
-    dm_unchanged = DM_ots_fts['heatcool-behaviour']
-    dm_intensity = DM_ots_fts['floor-intensity'].filter({'Variables': ['lfs_floor-intensity_space-cap']})
-    dm_building = DM_ots_fts['floor-area-fraction']
-    dm_building.append(dm_fxa_caf_intensity, dim='Variables')
-    dm_building.append(dm_intensity, dim='Variables')
-    dm_building.append(dm_population, dim='Variables')
-    del dm_intensity
 
 
     # Aggregate datamatrix by theme/flow
@@ -237,25 +212,6 @@ def read_data(data_file, lever_setting):
         'diet-fwaste': dm_diet_fwaste,
         'demography': dm_demography,
         'population': dm_population,
-        'food-caf': dm_fxa_caf_food
-    }
-
-    # Aggregated Data Matrix - Appliances
-
-    DM_appliance = {
-        'population': dm_population,
-        'appliance-use': dm_appliance_use,
-        'appliance-own': dm_appliance_own,
-        'product-substitution-rate': dm_appliance_substitution,
-        'household-size': dm_household
-    }
-
-    # Aggregated Data Matrix - Appliances
-
-    DM_transport = {
-        'population': dm_population,
-        'urbpop': dm_pop_urban,
-        'pkm': dm_passenger_distance
     }
 
     DM_industry = {
@@ -264,13 +220,8 @@ def read_data(data_file, lever_setting):
         'paperpack': dm_packaging
     }
 
-    DM_building = {
-        'building': dm_building,
-        'unchanged': dm_unchanged
-    }
-
     cdm_const = DM_lifestyles['constant']
-    return DM_food, DM_appliance, DM_transport, DM_industry, DM_building, cdm_const
+    return DM_food, DM_industry, cdm_const
 
 
 # Calculation tree - Lifestyles
@@ -300,39 +251,24 @@ def food_workflow(DM_food, cdm_const):
                     dm_population.array[:, :, idx_p['lfs_population_total'], np.newaxis] * 365
     start = time.time()
     dm_diet_tmp = DataMatrix.based_on(ay_total_diet[:, :, np.newaxis, :], dm_diet_share,
-                                      change={'Variables': ['lfs_diet_raw']}, units={'lfs_diet_raw': 'kcal'})
+                                      change={'Variables': ['lfs_diet']}, units={'lfs_diet': 'kcal'})
 
     # Total Consumers food wastes
     dm_diet_fwaste = DM_food['diet-fwaste']
     idx = dm_population.idx
     idx_const = cdm_const.idx
-    ay_total_fwaste = dm_diet_fwaste.array[:, :, 0, :] * dm_population.array[:, :, idx['lfs_population_total'],
-                                                         np.newaxis] \
-                      * cdm_const.array[idx_const['cp_time_days-per-year']]
-    dm_diet_fwaste.add(ay_total_fwaste, dim='Variables', col_label='lfs_food-wastes_raw', unit='kcal')
+    ay_total_fwaste = 365 * dm_diet_fwaste.array[:, :, 0, :]\
+                      * dm_population.array[:, :, idx['lfs_population_total'], np.newaxis]
+    dm_diet_fwaste.add(ay_total_fwaste, dim='Variables', col_label='lfs_food-wastes', unit='kcal')
+    dm_diet_fwaste.filter({'Variables': ['lfs_food-wastes']}, inplace=True)
 
     # Total Consumers food supply (Total food intake)
-    ay_total_food = dm_diet_split.array[:, :, 0, :] * dm_population.array[:, :, idx['lfs_population_total'], np.newaxis] \
-                    * cdm_const.array[idx_const['cp_time_days-per-year']]
+    ay_total_food = 365 * dm_diet_split.array[:, :, 0, :] \
+                    * dm_population.array[:, :, idx['lfs_population_total'], np.newaxis]
     dm_diet_food = DataMatrix.based_on(ay_total_food[:, :, np.newaxis, :], dm_diet_split,
-                                       change={'Variables': ['lfs_diet_raw']}, units={'lfs_diet_raw': 'kcal'})
-    # Calibration factors
-    dm_fxa_caf_food = DM_food['food-caf']
-    # Add dummy caf for afats and rice
-    dm_fxa_caf_food.add(1, dummy=True, col_label=['afats', 'rice'], dim='Categories1')
-
-    # Calibration - Food supply
+                                       change={'Variables': ['lfs_diet']}, units={'lfs_diet': 'kcal'})
     dm_diet_food.append(dm_diet_tmp, dim='Categories1')
-    dm_diet_food.append(dm_fxa_caf_food, dim='Variables')
-    dm_diet_food.operation('lfs_diet_raw', '*', 'caf_lfs_diet',
-                            dim="Variables", out_col='lfs_diet', unit='kcal')
     dm_diet_food.filter({'Variables': ['lfs_diet']}, inplace=True)
-
-    # Calibration - Food wastes
-    dm_diet_fwaste.append(dm_fxa_caf_food, dim='Variables')
-    dm_diet_fwaste.operation('lfs_food-wastes_raw', '*', 'caf_lfs_food-wastes',
-                             dim="Variables", out_col='lfs_food-wastes', unit='kcal')
-    dm_diet_fwaste.filter({'Variables': ['lfs_food-wastes']}, inplace=True)
 
     # Data to return to the TPE
     dm_diet_food.append(dm_diet_fwaste, dim='Variables')
@@ -358,8 +294,7 @@ def appliances_workflow(DM_appliance, cdm_const):
     idx_h = dm_household.idx
     ay_appliance_household = dm_household.array[:, :, idx_h['lfs_households'], np.newaxis] \
                              * dm_appliance.array[:, :, idx_a['lfs_appliance-own'], :]
-    dm_appliance.add(ay_appliance_household, dim='Variables', col_label='lfs_households-appliance-ownership',
-                         unit='#')
+    dm_appliance.add(ay_appliance_household, dim='Variables', col_label='lfs_households-appliance-ownership', unit='#')
 
     # Phone use
     idx_const = cdm_const.idx
@@ -459,11 +394,11 @@ def industry_workflow(DM_industry, cdm_const):
 
     return dm_packaging
 
+
 # Calculation tree - Building (Functions)
 def building_workflow(DM_building):
 
     dm_building = DM_building['building']
-
 
     # Compute floor area
     dm_building.operation('lfs_population_total', '*', 'lfs_floor-intensity_space-cap', unit='1000m2', out_col='lfs_floor-space_total')
@@ -483,6 +418,7 @@ def building_workflow(DM_building):
 
     return DM_building_out
 
+
 def lfs_agriculture_interface(dm_agriculture):
 
     cat_lfs = ['afats', 'beer', 'bev-alc', 'bev-fer', 'bov', 'cereals', 'coffee', 'dfish', 'egg', 'ffish', 'fruits', \
@@ -500,46 +436,45 @@ def lfs_agriculture_interface(dm_agriculture):
 
     return dm_agriculture
 
-def lifestyles_TPE_interface(dm_diet, dm_appliances):
+
+def lifestyles_TPE_interface(dm_diet):
 
     df_diet = dm_diet.write_df()
 
-    dm_own = dm_appliances.filter({'Variables': ['lfs_appliance-own']})
-    df_own = dm_own.write_df()
+    #dm_own = dm_appliances.filter({'Variables': ['lfs_appliance-own']})
+    #df_own = dm_own.write_df()
 
-    dm_use = dm_appliances.filter({'Variables': ['lfs_total-appliance-use']})
-    dm_use.filter({'Categories1': ['comp', 'phone', 'tv']})
-    df_use = dm_use.write_df()
+    #dm_use = dm_appliances.filter({'Variables': ['lfs_total-appliance-use']})
+    #dm_use.filter({'Categories1': ['comp', 'phone', 'tv']})
+    #df_use = dm_use.write_df()
 
-    df = pd.concat([df_diet, df_own.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df_use.drop(columns=['Country', 'Years'])], axis=1)
+    #df = pd.concat([df_diet, df_own.drop(columns=['Country', 'Years'])], axis=1)
+    #df = pd.concat([df, df_use.drop(columns=['Country', 'Years'])], axis=1)
 
-    return df
+    return df_diet
+
 
 # CORE module
 def lifestyles(lever_setting, years_setting, interface=Interface()):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     lifestyles_data_file = os.path.join(current_file_directory,
                                         '../_database/data/datamatrix/geoscale/lifestyles.pickle')
-    DM_food, DM_appliance, DM_transport, DM_industry, DM_building, cdm_const = read_data(lifestyles_data_file, lever_setting)
+    DM_food, DM_industry, cdm_const = read_data(lifestyles_data_file, lever_setting)
 
     # To send to TPE (result run)
+    dm_pop = DM_food['population']
     dm_agriculture_out = food_workflow(DM_food, cdm_const)
-    DM_appliance_out = appliances_workflow(DM_appliance, cdm_const)
-    DM_transport_out = transport_workflow(DM_transport)
     dm_industry_out = industry_workflow(DM_industry, cdm_const)
-    DM_building_out = building_workflow(DM_building)
 
     # concatenate all results to df
-    results_run = lifestyles_TPE_interface(dm_agriculture_out, DM_appliance_out['buildings'].copy())
+    results_run = lifestyles_TPE_interface(dm_agriculture_out)
 
-    # !FIXME: currently agriculture renames all of the lifestyles categories, we should rather keep lifestyles categories and rework agriculture
+    # !FIXME: currently agriculture renames all of the lifestyles categories,
+    #  we should rather keep lifestyles categories and rework agriculture
     dm_agriculture = lfs_agriculture_interface(dm_agriculture_out)
-    dm_population = DM_food['population']
-    interface.add_link(from_sector='lifestyles', to_sector='agriculture', dm=dm_population)
-    interface.add_link(from_sector='lifestyles', to_sector='transport', dm=DM_transport_out['transport'])
-    DM_building_out['appliance'] = DM_appliance_out['buildings']
-    interface.add_link(from_sector='lifestyles', to_sector='buildings', dm=DM_building_out)
+    interface.add_link(from_sector='lifestyles', to_sector='agriculture', dm=dm_agriculture)
+    interface.add_link(from_sector='lifestyles', to_sector='transport', dm=dm_pop)
+    interface.add_link(from_sector='lifestyles', to_sector='buildings', dm=dm_pop)
     interface.add_link(from_sector='lifestyles', to_sector='industry', dm=dm_industry_out)
 
     dm_minerals = DM_industry['macro']
@@ -554,15 +489,13 @@ def local_lifestyles_run():
     # Initiate the year & lever setting
     years_setting, lever_setting = init_years_lever()
 
-    global_vars = {'geoscale': '.*'}
+    global_vars = {'geoscale': 'Switzerland|Vaud'}
     filter_geoscale(global_vars)
 
     lifestyles(lever_setting, years_setting)
     return
 
 # Update/Create the Pickle
-# database_from_csv_to_datamatrix()  # un-comment to update
-local_lifestyles_run()  # to un-comment to run in local
-# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/transport_module.py"
-# local_lifestyles_run()  # to un-comment to run in local
+#database_from_csv_to_datamatrix()  # un-comment to update
+#local_lifestyles_run()  # to un-comment to run in local
 
