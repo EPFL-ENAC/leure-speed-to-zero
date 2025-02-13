@@ -3,7 +3,7 @@ import pandas as pd
 import pickle
 
 
-from model.common.auxiliary_functions import moving_average, linear_fitting, create_years_list
+from model.common.auxiliary_functions import moving_average, linear_fitting, create_years_list, my_pickle_dump
 from model.common.io_database import update_database_from_dm, csv_database_reformat, read_database_to_dm
 from _database.pre_processing.api_routines_CH import get_data_api_CH
 from model.common.data_matrix_class import DataMatrix
@@ -1898,9 +1898,9 @@ dm_pop_fts = DM_lifestyles['fts']['pop']['lfs_population_'][1]
 dm_pop_ots.append(dm_pop_fts, dim='Years')
 DM_interface_lfs_to_bld = {'pop': dm_pop_ots}
 
+
 file = '../../../data/interface/lifestyles_to_buildings.pickle'
-with open(file, 'wb') as handle:
-    pickle.dump(DM_interface_lfs_to_bld, handle, protocol=pickle.HIGHEST_PROTOCOL)
+my_pickle_dump(DM_new = DM_interface_lfs_to_bld, local_pickle_file=file)
 
 # SECTION: Climate to Buildings intereface
 #########################################
@@ -1916,8 +1916,7 @@ dm_clm_ots.append(dm_clm_fts, dim='Years')
 DM_interface_clm_to_bld = {'cdd-hdd': dm_clm_ots}
 
 file = '../../../data/interface/climate_to_buildings.pickle'
-with open(file, 'wb') as handle:
-    pickle.dump(DM_interface_clm_to_bld, handle, protocol=pickle.HIGHEST_PROTOCOL)
+my_pickle_dump(DM_new=DM_interface_clm_to_bld, local_pickle_file=file)
 
 # SECTION: FTS + PREPARE OUTPUT
 
@@ -2147,22 +2146,6 @@ dm_elec.array = arr_elec
 dm_elec.fill_nans(dim_to_interp="Years")
 DM_buildings['fxa']['emission-factor-electricity'] = dm_elec
 
-
 file = '../../../data/datamatrix/buildings.pickle'
-with open(file, 'wb') as handle:
-    pickle.dump(DM_buildings, handle, protocol=pickle.HIGHEST_PROTOCOL)
+my_pickle_dump(DM_buildings, file)
 
-# dm_heating_eff.filter({'Years': years_ots}, inplace=True)
-print('Hello')
-
-## I need to think about how things work. Say we are in 2023. And I need to predict stuff for 2024.
-# I need to know how many m2 are needed in 2024. Then I look at 2023 and I know the stock split in 2023.
-# I also apply the demolition rate and obtain the waste generated. I can obtain the total new m2 per mfh and sfh.
-# You can take the new m2 and apply the share by energy cat. Now I have the s_c(t-1), n_c(t), w_c(t)
-# I take s_c(t-1), I apply the renovation-rate and I obtain the renovated stock r_c(t). I can now use the following:
-# s_c(t) = s_c(t-1) + n_c(t) - w_c(t) + r_c(t)
-
-
-# I'm going to try new temperature settings, but in case that doesn't work, something that works is keeping efficiency
-# constants to 2005 values for all fuels except heating-oil + setting Tin to 23 for multi-family-households and to 19 for
-# single-family-households
