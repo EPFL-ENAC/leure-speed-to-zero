@@ -40,526 +40,397 @@ def read_data(data_file, lever_setting):
     # return
     return DM_fxa, DM_ots_fts, dm_cal, CMD_const
 
-def simulate_transport_to_industry_input():
-    dm_transport = simulate_input(from_sector='transport', to_sector='industry')
-
-    # rename
-    # dm_transport.rename_col_regex(str1 = "tra_", str2 = "tra_product-demand_", dim = "Variables")
-    dm_transport.deepen()
-
-    # infra
-    dm_demand_tra_infra = dm_transport.filter({"Variables" : ['tra_product-demand'],
-                                               "Categories1" : ['rail','road','trolley-cables']})
-    dm_demand_tra_infra.units["tra_product-demand"] = "km"
-
-    # vehicules
-    dm_demand_tra_veh = dm_transport.filter({"Variables" : ['tra_product-demand'],
-                                             "Categories1" : ['cars-EV', 'cars-FCV', 'cars-ICE',
-                                                              'planes', 'ships', 'trains',
-                                                              'trucks-EV', 'trucks-FCV', 'trucks-ICE']})
-    dm_demand_tra_veh.units["tra_product-demand"] = "num"
+def product_production(dm_demand_bld_pipe, dm_demand_bld_floor, dm_demand_bld_domapp, 
+                       dm_demand_tra_infra, dm_demand_tra_veh, 
+                       dm_demand_lfs, dm_import):
     
-    # waste
-    dm_waste_veh =  dm_transport.filter({"Variables" : ['tra_product-waste'],
-                                         "Categories1" : ['cars-EV', 'cars-FCV', 'cars-ICE',
-                                                          'planes', 'ships', 'trains',
-                                                          'trucks-EV', 'trucks-FCV', 'trucks-ICE']})
-    dm_waste_veh.units["tra_product-waste"] = "num"
+    # production [%] = 1 - net import [%]
+    # note: production [%] is production [unit] / demand [unit]
     
-    # stock
-    dm_stock_veh =  dm_transport.filter({"Variables" : ['tra_product-stock'],
-                                         "Categories1" : ['cars-EV', 'cars-FCV', 'cars-ICE',
-                                                          'planes', 'ships', 'trains',
-                                                          'trucks-EV', 'trucks-FCV', 'trucks-ICE']})
-    dm_stock_veh.units["tra_product-stock"] = "num"
-    
+    dm_prod = dm_import.copy()
+    dm_prod.array = 1 - dm_prod.array
+    dm_prod.rename_col(col_in="product-net-import", col_out="product-production", dim="Variables")
 
-    DM_transport = {
-        "tra-infra-demand": dm_demand_tra_infra,
-        "tra-veh-demand": dm_demand_tra_veh,
-        "tra-veh-waste" : dm_waste_veh,
-        "tra-veh-stock" : dm_stock_veh
-    }
+    #####################
+    ##### BUILDINGS #####
+    #####################
 
-    return DM_transport
+    # get production for buildings
+    dm_prod_bld_pipe = dm_prod.filter({"Categories1" : ['new-dhg-pipe']})
+    dm_prod_bld_floor = dm_prod.filter_w_regex({"Categories1": "floor-area"})
+    dm_prod_bld_domapp = dm_prod.filter({"Categories1" : ['computer', 'dishwasher', 'dryer', 
+                                                          'freezer', 'fridge', 'phone',
+                                                          'tv', 'wmachine']})
 
-def simulate_lifestyles_to_industry_input():
-    dm_lifestyles = simulate_input(from_sector='lifestyles', to_sector='industry')
-
-    dm_lifestyles.rename_col_regex(str1="lfs_", str2="lfs_product-demand_", dim="Variables")
-    dm_lifestyles.deepen()
-
-    return dm_lifestyles
-
-def simulate_buildings_to_industry_input():
-    dm_buildings = simulate_input(from_sector='buildings', to_sector='industry')
-
-    # rename
-    dm_buildings.rename_col_regex(str1 = "bld_", str2 = "bld_product-demand_", dim = "Variables")
-    dm_buildings.rename_col_regex(str1 = "_new_",str2 = "-new-",dim = "Variables")
-    dm_buildings.rename_col_regex(str1 = "_reno_",str2 = "-reno-",dim = "Variables")
-    dm_buildings.rename_col_regex(str1 = "-new-dhg_pipe",str2 = "_new-dhg-pipe",dim = "Variables")
-
-    # deepen
-    dm_buildings.deepen()
+    # production (units) = production [%] * demand
 
     # pipes
-    dm_demand_bld_pipe = dm_buildings.filter_w_regex({"Categories1" : ".*pipe"})
-    dm_demand_bld_pipe.units["bld_product-demand"] = "km"
+    dm_prod_bld_pipe.array = dm_prod_bld_pipe.array * dm_demand_bld_pipe.array
+    dm_prod_bld_pipe.units["product-production"] = dm_demand_bld_pipe.units["bld_product-demand"]
 
     # floor
-    dm_demand_bld_floor = dm_buildings.filter_w_regex({"Categories1" : ".*floor"})
-    dm_demand_bld_floor.units["bld_product-demand"] = "m2"
+    dm_prod_bld_floor.array = dm_prod_bld_floor.array * dm_demand_bld_floor.array
+    dm_prod_bld_floor.units["product-production"] = dm_demand_bld_floor.units["bld_product-demand"]
 
     # domestic appliances
-    dm_demand_bld_domapp = dm_buildings.filter({"Categories1" : ['computer', 'dishwasher', 'dryer',
-                                                                  'freezer', 'fridge', 'phone',
-                                                                  'tv', 'wmachine']})
-    dm_demand_bld_domapp.units["bld_product-demand"] = "num"
+    dm_prod_bld_domapp.array = dm_prod_bld_domapp.array * dm_demand_bld_domapp.array
+    dm_prod_bld_domapp.units["product-production"] = dm_demand_bld_domapp.units["bld_product-demand"]
 
-    DM_buildings = {
-        "bld-pipe-demand" : dm_demand_bld_pipe,
-        "bld-floor-demand" : dm_demand_bld_floor,
-        "bld-domapp-demand" : dm_demand_bld_domapp
-    }
 
-    return DM_buildings
+    #####################
+    ##### TRANSPORT #####
+    #####################
 
-def industry_agriculture_interface(DM_material_production, DM_energy_demand):
+    # get production for transport
+    dm_prod_tra_infra = dm_prod.filter({"Categories1": ['rail', 'road', 'trolley-cables']})
+    dm_prod_tra_veh = dm_prod.filter({"Categories1": ['cars-EV', 'cars-FCV', 'cars-ICE',
+                                                       'planes', 'ships', 'trains',
+                                                       'trucks-EV', 'trucks-FCV', 'trucks-ICE']})
     
-    DM_agr = {}
-    
-    # natfibers
-    dm_temp = DM_material_production["natfiber"].copy()
-    dm_temp.rename_col('material-decomposition', "ind_dem", "Variables")
-    DM_agr["natfibers"] = dm_temp.flatten()
-    
-    # bioenergy
-    dm_temp = DM_energy_demand["bioener_bybiomat"].copy()
-    dm_temp.rename_col("energy-demand_bioenergy", "ind_bioenergy", "Variables")
-    dm_temp = dm_temp.filter({"Categories1" : ['gas-bio', 'solid-bio']})
-    DM_agr["bioenergy"] = dm_temp
-    
-    # biomaterial
-    dm_temp = DM_energy_demand["feedstock_bybiomat"].copy()
-    dm_temp.rename_col("energy-demand-feedstock", "ind_biomaterial", "Variables")
-    dm_temp = dm_temp.filter({"Categories1" : ['gas-bio']})
-    DM_agr["biomaterial"] = dm_temp
-    
-    return DM_agr
+    # production (units) = demand * production [%]
 
-def industry_ammonia_interface(DM_material_production, DM_energy_demand, write_xls = False):
-    
-    dm_amm_matprod = DM_material_production["bymat"].filter({"Categories1" : ["chem"]})
-    dm_amm_endem = DM_energy_demand["bymatcarr"].filter({"Categories1" : ['chem']})
-    DM_amm = {"material-production" : dm_amm_matprod,
-              "energy-demand" : dm_amm_endem}
-    
-    # df_agr
-    if write_xls is True:
-        current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        dm_amm = dm_amm_matprod.flatten()
-        dm_amm.append(dm_amm_endem.flatten().flatten(),"Variables")
-        df_amm = dm_amm.write_df()
-        df_amm.to_excel(current_file_directory + "/../_database/data/xls/" + 'All-Countries-interface_from-industry-to-ammonia.xlsx', index=False)
-    
-    return DM_amm
+    # infra
+    dm_prod_tra_infra.array = dm_prod_tra_infra.array * dm_demand_tra_infra.array
+    dm_prod_tra_infra.units["product-production"] = dm_demand_tra_infra.units["tra_product-demand"]
 
-def industry_landuse_interface(DM_material_production, DM_energy_demand, write_xls = False):
-    
-    DM_lus = {}
-    
-    # timber
-    dm_timber = DM_material_production["bymat"].filter({"Categories1" : ["timber"]})
-    dm_timber.rename_col("material-production", "ind_material-production", "Variables")
-    dm_timber = dm_timber.flatten()
-    DM_lus["timber"] = dm_timber
-    
-    # woodpuplp
-    dm_woodpulp = DM_material_production["bytech"].filter({"Categories1" : ['paper_woodpulp']})
-    dm_woodpulp.rename_col("material-production", "ind_material-production", "Variables")
-    DM_lus["woodpulp"] = dm_woodpulp.flatten()
-    
-    # biomaterial solid bio
-    dm_temp = DM_energy_demand["feedstock_bybiomat"].copy()
-    dm_temp.rename_col("energy-demand-feedstock", "ind_biomaterial", "Variables")
-    dm_temp = dm_temp.filter({"Categories1" : ['solid-bio']})
-    DM_lus["biomaterial"] = dm_temp.flatten()
-        
-    # df_agr
-    if write_xls is True:
-        current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        
-        dm_lus = DM_lus["timber"].copy()
-        dm_lus.append(DM_lus["woodpulp"], "Variables")
-        dm_lus.append(DM_lus["biomaterial"], "Variables")
-        
-        dm_lus = dm_lus.write_df()
-        dm_lus.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-agriculture.xlsx', index=False)
+    # veh
+    dm_prod_tra_veh.array = dm_prod_tra_veh.array * dm_demand_tra_veh.array
+    dm_prod_tra_veh.units["product-production"] = dm_demand_tra_veh.units["tra_product-demand"]
 
-    # return
-    return DM_lus
 
-def industry_power_interface(DM_energy_demand, write_xls = False):
-    
-    # dm_elc
-    dm_elc = DM_energy_demand["bycarr"].filter(
-        {"Categories1" : ['electricity','hydrogen']})
-    dm_elc.rename_col("energy-demand", "ind_energy-demand", "Variables")
-    dm_elc = dm_elc.flatten()
+    ######################
+    ##### LIFESTYLES #####
+    ######################
 
-    dm_elc.change_unit('ind_energy-demand_electricity', factor=1e3, old_unit='TWh', new_unit='GWh')
-    dm_elc.change_unit('ind_energy-demand_hydrogen', factor=1e3, old_unit='TWh', new_unit='GWh')
+    # get production for lifestyles
+    dm_prod_lfs = dm_prod.filter({"Categories1": ['aluminium-pack', 'glass-pack', 'paper-pack',
+                                                   'paper-print', 'paper-san', 'plastic-pack']})
 
-    DM_pow = {
-        'electricity': dm_elc.filter({'Variables': ['ind_energy-demand_electricity']}),
-        'hydrogen': dm_elc.filter({'Variables': ['ind_energy-demand_hydrogen']})
-    }
 
-    # df_elc
-    if write_xls is True:
-        current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        dm_elc = dm_elc.write_df()
-        dm_elc.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-power.xlsx', index=False)
+    # production (units) = demand * production [%]
+    dm_prod_lfs.array = dm_prod_lfs.array * dm_demand_lfs.array
+    dm_prod_lfs.units["ind_product-production"] = dm_demand_lfs.units["lfs_product-demand"]
+
+    ########################
+    ##### PUT TOGETHER #####
+    ########################
+
+    DM_production = {"bld-pipe": dm_prod_bld_pipe,
+                     "bld-floor": dm_prod_bld_floor,
+                     "bld-domapp": dm_prod_bld_domapp,
+                     "tra-infra": dm_prod_tra_infra,
+                     "tra-veh": dm_prod_tra_veh,
+                     "lfs": dm_prod_lfs}
         
     # return
-    return DM_pow
+    return DM_production
 
-def industry_refinery_interface(DM_energy_demand, write_xls = False):
+def apply_material_decomposition(dm_production_bld_pipe, dm_production_bld_floor, dm_production_bld_domapp,  
+                                 dm_production_tra_infra, dm_production_tra_veh, dm_production_lfs,
+                                 cdm_matdec_pipe, cdm_matdec_floor, cdm_matdec_domapp,
+                                 cdm_matdec_tra_infra, cdm_matdec_tra_veh, cdm_matdec_lfs):
     
-    # dm_elc
-    dm_ref = DM_energy_demand["bycarr"].filter(
-        {"Categories1": ['liquid-ff-oil_diesel', 'liquid-ff-oil_fuel-oil',
-                          'gas-ff-natural', 'solid-ff-coal']})
-    dm_ref.rename_col("energy-demand", "ind_energy-demand", "Variables")
-    dm_ref.rename_col_regex('liquid-ff-oil_', '', dim='Categories1')
-    dm_ref.sort("Categories1")
+    # material demand [t] = product production [unit] * material decomposition coefficient [t/unit]
 
-    # df_elc
-    if write_xls is True:
-        current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        dm_ref = dm_ref.write_df()
-        dm_ref.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-refinery.xlsx', index=False)
-        
+    #####################
+    ##### BUILDINGS #####
+    #####################
+
+    # pipe
+    dm_bld_pipe_matdec = material_decomposition(dm=dm_production_bld_pipe, cdm=cdm_matdec_pipe)
+
+    # floor
+    dm_bld_floor_matdec = material_decomposition(dm=dm_production_bld_floor, cdm=cdm_matdec_floor)
+
+    # domestic appliance
+    dm_bld_domapp_matdec = material_decomposition(dm=dm_production_bld_domapp, cdm=cdm_matdec_domapp)
+    
+    #####################
+    ##### TRANSPORT #####
+    #####################
+
+    # infra
+    dm_tra_infra_matdec = material_decomposition(dm=dm_production_tra_infra, cdm=cdm_matdec_tra_infra)
+
+    # veh
+    dm_tra_veh_matdec = material_decomposition(dm=dm_production_tra_veh, cdm=cdm_matdec_tra_veh)
+
+    ######################
+    ##### LIFESTYLES #####
+    ######################
+
+    # lfs
+    dm_lfs_matdec = material_decomposition(dm=dm_production_lfs, cdm=cdm_matdec_lfs)
+
+    ########################
+    ##### PUT TOGETHER #####
+    ########################
+
+    dm_matdec = dm_bld_pipe_matdec.copy()
+    dm_matdec.append(dm_bld_floor_matdec, dim="Categories1")
+    dm_matdec.append(dm_bld_domapp_matdec, dim="Categories1")
+    dm_matdec.append(dm_tra_infra_matdec, dim="Categories1")
+    dm_matdec.append(dm_tra_veh_matdec, dim="Categories1")
+    dm_matdec.append(dm_lfs_matdec, dim="Categories1")
+
+    # note: we are calling this material demand as this is the demand of materials 
+    # that comes from the production sector (e.g. how much material is needed to
+    # produce a car)
+    DM_material_demand = {"material-demand": dm_matdec}
+    DM_material_demand["material-demand"].drop("Categories2", ["other"])
+    # TODO: understand if to keep other here and later
+
+    # clean
+    del dm_bld_pipe_matdec, dm_bld_floor_matdec, dm_bld_domapp_matdec, \
+        dm_tra_infra_matdec, dm_tra_veh_matdec, dm_lfs_matdec
+
     # return
-    return dm_ref
+    return DM_material_demand
 
-def industry_water_inferface(DM_energy_demand, DM_material_production, write_xls = False):
+def apply_material_switch(dm_material_demand, dm_material_switch, cdm_material_switch, DM_input_matswitchimpact):
     
-    # dm_water
-    dm_water = DM_energy_demand["bycarr"].filter(
-        {"Categories1" : ['electricity', 'gas-ff-natural', 'hydrogen', 'liquid-ff-oil', 
-                          'solid-ff-coal']}).flatten()
-    dm_water.append(DM_material_production["bytech"].filter(
-        {"Categories1" : ['aluminium_prim', 'aluminium_sec', 'cement_dry-kiln', 'cement_geopolym', 
-                          'cement_wet-kiln', 'chem_chem-tech', 'copper_tech', 'glass_glass', 'lime_lime',
-                          'paper_recycled', 'paper_woodpulp', 'steel_BF-BOF', 'steel_hisarna', 
-                          'steel_hydrog-DRI', 'steel_scrap-EAF']}).flatten(), "Variables")
-    variables = dm_water.col_labels["Variables"]
-    for i in variables:
-        dm_water.rename_col(i, "ind_" + i, "Variables")
-    dm_water.sort("Variables")
+    # material in-to-out [t] = material in [t] * in-to-out [%]
+    # material in [t] = material in [t] - material in-to-out [t]
+    # material out [t] = material out [t] + material in-to-out [t] * switch ratio [t/t]
 
-    # df_water
-    if write_xls is True:
-        current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        df_water = dm_water.write_df()
-        df_water.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-water.xlsx', index=False)
+    #####################
+    ##### TRANSPORT #####
+    #####################
 
-    # return
-    return dm_water
+    material_switch(dm = dm_material_demand, dm_ots_fts=dm_material_switch,
+                    cdm_const=cdm_material_switch, material_in="steel", material_out=["chem", "aluminium"],
+                    product="cars-ICE", switch_percentage_prefix="cars-",
+                    switch_ratio_prefix="material-switch-ratios_")
 
-def industry_ccus_interface(DM_emissions, write_xls = False):
-    
-    # adjust variables' names
-    variables = DM_emissions["capt_w_cc_bytech"].col_labels["Categories1"]
-    variables_new = [rename_tech_fordeepen(i) for i in variables]
-    for i in range(len(variables)):
-        DM_emissions["capt_w_cc_bytech"].rename_col(variables[i], variables_new[i], dim = "Categories1")
-    DM_emissions["capt_w_cc_bytech"].rename_col('CO2-capt-w-cc','ind_CO2-emissions-CC',"Variables")
+    material_switch(dm=dm_material_demand, dm_ots_fts=dm_material_switch,
+                    cdm_const=cdm_material_switch, material_in="steel", material_out=["chem", "aluminium"],
+                    product="trucks-ICE", switch_percentage_prefix="trucks-",
+                    switch_ratio_prefix="material-switch-ratios_")
 
-    # dm_ccus
-    dm_ccus = DM_emissions["capt_w_cc_bytech"].filter(
-        {"Categories1" : ['aluminium_prim', 'aluminium_sec', 'cement_dry-kiln', 'cement_geopolym', 
-                          'cement_wet-kiln', 'chem_chem-tech', 'lime_lime',
-                          'paper_recycled', 'paper_woodpulp', 'steel_BF-BOF', 'steel_hisarna', 
-                          'steel_hydrog-DRI', 'steel_scrap-EAF']}).flatten()
-    dm_ccus.sort("Variables")
+    #####################
+    ##### BUILDINGS #####
+    #####################
 
-    # df_ccus
-    if write_xls is True:
-        current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        df_ccus = dm_ccus.write_df()
-        df_ccus.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-ccus.xlsx', index=False)
-        
-    # return
-    return dm_ccus
-    
-def industry_gtap_interface(DM_energy_demand, DM_material_production, write_xls = False):
-    
-    # adjust variables' names
-    dm_temp = DM_energy_demand["bymatcarr"].copy()
-    dm_temp.rename_col("energy-demand", "l_nrg","Variables")
-    dm_temp.array = dm_temp.array * 1000
-    dm_temp.units["l_nrg"] = "GWh"
-    variables = dm_temp.col_labels["Categories1"]
-    variables_new = ['al', 'ce', 'ch', 'co', 'fb', 'gl', 'li', 'me', 'oi', 'pa', 'st', 'tx', 'tr', 'ww']
-    for i in range(len(variables)):
-        dm_temp.rename_col(variables[i],variables_new[i],"Categories1")
-    variables = dm_temp.col_labels["Categories2"]
-    variables_new = ['el','gb','ga','hy','lb','ol','sb','cl','sw']
-    for i in range(len(variables)):
-        dm_temp.rename_col(variables[i],variables_new[i],"Categories2")
+    # new buildings: switch to renewable materials (steel and cement to timber in new residential and non-residential)
 
-    dm_temp2 = DM_material_production["bymat"].filter(
-        {"Categories1" : ['aluminium', 'cement', 'chem', 'copper','glass', 'lime', 
-                          'paper', 'steel']})
-    variables = dm_temp2.col_labels["Categories1"]
-    variables_new = ['al', 'ce', 'ch', 'co', 'gl', 'li', 'pa', 'st']
-    for i in range(len(variables)):
-        dm_temp2.rename_col(variables[i],variables_new[i],"Categories1")
-    dm_temp2.rename_col("material-production","l_mat","Variables")
-    dm_temp2.array = dm_temp2.array / 1000
-    dm_temp2.units["l_mat"] = "Mt"
+    material_switch(dm = dm_material_demand, dm_ots_fts = dm_material_switch, 
+                    cdm_const = cdm_material_switch, material_in = "steel", material_out = ["timber"], 
+                    product = 'floor-area-new-residential', switch_percentage_prefix = "build-", 
+                    switch_ratio_prefix = "material-switch-ratios_", dict_for_output = DM_input_matswitchimpact)
 
-    # dm_gtap
-    dm_gtap = dm_temp.flatten()
-    dm_gtap = dm_gtap.flatten()
-    dm_gtap.append(dm_temp2.flatten(), "Variables")
-    dm_gtap.sort("Variables")
+    material_switch(dm = dm_material_demand, dm_ots_fts = dm_material_switch, 
+                    cdm_const = cdm_material_switch, material_in = "cement", material_out = ["timber"], 
+                    product = 'floor-area-new-residential', switch_percentage_prefix = "build-", 
+                    switch_ratio_prefix = "material-switch-ratios_", dict_for_output = DM_input_matswitchimpact)
 
-    # df_gtap
-    if write_xls is True:
-        current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        df_gtap = dm_gtap.write_df()
-        df_gtap.columns = df_gtap.columns.str.removesuffix("[Mt]")
-        df_gtap.columns = df_gtap.columns.str.removesuffix("[GWh]")
-        df_gtap.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-gtap.xlsx', index=False)
-        
-    # return
-    return dm_gtap
+    material_switch(dm = dm_material_demand, dm_ots_fts = dm_material_switch, 
+                    cdm_const = cdm_material_switch, material_in = "steel", material_out = ["timber"], 
+                    product = 'floor-area-new-non-residential', switch_percentage_prefix = "build-", 
+                    switch_ratio_prefix = "material-switch-ratios_", dict_for_output = DM_input_matswitchimpact)
 
-def industry_minerals_interface(DM_material_production, DM_production, DM_ots_fts, write_xls = False):
+    material_switch(dm = dm_material_demand, dm_ots_fts = dm_material_switch, 
+                    cdm_const = cdm_material_switch, material_in = "cement", material_out = ["timber"], 
+                    product = 'floor-area-new-non-residential', switch_percentage_prefix = "build-", 
+                    switch_ratio_prefix = "material-switch-ratios_", dict_for_output = DM_input_matswitchimpact)
+
+    # renovated buildings: switch to insulated surfaces (chemicals to paper and natural fibers in renovated residential and non-residential)
+
+    material_switch(dm = dm_material_demand, dm_ots_fts = dm_material_switch, 
+                    cdm_const = cdm_material_switch, material_in = "chem", material_out = ["paper","natfibers"], 
+                    product = "floor-area-reno-residential", switch_percentage_prefix = "reno-", 
+                    switch_ratio_prefix = "material-switch-ratios_")
+
+    material_switch(dm = dm_material_demand, dm_ots_fts = dm_material_switch, 
+                    cdm_const = cdm_material_switch, material_in = "chem", material_out = ["paper","natfibers"], 
+                    product = "floor-area-reno-non-residential", switch_percentage_prefix = "reno-", 
+                    switch_ratio_prefix = "material-switch-ratios_")
     
-    DM_ind = {}
+    return
+
+def material_production(dm_material_efficiency, dm_material_net_import, 
+                        dm_material_demand, dm_matprod_other_industries):
     
-    # aluminium pack
-    dm_alupack = DM_production["lfs"].filter({"Categories1" : ["aluminium-pack"]})
-    DM_ind["aluminium-pack"] = dm_alupack.flatten()
+    ######################
+    ##### EFFICIENCY #####
+    ######################
     
-    # material production
-    dm_matprod = DM_material_production["bymat"].filter({"Categories1": ["timber", 'glass', 'cement']})
-    dm_paper_woodpulp = DM_material_production["bytech"].filter({"Categories1": ['paper_woodpulp']})
-    dm_matprod.append(dm_paper_woodpulp, "Categories1")
-    dm_matprod.rename_col("material-production", "ind_material-production", "Variables")
-    DM_ind["material-production"] = dm_matprod.flatten()
-    
-    # technology development
-    dm_techdev = DM_ots_fts['technology-development'].filter(
-        {"Categories1" : ['aluminium-prim', 'aluminium-sec','copper-tech',
-                          'steel-BF-BOF', 'steel-hisarna', 'steel-hydrog-DRI', 
-                          'steel-scrap-EAF']})
-    variables = dm_techdev.col_labels["Categories1"]
-    variables_new = ['aluminium_primary', 'aluminium_secondary','copper_secondary',
-                      'steel_BF-BOF', 'steel_hisarna', 'steel_hydrog-DRI', 
-                      'steel_scrap-EAF']
-    for i in range(len(variables)):
-        dm_techdev.rename_col(variables[i], variables_new[i], dim = "Categories1")
-    dm_techdev.rename_col("ind_technology-development","ind_proportion","Variables")
-    DM_ind["technology-development"] = dm_techdev.flatten()
-    
-    # material efficiency
-    DM_ind["material-efficiency"] = DM_ots_fts['material-efficiency'].filter(
-        {"Variables" : ['ind_material-efficiency'],
-         "Categories1" : ['aluminium','copper','steel']})
-    
-    # material switch
-    dm_temp = DM_ots_fts['material-switch'].filter(
-        {"Categories1" : ['build-steel-to-timber', 'cars-steel-to-chem', 
-                          'trucks-steel-to-aluminium', 'trucks-steel-to-chem']}).flatten()
-    dm_temp.rename_col_regex("material-switch_","material-switch-","Variables")
-    DM_ind["material-switch"] = dm_temp
-    
-    # product net import
-    dm_temp = DM_ots_fts["product-net-import"].filter(
-        {"Variables" : ["ind_product-net-import"],
-         "Categories1" : ['cars-EV', 'cars-FCV', 'cars-ICE', 'computer', 'dishwasher', 'dryer',
-                          'freezer', 'fridge','phone','planes','rail','road', 'ships', 'trains',
-                          'trolley-cables', 'trucks-EV', 'trucks-FCV', 'trucks-ICE', 'tv', 
-                          'wmachine','new-dhg-pipe']})
-    dm_temp.rename_col_regex("cars","LDV","Categories1")
-    dm_temp.rename_col_regex("trucks","HDVL","Categories1")
-    dm_temp.rename_col("computer","electronics-computer","Categories1")
-    dm_temp.rename_col("phone","electronics-phone","Categories1")
-    dm_temp.rename_col("tv","electronics-tv","Categories1")
-    dm_temp.rename_col("dishwasher","dom-appliance-dishwasher","Categories1")
-    dm_temp.rename_col("dryer","dom-appliance-dryer","Categories1")
-    dm_temp.rename_col("freezer","dom-appliance-freezer","Categories1")
-    dm_temp.rename_col("fridge","dom-appliance-fridge","Categories1")
-    dm_temp.rename_col("wmachine","dom-appliance-wmachine","Categories1")
-    dm_temp.rename_col("new-dhg-pipe","infra-pipe","Categories1")
-    dm_temp.rename_col("rail","infra-rail","Categories1")
-    dm_temp.rename_col("road","infra-road","Categories1")
-    dm_temp.rename_col("trolley-cables","infra-trolley-cables","Categories1")
-    dm_temp.rename_col("planes","other-planes","Categories1")
-    dm_temp.rename_col("ships","other-ships","Categories1")
-    dm_temp.rename_col("trains","other-trains","Categories1")
-    dm_temp.rename_col_regex('FCV', 'FCEV', 'Categories1')
+    # get efficiency coefficients
+    dm_temp = dm_material_efficiency.copy()
+    dm_temp.filter({"Categories1" : dm_material_demand.col_labels["Categories2"]}, inplace=True)
+    dm_temp.add(0, "Categories1", "natfiber", unit="%", dummy=True)
     dm_temp.sort("Categories1")
-    DM_ind["product-net-import"] = dm_temp.flatten()
+    
+    # apply formula to material demand (and overwrite)
+    dm_material_demand.array = dm_material_demand.array * (1 - dm_temp.array[:,:,:,np.newaxis,:])
+    
+    ############################
+    ##### AGGREGATE DEMAND #####
+    ############################
 
-    # df_min
-    if write_xls is True:
-        
-        current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        
-        dm_min = DM_ind['aluminium-pack']
-        dm_min.append(DM_ind['material-production'], "Variables")
-        dm_min.append(DM_ind['technology-development'], "Variables")
-        dm_min.append(DM_ind['material-efficiency'].flatten(), "Variables")
-        dm_min.append(DM_ind['material-switch'], "Variables")
-        dm_min.append(DM_ind['product-net-import'], "Variables")
-        dm_min.sort("Variables")
-        
-        df_min = dm_min.write_df()
-        df_min.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-minerals.xlsx', index=False)
-        
+    # get aggregate demand
+    dm_matdec_agg = dm_material_demand.group_all(dim='Categories1', inplace=False)
+    dm_matdec_agg.change_unit('material-decomposition', factor=1e-3, old_unit='t', new_unit='kt')
+
+    # subset aggregate demand for the materials we keep
+    materials = ['aluminium', 'cement', 'chem', 'copper', 'glass', 'lime', 'paper', 'steel', 'timber']
+    dm_material_production_natfiber = dm_matdec_agg.filter({"Categories1": ["natfibers"]}) # this will be used for interface agriculture
+    dm_matdec_agg.filter({"Categories1": materials}, inplace=True)
+
+    ######################
+    ##### PRODUCTION #####
+    ######################
+
+    # material production [kt] = material demand [kt] * (1 - material net import [%])
+    # TODO: add this quantity to the material stock
+
+    # get net import % and make production %
+    dm_temp = dm_material_net_import.copy()
+    dm_temp.filter({"Categories1" : materials}, inplace = True)
+    dm_temp.array = 1 - dm_temp.array
+
+    # get material production
+    dm_material_production_bymat = dm_matdec_agg.copy()
+    dm_material_production_bymat.array = dm_matdec_agg.array * dm_temp.array
+    dm_material_production_bymat.rename_col(col_in = 'material-decomposition', col_out = 'material-production', dim = "Variables")
+
+    # include other industries from fxa
+    dm_material_production_bymat.append(data2 = dm_matprod_other_industries, dim = "Categories1")
+    dm_material_production_bymat.sort("Categories1")
+    
+    # put together
+    DM_material_production = {"bymat" : dm_material_production_bymat, 
+                              "natfiber" : dm_material_production_natfiber}
+    
+    # clean
+    del dm_matdec_agg, dm_temp, materials, dm_material_production_bymat, dm_material_production_natfiber
+    
     # return
-    return DM_ind
+    return DM_material_production
 
-def industry_employment_interface(DM_material_demand, DM_energy_demand, DM_material_production, DM_cost, DM_ots_fts, write_xls = False):
+def calibration_material_production(DM_cal, dm_material_production_bymat, DM_material_production, 
+                                    years_setting):
     
-    # get material demand for appliances
-    DM_material_demand["appliances"] = \
-        DM_material_demand["material-demand"].filter(
-            {"Categories1" : ["computer", "dishwasher", "dryer",
-                              "freezer", "fridge", "tv"]}).group_all("Categories1",
-                                                                   inplace=False)
-    DM_material_demand["appliances"].rename_col("material-decomposition", "material-demand_appliances", "Variables")
+    # get calibration series
+    dm_cal_sub = DM_cal["material-production"].copy()
+    materials = dm_material_production_bymat.col_labels["Categories1"]
+    dm_cal_sub.filter({"Categories1" : materials}, inplace = True)
+
+    # get calibration rates
+    DM_material_production["calib_rates_bymat"] = calibration_rates(dm = dm_material_production_bymat, dm_cal = dm_cal_sub,
+                                                                    calibration_start_year = 1990, calibration_end_year = 2023,
+                                                                    years_setting=years_setting)
+
+    # do calibration
+    dm_material_production_bymat.array = dm_material_production_bymat.array * DM_material_production["calib_rates_bymat"].array
+
+    # clean
+    del dm_cal_sub, materials
     
-    # get material demand for transport
-    DM_material_demand["transport"] = \
-        DM_material_demand["material-demand"].filter(
-            {"Categories1": ['cars-EV', 'cars-FCV', 'cars-ICE',
-                              'trucks-EV', 'trucks-FCV', 'trucks-ICE',
-                              'planes', 'ships', 'trains']}).group_all("Categories1", inplace=False)
-    DM_material_demand["transport"].rename_col("material-decomposition", "material-demand_transport", "Variables")
+    return
+
+def end_of_life(dm_transport_waste, dm_waste_management, dm_matrec_veh, 
+                cdm_matdec_veh, dm_material_production_bymat):
     
-    # get material demand for construction
-    DM_material_demand["construction"] = \
-        DM_material_demand["material-demand"].filter(
-            {"Categories1": ['floor-area-new-non-residential', 'floor-area-new-residential',
-                              'floor-area-reno-non-residential', 'floor-area-reno-residential',
-                              'rail', 'road', 'trolley-cables']}).group_all("Categories1", inplace = False)
-    DM_material_demand["construction"].rename_col("material-decomposition", "material-demand_construction", "Variables")
     
-    # dm_emp
-    dm_emp = DM_material_demand["appliances"].flatten()
-    dm_emp.append(DM_material_demand["transport"].flatten(), "Variables")
-    dm_emp.append(DM_material_demand["construction"].flatten(), "Variables")
-    dm_emp.append(DM_energy_demand["bymat"].flatten(), "Variables")
-    dm_emp.append(DM_energy_demand["bymatcarr"].flatten().flatten(), "Variables")
-    dm_emp.append(DM_material_production["bymat"].filter(
-        {"Categories1" : DM_energy_demand["bymat"].col_labels["Categories1"]}).flatten(), "Variables")
-    dm_emp.append(DM_cost["material-production_capex"].flatten(), "Variables")
-    dm_emp.append(DM_cost["material-production_opex"].flatten(), "Variables")
-    dm_emp.append(DM_cost["CO2-capt-w-cc_capex"].flatten(), "Variables")
-    dm_emp.append(DM_cost["CO2-capt-w-cc_opex"].flatten(), "Variables")
-    variables = dm_emp.col_labels["Variables"]
-    for i in variables:
-        dm_emp.rename_col(i, "ind_" + i, "Variables")
-    dm_emp.append(DM_ots_fts["material-net-import"].filter(
-        {"Categories1" : ['aluminium', 'cement', 'chem', 'copper', 'glass', 'lime', 
-                          'paper', 'steel', 'timber'],}).flatten(), "Variables")
-    dm_emp.sort("Variables")
-
-    # df_emp
-    if write_xls is True:
-        current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        df_emp = dm_emp.write_df()
-        df_emp.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-employment.xlsx', index=False)
-
-    # return
-    return dm_emp
-
-def industry_emissions_interface(DM_emissions, write_xls = False):
+    # in general:
+    # littered + export + uncolleted + collected = 1
+    # recycling + energy recovery + reuse + landfill + incineration = 1
+    # note on incineration: transport will not have incineration, while electric waste yes
     
-    # adjust variables' names
-    dm_temp = DM_emissions["bygasmat"].flatten().flatten()
-    dm_temp.deepen()
-    dm_temp.rename_col_regex("_","-","Variables")
-    DM_emissions["combustion_bio_capt_w_cc_neg_bymat"].rename_col("emissions-biogenic-negative","emissions-CO2_biogenic","Variables")
-    dm_temp1 = DM_emissions["combustion_bio_capt_w_cc_neg_bymat"].flatten()
-    dm_temp1.rename_col_regex("CO2-capt-w-cc_","","Categories1")
-
-    # dm_ems
-    dm_ems = dm_temp.flatten()
-    dm_ems.append(dm_temp1.flatten(), "Variables")
-    variables = dm_ems.col_labels["Variables"]
-    for i in variables:
-        dm_ems.rename_col(i, "ind_" + i, "Variables")
-    dm_ems.sort("Variables")
-
-    # dm_cli
-    if write_xls is True:
-        current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        dm_ems = dm_ems.write_df()
-        dm_ems.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-emissions.xlsx', index=False)
-
-    # return
-    return dm_ems
-
-def industry_airpollution_interface(DM_material_production, DM_energy_demand, write_xls = False):
+    # TODO: for the moment I am doing waste management only for cars and trucks, this will have to be done
+    # for 'planes', 'ships', 'trains', batteries (probably this will be in minerals), 
+    # appliances (for which we'll have to update buildings) and
+    # buildings (which is already present in buildings, though we need to develop the data on their eol).
+    # So far, the split of waste categories should be the same for transport and appliances, with the
+    # only difference that incineration will be positive values for appliances. That should be the only
+    # difference, so same formulas should apply.
     
-    # dm_airpoll
-    dm_airpoll = DM_material_production["bytech"].flatten()
-    dm_airpoll.append(DM_energy_demand["bymatcarr"].flatten().flatten(), "Variables")
-    variables = dm_airpoll.col_labels["Variables"]
-    for i in variables:
-        dm_airpoll.rename_col(i, "ind_" + i, "Variables")
-    dm_airpoll.sort("Variables")
-
-    # write
-    if write_xls is True:
-        current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        df_airpoll = dm_airpoll.write_df()
-        df_airpoll.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-air_pollution.xlsx', index=False)
-        
-    # return
-    return dm_airpoll
-
-def industry_district_heating_interface(DM_energy_demand, write_xls = False):
+    # make waste-collected, waste-uncollected, export, littered
+    layer1 = ["export","littered","waste-collected","waste-uncollected"]
+    dm_waste_layer1 = dm_waste_management.filter({"Categories1" : layer1})
+    arr_temp = dm_transport_waste.array[...,np.newaxis] * dm_waste_layer1.array[:,:,np.newaxis,:,:]
+    dm_transport_waste_bywsm_layer1 = DataMatrix.based_on(arr_temp, dm_transport_waste, 
+                                                          {'Categories2': layer1}, 
+                                                          units = dm_transport_waste.units)
     
-    # FIXME!: make dummy values for dh (this is like this also in KNIME, to be seen what to do)
-    dm_dh = DM_energy_demand["bycarr"].filter({"Categories1" : ["electricity"]})
-    dm_dh = dm_dh.flatten()
-    dm_dh.add(0, dim = "Variables", col_label = "dhg_energy-demand_contribution_heat-waste", unit = "TWh/year", dummy = True)
-    dm_dh.drop("Variables", 'energy-demand_electricity')
+    # make recycling, energy recovery, reuse, landfill, incineration
+    layer2 = ["energy-recovery","incineration","landfill","recycling","reuse"]
+    dm_waste_layer2 = dm_waste_management.filter({"Categories1" : layer2})
+    # dm_waste_layer2.rename_col_regex("cars","waste-management_cars","Variables")
+    # dm_waste_layer2.rename_col_regex("trucks","waste-management_trucks","Variables")
+    # dm_waste_layer2.deepen("_","Variables")
+    # dm_waste_layer2.switch_categories_order("Categories1","Categories2")
+    dm_waste_collected = dm_transport_waste_bywsm_layer1.filter({"Categories2" : ["waste-collected"]})
+    arr_temp = dm_waste_collected.array * dm_waste_layer2.array[:,:,np.newaxis,...]
+    dm_transport_waste_bywsm_layer2 = DataMatrix.based_on(arr_temp, dm_waste_collected, 
+                                                          {'Categories2': layer2}, 
+                                                          units = dm_waste_collected.units)
+    
+    # do material decomposition for recycling
+    dm_transport_waste_bywsm_recy = dm_transport_waste_bywsm_layer2.filter({"Categories2" : ["recycling"]})
+    arr_temp = dm_transport_waste_bywsm_recy.array * cdm_matdec_veh.array[np.newaxis,np.newaxis,...]
+    dm_transport_waste_bymat = DataMatrix.based_on(arr_temp, dm_transport_waste_bywsm_recy, 
+                                                   {'Categories2': cdm_matdec_veh.col_labels["Categories2"]}, 
+                                                   units = "t")
+    dm_transport_waste_bymat.units["tra_product-waste"] = "t"
+    
+    # get material recovered post consumer
+    dm_transport_waste_bymat
+    dm_matrec_veh
+    dm_transport_matrecovered_veh = dm_matrec_veh.copy()
+    idx = dm_transport_waste_bymat.idx
+    dm_transport_matrecovered_veh.array = \
+        dm_transport_waste_bymat.array[:,:,idx["tra_product-waste"],...] *\
+        dm_transport_matrecovered_veh.array
+    variables = dm_transport_matrecovered_veh.col_labels["Variables"]
+    for v in variables: dm_transport_matrecovered_veh.units[v] = "t"
+    
+    # sum across products
+    dm_transport_matrecovered_veh.groupby({'vehicles': '.*cars*|.*trucks.*'}, 
+                                          dim='Variables', aggregation = "sum", regex=True, inplace=True)
+    # dm_transport_matrecovered_veh = dm_transport_matrecovered_veh.flatten()
+    # dm_transport_matrecovered_veh.rename_col_regex("vehicles_","","Variables")
+    
+    # get material recovered across sectors
+    # TODO!: later on add here the other sectors, like buildings and batteries
+    dm_matrecovered = dm_transport_matrecovered_veh.copy()
+    dm_matrecovered.change_unit('vehicles', factor=1e-3, old_unit='t', new_unit='kt')
+    dm_matrecovered.rename_col_regex("vehicles","material-recovered","Variables")
+    
+    # if material recovered is larger than material produced, impose material recovered to be equal to material produced
+    materials = dm_matrecovered.col_labels["Categories1"]
+    dm_temp = dm_matrecovered.copy()
+    dm_temp1 = dm_material_production_bymat.filter({"Categories1" : materials})
+    dm_temp.array = dm_matrecovered.array - dm_temp1.array # create a dm in which you do the difference
+    dm_temp.array[dm_temp.array > 0] = 0 # where the difference is > 0, put difference = 0
+    dm_temp.array = dm_temp.array + dm_temp1.array # sum back the material production, so where the difference > 0, the value of material recovered now equals the value of material production
+    dm_matrecovered_corrected = dm_temp
+    
+    # save
+    DM_eol = {
+        "material-towaste": dm_transport_waste_bymat,
+        "material-recovered" : dm_matrecovered_corrected
+        }
+    
+    return DM_eol
 
-    # dm_dh
-    if write_xls is True:
-        current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        df_dh = dm_dh.write_df()
-        df_dh.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-district_heating.xlsx', index=False)
-        
-    # return
-    return dm_dh
-
-def industry(lever_setting, years_setting, interface = Interface(), calibration = False):
+def industry(lever_setting, years_setting, interface = Interface(), calibration = True):
 
     # industry data file
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     industry_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/industry.pickle')
-    DM_fxa, DM_ots_fts, dm_cal, CDM_const = read_data(industry_data_file, lever_setting)
+    DM_fxa, DM_ots_fts, DM_cal, CDM_const = read_data(industry_data_file, lever_setting)
 
-    cntr_list = dm_cal.col_labels['Country']
+    cntr_list = DM_ots_fts["product-net-import"].col_labels['Country']
 
     if interface.has_link(from_sector='transport', to_sector='industry'):
         DM_transport = interface.get_link(from_sector='transport', to_sector='industry')
     else:
         if len(interface.list_link()) != 0:
             print('You are missing transport to industry interface')
-        DM_transport = simulate_transport_to_industry_input()
+        filepath = os.path.join(current_file_directory, '../_database/data/interface/transport_to_industry.pickle')
+        with open(filepath, 'rb') as handle:
+            DM_transport = pickle.load(handle)
         for key in DM_transport.keys():
             DM_transport[key].filter({'Country': cntr_list}, inplace=True)
 
@@ -568,7 +439,9 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     else:
         if len(interface.list_link()) != 0:
             print('You are missing lifestyles to industry interface')
-        dm_demand_lfs = simulate_lifestyles_to_industry_input()
+        filepath = os.path.join(current_file_directory, '../_database/data/interface/lifestyles_to_industry.pickle')
+        with open(filepath, 'rb') as handle:
+            dm_demand_lfs = pickle.load(handle)
         dm_demand_lfs.filter({'Country': cntr_list}, inplace=True)
 
     if interface.has_link(from_sector='buildings', to_sector='industry'):
@@ -576,7 +449,9 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     else:
         if len(interface.list_link()) != 0:
             print('You are missing buildings to industry interface')
-        DM_buildings = simulate_buildings_to_industry_input()
+        filepath = os.path.join(current_file_directory, '../_database/data/interface/buildings_to_industry.pickle')
+        with open(filepath, 'rb') as handle:
+            DM_buildings = pickle.load(handle)
         for key in DM_buildings.keys():
             DM_buildings[key].filter({'Country': cntr_list}, inplace=True)
 
@@ -605,7 +480,8 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
 
     # calibrate material production (writes in DM_material_production)
     if calibration is True:
-        calibration_material_production(dm_cal, DM_material_production["bymat"], DM_material_production)
+        calibration_material_production(DM_cal, DM_material_production["bymat"], DM_material_production,
+                                        years_setting)
         
     # get end of life
     DM_eol = end_of_life(DM_transport["tra-veh-waste"].filter({"Categories1" : ['cars-EV', 'cars-FCV', 'cars-ICE', 'trucks-EV', 'trucks-FCV', 'trucks-ICE']}), 
@@ -728,7 +604,7 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
 def local_industry_run():
     
     # get years and lever setting
-    years_setting = [1990, 2015, 2050, 5]
+    years_setting = [1990, 2023, 2050, 5]
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     f = open(os.path.join(current_file_directory, '../config/lever_position.json'))
     lever_setting = json.load(f)[0]
