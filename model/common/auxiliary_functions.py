@@ -1058,65 +1058,69 @@ def fix_jumps_in_dm(dm, mad_multiple = 3, consec_do_nothing = False, consec_fill
 
 
 def my_pickle_dump(DM_new, local_pickle_file):
-    # Update local_pickle_file with DataMatrix
-    def update_data(dm_old, dm_new):
-        if 'Country' in dm_old.dim_labels:
-            matching_countries = set(dm_new.col_labels['Country']).intersection(set(dm_old.col_labels['Country']))
-            dm_old.drop(col_label=list(matching_countries), dim='Country')
-            # Add dm_new
-            dm_old.append(dm_new, dim='Country')
-            dm_old.sort('Country')
-        else:
-            dm_old = dm_new
-        return dm_old
-
-    # Load existing DM in pickle
-    with open(local_pickle_file, 'rb') as handle:
-        DM = pickle.load(handle)
-
-    for key in DM_new.keys():   # key = 'ots', 'fxa', ...
-        if isinstance(DM_new[key], dict):  # e.g. 'const' can not be a dict
-            for lever in DM_new[key].keys():
-                if isinstance(DM_new[key][lever], dict):  # you are likely in an fts level
-                    for level in DM_new[key][lever].keys():
-                        if isinstance(DM_new[key][lever][level], dict):  # this happens rarely
-                            for lev in DM_new[key][lever][level].keys():
-                                dm_new = DM_new[key][lever][level][lev]
-                                dm_old = DM[key][lever][level][lev].copy()
+    if not os.path.exists(local_pickle_file):
+        with open(local_pickle_file, 'wb') as handle:
+            pickle.dump(DM_new, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    else:
+        # Update local_pickle_file with DataMatrix
+        def update_data(dm_old, dm_new):
+            if 'Country' in dm_old.dim_labels:
+                matching_countries = set(dm_new.col_labels['Country']).intersection(set(dm_old.col_labels['Country']))
+                dm_old.drop(col_label=list(matching_countries), dim='Country')
+                # Add dm_new
+                dm_old.append(dm_new, dim='Country')
+                dm_old.sort('Country')
+            else:
+                dm_old = dm_new
+            return dm_old
+    
+        # Load existing DM in pickle
+        with open(local_pickle_file, 'rb') as handle:
+            DM = pickle.load(handle)
+    
+        for key in DM_new.keys():   # key = 'ots', 'fxa', ...
+            if isinstance(DM_new[key], dict):  # e.g. 'const' can not be a dict
+                for lever in DM_new[key].keys():
+                    if isinstance(DM_new[key][lever], dict):  # you are likely in an fts level
+                        for level in DM_new[key][lever].keys():
+                            if isinstance(DM_new[key][lever][level], dict):  # this happens rarely
+                                for lev in DM_new[key][lever][level].keys():
+                                    dm_new = DM_new[key][lever][level][lev]
+                                    dm_old = DM[key][lever][level][lev].copy()
+                                    try:
+                                        dm_update = update_data(dm_old, dm_new)
+                                        DM[key][lever][level][lev] = dm_update
+                                    except Exception as e:
+                                        raise RuntimeError(
+                                            f"Warning: Error occurred when trying to update {key}, {lever}, {level}, {lev}, in file {local_pickle_file} - {str(e)}")
+                            else:
+                                dm_new = DM_new[key][lever][level]
+                                dm_old = DM[key][lever][level].copy()
+                                # Remove matching countries
                                 try:
                                     dm_update = update_data(dm_old, dm_new)
-                                    DM[key][lever][level][lev] = dm_update
+                                    DM[key][lever][level] = dm_update
                                 except Exception as e:
-                                    raise RuntimeError(
-                                        f"Warning: Error occurred when trying to update {key}, {lever}, {level}, {lev}, in file {local_pickle_file} - {str(e)}")
-                        else:
-                            dm_new = DM_new[key][lever][level]
-                            dm_old = DM[key][lever][level].copy()
-                            # Remove matching countries
-                            try:
-                                dm_update = update_data(dm_old, dm_new)
-                                DM[key][lever][level] = dm_update
-                            except Exception as e:
-                                raise RuntimeError(f"Warning: Error occurred when trying to update {key}, {lever}, {level},in file {local_pickle_file} - {str(e)}")
-                else:
-                    dm_new = DM_new[key][lever]
-                    dm_old = DM[key][lever].copy()
-                    # Remove matching countries
-                    try:
-                        dm_update = update_data(dm_old, dm_new)
-                        DM[key][lever] = dm_update
-                    except Exception as e:
-                        raise RuntimeError(f"Warning: Error occurred when trying to update {key}, {lever}, in file {local_pickle_file} - {str(e)}")
-        else:
-            dm_new = DM_new[key]
-            dm_old = DM[key]
-            try:
-                dm_update = update_data(dm_old, dm_new)
-                DM[key] = dm_update
-            except Exception as e:
-                raise RuntimeError(f"Warning: Error occurred when trying to update {key}, in file {local_pickle_file} - {str(e)}")
-
-    with open(local_pickle_file, 'wb') as handle:
-        pickle.dump(DM, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                                    raise RuntimeError(f"Warning: Error occurred when trying to update {key}, {lever}, {level},in file {local_pickle_file} - {str(e)}")
+                    else:
+                        dm_new = DM_new[key][lever]
+                        dm_old = DM[key][lever].copy()
+                        # Remove matching countries
+                        try:
+                            dm_update = update_data(dm_old, dm_new)
+                            DM[key][lever] = dm_update
+                        except Exception as e:
+                            raise RuntimeError(f"Warning: Error occurred when trying to update {key}, {lever}, in file {local_pickle_file} - {str(e)}")
+            else:
+                dm_new = DM_new[key]
+                dm_old = DM[key]
+                try:
+                    dm_update = update_data(dm_old, dm_new)
+                    DM[key] = dm_update
+                except Exception as e:
+                    raise RuntimeError(f"Warning: Error occurred when trying to update {key}, in file {local_pickle_file} - {str(e)}")
+    
+        with open(local_pickle_file, 'wb') as handle:
+            pickle.dump(DM, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     return
