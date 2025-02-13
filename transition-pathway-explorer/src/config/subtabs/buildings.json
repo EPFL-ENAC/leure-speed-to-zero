@@ -78,7 +78,7 @@
       ]
     },
     "SHEnergyDemandPerCarrier": {
-      "title": "Demand for space heating per carrier",
+      "title": "Demand for space heating per heating technology",
       "type": "StackedArea",
       "unit": "TWh",
       "outputs": [
