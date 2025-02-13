@@ -2,9 +2,7 @@ import numpy as np
 import pandas as pd
 import pickle
 
-
-from model.common.auxiliary_functions import moving_average, linear_fitting, create_years_list
-from model.common.io_database import update_database_from_dm, csv_database_reformat, read_database_to_dm
+from model.common.auxiliary_functions import my_pickle_dump
 from _database.pre_processing.api_routines_CH import get_data_api_CH
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
@@ -111,9 +109,7 @@ if calibrate:
 
 
     file = '../../../data/datamatrix/buildings.pickle'
-    with open(file, 'wb') as handle:
-        pickle.dump(DM_bld, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
+    my_pickle_dump(DM_bld, file)
 
 
 # If the values are off and the calibration factors vary a lot, try to use the heating demand to back calculate the efficiencies
