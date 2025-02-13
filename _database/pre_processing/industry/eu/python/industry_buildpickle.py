@@ -162,9 +162,9 @@ DM_industry = {
     "constant" : CDM_const
 }
 
-################################
-##### GENERATE SWITZERLAND #####
-################################
+#######################################
+###### GENERATE FAKE SWITZERLAND ######
+#######################################
 
 for key in ['fxa', 'ots', 'calibration']:
     
@@ -191,6 +191,37 @@ for name in dm_names:
             idx = dm_temp.idx
             arr_temp = dm_temp.array[idx["Austria"],...]
             dm_temp.add(arr_temp[np.newaxis,...], "Country", "Switzerland")
+            dm_temp.sort("Country")
+            
+################################
+###### GENERATE FAKE VAUD ######
+################################
+
+for key in ['fxa', 'ots', 'calibration']:
+    
+    dm_names = list(DM_industry[key])
+    for name in dm_names:
+        
+        dm_temp = DM_industry[key][name]
+        if "Vaud" not in dm_temp.col_labels["Country"]:
+            
+            idx = dm_temp.idx
+            arr_temp = dm_temp.array[idx["Austria"],...]
+            dm_temp.add(arr_temp[np.newaxis,...], "Country", "Vaud")
+            dm_temp.sort("Country")
+
+
+dm_names = list(DM_industry["fts"])
+for name in dm_names:
+    
+    for i in range(1,4+1):
+        
+        dm_temp = DM_industry["fts"][name][i]
+        if "Vaud" not in dm_temp.col_labels["Country"]:
+            
+            idx = dm_temp.idx
+            arr_temp = dm_temp.array[idx["Austria"],...]
+            dm_temp.add(arr_temp[np.newaxis,...], "Country", "Vaud")
             dm_temp.sort("Country")
 
 ################
