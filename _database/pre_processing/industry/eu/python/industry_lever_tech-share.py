@@ -88,6 +88,7 @@ df = dm.write_df()
 # rename
 for i in variabs:
     dm.rename_col(i, "technology-share_" + i, "Variables")
+dm.deepen()
 
 # save
 years_ots = list(range(1990,2023+1))
