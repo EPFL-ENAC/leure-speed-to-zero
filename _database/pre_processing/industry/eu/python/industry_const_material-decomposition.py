@@ -148,6 +148,8 @@ for key in CDM_matdec.keys():
     variabs = CDM_matdec[key].col_labels["Variables"]
     for v in variabs:
         CDM_matdec[key].rename_col(v, "material-decomp_" + v, "Variables")
+    CDM_matdec[key] = CDM_matdec[key].flatten()
+    CDM_matdec[key].deepen_twice()
 
 # save
 f = os.path.join(current_file_directory, '../data/datamatrix/const_material-decomposition.pickle')
@@ -159,145 +161,147 @@ with open(f, 'wb') as handle:
 # cdm_temp.array[cdm_temp.array == 0] = np.nan
 # cdm_temp.write_df().columns
 
-#############################################
-##### NEW CONSTANTS FROM LIT REV BY E4S #####
-#############################################
-
-# get data
-filepath = os.path.join(current_file_directory, '../data/Literature/literature_review_material_decomposition.xlsx')
-df = pd.read_excel(filepath)
-
-# melt
-indexes = ["material","material-sub"]
-df = pd.melt(df, id_vars = indexes, var_name='variable')
-
-# save materials lists
-material_sub_alu = ["cast-aluminium","wrought-aluminium"]
-material_sub_steel = ["cast-iron","iron","steel","galvanized-steel","stainless-steel"]
-material_sub_pla = ["plastics-ABS", "plastics-PP", "plastics-PA", "plastics-PBT", "plastics-PE",
-                    "plastics-PMMA", "plastics-POM", "plastics-EPMD", "plastics-EPS", "plastics-PS",
-                    "plastics-PU", "plastics-PUR", "plastics-PET", "plastics-PVC", 
-                    "plastics-carbon-fiber-reinforced", "plastics-glass-fiber-reinforced",
-                    "plastics-mixture"]
-material_current = ['aluminium', 'ammonia', 'concrete-and-inert', 'plastics-total', 'copper', 'glass', 
-                    'lime', 'paper', 'iron_&_steel', 'wood']
-material_current_correct_name = ['aluminium', 'ammonia', 'cement', 'chem', 'copper', 'glass', 
-                                  'lime', 'paper', 'steel', 'timber']
-
-# make function to aggregate materials and products
-def aggregate_materials(df, products, products_fix, material_current, material_current_correct_name):
-    
-    # get df with materials of current model and change their names
-    df_temp1 = df.loc[df["material"].isin(material_current),:]
-    for i in range(0, len(material_current)):
-        df_temp1.loc[df_temp1["material"] == material_current[i],"material"] = material_current_correct_name[i]
-    
-    # get other materials, sum them and concat with others
-    df_temp2 = df.loc[~df["material"].isin(material_current),:]
-    df_temp2 = df_temp2.groupby(["variable"], as_index=False)['value'].agg(sum)
-    df_temp2["material"] = "other"
-    df_temp = pd.concat([df_temp1, df_temp2])
-    # df_temp.groupby(["variable"], as_index=False)['value'].agg(sum) # check ok
-    
-    # fix products names with current aggregation in the model and aggregate
-    for i in range(0, len(products)):
-        df_temp.loc[df_temp["variable"] == products[i],"variable"] = products_fix[i]
-    df_temp = df_temp.groupby(["variable","material"], as_index=False)['value'].agg(np.mean)
-    # df_temp.groupby(["variable"], as_index=False)['value'].agg(sum) # check ok
-    
-    # return
-    return df_temp
-
-# LDV
-# these products below have aluminium and iron&steel general, and plastic detailed
-products = ["LDV_ICE-gasoline[kg/unit]","LDV_ICE-diesel[kg/unit]","LDV_BEV[kg/unit]","LDV_HEV[kg/unit]"]
-df_temp = df.loc[df["variable"].isin(products),:]
-drop = material_sub_alu + material_sub_steel
-df_temp = df_temp.loc[~df_temp["material-sub"].isin(drop),:]
-df_temp1 = df_temp.loc[df_temp["material-sub"].isin(material_sub_pla),:]
-df_temp1 = df_temp1.groupby(["variable"], as_index=False)['value'].agg(sum)
-df_temp1["material"] = "plastics-total"
-df_temp = df_temp.loc[~df_temp["material-sub"].isin(material_sub_pla),:]
-df_temp = df_temp.loc[~df_temp["material"].isin(["plastics-total"]),:]
-df_temp = pd.concat([df_temp, df_temp1])
-df_temp.drop("material-sub",axis=1,inplace=True)
-df_temp = df_temp.sort_values(by=["variable","material"])
-
-df_temp = aggregate_materials(df_temp, products = products, 
-                              products_fix=["cars-ICE[kg/unit]","cars-ICE[kg/unit]","cars-EV[kg/unit]","cars-ICE[kg/unit]"],
-                              material_current = material_current, 
-                              material_current_correct_name = material_current_correct_name)
-
-df_temp["value"] = df_temp["value"]/1000
-df_temp["variable"] = [i.replace("kg","t") for i in df_temp["variable"]]
-df_ldv = df_temp.copy()
-
-# LDV_FCEV[kg/num] has aluminium and plastic general, and iron&steel detailed
-products = ["LDV_FCEV[kg/unit]"]
-df_temp = df.loc[df["variable"].isin(products),:]
-drop = material_sub_alu + material_sub_pla
-df_temp = df_temp.loc[~df_temp["material-sub"].isin(drop),:]
-df_temp1 = df_temp.loc[df_temp["material-sub"].isin(material_sub_steel),:]
-df_temp1 = df_temp1.groupby(["variable"], as_index=False)['value'].agg(sum)
-df_temp1["material"] = "iron_&_steel"
-df_temp = df_temp.loc[~df_temp["material-sub"].isin(material_sub_steel),:]
-df_temp = df_temp.loc[~df_temp["material"].isin(["iron_&_steel"]),:]
-df_temp = pd.concat([df_temp, df_temp1])
-df_temp.drop("material-sub",axis=1,inplace=True)
-df_temp = df_temp.sort_values(by=["variable","material"])
-
-df_temp = aggregate_materials(df_temp, products = products, 
-                              products_fix=["cars-FCV[kg/num]"],
-                              material_current = material_current, 
-                              material_current_correct_name = material_current_correct_name)
-
-df_temp["value"] = df_temp["value"]/1000
-df_temp["variable"] = [i.replace("kg","t") for i in df_temp["variable"]]
-df_ldv = pd.concat([df_ldv, df_temp])
-
-# HDV
-# these products below have alluminium, iron&steel and plastics all detailed, though also plastics
-# general (and things don't sum up). So for the moment I take plastics general and  alluminium and iron&steel detailed.
-# actually, the figures for trucks do not make any sense as they are right now (more than 100k kilos just for aluminium).
-# so for the moment at least for trucks I'll take the value from the EUCalc data
 # =============================================================================
-# products = ['HDVH_ICE-Class-8-day-cab-truck[kg/num]', 'HDVH_HEV-Class-8-day-cab-truck[kg/num]', 
-#             'HDVH_BEV-Class-8-day-cab-truck[kg/num]', 'HDVH_FCEV-Class-8-day-cab-truck[kg/num]', 
-#             'HDVH_ICE-Class-8-sleeper-cab-truck[kg/num]', 'HDVH_HEV-Class-8-sleeper-cab-truck[kg/num]', 
-#             'HDVH_BEV-Class-8-sleeper-cab-truck[kg/num]', 'HDVH_FCV-Class-8-sleeper-cab-truck[kg/num]',
-#             'HDVM_ICE-Class-6-PnD-truck[kg/num]', 'HDVM_HEV-Class-6-PnD-truck[kg/num]', 
-#             'HDVM_EV-Class-6-PnD-truck[kg/num]', 'HDVM_FCV-Class-6-PnD-truck[kg/num]']
+# #############################################
+# ##### NEW CONSTANTS FROM LIT REV BY E4S #####
+# #############################################
+# 
+# # get data
+# filepath = os.path.join(current_file_directory, '../data/Literature/literature_review_material_decomposition.xlsx')
+# df = pd.read_excel(filepath)
+# 
+# # melt
+# indexes = ["material","material-sub"]
+# df = pd.melt(df, id_vars = indexes, var_name='variable')
+# 
+# # save materials lists
+# material_sub_alu = ["cast-aluminium","wrought-aluminium"]
+# material_sub_steel = ["cast-iron","iron","steel","galvanized-steel","stainless-steel"]
+# material_sub_pla = ["plastics-ABS", "plastics-PP", "plastics-PA", "plastics-PBT", "plastics-PE",
+#                     "plastics-PMMA", "plastics-POM", "plastics-EPMD", "plastics-EPS", "plastics-PS",
+#                     "plastics-PU", "plastics-PUR", "plastics-PET", "plastics-PVC", 
+#                     "plastics-carbon-fiber-reinforced", "plastics-glass-fiber-reinforced",
+#                     "plastics-mixture"]
+# material_current = ['aluminium', 'ammonia', 'concrete-and-inert', 'plastics-total', 'copper', 'glass', 
+#                     'lime', 'paper', 'iron_&_steel', 'wood']
+# material_current_correct_name = ['aluminium', 'ammonia', 'cement', 'chem', 'copper', 'glass', 
+#                                   'lime', 'paper', 'steel', 'timber']
+# 
+# # make function to aggregate materials and products
+# def aggregate_materials(df, products, products_fix, material_current, material_current_correct_name):
+#     
+#     # get df with materials of current model and change their names
+#     df_temp1 = df.loc[df["material"].isin(material_current),:]
+#     for i in range(0, len(material_current)):
+#         df_temp1.loc[df_temp1["material"] == material_current[i],"material"] = material_current_correct_name[i]
+#     
+#     # get other materials, sum them and concat with others
+#     df_temp2 = df.loc[~df["material"].isin(material_current),:]
+#     df_temp2 = df_temp2.groupby(["variable"], as_index=False)['value'].agg(sum)
+#     df_temp2["material"] = "other"
+#     df_temp = pd.concat([df_temp1, df_temp2])
+#     # df_temp.groupby(["variable"], as_index=False)['value'].agg(sum) # check ok
+#     
+#     # fix products names with current aggregation in the model and aggregate
+#     for i in range(0, len(products)):
+#         df_temp.loc[df_temp["variable"] == products[i],"variable"] = products_fix[i]
+#     df_temp = df_temp.groupby(["variable","material"], as_index=False)['value'].agg(np.mean)
+#     # df_temp.groupby(["variable"], as_index=False)['value'].agg(sum) # check ok
+#     
+#     # return
+#     return df_temp
+# 
+# # LDV
+# # these products below have aluminium and iron&steel general, and plastic detailed
+# products = ["LDV_ICE-gasoline[kg/unit]","LDV_ICE-diesel[kg/unit]","LDV_BEV[kg/unit]","LDV_HEV[kg/unit]"]
 # df_temp = df.loc[df["variable"].isin(products),:]
-# drop = material_sub_pla
-# df_temp = df_temp.loc[~df_temp["material_sub"].isin(drop),:]
-# df_temp1 = df_temp.loc[df_temp["material_sub"].isin(material_sub_steel),:]
+# drop = material_sub_alu + material_sub_steel
+# df_temp = df_temp.loc[~df_temp["material-sub"].isin(drop),:]
+# df_temp1 = df_temp.loc[df_temp["material-sub"].isin(material_sub_pla),:]
 # df_temp1 = df_temp1.groupby(["variable"], as_index=False)['value'].agg(sum)
-# df_temp1["material"] = "iron_&_steel"
-# df_temp = df_temp.loc[~df_temp["material_sub"].isin(material_sub_steel),:]
-# df_temp = df_temp.loc[~df_temp["material"].isin(["iron_&_steel"]),:]
+# df_temp1["material"] = "plastics-total"
+# df_temp = df_temp.loc[~df_temp["material-sub"].isin(material_sub_pla),:]
+# df_temp = df_temp.loc[~df_temp["material"].isin(["plastics-total"]),:]
 # df_temp = pd.concat([df_temp, df_temp1])
-# df_temp1 = df_temp.loc[df_temp["material_sub"].isin(material_sub_alu),:]
-# df_temp1 = df_temp1.groupby(["variable"], as_index=False)['value'].agg(sum)
-# df_temp1["material"] = "aluminium"
-# df_temp = df_temp.loc[~df_temp["material_sub"].isin(material_sub_alu),:]
-# df_temp = df_temp.loc[~df_temp["material"].isin(["aluminium"]),:]
-# df_temp = pd.concat([df_temp, df_temp1])
-# df_temp.drop("material_sub",axis=1,inplace=True)
+# df_temp.drop("material-sub",axis=1,inplace=True)
 # df_temp = df_temp.sort_values(by=["variable","material"])
 # 
 # df_temp = aggregate_materials(df_temp, products = products, 
-#                               products_fix=['trucks-ICE[kg/num]', 'trucks-ICE[kg/num]', 
-#                                             'trucks-EV[kg/num]', 'trucks-FCV[kg/num]', 
-#                                             'trucks-ICE[kg/num]', 'trucks-ICE[kg/num]', 
-#                                             'trucks-EV[kg/num]', 'trucks-FCV[kg/num]',
-#                                             'trucks-ICE[kg/num]', 'trucks-ICE[kg/num]', 
-#                                             'trucks-EV[kg/num]', 'trucks-FCV[kg/num]'],
+#                               products_fix=["cars-ICE[kg/unit]","cars-ICE[kg/unit]","cars-EV[kg/unit]","cars-ICE[kg/unit]"],
 #                               material_current = material_current, 
 #                               material_current_correct_name = material_current_correct_name)
 # 
 # df_temp["value"] = df_temp["value"]/1000
 # df_temp["variable"] = [i.replace("kg","t") for i in df_temp["variable"]]
-# sum(df_temp["value"])
+# df_ldv = df_temp.copy()
+# 
+# # LDV_FCEV[kg/num] has aluminium and plastic general, and iron&steel detailed
+# products = ["LDV_FCEV[kg/unit]"]
+# df_temp = df.loc[df["variable"].isin(products),:]
+# drop = material_sub_alu + material_sub_pla
+# df_temp = df_temp.loc[~df_temp["material-sub"].isin(drop),:]
+# df_temp1 = df_temp.loc[df_temp["material-sub"].isin(material_sub_steel),:]
+# df_temp1 = df_temp1.groupby(["variable"], as_index=False)['value'].agg(sum)
+# df_temp1["material"] = "iron_&_steel"
+# df_temp = df_temp.loc[~df_temp["material-sub"].isin(material_sub_steel),:]
+# df_temp = df_temp.loc[~df_temp["material"].isin(["iron_&_steel"]),:]
+# df_temp = pd.concat([df_temp, df_temp1])
+# df_temp.drop("material-sub",axis=1,inplace=True)
+# df_temp = df_temp.sort_values(by=["variable","material"])
+# 
+# df_temp = aggregate_materials(df_temp, products = products, 
+#                               products_fix=["cars-FCV[kg/num]"],
+#                               material_current = material_current, 
+#                               material_current_correct_name = material_current_correct_name)
+# 
+# df_temp["value"] = df_temp["value"]/1000
+# df_temp["variable"] = [i.replace("kg","t") for i in df_temp["variable"]]
+# df_ldv = pd.concat([df_ldv, df_temp])
+# 
+# # HDV
+# # these products below have alluminium, iron&steel and plastics all detailed, though also plastics
+# # general (and things don't sum up). So for the moment I take plastics general and  alluminium and iron&steel detailed.
+# # actually, the figures for trucks do not make any sense as they are right now (more than 100k kilos just for aluminium).
+# # so for the moment at least for trucks I'll take the value from the EUCalc data
+# # =============================================================================
+# # products = ['HDVH_ICE-Class-8-day-cab-truck[kg/num]', 'HDVH_HEV-Class-8-day-cab-truck[kg/num]', 
+# #             'HDVH_BEV-Class-8-day-cab-truck[kg/num]', 'HDVH_FCEV-Class-8-day-cab-truck[kg/num]', 
+# #             'HDVH_ICE-Class-8-sleeper-cab-truck[kg/num]', 'HDVH_HEV-Class-8-sleeper-cab-truck[kg/num]', 
+# #             'HDVH_BEV-Class-8-sleeper-cab-truck[kg/num]', 'HDVH_FCV-Class-8-sleeper-cab-truck[kg/num]',
+# #             'HDVM_ICE-Class-6-PnD-truck[kg/num]', 'HDVM_HEV-Class-6-PnD-truck[kg/num]', 
+# #             'HDVM_EV-Class-6-PnD-truck[kg/num]', 'HDVM_FCV-Class-6-PnD-truck[kg/num]']
+# # df_temp = df.loc[df["variable"].isin(products),:]
+# # drop = material_sub_pla
+# # df_temp = df_temp.loc[~df_temp["material_sub"].isin(drop),:]
+# # df_temp1 = df_temp.loc[df_temp["material_sub"].isin(material_sub_steel),:]
+# # df_temp1 = df_temp1.groupby(["variable"], as_index=False)['value'].agg(sum)
+# # df_temp1["material"] = "iron_&_steel"
+# # df_temp = df_temp.loc[~df_temp["material_sub"].isin(material_sub_steel),:]
+# # df_temp = df_temp.loc[~df_temp["material"].isin(["iron_&_steel"]),:]
+# # df_temp = pd.concat([df_temp, df_temp1])
+# # df_temp1 = df_temp.loc[df_temp["material_sub"].isin(material_sub_alu),:]
+# # df_temp1 = df_temp1.groupby(["variable"], as_index=False)['value'].agg(sum)
+# # df_temp1["material"] = "aluminium"
+# # df_temp = df_temp.loc[~df_temp["material_sub"].isin(material_sub_alu),:]
+# # df_temp = df_temp.loc[~df_temp["material"].isin(["aluminium"]),:]
+# # df_temp = pd.concat([df_temp, df_temp1])
+# # df_temp.drop("material_sub",axis=1,inplace=True)
+# # df_temp = df_temp.sort_values(by=["variable","material"])
+# # 
+# # df_temp = aggregate_materials(df_temp, products = products, 
+# #                               products_fix=['trucks-ICE[kg/num]', 'trucks-ICE[kg/num]', 
+# #                                             'trucks-EV[kg/num]', 'trucks-FCV[kg/num]', 
+# #                                             'trucks-ICE[kg/num]', 'trucks-ICE[kg/num]', 
+# #                                             'trucks-EV[kg/num]', 'trucks-FCV[kg/num]',
+# #                                             'trucks-ICE[kg/num]', 'trucks-ICE[kg/num]', 
+# #                                             'trucks-EV[kg/num]', 'trucks-FCV[kg/num]'],
+# #                               material_current = material_current, 
+# #                               material_current_correct_name = material_current_correct_name)
+# # 
+# # df_temp["value"] = df_temp["value"]/1000
+# # df_temp["variable"] = [i.replace("kg","t") for i in df_temp["variable"]]
+# # sum(df_temp["value"])
+# # =============================================================================
 # =============================================================================
 
 
