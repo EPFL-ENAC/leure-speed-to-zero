@@ -487,8 +487,8 @@ def yearly_production_workflow(dm_climate, dm_capacity, dm_ccus, cdm_const):
     # Tuto: Tree parallel (array)
     idx_cap = dm_capacity.idx
     idx_clm = dm_climate.idx
-    ay_gross_yearly_production = dm_capacity.array[:,:,idx_cap['pow_existing-capacity'],:] \
-                                 * dm_climate.array[:,:,idx_clm['clm_capacity-factor'],:]*8760
+    ay_gross_yearly_production = dm_capacity.array[:, :, idx_cap['pow_existing-capacity'], :] \
+                                 * dm_climate.array[:, :, idx_clm['clm_capacity-factor'], :]*8760
     dm_capacity.add(ay_gross_yearly_production, dim='Variables', col_label='pow_gross-yearly-production', unit='GWh')
 
     #######################################################
@@ -633,8 +633,8 @@ def hourly_production_workflow(dm_production_np, dm_production_p, DM_production_
 
     # Extract hourly data (fake pv hourly profile)
     dm_profile_hourly = DM_production_profiles['pv-profile']
-    dm_profile_hourly.append(DM_production_profiles['offshore-wind-profile'],dim='Variables')
-    dm_profile_hourly.append(DM_production_profiles['onshore-wind-profile'],dim='Variables')
+    dm_profile_hourly.append(DM_production_profiles['offshore-wind-profile'], dim='Variables')
+    dm_profile_hourly.append(DM_production_profiles['onshore-wind-profile'], dim='Variables')
 
     # Indexes for computation
     idx_cap = dm_production_p.idx
@@ -697,7 +697,6 @@ def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_ag
     #########################################################################
     # CalculationLeafs - Electricity demand - Heating & cooling [GWh]
     #########################################################################
-
     dm_bld_cooling = DM_bld['cooling']
     dm_bld_heating = DM_bld['space-heating']
     # dm_bld_heatpump = DM_bld['heatpump']
@@ -709,10 +708,10 @@ def yearly_demand_workflow(DM_bld, dm_ind_electricity, dm_amm_electricity, dm_ag
     dm_tra_elec = DM_tra['electricity']
     dm_demand_train = dm_tra_elec.filter_w_regex({'Variables': '.*rail'})
     dm_demand_road = dm_tra_elec.filter_w_regex({'Variables': '.*road'})
+
     #############################################################################
     # CalculationLeafs - Electricity demand - Other sectors [GWh] (no-profiles)
     #############################################################################
-
     dm_demand_other = dm_tra_elec.filter_w_regex({'Variables': '.*other'})
 
     # Tuto: Append matrices
@@ -871,9 +870,9 @@ def storage_workflow(dm_hourly_demand, dm_hourly_production):
 
     dm_hourly_equilibrium = dm_hourly_demand.copy()
     dm_hourly_equilibrium.append(dm_hourly_production, dim='Variables')
-    dm_hourly_equilibrium.operation('pow_total-hourly-production', '-' , 'pow_total-hourly-demand',dim="Variables",
-                                    out_col='sto_hourly-equilibrium',unit='GWh')
-    dm_hourly_equilibrium = dm_hourly_equilibrium.filter({'Variables':['sto_hourly-equilibrium']})
+    dm_hourly_equilibrium.operation('pow_total-hourly-production', '-', 'pow_total-hourly-demand',dim="Variables",
+                                    out_col='sto_hourly-equilibrium', unit='GWh')
+    dm_hourly_equilibrium = dm_hourly_equilibrium.filter({'Variables': ['sto_hourly-equilibrium']})
 
     ######################################
     # CalculationLeafs - Hourly residual demand [GWh]
@@ -889,8 +888,8 @@ def storage_workflow(dm_hourly_demand, dm_hourly_production):
 
     ay_residual_supply = np.where(np.isnan(dm_hourly_equilibrium.array), dm_hourly_equilibrium.array,
                                  np.fmax(dm_hourly_equilibrium.array, 0))
-    dm_hourly_equilibrium.array[:,:,idx_he['sto_hourly-equilibrium'],np.newaxis,...] = ay_residual_supply
-    dm_hourly_equilibrium.rename_col('sto_hourly-equilibrium','sto_residual-supply', dim='Variables')
+    dm_hourly_equilibrium.array[:, :, idx_he['sto_hourly-equilibrium'], np.newaxis, ...] = ay_residual_supply
+    dm_hourly_equilibrium.rename_col('sto_hourly-equilibrium', 'sto_residual-supply', dim='Variables')
     dm_hourly_equilibrium.add(ay_residual_demand, dim='Variables', col_label='sto_residual-demand', unit='GWh')
 
     return dm_hourly_equilibrium
@@ -1092,6 +1091,7 @@ def power(lever_setting, years_setting, interface=Interface()):
     interface.add_link(from_sector='power', to_sector='minerals', dm=DM_minerals)
     # concatenate all results to df
     #results_run = dm_capacity
+    # FIXME: I think this is wrong
     dm_decommission = dm_capacity.filter({'Variables': ['pow_existing-capacity']})
     results_run = pow_TPE_interface(dm_gross_production, dm_decommission)
 
@@ -1108,7 +1108,7 @@ def local_power_run():
     f = open('../config/lever_position.json')
     lever_setting = json.load(f)[0]
 
-    global_vars = {'geoscale': '.*'}
+    global_vars = {'geoscale': 'Switzerland'}
     filter_geoscale(global_vars)
 
     results_run = power(lever_setting, years_setting)
@@ -1118,7 +1118,7 @@ def local_power_run():
 
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/minerals_module.py"
 # # database_from_csv_to_datamatrix()
-# results_run = local_power_run()
+#results_run = local_power_run()
 
 
 
