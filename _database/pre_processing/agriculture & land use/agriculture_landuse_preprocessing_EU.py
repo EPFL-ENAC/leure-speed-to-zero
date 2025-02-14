@@ -684,6 +684,9 @@ def climate_smart_crop_processing():
     # Convert numeric columns to float (if necessary)
     df_oth_energy.iloc[:, 1:] = df_oth_energy.iloc[:, 1:].astype(float)
 
+    # Keep only the years starting from 1990
+    df_oth_energy = df_oth_energy[df_oth_energy["timescale"] >= 1990]
+
     # convert from [TJ] to [ktoe]
     tj_to_ktoe = 0.02388458966275  # source https://www.unitjuggler.com/convertir-energy-de-TJ-en-ktoe.html
     df_oth_energy.loc[:, df_oth_energy.columns != 'timescale'] *= tj_to_ktoe
@@ -793,7 +796,7 @@ def climate_smart_crop_processing():
     # Read excel file
     df_dict_csc = pd.read_excel(
         '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
-        sheet_name='climate-smart-crops')
+        sheet_name='calibration')
 
     # Merge based on 'Item'
     df_energy_pathwaycalc = pd.merge(df_dict_csc, df_combined, on='Item')
@@ -3150,10 +3153,10 @@ def livestock_protein_meals_processing(df_csl_feed):
 #df_waste_pathwaycalc = food_waste_processing(df_diet)
 #df_kcal_req_pathwaycalc = energy_requirements_processing()
 #df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing(years_ots)
-#df_climate_smart_crop_pathwaycalc, df_energy_demand_cal = climate_smart_crop_processing()
+df_climate_smart_crop_pathwaycalc, df_energy_demand_cal = climate_smart_crop_processing()
 #df_climate_smart_livestock_pathwaycalc = climate_smart_livestock_processing(df_csl_feed)
-df_climate_smart_forestry_pathwaycalc, csf_managed = climate_smart_forestry_processing()
-df_land_management_pathwaycalc = land_management_processing(csf_managed)
+#df_climate_smart_forestry_pathwaycalc, csf_managed = climate_smart_forestry_processing()
+#df_land_management_pathwaycalc = land_management_processing(csf_managed)
 #df_bioenergy_capacity_CH_pathwaycalc = bioernergy_capacity_processing(df_csl_feed)
 #df_biomass_hierarchy_pathwaycalc = biomass_bioernergy_hierarchy_processing(df_csl_feed)
 #df_protein_meals_pathwaycalc = livestock_protein_meals_processing(df_csl_feed)
@@ -4452,6 +4455,9 @@ def calibration_formatting(df_diet_calibration, df_domestic_supply_calibration, 
                                                                                 'Netherlands')
     df_calibration['geoscale'] = df_calibration['geoscale'].replace('Czechia', 'Czech Republic')
 
+    # Change data type of timescale to int
+    df_calibration["timescale"] = pd.to_numeric(df_calibration["timescale"], errors="coerce")
+
     # Extrapolation for missing data
     df_calibration_struct = ensure_structure(df_calibration)
     df_calibration_ext = linear_fitting_ots_db(df_calibration_struct, years_ots,
@@ -4542,88 +4548,3 @@ df_calibration = calibration_formatting(df_diet_calibration, df_domestic_supply_
                      df_nitrogen_calibration, df_liv_emissions_calibration, df_feed_calibration,
                      df_land_use_fao_calibration, df_liming_urea_calibration, df_wood_calibration,
                      df_emissions_calibration)
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-# BIOMASS MIX ----------------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------------
-
-# API EUROSTAT (DOES NOT WORK FOR CH)
-#code_eurostat = 'nrg_cb_rw'
-#list_test = ['LI']
-#list_countries_eurostat = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE',
-#                           'EL', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT',
-#                           'RO', 'SK', 'SI', 'ES', 'SE', 'UK']
-#my_filter_pars = {'startPeriod': 1990,'endPeriod': 2022, 'geo': list_test}
-#data = eurostat.get_data_df(code_eurostat, filter_pars=my_filter_pars)
-
-
-# Drop the irrelevant columns
-
-
-list_elements = ['Energy production']
-
-list_items = ['Total Bioenergy > (List)']
-
-# 1990 - 2022
-code = 'BE'
-my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
-my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
-
-my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
-list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
-              '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
-              '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022']
-my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
-
-my_pars = {
-    'area': my_countries,
-    'element': my_elements,
-    'item': my_items,
-    'year': my_years
-}
-df_bioenergy_mix_1990_2022 = faostat.get_data_df(code, pars=my_pars, strval=False)
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-# INTERACTIONS CONSTANTS
-# ----------------------------------------------------------------------------------------------------------------------
-
-# Goal is to add the add the constants from the agriculture module to the interactions_constants file common
-# to all modules
-
-# Read csv
-constants_agr = pd.read_csv('/Users/crosnier/Documents/PathwayCalc/_database/data/csv/interactions_constants_pathwaycalc.csv', sep=';')
-constants_all = pd.read_csv('/Users/crosnier/Documents/PathwayCalc/_database/data/csv/interactions_constants_back-up.csv', sep=';')
-
-# Identify the columns to check for duplicates
-common_columns = constants_all.columns.tolist()
-
-# Filter out rows in df2 that are already in df1 based on common columns
-constants_agr_unique = constants_agr[~constants_agr.apply(tuple, axis=1).isin(constants_all.apply(tuple, axis=1))]
-
-# Concatenate df1 with the filtered df2
-result = pd.concat([constants_all, constants_agr_unique])
-
-# Export to csv
-#result.to_csv('interactions_constants_30-07.csv', index=False, sep=';')
-
-
-
-
-years_setting = [1990, 2022, 2050, 5]
-startyear = years_setting[0]
-baseyear = years_setting[1]
-lastyear = years_setting[2]
-step_fts = years_setting[3]
-years_ots = list(np.linspace(start=startyear, stop=baseyear, num=(baseyear-startyear)+1).astype(int))
-years_fts = list(np.linspace(start=baseyear+step_fts, stop=lastyear, num=int((lastyear-baseyear)/step_fts)).astype(int))
-years_all = years_ots + years_fts
-#num_cat = 33
-
-#dict_ots, dict_fts = database_to_dm(df_ssr_pathwaycalc, 'food-net-import', num_cat, baseyear, years_all, level='all')
-
-
-print('Hello')
-
-
