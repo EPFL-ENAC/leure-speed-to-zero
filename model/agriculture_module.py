@@ -2028,25 +2028,30 @@ def nitrogen_workflow(DM_nitrogen, dm_land, CDM_const):
 def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, DM_manure, dm_land, dm_fertilizer_co, dm_liv_N2O, dm_CH4, CDM_const, dm_n):
 
     # ENERGY DEMAND ----------------------------------------------------------------------------------------------------
-    # Energy demand from agriculture [ktoe] = energy demand [ktoe/ha] * Agricultural land [ha] FIXME replace with calibration land
+    # Energy demand from agriculture [ktoe] = energy demand [ktoe/ha] * Agricultural land [ha]
     dm_agricultural_land = dm_land.filter({'Variables': ['agr_lus_land']})
     dm_agricultural_land = dm_agricultural_land.flatten()
     idx_land = dm_agricultural_land.idx
     idx_energy = DM_energy_ghg['energy_demand'].idx
     array_temp = dm_agricultural_land.array[:, :, idx_land['agr_lus_land_agriculture'], np.newaxis] \
                  * DM_energy_ghg['energy_demand'].array[:, :, idx_energy['agr_climate-smart-crop_energy-demand'], :]
-    DM_energy_ghg['energy_demand'].add(array_temp, dim='Variables', col_label='agr_energy-demand', unit='ktoe')
+    DM_energy_ghg['energy_demand'].add(array_temp, dim='Variables', col_label='agr_energy-demand_raw', unit='ktoe')
 
-    # Calibration Energy demand
-    #DM_energy_ghg['cal_energy_demand'].add(array_temp, dim='Variables', col_label='agr_energy-demand', unit='ktoe')
-    #DM_energy_ghg['caf_energy_demand'].operation('caf_agr_energy-demand', '*', 'agr_energy-demand',
-    #                                             out_col='cal_agr_energy-demand', unit='ktoe')
+    # Calibration - Energy demand
+    dm_cal_energy_demand = DM_energy_ghg['cal_energy_demand']
+    dm_energy_demand = DM_energy_ghg['energy_demand'].filter({'Variables': ['agr_energy-demand_raw']})
+    dm_cal_rates_energy_demand = calibration_rates(dm_energy_demand, dm_cal_energy_demand, calibration_start_year=1990,
+                                               calibration_end_year=2015, years_setting=[1990, 2015, 2050, 5])
+    DM_energy_ghg['energy_demand'].append(dm_cal_rates_energy_demand, dim='Variables')
+    DM_energy_ghg['energy_demand'].operation('agr_energy-demand_raw', '*', 'cal_rate', dim='Variables',
+                     out_col='agr_energy-demand', unit='ktoe')
+    df_cal_rates_energy_demand = dm_to_database(dm_cal_rates_energy_demand, 'none', 'agriculture', level=0)
 
     # CO2 EMISSIONS ----------------------------------------------------------------------------------------------------
     # Pre processing : filtering and deepening constants
     cdm_CO2 = CDM_const['cdm_CO2']
 
-    # Energy direct emission [MtCO2] = energy demand [ktoe] * fertilizer use [MtCO2/ktoe] FIXME replace with calibrated energy demand
+    # Energy direct emission [MtCO2] = energy demand [ktoe] * fertilizer use [MtCO2/ktoe]
     dm_energy = DM_energy_ghg['energy_demand']
     idx_energy = dm_energy.idx
     idx_cdm = cdm_CO2.idx
