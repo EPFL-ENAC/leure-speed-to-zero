@@ -3,18 +3,19 @@
 import pickle
 import numpy as np
 import pandas as pd
-from model.common.auxiliary_functions import linear_fitting
+from model.common.auxiliary_functions import linear_fitting, my_pickle_dump
 import os
 
 data_file = '../../../data/datamatrix/transport.pickle'
 with open(data_file, 'rb') as handle:
     DM_transport = pickle.load(handle)
 
+DM_fts = {'fts': dict()}
 
 # ======================  MODAL_SHARE  ========================================================
-dm_modal_share_2 = DM_transport['fts']['passenger_modal-share'][2].copy()
-dm_modal_share_4 = DM_transport['fts']['passenger_modal-share'][4].copy()
-dm_modal_share_ots = DM_transport['ots']['passenger_modal-share'].copy()
+dm_modal_share_2 = DM_transport['fts']['passenger_modal-share'][2].filter({'Country': ['Vaud']})
+dm_modal_share_4 = DM_transport['fts']['passenger_modal-share'][4].filter({'Country': ['Vaud']})
+dm_modal_share_ots = DM_transport['ots']['passenger_modal-share'].filter({'Country': ['Vaud']})
 
 cat_dict = {'TIM': ['LDV', '2W'],
             'TP': ['rail', 'metrotram', 'bus'],
@@ -69,14 +70,13 @@ dm_modal_share_2.normalise(dim='Categories1', inplace=True)
 linear_fitting(dm_modal_share_4, dm_modal_share_4.col_labels['Years'])
 dm_modal_share_4.normalise(dim='Categories1', inplace=True)
 
-DM_transport['fts']['passenger_modal-share'][2] = dm_modal_share_2
-DM_transport['fts']['passenger_modal-share'][4] = dm_modal_share_4
+DM_fts['fts']['passenger_modal-share'] = {2: dm_modal_share_2, 4: dm_modal_share_4}
 
 # FIXME ! Level 4 is missing the LDV reduction in 2025 (should it be there?)
 
 # ======================  OCCUPANCY  ========================================================
-dm_occupancy_2 = DM_transport['fts']['passenger_occupancy'][2].copy()
-dm_occupancy_ots = DM_transport['ots']['passenger_occupancy'].copy()
+dm_occupancy_2 = DM_transport['fts']['passenger_occupancy'][2].filter({'Country': ['Vaud']})
+dm_occupancy_ots = DM_transport['ots']['passenger_occupancy'].filter({'Country': ['Vaud']})
 
 #Scénario PCV:
 idx = dm_occupancy_2.idx
@@ -84,19 +84,15 @@ dm_occupancy_2.array[idx['Vaud'], idx[2030]:, idx['tra_passenger_occupancy'], :]
 array_PCV_occupancy = dm_occupancy_2.array
 
 dm_occupancy_2.array[idx['Vaud'], idx[2030], idx['tra_passenger_occupancy'], idx['LDV']] = 1.9
-
 dm_occupancy_2.fill_nans(dim_to_interp='Years')
 
-DM_transport['fts']['passenger_occupancy'][2] = dm_occupancy_2
-
-#scénario 3
-DM_transport['fts']['passenger_occupancy'][4] = dm_occupancy_2
+DM_fts['fts']['passenger_occupancy'] = {2: dm_occupancy_2, 4: dm_occupancy_2}
 
 # ======================  NEW FUEL EFF  ========================================================
 
-dm_new_eff_2 = DM_transport['fts']['passenger_veh-efficiency_new'][2].copy()
-dm_new_eff_ots = DM_transport['ots']['passenger_veh-efficiency_new'].copy()
-dm_new_eff_4 = DM_transport['fts']['passenger_veh-efficiency_new'][4].copy()
+dm_new_eff_2 = DM_transport['fts']['passenger_veh-efficiency_new'][2].filter({'Country': ['Vaud']})
+dm_new_eff_ots = DM_transport['ots']['passenger_veh-efficiency_new'].filter({'Country': ['Vaud']})
+dm_new_eff_4 = DM_transport['fts']['passenger_veh-efficiency_new'][4].filter({'Country': ['Vaud']})
 
 #PCV: on prend les hypothèses d'amélioration ci dessous (source: canton de Vaud).
 reduction_2050_thermique = 1 - 0.39
@@ -115,7 +111,7 @@ for cat, reduction_2050 in reduction_map.items():
 
 linear_fitting(dm_new_eff_2, dm_new_eff_2.col_labels['Years'])
 
-DM_transport['fts']['passenger_veh-efficiency_new'][2] = dm_new_eff_2
+DM_fts['fts']['passenger_veh-efficiency_new'] = {2: dm_new_eff_2}
 
 #Scénario 4:
 #on applique la réduction de 2/3 pour 2025 et 2050 due à la réduction de la taille des véhicules.
@@ -141,12 +137,12 @@ efficiency_2050_bev_vus = efficiency_2050_bev*2/3*(1-prop_VUS) + efficiency_VUS*
 dm_new_eff_4.array[idx['Vaud'], idx[2050], idx['tra_passenger_veh-efficiency_new'], idx['LDV'], idx['BEV']] = efficiency_2050_bev_vus
 
 linear_fitting(dm_new_eff_4, dm_new_eff_4.col_labels['Years'])
-DM_transport['fts']['passenger_veh-efficiency_new'][4] = dm_new_eff_4
+DM_fts['fts']['passenger_veh-efficiency_new'][4] = dm_new_eff_4
 
 # ======================  NEW SALES VEHICLES  ========================================================
-dm_new_tech_share_2 = DM_transport['fts']['passenger_technology-share_new'][2].copy()
-dm_new_tech_share_4 = DM_transport['fts']['passenger_technology-share_new'][4].copy()
-dm_new_tech_share_ots = DM_transport['ots']['passenger_technology-share_new'].copy()
+dm_new_tech_share_2 = DM_transport['fts']['passenger_technology-share_new'][2].filter({'Country': ['Vaud']})
+dm_new_tech_share_4 = DM_transport['fts']['passenger_technology-share_new'][4].filter({'Country': ['Vaud']})
+dm_new_tech_share_ots = DM_transport['ots']['passenger_technology-share_new'].filter({'Country': ['Vaud']})
 
 #PCV: ci dessous les valeurs fixées par le PCV pour 2035.
 prop_EV_PHEV_2035_PCV = 0.65
@@ -190,8 +186,8 @@ dm_new_tech_share_trend_PCV.array[idx['Vaud'], idx[2035]+1: , idx['tra_passenger
 linear_fitting(dm_new_tech_share_trend_PCV, dm_new_tech_share_trend_PCV.col_labels['Years'], based_on= dm_new_tech_share_2.col_labels['Years'], min_tb=0)
 
 dm_new_tech_share_trend_PCV.normalise(dim='Categories2', inplace=True)
-
-DM_transport['fts']['passenger_technology-share_new'][2] = dm_new_tech_share_trend_PCV.filter({"Years": dm_new_tech_share_2.col_labels['Years']})
+dm_new_tech_share_2_PVC = dm_new_tech_share_trend_PCV.filter({"Years": dm_new_tech_share_2.col_labels['Years']})
+DM_fts['fts']['passenger_technology-share_new'] = {2: dm_new_tech_share_2_PVC}
 
 #Scénario 3:
 values_2025_new_tech_share_3 = {'BEV': 1, 'ICE-diesel': 0, 'ICE-gasoline': 0, 'PHEV-diesel': 0, 'PHEV-gasoline': 0}
@@ -207,18 +203,17 @@ linear_fitting(dm_new_tech_share_trend_4, dm_new_tech_share_trend_4.col_labels['
 
 dm_new_tech_share_trend_4.array = np.maximum(dm_new_tech_share_trend_4.array, 0)
 dm_new_tech_share_trend_4.normalise('Categories2', inplace=True)
-
-DM_transport['fts']['passenger_technology-share_new'][4] = dm_new_tech_share_trend_4.filter({"Years": dm_new_tech_share_4.col_labels['Years']})
+dm_new_tech_share_trend_4_fts = dm_new_tech_share_trend_4.filter({"Years": dm_new_tech_share_4.col_labels['Years']})
+DM_fts['fts']['passenger_technology-share_new'][4] = dm_new_tech_share_trend_4_fts
 
 #======================  DEMANDE  ========================================================
-dm_pkm_2 = DM_transport['fts']['pkm'][2].copy()
-dm_pkm_4 = DM_transport['fts']['pkm'][4].copy()
-dm_pkm_ots = DM_transport['ots']['pkm'].copy()
+dm_pkm_2 = DM_transport['fts']['pkm'][2].filter({'Country': ['Vaud']})
+dm_pkm_4 = DM_transport['fts']['pkm'][4].filter({'Country': ['Vaud']})
+dm_pkm_ots = DM_transport['ots']['pkm'].filter({'Country': ['Vaud']})
 
 idx = dm_pkm_ots.idx
 demande_transport_2019 = dm_pkm_ots.array[idx['Vaud'], idx[2019], 0]
 demande_transport_2023 = dm_pkm_ots.array[idx['Vaud'], idx[2023], 0]
-print(demande_transport_2023)
 croissance_demande_annuelle = 0.0091
 
 idx = dm_pkm_2.idx
@@ -230,7 +225,7 @@ linear_fitting(dm_pkm_2, dm_pkm_2.col_labels['Years'])
 dm_pkm_PCV = dm_pkm_ots.copy()
 dm_pkm_PCV.append(dm_pkm_2, dim ='Years')
 
-DM_transport['fts']['pkm'][2]= dm_pkm_2
+DM_fts['fts']['pkm'] = {2: dm_pkm_2}
 
 #SCENARIO 3:
 idx = dm_pkm_4.idx
@@ -241,7 +236,7 @@ linear_fitting(dm_pkm_4, dm_pkm_4.col_labels['Years'])
 dm_pkm_4.array[idx['Vaud'], idx[2025], 0] *= 0.95
 linear_fitting(dm_pkm_4, dm_pkm_4.col_labels['Years'])
 
-DM_transport['fts']['pkm'][4]= dm_pkm_4
+DM_fts['fts']['pkm'] = {4: dm_pkm_4}
 
 #======================  MESURE 5  ==================================== (CALCULER LES EMISSIONS MOYENNES DU NOUVEAU PARC EN 2021)
 categories_transport =['BEV', 'CEV', 'FCEV', 'ICE-diesel', 'ICE-gas', 'ICE-gasoline', 'PHEV-diesel', 'PHEV-gasoline', 'mt']
@@ -310,7 +305,4 @@ emissions_moyennes_2035_DLS = electricite_2035_intensity * efficiency_bev_2035_D
 
 
 # ======================  EXPORTS FINAUX   ========================================================
-current_file_directory = os.path.dirname(os.path.abspath(__file__))
-with open(data_file, 'wb') as handle:
-    pickle.dump(DM_transport, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
+my_pickle_dump(DM_new=DM_fts, local_pickle_file=data_file)

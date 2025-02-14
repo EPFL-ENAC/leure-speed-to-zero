@@ -6,7 +6,7 @@ from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.data_matrix_class import DataMatrix
 from model.common.io_database import read_database_to_dm
 from model.common.auxiliary_functions import create_years_list, linear_fitting, add_missing_ots_years, moving_average
-from model.common.auxiliary_functions import linear_forecast_BAU, linear_forecast_BAU_w_noise
+from model.common.auxiliary_functions import my_pickle_dump
 from _database.pre_processing.WorldBank_data_extract import get_WB_data
 import pickle
 import os
@@ -2188,8 +2188,7 @@ dm_pop.append(dm_pop_fts, dim='Years')
 DM_interface_lfs_to_tra = {'pop': dm_pop}
 
 file = '../../../data/interface/lifestyles_to_transport.pickle'
-with open(file, 'wb') as handle:
-    pickle.dump(DM_interface_lfs_to_tra, handle, protocol=pickle.HIGHEST_PROTOCOL)
+my_pickle_dump(DM_new=DM_interface_lfs_to_tra, local_pickle_file=file)
 
 # tot pkm-cap
 dm_pkm_cap_tot = dm_pkm_cap.group_all(dim='Categories1', inplace=False)
@@ -2256,10 +2255,6 @@ for lev in [1, 2, 3, 4]:
     dm_modal_all.normalise('Categories1')
     DM_transport_new['fts']['freight_modal-share'][lev] = dm_modal_all.filter({'Years': years_fts})
 
+pickle_file = '../../../data/datamatrix/transport.pickle'
 
-current_file_directory = os.path.dirname(os.path.abspath(__file__))
-f = os.path.join(current_file_directory, '../../../data/datamatrix/transport.pickle')
-with open(f, 'wb') as handle:
-    pickle.dump(DM_transport_new, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-# print('Hello')
+my_pickle_dump(DM_new=DM_transport_new, local_pickle_file=pickle_file)
