@@ -2,11 +2,13 @@ import json
 import numpy as np
 import eurostat
 import pandas as pd
+import os
 from model.common.data_matrix_class import DataMatrix
 from model.common.auxiliary_functions import linear_fitting, linear_forecast_BAU, moving_average, create_years_list
-from model.common.auxiliary_functions import eurostat_iso2_dict
+from model.common.auxiliary_functions import eurostat_iso2_dict, my_pickle_dump
 from model.common.io_database import update_database_from_dm, csv_database_reformat, read_database_to_dm
 from _database.pre_processing.api_routine_Eurostat import get_data_api_eurostat
+import pickle
 
 EU27_cntr_list = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czech Republic', 'Denmark', 'Estonia', 'Finland',
                   'France', 'Germany', 'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia', 'Lithuania', 'Luxembourg',
@@ -89,6 +91,8 @@ def get_pop_eurostat(code_pop, EU27_cntr_list, dict_iso2, years_ots):
     dm_pop_age.rename_col('A', 'lfs_demography', dim='Variables')
     dm_pop_age.rename_col(['M', 'F'], ['male', 'female'], dim='Categories1')
     dm_pop_age = dm_pop_age.flatten()
+    dm_pop_age.rename_col_regex("female_", "female-", "Categories1")
+    dm_pop_age.rename_col_regex("male_", "male-", "Categories1")
 
     dm_pop_age.drop(dim='Country', col_label='EU27')
     dm_EU27_age = dm_pop_age.groupby({'EU27': EU27_cntr_list}, dim='Country')
@@ -170,6 +174,8 @@ def get_pop_eurostat_fts(code_pop_fts, EU27_cntr_list, years_fts, dict_iso2):
     dm_pop_age.groupby(group_dict, inplace=True, dim='Categories2')
     dm_pop_age.rename_col(['M', 'F'], ['male', 'female'], dim='Categories1')
     dm_pop_age = dm_pop_age.flatten()
+    dm_pop_age.rename_col_regex("female_", "female-", "Categories1")
+    dm_pop_age.rename_col_regex("male_", "male-", "Categories1")
 
     dm_pop_tot.drop(dim='Country', col_label='EU27')
     dm_EU27_tot = dm_pop_tot.groupby({'EU27': EU27_cntr_list}, dim='Country')
@@ -278,6 +284,7 @@ def estimate_household_size_fts_from_ots(dm_ots, start_t):
     return dict_fts
 
 
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/_database/pre_processing/lifestyles/Europe/lifestyles_preprocessing_EU.py"
 # Set the timestep for historical years & scenarios
 years_ots = create_years_list(start_year=1990, end_year=2023, step=1, astype=int)
 years_fts = create_years_list(start_year=2025, end_year=2050, step=5, astype=int)
@@ -288,38 +295,27 @@ dict_iso2.pop('CH')  # Remove Switzerland
 # Use following line to explore EUROSTAT database
 #toc = eurostat.get_toc_df(agency='EUROSTAT', lang='en')
 #toc_pop = eurostat.subset_toc_df(toc, 'house')
-update_pop = False
-if update_pop:
-    # Get population total and by age group (ots)
-    dm_pop_age, dm_pop_tot = get_pop_eurostat('demo_pjan', EU27_cntr_list, dict_iso2, years_ots)
-    # Get raw fts pop data (fts)
-    dict_dm_pop_fts, dict_dm_pop_fts_tot = get_pop_eurostat_fts('proj_23np', EU27_cntr_list, years_fts, dict_iso2)
-    dm_pop_age.drop(dim='Years', col_label=[2023])
-    dm_pop_tot.drop(dim='Years', col_label=[2023])
-    # Update lifestyles_population.csv data
-    file = 'lifestyles_population.csv'
-    update_database_from_dm(dm_pop_tot, filename=file, lever='pop', level=0, module='lifestyles')
-    update_database_from_dm(dm_pop_age, filename=file, lever='pop', level=0, module='lifestyles')
-    for lev, dm_fts in dict_dm_pop_fts.items():
-        update_database_from_dm(dm_fts, filename=file, lever='pop', level=lev, module='lifestyles')
-    for lev, dm_fts in dict_dm_pop_fts_tot.items():
-        update_database_from_dm(dm_fts, filename=file, lever='pop', level=lev, module='lifestyles')
 
-# Update household size
-update_household_size = True
-if update_household_size:
-    # OTS
-    dm_household_size = get_household_size('ilc_lvph01', dict_iso2)
-    # FTS dict
-    dict_hs_fts = estimate_household_size_fts_from_ots(dm_household_size, start_t=2012)
-    # Update csv file
-    file = 'lifestyles_floor-intensity.csv'
-    # csv_database_reformat(file)
-    update_database_from_dm(dm_household_size, filename=file, lever='floor-intensity', level=0, module='lifestyles')
-    for lev, dm_fts in dict_hs_fts.items():
-        update_database_from_dm(dm_fts, filename=file, lever='floor-intensity', level=lev, module='lifestyles')
+# Get population total and by age group (ots)
+dm_pop_age, dm_pop_tot = get_pop_eurostat('demo_pjan', EU27_cntr_list, dict_iso2, years_ots)
+# Get raw fts pop data (fts)
+dict_dm_pop_fts, dict_dm_pop_fts_tot = get_pop_eurostat_fts('proj_23np', EU27_cntr_list, years_fts, dict_iso2)
+# Save pickle
+DM_lfs = {"ots" : {"pop" : {"lfs_demography_":[],
+                            "lfs_population_" : []}},
+          "fts" : {"pop" : {"lfs_demography_": {1:[],2:[],3:[],4:[]},
+                            "lfs_population_": {1:[],2:[],3:[],4:[]}}}}
+DM_lfs['ots']['pop']['lfs_demography_'] = dm_pop_age
+for lev in range(4):
+    lev = lev + 1
+    DM_lfs['fts']['pop']['lfs_demography_'][lev] = dict_dm_pop_fts[lev]
+DM_lfs['ots']['pop']['lfs_population_'] = dm_pop_tot
+for lev in range(4):
+    lev = lev + 1
+    DM_lfs['fts']['pop']['lfs_population_'][lev] = dict_dm_pop_fts_tot[lev]
 
+# save
+current_file_directory = os.path.dirname(os.path.abspath(__file__))
+file = os.path.join(current_file_directory, '../../../data/datamatrix/lifestyles.pickle')
+my_pickle_dump(DM_lfs, file)
 
-# Household size is a fixed assumption and not an ots
-
-print('Hello')

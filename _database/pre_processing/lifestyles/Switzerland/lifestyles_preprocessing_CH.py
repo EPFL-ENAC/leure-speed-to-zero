@@ -3,7 +3,7 @@ import pandas as pd
 import pickle
 
 
-from model.common.auxiliary_functions import linear_fitting, linear_fitting_ots_db, create_years_list
+from model.common.auxiliary_functions import linear_fitting, linear_fitting_ots_db, create_years_list, my_pickle_dump
 from model.common.io_database import update_database_from_dm, csv_database_reformat
 from _database.pre_processing.api_routines_CH import get_data_api_CH
 from model.common.data_matrix_class import DataMatrix
@@ -179,6 +179,7 @@ def extract_lfs_pop(years_ots, table_id, file):
     # Rename sex
     dm_lfs_pop_age.rename_col('Male', 'male', dim='Categories1')
     dm_lfs_pop_age.rename_col('Female', 'female', dim='Categories1')
+    dm_lfs_pop_age.sort("Categories1")
     dm_lfs_pop_age.rename_col('Population on 1 January', 'lfs_demography', dim='Variables')
     dm_lfs_pop_age = dm_lfs_pop_age.flatten(sep='-')
 
@@ -262,6 +263,7 @@ def extract_lfs_pop_fts(years_fts, table_id, file):
     # Rename sex
     dm_pop_fts.rename_col('Homme', 'male', dim='Categories1')
     dm_pop_fts.rename_col('Femme', 'female', dim='Categories1')
+    dm_pop_fts.sort("Categories1")
     dm_pop_fts = dm_pop_fts.flatten(sep='-')
 
     # Assign levers
@@ -620,7 +622,7 @@ def filter_country_DM(cntr_list, DM):
 
     return DM
 
-
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/_database/pre_processing/lifestyles/Switzerland/lifestyles_preprocessing_CH.py"
 years_setting = [1990, 2023, 2050, 5]  # Set the timestep for historical years & scenarios
 years_ots = create_years_list(start_year=1990, end_year=2023, step=1)
 years_fts = create_years_list(start_year=2025, end_year=2050, step=5)
@@ -632,59 +634,24 @@ dm_lfs_age, dm_lfs_tot_pop = extract_lfs_pop(years_ots, table_id='px-x-010202000
 filename = 'data/lfs_pop_fts.pickle'
 dict_lfs_age_fts, dict_lfs_tot_pop_fts = extract_lfs_pop_fts(years_fts, table_id='px-x-0104000000_101', file=filename)
 add_vaud_fts_pop(dm_lfs_age, dm_lfs_tot_pop, dict_lfs_age_fts, dict_lfs_tot_pop_fts)
-update_pop = False
-if update_pop:
-    # Add Vaud
-    # Update lifestyles_population.csv data
-    file = 'lifestyles_population.csv'
-    update_database_from_dm(dm_lfs_tot_pop, filename=file, lever='pop', level=0, module='lifestyles')
-    update_database_from_dm(dm_lfs_age, filename=file, lever='pop', level=0, module='lifestyles')
-    for lev, dm_fts in dict_lfs_age_fts.items():
-        update_database_from_dm(dm_fts, filename=file, lever='pop', level=lev, module='lifestyles')
-    for lev, dm_fts in dict_lfs_tot_pop_fts.items():
-        update_database_from_dm(dm_fts, filename=file, lever='pop', level=lev, module='lifestyles')
 
-file = '../../../data/datamatrix/lifestyles.pickle'
-with open(file, 'rb') as handle:
-    DM_lifestyles_old = pickle.load(handle)
-
-# Remove levers that have to go in buildings and transport
-levers_to_remove = ['pkm', 'urbpop', 'heatcool-behaviour', 'floor-intensity', 'floor-area-fraction', 'appliance-use',
-                    'appliance-own', 'product-substitution-rate']
-for lever in levers_to_remove:
-    if lever in DM_lifestyles_old['ots'].keys():
-        del DM_lifestyles_old['ots'][lever]
-        del DM_lifestyles_old['fts'][lever]
-
-if 'fxa' in DM_lifestyles_old.keys():
-    fxa_to_remove = ['caf_food', 'caf_intensity']
-    for fxa in fxa_to_remove:
-        if fxa in DM_lifestyles_old['fxa'].keys():
-            del DM_lifestyles_old['fxa'][fxa]
-    # if the DM is empty delete it
-    if not bool(DM_lifestyles_old['fxa']):
-        del DM_lifestyles_old['fxa']
-
-const_to_remove = ['cp_appliances_charging-time-share', 'cp_time_days-per-year']
-for col in const_to_remove:
-    DM_lifestyles_old['constant'].drop(col_label=col, dim='Variables')
-
-DM_lfs_new = dummy_update_DM_module_baseyear(DM_lifestyles_old, years_ots, years_fts)
-
-DM_lfs_new = filter_country_DM(['Switzerland', 'Vaud'], DM_lfs_new)
-
-DM_lfs_new['ots']['pop']['lfs_demography_'] = dm_lfs_age
+# Store
+DM_lfs = {"ots" : {"pop" : {"lfs_demography_":[],
+                            "lfs_population_" : []}},
+          "fts" : {"pop" : {"lfs_demography_": {1:[],2:[],3:[],4:[]},
+                            "lfs_population_": {1:[],2:[],3:[],4:[]}}}}
+DM_lfs['ots']['pop']['lfs_demography_'] = dm_lfs_age
 for lev in range(4):
     lev = lev + 1
-    DM_lfs_new['fts']['pop']['lfs_demography_'][lev] = dict_lfs_age_fts[lev]
-
-DM_lfs_new['ots']['pop']['lfs_population_'] = dm_lfs_tot_pop
+    DM_lfs['fts']['pop']['lfs_demography_'][lev] = dict_lfs_age_fts[lev]
+DM_lfs['ots']['pop']['lfs_population_'] = dm_lfs_tot_pop
 for lev in range(4):
     lev = lev + 1
-    DM_lfs_new['fts']['pop']['lfs_population_'][lev] = dict_lfs_tot_pop_fts[lev]
+    DM_lfs['fts']['pop']['lfs_population_'][lev] = dict_lfs_tot_pop_fts[lev]
 
-file = '../../../data/datamatrix/lifestyles.pickle'
+# Save
+current_file_directory = os.path.dirname(os.path.abspath(__file__))
+file = os.path.join(current_file_directory, '../../../data/datamatrix/lifestyles.pickle')
 with open(file, 'wb') as handle:
-    pickle.dump(DM_lfs_new, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    pickle.dump(DM_lfs, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-print('Hello')
