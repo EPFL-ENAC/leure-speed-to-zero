@@ -622,7 +622,7 @@ def filter_country_DM(cntr_list, DM):
 
     return DM
 
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/_database/pre_processing/lifestyles/Switzerland/lifestyles_preprocessing_CH.py"
+# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/_database/pre_processing/lifestyles/Switzerland/lifestyles_preprocessing_CH.py"
 years_setting = [1990, 2023, 2050, 5]  # Set the timestep for historical years & scenarios
 years_ots = create_years_list(start_year=1990, end_year=2023, step=1)
 years_fts = create_years_list(start_year=2025, end_year=2050, step=5)
