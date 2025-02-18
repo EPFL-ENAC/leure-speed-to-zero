@@ -378,10 +378,13 @@ def calibration_rates(dm, dm_cal, calibration_start_year = 1990, calibration_end
     dm_cal_sub = dm_cal.filter({"Years" : years_sub})
     
     # get calibration rates = (calib - variable)/variable
-    dm_cal_sub.array = (dm_cal_sub.array - dm_sub.array)/dm_sub.array + 1
-    old_name = dm_cal_sub.col_labels["Variables"][0]
-    dm_cal_sub.rename_col(old_name, "cal_rate", "Variables")
-    dm_cal_sub.units['cal_rate'] = "%"
+    dm_cal_sub.append(dm_sub, 'Variables')
+    var_raw = dm_sub.col_labels['Variables'][0]
+    var_cal = dm_cal_sub.col_labels['Variables'][0]
+    dm_cal_sub.operation(var_cal, '-', var_raw, out_col='delta', unit='')
+    dm_cal_sub.operation('delta', '/', var_raw, out_col='cal_rate', unit='%')
+    dm_cal_sub.array = dm_cal_sub.array + 1
+    dm_cal_sub.filter({'Variables':['cal_rate']}, inplace=True)
 
     # adjust missing years in dm_cal_sub
     
