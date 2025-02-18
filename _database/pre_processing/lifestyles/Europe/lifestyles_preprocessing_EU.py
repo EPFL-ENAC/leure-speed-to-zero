@@ -284,7 +284,7 @@ def estimate_household_size_fts_from_ots(dm_ots, start_t):
     return dict_fts
 
 
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/_database/pre_processing/lifestyles/Europe/lifestyles_preprocessing_EU.py"
+# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/_database/pre_processing/lifestyles/Europe/lifestyles_preprocessing_EU.py"
 # Set the timestep for historical years & scenarios
 years_ots = create_years_list(start_year=1990, end_year=2023, step=1, astype=int)
 years_fts = create_years_list(start_year=2025, end_year=2050, step=5, astype=int)
