@@ -75,9 +75,21 @@ for n in lever_names:
     for i in range(1,4+1):
         DM_fts[n][i].drop("Categories1","ammonia-tech")
 
+# drop products that have not being re-inserted in the calc yet
+drops = ['floor-area-new-non-residential','floor-area-reno-non-residential',
+         'computer', 'dishwasher', 'dryer', 'freezer', 'fridge', 'new-dhg-pipe',
+         'phone', 'tv', 'wmachine']
+DM_ots["product-net-import"].drop("Categories1",drops)
+for i in range(1,4+1):
+    DM_fts["product-net-import"][i].drop("Categories1",drops)
+drops = ['domapp','electronics']
+DM_ots["eol-waste-management"].drop("Variables",drops)
+for i in range(1,4+1):
+    DM_fts["eol-waste-management"][i].drop("Variables",drops)
+
 # save
-DM_industry["ots"] = DM_ots
-DM_industry["fts"] = DM_fts
+DM_industry["ots"] = DM_ots.copy()
+DM_industry["fts"] = DM_fts.copy()
 
 #############################
 ##### FIXED ASSUMPTIONS #####
@@ -137,9 +149,9 @@ CDM_const["material-switch"] = cdm
 filepath = os.path.join(current_file_directory, '../data/datamatrix/' + 'const_material-decomposition.pickle')
 with open(filepath, 'rb') as handle:
     CDM = pickle.load(handle)
-CDM_const["material-decomposition_pipe"] = CDM["bld_pipe"]
-CDM_const["material-decomposition_floor"] = CDM["bld_floor"]
-CDM_const["material-decomposition_domapp"] = CDM["bld_domapp"]
+# CDM_const["material-decomposition_pipe"] = CDM["bld_pipe"] # do not load pipes for dh for now as this needs to be implemented in buildings
+CDM_const["material-decomposition_floor"] = CDM["bld_floor"].filter({"Categories1" : ['floor-area-new-residential', 'floor-area-reno-residential']}) # keep only residential for now as non residential need to be implemented in buildings
+# CDM_const["material-decomposition_domapp"] = CDM["bld_domapp"] # do not load domestic appliances for now as this needs to be implemented in buildings
 CDM_const["material-decomposition_infra"] = CDM["tra_infra"]
 CDM_const["material-decomposition_veh"] = CDM["tra_veh"]
 CDM_const["material-decomposition_pack"] = CDM["pack"]
@@ -159,8 +171,7 @@ CDM_const["emission-factor"] = CDM["combustion-emissions"]
 CDM_const["emission-factor-process"] = CDM["process-emissions"]
 
 # drop ammonia
-lever_names = ['material-decomposition_pipe', 'material-decomposition_floor',
-               'material-decomposition_domapp', 'material-decomposition_infra',
+lever_names = ['material-decomposition_floor', 'material-decomposition_infra',
                'material-decomposition_veh', 'material-decomposition_pack']
 for n in lever_names:
     CDM_const[n].drop("Categories2","ammonia")
