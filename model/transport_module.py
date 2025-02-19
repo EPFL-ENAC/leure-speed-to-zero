@@ -1406,7 +1406,8 @@ def transport(lever_setting, years_setting, interface=Interface()):
 def local_transport_run():
     # Function to run only transport module without converter and tpe
     years_setting = [1990, 2023, 2025, 2050, 5]
-    f = open('../config/lever_position.json')
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = open(os.path.join(current_file_directory, '../config/lever_position.json'))
     lever_setting = json.load(f)[0]
 
     global_vars = {'geoscale': 'Vaud'}
