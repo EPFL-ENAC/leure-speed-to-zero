@@ -792,7 +792,6 @@ def linear_fitting_ots_db(df_db, years_ots, countries='all'):
     if isinstance(countries, str):
         countries = [countries]
     for country in countries:
-        print(country)
         df_db_country = df_db.loc[df_db['geoscale'] == country].copy()
         dict_ots_country, dict_fts = database_to_dm(df_db_country, lever_name, num_cat, baseyear, years_ots, level='all')
         # Keep only ots years as dm
@@ -1078,51 +1077,25 @@ def my_pickle_dump(DM_new, local_pickle_file):
             else:
                 dm_old = dm_new
             return dm_old
+
+        def update_DM(DM_old, DM_new):
+            for key in DM_new.keys():
+                if isinstance(DM_new[key], dict):
+                    update_DM(DM_old[key], DM_new[key])
+                else:
+                    try:
+                        DM_old[key] = update_data(DM_old[key], DM_new[key])
+                    except Exception as e:
+                        raise RuntimeError(
+                            f"Warning: Error occurred when trying to update {key}, in file {local_pickle_file}")
+            return
+
         # Load existing DM in pickle
         with open(local_pickle_file, 'rb') as handle:
             DM = pickle.load(handle)
-        for key in DM_new.keys():   # key = 'ots', 'fxa', ...
-            if isinstance(DM_new[key], dict):  # e.g. 'const' can not be a dict
-                for lever in DM_new[key].keys():
-                    if isinstance(DM_new[key][lever], dict):  # you are likely in an fts level
-                        for level in DM_new[key][lever].keys():
-                            if isinstance(DM_new[key][lever][level], dict):  # this happens rarely
-                                for lev in DM_new[key][lever][level].keys():
-                                    dm_new = DM_new[key][lever][level][lev]
-                                    dm_old = DM[key][lever][level][lev].copy()
-                                    try:
-                                        dm_update = update_data(dm_old, dm_new)
-                                        DM[key][lever][level][lev] = dm_update
-                                    except Exception as e:
-                                        raise RuntimeError(
-                                            f"Warning: Error occurred when trying to update {key}, {lever}, {level}, {lev}, in file {local_pickle_file} - {str(e)}")
-                            else:
-                                dm_new = DM_new[key][lever][level]
-                                dm_old = DM[key][lever][level].copy()
-                                # Remove matching countries
-                                try:
-                                    dm_update = update_data(dm_old, dm_new)
-                                    DM[key][lever][level] = dm_update
-                                except Exception as e:
-                                    raise RuntimeError(f"Warning: Error occurred when trying to update {key}, {lever}, {level},in file {local_pickle_file} - {str(e)}")
-                    else:
-                        dm_new = DM_new[key][lever]
-                        dm_old = DM[key][lever].copy()
-                        # Remove matching countries
-                        try:
-                            dm_update = update_data(dm_old, dm_new)
-                            DM[key][lever] = dm_update
-                        except Exception as e:
-                            raise RuntimeError(f"Warning: Error occurred when trying to update {key}, {lever}, in file {local_pickle_file} - {str(e)}")
-            else:
-                dm_new = DM_new[key]
-                dm_old = DM[key]
-                try:
-                    dm_update = update_data(dm_old, dm_new)
-                    DM[key] = dm_update
-                except Exception as e:
-                    raise RuntimeError(f"Warning: Error occurred when trying to update {key}, in file {local_pickle_file} - {str(e)}")
-    
+
+        update_DM(DM, DM_new)
+
         with open(local_pickle_file, 'wb') as handle:
             pickle.dump(DM, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
