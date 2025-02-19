@@ -1372,12 +1372,14 @@ def transport(lever_setting, years_setting, interface=Interface()):
 
     # If the input from lifestyles are available in the interface, read them, else read from xls
     if interface.has_link(from_sector='lifestyles', to_sector='transport'):
-        dm_lfs = interface.get_link(from_sector='lifestyles', to_sector='transport')
+        DM_lfs = interface.get_link(from_sector='lifestyles', to_sector='transport')
+        dm_lfs = DM_lfs['pop']
     else:
         lfs_interface_data_file = os.path.join(current_file_directory,
                                                '../_database/data/interface/lifestyles_to_transport.pickle')
         with open(lfs_interface_data_file, 'rb') as handle:
-            dm_lfs = pickle.load(handle)
+            DM_lfs = pickle.load(handle)
+        dm_lfs = DM_lfs['pop']
         dm_lfs.filter({'Country': cntr_list}, inplace=True)
 
     # PASSENGER
