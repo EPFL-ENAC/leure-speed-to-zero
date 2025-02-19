@@ -1376,7 +1376,7 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     # get interfaces
     cntr_list = DM_ots_fts["product-net-import"].col_labels['Country']
     DM_transport = get_interface(current_file_directory, interface, "transport", "industry", cntr_list)
-    dm_pop = get_interface(current_file_directory, interface, "lifestyles", "industry", cntr_list)
+    DM_lfs = get_interface(current_file_directory, interface, "lifestyles", "industry", cntr_list)
     DM_buildings = get_interface(current_file_directory, interface, "buildings", "industry", cntr_list)
 
     # get product import
@@ -1384,7 +1384,7 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     
     # get product production
     DM_production = product_production(DM_buildings["floor-demand"], DM_transport["tra-infra"], DM_transport["tra-veh"], 
-                                       dm_pop, DM_ots_fts["paperpack"], 
+                                       DM_lfs["pop"], DM_ots_fts["paperpack"], 
                                        dm_import)
     
     # get material demand
