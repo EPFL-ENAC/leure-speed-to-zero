@@ -4,15 +4,15 @@ from model.lifestyles_module import lifestyles
 from model.buildings_module import buildings
 # from model.minerals_module import minerals
 from model.common.interface_class import Interface
-from model.district_heating_module import district_heating
-from model.agriculture_module import agriculture
-from model.emissions_module import emissions
+# from model.district_heating_module import district_heating
+# from model.agriculture_module import agriculture
+# from model.emissions_module import emissions
 from model.climate_module import climate
 # from model.ammonia_module import ammonia
-from model.industry_module import industry
-from model.power_module import power
-from model.landuse_module import land_use
-from model.oilrefinery_module import refinery
+# from model.industry_module import industry
+# from model.power_module import power
+# from model.landuse_module import land_use
+# from model.oilrefinery_module import refinery
 from model.common.auxiliary_functions import filter_geoscale
 
 import math
@@ -85,7 +85,7 @@ def local_interactions_run():
     years_setting = [1990, 2023, 2025, 2050, 5]
     
     # geoscale
-    global_vars = {'geoscale': '.*'}
+    global_vars = {'geoscale': 'Switzerland'}
     filter_geoscale(global_vars)
 
     # run
@@ -95,7 +95,7 @@ def local_interactions_run():
     return results_run, runtime
 
 # run local
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/interactions_localrun.py"
+# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/interactions_localrun.py"
 results_run, runtime = local_interactions_run()
 
 # # checks
