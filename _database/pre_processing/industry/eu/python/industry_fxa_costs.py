@@ -19,19 +19,11 @@ __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/_datab
 # directories
 current_file_directory = os.path.dirname(os.path.abspath(__file__))
 
-###########################################################
-#################### FIXED ASSUMPTIONS ####################
-###########################################################
-
-#################
-##### COSTS #####
-#################
-
-# costs
+# get cost data
 filepath = os.path.join(current_file_directory, '../data/Literature/costs.xlsx')
 df_costs = pd.read_excel(filepath)
 
-# price index
+# get price index data
 filepath = os.path.join(current_file_directory, '../data/Literature/costs_priceindex.xlsx')
 df_price = pd.read_excel(filepath)
 
@@ -52,6 +44,9 @@ for c in countries:
 
 # merge with price data
 df_costs_new = pd.merge(df_costs_new, df_price, how="left", on=["Country","Years"])
+
+# put evolution method nan if capex unit is nan
+df_costs_new.loc[df_costs_new["capex_unit"].isnull(),"evolution_method"] = np.nan
 
 # get new capex and opex 2050 and baseyear by weighting for price index
 variabs = ["capex_2050","capex_baseyear","opex_2050","opex_baseyear"]
@@ -139,12 +134,34 @@ df_temp = df_temp.pivot(index=["Country","Years"], columns="variable", values='v
 dm = DataMatrix.create_from_df(df_temp, 1)
 dm.sort("Categories1")
 
+# make the secondary techs (simple assumptions for now)
+# TODO: check literature and re-do this
+idx = dm.idx
+techs = ['aluminium-sec','cement-dry-kiln','chem-chem-tech', 'copper-tech', 'glass-glass', 'paper-tech','steel-scrap-EAF']
+techs_sec = ['aluminium-sec-post-consumer','cement-sec-post-consumer','chem-sec-post-consumer', 
+             'copper-sec-post-consumer', 'glass-sec-post-consumer', 'paper-sec-post-consumer','steel-sec-post-consumer']
+for i in range(0,len(techs)):
+    arr_temp = dm.array[...,idx[techs[i]]]
+    dm.add(arr_temp, "Categories1", techs_sec[i])
+dm.sort("Categories1")
+
 # make data matrix for CC
 idx = [i.split("_")[1] == "CC" for i in df1["variable"]]
 df_temp = df1.loc[idx,:]
 df_temp = df_temp.pivot(index=["Country","Years"], columns="variable", values='value').reset_index()
 dm_cc = DataMatrix.create_from_df(df_temp, 1)
 dm_cc.sort("Categories1")
+
+# make the secondary techs for cc (simple assumptions for now)
+# TODO: check literature and re-do this
+idx = dm_cc.idx
+techs = ['cement-dry-kiln','chem-chem-tech','steel-scrap-EAF']
+techs_sec = ['cement-sec-post-consumer','chem-sec-post-consumer', 'steel-sec-post-consumer']
+for i in range(0,len(techs)):
+    arr_temp = dm_cc.array[...,idx[techs[i]]]
+    dm_cc.add(arr_temp, "Categories1", techs_sec[i])
+dm_cc.sort("Categories1")
+dm_cc.rename_col_regex("_CC", "", "Variables")
 
 # put together
 DM_costs = {"costs" : dm,

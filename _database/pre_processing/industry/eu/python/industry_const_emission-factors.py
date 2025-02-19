@@ -277,6 +277,74 @@ df_temp = pd.DataFrame({"variable" : ["process-emissions_steel-hisarna_CO2[Mt/Mt
 df = pd.concat([df, df_temp])
 df.sort_values(by=["variable"],inplace=True)
 
+# aluminium-sec-post-consumer
+# assumption: same of alluminium sec
+# TODO: check the literature and re-do this
+df_temp = df.loc[df["variable"] == "process-emissions_aluminium-sec_CO2[Mt/Mt]",:]
+df_temp["variable"] = "process-emissions_aluminium-sec-post-consumer_CO2[Mt/Mt]"
+df = pd.concat([df, df_temp])
+
+# cement-sec-post-consumer
+# source: https://www.sciencedirect.com/science/article/pii/S235255412300044X
+# from abstract: first tech no emission reduction, with other 2 techs, up until 80% reduction in emissions
+# assuming that this is translated to process emissions (which make up for a large part of emissions from clinker)
+# I make an average between 0% and 80%
+# TODO: check the literature and re-do this
+ec_perc_less = np.mean(np.array([0,0.8]))
+df_temp = df.loc[df["variable"] == "process-emissions_cement-dry-kiln_CO2[Mt/Mt]",:]
+df_temp["value"] = df_temp["value"]*(1-ec_perc_less)
+df_temp["variable"] = "process-emissions_cement-sec-post-consumer_CO2[Mt/Mt]"
+df = pd.concat([df, df_temp])
+
+# chem-sec-post-consumer
+# it seems that energy consumption and emissions in post consumer recycling can differ a lot from chemical to chemial
+# so for the moment I will put it the same of chemicals primary
+# TODO: check the literature and re-do this
+df_temp = df.loc[df["variable"] == "process-emissions_chem-chem-tech_CO2[Mt/Mt]",:]
+df_temp["variable"] = "process-emissions_chem-sec-post-consumer_CO2[Mt/Mt]"
+df = pd.concat([df, df_temp])
+
+# copper-sec-post-consumer
+# source: https://internationalcopper.org/policy-focus/climate-environment/recycling/#:~:text=Recycled%20copper%20requires%2085%20percent,production%20and%20reduces%20CO2%20emissions
+# here they do not mention process emissions, and it seems that the reduciton in emissions
+# is just due to the lower energy demand to make secondary copper. So process emissions
+# I will assign the same of process emissions for primary copper
+# TODO: check the literature and re-do this
+df_temp = df.loc[df["variable"] == "process-emissions_copper-tech_CO2[Mt/Mt]",:]
+df_temp["variable"] = "process-emissions_copper-sec-post-consumer_CO2[Mt/Mt]"
+df = pd.concat([df, df_temp])
+
+# glass-sec-post-consumer
+# sources:
+# https://www.nrel.gov/docs/legosti/old/5703.pdf
+# https://www.gpi.org/facts-about-glass-recycling
+# https://www.agc-glass.eu/en/sustainability/decarbonisation/recycling
+# no clear answer, so I will put the same of glass production for now
+# TODO: check the literature and re-do this
+df_temp = df.loc[df["variable"] == "process-emissions_glass-glass-tech_CO2[Mt/Mt]",:]
+df_temp["variable"] = "process-emissions_glass-sec-post-consumer_CO2[Mt/Mt]"
+df = pd.concat([df, df_temp])
+
+# paper-sec-post-consumer
+# source: https://ocshredding.com/blog/does-it-take-more-energy-to-produce-recycled-paper/#:~:text=According%20to%20the%20Environmental%20Paper,takes%20about%2022%20million%20BTUs.
+# here they do not mention process emissions, so I assume that all the reduction in emissions
+# comes from the lower energy demand, and that process emissions are the same
+# TODO: check the literature and re-do this
+df_temp = df.loc[df["variable"] == "process-emissions_paper-tech_CO2[Mt/Mt]",:]
+df_temp["variable"] = "process-emissions_paper-sec-post-consumer_CO2[Mt/Mt]"
+df = pd.concat([df, df_temp])
+
+# steel-sec-post-consumer
+# assumption: same process emissions of scrap EAF
+df_temp = df.loc[df["variable"] == "process-emissions_steel-scrap-EAF_CO2[Mt/Mt]",:]
+df_temp["variable"] = "process-emissions_steel-sec-post-consumer_CO2[Mt/Mt]"
+df = pd.concat([df, df_temp])
+
+# wwp-sec-post-consumer: assuming no wooden products post consumer for now
+
+# sort
+df.sort_values(by=["variable"],inplace=True)
+
 ###############
 ##### N2O #####
 ###############
@@ -293,13 +361,14 @@ df_N2O = pd.DataFrame({"variable" : ["process-emissions_ammonia-tech_N2O[Mt/Mt]"
 # source: https://www.ipcc-nggip.iges.or.jp/public/2006gl/pdf/3_Volume3/V3_3_Ch3_Chemical_Industry.pdf
 # Table 3.4 page 3.30
 value = 300/1000
-df_temp = pd.DataFrame({"variable" : ["process-emissions_chem-chem-tech_N2O[Mt/Mt]"],
-                        "value" : [value]})
+df_temp = pd.DataFrame({"variable" : ["process-emissions_chem-chem-tech_N2O[Mt/Mt]",
+                                      "process-emissions_chem-sec-post-consumer_N2O[Mt/Mt]"], # I assume post consumer it's the same for process emissions N2O
+                        "value" : [value, value]})
 df_N2O = pd.concat([df_N2O, df_temp])
 
 # assign 0 to others
 techs = [i.split("_")[1].split("_")[0] for i in df["variable"]]
-drops = ["ammonia-tech","chem-chem-tech"]
+drops = ["ammonia-tech","chem-chem-tech","chem-sec-post-consumer"]
 idx = [i not in drops for i in techs]
 techs = list(np.array(techs)[idx])
 variabs = ["process-emissions_" + t + "_N2O[Mt/Mt]" for t in techs]
