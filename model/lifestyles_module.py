@@ -52,26 +52,26 @@ def lifestyles(lever_setting, years_setting, interface=Interface(), write_pickle
     # send population to agriculture
     if write_pickle is True:
         f = os.path.join(current_file_directory, '../_database/data/interface/lifestyles_to_agriculture.pickle')
-        my_pickle_dump(DM_new=dm_pop, local_pickle_file=f)
-    interface.add_link(from_sector='lifestyles', to_sector='agriculture', dm=dm_pop)
+        my_pickle_dump(DM_new={'pop': dm_pop}, local_pickle_file=f)
+    interface.add_link(from_sector='lifestyles', to_sector='agriculture', dm={'pop': dm_pop})
     
     # send population to transport
     if write_pickle is True:
         f = os.path.join(current_file_directory, '../_database/data/interface/lifestyles_to_transport.pickle')
-        my_pickle_dump(DM_new=dm_pop, local_pickle_file=f)
-    interface.add_link(from_sector='lifestyles', to_sector='transport', dm=dm_pop)
+        my_pickle_dump(DM_new={'pop': dm_pop}, local_pickle_file=f)
+    interface.add_link(from_sector='lifestyles', to_sector='transport', dm={'pop': dm_pop})
     
     # send population to buildings
     if write_pickle is True:
         f = os.path.join(current_file_directory, '../_database/data/interface/lifestyles_to_buildings.pickle')
-        my_pickle_dump(DM_new=dm_pop, local_pickle_file=f)
-    interface.add_link(from_sector='lifestyles', to_sector='buildings', dm=dm_pop)
+        my_pickle_dump(DM_new={'pop': dm_pop}, local_pickle_file=f)
+    interface.add_link(from_sector='lifestyles', to_sector='buildings', dm={'pop': dm_pop})
     
     # send population to industry
     if write_pickle is True:
         f = os.path.join(current_file_directory, '../_database/data/interface/lifestyles_to_industry.pickle')
-        my_pickle_dump(DM_new=dm_pop, local_pickle_file=f)
-    interface.add_link(from_sector='lifestyles', to_sector='industry', dm=dm_pop)
+        my_pickle_dump(DM_new={'pop': dm_pop}, local_pickle_file=f)
+    interface.add_link(from_sector='lifestyles', to_sector='industry', dm={'pop': dm_pop})
 
     # dm_minerals = DM_industry['macro']
     # dm_minerals.append(DM_industry['population'], dim='Variables')
@@ -81,17 +81,17 @@ def lifestyles(lever_setting, years_setting, interface=Interface(), write_pickle
 
 
 # Local run of lifestyles
-def local_lifestyles_run():
+def local_lifestyles_run(write_pickle=False):
     # Initiate the year & lever setting
     years_setting, lever_setting = init_years_lever()
 
-    global_vars = {'geoscale': 'Vaud'}
+    global_vars = {'geoscale': '.*'}
     filter_geoscale(global_vars)
 
-    lifestyles(lever_setting, years_setting)
+    lifestyles(lever_setting, years_setting, write_pickle=write_pickle)
     return
 
 # Update/Create the Pickle
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/lifestyles_module.py"
-# local_lifestyles_run()  # to un-comment to run in local
+#local_lifestyles_run()  # to un-comment to run in local
 
