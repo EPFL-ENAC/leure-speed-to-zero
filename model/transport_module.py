@@ -1058,8 +1058,7 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
     return DM_freight_out
 
 
-def tra_industry_interface(dm_freight_veh, dm_passenger_veh, dm_infrastructure,
-                           write_xls = False):
+def tra_industry_interface(dm_freight_veh, dm_passenger_veh, dm_infrastructure, write_pickle = False):
     # Filter cars only and rename technology as ICE, FCV and EV
     if 'aviation' not in dm_passenger_veh.col_labels['Categories1']:
         dm_passenger_veh.add(np.nan, dim='Categories1', col_label='aviation', dummy=True)
@@ -1139,17 +1138,6 @@ def tra_industry_interface(dm_freight_veh, dm_passenger_veh, dm_infrastructure,
     dm_trucks_stock.rename_col("tra_freight_vehicle-fleet","tra_product-stock","Variables")
     dm_stock.append(dm_trucks_stock, dim='Categories1')
     dm_stock.sort(dim='Categories1')
-    
-    # dm_ind
-    if write_xls is True:
-        dm_ind = dm_product_demand.flatten()
-        dm_ind.append(dm_infra_ind.flatten(), "Variables")
-        dm_ind.append(dm_waste.flatten(), "Variables")
-        dm_ind.append(dm_stock.flatten(), "Variables")
-        dm_ind.sort("Variables")
-        current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        df_ind = dm_ind.write_df()
-        df_ind.to_excel(current_file_directory + "/../_database/data/xls/" + 'All-Countries-interface_from-transport-to-industry.xlsx', index=False)
 
     # ! FIXME add infrastructure in km
     DM_industry = {
@@ -1158,10 +1146,18 @@ def tra_industry_interface(dm_freight_veh, dm_passenger_veh, dm_infrastructure,
         'tra-waste': dm_waste,
         'tra-stock': dm_stock
     }
+    
+    # if write_pickle is True, write pickle
+    if write_pickle is True:
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        f = os.path.join(current_file_directory, '../_database/data/interface/transport_to_industry.pickle')
+        with open(f, 'wb') as handle:
+            pickle.dump(DM_industry, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    
     return DM_industry
 
 
-def tra_minerals_interface(dm_freight_new_veh, dm_passenger_new_veh, DM_industry, dm_infrastructure, write_xls=False):
+def tra_minerals_interface(dm_freight_new_veh, dm_passenger_new_veh, DM_industry, dm_infrastructure, write_pickle=False):
 
     # Group technologies as PHEV, ICE, EV and FCEV
     dm_freight_new_veh.groupby({'PHEV': 'PHEV.*', 'ICE': 'ICE.*', 'EV': 'BEV|CEV'}, regex=True, inplace=True, dim='Categories2')
@@ -1191,15 +1187,16 @@ def tra_minerals_interface(dm_freight_new_veh, dm_passenger_new_veh, DM_industry
         'tra_infra': dm_infrastructure
     }
 
-    if write_xls:
-        df1 = DM_minerals['tra_veh'].write_df()
-        df2 = DM_minerals['tra_infra'].write_df()
-        df = pd.concat([df1, df2.drop(columns=['Country', 'Years'])], axis=1)
-        df.to_excel('../_database/data/xls/All-Countries-interface_from-transport-to-minerals.xlsx', index=False)
+    # if write_pickle is True, write pickle
+    if write_pickle is True:
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        f = os.path.join(current_file_directory, '../_database/data/interface/transport_to_minerals.pickle')
+        with open(f, 'wb') as handle:
+            pickle.dump(DM_minerals, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     return DM_minerals
 
-def tra_oilrefinery_interface(dm_pass_energy, dm_freight_energy):
+def tra_oilrefinery_interface(dm_pass_energy, dm_freight_energy, write_pickle=False):
     cat_missing = ['kerosene', 'marinefueloil']
     for cat in cat_missing:
         if cat not in dm_pass_energy.col_labels['Categories1']:
@@ -1210,6 +1207,13 @@ def tra_oilrefinery_interface(dm_pass_energy, dm_freight_energy):
                    'gas': 'gas-ff-natural', 'kerosene': 'liquid-ff-kerosene'}
     for str_old, str_new in dict_rename.items():
         dm_tot_energy.rename_col(str_old, str_new, dim='Categories1')
+        
+    # if write_pickle is True, write pickle
+    if write_pickle is True:
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        f = os.path.join(current_file_directory, '../_database/data/interface/transport_to_oil-refinery.pickle')
+        with open(f, 'wb') as handle:
+            pickle.dump(dm_tot_energy, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     return dm_tot_energy
 
@@ -1305,7 +1309,7 @@ def dummy_tra_infrastructure_workflow(dm_pop):
     return dm_infra.filter({'Variables': ['tra_new_infrastructure']})
 
 
-def tra_emissions_interface(dm_pass_emissions, dm_freight_emissions, write_xls=False):
+def tra_emissions_interface(dm_pass_emissions, dm_freight_emissions, write_pickle=False):
 
     dm_pass_emissions.rename_col('tra_passenger_emissions', 'tra_emissions_passenger', dim='Variables')
     dm_pass_emissions = dm_pass_emissions.flatten().flatten()
@@ -1314,12 +1318,49 @@ def tra_emissions_interface(dm_pass_emissions, dm_freight_emissions, write_xls=F
 
     dm_pass_emissions.append(dm_freight_emissions, dim='Variables')
 
-    if write_xls:
-        df = dm_pass_emissions.write_df()
-        df.to_excel('../_database/data/xls/All-Countries-interface_from-transport-to-emissions.xlsx', index=False)
+    # if write_pickle is True, write pickle
+    if write_pickle is True:
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        f = os.path.join(current_file_directory, '../_database/data/interface/transport_to_emissions.pickle')
+        with open(f, 'wb') as handle:
+            pickle.dump(dm_pass_emissions, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     return dm_pass_emissions
 
+def tra_agriculture_interface(dm_freight_agriculture, dm_passenger_agriculture, write_pickle = False):
+    
+    # !FIXME: of all of the bio-energy demand, only the biogas one is accounted for in Agriculture
+    dm_agriculture = dm_freight_agriculture
+    dm_agriculture.array = dm_agriculture.array + dm_passenger_agriculture.array
+    dm_agriculture.rename_col('tra_freight_total-energy', 'tra_bioenergy', dim='Variables')
+    dm_agriculture.rename_col('biogas', 'gas', dim='Categories1')
+    
+    # if write_pickle is True, write pickle
+    if write_pickle is True:
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        f = os.path.join(current_file_directory, '../_database/data/interface/transport_to_agriculture.pickle')
+        with open(f, 'wb') as handle:
+            pickle.dump(dm_agriculture, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    return dm_agriculture
+
+def tra_power_interface(DM_passenger_power, DM_freight_power, write_pickle=False):
+    
+    DM_power = DM_passenger_power
+    DM_power['hydrogen'].array = DM_power['hydrogen'].array + DM_freight_power['hydrogen'].array
+    DM_power['electricity'].add(np.nan, dim='Variables', dummy=True, col_label='tra_power-demand_other', unit='GWh')
+    DM_power['electricity'].sort('Variables')
+    DM_freight_power['electricity'].sort('Variables')
+    DM_power['electricity'].array = DM_power['electricity'].array + DM_freight_power['electricity'].array
+    
+    # if write_pickle is True, write pickle
+    if write_pickle is True:
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        f = os.path.join(current_file_directory, '../_database/data/interface/transport_to_power.pickle')
+        with open(f, 'wb') as handle:
+            pickle.dump(DM_power, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    
+    return DM_power
 
 def transport(lever_setting, years_setting, interface=Interface()):
 
@@ -1347,12 +1388,7 @@ def transport(lever_setting, years_setting, interface=Interface()):
     DM_freight_out = freight_fleet_energy(DM_freight, DM_other, cdm_const_freight, years_setting)
 
     # Power-module
-    DM_power = DM_passenger_out['power']
-    DM_power['hydrogen'].array = DM_power['hydrogen'].array + DM_freight_out['power']['hydrogen'].array
-    DM_power['electricity'].add(np.nan, dim='Variables', dummy=True, col_label='tra_power-demand_other', unit='GWh')
-    DM_power['electricity'].sort('Variables')
-    DM_freight_out['power']['electricity'].sort('Variables')
-    DM_power['electricity'].array = DM_power['electricity'].array + DM_freight_out['power']['electricity'].array
+    DM_power = tra_power_interface(DM_passenger_out['power'], DM_freight_out['power'])
     interface.add_link(from_sector='transport', to_sector='power', dm=DM_power)
     # df = dm_power.write_df()
     # df.to_excel('transport-to-power.xlsx', index=False)
@@ -1362,11 +1398,7 @@ def transport(lever_setting, years_setting, interface=Interface()):
     interface.add_link(from_sector='transport', to_sector='oil-refinery', dm=dm_oil_refinery)
 
     # Agriculture-module
-    # !FIXME: of all of the bio-energy demand, only the biogas one is accounted for in Agriculture
-    dm_agriculture = DM_freight_out['agriculture']
-    dm_agriculture.array = dm_agriculture.array + DM_passenger_out['agriculture'].array
-    dm_agriculture.rename_col('tra_freight_total-energy', 'tra_bioenergy', dim='Variables')
-    dm_agriculture.rename_col('biogas', 'gas', dim='Categories1')
+    dm_agriculture = tra_agriculture_interface(DM_freight_out['agriculture'], DM_passenger_out['agriculture'])
     interface.add_link(from_sector='transport', to_sector='agriculture', dm=dm_agriculture)
 
     # Minerals and Industry
@@ -1385,7 +1417,7 @@ def transport(lever_setting, years_setting, interface=Interface()):
     #interface.add_link(from_sector='transport', to_sector='minerals', dm=DM_minerals)
 
     # Emissions
-    dm_emissions = tra_emissions_interface(DM_passenger_out['emissions'], DM_freight_out['emissions'], write_xls=False)
+    dm_emissions = tra_emissions_interface(DM_passenger_out['emissions'], DM_freight_out['emissions'])
     interface.add_link(from_sector='transport', to_sector='emissions', dm=dm_emissions.copy())
 
     # Local transport emissions
@@ -1410,7 +1442,7 @@ def local_transport_run():
     f = open(os.path.join(current_file_directory, '../config/lever_position.json'))
     lever_setting = json.load(f)[0]
 
-    global_vars = {'geoscale': 'Vaud'}
+    global_vars = {'geoscale': 'Switzerland|Vaud'}
     filter_geoscale(global_vars)
 
     results_run = transport(lever_setting, years_setting)
