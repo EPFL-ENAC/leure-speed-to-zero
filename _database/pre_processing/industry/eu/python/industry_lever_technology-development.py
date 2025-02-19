@@ -19,7 +19,7 @@ pio.renderers.default='browser'
 # TODO: use documentation EUCalc to do level 1 etc.
 
 # file
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/_database/pre_processing/industry/eu/python/industry_lever_energy-efficiency.py"
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/_database/pre_processing/industry/eu/python/industry_lever_technology-development.py"
 
 # directories
 current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -31,12 +31,16 @@ countries = ['Austria','Belgium','Bulgaria','Croatia','Cyprus','Czech Republic',
              'Romania','Slovakia','Slovenia','Spain','Sweden','United Kingdom']
 years = list(range(1990,2023+1,1))
 years = years + list(range(2025, 2050+1, 5))
-variabs = ['steel-BF-BOF', 'steel-scrap-EAF', 'steel-hisarna', 'steel-hydrog-DRI', 
-           'cement-dry-kiln', 'cement-wet-kiln', 'cement-geopolym', 'chem-chem-tech', 
-           'ammonia-tech', 'pulp-tech', 'paper-tech', 'aluminium-prim', 'aluminium-sec', 
-           'glass-glass','lime-lime','copper-tech','fbt-tech', 'mae-tech', 'ois-tech', 
-           'textiles-tech', 'tra-equip-tech', 'wwp-tech']
-variabs = ["energy-efficiency_" + i for i in variabs]
+variabs = ['aluminium-prim', 'aluminium-sec', 'aluminium-sec-post-consumer', 
+           'cement-dry-kiln', 'cement-geopolym', 'cement-sec-post-consumer', 
+           'cement-wet-kiln', 'chem-chem-tech', 'chem-sec-post-consumer', 
+           'copper-sec-post-consumer', 'copper-tech', 'fbt-tech', 'glass-glass', 
+           'glass-sec-post-consumer', 'lime-lime',
+           'mae-tech', 'ois-tech', 'paper-sec-post-consumer', 'paper-tech', 
+           'pulp-tech', 'steel-BF-BOF', 'steel-hisarna', 'steel-hydrog-DRI', 
+           'steel-scrap-EAF', 'steel-sec-post-consumer', 'textiles-tech', 
+           'tra-equip-tech', 'wwp-tech']
+variabs = ["technology-development_" + i for i in variabs]
 units = list(np.repeat("%", len(variabs)))
 units_dict = dict()
 for i in range(0, len(variabs)):
@@ -77,7 +81,7 @@ DM = {"ots" : dm_ots,
       "fts" : DM_fts}
 
 # save
-f = os.path.join(current_file_directory, '../data/datamatrix/lever_energy-efficiency.pickle')
+f = os.path.join(current_file_directory, '../data/datamatrix/lever_technology-development.pickle')
 with open(f, 'wb') as handle:
     pickle.dump(DM, handle, protocol=pickle.HIGHEST_PROTOCOL)
 

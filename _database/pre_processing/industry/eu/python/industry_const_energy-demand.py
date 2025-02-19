@@ -359,6 +359,14 @@ df_dri.loc[df_dri["variable"] == "steel-hydrog-DRI_hydrogen[TWh/Mt]","value"] = 
 df_dri["value"] = df_dri["value"]*df_dri["total"]
 df = pd.concat([df, df_dri.loc[:,["variable","value","tech"]]])
 
+# create steel post consumer
+# assumption: same energy demand of electric arc furnace for scrap
+# TODO: check the literature and re-do this
+df_temp = df.loc[df["tech"] == "steel-scrap-EAF",:]
+df_temp["tech"] = "steel-sec-post-consumer"
+df_temp["variable"] = [i.replace("steel-scrap-EAF","steel-sec-post-consumer") for i in df_temp["variable"]]
+df = pd.concat([df, df_temp])
+
 # store
 df_final = df.copy()
 
@@ -424,6 +432,28 @@ for key in ls_cement_tech_ec.keys():
     df_temp["variable"] = [i.replace("cement",key) for i in df_temp["variable"]]
     df = pd.concat([df, df_temp])
 df = df.loc[df["tech"] != "cement",:]
+
+# create cement post consumer
+# cement: https://www.sciencedirect.com/science/article/pii/S235255412300044X
+# from abstract: there are marginal energy and emissions reduction with the wet method (so zero), while dry and air methods consume only 30%–40% of the energy for clinker production..
+ec_perc_less = np.mean(np.array([0,0.30,0.40]))
+df_temp = df.loc[df["tech"] == "cement-dry-kiln",:]
+df_temp["value"] = df_temp["value"]*(1-ec_perc_less)
+df_temp["tech"] = "cement-sec-post-consumer"
+df_temp["variable"] = [i.replace("cement-dry-kiln","cement-sec-post-consumer") for i in df_temp["variable"]]
+df = pd.concat([df, df_temp])
+
+# create glass post consumer
+# sources:
+# https://www.nrel.gov/docs/legosti/old/5703.pdf
+# https://www.gpi.org/facts-about-glass-recycling
+# https://www.agc-glass.eu/en/sustainability/decarbonisation/recycling
+# no clear answer, so I will put the same of glass production for now
+# TODO: check the literature and re-do this
+df_temp = df.loc[df["tech"] == "glass-glass",:]
+df_temp["tech"] = "glass-sec-post-consumer"
+df_temp["variable"] = [i.replace("glass-glass","glass-sec-post-consumer") for i in df_temp["variable"]]
+df = pd.concat([df, df_temp])
 
 # store
 df_final = pd.concat([df_final, df])
@@ -606,6 +636,15 @@ df["variable"] = [tech + "_" + enercarr + "[" + unit + "/" + unit_production + "
                       zip(df["tech"], df["energy_carrier"], df["unit"], df["unit_production"])]
 df = df.loc[:,["variable","value","tech"]]
 
+# create chemicals post consumer
+# it seems that energy consumption in post consumer recycling can differ a lot from chemical to chemial
+# so for the moment I will put it the same of chemicals primary
+# TODO: check the literature and re-do this
+df_temp = df.loc[df["tech"] == "chem-chem-tech",:]
+df_temp["tech"] = "chem-sec-post-consumer"
+df_temp["variable"] = [i.replace("chem-chem-tech","chem-sec-post-consumer") for i in df_temp["variable"]]
+df = pd.concat([df, df_temp])
+
 # append
 df_final = pd.concat([df_final, df])
 
@@ -649,6 +688,16 @@ df["variable"] = [tech + "_" + enercarr + "[" + unit + "/" + unit_production + "
                   tech, enercarr, unit, unit_production in \
                       zip(df["tech"], df["energy_carrier"], df["unit"], df["unit_production"])]
 df = df.loc[:,["variable","value","tech"]]
+
+# create chemicals feedstock post consumer
+# it seems that energy consumption in post consumer recycling can differ a lot from chemical to chemial
+# so for the moment I will put it the same of chemicals primary
+# TODO: check the literature and re-do this
+df_temp = df.loc[df["tech"] == "chem-chem-tech",:]
+df_temp["tech"] = "chem-sec-post-consumer"
+df_temp["variable"] = [i.replace("chem-chem-tech","chem-sec-post-consumer") for i in df_temp["variable"]]
+df = pd.concat([df, df_temp])
+
 df_final_feedstock = df.copy()
 
 # clean
@@ -748,6 +797,15 @@ df_check = df.groupby(["tech"], as_index=False)["value"].agg(np.mean)
 # drop printing and media
 df = df.loc[df["tech"] != "printing-media-tech",:]
 
+# create paper post consumer
+# source: https://ocshredding.com/blog/does-it-take-more-energy-to-produce-recycled-paper/#:~:text=According%20to%20the%20Environmental%20Paper,takes%20about%2022%20million%20BTUs.
+ec_perc_less = 0.31
+df_temp = df.loc[df["tech"] == "paper-tech",:]
+df_temp["value"] = df_temp["value"]*(1-ec_perc_less)
+df_temp["tech"] = "paper-sec-post-consumer"
+df_temp["variable"] = [i.replace("paper-tech","paper-sec-post-consumer") for i in df_temp["variable"]]
+df = pd.concat([df, df_temp])
+
 # save
 df_final = pd.concat([df_final, df])
 
@@ -803,6 +861,23 @@ df.loc[df["tech"] == "other-nfm","tech"] = 'copper-tech'
 df["variable"] = [i.replace("other-nfm",'copper-tech') for i in df["variable"]]
 # sum(df.loc[df["tech"] == "copper","value"])
 
+# create aluminium post consumer
+# for the moment I will put it the same of aluminium secondary
+# TODO: check the literature and re-do this
+df_temp = df.loc[df["tech"] == "aluminium-sec",:]
+df_temp["tech"] = "aluminium-sec-post-consumer"
+df_temp["variable"] = [i.replace("aluminium-sec","aluminium-sec-post-consumer") for i in df_temp["variable"]]
+df = pd.concat([df, df_temp])
+
+# create copper post consumer
+# source: https://internationalcopper.org/policy-focus/climate-environment/recycling/#:~:text=Recycled%20copper%20requires%2085%20percent,production%20and%20reduces%20CO2%20emissions.
+ec_perc_less = 0.85
+df_temp = df.loc[df["tech"] == "copper-tech",:]
+df_temp["value"] = df_temp["value"]*(1-ec_perc_less)
+df_temp["tech"] = "copper-sec-post-consumer"
+df_temp["variable"] = [i.replace("copper-tech","copper-sec-post-consumer") for i in df_temp["variable"]]
+df = pd.concat([df, df_temp])
+
 # put together
 df_final = pd.concat([df_final, df])
 
@@ -834,6 +909,12 @@ df.columns = ["variable","value"]
 df["variable"] = ["lime-lime_" + v + "[TWh/Mt]" for v in df["variable"]]
 df["tech"] = "lime-lime"
 df_final = pd.concat([df_final, df])
+
+# note for recycling: we will just drop lime post consumer recycling for now
+# as it does not seem feasible / largely done at the moment
+# some sources here:
+# https://www.buildinglimesforum.org.uk/recycle-week/
+# https://www.sciencedirect.com/science/article/pii/S2352710224005035
 
 # clean
 del df, energy_consumption_gj_per_tonne, electricity, ec_minus_electricity
@@ -1073,6 +1154,13 @@ df_check = df_check.groupby(["tech"], as_index=False)["value"].agg(sum)
 df_check = DF["energy-intensity-check"].copy()
 df_check = df.groupby(["tech"], as_index=False)["value"].agg(np.mean)
 
+# for post consumer recycling
+# it does not seem to be very spread at the moment (it's mostly used to be burned)
+# one article is here: https://www.nature.com/articles/s41467-023-42499-6
+# they say it requires less energy, but not how much less
+# for the moment I will drop it as a technology in the model
+# TODO: come back and check the literature
+
 # save
 df_final = pd.concat([df_final, df])
 
@@ -1137,7 +1225,7 @@ CDM_energy_demand = {
 f = os.path.join(current_file_directory, '../data/datamatrix/const_energy-demand.pickle')
 with open(f, 'wb') as handle:
     pickle.dump(CDM_energy_demand, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    
+
 
 # df = cdm_enerdem_exclfeed.write_df()
 # df["country"] = "all"

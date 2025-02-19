@@ -74,12 +74,12 @@ df_elv = pd.melt(df_elv, id_vars = ["material"], var_name='tech')
 df_elv = df_elv.groupby(["material"], as_index=False)['value'].agg(np.mean)
 df_elv.sort_values(["material"], inplace=True)
 
-# keep materials present in calculator (and make mean for others)
-df_temp = df_elv.loc[df_elv["material"].isin(material_current),:]
-df_temp1 = df_elv.loc[~df_elv["material"].isin(material_current),:]
-df_temp1["material"] = "other"
-df_temp1 = df_temp1.groupby(["material"], as_index=False)['value'].agg(np.mean)
-df_elv = pd.concat([df_temp,df_temp1])
+# keep materials present in calculator
+df_elv = df_elv.loc[df_elv["material"].isin(material_current),:]
+# df_temp1 = df_elv.loc[~df_elv["material"].isin(material_current),:]
+# df_temp1["material"] = "other"
+# df_temp1 = df_temp1.groupby(["material"], as_index=False)['value'].agg(np.mean)
+# df_elv = pd.concat([df_temp,df_temp1])
 for old, new in zip(material_current, material_current_correct_name):
     df_elv.loc[df_elv["material"] == old,"material"] = new
 
@@ -140,6 +140,9 @@ for i in range(1, len(products)):
     dm_temp.rename_col("waste-material-recovery_elv", products[i], "Variables")
     dm_new.append(dm_temp, "Variables")
 dm = dm_new.copy()
+
+# drop ammonia
+dm.drop("Categories1", "ammonia")
 
 # save
 years_ots = list(range(1990,2023+1))

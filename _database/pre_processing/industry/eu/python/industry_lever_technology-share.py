@@ -32,14 +32,14 @@ df.columns = ["material-tech","value"]
 name_new = ['steel-BF-BOF', 'steel-scrap-EAF', 'steel-hisarna', 'steel-hydrog-DRI',
             'cement-dry-kiln', 'cement-wet-kiln', 'cement-geopolym',
             'chem-chem-tech', 'ammonia-tech',
-            'paper-woodpulp', 'paper-recycled',
+            'pulp-tech', 'paper-tech',
             'aluminium-prim', 'aluminium-sec',
             'glass-glass','lime-lime','copper-tech']
 df["material-tech"] = name_new
 
 # add missing
-df_temp = pd.DataFrame({"material-tech" : ['fbt-tech', 'mae-tech', 'ois-tech', 'textiles-tech', 'timber-tech', 'tra-equip-tech', 'wwp-tech'],
-                        "value" : [100, 100, 100, 100, 100, 100, 100]})
+df_temp = pd.DataFrame({"material-tech" : ['fbt-tech', 'mae-tech', 'ois-tech', 'textiles-tech', 'tra-equip-tech', 'wwp-tech'],
+                        "value" : [100, 100, 100, 100, 100, 100]})
 df = pd.concat([df, df_temp])
 
 # divide by 100 and order
@@ -89,6 +89,9 @@ df = dm.write_df()
 for i in variabs:
     dm.rename_col(i, "technology-share_" + i, "Variables")
 dm.deepen()
+
+# drop ammonia-tech
+dm.drop("Categories1","ammonia-tech")
 
 # save
 years_ots = list(range(1990,2023+1))

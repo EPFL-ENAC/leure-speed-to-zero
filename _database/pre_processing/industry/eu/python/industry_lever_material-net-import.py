@@ -100,13 +100,13 @@ df_sub = pd.merge(df_sub, df_sub_unit.loc[:,keep], how="left", on=indexes)
 # fix unit
 df_sub["unit"].unique()
 df_sub["calc_industry_material"].unique()
-old_unit = ['kg ', 'p/st ', 'l ', 'l alc 100% ', 'm3 ', 'pa ', 'm2 ', 'm ',
+old_unit = ['kg ', 'p/st ', 'l ', 'l alc 100% ', 'm3 ', 'pa ', 'm2 ', 'm ', 'kg 90% sdt ',
             'kg TiO2 ', 'kg HCl ', 'kg P2O5 ', 'kg HF ', 'kg SiO2 ', 'kg SO2 ',
             'kg NaOH ', 'kg Al2O3 ', 'kg Cl ', 'kg Na2S2O5 ', 'kg Na2CO3 ',
             'kg B2O3 ', 'kg H2O2 ', 'g ', 'kg N ', 'kg act.subst ', 'km ',
             'c/k ', 'pa ', 'kg act. subst. ', 'kW ', 'l alc. 100% ', 'kg KOH ',
             'kg H2SO4 ', 'NA ', 'kg act.subst. ', 'kg F ']
-new_unit = ['kg', 'p/st', 'l', 'l alc 100%', 'm3', 'pa', 'm2', 'm',
+new_unit = ['kg', 'p/st', 'l', 'l alc 100%', 'm3', 'pa', 'm2', 'm', 'kg 90% sdt',
             'kg TiO2', 'kg HCl', 'kg P2O5', 'kg HF', 'kg SiO2', 'kg SO2',
             'kg NaOH', 'kg Al2O3', 'kg Cl', 'kg Na2S2O5', 'kg Na2CO3',
             'kg B2O3', 'kg H2O2', 'g', 'kg N', 'kg act.subst', 'km',
@@ -115,6 +115,7 @@ new_unit = ['kg', 'p/st', 'l', 'l alc 100%', 'm3', 'pa', 'm2', 'm',
 for i in range(0, len(old_unit)):
     df_sub.loc[df_sub["unit"] == old_unit[i],"unit"] = new_unit[i]
 df_sub["unit"].unique()
+df_sub["calc_industry_material"].unique()
 
 # fix value
 df_sub["value"] = [float(i) for i in df_sub["value"]]
@@ -138,12 +139,12 @@ df_sub = df_sub.groupby(indexes, as_index=False)['value'].agg(sum)
 # keep right units
 df_sub["calc_industry_material"].unique()
 df_sub["unit"].unique()
-df_check = df_sub.loc[df_sub["calc_industry_material"] == "textiles",:]
+df_check = df_sub.loc[df_sub["calc_industry_material"] == "paper",:]
 df_check["unit"].unique()
 units_dict = {'aluminium' : ['kg'], 'ammonia' : ["kg N"], 'cement' : ["kg"], 
               'copper' : ['kg'], 'glass' : ['kg'], 
               'lime' : ['kg'], 'mae' : ['kg'], 'ois' : ['kg'],
-              'paper' : ['kg'], 'steel' : ['kg'], "textiles" : ['kg'],
+              'steel' : ['kg'], "textiles" : ['kg'],
               'tra-equip' : ['kg']}
 # NOTE: for large groups of materials, we consider only kg, but 
 # we are missing other products in other categories (for example for ois, there are 
@@ -201,7 +202,14 @@ df_sub_wwp = df_sub_wwp.loc[df_sub_wwp["unit"].isin(["kg","m3"]),:]
 df_sub_wwp.loc[df_sub_wwp["unit"] == "m3","unit"] = "kg"
 indexes = ['country', 'variable', 'calc_industry_material', 'year', 'unit']
 df_sub_wwp = df_sub_wwp.groupby(indexes, as_index=False)['value'].agg(sum)
-df_sub = pd.concat([df_sub_temp, df_sub_wwp])
+df_sub_temp = pd.concat([df_sub_temp, df_sub_wwp])
+
+# paper
+df_sub_paper = df_sub.loc[df_sub["calc_industry_material"].isin(["paper"]),:]
+df_sub_paper["unit"].unique()
+df_sub_paper.loc[df_sub_paper["unit"] == 'kg 90% sdt',"unit"] = "kg"
+df_sub_paper = df_sub_paper.groupby(indexes, as_index=False)['value'].agg(sum)
+df_sub = pd.concat([df_sub_temp, df_sub_paper])
 
 # sort
 indexes = ['country', 'variable', 'calc_industry_material', 'year', 'unit']
@@ -308,9 +316,7 @@ dm_mat = linear_fitting(dm_mat, years_fitting, min_t0=0)
 dm_mat.array = np.round(dm_mat.array,0)
 
 # # plot
-# dm_mat["domapp"].filter({"Country" : ["EU27"]}).datamatrix_plot()
-# dm_mat["tra-veh"].filter({"Country" : ["EU27"], "Categories1" : ["trucks-ICE"]}).datamatrix_plot()
-# dm_mat["lfs"].filter({"Country" : ["EU27"]}).datamatrix_plot()
+# dm_mat.filter({"Country" : ["EU27"], "Categories1": ["aluminium"]}).datamatrix_plot()
 
 # fix jumps
 dm_mat = fix_jumps_in_dm(dm_mat)
@@ -331,7 +337,7 @@ dm_mat.array = np.round(dm_mat.array,0)
 
 # # check
 # df_check = dm_mat.write_df()
-# material = "wwp"
+# material = "aluminium"
 # dm_mat.datamatrix_plot(selected_cols={"Country" : ["EU27"], 
 #                                       "Variables" : ["material-export","material-import"],
 #                                       "Categories1" : [material]})
@@ -391,7 +397,7 @@ dm_mat = make_fts(dm_mat, "steel", baseyear_start, baseyear_end)
 dm_mat = make_fts(dm_mat, "timber", baseyear_start, baseyear_end)
 dm_mat = make_fts(dm_mat, "tra-equip", 2012, baseyear_end) # upward trend from 2012
 dm_mat = make_fts(dm_mat, "wwp", baseyear_start, baseyear_end)
-# product = "wwp"
+# product = "aluminium"
 # (make_fts(dm_mat, product, baseyear_start, baseyear_end).
 #   datamatrix_plot(selected_cols={"Country" : ["EU27"],
 #                                 "Variables" : ["material-import","material-export"],

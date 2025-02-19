@@ -133,15 +133,15 @@ df_sub["unit"].unique()
 df_sub.loc[df_sub["calc_industry_product"].isin(["glass-pack"]),"unit"].unique()
 df_sub.loc[df_sub["calc_industry_product"].isin(["aluminium-pack"]),"unit"].unique()
 ["aluminium-pack","glass-pack", "paper-pack", "paper-print", "paper-san", "plastic-pack"]
-product_check = ["paper-pack"]
+product_check = ["plastic-pack"]
 df_check = df_sub.loc[df_sub["calc_industry_product"].isin(product_check),:]
 df_check = df_check.loc[df_check["country"].isin(["EU27_2020"]),:]
 units_dict = {'aluminium-pack' : ['p/st'], 'cars-EV' : ['p/st'], 'cars-ICE' : ['p/st'],
               'computer' : ['p/st'], 'dishwasher' : ['p/st'],
               'fertilizer' : ['kg', 'kg K2O', 'kg N', 'kg P2O5', 'kg effect'],
-              'freezer' : ['p/st'], 'fridge' : ['p/st'], 'glass-pack' : ['p/st'],
+              'freezer' : ['p/st'], 'fridge' : ['p/st'], 'glass-pack' : ['kg'],
               'paper-pack' : ['kg'], 'paper-print' : ['kg'], 'paper-san' : ['kg'],
-              'phone' : ['p/st'], 'planes' : ['p/st'], 'plastic-pack' : ['p/st'],
+              'phone' : ['p/st'], 'planes' : ['p/st'], 'plastic-pack' : ['kg'],
               'ships' : ['p/st'], 'trains' : ['p/st'], 'trucks-EV' : ['p/st'],
               'trucks-ICE' : ['p/st'], 'tv' : ['p/st'], 'wmachine' : ['p/st']}
 df_sub = pd.concat([df_sub.loc[(df_sub["calc_industry_product"] == key) & \
@@ -218,10 +218,12 @@ df_temp = df_temp.pivot(index=["Country","Years"], columns="variable", values='v
 dm_tra_veh = DataMatrix.create_from_df(df_temp, 1)
 
 # dm_lfs
-df_temp = df_sub.loc[df_sub["selection"].isin(['paper-pack', 'paper-print', 'paper-san']),["Country","Years","variable","value"]]
+df_temp = df_sub.loc[df_sub["selection"].isin(['glass-pack', 'plastic-pack', 
+                                               'paper-pack', 'paper-print', 
+                                               'paper-san']),["Country","Years","variable","value"]]
 df_temp = df_temp.pivot(index=["Country","Years"], columns="variable", values='value').reset_index()
 dm_lfs_kg = DataMatrix.create_from_df(df_temp, 1)
-df_temp = df_sub.loc[df_sub["selection"].isin(['aluminium-pack', 'glass-pack', 'plastic-pack']),
+df_temp = df_sub.loc[df_sub["selection"].isin(['aluminium-pack']),
                      ["Country","Years","variable","value"]]
 df_temp = df_temp.pivot(index=["Country","Years"], columns="variable", values='value').reset_index()
 dm_lfs_unit = DataMatrix.create_from_df(df_temp, 1)
@@ -229,16 +231,16 @@ dm_lfs_unit = DataMatrix.create_from_df(df_temp, 1)
 # put together
 DM_trade = {"domapp" : dm_bld_domapp,
             "tra-veh" : dm_tra_veh,
-            "lfs_paper" : dm_lfs_kg,
-            "lfs_other" : dm_lfs_unit}
+            "lfs" : dm_lfs_kg,
+            "lfs-alu" : dm_lfs_unit}
 
 # # plot
-# DM_trade["domapp"].filter({"Country" : ["EU27"]}).datamatrix_plot()
+# DM_trade["domapp"].filter({"Country" : ["EU27"], "Variables" : ["product-demand"]}).datamatrix_plot()
 # DM_trade["tra-veh"].filter({"Country" : ["EU27"]}).datamatrix_plot()
 # DM_trade["lfs_kg"].filter({"Country" : ["EU27"]}).datamatrix_plot()
 # DM_trade["lfs_unit"].filter({"Country" : ["EU27"]}).datamatrix_plot()
 # # all data starts in 2003
-# # phone data starts in 2022, i will put a zero in 2003 and then compute the linear trend for missing 
+# # phone data starts in 2022, i will put a zero in 1995 and then compute the linear trend for missing 
 
 ###################
 ##### FIX OTS #####
@@ -254,31 +256,44 @@ years_ots = list(range(startyear, baseyear+1, 1))
 years_fts = list(range(baseyear+2, lastyear+1, step_fts))
 years_all = years_ots + years_fts
 
-# put zero for phone and planes in 2003
-idx = DM_trade["domapp"].idx
-DM_trade["domapp"].array[:,idx[2003],:,idx["phone"]] = 0
-idx = DM_trade["tra-veh"].idx
-DM_trade["tra-veh"].array[:,idx[2003],:,idx["planes"]] = 0
+# before 2003, fill in with value of 2003
+for key in DM_trade.keys():
+    years_fitting = list(range(DM_trade[key].col_labels["Years"][0],2002+1))
+    DM_trade[key] = linear_fitting(DM_trade[key], years_fitting, min_t0=0, based_on=[2003])
+    DM_trade[key].array = np.round(DM_trade[key].array,0)
 
-# fill in missing values with linear fitting
+# # plot
+# DM_trade["domapp"].filter({"Country" : ["EU27"], "Variables" : ["product-demand"]}).datamatrix_plot()
+# DM_trade["tra-veh"].filter({"Country" : ["EU27"], "Variables" : ["product-demand"]}).datamatrix_plot()
+# DM_trade["lfs"].filter({"Country" : ["EU27"], "Variables" : ["product-demand"]}).datamatrix_plot()
+# DM_trade["lfs-alu"].filter({"Country" : ["EU27"]}).datamatrix_plot()
+
+# for phone and planes in 1995, put value of 2023 divided by n of years
+idx = DM_trade["domapp"].idx
+DM_trade["domapp"].array[:,idx[1995],:,idx["phone"]] = DM_trade["domapp"].array[:,idx[2023],:,idx["phone"]]/(2023-1995)
+idx = DM_trade["tra-veh"].idx
+DM_trade["tra-veh"].array[:,idx[1995],:,idx["planes"]] = DM_trade["tra-veh"].array[:,idx[2023],:,idx["planes"]]/(2023-1995)
+
+# fill in with linear fitting what's left
 for key in DM_trade.keys():
     years_fitting = DM_trade[key].col_labels["Years"]
     DM_trade[key] = linear_fitting(DM_trade[key], years_fitting, min_t0=0)
     DM_trade[key].array = np.round(DM_trade[key].array,0)
 
 # # plot
-# DM_trade["domapp"].filter({"Country" : ["EU27"]}).datamatrix_plot()
-# DM_trade["tra-veh"].filter({"Country" : ["EU27"], "Categories1" : ["trucks-ICE"]}).datamatrix_plot()
-# DM_trade["lfs_kg"].filter({"Country" : ["EU27"]}).datamatrix_plot()
-# DM_trade["lfs_unit"].filter({"Country" : ["EU27"]}).datamatrix_plot()
+# DM_trade["domapp"].filter({"Country" : ["EU27"], "Variables" : ["product-demand"]}).datamatrix_plot()
+# DM_trade["tra-veh"].filter({"Country" : ["EU27"], "Variables" : ["product-demand"]}).datamatrix_plot()
+# DM_trade["lfs"].filter({"Country" : ["EU27"], "Variables" : ["product-demand"]}).datamatrix_plot()
+# DM_trade["lfs-alu"].filter({"Country" : ["EU27"]}).datamatrix_plot()
 
 # fix jumps
 for key in DM_trade.keys(): DM_trade[key] = fix_jumps_in_dm(DM_trade[key])
 
 # # plot
-# DM_trade["domapp"].filter({"Country" : ["EU27"]}).datamatrix_plot()
-# DM_trade["tra-veh"].filter({"Country" : ["EU27"]}).datamatrix_plot()
-# DM_trade["lfs"].filter({"Country" : ["EU27"]}).datamatrix_plot()
+# DM_trade["domapp"].filter({"Country" : ["EU27"], "Variables" : ["product-demand"]}).datamatrix_plot()
+# DM_trade["tra-veh"].filter({"Country" : ["EU27"], "Variables" : ["product-demand"]}).datamatrix_plot()
+# DM_trade["lfs"].filter({"Country" : ["EU27"], "Variables" : ["product-demand"]}).datamatrix_plot()
+# DM_trade["lfs-alu"].filter({"Country" : ["EU27"]}).datamatrix_plot()
 
 # add missing years ots
 for key in DM_trade.keys():
@@ -286,14 +301,17 @@ for key in DM_trade.keys():
     DM_trade[key].add(np.nan, col_label=years_missing, dummy=True, dim='Years')
     DM_trade[key].sort('Years')
 
-# fill in missing years ots with linear fitting
+# fill in missing years ots with value from 1995
 for key in DM_trade.keys():
-    DM_trade[key] = linear_fitting(DM_trade[key], years_missing, min_t0=0)
+    years_fitting = list(range(1990,1994+1))
+    DM_trade[key] = linear_fitting(DM_trade[key], years_fitting, min_t0=0, based_on=[1995])
     DM_trade[key].array = np.round(DM_trade[key].array,0)
 
-# # check
-# df_check = DM_trade["domapp"].write_df()
-# DM_trade["domapp"].filter({"Country" : ["EU27"]}).datamatrix_plot()
+# # plot
+# DM_trade["domapp"].filter({"Country" : ["EU27"], "Variables" : ["product-demand"]}).datamatrix_plot()
+# DM_trade["tra-veh"].filter({"Country" : ["EU27"], "Variables" : ["product-demand"]}).datamatrix_plot()
+# DM_trade["lfs"].filter({"Country" : ["EU27"], "Variables" : ["product-demand"]}).datamatrix_plot()
+# DM_trade["lfs-alu"].filter({"Country" : ["EU27"]}).datamatrix_plot()
 
 #############################################
 ##### GENERATE VARIABLES WE DO NOT HAVE #####
@@ -370,11 +388,11 @@ DM_trade["tra-veh"].array[:,:,idx["product-import"],idx["ships"]] = 0
 # ['aluminium-pack', 'glass-pack', 'paper-pack', 'paper-print', 'paper-san', 'plastic-pack']
 # ['cars-EV', 'cars-FCV', 'cars-ICE', 'planes', 'ships', 'trains', 'trucks-EV', 'trucks-FCV', 'trucks-ICE']
 # ['computer', 'dishwasher', 'dryer', 'freezer', 'fridge', 'phone', 'tv', 'wmachine']
-# product = 'ships'
-# DM_trade["tra-veh"].datamatrix_plot(selected_cols={"Country" : ["EU27"], 
+# product = 'aluminium-pack'
+# DM_trade["lfs-alu"].datamatrix_plot(selected_cols={"Country" : ["EU27"], 
 #                                                   "Variables" : ["product-export","product-import"],
 #                                                   "Categories1" : [product]})
-# DM_trade["tra-veh"].datamatrix_plot(selected_cols={"Country" : ["EU27"], 
+# DM_trade["lfs-alu"].datamatrix_plot(selected_cols={"Country" : ["EU27"], 
 #                                                   "Variables" : ["product-demand"],
 #                                                   "Categories1" : [product]})
 
@@ -416,19 +434,19 @@ for key in DM_trade.keys():
 baseyear_start = 1990
 baseyear_end = 2019
 
-# domestic appliances
-DM_trade["lfs_other"] = make_fts(DM_trade["lfs_other"], "aluminium-pack", baseyear_start, baseyear_end)
-DM_trade["lfs_other"] = make_fts(DM_trade["lfs_other"], "glass-pack", 2012, baseyear_end) # here upwatd trend in import and demand starts in 2012
-DM_trade["lfs_other"] = make_fts(DM_trade["lfs_other"], "plastic-pack", baseyear_start, baseyear_end)
-DM_trade["lfs_paper"] = make_fts(DM_trade["lfs_paper"], "paper-pack", baseyear_start, baseyear_end)
-DM_trade["lfs_paper"] = make_fts(DM_trade["lfs_paper"], "paper-print", baseyear_start, baseyear_end)
-DM_trade["lfs_paper"] = make_fts(DM_trade["lfs_paper"], "paper-san", baseyear_start, baseyear_end)
+# packages
+DM_trade["lfs-alu"] = make_fts(DM_trade["lfs-alu"], "aluminium-pack", baseyear_start, baseyear_end)
+DM_trade["lfs"] = make_fts(DM_trade["lfs"], "glass-pack", 2012, baseyear_end) # here upwatd trend in import and demand starts in 2012
+DM_trade["lfs"] = make_fts(DM_trade["lfs"], "plastic-pack", baseyear_start, baseyear_end)
+DM_trade["lfs"] = make_fts(DM_trade["lfs"], "paper-pack", 2009, baseyear_end)
+DM_trade["lfs"] = make_fts(DM_trade["lfs"], "paper-print", baseyear_start, baseyear_end)
+DM_trade["lfs"] = make_fts(DM_trade["lfs"], "paper-san", baseyear_start, baseyear_end)
 # product = "paper-san"
-# (make_fts(DM_trade["lfs_paper"], product, baseyear_start, baseyear_end).
+# (make_fts(DM_trade["lfs"], product, baseyear_start, baseyear_end).
 #   datamatrix_plot(selected_cols={"Country" : ["EU27"],
 #                                 "Variables" : ["product-import","product-export"],
 #                                 "Categories1" : [product]}))
-# (make_fts(DM_trade["lfs_paper"], product, baseyear_start, baseyear_end).
+# (make_fts(DM_trade["lfs"], product, baseyear_start, baseyear_end).
 #   datamatrix_plot(selected_cols={"Country" : ["EU27"],
 #                                 "Variables" : ["product-demand"],
 #                                 "Categories1" : [product]}))
@@ -492,7 +510,7 @@ DM_trade["pipe"] = make_fts(DM_trade["pipe"], "new-dhg-pipe", baseyear_start, ba
 
 # product-net-import[%] = (product-import - product-export)/product-demand
 DM_trade_net_share = {}
-keys = ['domapp', 'tra-veh', 'lfs_paper', 'lfs_other', 'pipe', 'tra-infra', 'bld-floor']
+keys = ['domapp', 'tra-veh', 'lfs', 'lfs-alu', 'pipe', 'tra-infra', 'bld-floor']
 for key in keys:
     dm_temp = DM_trade[key].copy() 
     
@@ -515,8 +533,9 @@ for key in keys:
     
     # store
     DM_trade_net_share[key] = dm_temp
-dm_trade_netshare = DM_trade_net_share["domapp"]
-keys = ['tra-veh', 'lfs_paper', 'lfs_other', 'pipe', 'tra-infra', 'bld-floor']
+
+dm_trade_netshare = DM_trade_net_share["domapp"].copy()
+keys = ['tra-veh', 'lfs', 'lfs-alu', 'pipe', 'tra-infra', 'bld-floor']
 for key in keys:
     dm_trade_netshare.append(DM_trade_net_share[key], "Categories1")
 dm_trade_netshare.sort("Categories1")
@@ -528,35 +547,16 @@ years_fitting = dm_trade_netshare.col_labels["Years"]
 dm_trade_netshare = linear_fitting(dm_trade_netshare, years_fitting)
 
 # for the variables that we generated as all zero, re-put zeroes
-variabs = ["cars-FCV", "trucks-FCV", "aluminium-pack", "new-dhg-pipe", "rail",
-            "road", "trolley-cables", "floor-area-new-non-residential", 
-            "floor-area-new-residential", "floor-area-reno-non-residential", 
-            "floor-area-reno-residential", "ships"]
+variabs = ["cars-FCV", "trucks-FCV", "new-dhg-pipe", "rail",
+           "road", "trolley-cables", "floor-area-new-non-residential", 
+           "floor-area-new-residential", "floor-area-reno-non-residential", 
+           "floor-area-reno-residential", "ships"]
 idx = dm_trade_netshare.idx
 for v in variabs:
     dm_trade_netshare.array[:,:,:,idx[v]] = 0
     
 # fix jumps in product-net-import
 dm_trade_netshare = fix_jumps_in_dm(dm_trade_netshare)
-
-# check
-['aluminium-pack', 'glass-pack', 'paper-pack', 'paper-print', 'paper-san', 'plastic-pack']
-['cars-EV', 'cars-FCV', 'cars-ICE', 'planes', 'ships', 'trains', 'trucks-EV', 'trucks-FCV', 'trucks-ICE']
-['computer', 'dishwasher', 'dryer', 'freezer', 'fridge', 'phone', 'tv', 'wmachine']
-product = 'trains'
-# DM_trade["tra-veh"].datamatrix_plot(selected_cols={"Country" : ["EU27"], 
-#                                                   "Variables" : ["product-export","product-import"],
-#                                                   "Categories1" : [product]})
-# DM_trade["tra-veh"].datamatrix_plot(selected_cols={"Country" : ["EU27"], 
-#                                                   "Variables" : ["product-demand"],
-#                                                   "Categories1" : [product]})
-# dm_trade_netshare.datamatrix_plot(selected_cols={"Country" : ["EU27"], 
-#                                                   "Variables" : ["product-net-import"],
-#                                                   "Categories1" : [product]})
-# idx = DM_trade["domapp"].idx
-# ((DM_trade["domapp"].array[idx["EU27"],idx[1990],idx["product-import"],idx["phone"]]-
-#   DM_trade["domapp"].array[idx["EU27"],idx[1990],idx["product-export"],idx["phone"]])/
-#   DM_trade["domapp"].array[idx["EU27"],idx[1990],idx["product-demand"],idx["phone"]])
 
 # Should having values above and below, respectively, 1 and -1 be a problem? probably
 # it is if it's larger than 1, as it would mean that we are importing more than the demand ... the
@@ -568,16 +568,70 @@ product = 'trains'
 # For computers, we have values well above 1.
 # For dryer, we have values below -1 (gets to -3.5).
 # For freezer, fridge, phone, we have values well above 1.
-
 # Let's cap everything to max 1
 dm_trade_netshare.array[dm_trade_netshare.array>1]=1
 
+# check
+# ['aluminium-pack', 'glass-pack', 'paper-pack', 'paper-print', 'paper-san', 'plastic-pack']
+# ['cars-EV', 'cars-FCV', 'cars-ICE', 'planes', 'ships', 'trains', 'trucks-EV', 'trucks-FCV', 'trucks-ICE']
+# ['computer', 'dishwasher', 'dryer', 'freezer', 'fridge', 'phone', 'tv', 'wmachine']
+# product = 'aluminium-pack'
+# DM_trade["lfs-alu"].datamatrix_plot(selected_cols={"Country" : ["EU27"], 
+#                                                   "Variables" : ["product-export","product-import"],
+#                                                   "Categories1" : [product]})
+# DM_trade["lfs-alu"].datamatrix_plot(selected_cols={"Country" : ["EU27"], 
+#                                                   "Variables" : ["product-demand"],
+#                                                   "Categories1" : [product]})
+# dm_trade_netshare.datamatrix_plot(selected_cols={"Country" : ["EU27"], 
+#                                                   "Variables" : ["product-net-import"],
+#                                                   "Categories1" : [product]})
+# idx = DM_trade["domapp"].idx
+# ((DM_trade["domapp"].array[idx["EU27"],idx[1990],idx["product-import"],idx["phone"]]-
+#   DM_trade["domapp"].array[idx["EU27"],idx[1990],idx["product-export"],idx["phone"]])/
+#   DM_trade["domapp"].array[idx["EU27"],idx[1990],idx["product-demand"],idx["phone"]])
+
+
+################################
+##### MAKE PAPERPACK LEVER #####
+################################
+
+# the paper pack lever is the demand for packages per capita. The unit is ton/cap.
+# for the population, we upload the population data in lifestyles
+
+# load DM_lfs
+filepath = os.path.join(current_file_directory, '../../../../data/datamatrix/lifestyles.pickle')
+with open(filepath, 'rb') as handle:
+    DM_lfs = pickle.load(handle)
+    
+# get population data
+dm_pop = DM_lfs["ots"]["pop"]["lfs_population_"].copy()
+dm_pop.append(DM_lfs["fts"]["pop"]["lfs_population_"][1], "Years")
+
+# get aluminium package data
+dm_alu = DM_trade["lfs-alu"].filter({"Variables" : ["product-demand"]})
+
+# assuming an average of 30 g per unit, so 0.03 kg per unit
+dm_alu.array = dm_alu.array * 0.03
+dm_alu.units["product-demand"] = "kg"
+
+# put together with rest of packaging (which is already in kg)
+dm_pack = DM_trade["lfs"].filter({"Variables" : ["product-demand"]})
+dm_pack.append(dm_alu, "Categories1")
+dm_pack.sort("Categories1")
+
+# make kg to tonnes
+dm_pack.change_unit('product-demand', factor=1e-3, old_unit='kg', new_unit='t')
+
+# make tonne per capita
+dm_pop.drop("Country",['Switzerland','Vaud'])
+dm_pack.array = dm_pack.array / dm_pop.array[...,np.newaxis]
+dm_pack.units["product-demand"] = "t/cap"
 
 ################
 ##### SAVE #####
 ################
 
-# save
+# save dm_trade_netshare
 years_ots = list(range(1990,2023+1))
 years_fts = list(range(2025,2055,5))
 dm_ots = dm_trade_netshare.filter({"Years" : years_ots})
@@ -588,3 +642,22 @@ DM = {"ots" : dm_ots,
 f = os.path.join(current_file_directory, '../data/datamatrix/lever_product-net-import.pickle')
 with open(f, 'wb') as handle:
     pickle.dump(DM, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+# save paperpack
+years_ots = list(range(1990,2023+1))
+years_fts = list(range(2025,2055,5))
+dm_ots = dm_pack.filter({"Years" : years_ots})
+dm_fts = dm_pack.filter({"Years" : years_fts})
+DM_fts = {1: dm_fts, 2: dm_fts, 3: dm_fts, 4: dm_fts} # for now we set all levels to be the same
+DM = {"ots" : dm_ots,
+      "fts" : DM_fts}
+f = os.path.join(current_file_directory, '../data/datamatrix/lever_paperpack.pickle')
+with open(f, 'wb') as handle:
+    pickle.dump(DM, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+
+
+
+
+

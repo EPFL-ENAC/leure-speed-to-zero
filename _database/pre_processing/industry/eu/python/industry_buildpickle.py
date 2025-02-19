@@ -2,7 +2,7 @@
 
 # packages
 from model.common.data_matrix_class import DataMatrix
-from model.common.auxiliary_functions import linear_fitting, fix_jumps_in_dm
+from model.common.auxiliary_functions import linear_fitting, fix_jumps_in_dm, my_pickle_dump
 import pandas as pd
 import pickle
 import os
@@ -40,15 +40,17 @@ DM_industry = {}
 
 # list(np.array(files)[[bool(re.search("lever", i)) for i in files]])
 lever_files = ['lever_material-switch.pickle', 'lever_material-efficiency.pickle', 
-               'lever_energy-efficiency.pickle', 'lever_carbon-capture.pickle', 
+               'lever_technology-development.pickle', 'lever_carbon-capture.pickle', 
                'lever_technology-share.pickle', 'lever_material-net-import.pickle',
                'lever_product-net-import.pickle', 'lever_energy-switch.pickle',
-               'lever_waste-management.pickle', 'lever_material-recovery.pickle']
+               'lever_waste-management.pickle', 'lever_material-recovery.pickle',
+               'lever_paperpack.pickle']
 lever_names = ['material-switch', 'material-efficiency', 
                'technology-development',  'cc', 
                'technology-share', 'material-net-import', 
                'product-net-import', 'energy-carrier-mix', 
-               'eol-waste-management', 'eol-material-recovery']
+               'eol-waste-management', 'eol-material-recovery',
+               'paperpack']
 
 # load dms
 for i in range(0, len(lever_files)):
@@ -98,6 +100,10 @@ with open(filepath, 'rb') as handle:
     DM = pickle.load(handle)
 DM_fxa["prod"] = DM
 
+# drop ammonia-tech
+DM_fxa["cost-matprod"].drop("Categories1","ammonia-tech")
+DM_fxa["cost-CC"].drop("Categories1","ammonia-tech")
+
 #######################
 ##### CALIBRATION #####
 #######################
@@ -110,6 +116,9 @@ for i in range(0, len(files_temp)):
     with open(filepath, 'rb') as handle:
         dm = pickle.load(handle)
     DM_cal[names_temp[i]] = dm
+    
+# drop ammonia
+DM_cal["material-production"].drop("Categories1","ammonia")
 
 #####################
 ##### CONSTANTS #####
@@ -133,7 +142,7 @@ CDM_const["material-decomposition_floor"] = CDM["bld_floor"]
 CDM_const["material-decomposition_domapp"] = CDM["bld_domapp"]
 CDM_const["material-decomposition_infra"] = CDM["tra_infra"]
 CDM_const["material-decomposition_veh"] = CDM["tra_veh"]
-CDM_const["material-decomposition_lfs"] = CDM["lfs"]
+CDM_const["material-decomposition_pack"] = CDM["pack"]
 
 # energy demand
 filepath = os.path.join(current_file_directory, '../data/datamatrix/' + 'const_energy-demand.pickle')
@@ -148,6 +157,18 @@ with open(filepath, 'rb') as handle:
     CDM = pickle.load(handle)
 CDM_const["emission-factor"] = CDM["combustion-emissions"]
 CDM_const["emission-factor-process"] = CDM["process-emissions"]
+
+# drop ammonia
+lever_names = ['material-decomposition_pipe', 'material-decomposition_floor',
+               'material-decomposition_domapp', 'material-decomposition_infra',
+               'material-decomposition_veh', 'material-decomposition_pack']
+for n in lever_names:
+    CDM_const[n].drop("Categories2","ammonia")
+
+lever_names = ['energy_excl-feedstock', 'energy_feedstock', 
+               'emission-factor-process']
+for n in lever_names:
+    CDM_const[n].drop("Categories1","ammonia-tech")
 
 
 ########################
@@ -228,14 +249,14 @@ for name in dm_names:
 ##### SAVE #####
 ################
 
+# # save
+# f = os.path.join(current_file_directory, '../../../../data/datamatrix/industry.pickle')
+# my_pickle_dump(DM_industry, f)
+
 # save
 f = os.path.join(current_file_directory, '../../../../data/datamatrix/industry.pickle')
 with open(f, 'wb') as handle:
     pickle.dump(DM_industry, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-
-
-
 
 
 

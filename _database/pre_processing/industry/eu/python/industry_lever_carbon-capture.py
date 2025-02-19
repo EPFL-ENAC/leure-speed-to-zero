@@ -31,11 +31,15 @@ countries = ['Austria','Belgium','Bulgaria','Croatia','Cyprus','Czech Republic',
              'Romania','Slovakia','Slovenia','Spain','Sweden','United Kingdom']
 years = list(range(1990,2023+1,1))
 years = years + list(range(2025, 2050+1, 5))
-variabs = ['steel-BF-BOF', 'steel-scrap-EAF', 'steel-hisarna', 'steel-hydrog-DRI', 
-           'cement-dry-kiln', 'cement-wet-kiln', 'cement-geopolym', 'chem-chem-tech', 
-           'ammonia-tech', 'pulp-tech', 'paper-tech', 'aluminium-prim', 'aluminium-sec', 
-           'glass-glass','lime-lime','copper-tech','fbt-tech', 'mae-tech', 'ois-tech', 
-           'textiles-tech', 'tra-equip-tech', 'wwp-tech']
+variabs = ['aluminium-prim', 'aluminium-sec', 'aluminium-sec-post-consumer', 
+           'cement-dry-kiln', 'cement-geopolym', 'cement-sec-post-consumer', 
+           'cement-wet-kiln', 'chem-chem-tech', 'chem-sec-post-consumer', 
+           'copper-sec-post-consumer', 'copper-tech', 'fbt-tech', 'glass-glass', 
+           'glass-sec-post-consumer', 'lime-lime',
+           'mae-tech', 'ois-tech', 'paper-sec-post-consumer', 'paper-tech', 
+           'pulp-tech', 'steel-BF-BOF', 'steel-hisarna', 'steel-hydrog-DRI', 
+           'steel-scrap-EAF', 'steel-sec-post-consumer', 'textiles-tech', 
+           'tra-equip-tech', 'wwp-tech']
 variabs = ["carbon-capture_" + i for i in variabs]
 units = list(np.repeat("%", len(variabs)))
 units_dict = dict()
