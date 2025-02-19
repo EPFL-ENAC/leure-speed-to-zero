@@ -1,19 +1,19 @@
 
+from model.climate_module import climate
 from model.transport_module import transport
 from model.lifestyles_module import lifestyles
 from model.buildings_module import buildings
-# from model.minerals_module import minerals
+from model.industry_module import industry
 from model.common.interface_class import Interface
+from model.common.auxiliary_functions import filter_geoscale
 # from model.district_heating_module import district_heating
 # from model.agriculture_module import agriculture
 # from model.emissions_module import emissions
-from model.climate_module import climate
 # from model.ammonia_module import ammonia
-# from model.industry_module import industry
 # from model.power_module import power
 # from model.landuse_module import land_use
 # from model.oilrefinery_module import refinery
-from model.common.auxiliary_functions import filter_geoscale
+# from model.minerals_module import minerals
 
 import math
 import time
@@ -41,9 +41,9 @@ def interactions(lever_setting, years_setting):
     TPE['buildings'] = buildings(lever_setting, years_setting, interface)
     runtime['Execution time Buldings'] = time.time() - start_time
     start_time = time.time()
-    #TPE['industry'] = industry(lever_setting, years_setting, interface)
-    #runtime['Execution time Industry'] = time.time() - start_time
-    #start_time = time.time()
+    TPE['industry'] = industry(lever_setting, years_setting, interface)
+    runtime['Execution time Industry'] = time.time() - start_time
+    start_time = time.time()
     #TPE['agriculture'] = agriculture(lever_setting, years_setting, interface)
     #runtime['Execution time Agriculture'] = time.time() - start_time
     #start_time = time.time()
@@ -85,7 +85,7 @@ def local_interactions_run():
     years_setting = [1990, 2023, 2025, 2050, 5]
     
     # geoscale
-    global_vars = {'geoscale': 'Switzerland'}
+    global_vars = {'geoscale': 'Switzerland|Vaud'}
     filter_geoscale(global_vars)
 
     # run
