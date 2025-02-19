@@ -209,82 +209,84 @@ def get_pop_eurostat_fts(code_pop_fts, EU27_cntr_list, years_fts, dict_iso2):
     return dict_dm_pop_fts, dict_dm_pop_fts_tot
 
 
-def get_household_nb_people_eustat(dict_iso2):
+# =============================================================================
+# def get_household_nb_people_eustat(dict_iso2):
+# 
+#     ##### Extract number of household with a certain number of people
+#     filter = {'geo\TIME_PERIOD': list(dict_iso2.keys())}
+#     mapping_dim = {'Country': 'geo\TIME_PERIOD',
+#                    'Variables': 'unit',
+#                    'Categories1': 'n_person'}
+#     dm_ppl = get_data_api_eurostat('cens_hndwsize', filter, mapping_dim, 'households', years_ots)
+# 
+# 
+#     # There is only one value in GE6 for Cyprus, but Cyprus also has 6 and GE7 data. remove GE6 and Total
+#     dm_ppl.drop(col_label=['GE6', 'TOTAL'], dim='Categories1')
+#     # Rename GE7 as 7
+#     dm_ppl.rename_col('GE7', '7', dim='Categories1')
+#     ppl_int = np.array([int(ppl) for ppl in dm_ppl.col_labels['Categories1']])
+#     # Compute total number of households
+#     arr_hh_tot = np.sum(dm_ppl.array, axis=-1)
+#     # household-size x nb_household / tot nb households = avg household-size
+#     arr_ppl_w_hh = np.sum(dm_ppl.array[:, :, :, :] * ppl_int[np.newaxis, np.newaxis, np.newaxis, :], axis=-1)
+#     # Sum together all houses (since it is a nan sum I will overwrite it with the actual sum)
+#     dm_ppl.group_all('Categories1')
+#     # Compute average household size in number of people
+#     arr_hh_size = arr_ppl_w_hh / arr_hh_tot
+#     dm_ppl.add(arr_hh_size, dim='Variables', col_label='lfs_household-size', unit='people')
+#     dm_ppl.rename_col('PER', 'lfs_households', dim='Variables')
+#     # replace household size with avg household size
+#     dm_ppl.fill_nans(dim_to_interp='Years')
+#     # Number of households
+#     idx = dm_ppl.idx
+#     dm_ppl.array[:, :, idx['lfs_households']] = arr_hh_tot[:, :, 0]
+# 
+#     return dm_ppl
+# 
+# 
+# def get_household_size(eustat_code, dict_iso2):
+# 
+#     ##### Household-size data eurostat
+#     filter = {'geo\TIME_PERIOD': list(dict_iso2.keys())}
+#     mapping_dim = {'Country': 'geo\TIME_PERIOD',
+#                    'Variables': 'unit'}
+#     dm_hs = get_data_api_eurostat(eustat_code, filter, mapping_dim, unit='people', years=years_ots)
+#     dm_hs.rename_col('AVG', 'household-size', dim='Variables')
+# 
+#     for i in range(2):
+#         window_size = 3  # Change window size to control the smoothing effect
+#         data_smooth = moving_average(dm_hs.array, window_size, axis=dm_hs.dim_labels.index('Years'))
+#         dm_hs.array[:, 1:-1, ...] = data_smooth
+# 
+#     # Treat Slovakia differently because of specific trend
+#     # Constant extrapolation instead of linear fitting
+#     dm_hs_slovakia = dm_hs.filter({'Country': ['Slovakia']})
+#     dm_hs.drop('Country', 'Slovakia')
+#     dm_hs_slovakia.fill_nans('Years')
+#     dm_hs.append(dm_hs_slovakia, dim='Country')
+# 
+#     linear_fitting(dm_hs, years_ots=years_ots)
+# 
+#     dm_hs.sort('Country')
+# 
+#     return dm_hs
+# 
+# 
+# def estimate_household_size_fts_from_ots(dm_ots, start_t):
+# 
+#     dm_fts_BAU = linear_forecast_BAU(dm_ots, start_t, years_ots, years_fts)
+# 
+#     # Household-size is actually a fxa, all levels have the same value
+#     dict_fts = dict()
+#     for level in range(4):
+#         level = level + 1
+#         dict_fts[level] = dm_fts_BAU
+# 
+#     return dict_fts
+# =============================================================================
 
-    ##### Extract number of household with a certain number of people
-    filter = {'geo\TIME_PERIOD': list(dict_iso2.keys())}
-    mapping_dim = {'Country': 'geo\TIME_PERIOD',
-                   'Variables': 'unit',
-                   'Categories1': 'n_person'}
-    dm_ppl = get_data_api_eurostat('cens_hndwsize', filter, mapping_dim, 'households', years_ots)
 
-
-    # There is only one value in GE6 for Cyprus, but Cyprus also has 6 and GE7 data. remove GE6 and Total
-    dm_ppl.drop(col_label=['GE6', 'TOTAL'], dim='Categories1')
-    # Rename GE7 as 7
-    dm_ppl.rename_col('GE7', '7', dim='Categories1')
-    ppl_int = np.array([int(ppl) for ppl in dm_ppl.col_labels['Categories1']])
-    # Compute total number of households
-    arr_hh_tot = np.sum(dm_ppl.array, axis=-1)
-    # household-size x nb_household / tot nb households = avg household-size
-    arr_ppl_w_hh = np.sum(dm_ppl.array[:, :, :, :] * ppl_int[np.newaxis, np.newaxis, np.newaxis, :], axis=-1)
-    # Sum together all houses (since it is a nan sum I will overwrite it with the actual sum)
-    dm_ppl.group_all('Categories1')
-    # Compute average household size in number of people
-    arr_hh_size = arr_ppl_w_hh / arr_hh_tot
-    dm_ppl.add(arr_hh_size, dim='Variables', col_label='lfs_household-size', unit='people')
-    dm_ppl.rename_col('PER', 'lfs_households', dim='Variables')
-    # replace household size with avg household size
-    dm_ppl.fill_nans(dim_to_interp='Years')
-    # Number of households
-    idx = dm_ppl.idx
-    dm_ppl.array[:, :, idx['lfs_households']] = arr_hh_tot[:, :, 0]
-
-    return dm_ppl
-
-
-def get_household_size(eustat_code, dict_iso2):
-
-    ##### Household-size data eurostat
-    filter = {'geo\TIME_PERIOD': list(dict_iso2.keys())}
-    mapping_dim = {'Country': 'geo\TIME_PERIOD',
-                   'Variables': 'unit'}
-    dm_hs = get_data_api_eurostat(eustat_code, filter, mapping_dim, unit='people', years=years_ots)
-    dm_hs.rename_col('AVG', 'household-size', dim='Variables')
-
-    for i in range(2):
-        window_size = 3  # Change window size to control the smoothing effect
-        data_smooth = moving_average(dm_hs.array, window_size, axis=dm_hs.dim_labels.index('Years'))
-        dm_hs.array[:, 1:-1, ...] = data_smooth
-
-    # Treat Slovakia differently because of specific trend
-    # Constant extrapolation instead of linear fitting
-    dm_hs_slovakia = dm_hs.filter({'Country': ['Slovakia']})
-    dm_hs.drop('Country', 'Slovakia')
-    dm_hs_slovakia.fill_nans('Years')
-    dm_hs.append(dm_hs_slovakia, dim='Country')
-
-    linear_fitting(dm_hs, years_ots=years_ots)
-
-    dm_hs.sort('Country')
-
-    return dm_hs
-
-
-def estimate_household_size_fts_from_ots(dm_ots, start_t):
-
-    dm_fts_BAU = linear_forecast_BAU(dm_ots, start_t, years_ots, years_fts)
-
-    # Household-size is actually a fxa, all levels have the same value
-    dict_fts = dict()
-    for level in range(4):
-        level = level + 1
-        dict_fts[level] = dm_fts_BAU
-
-    return dict_fts
-
-
-# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/_database/pre_processing/lifestyles/Europe/lifestyles_preprocessing_EU.py"
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/_database/pre_processing/lifestyles/Europe/lifestyles_preprocessing_EU.py"
 # Set the timestep for historical years & scenarios
 years_ots = create_years_list(start_year=1990, end_year=2023, step=1, astype=int)
 years_fts = create_years_list(start_year=2025, end_year=2050, step=5, astype=int)
@@ -298,8 +300,32 @@ dict_iso2.pop('CH')  # Remove Switzerland
 
 # Get population total and by age group (ots)
 dm_pop_age, dm_pop_tot = get_pop_eurostat('demo_pjan', EU27_cntr_list, dict_iso2, years_ots)
+
 # Get raw fts pop data (fts)
 dict_dm_pop_fts, dict_dm_pop_fts_tot = get_pop_eurostat_fts('proj_23np', EU27_cntr_list, years_fts, dict_iso2)
+
+# create UK for fts with projections of Germany
+idx = dm_pop_age.idx
+arr_2023 = dm_pop_age.array[idx["Germany"],idx[2023],...]
+arr_2023_uk = dm_pop_age.array[idx["United Kingdom"],idx[2023],...]
+for i in range(1,4+1):
+    dm_temp = dict_dm_pop_fts[i].copy()
+    idx = dm_temp.idx
+    arr_rates = dm_temp.array[idx["Germany"],...] / arr_2023[np.newaxis,...]
+    arr_uk = arr_2023_uk[np.newaxis,...] * arr_rates
+    dict_dm_pop_fts[i].add(arr_uk, "Country", "United Kingdom")
+
+idx = dm_pop_tot.idx
+arr_2023 = dm_pop_tot.array[idx["Germany"],idx[2023],...]
+arr_2023_uk = dm_pop_tot.array[idx["United Kingdom"],idx[2023],...]
+for i in range(1,4+1):
+    dm_temp = dict_dm_pop_fts_tot[i].copy()
+    idx = dm_temp.idx
+    arr_rates = dm_temp.array[idx["Germany"],...] / arr_2023[np.newaxis,...]
+    arr_uk = arr_2023_uk[np.newaxis,...] * arr_rates
+    dict_dm_pop_fts_tot[i].add(arr_uk, "Country", "United Kingdom")
+
+
 # Save pickle
 DM_lfs = {"ots" : {"pop" : {"lfs_demography_":[],
                             "lfs_population_" : []}},
