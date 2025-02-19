@@ -1538,7 +1538,7 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
 def local_industry_run():
     
     # get years and lever setting
-    years_setting = [1990, 2023, 2050, 5]
+    years_setting = [1990, 2023, 2025, 2050, 5]
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     f = open(os.path.join(current_file_directory, '../config/lever_position.json'))
     lever_setting = json.load(f)[0]
@@ -1557,7 +1557,7 @@ def local_industry_run():
     # return
     return results_run
 
-# run local
+# # run local
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
 # start = time.time()
 # results_run = local_industry_run()
