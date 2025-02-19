@@ -1264,13 +1264,15 @@ def buildings(lever_setting, years_setting, interface=Interface()):
 
     # Simulate lifestyle input
     if interface.has_link(from_sector='lifestyles', to_sector='buildings'):
-        dm_lfs = interface.get_link(from_sector='lifestyles', to_sector='buildings')
+        DM_lfs = interface.get_link(from_sector='lifestyles', to_sector='buildings')
+        dm_lfs = DM_lfs['pop']
     else:
         if len(interface.list_link()) != 0:
             print('You are missing lifestyles to buildings interface')
         data_file = os.path.join(current_file_directory, '../_database/data/interface/lifestyles_to_buildings.pickle')
         with open(data_file, 'rb') as handle:
-            dm_lfs = pickle.load(handle)
+            DM_lfs = pickle.load(handle)
+        dm_lfs = DM_lfs['pop']
         cntr_list = DM_floor_area['floor-intensity'].col_labels['Country']
         dm_lfs.filter({'Country': cntr_list}, inplace=True)
 
