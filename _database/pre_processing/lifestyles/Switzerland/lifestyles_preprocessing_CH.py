@@ -636,10 +636,10 @@ dict_lfs_age_fts, dict_lfs_tot_pop_fts = extract_lfs_pop_fts(years_fts, table_id
 add_vaud_fts_pop(dm_lfs_age, dm_lfs_tot_pop, dict_lfs_age_fts, dict_lfs_tot_pop_fts)
 
 # Store
-DM_lfs = {"ots" : {"pop" : {"lfs_demography_":[],
-                            "lfs_population_" : []}},
-          "fts" : {"pop" : {"lfs_demography_": {1:[],2:[],3:[],4:[]},
-                            "lfs_population_": {1:[],2:[],3:[],4:[]}}}}
+DM_lfs = {"ots": {"pop": {"lfs_demography_": [],
+                          "lfs_population_": []}},
+          "fts": {"pop": {"lfs_demography_": dict(),
+                          "lfs_population_": dict()}}}
 DM_lfs['ots']['pop']['lfs_demography_'] = dm_lfs_age
 for lev in range(4):
     lev = lev + 1
@@ -652,6 +652,6 @@ for lev in range(4):
 # Save
 current_file_directory = os.path.dirname(os.path.abspath(__file__))
 file = os.path.join(current_file_directory, '../../../data/datamatrix/lifestyles.pickle')
-with open(file, 'wb') as handle:
-    pickle.dump(DM_lfs, handle, protocol=pickle.HIGHEST_PROTOCOL)
+my_pickle_dump(DM_new=DM_lfs, local_pickle_file=file)
+
 
