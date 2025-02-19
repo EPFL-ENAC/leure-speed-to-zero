@@ -94,7 +94,7 @@ for key in DM_transport.keys():
 
 # drop paris and canton vaud
 for key in DM_transport.keys():
-    DM_transport[key].drop("Country",["Paris","Vaud"])
+    DM_transport[key].drop("Country",["Paris"])
 
 # save
 f = os.path.join(current_file_directory, 'transport_to_industry.pickle')
@@ -118,7 +118,7 @@ for y in years_missing:
 dm_lifestyles.fill_nans(dim_to_interp='Years')
 
 # drop paris and canton vaud
-dm_lifestyles.drop("Country",["Paris","Vaud"])
+dm_lifestyles.drop("Country",["Paris"])
 
 # save
 f = os.path.join(current_file_directory, 'lifestyles_to_industry.pickle')
@@ -171,7 +171,7 @@ for key in DM_buildings.keys():
 
 # drop paris and canton vaud
 for key in DM_buildings.keys():
-    DM_buildings[key].drop("Country",["Paris","Vaud"])
+    DM_buildings[key].drop("Country",["Paris"])
 
 # save
 f = os.path.join(current_file_directory, 'buildings_to_industry.pickle')
