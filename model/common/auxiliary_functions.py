@@ -911,6 +911,7 @@ def eurostat_iso2_dict():
         "ES": "Spain",
         "SE": "Sweden",
         "CH": "Switzerland",
+        "UK": "United Kingdom",
         "EU27_2020": "EU27"
     }
     return dict_iso2
@@ -1061,6 +1062,7 @@ def fix_jumps_in_dm(dm, mad_multiple = 3, consec_do_nothing = False, consec_fill
 
 
 def my_pickle_dump(DM_new, local_pickle_file):
+    # if there is no pickle, just save DM_new
     if not os.path.exists(local_pickle_file):
         with open(local_pickle_file, 'wb') as handle:
             pickle.dump(DM_new, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -1076,11 +1078,9 @@ def my_pickle_dump(DM_new, local_pickle_file):
             else:
                 dm_old = dm_new
             return dm_old
-    
         # Load existing DM in pickle
         with open(local_pickle_file, 'rb') as handle:
             DM = pickle.load(handle)
-    
         for key in DM_new.keys():   # key = 'ots', 'fxa', ...
             if isinstance(DM_new[key], dict):  # e.g. 'const' can not be a dict
                 for lever in DM_new[key].keys():
