@@ -359,8 +359,7 @@ def material_decomposition(dm, cdm):
     return dm_out
 
 
-def calibration_rates(dm, dm_cal, calibration_start_year = 1990, calibration_end_year = 2015,
-                      years_setting=[1990, 2015, 2050, 5]):
+def calibration_rates(dm, dm_cal, years_setting, calibration_start_year = 1990, calibration_end_year = 2023):
     # dm is the datamatrix with data to be calibrated
     # dm_cal is the datamatrix with the reference data
     # the function returns a datamatrix with the calibration rates
@@ -377,6 +376,13 @@ def calibration_rates(dm, dm_cal, calibration_start_year = 1990, calibration_end
     dm_sub = dm.filter({"Years" : years_sub})
     dm_cal_sub = dm_cal.filter({"Years" : years_sub})
     
+    # if dm_sub and dm_cal_sub have same variable name, rename dm_cal_sub
+    variabs = dm_sub.col_labels["Variables"]
+    variabs_cal = dm_cal_sub.col_labels["Variables"]
+    if variabs == variabs_cal:
+        for i in range(0,len(variabs)):
+            dm_cal_sub.rename_col(variabs_cal[i], "cal_" + variabs[i], "Variables")
+    
     # get calibration rates = (calib - variable)/variable
     dm_cal_sub.append(dm_sub, 'Variables')
     var_raw = dm_sub.col_labels['Variables'][0]
@@ -390,22 +396,20 @@ def calibration_rates(dm, dm_cal, calibration_start_year = 1990, calibration_end
     
     # get new years post calibration_end_year
     years = dm_cal_sub.col_labels["Years"]
-    years_fts = np.array(range(years_setting[1] + years_setting[3], 
-                                    years_setting[2] + years_setting[3], 
-                                    years_setting[3])).tolist()
+    years_fts = list(range(years_setting[2], years_setting[3] + years_setting[4], years_setting[4]))
     if years_setting[1] in years:
         years_new_post = years_fts
     else:
-        years_new_post_temp = np.array(range(years[len(years)-1] + 1, years_setting[1] + 1, 1)).tolist()
+        years_new_post_temp = list(range(years[len(years)-1]+1,years_setting[1]+1))
         years_new_post = years_new_post_temp + years_fts
     
     # get index of dm_cal_sub
     idx = dm_cal_sub.idx
     
     # for missing years pre calibration_start_year, add them with value 1 (no calibration done)
-    # TODO!: in KNIME, for the years pre calibration, the calibration rate is the first calibration rate available (not 1), to be decided 
+    # TODO!: in the old model, for the years pre calibration, the calibration rate is the first calibration rate available (not 1), to be decided 
     if years_setting[0] not in years:
-        years_new_pre = np.array(range(years_setting[0], calibration_start_year, 1)).tolist()
+        years_new_pre = list(range(years_setting[0], calibration_start_year))
         for i in years_new_pre:
             dm_cal_sub.add(1, dim="Years", col_label = [i], dummy = True)
         
