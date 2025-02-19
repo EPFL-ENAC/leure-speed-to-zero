@@ -19,7 +19,8 @@ from model.common.auxiliary_functions import read_level_data, filter_geoscale, m
 def init_years_lever():
     # function that can be used when running the module as standalone to initialise years and levers
     years_setting = [1990, 2015, 2050, 5]
-    f = open('../config/lever_position.json')
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = open(os.path.join(current_file_directory, '../config/lever_position.json'))
     lever_setting = json.load(f)[0]
     return years_setting, lever_setting
 
@@ -84,7 +85,7 @@ def local_lifestyles_run():
     # Initiate the year & lever setting
     years_setting, lever_setting = init_years_lever()
 
-    global_vars = {'geoscale': 'Switzerland|Vaud'}
+    global_vars = {'geoscale': 'Vaud'}
     filter_geoscale(global_vars)
 
     lifestyles(lever_setting, years_setting)
