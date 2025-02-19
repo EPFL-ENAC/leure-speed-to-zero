@@ -1336,8 +1336,7 @@ def transport(lever_setting, years_setting, interface=Interface()):
         lfs_interface_data_file = os.path.join(current_file_directory,
                                                '../_database/data/interface/lifestyles_to_transport.pickle')
         with open(lfs_interface_data_file, 'rb') as handle:
-            DM_lfs = pickle.load(handle)
-        dm_lfs = DM_lfs['pop']
+            dm_lfs = pickle.load(handle)
         dm_lfs.filter({'Country': cntr_list}, inplace=True)
 
     # PASSENGER
