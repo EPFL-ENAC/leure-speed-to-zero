@@ -1127,3 +1127,34 @@ def my_pickle_dump(DM_new, local_pickle_file):
             pickle.dump(DM, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     return
+
+
+def countries_in_pickles(country_list, file = None):
+
+    def check_country_in_dm(DM):
+        for key in DM:
+            if key != 'constant':
+                if isinstance(DM[key], dict):
+                    check_country_in_dm(DM[key])
+                else:
+                    for country in country_list:
+                        if country not in DM[key].col_labels['Country']:
+                            raise ValueError(f'Country {country} not in module {file}, label {key}')
+
+    def check_country_in_pickle(file):
+        if '.pickle' in file:
+            with open(join(mypath, file), 'rb') as handle:
+                DM_module = pickle.load(handle)
+            check_country_in_dm(DM_module)
+
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    mypath = os.path.join(current_file_directory, '../../_database/data/datamatrix')
+    files = [f for f in listdir(mypath) if isfile(join(mypath, f))]
+
+    if file is None:
+        for file in files:
+            check_country_in_pickle(file)
+    else:
+        check_country_in_pickle(file)
+
+    return
