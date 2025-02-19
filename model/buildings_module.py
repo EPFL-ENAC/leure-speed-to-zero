@@ -580,7 +580,10 @@ def bld_energy_workflow(DM_energy, dm_clm, dm_floor_area, cdm_const):
 
     # write datamatrix to pickle
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    f = os.path.join(current_file_directory, '../_database/pre_processing/buildings/Switzerland/data/heating_energy.pickle')
+    directory = os.path.join(current_file_directory, '../_database/pre_processing/buildings/Switzerland/data')
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    f = os.path.join(directory, 'heating_energy.pickle')
     with open(f, 'wb') as handle:
         pickle.dump(dm_energy, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -1258,7 +1261,6 @@ def buildings(lever_setting, years_setting, interface=Interface()):
         data_file = os.path.join(current_file_directory, '../_database/data/interface/lifestyles_to_buildings.pickle')
         with open(data_file, 'rb') as handle:
             dm_lfs = pickle.load(handle)
-        dm_lfs = dm_lfs['pop']
         cntr_list = DM_floor_area['floor-intensity'].col_labels['Country']
         dm_lfs.filter({'Country': cntr_list}, inplace=True)
 
@@ -1320,4 +1322,4 @@ def buildings_local_run():
 
 
 # database_from_csv_to_datamatrix()
-#buildings_local_run()
+# buildings_local_run()
