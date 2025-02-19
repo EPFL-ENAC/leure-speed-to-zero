@@ -305,7 +305,7 @@ def add_vaud_fts_pop(dm_lfs_age, dm_lfs_tot_pop, dict_lfs_age_fts, dict_lfs_tot_
         # dm_fts.append(dm_lfs_age, dim='Years')
         # dm_fts.sort(dim='Years')
         # dm_fts.datamatrix_plot(title=l)
-        return
+    return
 
 
 ########################
