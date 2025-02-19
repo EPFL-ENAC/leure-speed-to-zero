@@ -502,6 +502,15 @@ def bld_floor_area_workflow(DM_floor_area, dm_lfs, cdm_const, years_ots, years_f
     dm_industry = dm_bld_tot.filter({'Variables': ['bld_floor-area_new', 'bld_floor-area_renovated', 'bld_floor-area_waste']})
     dm_industry.group_all('Categories2')
     dm_industry.groupby({'residential': '.*'}, dim='Categories1', regex=True, inplace=True)
+    dm_industry = dm_industry.flatten()
+    DM_industry = {}
+    DM_industry["floor-demand"] = dm_industry.filter({"Variables" : ['bld_floor-area_renovated_residential', 
+                                                                     'bld_floor-area_new_residential']})
+    DM_industry["floor-demand"].rename_col("bld_floor-area_renovated_residential","floor-area-reno-residential","Variables")
+    DM_industry["floor-demand"].rename_col("bld_floor-area_new_residential","floor-area-new-residential","Variables")
+    DM_industry["floor-demand"].sort("Variables")
+    DM_industry["floor-waste"] = dm_industry.filter({"Variables" : ['bld_floor-area_waste_residential']})
+    DM_industry["floor-waste"].rename_col("bld_floor-area_waste_residential","floor-area-waste-residential","Variables")
 
     dm_stock = dm_bld_tot.filter({'Variables': ['bld_floor-area_stock']})
     DM_floor_out = \
@@ -509,7 +518,7 @@ def bld_floor_area_workflow(DM_floor_area, dm_lfs, cdm_const, years_ots, years_f
                  'floor-area-cat': dm_stock.group_all('Categories1', inplace=False),
                  'floor-area-bld-type': dm_stock.group_all('Categories2', inplace=False)},
          'wf-energy': dm_bld_tot,
-         'industry': dm_industry}
+         'industry': DM_industry}
 
     return DM_floor_out
 
@@ -1315,7 +1324,7 @@ def buildings_local_run():
     years_setting, lever_setting = init_years_lever()
     # Function to run only transport module without converter and tpe
 
-    global_vars = {'geoscale': 'Switzerland'}
+    global_vars = {'geoscale': 'Switzerland|Vaud'}
     filter_geoscale(global_vars)
 
     buildings(lever_setting, years_setting)
