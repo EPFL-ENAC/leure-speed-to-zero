@@ -1131,3 +1131,27 @@ def countries_in_pickles(country_list, file = None):
         check_country_in_pickle(file)
 
     return
+
+
+def sort_pickle(file_path):
+    def sort_DM(DM):
+        for key in DM.keys():
+            if isinstance(DM[key], dict):
+                sort_DM(DM[key])
+            else:
+                dm = DM[key]
+                for dim in dm.dim_labels:
+                    dm.sort(dim)
+                DM[key] = dm
+        return
+
+    with open(file_path, 'rb') as handle:
+        DM = pickle.load(handle)
+
+    sort_DM(DM)
+
+    with open(file_path, 'wb') as handle:
+        pickle.dump(DM, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    return
+
