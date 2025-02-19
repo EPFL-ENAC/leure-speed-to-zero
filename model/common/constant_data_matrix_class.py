@@ -592,3 +592,38 @@ class ConstantDataMatrix:
                     if not np.isnan(col_value).all():
                         df[col_name] = col_value
         return df
+    
+    def group_all(self, dim=str, inplace=True, aggregation = "sum"):
+        # Function to drop a dimension by summing all categories
+        # Call example: dm_to_group.group_all(dim='Categories2', inplace=True)
+        # or dm_grouped = dm_to_group.group_all(dim='Categories1', inplace=False)
+        # when inplace = False dm_to_group remains unchanged and the grouped dm is return as output
+        if 'Categories' not in dim:
+            raise ValueError(f'You can only use group_all() on Categories')
+        if inplace:
+            dm = self
+        else:
+            dm = self.copy()
+        a = dm.dim_labels.index(dim)
+        if aggregation == "sum":
+            dm.array = np.nansum(dm.array, axis=a)
+        if aggregation == "mean":
+            dm.array = np.nanmean(dm.array, axis=a)
+        # Remove indexes
+        for col in dm.col_labels[dim]:
+            dm.idx.pop(col)
+        # Rename categories
+        categories_to_rename = [cat for cat in dm.dim_labels if 'Categories' in cat]
+        categories_to_rename.remove(dim)
+        i = 1
+        for old_cat in categories_to_rename:
+            new_cat = 'Categories' + str(i)
+            dm.col_labels[new_cat] = dm.col_labels[old_cat]
+            i = i + 1
+        # Remove last category and dimension
+        last_dim = dm.dim_labels[-1]
+        dm.col_labels.pop(last_dim)
+        dm.dim_labels = dm.dim_labels[:-1]
+        if not inplace:
+            return dm
+        return
