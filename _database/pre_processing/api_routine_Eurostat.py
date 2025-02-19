@@ -39,6 +39,7 @@ def get_data_api_eurostat(eustat_code, filter, mapping_dim, unit, years=None):
         "ES": "Spain",
         "SE": "Sweden",
         "CH": "Switzerland",
+        "UK" : "United Kingdom",
         "EU27_2020": "EU27"
     }
 
