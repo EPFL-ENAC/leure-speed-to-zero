@@ -6,7 +6,7 @@ from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.data_matrix_class import DataMatrix
 from model.common.io_database import read_database_to_dm
 from model.common.auxiliary_functions import create_years_list, linear_fitting, add_missing_ots_years, moving_average
-from model.common.auxiliary_functions import my_pickle_dump
+from model.common.auxiliary_functions import my_pickle_dump, sort_pickle
 from _database.pre_processing.WorldBank_data_extract import get_WB_data
 import pickle
 import os
@@ -1456,19 +1456,19 @@ def fix_freight_tech_shares(DM_transport_new):
     dm_tech.array[:, :, :, idx['IWW'], idx['ICE']] = 1
     dm_tech.normalise(dim='Categories2')
 
-    for lev in [1, 2, 3, 4]:
-        dm_tech = DM_transport_new['fts']['freight_technology-share_new'][lev]
-        # Fix the shares
-        idx = dm_tech.idx
-        dm_tech.array[:, :, :, idx['aviation'], idx['BEV']] = 0
-        dm_tech.array[:, :, :, idx['aviation'], idx['ICE']] = 1
-        dm_tech.array[:, :, :, idx['marine'], idx['FCEV']] = 0
-        dm_tech.array[:, :, :, idx['marine'], idx['BEV']] = 0
-        dm_tech.array[:, :, :, idx['marine'], idx['ICE']] = 1
-        dm_tech.array[:, :, :, idx['IWW'], idx['FCEV']] = 0
-        dm_tech.array[:, :, :, idx['IWW'], idx['BEV']] = 0
-        dm_tech.array[:, :, :, idx['IWW'], idx['ICE']] = 1
-        dm_tech.normalise(dim='Categories2')
+
+    dm_tech = DM_transport_new['fts']['freight_technology-share_new'][1]
+    # Fix the shares
+    idx = dm_tech.idx
+    dm_tech.array[:, :, :, idx['aviation'], idx['BEV']] = 0
+    dm_tech.array[:, :, :, idx['aviation'], idx['ICE']] = 1
+    dm_tech.array[:, :, :, idx['marine'], idx['FCEV']] = 0
+    dm_tech.array[:, :, :, idx['marine'], idx['BEV']] = 0
+    dm_tech.array[:, :, :, idx['marine'], idx['ICE']] = 1
+    dm_tech.array[:, :, :, idx['IWW'], idx['FCEV']] = 0
+    dm_tech.array[:, :, :, idx['IWW'], idx['BEV']] = 0
+    dm_tech.array[:, :, :, idx['IWW'], idx['ICE']] = 1
+    dm_tech.normalise(dim='Categories2')
     return
 
 
@@ -2169,14 +2169,12 @@ DM_transport_new['fts']['passenger_technology-share_new'] = dict()
 DM_transport_new['fts']['passenger_utilization-rate'] = dict()
 DM_transport_new['fts']['passenger_veh-efficiency_new'] = dict()
 
-for lev in range(4):
-    lev = lev+1
-    DM_transport_new['fts']['passenger_aviation-pkm'][lev] = dm_pkm_cap_aviation_fts
-    DM_transport_new['fts']['passenger_modal-share'][lev] = dm_modal_share.filter({'Years': years_fts})
-    DM_transport_new['fts']['passenger_occupancy'][lev] = dm_occupancy.filter({'Years': years_fts})
-    DM_transport_new['fts']['passenger_technology-share_new'][lev] = dm_fleet_new_tech_share.filter({'Years': years_fts})
-    DM_transport_new['fts']['passenger_utilization-rate'][lev] = dm_utilisation.filter({'Years': years_fts})
-    DM_transport_new['fts']['passenger_veh-efficiency_new'][lev] = dm_veh_new_eff_fts
+DM_transport_new['fts']['passenger_aviation-pkm'][1] = dm_pkm_cap_aviation_fts
+DM_transport_new['fts']['passenger_modal-share'][1] = dm_modal_share.filter({'Years': years_fts})
+DM_transport_new['fts']['passenger_occupancy'][1] = dm_occupancy.filter({'Years': years_fts})
+DM_transport_new['fts']['passenger_technology-share_new'][1] = dm_fleet_new_tech_share.filter({'Years': years_fts})
+DM_transport_new['fts']['passenger_utilization-rate'][1] = dm_utilisation.filter({'Years': years_fts})
+DM_transport_new['fts']['passenger_veh-efficiency_new'][1] = dm_veh_new_eff_fts
 
 # CONSTANT
 DM_transport_new['constant'] = cdm_emissions_factors
@@ -2195,9 +2193,7 @@ dm_pkm_cap_tot = dm_pkm_cap.group_all(dim='Categories1', inplace=False)
 
 DM_transport_new['ots']['pkm'] = dm_pkm_cap_tot.filter({'Years': years_ots})
 DM_transport_new['fts']['pkm'] = dict()
-for lev in range(4):
-    lev = lev+1
-    DM_transport_new['fts']['pkm'][lev] = dm_pkm_cap_tot.filter({'Years': years_fts})
+DM_transport_new['fts']['pkm'][1] = dm_pkm_cap_tot.filter({'Years': years_fts})
 
 types = ['ots', 'fts', 'fxa']
 
@@ -2227,14 +2223,6 @@ for t in types:
                 dm_ots = dm_all.filter({'Years': years_ots})
                 DM_transport_new['ots'][key] = dm_ots
                 DM_transport_new['fts'][key] = {1: dm_all.filter({'Years': years_fts})}
-                for lev in [2, 3, 4]:
-                    dm_fts = DM_transport['fts'][key][lev].filter({'Country': ['Switzerland', 'Vaud']})
-                    dm_fts.array[:, 0:-1, ...] = np.nan
-                    dm_fts.drop(col_label=years_to_drop, dim='Years')
-                    dm_all = dm_ots.copy()
-                    dm_all.append(dm_fts, dim='Years')
-                    linear_fitting(dm_all, years_ots + years_fts)
-                    DM_transport_new['fts'][key][lev] = dm_all.filter({'Years': years_fts})
 
 
 # Fix freight tech-share
@@ -2244,17 +2232,18 @@ dm_modal = DM_transport_new['ots']['freight_modal-share']
 idx = dm_modal.idx
 dm_modal.array[:, :, :, idx['marine']] = 0
 dm_modal.normalise('Categories1')
-for lev in [1, 2, 3, 4]:
-    dm_modal_fts = DM_transport_new['fts']['freight_modal-share'][lev]
-    idx = dm_modal_fts.idx
-    dm_modal_fts.array[:, :, :, idx['marine']] = 0
-    dm_modal_fts.array[:, 0:-1, ...] = np.nan
-    dm_modal_all = dm_modal.copy()
-    dm_modal_all.append(dm_modal_fts, dim='Years')
-    linear_fitting(dm_modal_all, years_ots+years_fts)
-    dm_modal_all.normalise('Categories1')
-    DM_transport_new['fts']['freight_modal-share'][lev] = dm_modal_all.filter({'Years': years_fts})
+
+dm_modal_fts = DM_transport_new['fts']['freight_modal-share'][1]
+idx = dm_modal_fts.idx
+dm_modal_fts.array[:, :, :, idx['marine']] = 0
+dm_modal_fts.array[:, 0:-1, ...] = np.nan
+dm_modal_all = dm_modal.copy()
+dm_modal_all.append(dm_modal_fts, dim='Years')
+linear_fitting(dm_modal_all, years_ots+years_fts)
+dm_modal_all.normalise('Categories1')
+DM_transport_new['fts']['freight_modal-share'][1] = dm_modal_all.filter({'Years': years_fts})
 
 pickle_file = '../../../data/datamatrix/transport.pickle'
 
 my_pickle_dump(DM_new=DM_transport_new, local_pickle_file=pickle_file)
+sort_pickle(pickle_file)
