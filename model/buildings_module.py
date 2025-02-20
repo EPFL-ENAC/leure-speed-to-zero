@@ -589,13 +589,13 @@ def bld_energy_workflow(DM_energy, dm_clm, dm_floor_area, cdm_const):
     dm_energy.array[...] = dm_energy.array[...] * dm_calib.array[:, :, :, np.newaxis, np.newaxis, :]
 
     # write datamatrix to pickle
-    current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    directory = os.path.join(current_file_directory, '../_database/pre_processing/buildings/Switzerland/data')
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    f = os.path.join(directory, 'heating_energy.pickle')
-    with open(f, 'wb') as handle:
-        pickle.dump(dm_energy, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    #current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    #directory = os.path.join(current_file_directory, '../_database/pre_processing/buildings/Switzerland/data')
+    #if not os.path.exists(directory):
+    #    os.makedirs(directory)
+    #f = os.path.join(directory, 'heating_energy.pickle')
+    #with open(f, 'wb') as handle:
+    #    pickle.dump(dm_energy, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     # SECTION Cooling
     # dC = gamma kC (24 CDD Us A − IG)
