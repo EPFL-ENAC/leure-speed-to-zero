@@ -1558,7 +1558,7 @@ def local_industry_run():
     return results_run
 
 # # run local
-# __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/industry_module.py"
 # start = time.time()
 # results_run = local_industry_run()
 # end = time.time()
