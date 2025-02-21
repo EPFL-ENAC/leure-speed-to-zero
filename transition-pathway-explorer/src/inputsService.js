@@ -160,7 +160,7 @@ export function initCountries(countrs) {
 
   selected.push( {
     id: "EU",
-    name: "Country",
+    name: "Canton",
     values: {...defaultValues}
   });
 }

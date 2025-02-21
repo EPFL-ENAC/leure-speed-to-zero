@@ -79,7 +79,7 @@ blue: #50ade5
   /*setting a min-height prevents jumping of size when pageicon loads on pageload*/
   min-height: 56px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
 }
 #page-logo {
   position: relative;

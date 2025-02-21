@@ -4,18 +4,20 @@
       <div id="page-logo"
         :class="{'one-selected': !appState.isMobile && selected.length === 1, 'two-selected': !appState.isMobile && selected.length === 2 }"
       >
-        <img class="cursor-pointer" src="/img/eucalc_logo-alt5.png" v-on:click="reloadPage">
+   <!-- <img class="cursor-pointer" src="/img/EPFL_Logo_Digital_WHITE_PROD.png" v-on:click="reloadPage">  -->
         <div id="page-title" class="cursor-pointer" v-on:click="reloadPage">
-          Pathaway<span>Calculator </span><br>
+          Vaud<span>Calc </span><br>
         </div>
       </div>
 
-      <transition name="wait-fade">
-        <div v-if="!appState.isMobile && (appState.mode==='target' || appState.mode==='main')" id="bar-chart-cont" class="noselect">
-          <EmissionsBar :app-state="appState"/>
-        </div>
-      </transition>
-
+<!--Ccomment out this whole block to hide the bar not needed -->
+<!--
+<transition name="wait-fade">
+  <div v-if="!appState.isMobile && (appState.mode==='target' || appState.mode==='main')" id="bar-chart-cont" class="noselect">
+    <EmissionsBar :app-state="appState"/>
+  </div>
+</transition>
+-->
       <div id="page-menu-toggle">
         <BurgerMenuIcon :callback="toggleMenu" :open="appState.menuOpen"/>
       </div>

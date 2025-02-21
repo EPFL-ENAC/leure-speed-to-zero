@@ -2,9 +2,9 @@
   <div id="levers-container"
     :class="{'one-selected': selected.length === 1, 'two-selected': selected.length === 2 }"
   >
-    <div id="inputs-header">
+<!--    <div id="inputs-header">
       <span>Pathway</span>
-    </div>
+    </div>   -->
 
     <div id="inputs-pathways">
       <!-- <h3>Choose example pathway:</h3> -->
