@@ -3,7 +3,7 @@
     <div id="header">
       <div id="header-main">
         <div id="page-logo" style="padding-left: 10px;">
-          <img src="/img/eucalc_logo-alt5.png">
+<!--          <img src="/img/EPFL_Logo_184X53.svg">  -->
           <div id="page-title" class="cursor-pointer">
             EU<span>CALC </span><br>
           </div>
@@ -11,7 +11,7 @@
       </div>
     </div>
     <div id="exception-content">
-      <span>Sorry, EUCALC doesn't yet support Safari or Internet Explorer. Please use a different browser.</span>
+      <span>Sorry, VaudCalc doesn't yet support Safari or Internet Explorer. Please use a different browser.</span>
     </div>
   </div>
 </template>
