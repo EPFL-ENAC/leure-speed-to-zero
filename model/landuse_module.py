@@ -974,7 +974,7 @@ def land_use_local_run():
 #__file__ = "/Users/crosnier/DocumentsPathwayCalc/model/landuse_module.py"
 #database_from_csv_to_datamatrix()
 #start = time.time()
-results_run = local_land_use_run()
+#results_run = local_land_use_run()
 #end = time.time()
 #print(end-start)
 
