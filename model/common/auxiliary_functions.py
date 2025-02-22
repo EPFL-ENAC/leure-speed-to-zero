@@ -919,6 +919,40 @@ def eurostat_iso2_dict():
     }
     return dict_iso2
 
+def jrc_iso2_dict():
+    # Eurostat iso2: country name
+    dict_iso2 = {
+        "AT": "Austria",
+        "BE": "Belgium",
+        "BG": "Bulgaria",
+        "HR": "Croatia",
+        "CY": "Cyprus",
+        "CZ": "Czech Republic",
+        "DK": "Denmark",
+        "EE": "Estonia",
+        "FI": "Finland",
+        "FR": "France",
+        "DE": "Germany",
+        "EL": "Greece",
+        "HU": "Hungary",
+        "IE": "Ireland",
+        "IT": "Italy",
+        "LV": "Latvia",
+        "LT": "Lithuania",
+        "LU": "Luxembourg",
+        "MT": "Malta",
+        "NL": "Netherlands",
+        "PL": "Poland",
+        "PT": "Portugal",
+        "RO": "Romania",
+        "SK": "Slovakia",
+        "SI": "Slovenia",
+        "ES": "Spain",
+        "SE": "Sweden",
+        "EU27": "EU27"
+    }
+    return dict_iso2
+
 # fix jumps
 def fix_jumps(ts, mad_multiple = 3, consec_do_nothing = False, consec_fill_with_nan = False):
     
