@@ -6,7 +6,7 @@ import os
 from model.common.data_matrix_class import DataMatrix
 
 def get_jrc_data(dict_extract, dict_countries, current_file_directory, years = list(range(2000,2021+1)), 
-                 levels_to_industry_preproc = "../../../Industry"):
+                 levels_to_industry_preproc = "../../../Industry", categories = None):
     
     sub_variables = dict_extract["sub_variables"]
     calc_names = dict_extract["calc_names"]
@@ -42,6 +42,9 @@ def get_jrc_data(dict_extract, dict_countries, current_file_directory, years = l
             return idx_temp
         string_first = get_indexes(df.loc[:,"variable"], variable)
         df_temp = df.iloc[range(string_first,len(df)),:]
+        if categories is not None:
+            string_intermediate = get_indexes(df_temp.loc[:,"variable"], categories)
+            df_temp = df_temp.iloc[range(string_intermediate,len(df_temp)),:]
         string_second = get_indexes(df_temp.loc[:,"variable"], sheet_last_row)
         df_temp = df_temp.iloc[range(0,string_second+1),:]
         df_temp = df_temp.loc[df_temp["variable"].isin(sub_variables),:]
@@ -68,7 +71,8 @@ def get_jrc_data(dict_extract, dict_countries, current_file_directory, years = l
     
     # change country names
     dict_temp = dict_countries.copy()
-    dict_temp.pop("EU27") 
+    if "EU27" in list(dict_temp.keys()):
+        dict_temp.pop("EU27")
     for key in dict_temp.keys():
         dm.rename_col(key, dict_temp[key], "Country")
         
