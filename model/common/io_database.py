@@ -482,13 +482,14 @@ def update_database_from_dm(dm, filename, lever, level, module):
     return
 
 
-def read_database_to_dm(filename, lever=None, num_cat=0, baseyear=2022, years=None, level='all', filter=dict()):
+def read_database_to_dm(filename=None, df_db=None, lever=None, num_cat=0, baseyear=2023, years=None, level='all', filter=dict()):
     # csv file columns: geoscale;timescale;module;variables;lever;level;value
-    root = find_git_root()
-    path = '_database/data/csv/'
-    file = path + filename
-    file_path = os.path.join(root, file)
-    df_db = pd.read_csv(file_path, sep=';')
+    if filename is not None:
+        root = find_git_root()
+        path = '_database/data/csv/'
+        file = path + filename
+        file_path = os.path.join(root, file)
+        df_db = pd.read_csv(file_path, sep=';')
     if lever is None:
         levers = list(set(df_db['lever']))
         if len(levers) != 1:
