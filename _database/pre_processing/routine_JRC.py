@@ -20,6 +20,10 @@ def get_jrc_data(dict_extract, dict_countries, current_file_directory, years = l
         sheet = dict_extract["sheet"]
         variable = dict_extract["variable"]
         sheet_last_row = dict_extract["sheet_last_row"]
+        if "categories" in list(dict_extract.keys()):
+            categories = dict_extract["categories"]
+        else:
+            categories = None
         
         # define function to search
         def my_search(search, x):
@@ -42,6 +46,9 @@ def get_jrc_data(dict_extract, dict_countries, current_file_directory, years = l
             return idx_temp
         string_first = get_indexes(df.loc[:,"variable"], variable)
         df_temp = df.iloc[range(string_first,len(df)),:]
+        if categories is not None:
+            string_intermediate = get_indexes(df_temp.loc[:,"variable"], categories)
+            df_temp = df_temp.iloc[range(string_intermediate,len(df_temp)),:]
         string_second = get_indexes(df_temp.loc[:,"variable"], sheet_last_row)
         df_temp = df_temp.iloc[range(0,string_second+1),:]
         df_temp = df_temp.loc[df_temp["variable"].isin(sub_variables),:]
@@ -68,7 +75,8 @@ def get_jrc_data(dict_extract, dict_countries, current_file_directory, years = l
     
     # change country names
     dict_temp = dict_countries.copy()
-    dict_temp.pop("EU27") 
+    if "EU27" in list(dict_temp.keys()):
+        dict_temp.pop("EU27")
     for key in dict_temp.keys():
         dm.rename_col(key, dict_temp[key], "Country")
         
