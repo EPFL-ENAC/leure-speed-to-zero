@@ -6,7 +6,7 @@ import os
 from model.common.data_matrix_class import DataMatrix
 
 def get_jrc_data(dict_extract, dict_countries, current_file_directory, years = list(range(2000,2021+1)), 
-                 levels_to_industry_preproc = "../../../Industry", categories = None):
+                 levels_to_industry_preproc = "../../../Industry"):
     
     sub_variables = dict_extract["sub_variables"]
     calc_names = dict_extract["calc_names"]
@@ -20,6 +20,10 @@ def get_jrc_data(dict_extract, dict_countries, current_file_directory, years = l
         sheet = dict_extract["sheet"]
         variable = dict_extract["variable"]
         sheet_last_row = dict_extract["sheet_last_row"]
+        if "categories" in list(dict_extract.keys()):
+            categories = dict_extract["categories"]
+        else:
+            categories = None
         
         # define function to search
         def my_search(search, x):
