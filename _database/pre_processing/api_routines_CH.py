@@ -24,19 +24,21 @@ def json_to_dm(data_json, mapping_dims, mapping_vars, units):
 
     def from_json_to_numpy(json_data, json_col_labels):
         # Turn json structure into numpy array
-        arr_shape = [len(l) for l in json_col_labels]
-        arr_shape = tuple(arr_shape)
-        arr = np.empty(arr_shape)
+        arr_shape = tuple(len(l) for l in json_col_labels)
+        arr = np.empty(arr_shape, dtype=float)  # Ensure dtype supports NaN
+        arr.fill(np.nan)  # Default all values to NaN
+
         for elem in json_data['data']:
             key = elem['key']
             value = elem['values'][0]
-            idx = []
             # Match key with position in numpy array
-            for dim_axis_json in range(len(json_col_labels)):
-                col_json = key[dim_axis_json]
-                col_idx = json_col_labels[dim_axis_json].index(col_json)
-                idx.append(col_idx)
-            arr[tuple(idx)] = value
+            idx = [json_col_labels[i].index(k) for i, k in enumerate(key)]
+
+            try:
+                arr[tuple(idx)] = float(value)
+            except ValueError:
+                arr[tuple(idx)] = np.nan  # Assign NaN if conversion fails
+
         return arr
 
     def get_col_labels_axis_dim(json_col_labels, var_mapping, dim_mapping):
