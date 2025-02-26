@@ -276,6 +276,11 @@ def food_waste_processing(df_diet):
                                                                                 'Netherlands')
     df_waste_pathwaycalc['geoscale'] = df_waste_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
 
+    # Extrapolating
+    df_waste_pathwaycalc = ensure_structure(df_waste_pathwaycalc)
+    df_waste_pathwaycalc = linear_fitting_ots_db(df_waste_pathwaycalc, years_ots,
+                                                                 countries='all')
+
     return df_waste_pathwaycalc
 
 # CalculationLeaf ENERGY REQUIREMENTS -----------------------------------------------------------------------------------
@@ -782,7 +787,7 @@ def climate_smart_crop_processing():
     # Read excel file
     df_dict_csc = pd.read_excel(
         '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
-        sheet_name='calibration')
+        sheet_name='climate-smart-crops')
 
     # Merge based on 'Item'
     df_energy_pathwaycalc = pd.merge(df_dict_csc, df_combined, on='Item')
@@ -2970,8 +2975,8 @@ def bioernergy_capacity_processing(df_csl_feed):
     df_bioenergy_capacity_CH_pathwaycalc.rename(columns={'Area': 'geoscale', 'Year': 'timescale'}, inplace=True)
 
     # PathwayCalc formatting
-    df_bioenergy_capacity_CH_pathwaycalc['module'] = 'land-use'
-    df_bioenergy_capacity_CH_pathwaycalc['lever'] = 'land-man'
+    df_bioenergy_capacity_CH_pathwaycalc['module'] = 'agriculture'
+    df_bioenergy_capacity_CH_pathwaycalc['lever'] = 'bioenergy-capacity'
     df_bioenergy_capacity_CH_pathwaycalc['level'] = 0
     cols = df_bioenergy_capacity_CH_pathwaycalc.columns.tolist()
     cols.insert(cols.index('value'), cols.pop(cols.index('module')))
@@ -4442,6 +4447,9 @@ def calibration_formatting(df_diet_calibration, df_domestic_supply_calibration, 
     df_calibration_ext = linear_fitting_ots_db(df_calibration_struct, years_ots,
                                                 countries='all')
 
+    # Filter to keep only data from 1990
+    df_calibration_ext = df_calibration_ext[df_calibration_ext["timescale"] >= 1990]
+
     # Add dummy values for EU27, Vaud and Paris, copied respectively on Germany, Switzerland and France
     # EU27
     duplicated_rows = df_calibration_ext[df_calibration_ext['geoscale'] == 'Germany'].copy() # Duplicate rows where geoscale is 'Germany'
@@ -4488,6 +4496,7 @@ def calibration_formatting(df_diet_calibration, df_domestic_supply_calibration, 
     df_calibration_struct = ensure_structure(df_calibration)
     df_calibration_ext = linear_fitting_ots_db(df_calibration_struct, years_ots,
                                                 countries='all')
+    df_calibration_ext = df_calibration_ext[df_calibration_ext["timescale"] >= 1990]
 
     # Add dummy values for EU27, Vaud and Paris, copied respectively on Germany, Switzerland and France
     # EU27
@@ -4683,7 +4692,7 @@ def database_from_csv_to_datamatrix():
 
     # CalibrationDataToDatamatrix
 
-    """ dict_fxa = {}
+    dict_fxa = {}
     # Data - Calibration
     #file = '/Users/crosnier/Documents/PathwayCalc/_database/data/csv/agriculture_calibration.csv'
     lever = 'none'
@@ -4761,8 +4770,8 @@ def database_from_csv_to_datamatrix():
     dm_cal_input.deepen(based_on='Variables')
     dict_fxa['cal_agr_input-use_emissions-CO2'] = dm_cal_input
 
-    # Create a dictionnay with all the fixed assumptions
-    dict_fxa = {
+    # Create a dictionnay with all the fixed assumptions (only for calibration since the other comes from pickle)
+    """dict_fxa = {
         'cal_agr_diet': dm_cal_diet,
         'cal_agr_domestic-production-liv': dm_cal_liv_dom_prod,
         'cal_agr_liv-population': dm_cal_liv_pop,
@@ -4792,7 +4801,7 @@ def database_from_csv_to_datamatrix():
         'agr_climate-smart-crop_ef_agroforestry' : dm_crop_ef_agroforestry,
         'agr_climate-smart-livestock_ef_agroforestry': dm_livestock_ef_agroforestry,
         'agr_climate-smart-forestry' : dm_agroforestry
-    } """
+    }"""
 
 
     #####################
@@ -4832,11 +4841,11 @@ def database_from_csv_to_datamatrix():
     dict_ots[lever] = dm
 
     # Data - Lever - Food wastes
-    """lever = 'fwaste'
+    lever = 'fwaste'
     df_ots, df_fts = database_to_df(df_waste_pathwaycalc, lever, level='all')
     df_ots = df_ots.drop(columns=[lever])  # Drop column with lever name
     dm = DataMatrix.create_from_df(df_ots, num_cat=1)
-    dict_ots[lever] = dm"""
+    dict_ots[lever] = dm
 
     # Data - Lever - self-sufficiency
     lever = 'food-net-import'
@@ -4939,7 +4948,7 @@ def database_from_csv_to_datamatrix():
     dict = {}
     dm_temp = dm.filter_w_regex({'Variables': 'agr_bioenergy-capacity_load-factor.*'})
     dm_temp.deepen()
-    dict['bioenergy-capacity_load-factor.*'] = dm_temp
+    dict['bioenergy-capacity_load-factor'] = dm_temp
     dm_temp = dm.filter_w_regex({'Variables': 'agr_bioenergy-capacity_bgs-mix.*'})
     dm_temp.deepen()
     dict['bioenergy-capacity_bgs-mix'] = dm_temp
@@ -4949,7 +4958,7 @@ def database_from_csv_to_datamatrix():
     dm_temp = dm.filter_w_regex({'Variables': 'agr_bioenergy-capacity_liq_b.*'})
     dm_temp.deepen()
     dict['bioenergy-capacity_liq_b'] = dm_temp
-    dm_temp = dm.filter_w_regex({'Variables': 'bioenergy-capacity_elec.*'})
+    dm_temp = dm.filter_w_regex({'Variables': 'agr_bioenergy-capacity_elec.*'})
     dm_temp.deepen()
     dict['bioenergy-capacity_elec'] = dm_temp
     dict_ots[lever] = dict
@@ -4970,19 +4979,32 @@ def database_from_csv_to_datamatrix():
 
 
     # Data - Lever - climate smart crop
-    file = 'agriculture_climate-smart-crop'
     lever = 'climate-smart-crop'
-    #edit_database(file,lever,column='eucalc-name',pattern={'meat_':'meat-', 'abp_':'abp-'},mode='rename')
-    #edit_database(file,lever,column='eucalc-name',pattern={'_energycrop':'-energycrop'},mode='rename')
-    #edit_database(file,lever,column='eucalc-name',pattern={'liquid_':'liquid-', 'gas_':'gas-'},mode='rename')
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 1],
+    df_ots, df_fts = database_to_df(df_climate_smart_crop_pathwaycalc, lever, level='all')
+    df_ots = df_ots.drop(columns=[lever])  # Drop column with lever name
+    dm = DataMatrix.create_from_df(df_ots, num_cat=0)
+    dict = {}
+    dm_temp = dm.filter_w_regex({'Variables': 'agr_climate-smart-crop_losses.*'})
+    dm_temp.deepen()
+    dict['climate-smart-crop_losses'] = dm_temp
+    dm_temp = dm.filter_w_regex({'Variables': 'agr_climate-smart-crop_yield.*'})
+    dm_temp.deepen()
+    dict['climate-smart-crop_yield'] = dm_temp
+    dm_temp = dm.filter_w_regex({'Variables': 'agr_climate-smart-crop_input-use.*'})
+    dm_temp.deepen()
+    dict['climate-smart-crop_input-use'] = dm_temp
+    dm_temp = dm.filter_w_regex({'Variables': 'agr_climate-smart-crop_energy-demand.*'})
+    dm_temp.deepen()
+    dict['climate-smart-crop_energy-demand'] = dm_temp
+    dict_ots[lever] = dict
+    """dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 1],
                                                                 baseyear=baseyear,
                                                                 years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
                                                                 column='eucalc-name',
                                                                 group_list=['climate-smart-crop_losses.*',
                                                                             'climate-smart-crop_yield.*',
                                                                             'agr_climate-smart-crop_input-use.*',
-                                                                            'agr_climate-smart-crop_energy-demand.*'])
+                                                                            'agr_climate-smart-crop_energy-demand.*'])"""
 
     #####################
     ###### CONSTANTS #######
@@ -5117,28 +5139,28 @@ def database_from_csv_to_datamatrix():
     # FXA pre-processing -----------------------------------------------------------------------------------------------
 
     # Emssion factors residues residues
-    DM_agriculture['fxa']['ef_soil-residues'].add(0.0, dummy=True, col_label='CH4-emission', dim='Categories1', unit='Mt')
-    DM_agriculture['fxa']['ef_soil-residues'].sort(dim='Categories1')
-    DM_agriculture['fxa']['ef_burnt-residues'].append(DM_agriculture['fxa']['ef_soil-residues'], dim='Variables')
-    DM_agriculture['fxa']['ef_burnt-residues'] = DM_agriculture['fxa']['ef_burnt-residues'].flatten()  # extra steps to have correct deepening
-    DM_agriculture['fxa']['ef_burnt-residues'].rename_col_regex(str1="residues_", str2="residues-", dim="Variables")
-    DM_agriculture['fxa']['ef_burnt-residues'].rename_col_regex(str1="fxa_", str2="", dim="Variables")
-    DM_agriculture['fxa']['ef_burnt-residues'].deepen()
-    DM_agriculture['fxa']['ef_burnt-residues'].rename_col_regex(str1="residues-", str2="residues_", dim="Categories1")
-    DM_agriculture['fxa']['ef_burnt-residues'].deepen()
+    #DM_agriculture['fxa']['ef_soil-residues'].add(0.0, dummy=True, col_label='CH4-emission', dim='Categories1', unit='Mt')
+    #DM_agriculture['fxa']['ef_soil-residues'].sort(dim='Categories1')
+    #DM_agriculture['fxa']['ef_burnt-residues'].append(DM_agriculture['fxa']['ef_soil-residues'], dim='Variables')
+    #DM_agriculture['fxa']['ef_burnt-residues'] = DM_agriculture['fxa']['ef_burnt-residues'].flatten()  # extra steps to have correct deepening
+    #DM_agriculture['fxa']['ef_burnt-residues'].rename_col_regex(str1="residues_", str2="residues-", dim="Variables")
+    #DM_agriculture['fxa']['ef_burnt-residues'].rename_col_regex(str1="fxa_", str2="", dim="Variables")
+    #DM_agriculture['fxa']['ef_burnt-residues'].deepen()
+    #DM_agriculture['fxa']['ef_burnt-residues'].rename_col_regex(str1="residues-", str2="residues_", dim="Categories1")
+    #DM_agriculture['fxa']['ef_burnt-residues'].deepen()
 
     # caf GHG emissions
-    DM_agriculture['fxa']['cal_agr_emission_CH4'].append(DM_agriculture['fxa']['cal_agr_emission_N2O'], dim='Variables')
-    DM_agriculture['fxa']['cal_agr_emission_CH4'].append(DM_agriculture['fxa']['cal_agr_emission_CO2'], dim='Variables')
-    DM_agriculture['fxa']['cal_agr_emission_CH4'].rename_col_regex(str1='cal_agr_emissions-', str2='cal_agr_emissions_', dim='Variables')
-    DM_agriculture['fxa']['cal_agr_emission_CH4'].deepen()
+    #DM_agriculture['fxa']['cal_agr_emission_CH4'].append(DM_agriculture['fxa']['cal_agr_emission_N2O'], dim='Variables')
+    #DM_agriculture['fxa']['cal_agr_emission_CH4'].append(DM_agriculture['fxa']['cal_agr_emission_CO2'], dim='Variables')
+    #DM_agriculture['fxa']['cal_agr_emission_CH4'].rename_col_regex(str1='cal_agr_emissions-', str2='cal_agr_emissions_', dim='Variables')
+    #DM_agriculture['fxa']['cal_agr_emission_CH4'].deepen()
 
     # write datamatrix to pickle
+    __file__ = "/Users/crosnier/Documents/PathwayCalc/_database"
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    f = os.path.join(current_file_directory, '../_database/data/datamatrix/agriculture.pickle')
+    f = os.path.join(current_file_directory, '_database/data/datamatrix/agriculture.pickle')
     with open(f, 'wb') as handle:
         pickle.dump(DM_agriculture, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
     return
 
 
@@ -5154,6 +5176,8 @@ df_diet_pathwaycalc, df_diet = diet_processing()
 lever = 'diet'
 dict_ots, dict_fts = read_database_to_dm(df_db=df_diet_pathwaycalc, filter={'geoscale': ['Vaud', 'Switzerland']},
                                                  baseyear=2023, num_cat=0, level='all')"""
+
+
 df_diet_pathwaycalc, df_diet = diet_processing()
 df_waste_pathwaycalc = food_waste_processing(df_diet)
 df_kcal_req_pathwaycalc = energy_requirements_processing()
@@ -5165,21 +5189,7 @@ df_land_management_pathwaycalc = land_management_processing(csf_managed)
 df_bioenergy_capacity_CH_pathwaycalc = bioernergy_capacity_processing(df_csl_feed)
 df_biomass_hierarchy_pathwaycalc = biomass_bioernergy_hierarchy_processing(df_csl_feed)
 df_protein_meals_pathwaycalc = livestock_protein_meals_processing(df_csl_feed)
-database_from_csv_to_datamatrix()
 
-# CREATING CSV FILES
-"""df_diet_pathwaycalc.to_csv('lifestyles_diet_pathwaycalc.csv', index=False)
-df_waste_pathwaycalc.to_csv('lifestyles_food-wastes_pathwaycalc.csv', index=False)
-df_kcal_req_pathwaycalc.to_csv('lifestyles_energy-requirement_pathwaycalc.csv', index=False)
-df_ssr_pathwaycalc.to_csv('agriculture_self-sufficiency_pathwaycalc.csv', index=False)
-df_climate_smart_crop_pathwaycalc.to_csv('agriculture_climate-smart-crop_pathwaycalc.csv', index=False)
-df_climate_smart_livestock_pathwaycalc.to_csv('agriculture_climate-smart-livestock_pathwaycalc.csv', index=False)
-df_climate_smart_forestry_pathwaycalc.to_csv('agriculture_climate-smart-forestry_pathwaycalc.csv', index=False)
-df_land_management_pathwaycalc.to_csv('agriculture_land-management_pathwaycalc.csv', index=False)
-df_bioenergy_capacity_CH_pathwaycalc.to_csv('agriculture_bioenergy-capacity_pathwaycalc.csv', index=False)
-df_biomass_hierarchy_pathwaycalc.to_csv('agriculture_biomass-hierarchy_pathwaycalc.csv', index=False)
-df_protein_meals_pathwaycalc.to_csv('agriculture_livestock-protein-meals_pathwaycalc.csv', index=False)
-"""
 
 # CalculationTree RUNNING CALIBRATION ----------------------------------------------------------------------------------
 df_diet_calibration = lifestyle_calibration()
@@ -5200,6 +5210,6 @@ df_calibration = calibration_formatting(df_diet_calibration, df_domestic_supply_
 # CalculationTree RUNNING FXA PRE-PROCESSING ---------------------------------------------------------------------------
 #fxa_preprocessing()
 # CalculationTree RUNNING PICKLE CREATION
-#database_from_csv_to_datamatrix()
+database_from_csv_to_datamatrix()
 
 
