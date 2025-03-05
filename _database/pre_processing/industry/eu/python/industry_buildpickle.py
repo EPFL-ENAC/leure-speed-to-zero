@@ -15,12 +15,43 @@ import plotly.express as px
 import plotly.io as pio
 import re
 pio.renderers.default='browser'
+import subprocess
 
 # file
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/_database/pre_processing/industry/eu/python/industry_lever_material-recovery.py"
+__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/_database/pre_processing/industry/eu/python/industry_buildpickle.py"
 
 # directories
 current_file_directory = os.path.dirname(os.path.abspath(__file__))
+
+###############################################################################
+############################### EXECUTE SCRIPTS ###############################
+###############################################################################
+
+# subprocess.run(['python', os.path.join(current_file_directory, 'industry_lever_material-switch.py')])
+# subprocess.run(['python', os.path.join(current_file_directory, 'industry_lever_material-efficiency.py')])
+# subprocess.run(['python', os.path.join(current_file_directory, 'industry_lever_technology-development.py')])
+# subprocess.run(['python', os.path.join(current_file_directory, 'industry_lever_carbon-capture.py')])
+# subprocess.run(['python', os.path.join(current_file_directory, 'industry_lever_technology-share.py')])
+# subprocess.run(['python', os.path.join(current_file_directory, 'industry_lever_material-net-import.py')])
+# subprocess.run(['python', os.path.join(current_file_directory, 'industry_lever_product-net-import.py')])
+# subprocess.run(['python', os.path.join(current_file_directory, 'industry_lever_energy-switch.py')])
+# subprocess.run(['python', os.path.join(current_file_directory, 'industry_lever_waste-management.py')])
+# subprocess.run(['python', os.path.join(current_file_directory, 'industry_lever_material-recovery.py')])
+
+# subprocess.run(['python', os.path.join(current_file_directory, 'industry_fxa_costs.py')])
+
+# subprocess.run(['python', os.path.join(current_file_directory, 'industry_calib_emissions.py')])
+# subprocess.run(['python', os.path.join(current_file_directory, 'industry_calib_energy-demand.py')])
+
+# subprocess.run(['python', os.path.join(current_file_directory, 'industry_const_emission-factors.py')])
+# subprocess.run(['python', os.path.join(current_file_directory, 'industry_const_energy-demand.py')])
+# subprocess.run(['python', os.path.join(current_file_directory, 'industry_const_material-decomposition.py')])
+# subprocess.run(['python', os.path.join(current_file_directory, 'industry_const_material-switch-ratio.py')])
+
+
+###############################################################################
+################################ BUILD PICKLE #################################
+###############################################################################
 
 # files
 files_directory = os.path.join(current_file_directory, '../data/datamatrix')
@@ -87,9 +118,9 @@ DM_ots["eol-waste-management"].drop("Variables",drops)
 for i in range(1,4+1):
     DM_fts["eol-waste-management"][i].drop("Variables",drops)
 
-# save
-DM_industry["ots"] = DM_ots.copy()
-DM_industry["fts"] = DM_fts.copy()
+# # save
+# DM_industry["ots"] = DM_ots.copy()
+# DM_industry["fts"] = DM_fts.copy()
 
 #############################
 ##### FIXED ASSUMPTIONS #####
@@ -194,34 +225,41 @@ DM_industry = {
     "constant" : CDM_const
 }
 
+##########################
+##### KEEP ONLY EU27 #####
+##########################
+
+for key in DM_industry["ots"].keys():
+    DM_industry["ots"][key].filter({"Country" : ["EU27"]},inplace=True)
+for key in DM_industry["fts"].keys():
+    for level in list(range(1,4+1)):
+        DM_industry["fts"][key][level].filter({"Country" : ["EU27"]},inplace=True)
+for key in DM_industry["fxa"].keys():
+    DM_industry["fxa"][key].filter({"Country" : ["EU27"]},inplace=True)
+
+
 #######################################
 ###### GENERATE FAKE SWITZERLAND ######
 #######################################
 
 for key in ['fxa', 'ots', 'calibration']:
-    
     dm_names = list(DM_industry[key])
     for name in dm_names:
-        
         dm_temp = DM_industry[key][name]
         if "Switzerland" not in dm_temp.col_labels["Country"]:
-            
             idx = dm_temp.idx
-            arr_temp = dm_temp.array[idx["Austria"],...]
+            arr_temp = dm_temp.array[idx["EU27"],...]
             dm_temp.add(arr_temp[np.newaxis,...], "Country", "Switzerland")
             dm_temp.sort("Country")
 
 
 dm_names = list(DM_industry["fts"])
 for name in dm_names:
-    
     for i in range(1,4+1):
-        
         dm_temp = DM_industry["fts"][name][i]
         if "Switzerland" not in dm_temp.col_labels["Country"]:
-            
             idx = dm_temp.idx
-            arr_temp = dm_temp.array[idx["Austria"],...]
+            arr_temp = dm_temp.array[idx["EU27"],...]
             dm_temp.add(arr_temp[np.newaxis,...], "Country", "Switzerland")
             dm_temp.sort("Country")
             
@@ -230,29 +268,23 @@ for name in dm_names:
 ################################
 
 for key in ['fxa', 'ots', 'calibration']:
-    
     dm_names = list(DM_industry[key])
     for name in dm_names:
-        
         dm_temp = DM_industry[key][name]
         if "Vaud" not in dm_temp.col_labels["Country"]:
-            
             idx = dm_temp.idx
-            arr_temp = dm_temp.array[idx["Austria"],...]
+            arr_temp = dm_temp.array[idx["EU27"],...]
             dm_temp.add(arr_temp[np.newaxis,...], "Country", "Vaud")
             dm_temp.sort("Country")
 
 
 dm_names = list(DM_industry["fts"])
 for name in dm_names:
-    
     for i in range(1,4+1):
-        
         dm_temp = DM_industry["fts"][name][i]
         if "Vaud" not in dm_temp.col_labels["Country"]:
-            
             idx = dm_temp.idx
-            arr_temp = dm_temp.array[idx["Austria"],...]
+            arr_temp = dm_temp.array[idx["EU27"],...]
             dm_temp.add(arr_temp[np.newaxis,...], "Country", "Vaud")
             dm_temp.sort("Country")
 
