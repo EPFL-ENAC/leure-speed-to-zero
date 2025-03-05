@@ -85,7 +85,7 @@ def local_interactions_run():
     years_setting = [1990, 2023, 2025, 2050, 5]
     
     # geoscale
-    global_vars = {'geoscale': 'Switzerland|Vaud'}
+    global_vars = {'geoscale': 'EU27|Switzerland|Vaud'}
     filter_geoscale(global_vars)
 
     # run
