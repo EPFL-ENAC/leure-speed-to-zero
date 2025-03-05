@@ -25,10 +25,10 @@ current_file_directory = os.path.dirname(os.path.abspath(__file__))
 #########################################
 
 # get data
-# df = eurostat.get_data_df("env_ac_ainah_r2")
-filepath = os.path.join(current_file_directory, '../data/eurostat/env_ac_ainah_r2.csv')
+df = eurostat.get_data_df("env_ac_ainah_r2")
+# filepath = os.path.join(current_file_directory, '../data/eurostat/env_ac_ainah_r2.csv')
 # df.to_csv(filepath, index = False)
-df = pd.read_csv(filepath)
+# df = pd.read_csv(filepath)
 
 # get manufacturing and gases in tonnes
 df = df.loc[df["nace_r2"] == "C",:]
@@ -40,18 +40,18 @@ countries_codes = ["AT","BE","BG","HR","CY","CZ","DK",
                    "EE","FI","FR","DE","EL","HU","IE","IT",
                    "LV","LT","LU","MT","NL","PL","PT",
                    "RO","SK","SI","ES","SE","EU27_2020"]
-df = df.loc[df["geo\TIME_PERIOD"].isin(countries_codes),:]
+df = df.loc[df["geo\\TIME_PERIOD"].isin(countries_codes),:]
 countries = ['Austria','Belgium','Bulgaria','Croatia','Cyprus','Czech Republic','Denmark',
              'Estonia','Finland','France','Germany','Greece','Hungary','Ireland','Italy',
              'Latvia','Lithuania','Luxembourg','Malta','Netherlands','Poland','Portugal',
              'Romania','Slovakia','Slovenia','Spain','Sweden',"EU27"]
 for i in range(0, len(countries_codes)):
-    df.loc[df["geo\TIME_PERIOD"] == countries_codes[i],"geo\TIME_PERIOD"] = countries[i]
-len(df["geo\TIME_PERIOD"].unique())
+    df.loc[df["geo\\TIME_PERIOD"] == countries_codes[i],"geo\\TIME_PERIOD"] = countries[i]
+len(df["geo\\TIME_PERIOD"].unique())
 
 # clean df
 df.drop(['freq', 'nace_r2'], axis=1, inplace=True)
-df = pd.melt(df, id_vars = ["geo\TIME_PERIOD","airpol","unit"], var_name='year')
+df = pd.melt(df, id_vars = ["geo\\TIME_PERIOD","airpol","unit"], var_name='year')
 df["year"] = [int(i) for i in df["year"]]
 df = df.loc[df["year"] >= 2008,:] # most data is from 2008 onwards
 df["value"] = df["value"]/1000000
