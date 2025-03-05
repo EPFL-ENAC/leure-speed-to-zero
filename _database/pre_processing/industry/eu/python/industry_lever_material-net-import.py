@@ -38,7 +38,7 @@ df = pd.read_csv(filepath)
 
 # get "PRODQNT", "EXPQNT", "IMPQNT", "QNTUNIT"
 variabs = ["PRODQNT", "EXPQNT", "IMPQNT", "QNTUNIT"]
-df = df.loc[df["indicators\TIME_PERIOD"].isin(variabs),:]
+df = df.loc[df["indicators\\TIME_PERIOD"].isin(variabs),:]
 
 # apply mapping with our variable names
 filepath = os.path.join(current_file_directory, '../data/eurostat/PRODCOM2024_PRODCOM2023_Table.csv')
@@ -79,7 +79,7 @@ for key in decl_mapping.keys():
     df_sub.loc[df_sub["decl"] == key,"country"] = decl_mapping[key]
 
 # make long format
-df_sub.rename(columns={"indicators\TIME_PERIOD":"variable"}, inplace = True)
+df_sub.rename(columns={"indicators\\TIME_PERIOD":"variable"}, inplace = True)
 df_sub_unit = df_sub.loc[df_sub["variable"].isin(["QNTUNIT"]),:]
 df_sub = df_sub.loc[~df_sub["variable"].isin(["QNTUNIT"]),:]
 drops = ['freq', 'decl']

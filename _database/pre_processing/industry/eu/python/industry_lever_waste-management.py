@@ -39,15 +39,15 @@ current_file_directory = os.path.dirname(os.path.abspath(__file__))
 ###############################################
 
 # get data
-# df = eurostat.get_data_df("env_waselv")
-filepath = os.path.join(current_file_directory, '../data/eurostat/env_waselv.csv')
+df = eurostat.get_data_df("env_waselv")
+# filepath = os.path.join(current_file_directory, '../data/eurostat/env_waselv.csv')
 # df.to_csv(filepath, index = False)
-df = pd.read_csv(filepath)
+# df = pd.read_csv(filepath)
 
-# df = eurostat.get_data_df("env_waselvt")
-filepath = os.path.join(current_file_directory, '../data/eurostat/env_waselvt.csv')
-# df.to_csv(filepath, index = False)
-df_total = pd.read_csv(filepath)
+df_total = eurostat.get_data_df("env_waselvt")
+# filepath = os.path.join(current_file_directory, '../data/eurostat/env_waselvt.csv')
+# df_total.to_csv(filepath, index = False)
+# df_total = pd.read_csv(filepath)
 
 # get geo column
 df.rename(columns={'geo\\TIME_PERIOD': 'geoscale'}, inplace=True)
@@ -492,15 +492,15 @@ del dm_elv_tot, dm_elv_col
 ####################
 
 # get data
-# df = eurostat.get_data_df("env_waselee")
-filepath = os.path.join(current_file_directory, '../data/eurostat/env_waselee.csv')
+df = eurostat.get_data_df("env_waselee")
+# filepath = os.path.join(current_file_directory, '../data/eurostat/env_waselee.csv')
 # df.to_csv(filepath, index = False)
-df = pd.read_csv(filepath)
+# df = pd.read_csv(filepath)
 
-# df = eurostat.get_data_df("env_wasmun")
-filepath = os.path.join(current_file_directory, '../data/eurostat/env_wasmun.csv')
-# df.to_csv(filepath, index = False)
-df_mun = pd.read_csv(filepath)
+df_mun = eurostat.get_data_df("env_wasmun")
+# filepath = os.path.join(current_file_directory, '../data/eurostat/env_wasmun.csv')
+# df_mun.to_csv(filepath, index = False)
+# df_mun = pd.read_csv(filepath)
 df_mun["wst_oper"].unique()
 
 # get geo column
@@ -961,15 +961,15 @@ del dm_domapp_tot, dm_domapp_col
 ####################
 
 # get data
-# df = eurostat.get_data_df("env_waspac")
-filepath = os.path.join(current_file_directory, '../data/eurostat/env_waspac.csv')
+df = eurostat.get_data_df("env_waspac")
+# filepath = os.path.join(current_file_directory, '../data/eurostat/env_waspac.csv')
 # df.to_csv(filepath, index = False)
-df = pd.read_csv(filepath)
+# df = pd.read_csv(filepath)
 
-# df = eurostat.get_data_df("env_wasmun")
-filepath = os.path.join(current_file_directory, '../data/eurostat/env_wasmun.csv')
-# df.to_csv(filepath, index = False)
-df_mun = pd.read_csv(filepath)
+df_mun = eurostat.get_data_df("env_wasmun")
+# filepath = os.path.join(current_file_directory, '../data/eurostat/env_wasmun.csv')
+# df_mun.to_csv(filepath, index = False)
+# df_mun = pd.read_csv(filepath)
 df_mun["wst_oper"].unique()
 
 # get geo column

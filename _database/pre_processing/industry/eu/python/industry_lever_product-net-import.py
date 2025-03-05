@@ -39,7 +39,7 @@ df.columns
 product_code = "29102100"
 variabs = ["PRODVAL","PRODQNT","EXPVAL","EXPQNT","IMPVAL","IMPQNT"]
 df_sub = df.loc[df["prccode"].isin([product_code]),:]
-df_sub = df_sub.loc[df_sub["indicators\TIME_PERIOD"].isin(variabs),:]
+df_sub = df_sub.loc[df_sub["indicators\\TIME_PERIOD"].isin(variabs),:]
 len(df_sub["decl"].unique())
 df_sub = df_sub.loc[df_sub["decl"].isin([4,2027])] # get germnay and EU27_2020
 # it seems values are generally there for all variables
@@ -52,7 +52,7 @@ df_sub = df_sub.loc[df_sub["decl"].isin([4,2027])] # get germnay and EU27_2020
 
 # get "PRODQNT", "EXPQNT", "IMPQNT", "QNTUNIT"
 variabs = ["PRODQNT", "EXPQNT", "IMPQNT", "QNTUNIT"]
-df = df.loc[df["indicators\TIME_PERIOD"].isin(variabs),:]
+df = df.loc[df["indicators\\TIME_PERIOD"].isin(variabs),:]
 
 # keep only things in mapping for industry
 filepath = os.path.join(current_file_directory, '../data/eurostat/PRODCOM2024_PRODCOM2023_Table.csv')
@@ -82,7 +82,7 @@ for key in decl_mapping.keys():
     df_sub.loc[df_sub["decl"] == key,"country"] = decl_mapping[key]
     
 # make long format
-df_sub.rename(columns={"indicators\TIME_PERIOD":"variable"}, inplace = True)
+df_sub.rename(columns={"indicators\\TIME_PERIOD":"variable"}, inplace = True)
 df_sub_unit = df_sub.loc[df_sub["variable"].isin(["QNTUNIT"]),:]
 df_sub = df_sub.loc[~df_sub["variable"].isin(["QNTUNIT"]),:]
 drops = ['freq', 'decl']
@@ -210,6 +210,8 @@ df_temp = df_sub.loc[df_sub["selection"].isin(['computer', 'dishwasher', 'freeze
                                                'phone', 'tv', 'wmachine']),["Country","Years","variable","value"]]
 df_temp = df_temp.pivot(index=["Country","Years"], columns="variable", values='value').reset_index()
 dm_bld_domapp = DataMatrix.create_from_df(df_temp, 1)
+idx = dm_bld_domapp.idx
+dm_bld_domapp.array[idx["Austria"],idx[2019],idx["product-demand"],idx["dishwasher"]]
 
 # dm_tra_veh
 df_temp = df_sub.loc[df_sub["selection"].isin(['cars-EV', 'cars-ICE','planes', 'ships', 'trains',
