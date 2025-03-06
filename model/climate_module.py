@@ -86,10 +86,17 @@ def read_data(data_file, lever_setting):
 
     return DM_ots_fts
 
-def climate_buildings_interface(DM_ots_fts, write_xls = False):
+def climate_buildings_interface(DM_ots_fts, write_pickle = False):
     
     # append
     dm_bld = DM_ots_fts["temp"]["bld_climate-impact-space"]
+    
+    # if write_pickle is True, write pickle
+    if write_pickle is True:
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        f = os.path.join(current_file_directory, '../_database/data/interface/climate_to_buildings.pickle')
+        with open(f, 'wb') as handle:
+            pickle.dump(dm_bld, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     # return
     return dm_bld
@@ -102,9 +109,16 @@ def variables_to_tpe(DM_ots_fts):
     
     return df
 
-def climate_power_interface(DM_ots_fts):
+def climate_power_interface(DM_ots_fts, write_pickle = False):
     
     dm = DM_ots_fts["temp"]["clm_capacity-factor"].copy()
+    
+    # if write_pickle is True, write pickle
+    if write_pickle is True:
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        f = os.path.join(current_file_directory, '../_database/data/interface/climate_to_power.pickle')
+        with open(f, 'wb') as handle:
+            pickle.dump(dm, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
     return dm
 
@@ -139,7 +153,7 @@ def local_climate_run():
     years_setting, lever_setting = init_years_lever()
 
     # get geoscale
-    global_vars = {'geoscale': '.*'}
+    global_vars = {'geoscale': 'EU27|Switzerland|Vaud'}
     filter_geoscale(global_vars)
 
     # run
@@ -149,8 +163,7 @@ def local_climate_run():
 
 # # local
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/climate_module.py"
-# database_from_csv_to_datamatrix()
-#results_run = local_climate_run()
+# results_run = local_climate_run()
 
 
 
