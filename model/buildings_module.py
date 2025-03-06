@@ -1284,7 +1284,6 @@ def buildings(lever_setting, years_setting, interface=Interface()):
         data_file = os.path.join(current_file_directory, '../_database/data/interface/climate_to_buildings.pickle')
         with open(data_file, 'rb') as handle:
             dm_clm = pickle.load(handle)
-        dm_clm = dm_clm['cdd-hdd']
         cntr_list = DM_floor_area['floor-intensity'].col_labels['Country']
         dm_clm.filter({'Country': cntr_list}, inplace=True)
 
@@ -1326,7 +1325,7 @@ def buildings_local_run():
     years_setting, lever_setting = init_years_lever()
     # Function to run only transport module without converter and tpe
 
-    global_vars = {'geoscale': 'Switzerland|Vaud'}
+    global_vars = {'geoscale': 'EU27|Switzerland|Vaud'}
     filter_geoscale(global_vars)
 
     buildings(lever_setting, years_setting)
