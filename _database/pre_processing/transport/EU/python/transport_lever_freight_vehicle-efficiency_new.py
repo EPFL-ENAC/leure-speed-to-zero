@@ -217,7 +217,7 @@ dm_mar = get_jrc_data(dict_extract, dict_iso2_jrc, current_file_directory)
 dm_mar.array[dm_mar.array==0] = np.nan
 
 # assuming they are all diesel
-dm_mar.rename_col("marine","marine_ICE-diesel","Variables")
+dm_mar.rename_col("marine","marine_ICE","Variables")
 
 # make other variables
 dm_mar.deepen()
@@ -328,7 +328,7 @@ dict_call = {"HDVH_BEV" : {"n_adj" : 2, "year_end_first_adj" : 2010, "year_start
              "HDVM_ICE-gasoline" : {"n_adj" : 1},
              "IWW_ICE-diesel" : {"n_adj" : 1},
              "aviation_ICE" : {"n_adj" : 1},
-             "marine_ICE-diesel" : {"n_adj" : 1},
+             "marine_ICE" : {"n_adj" : 1},
              "rail_CEV" : {"n_adj" : 1},
              "rail_ICE-diesel" : {"n_adj" : 1}}
 
