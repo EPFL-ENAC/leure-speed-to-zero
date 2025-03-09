@@ -85,7 +85,7 @@ def local_lifestyles_run(write_pickle=False):
     # Initiate the year & lever setting
     years_setting, lever_setting = init_years_lever()
 
-    global_vars = {'geoscale': '.*'}
+    global_vars = {'geoscale': 'EU27|Switzerland|Vaud'}
     filter_geoscale(global_vars)
 
     lifestyles(lever_setting, years_setting, write_pickle=write_pickle)
