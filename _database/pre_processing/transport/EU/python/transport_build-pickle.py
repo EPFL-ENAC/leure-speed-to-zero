@@ -134,6 +134,26 @@ for key in DM_transport["fts"].keys():
         DM_transport["fts"][key][level].filter({"Country" : ["EU27"]},inplace=True)
 for key in DM_transport["fxa"].keys():
     DM_transport["fxa"][key].filter({"Country" : ["EU27"]},inplace=True)
+    
+# #############################################################
+# ##### PUT ZERO FOR FCEV IN FREIGHT (INSTEAD OF MISSING) #####
+# #############################################################
+
+# # note: I am doing this as otherwise the function rename_and_group() at line 453 in transport_module
+# # gets blocked (as in EU27 there is no FCEV, so line 965 does not make FCV-hydrogen, and
+# # then hydrogen is not found at line 453)
+
+# levers = ["passenger_technology-share_new", "passenger_veh-efficiency_new", 
+#           'freight_vehicle-efficiency_new', 'freight_technology-share_new']
+# for lever in levers:
+#     idx = DM_transport["ots"][lever].idx
+#     DM_transport["ots"][lever].array[:,:,:,:,idx["FCEV"]] = 0
+#     for i in range(1,4+1):
+#         DM_transport["fts"][lever][i].array[:,:,:,:,idx["FCEV"]] = 0
+# variabs = ["passenger_tech","passenger_vehicle-lifetime","freight_tech"]
+# for v in variabs:
+#     idx = DM_transport["fxa"][v].idx
+#     DM_transport["fxa"][v].array[:,:,:,:,idx["FCEV"]] = 0
 
 ###############
 #### SAVE #####
