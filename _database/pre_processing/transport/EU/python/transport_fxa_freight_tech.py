@@ -31,7 +31,7 @@ with open(filepath, 'rb') as handle:
     DM_tra = pickle.load(handle)
 
 # Set years range
-years_setting = [1990, 2023, 2050, 5]
+years_setting = [1989, 2023, 2050, 5]
 startyear = years_setting[0]
 baseyear = years_setting[1]
 lastyear = years_setting[2]
@@ -245,7 +245,7 @@ def make_ots(dm, variable, periods_dicts, years_ots = None):
     if periods_dicts["n_adj"] == 1:
         dm_temp = linear_fitting(dm_temp, years_ots, min_t0=0.1,min_tb=0.1)
     if periods_dicts["n_adj"] == 2:
-        dm_temp = linear_fitting(dm_temp, list(range(1990,1999+1)), 
+        dm_temp = linear_fitting(dm_temp, list(range(startyear,1999+1)), 
                                  based_on=list(range(2000,periods_dicts["year_end_first_adj"]+1)), 
                                  min_t0=0.1,min_tb=0.1)
         dm_temp = linear_fitting(dm_temp, list(range(2022,2023+1)), 
@@ -704,7 +704,7 @@ def make_ots(dm, variable, periods_dicts, years_ots = None):
     if periods_dicts["n_adj"] == 1:
         dm_temp = linear_fitting(dm_temp, years_ots, min_t0=0.1,min_tb=0.1)
     if periods_dicts["n_adj"] == 2:
-        dm_temp = linear_fitting(dm_temp, list(range(1990,1999+1)), 
+        dm_temp = linear_fitting(dm_temp, list(range(startyear,1999+1)), 
                                  based_on=list(range(2000,periods_dicts["year_end_first_adj"]+1)), 
                                  min_t0=0.1,min_tb=0.1)
         dm_temp = linear_fitting(dm_temp, list(range(2022,2023+1)), 
@@ -841,6 +841,14 @@ del baseyear_end, baseyear_start, cat, categories2_all, categories2_missing, df,
     dict_call, dict_iso2, dict_iso2_jrc, dict_new, dm_avi, dm_hdvh, \
     dm_hdvl, dm_hdvm, dm_temp, dm_eneff_rail, dm_iww, dm_mar, dm_temp1, \
     idx, key, mylist, v, categories1_missing, dm_eneff
+    
+#############################################
+################# DROP 1989 #################
+#############################################
+
+dm_fleet_pc_final.drop("Years",startyear)
+dm_eneff_final.drop("Years",startyear)
+dm_fleet_final.drop("Years",startyear)
 
 ##########################################
 ################## SAVE ##################

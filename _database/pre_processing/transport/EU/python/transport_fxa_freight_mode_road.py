@@ -31,7 +31,7 @@ with open(filepath, 'rb') as handle:
     DM_tra = pickle.load(handle)
 
 # load tkm pickle
-filepath = os.path.join(current_file_directory, '../data/datamatrix/fxa_passenger_lifetime.pickle')
+filepath = os.path.join(current_file_directory, '../data/datamatrix/fxa_passenger_vehicle-lifetime.pickle')
 with open(filepath, 'rb') as handle:
     dm_lifetime = pickle.load(handle)
 

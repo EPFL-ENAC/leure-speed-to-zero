@@ -31,7 +31,7 @@ with open(filepath, 'rb') as handle:
     DM_tra = pickle.load(handle)
 
 # Set years range
-years_setting = [1990, 2023, 2050, 5]
+years_setting = [1989, 2023, 2050, 5]
 startyear = years_setting[0]
 baseyear = years_setting[1]
 lastyear = years_setting[2]
@@ -249,7 +249,7 @@ def make_ots(dm, variable, periods_dicts, years_ots = None):
     if periods_dicts["n_adj"] == 1:
         dm_temp = linear_fitting(dm_temp, years_ots, min_t0=0.1,min_tb=0.1)
     if periods_dicts["n_adj"] == 2:
-        dm_temp = linear_fitting(dm_temp, list(range(1990,1999+1)), 
+        dm_temp = linear_fitting(dm_temp, list(range(startyear,1999+1)), 
                                  based_on=list(range(2000,periods_dicts["year_end_first_adj"]+1)), 
                                  min_t0=0.1,min_tb=0.1)
         dm_temp = linear_fitting(dm_temp, list(range(2022,2023+1)), 
@@ -455,6 +455,7 @@ del baseyear_end, baseyear_start, cat, categories2_all, categories2_missing, df,
 # split between ots and fts
 DM_new = {"ots": {"freight_technology-share_new" : []}, "fts": {"freight_technology-share_new" : dict()}}
 DM_new["ots"]["freight_technology-share_new"] = dm_new_pc_final.filter({"Years" : years_ots})
+DM_new["ots"]["freight_technology-share_new"].drop("Years",startyear)
 for i in range(1,4+1):
     DM_new["fts"]["freight_technology-share_new"][i] = dm_new_pc_final.filter({"Years" : years_fts})
 

@@ -36,7 +36,7 @@ with open(filepath, 'rb') as handle:
     DM_pkm = pickle.load(handle)
 
 # Set years range
-years_setting = [1990, 2023, 2050, 5]
+years_setting = [1989, 2023, 2050, 5]
 startyear = years_setting[0]
 baseyear = years_setting[1]
 lastyear = years_setting[2]
@@ -199,6 +199,7 @@ dm_pkm = DM_pkm["ots"]["passenger_pkm"].copy()
 dm_pkm.append(DM_pkm["fts"]["passenger_pkm"][1],"Years")
 dm_pkm.sort("Years")
 dm_occ = dm_pkm.copy()
+dm_vkm.drop("Years",startyear)
 dm_occ.array = dm_occ.array/dm_vkm.array
 dm_occ.rename_col("tra_passenger_pkm","tra_passenger_occupancy","Variables")
 dm_occ.units["tra_passenger_occupancy"] = "pkm/vkm"
@@ -214,7 +215,7 @@ dm_occ.units["tra_passenger_occupancy"] = "pkm/vkm"
 
 # split between ots and fts
 DM_occ = {"ots": {"passenger_occupancy" : []}, "fts": {"passenger_occupancy" : dict()}}
-DM_occ ["ots"]["passenger_occupancy"] = dm_occ.filter({"Years" : years_ots})
+DM_occ["ots"]["passenger_occupancy"] = dm_occ.filter({"Years" : list(range(1990,baseyear+1))})
 for i in range(1,4+1):
     DM_occ["fts"]["passenger_occupancy"][i] = dm_occ.filter({"Years" : years_fts})
 
@@ -225,7 +226,7 @@ with open(f, 'wb') as handle:
 
 # split between ots and fts
 DM_vkm = {"ots": {"passenger_vkm" : []}, "fts": {"passenger_vkm" : dict()}}
-DM_vkm ["ots"]["passenger_vkm"] = dm_vkm.filter({"Years" : years_ots})
+DM_vkm ["ots"]["passenger_vkm"] = dm_vkm.filter({"Years" : list(range(1990,baseyear+1))})
 for i in range(1,4+1):
     DM_vkm["fts"]["passenger_vkm"][i] = dm_vkm.filter({"Years" : years_fts})
     

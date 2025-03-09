@@ -31,7 +31,7 @@ with open(filepath, 'rb') as handle:
     DM_tra = pickle.load(handle)
 
 # Set years range
-years_setting = [1990, 2023, 2050, 5]
+years_setting = [1989, 2023, 2050, 5]
 startyear = years_setting[0]
 baseyear = years_setting[1]
 lastyear = years_setting[2]
@@ -235,7 +235,7 @@ def make_ots(dm, variable, periods_dicts, years_ots = None):
     if periods_dicts["n_adj"] == 1:
         dm_temp = linear_fitting(dm_temp, years_ots, min_t0=0.1,min_tb=0.1)
     if periods_dicts["n_adj"] == 2:
-        dm_temp = linear_fitting(dm_temp, list(range(1990,1999+1)), 
+        dm_temp = linear_fitting(dm_temp, list(range(startyear,1999+1)), 
                                  based_on=list(range(2000,periods_dicts["year_end_first_adj"]+1)), 
                                  min_t0=0.1,min_tb=0.1)
         dm_temp = linear_fitting(dm_temp, list(range(2022,2023+1)), 
@@ -271,6 +271,14 @@ mylist.remove("2W_ICE-gasoline")
 for v in mylist:
     dm_fleet.append(dict_new[v],"Variables")
 dm_fleet.sort("Variables")
+
+# # if 1990 value is 0.1, put value of 1991
+# dm_fleet_1990 = dm_fleet.filter({"Years" : [1990]})
+# dm_fleet_1991 = dm_fleet.filter({"Years" : [1991]})
+# dm_fleet_1990.array[dm_fleet_1990.array == 0.1] = dm_fleet_1991.array[dm_fleet_1990.array == 0.1]
+# dm_fleet.drop("Years",[1990])
+# dm_fleet.append(dm_fleet_1990, "Years")
+# dm_fleet.sort("Years")
 
 # check
 # dm_fleet.filter({"Country" : ["EU27"]}).datamatrix_plot()
@@ -497,7 +505,7 @@ dm_eneff.array[dm_eneff.array==0] = np.nan
 # note: bus_ICE-diesel: until before 2000 until 2012, after 2021 after 2012
 dm_eneff_bus_icedie = dm_eneff.filter({"Variables" : ["bus"],"Categories1" : ["ICE-diesel"]})
 dm_eneff = linear_fitting(dm_eneff, years_ots, min_t0=0,min_tb=0)
-dm_eneff_bus_icedie = linear_fitting(dm_eneff_bus_icedie, list(range(1990,1999+1)),based_on=list(range(2000,2012+1)), min_t0=0.1,min_tb=0.1)
+dm_eneff_bus_icedie = linear_fitting(dm_eneff_bus_icedie, list(range(startyear,1999+1)),based_on=list(range(2000,2012+1)), min_t0=0.1,min_tb=0.1)
 dm_eneff_bus_icedie = linear_fitting(dm_eneff_bus_icedie, list(range(2022,2023+1)),based_on=list(range(2012,2020+1)), min_t0=0.1,min_tb=0.1)
 dm_eneff = dm_eneff.flatten()
 dm_eneff.drop("Variables","bus_ICE-diesel")
@@ -768,6 +776,11 @@ idx = dm_new.idx
 years_fix = list(range(2000,2013+1))
 for y in years_fix:
     dm_new.array[:,idx[y],idx["LDV_ICE-gasoline"]] = np.nan
+
+# put LDV_ICE-gas 2000 as missing
+dm_new.array[:,idx[2000],idx["LDV_ICE-gas"]] = np.nan
+
+# deepen
 dm_new.deepen()
 
 # check
@@ -790,7 +803,7 @@ def make_ots(dm, variable, periods_dicts, years_ots = None):
     if periods_dicts["n_adj"] == 1:
         dm_temp = linear_fitting(dm_temp, years_ots, min_t0=0.1,min_tb=0.1)
     if periods_dicts["n_adj"] == 2:
-        dm_temp = linear_fitting(dm_temp, list(range(1990,1999+1)), 
+        dm_temp = linear_fitting(dm_temp, list(range(startyear,1999+1)), 
                                  based_on=list(range(2000,periods_dicts["year_end_first_adj"]+1)), 
                                  min_t0=0.1,min_tb=0.1)
         dm_temp = linear_fitting(dm_temp, list(range(2022,2023+1)), 
@@ -801,16 +814,16 @@ def make_ots(dm, variable, periods_dicts, years_ots = None):
 dict_call = {"2W_ICE-gasoline" : {"n_adj" : 2, "year_end_first_adj" : 2007, "year_start_second_adj" : 2021},
              "LDV_BEV" : {"n_adj" : 2, "year_end_first_adj" : 2010, "year_start_second_adj" : 2021},
              "LDV_ICE-diesel" : {"n_adj" : 2, "year_end_first_adj" : 2006, "year_start_second_adj" : 2017},
-             "LDV_ICE-gas" : {"n_adj" : 1},
+             "LDV_ICE-gas" : {"n_adj" : 2, "year_end_first_adj" : 2003, "year_start_second_adj" : 2020},
              "LDV_ICE-gasoline" : {"n_adj" : 1},
              "LDV_PHEV-diesel" : {"n_adj" : 2, "year_end_first_adj" : 2010, "year_start_second_adj" : 2021},
              "LDV_PHEV-gasoline" : {"n_adj" : 2, "year_end_first_adj" : 2010, "year_start_second_adj" : 2021},
              "bus_BEV" : {"n_adj" : 2, "year_end_first_adj" : 2010, "year_start_second_adj" : 2021},
-             "bus_ICE-diesel" : {"n_adj" : 1},
+             "bus_ICE-diesel" : {"n_adj" : 2, "year_end_first_adj" : 2008, "year_start_second_adj" : 2020},
              "bus_ICE-gas" : {"n_adj" : 2, "year_end_first_adj" : 2010, "year_start_second_adj" : 2020},
              "bus_ICE-gasoline" : {"n_adj" : 2, "year_end_first_adj" : 2010, "year_start_second_adj" : 2020},
              "metrotram_mt" :  {"n_adj" : 1},
-             "rail_CEV" :  {"n_adj" : 1},
+             "rail_CEV" :  {"n_adj" : 2, "year_end_first_adj" : 2000, "year_start_second_adj" : 2005},
              "rail_ICE-diesel" :  {"n_adj" : 1}}
 
 for key in dict_call.keys():
@@ -826,6 +839,14 @@ mylist.remove("2W_ICE-gasoline")
 for v in mylist:
     dm_new.append(dict_new[v],"Variables")
 dm_new.sort("Variables")
+
+# # if 1990 value is 0.1, put value of 1991
+# dm_new_1990 = dm_new.filter({"Years" : [1990]})
+# dm_new_1991 = dm_new.filter({"Years" : [1991]})
+# dm_new_1990.array[dm_new_1990.array == 0.1] = dm_new_1991.array[dm_new_1990.array == 0.1]
+# dm_new.drop("Years",[1990])
+# dm_new.append(dm_new_1990, "Years")
+# dm_new.sort("Years")
 
 # check
 # dm_new.filter({"Country" : ["EU27"]}).datamatrix_plot()
@@ -1113,8 +1134,8 @@ dm_fleet = dm_fleet.flatten().flatten()
 dm_fleet.rename_col_regex("tra_passenger_technology-share_fleet_","","Variables")
 
 # make a total
-dm_total = dm_fleet.groupby({"total" : dm_fleet.col_labels["Variables"]}, dim='Variables', 
-                            aggregation = "sum", regex=False, inplace=False)
+dm_total = dm_fleet.groupby({"total" : '2W|LDV|bus'}, dim='Variables', 
+                            aggregation = "sum", regex=True, inplace=False)
 dm_fleet.append(dm_total,"Variables")
 
 # add missing years
@@ -1227,6 +1248,12 @@ dm_tech.add(np.nan, col_label=years_fts, dummy=True, dim='Years')
 dm_tech.append(dm_fleet,"Variables")
 dm_tech.sort("Variables")
 
+###############################################
+################## DROP 1989 ##################
+###############################################
+
+dm_tech.drop("Years",startyear)
+dm_renrate.drop("Years",startyear)
 
 ############################################
 ################## CHECKS ##################
