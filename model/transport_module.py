@@ -1059,92 +1059,43 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
 
 
 def tra_industry_interface(dm_freight_veh, dm_passenger_veh, dm_infrastructure, write_pickle = False):
-    # Filter cars only and rename technology as ICE, FCV and EV
-    if 'aviation' not in dm_passenger_veh.col_labels['Categories1']:
+    
+    # passenger
+    # TODO: check with Paola why aviation is not here
+    if "aviation" not in dm_passenger_veh.col_labels["Categories1"]:
         dm_passenger_veh.add(np.nan, dim='Categories1', col_label='aviation', dummy=True)
-    dm_passenger_new_veh = dm_passenger_veh.filter({'Variables': ['tra_passenger_new-vehicles']})
-    dm_cars = dm_passenger_new_veh.filter({'Categories1': ['LDV']})
-    dm_cars.group_all(dim='Categories1', inplace=True)
-    dm_cars.groupby({'cars-ICE': 'ICE.*|PHEV.*', 'cars-FCV': 'FCEV', 'cars-EV': 'BEV'}, dim='Categories1', regex=True, inplace=True)
-    dm_cars.drop(dim='Categories1', col_label=['CEV', 'mt'])   # these are 0 for cars empty
-    dm_cars.rename_col('tra_passenger_new-vehicles', 'tra_product-demand', dim='Variables')
-
-    # Filter trucks only and rename technologies as ICE, FCV, EV
-    dm_freight_new_veh = dm_freight_veh.filter({'Variables' : ['tra_freight_new-vehicles']})
-    dm_trucks = dm_freight_new_veh.filter({'Categories1': ['HDVH', 'HDVL', 'HDVM']})
-    dm_trucks.group_all(dim='Categories1')
-    dm_trucks.groupby({'trucks-ICE': 'ICE.*|PHEV.*', 'trucks-FCV': 'FCEV', 'trucks-EV': 'BEV|CEV'}, dim='Categories1', regex=True, inplace=True)
-    dm_trucks.rename_col('tra_freight_new-vehicles', 'tra_product-demand', dim='Variables')
-
-    # Compute new-vehicles for aviation, marine, rail
-    dm_freight_new_veh.group_all(dim='Categories2')  # drop fuel split
-    dm_passenger_new_veh.group_all(dim='Categories2')  # drop fuel split
-    dm_passenger_new_veh.add(0, dim='Categories1', col_label=['marine'], dummy=True)  # add dummy 'marine' to passenger
-    dm_freight_new_veh.filter({'Categories1': ['aviation', 'marine', 'rail']}, inplace=True)  # keep only rail, aviation, marine
-    dm_passenger_new_veh.filter({'Categories1': ['aviation', 'marine', 'rail']}, inplace=True)  # keep only rail, aviation, marine
-    dm_product_demand = dm_passenger_new_veh
-    if 'aviation' not in dm_product_demand.col_labels['Categories1']:
-        dm_product_demand.add(0, dummy=True, dim='Categories1', col_label='aviation')
-    dm_product_demand.append(dm_freight_new_veh, dim='Variables')  # merge passenger and freight
-    dm_product_demand.groupby({'tra_product-demand': '.*'}, dim='Variables', regex=True, inplace=True)
-    # Rename aviation, marine, rail to planes, ships, trains
-    dm_product_demand.rename_col(['aviation', 'marine', 'rail'], ['planes', 'ships', 'trains'], dim='Categories1')
-
-    # Append cars and trucks
-    dm_product_demand.append(dm_cars, dim='Categories1')
-    dm_product_demand.append(dm_trucks, dim='Categories1')
-    dm_product_demand.sort(dim='Categories1')
+        dm_passenger_veh.add(np.nan, dim='Categories2', col_label='ICE', dummy=True)
+    dm_veh = dm_passenger_veh.copy()
+    dm_veh.groupby({"CEV" : ['mt', 'CEV']}, "Categories2", inplace=True)
+    dm_veh = dm_veh.filter_w_regex({"Categories1" : "LDV|aviation|bus|rail"})
+    dm_veh.rename_col(["rail","aviation"],["trains","planes"],"Categories1")
+    dm_veh.rename_col(['tra_passenger_new-vehicles', 'tra_passenger_vehicle-waste', 'tra_passenger_vehicle-fleet'], 
+                       ['tra_product-demand', 'tra_product-waste','tra_product-stock'], dim='Variables')
+        
+    # freight
+    dm_fre = dm_freight_veh.copy()
+    dm_fre.groupby({"HDV" : "HDV"}, "Categories1", regex=True, inplace=True)
+    dm_fre = dm_fre.filter_w_regex({"Categories1" : "HDV|aviation|marine|rail"})
+    dm_fre.rename_col("marine","ships","Categories1")
+    dm_fre.rename_col(['tra_freight_new-vehicles', 'tra_freight_vehicle-waste', 'tra_freight_vehicle-fleet'], 
+                      ['tra_product-demand', 'tra_product-waste','tra_product-stock'], dim='Variables')
+    
+    # put together
+    dm_veh.append(dm_fre, "Categories1")
+    dm_veh.groupby({"trains" : ["trains","rail"], "planes" : ["planes","aviation"]}, "Categories1", inplace=True)
+    dm_veh.sort("Categories1")
 
     # get infrastructure
     dm_infra_ind = dm_infrastructure.copy()
     dm_infra_ind.rename_col_regex('infra-', '', dim='Categories1')
     dm_infra_ind.rename_col('tra_new_infrastructure', 'tra_product-demand', dim='Variables')
-    
-    # get vehicles that go to eol + vehicles' stock
-    dm_passenger_eol_veh = dm_passenger_veh.filter({'Variables': ['tra_passenger_vehicle-waste', 'tra_passenger_vehicle-fleet']})
-    dm_cars_eol = dm_passenger_eol_veh.filter({'Categories1': ['LDV']})
-    dm_cars_eol.drop("Categories2", ["mt","CEV"]) # mt is metrotram
-    dm_cars_eol.group_all(dim='Categories1', inplace=True)
-    dm_cars_eol.groupby({'cars-ICE': 'ICE.*|PHEV.*', 'cars-FCV': 'FCEV', 'cars-EV': 'BEV'}, dim='Categories1', regex=True, inplace=True)
-    dm_freight_eol_veh = dm_freight_veh.filter({'Variables' : ['tra_freight_vehicle-waste', 'tra_freight_vehicle-fleet']})
-    dm_trucks_eol = dm_freight_eol_veh.filter({'Categories1': ['HDVH', 'HDVL', 'HDVM']})
-    dm_trucks_eol.group_all(dim='Categories1')
-    dm_trucks_eol.groupby({'trucks-ICE': 'ICE.*|PHEV.*', 'trucks-FCV': 'FCEV', 'trucks-EV': 'BEV|CEV'}, dim='Categories1', regex=True, inplace=True)
-    dm_freight_eol_oth = dm_freight_eol_veh.group_all(dim='Categories2', inplace = False).filter({'Categories1': ['aviation', 'marine', 'rail']})
-    dm_passenger_eol_oth = dm_passenger_eol_veh.group_all(dim='Categories2', inplace = False).filter({'Categories1': ['aviation', 'rail']})
-    dm_passenger_eol_oth.add(0, dim='Categories1', col_label=['marine'], dummy=True)  # add dummy 'marine' to passenger
-    dm_eol = dm_freight_eol_oth.copy()
-    dm_eol.append(dm_passenger_eol_oth, "Variables")
-    dm_eol.groupby({'tra_product-waste': '.*waste.*', 
-                      'tra_product-stock' : '.*fleet.*'}, dim='Variables', regex=True, inplace=True)
-    dm_eol.rename_col(['aviation', 'marine', 'rail'], ['planes', 'ships', 'trains'], dim='Categories1')
-    
-    # create dm for waste
-    dm_waste = dm_eol.filter({"Variables" : ["tra_product-waste"]})
-    dm_cars_waste = dm_cars_eol.filter({"Variables" : ["tra_passenger_vehicle-waste"]})
-    dm_cars_waste.rename_col("tra_passenger_vehicle-waste","tra_product-waste","Variables")
-    dm_waste.append(dm_cars_waste, dim='Categories1')
-    dm_trucks_waste = dm_trucks_eol.filter({"Variables" : ["tra_freight_vehicle-waste"]})
-    dm_trucks_waste.rename_col("tra_freight_vehicle-waste","tra_product-waste","Variables")
-    dm_waste.append(dm_trucks_waste, dim='Categories1')
-    dm_waste.sort(dim='Categories1')
-    
-    # create dm for stocks
-    dm_stock = dm_eol.filter({"Variables" : ["tra_product-stock"]})
-    dm_cars_stock = dm_cars_eol.filter({"Variables" : ["tra_passenger_vehicle-fleet"]})
-    dm_cars_stock.rename_col("tra_passenger_vehicle-fleet","tra_product-stock","Variables")
-    dm_stock.append(dm_cars_stock, dim='Categories1')
-    dm_trucks_stock = dm_trucks_eol.filter({"Variables" : ["tra_freight_vehicle-fleet"]})
-    dm_trucks_stock.rename_col("tra_freight_vehicle-fleet","tra_product-stock","Variables")
-    dm_stock.append(dm_trucks_stock, dim='Categories1')
-    dm_stock.sort(dim='Categories1')
 
     # ! FIXME add infrastructure in km
     DM_industry = {
-        'tra-veh': dm_product_demand,
+        'tra-veh': dm_veh.filter({"Variables" : ["tra_product-demand"]}),
         'tra-infra': dm_infra_ind,
-        'tra-waste': dm_waste,
-        'tra-stock': dm_stock
+        'tra-waste': dm_veh.filter({"Variables" : ["tra_product-waste"]}),
+        'tra-stock': dm_veh.filter({"Variables" : ["tra_product-stock"]})
     }
     
     # if write_pickle is True, write pickle
@@ -1457,5 +1408,5 @@ def local_transport_run():
 #print('In transport, the share of waste by fuel/tech type does not seem right. Fix it.')
 #print('Apply technology shares before computing the stock')
 #print('For the efficiency, use the new methodology developped for Building (see overleaf on U-value)')
-# results_run = local_transport_run()
+#results_run = local_transport_run()
 
