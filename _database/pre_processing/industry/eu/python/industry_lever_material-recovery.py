@@ -131,7 +131,15 @@ dm.deepen()
 dm.array = dm.array/100
 
 # put the products of transport from industry
-products = ['cars-EV', 'cars-FCV', 'cars-ICE', 'trucks-EV', 'trucks-FCV', 'trucks-ICE']
+# vehicles = ['HDV', 'LDV', 'bus']
+# engines = ['BEV', 'FCEV', 'ICE', 'ICE-diesel', 'ICE-gas', 'ICE-gasoline', 'PHEV-diesel', 'PHEV-gasoline']
+# dict_out = {}
+# for v in vehicles:
+#     dict_out[v] = [v + "_" + e for e in engines]
+# products = dict_out["HDV"].copy()
+# for v in ['LDV', 'bus']:
+#     products = products + dict_out[v].copy()
+products = ["vehicles"]
 dm_temp = dm.copy()
 dm_temp.rename_col("waste-material-recovery_elv", products[0], "Variables")
 dm_new = dm_temp.copy()

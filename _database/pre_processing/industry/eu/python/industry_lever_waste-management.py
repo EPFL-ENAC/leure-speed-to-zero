@@ -434,7 +434,15 @@ arr_temp = dm_elv_tot.array[idx["Germany"],:,:]
 dm_elv_tot.add(arr_temp[np.newaxis,...], dim = "Country", col_label = "United Kingdom")
 
 # create industry products for vehicles (use same rates for all products)
-products = ['cars-EV', 'cars-FCV', 'cars-ICE', 'trucks-EV', 'trucks-FCV', 'trucks-ICE']
+# vehicles = ['HDV', 'LDV', 'bus']
+# engines = ['BEV', 'FCEV', 'ICE', 'ICE-diesel', 'ICE-gas', 'ICE-gasoline', 'PHEV-diesel', 'PHEV-gasoline']
+# dict_out = {}
+# for v in vehicles:
+#     dict_out[v] = [v + "_" + e for e in engines]
+# products = dict_out["HDV"].copy()
+# for v in ['LDV', 'bus']:
+#     products = products + dict_out[v].copy()
+products = ["vehicles"]
 
 dm_temp = dm_elv_tot.copy()
 variabs = dm_temp.col_labels["Variables"]
@@ -470,7 +478,7 @@ dm_elv_col = dm_elv_col_new.copy()
 del arr_temp, baseyear, baseyear_end, baseyear_start, c, countries, dm_elv,\
     dm_temp, idx, lastyear, startyear, step_fts, v, years_all, \
     years_fts, years_ots, years_setting, y, dm_elv_col_new, dm_elv_tot_new, \
-    products, i, variabs
+    products, i
 
 ################
 ##### SAVE #####

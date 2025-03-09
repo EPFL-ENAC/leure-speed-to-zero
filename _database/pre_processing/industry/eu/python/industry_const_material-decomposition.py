@@ -84,21 +84,23 @@ df_agg = pd.concat([aggregate_materials(df, variable,
 df_check = df_agg.groupby(["variable"], as_index=False)['value'].agg(sum)
 
 # map to products we have in the calc (by taking the mean across products)
-dict_map = {"cars-ICE[kg/num]": ["LDV_ICE-gasoline[kg/unit]","LDV_ICE-diesel[kg/unit]","LDV_HEV[kg/unit]"],
-            "cars-EV[kg/num]" : ["LDV_BEV[kg/unit]"],
-            "cars-FCV[kg/num]" : ["LDV_FCEV[kg/unit]"],
-            "trucks-ICE[kg/num]": ["HDVH_ICE-Class-8-day-cab-truck[kg/unit]",
-                                    "HDVH_HEV-Class-8-day-cab-truck[kg/unit]",
-                                    "HDVH_ICE-Class-8-sleeper-cab-truck[kg/unit]",
-                                    "HDVH_HEV-Class-8-sleeper-cab-truck[kg/unit]",
-                                    "HDVM_ICE-Class-6-PnD-truck[kg/unit]",
-                                    "HDVM_HEV-Class-6-PnD-truck[kg/unit]"],
-            "trucks-EV[kg/num]" : ["HDVH_BEV-Class-8-day-cab-truck[kg/unit]",
-                                    "HDVH_BEV-Class-8-sleeper-cab-truck[kg/unit]",
-                                    "HDVM_EV-Class-6-PnD-truck[kg/unit]"],
-            "trucks-FCV[kg/num]" : ["HDVH_FCEV-Class-8-day-cab-truck[kg/unit]",
-                                    "HDVH_FCV-Class-8-sleeper-cab-truck[kg/unit]",
-                                    "HDVM_FCV-Class-6-PnD-truck[kg/unit]"],
+dict_map = {"LDV_ICE-gasoline[kg/num]" : ["LDV_ICE-gasoline[kg/unit]"],
+            "LDV_ICE-diesel[kg/num]" : ["LDV_ICE-diesel[kg/unit]"],
+            "LDV_PHEV-gasoline[kg/num]" : ["LDV_HEV[kg/unit]"],
+            "LDV_BEV[kg/num]" : ["LDV_BEV[kg/unit]"],
+            "LDV_FCEV[kg/num]" : ["LDV_FCEV[kg/unit]"],
+            "HDV_ICE-diesel[kg/num]" : ["HDVH_ICE-Class-8-day-cab-truck[kg/unit]",
+                                        "HDVH_ICE-Class-8-sleeper-cab-truck[kg/unit]",
+                                        "HDVM_ICE-Class-6-PnD-truck[kg/unit]"],
+            "HDV_PHEV-diesel[kg/num]" : ["HDVH_HEV-Class-8-day-cab-truck[kg/unit]",
+                                         "HDVH_HEV-Class-8-sleeper-cab-truck[kg/unit]",
+                                         "HDVM_HEV-Class-6-PnD-truck[kg/unit]"],
+            "HDV_BEV[kg/num]" : ["HDVH_BEV-Class-8-day-cab-truck[kg/unit]",
+                                 "HDVH_BEV-Class-8-sleeper-cab-truck[kg/unit]",
+                                 "HDVM_EV-Class-6-PnD-truck[kg/unit]"],
+            "HDV_FCEV[kg/num]" : ["HDVH_FCEV-Class-8-day-cab-truck[kg/unit]",
+                                  "HDVH_FCV-Class-8-sleeper-cab-truck[kg/unit]",
+                                  "HDVM_FCV-Class-6-PnD-truck[kg/unit]"],
             "computer[kg/num]" : ["electronics_PC[kg/unit]"],
             "dryer[kg/num]" : ["larger-appliances_dryer[kg/unit]"],
             "tv[kg/num]" : ["electronics_TV[kg/unit]"],
@@ -112,9 +114,9 @@ dict_map = {"cars-ICE[kg/num]": ["LDV_ICE-gasoline[kg/unit]","LDV_ICE-diesel[kg/
             "floor-area-reno-residential[t/m2]" : ["floor-area-reno-residential[t/m2]"], 
             "floor-area-reno-non-residential[t/m2]" : [],	
             "new-dhg-pipe[t/km]" : ["District heating pipes [t/km]"],	
-            "ships[t/num]" : ["Ships [t/num]"], 
-            "trains[t/num]" : ["Trains [t/num]"],
-            "planes[t/num]" : ["Planes [t/num]"],
+            "ships_ICE-diesel[t/num]" : ["Ships [t/num]"], 
+            "trains_CEV[t/num]" : ["Trains [t/num]"],
+            "planes_ICE[t/num]" : ["Planes [t/num]"],
             "road[t/km]" : ["Road [t/km]"], 
             "rail[t/km]" : ["Rail [t/km]"], 	
             "trolley-cables[t/km]" : ["Trolley-cables [t/km]"],
@@ -140,16 +142,10 @@ df_agg.loc[df_agg["variable"] == "floor-area-new-non-residential[kg/m2]","value"
     df_agg.loc[df_agg["variable"] == "floor-area-new-non-residential[kg/m2]","value"] / 1000
 df_agg.loc[df_agg["variable"] == "floor-area-new-residential[kg/m2]","variable"] = "floor-area-new-residential[t/m2]"
 df_agg.loc[df_agg["variable"] == "floor-area-new-non-residential[kg/m2]","variable"] = "floor-area-new-non-residential[t/m2]"
-ls_temp = ["fridge[kg/num]", "dishwasher[kg/num]", "wmachine[kg/num]", 
-            "freezer[kg/num]", "dryer[kg/num]", "tv[kg/num]", "phone[kg/num]", 
-            "computer[kg/num]",
-            "cars-ICE[kg/num]", "trucks-ICE[kg/num]", "cars-FCV[kg/num]",
-            "trucks-FCV[kg/num]", "cars-EV[kg/num]", "trucks-EV[kg/num]"]
-ls_temp1 = ["fridge[t/num]", "dishwasher[t/num]", "wmachine[t/num]", 
-            "freezer[t/num]", "dryer[t/num]", "tv[t/num]", "phone[t/num]", 
-            "computer[t/num]",
-            "cars-ICE[t/num]", "trucks-ICE[t/num]", "cars-FCV[t/num]",
-            "trucks-FCV[t/num]", "cars-EV[t/num]", "trucks-EV[t/num]"]
+import re
+variabs = df_agg["variable"].unique()
+ls_temp = list(np.array(variabs)[[bool(re.search("kg",i)) for i in variabs]])
+ls_temp1 = [i.replace("kg","t") for i in ls_temp]
 for i in range(0, len(ls_temp)):
     df_agg.loc[df_agg["variable"] == ls_temp[i],"value"] = \
         df_agg.loc[df_agg["variable"] == ls_temp[i],"value"] / 1000
@@ -208,10 +204,30 @@ cdm_check = cdm_domapp.group_all("Categories1",inplace=False)
 df_check = cdm_check.write_df()
 
 # cdm_tra_veh
-tmp = create_constant(df_agg, ["cars-ICE[t/num]", "trucks-ICE[t/num]", "cars-FCV[t/num]",
-                               "ships[t/num]", "trains[t/num]", "planes[t/num]",
-                               "trucks-FCV[t/num]", "cars-EV[t/num]", "trucks-EV[t/num]"])
+variabs = df_agg["variable"].unique()
+variabs = list(np.array(variabs)[[bool(re.search("HDV|LDV|planes|trains|ships",i)) for i in variabs]])
+tmp = create_constant(df_agg, variabs)
 cdm_tra_veh = ConstantDataMatrix.create_from_constant(tmp, 1)
+
+# add missing veh
+# TODO: check the literature and re do the material decomp for these missing veh
+idx = cdm_tra_veh.idx
+cdm_tra_veh.add(cdm_tra_veh.array[idx["HDV_BEV"],:], "Variables", "bus_BEV", unit="t/num")
+cdm_tra_veh.add(cdm_tra_veh.array[idx["HDV_FCEV"],:], "Variables", "bus_FCEV", unit="t/num")
+cdm_tra_veh.add(cdm_tra_veh.array[idx["HDV_ICE-diesel"],:], "Variables", "bus_ICE-diesel", unit="t/num")
+cdm_tra_veh.add(cdm_tra_veh.array[idx["HDV_PHEV-diesel"],:], "Variables", "bus_PHEV-diesel", unit="t/num")
+cdm_tra_veh.add(cdm_tra_veh.array[idx["HDV_ICE-diesel"],:], "Variables", "HDV_ICE-gas", unit="t/num")
+cdm_tra_veh.add(cdm_tra_veh.array[idx["LDV_ICE-gasoline"],:], "Variables", "LDV_ICE-gas", unit="t/num")
+cdm_tra_veh.add(cdm_tra_veh.array[idx["LDV_PHEV-gasoline"],:], "Variables", "LDV_PHEV-diesel", unit="t/num")
+cdm_tra_veh.add(cdm_tra_veh.array[idx["bus_ICE-diesel"],:], "Variables", "bus_ICE-gas", unit="t/num")
+cdm_tra_veh.add(cdm_tra_veh.array[idx["HDV_PHEV-diesel"],:], "Variables", "HDV_PHEV-gasoline", unit="t/num")
+cdm_tra_veh.add(cdm_tra_veh.array[idx["HDV_ICE-diesel"],:], "Variables", "HDV_ICE-gasoline", unit="t/num")
+cdm_tra_veh.add(cdm_tra_veh.array[idx["bus_ICE-diesel"],:], "Variables", "bus_ICE-gasoline", unit="t/num")
+cdm_tra_veh.add(cdm_tra_veh.array[idx["bus_PHEV-diesel"],:], "Variables", "bus_PHEV-gasoline", unit="t/num")
+cdm_tra_veh.add(cdm_tra_veh.array[idx["trains_CEV"],:], "Variables", "trains_ICE-diesel", unit="t/num")
+cdm_tra_veh.sort("Variables")
+cdm_tra_veh.deepen(based_on="Variables")
+cdm_tra_veh.switch_categories_order("Categories1","Categories2")
 cdm_check = cdm_tra_veh.group_all("Categories1",inplace=False)
 df_check = cdm_check.write_df()
 
@@ -246,20 +262,30 @@ CDM_matdec = {
     }
 
 # rename
-for key in CDM_matdec.keys():
+for key in ['pack', 'tra_infra', 'bld_floor', 'bld_pipe', 'bld_domapp', 'fertilizer']:
     variabs = CDM_matdec[key].col_labels["Variables"]
     for v in variabs:
         CDM_matdec[key].rename_col(v, "material-decomp_" + v, "Variables")
     CDM_matdec[key] = CDM_matdec[key].flatten()
     CDM_matdec[key].deepen_twice()
 
+key = "tra_veh"
+variabs = CDM_matdec[key].col_labels["Variables"]
+for v in variabs:
+    CDM_matdec[key].rename_col(v, "material-decomp_" + v, "Variables")
+CDM_matdec[key] = CDM_matdec[key].flatten()
+CDM_matdec[key].deepen(based_on="Variables")
+CDM_matdec[key].switch_categories_order("Categories1","Categories2")
+CDM_matdec[key].deepen(based_on="Categories2")
+
 # drop other
 # note: in general we drop other as we do not have a general technology for other materials
 # we could keep "other" and use it in industry module until the technology part, though we would need to adjust
 # net import to add other raw materials ... we'll do it only if we decide
 # to add a general tech for other at some point.
-for key in CDM_matdec.keys():
+for key in ['pack', 'tra_infra', 'bld_floor', 'bld_pipe', 'bld_domapp', 'fertilizer']:
     CDM_matdec[key].drop("Categories2","other")
+CDM_matdec["tra_veh"].drop("Categories3","other")
 
 # save
 f = os.path.join(current_file_directory, '../data/datamatrix/const_material-decomposition.pickle')

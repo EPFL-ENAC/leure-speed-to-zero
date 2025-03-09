@@ -203,10 +203,10 @@ CDM_const["emission-factor-process"] = CDM["process-emissions"]
 
 # drop ammonia
 lever_names = ['material-decomposition_floor', 'material-decomposition_infra',
-               'material-decomposition_veh', 'material-decomposition_pack']
+               'material-decomposition_pack']
 for n in lever_names:
     CDM_const[n].drop("Categories2","ammonia")
-
+CDM_const['material-decomposition_veh'].drop("Categories3","ammonia")
 lever_names = ['energy_excl-feedstock', 'energy_feedstock', 
                'emission-factor-process']
 for n in lever_names:
