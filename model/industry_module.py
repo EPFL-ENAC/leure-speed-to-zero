@@ -1,10 +1,8 @@
 
 from model.common.data_matrix_class import DataMatrix
-from model.common.constant_data_matrix_class import ConstantDataMatrix
-from model.common.io_database import read_database, read_database_fxa, read_database_to_ots_fts_dict
 from model.common.interface_class import Interface
 from model.common.auxiliary_functions import filter_geoscale, cdm_to_dm, read_level_data
-from model.common.auxiliary_functions import simulate_input, material_decomposition, calibration_rates, cost
+from model.common.auxiliary_functions import calibration_rates, cost
 from model.common.auxiliary_functions import material_switch, energy_switch
 import pickle
 import json
@@ -13,7 +11,6 @@ import numpy as np
 import re
 import warnings
 import time
-import pandas as pd
 warnings.simplefilter("ignore")
 
 def read_data(data_file, lever_setting):
@@ -88,9 +85,8 @@ def product_production(dm_demand_bld_floor, dm_demand_tra_infra, dm_demand_tra_v
 
     # get production for transport
     dm_prod_tra_infra = dm_prod.filter({"Categories1": ['rail', 'road', 'trolley-cables']})
-    dm_prod_tra_veh = dm_prod.filter({"Categories1": ['cars-EV', 'cars-FCV', 'cars-ICE',
-                                                       'planes', 'ships', 'trains',
-                                                       'trucks-EV', 'trucks-FCV', 'trucks-ICE']})
+    dm_prod_tra_veh = dm_prod.filter_w_regex({"Categories1" : "HDV|LDV|bus|planes|ships|trains"})
+    dm_prod_tra_veh.deepen()
     
     # production (units) = demand * production [%]
 
@@ -118,7 +114,7 @@ def product_production(dm_demand_bld_floor, dm_demand_tra_infra, dm_demand_tra_v
 
     # production (units) = demand * production [%]
     dm_prod_pack.array = dm_prod_pack.array * dm_demand_pack.array
-    dm_prod_pack.units["ind_product-production"] = dm_demand_pack.units["product-demand"]
+    dm_prod_pack.units["product-production"] = dm_demand_pack.units["product-demand"]
 
     ########################
     ##### PUT TOGETHER #####
@@ -137,6 +133,9 @@ def apply_material_decomposition(dm_production_bld_floor,
                                  cdm_matdec_floor,
                                  cdm_matdec_tra_infra, cdm_matdec_tra_veh, cdm_matdec_pack):
     
+    countries = dm_production_bld_floor.col_labels["Country"]
+    years = dm_production_bld_floor.col_labels["Years"]
+    
     # material demand [t] = product production [unit] * material decomposition coefficient [t/unit]
 
     #####################
@@ -144,24 +143,32 @@ def apply_material_decomposition(dm_production_bld_floor,
     #####################
 
     # floor
-    dm_bld_floor_matdec = material_decomposition(dm=dm_production_bld_floor, cdm=cdm_matdec_floor)
+    dm_bld_floor_matdec = cdm_to_dm(cdm_matdec_floor, countries, years)
+    dm_bld_floor_matdec.array = dm_production_bld_floor.array[...,np.newaxis] * dm_bld_floor_matdec.array
+    dm_bld_floor_matdec.units['material-decomp'] = "t"
     
     #####################
     ##### TRANSPORT #####
     #####################
 
     # infra
-    dm_tra_infra_matdec = material_decomposition(dm=dm_production_tra_infra, cdm=cdm_matdec_tra_infra)
+    dm_tra_infra_matdec = cdm_to_dm(cdm_matdec_tra_infra, countries, years)
+    dm_tra_infra_matdec.array = dm_production_tra_infra.array[...,np.newaxis] * dm_tra_infra_matdec.array
+    dm_tra_infra_matdec.units['material-decomp'] = "t"
 
     # veh
-    dm_tra_veh_matdec = material_decomposition(dm=dm_production_tra_veh, cdm=cdm_matdec_tra_veh)
+    dm_tra_veh_matdec = cdm_to_dm(cdm_matdec_tra_veh, countries, years)
+    dm_tra_veh_matdec.array = dm_production_tra_veh.array[...,np.newaxis] * dm_tra_veh_matdec.array
+    dm_tra_veh_matdec.units['material-decomp'] = "t"
 
     #####################
     ##### PACKAGING #####
     #####################
 
     # packaging
-    dm_pack_matdec = material_decomposition(dm=dm_production_pack, cdm=cdm_matdec_pack)
+    dm_pack_matdec = cdm_to_dm(cdm_matdec_pack, countries, years)
+    dm_pack_matdec.array = dm_production_pack.array[...,np.newaxis] * dm_pack_matdec.array
+    dm_pack_matdec.units['material-decomp'] = "t"
 
     ########################
     ##### PUT TOGETHER #####
@@ -169,7 +176,9 @@ def apply_material_decomposition(dm_production_bld_floor,
 
     dm_matdec = dm_bld_floor_matdec.copy()
     dm_matdec.append(dm_tra_infra_matdec, dim="Categories1")
-    dm_matdec.append(dm_tra_veh_matdec, dim="Categories1")
+    dm_temp = dm_tra_veh_matdec.flatten().flatten()
+    dm_temp.deepen(based_on="Categories1")
+    dm_matdec.append(dm_temp, dim="Categories1")
     dm_matdec.append(dm_pack_matdec, dim="Categories1")
 
     # note: we are calling this material demand as this is the demand of materials 
@@ -189,20 +198,26 @@ def apply_material_switch(dm_material_demand, dm_material_switch, cdm_material_s
     # material in-to-out [t] = material in [t] * in-to-out [%]
     # material in [t] = material in [t] - material in-to-out [t]
     # material out [t] = material out [t] + material in-to-out [t] * switch ratio [t/t]
-
+    
+    products = dm_material_demand.col_labels["Categories1"]
+    
     #####################
     ##### TRANSPORT #####
     #####################
-
-    material_switch(dm = dm_material_demand, dm_ots_fts=dm_material_switch,
-                    cdm_const=cdm_material_switch, material_in="steel", material_out=["chem", "aluminium"],
-                    product="cars-ICE", switch_percentage_prefix="cars-",
-                    switch_ratio_prefix="material-switch-ratios_")
-
-    material_switch(dm=dm_material_demand, dm_ots_fts=dm_material_switch,
-                    cdm_const=cdm_material_switch, material_in="steel", material_out=["chem", "aluminium"],
-                    product="trucks-ICE", switch_percentage_prefix="trucks-",
-                    switch_ratio_prefix="material-switch-ratios_")
+    
+    cars = list(np.array(products)[[bool(re.search("LDV", p)) for p in products]])
+    for car in cars:
+        material_switch(dm = dm_material_demand, dm_ots_fts=dm_material_switch,
+                        cdm_const=cdm_material_switch, material_in="steel", material_out=["chem", "aluminium"],
+                        product=car, switch_percentage_prefix="cars-",
+                        switch_ratio_prefix="material-switch-ratios_")
+        
+    trucks = list(np.array(products)[[bool(re.search("HDV", p)) for p in products]])
+    for truck in trucks:
+        material_switch(dm=dm_material_demand, dm_ots_fts=dm_material_switch,
+                        cdm_const=cdm_material_switch, material_in="steel", material_out=["chem", "aluminium"],
+                        product=truck, switch_percentage_prefix="trucks-",
+                        switch_ratio_prefix="material-switch-ratios_")
 
     #####################
     ##### BUILDINGS #####
@@ -266,7 +281,7 @@ def material_production(dm_material_efficiency, dm_material_net_import,
 
     # get aggregate demand
     dm_matdec_agg = dm_material_demand.group_all(dim='Categories1', inplace=False)
-    dm_matdec_agg.change_unit('material-decomposition', factor=1e-3, old_unit='t', new_unit='kt')
+    dm_matdec_agg.change_unit('material-decomp', factor=1e-3, old_unit='t', new_unit='kt')
 
     # subset aggregate demand for the materials we keep
     # materials = ['aluminium', 'cement', 'chem', 'copper', 'glass', 'lime', 'paper', 'steel', 'timber']
@@ -287,7 +302,7 @@ def material_production(dm_material_efficiency, dm_material_net_import,
     # get material production in units
     dm_material_production_bymat = dm_matdec_agg.copy()
     dm_material_production_bymat.array = dm_matdec_agg.array * dm_temp.array
-    dm_material_production_bymat.rename_col(col_in = 'material-decomposition', col_out = 'material-production', dim = "Variables")
+    dm_material_production_bymat.rename_col(col_in = 'material-decomp', col_out = 'material-production', dim = "Variables")
 
     # include other industries from fxa
     dm_material_production_bymat.append(data2 = dm_matprod_other_industries, dim = "Categories1")
@@ -343,44 +358,47 @@ def end_of_life(dm_transport_waste, dm_waste_management, dm_matrec_veh,
     # make waste-collected, waste-uncollected, export, littered
     layer1 = ["export","littered","waste-collected","waste-uncollected"]
     dm_waste_layer1 = dm_waste_management.filter({"Categories1" : layer1})
-    arr_temp = dm_transport_waste.array[...,np.newaxis] * dm_waste_layer1.array[:,:,np.newaxis,:,:]
+    arr_temp = dm_transport_waste.array[...,np.newaxis] * dm_waste_layer1.array[:,:,np.newaxis,:,np.newaxis,:]
     dm_transport_waste_bywsm_layer1 = DataMatrix.based_on(arr_temp, dm_transport_waste, 
-                                                          {'Categories2': layer1}, 
+                                                          {'Categories3': layer1}, 
                                                           units = dm_transport_waste.units)
+    
+    # do material decomp of waste collected (to be used in stock and flow analysis)
+    dm_temp = dm_transport_waste_bywsm_layer1.filter({"Categories3" : ["waste-collected"]})
+    arr_temp = dm_temp.array * cdm_matdec_veh.array[np.newaxis,np.newaxis,...] / 1000
+    dm_transport_waste_bymat = DataMatrix.based_on(arr_temp, dm_temp, 
+                                                   {'Categories3': cdm_matdec_veh.col_labels["Categories3"]}, 
+                                                   units = "kt")
+    dm_transport_waste_bymat.units["tra_product-waste"] = "kt"
+    dm_transport_waste_bymat.group_all("Categories2")
+    dm_transport_waste_bymat.group_all("Categories1")
     
     # make recycling, energy recovery, reuse, landfill, incineration
     layer2 = ["energy-recovery","incineration","landfill","recycling","reuse"]
     dm_waste_layer2 = dm_waste_management.filter({"Categories1" : layer2})
-    # dm_waste_layer2.rename_col_regex("cars","waste-management_cars","Variables")
-    # dm_waste_layer2.rename_col_regex("trucks","waste-management_trucks","Variables")
-    # dm_waste_layer2.deepen("_","Variables")
-    # dm_waste_layer2.switch_categories_order("Categories1","Categories2")
-    dm_waste_collected = dm_transport_waste_bywsm_layer1.filter({"Categories2" : ["waste-collected"]})
-    arr_temp = dm_waste_collected.array * dm_waste_layer2.array[:,:,np.newaxis,...]
+    dm_waste_collected = dm_transport_waste_bywsm_layer1.filter({"Categories3" : ["waste-collected"]})
+    arr_temp = dm_waste_collected.array * dm_waste_layer2.array[:,:,np.newaxis,:,np.newaxis,:]
     dm_transport_waste_bywsm_layer2 = DataMatrix.based_on(arr_temp, dm_waste_collected, 
-                                                          {'Categories2': layer2}, 
+                                                          {'Categories3': layer2}, 
                                                           units = dm_waste_collected.units)
-    
+
     # do material decomposition for recycling
-    dm_transport_waste_bywsm_recy = dm_transport_waste_bywsm_layer2.filter({"Categories2" : ["recycling"]})
+    dm_transport_waste_bywsm_recy = dm_transport_waste_bywsm_layer2.filter({"Categories3" : ["recycling"]})
     arr_temp = dm_transport_waste_bywsm_recy.array * cdm_matdec_veh.array[np.newaxis,np.newaxis,...]
-    dm_transport_waste_bymat = DataMatrix.based_on(arr_temp, dm_transport_waste_bywsm_recy, 
-                                                   {'Categories2': cdm_matdec_veh.col_labels["Categories2"]}, 
+    dm_transport_recy_bymat = DataMatrix.based_on(arr_temp, dm_transport_waste_bywsm_recy, 
+                                                   {'Categories3': cdm_matdec_veh.col_labels["Categories3"]}, 
                                                    units = "t")
-    dm_transport_waste_bymat.units["tra_product-waste"] = "t"
+    dm_transport_recy_bymat.units["tra_product-waste"] = "t"
     
-    # get material recovered post consumer
-    dm_transport_matrecovered_veh = dm_matrec_veh.copy()
-    idx = dm_transport_waste_bymat.idx
-    dm_transport_matrecovered_veh.array = \
-        dm_transport_waste_bymat.array[:,:,idx["tra_product-waste"],...] *\
-        dm_transport_matrecovered_veh.array
-    variables = dm_transport_matrecovered_veh.col_labels["Variables"]
-    for v in variables: dm_transport_matrecovered_veh.units[v] = "t"
+    # get material recovered from recycling
+    dm_transport_matrecovered_veh = dm_transport_recy_bymat.copy()
+    dm_transport_matrecovered_veh.array = dm_transport_matrecovered_veh.array * \
+        dm_matrec_veh.array[:,:,:,np.newaxis,np.newaxis,:]
     
     # sum across products
-    dm_transport_matrecovered_veh.groupby({'vehicles': '.*cars*|.*trucks.*'}, 
-                                          dim='Variables', aggregation = "sum", regex=True, inplace=True)
+    dm_transport_matrecovered_veh.group_all("Categories1")
+    dm_transport_matrecovered_veh.group_all("Categories1")
+    dm_transport_matrecovered_veh.rename_col('tra_product-waste','vehicles',"Variables")
     # dm_transport_matrecovered_veh = dm_transport_matrecovered_veh.flatten()
     # dm_transport_matrecovered_veh.rename_col_regex("vehicles_","","Variables")
     
@@ -990,7 +1008,7 @@ def industry_agriculture_interface(DM_material_production, DM_energy_demand, wri
     
     # natfibers
     dm_temp = DM_material_production["natfiber"].copy()
-    dm_temp.rename_col('material-decomposition', "ind_dem", "Variables")
+    dm_temp.rename_col('material-decomp', "ind_dem", "Variables")
     DM_agr["natfibers"] = dm_temp.flatten()
     
     # bioenergy
@@ -1410,10 +1428,10 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
                                         years_setting)
         
     # get end of life
-    DM_eol = end_of_life(DM_transport["tra-waste"].filter({"Categories1" : ['cars-EV', 'cars-FCV', 'cars-ICE', 'trucks-EV', 'trucks-FCV', 'trucks-ICE']}), 
-                         DM_ots_fts['eol-waste-management'].filter({"Variables" : ['cars-EV', 'cars-FCV', 'cars-ICE', 'trucks-EV', 'trucks-FCV', 'trucks-ICE']}),
-                         DM_ots_fts['eol-material-recovery'].filter({"Variables" : ['cars-EV', 'cars-FCV', 'cars-ICE', 'trucks-EV', 'trucks-FCV', 'trucks-ICE']}),
-                         CDM_const["material-decomposition_veh"].filter({"Categories1" : ['cars-EV', 'cars-FCV', 'cars-ICE', 'trucks-EV', 'trucks-FCV', 'trucks-ICE']}),
+    DM_eol = end_of_life(DM_transport["tra-waste"].filter({"Categories1" : ["HDV","LDV","bus"]}), 
+                         DM_ots_fts['eol-waste-management'].filter({"Variables" : ['vehicles']}),
+                         DM_ots_fts['eol-material-recovery'].filter({"Variables" : ['vehicles']}),
+                         CDM_const["material-decomposition_veh"].filter({"Categories1" : ["HDV","LDV","bus"]}),
                          DM_material_production["bymat"])
         
     # get material production by technology (writes in DM_material_production)
