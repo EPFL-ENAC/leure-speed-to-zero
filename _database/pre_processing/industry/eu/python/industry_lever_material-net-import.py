@@ -310,40 +310,120 @@ for y in range(1995,2016):
     dm_mat.array[idx["EU27"],idx[y],idx["material-import"],idx["wwp"]] = np.nan
 dm_mat.array[idx["EU27"],idx[2022],idx["material-import"],idx["wwp"]] = np.nan
 
-# fill in missing values with linear fitting
-years_fitting = dm_mat.col_labels["Years"]
-dm_mat = linear_fitting(dm_mat, years_fitting, min_t0=0)
-dm_mat.array = np.round(dm_mat.array,0)
+# for tra equipment put missing before 2009
+idx = dm_mat.idx
+for y in range(1995,2009):
+    dm_mat.array[idx["EU27"],idx[y],:,idx["tra-equip"]] = np.nan
+    
+# for ois put missing before 2010
+idx = dm_mat.idx
+for y in range(1995,2010):
+    dm_mat.array[idx["EU27"],idx[y],:,idx["ois"]] = np.nan
 
-# # plot
-# dm_mat.filter({"Country" : ["EU27"], "Categories1": ["aluminium"]}).datamatrix_plot()
+# check
+# dm_mat.flatten().filter({"Country" : ["EU27"]}).datamatrix_plot()
 
 # fix jumps
 dm_mat = fix_jumps_in_dm(dm_mat)
 
-# # plot
-# dm_mat["domapp"].filter({"Country" : ["EU27"]}).datamatrix_plot()
-# dm_mat["tra-veh"].filter({"Country" : ["EU27"]}).datamatrix_plot()
-# dm_mat["lfs"].filter({"Country" : ["EU27"]}).datamatrix_plot()
+# check
+# dm_mat.flatten().filter({"Country" : ["EU27"]}).datamatrix_plot()
 
-# add missing years ots
-years_missing = list(set(years_ots) - set(dm_mat.col_labels['Years']))
-dm_mat.add(np.nan, col_label=years_missing, dummy=True, dim='Years')
-dm_mat.sort('Years')
+# put nas for 2008 crisis when needed
+idx = dm_mat.idx
+for y in range(2007,2011+1):
+    dm_mat.array[idx["EU27"],idx[y],:,idx["copper"]] = np.nan
+    dm_mat.array[idx["EU27"],idx[y],:,idx["cement"]] = np.nan
+    dm_mat.array[idx["EU27"],idx[y],:,idx["lime"]] = np.nan
+for y in range(2007,2009+1):
+    dm_mat.array[idx["EU27"],idx[y],:,idx["steel"]] = np.nan
+dm_mat.array[idx["EU27"],idx[2018],:,idx["paper"]] = np.nan
+dm_mat.array[idx["EU27"],idx[2008],:,idx["paper"]] = np.nan
+dm_mat.array[idx["EU27"],idx[2022],:,idx["lime"]] = np.nan
+dm_mat.array[idx["EU27"],idx[2023],:,idx["lime"]] = np.nan
 
-# fill in missing years ots with linear fitting
-dm_mat = linear_fitting(dm_mat, years_missing, min_t0=0)
-dm_mat.array = np.round(dm_mat.array,0)
+# flatten
+dm_mat = dm_mat.flatten()
 
-# # check
-# df_check = dm_mat.write_df()
-# material = "aluminium"
-# dm_mat.datamatrix_plot(selected_cols={"Country" : ["EU27"], 
-#                                       "Variables" : ["material-export","material-import"],
-#                                       "Categories1" : [material]})
-# dm_mat.datamatrix_plot(selected_cols={"Country" : ["EU27"], 
-#                                       "Variables" : ["material-demand"],
-#                                       "Categories1" : [material]})
+# check
+# dm_mat.filter({"Country" : ["EU27"]}).datamatrix_plot()
+
+# new variabs list
+dict_new = {}
+
+# function to adjust ots
+def make_ots(dm, variable, based_on):
+    dm_temp = dm.filter({"Variables" : [variable]})
+    dm_temp = linear_fitting(dm_temp, years_ots, based_on=based_on, min_t0=0.1,min_tb=0.1)
+    return dm_temp
+
+dict_call = {"material-demand_aluminium" : None,
+             "material-demand_ammonia" : None,
+             "material-demand_cement" :  None,
+             "material-demand_chem" : None,
+             "material-demand_copper" :  None,
+             "material-demand_fbt" : None,
+             "material-demand_glass" : None,
+             "material-demand_lime" : None,
+             "material-demand_mae" : None,
+             "material-demand_ois" : None,
+             "material-demand_paper" : range(2007,2017+1),
+             "material-demand_steel" : range(2010,2018+1),
+             "material-demand_textiles" : None,
+             "material-demand_timber" : None,
+             "material-demand_tra-equip" : None,
+             "material-demand_wwp" : None,
+             "material-export_aluminium" : None,
+             "material-export_cement" : range(2012,2014+1),
+             "material-export_chem" : None,
+             "material-export_copper" : None,
+             "material-export_fbt" : None,
+             "material-export_glass" : None,
+             "material-export_lime" : range(2012,2018+1),
+             "material-export_mae" : range(2007,2017+1),
+             "material-export_ois" : range(2010,2018+1),
+             "material-export_paper" : None,
+             "material-export_steel" : None,
+             "material-export_textiles" :None,
+             "material-export_timber" : None,
+             "material-export_tra-equip" : None,
+             "material-export_wwp" : None,
+             "material-import_aluminium" : None,
+             "material-import_cement" : None,
+             "material-import_chem" : None,
+             "material-import_copper" : None,
+             "material-import_fbt" : None,
+             "material-import_glass" : None,
+             "material-import_lime" : range(2014,2023+1),
+             "material-import_mae" : None,
+             "material-import_ois" : None,
+             "material-import_paper" : None,
+             "material-import_steel" : None,
+             "material-import_textiles" : None,
+             "material-import_timber" : None,
+             "material-import_tra-equip" : None,
+             "material-import_wwp" : None}
+
+for key in dict_call.keys(): dict_new[key] = make_ots(dm_mat, key, based_on=dict_call[key])
+
+# append
+dm_mat_temp = dict_new["material-demand_aluminium"].copy()
+mylist = list(dict_call.keys())
+mylist.remove("material-demand_aluminium")
+for v in mylist:
+    dm_mat_temp.append(dict_new[v],"Variables")
+dm_mat_temp.sort("Variables")
+dm_mat = dm_mat_temp.copy()
+dm_mat.deepen()
+
+# check
+# dm_mat_temp.filter({"Country" : ["EU27"]}).datamatrix_plot()
+
+# # fix jumps
+# dm_mat = fix_jumps_in_dm(dm_mat)
+
+# check
+# dm_mat_temp.filter({"Country" : ["EU27"]}).datamatrix_plot()
 
 ####################
 ##### MAKE FTS #####
@@ -373,13 +453,14 @@ def make_fts(dm, variable, year_start, year_end, country = "EU27", dim = "Catego
     
     return dm
 
+
 # add missing years fts
 dm_mat.add(np.nan, col_label=years_fts, dummy=True, dim='Years')
 
 # set default time window for linear trend
 # assumption: best is taking longer trend possible to make predictions to 2050 (even if earlier data is generated)
 baseyear_start = 1990
-baseyear_end = 2019
+baseyear_end = 2023
 
 # fill in
 dm_mat = make_fts(dm_mat, "aluminium", baseyear_start, baseyear_end)
@@ -388,24 +469,19 @@ dm_mat = make_fts(dm_mat, "cement", 2014, 2023) # import on upward trend and exp
 dm_mat = make_fts(dm_mat, "chem", baseyear_start, baseyear_end)
 dm_mat = make_fts(dm_mat, "copper", baseyear_start, baseyear_end)
 dm_mat = make_fts(dm_mat, "fbt", baseyear_start, baseyear_end)
-dm_mat = make_fts(dm_mat, "glass", baseyear_start, baseyear_end)
+dm_mat = make_fts(dm_mat, "glass", 2020, 2023)
 dm_mat = make_fts(dm_mat, "lime", baseyear_start, baseyear_end)
 dm_mat = make_fts(dm_mat, "mae", baseyear_start, baseyear_end)
-dm_mat = make_fts(dm_mat, "ois", 2012, baseyear_end) # upward trend from 2012
+dm_mat = make_fts(dm_mat, "ois", baseyear_start, baseyear_end) 
 dm_mat = make_fts(dm_mat, "paper", baseyear_start, baseyear_end)
 dm_mat = make_fts(dm_mat, "steel", baseyear_start, baseyear_end)
+dm_mat = make_fts(dm_mat, "textiles", baseyear_start, baseyear_end)
 dm_mat = make_fts(dm_mat, "timber", baseyear_start, baseyear_end)
-dm_mat = make_fts(dm_mat, "tra-equip", 2012, baseyear_end) # upward trend from 2012
+dm_mat = make_fts(dm_mat, "tra-equip", baseyear_start, baseyear_end)
 dm_mat = make_fts(dm_mat, "wwp", baseyear_start, baseyear_end)
-# product = "aluminium"
-# (make_fts(dm_mat, product, baseyear_start, baseyear_end).
-#   datamatrix_plot(selected_cols={"Country" : ["EU27"],
-#                                 "Variables" : ["material-import","material-export"],
-#                                 "Categories1" : [product]}))
-# (make_fts(dm_mat, product, baseyear_start, baseyear_end).
-#   datamatrix_plot(selected_cols={"Country" : ["EU27"],
-#                                 "Variables" : ["material-demand"],
-#                                 "Categories1" : [product]}))
+
+# check
+# dm_mat.filter({"Country" : ["EU27"]}).datamatrix_plot()
 
 ####################################
 ##### MAKE MATERIAL NET IMPORT #####
@@ -439,27 +515,19 @@ dm_trade_netshare.array[dm_trade_netshare.array == np.inf] = np.nan
 years_fitting = dm_trade_netshare.col_labels["Years"]
 dm_trade_netshare = linear_fitting(dm_trade_netshare, years_fitting)
     
-# fix jumps in material-net-import
-dm_trade_netshare = fix_jumps_in_dm(dm_trade_netshare)
+# # fix jumps in material-net-import
+# dm_trade_netshare = fix_jumps_in_dm(dm_trade_netshare)
 
 # make ammonia as missing
+dm_trade_netshare.drop("Categories1","ammonia")
 dm_trade_netshare.add(np.nan, col_label="ammonia", dummy=True, dim='Categories1')
 dm_trade_netshare.sort("Categories1")
 
-# # check
-# material = 'timber'
-# # dm_mat.datamatrix_plot(selected_cols={"Country" : ["EU27"], 
-# #                                                   "Variables" : ["material-export","material-import"],
-# #                                                   "Categories1" : [material]})
-# # dm_mat.datamatrix_plot(selected_cols={"Country" : ["EU27"], 
-# #                                                   "Variables" : ["material-demand"],
-# #                                                   "Categories1" : [material]})
-# dm_trade_netshare.datamatrix_plot(selected_cols={"Country" : ["EU27"], 
-#                                                   "Variables" : ["material-net-import"],
-#                                                   "Categories1" : [material]})
-
 # let's cap everything to 1
 dm_trade_netshare.array[dm_trade_netshare.array > 1] = 1
+
+# check
+# dm_trade_netshare.filter({"Country" : ["EU27"]}).datamatrix_plot()
 
 ####################################
 ##### MAKE MATERIAL PRODUCTION #####
@@ -487,27 +555,14 @@ dm_temp.add(arr_net[:,:,np.newaxis,:], "Variables", "material-production", unit=
 dm_temp.drop("Variables", ["material-import","material-export","material-demand"])
 dm_matprod = dm_temp.copy()
 
-# fix jumps in material-production
-dm_matprod = fix_jumps_in_dm(dm_matprod)
+# # fix jumps in material-production
+# dm_matprod = fix_jumps_in_dm(dm_matprod)
 
-# make ammonia as demand
-idx = dm_mat.idx
-arr_temp = dm_mat.array[:,:,idx["material-demand"],idx["ammonia"]]
-dm_matprod.add(arr_temp[:,:,np.newaxis,np.newaxis], col_label="ammonia", dim='Categories1', unit="kg")
-dm_matprod.sort("Categories1")
-
-# # check
-# # ['aluminium', 'ammonia', 'cement', 'chem', 'copper', 'fbt', 'glass', 'lime', 'mae', 'ois', 'paper', 'steel', 'timber', 'tra-equip', 'wwp']
-# material = 'wwp'
-# dm_mat.datamatrix_plot(selected_cols={"Country" : ["EU27"], 
-#                                                   "Variables" : ["material-export","material-import"],
-#                                                   "Categories1" : [material]})
-# dm_mat.datamatrix_plot(selected_cols={"Country" : ["EU27"], 
-#                                                   "Variables" : ["material-demand"],
-#                                                   "Categories1" : [material]})
-# dm_matprod.datamatrix_plot(selected_cols={"Country" : ["EU27"], 
-#                                           "Variables" : ["material-production"],
-#                                           "Categories1" : [material]})
+# # make ammonia as demand
+# idx = dm_mat.idx
+# arr_temp = dm_mat.array[:,:,idx["material-demand"],idx["ammonia"]]
+# dm_matprod.add(arr_temp[:,:,np.newaxis,np.newaxis], col_label="ammonia", dim='Categories1', unit="kg")
+# dm_matprod.sort("Categories1")
 
 # make it in kilo tonnes
 dm_matprod.array = dm_matprod.array / 1000000
@@ -519,7 +574,9 @@ dm_matprod_fxa = dm_matprod.filter({"Categories1" : ["fbt","mae","ois","textiles
 # make calibration data
 dm_matprod_calib = dm_matprod.filter({"Years" : years_ots})
 
-# dm_matprod_calib.write_df().to_csv("/Users/echiarot/Desktop/file.csv", index = False)
+# check
+# dm_matprod_fxa.filter({"Country" : ["EU27"]}).datamatrix_plot()
+# dm_matprod_calib.filter({"Country" : ["EU27"]}).datamatrix_plot()
 
 ################
 ##### SAVE #####
