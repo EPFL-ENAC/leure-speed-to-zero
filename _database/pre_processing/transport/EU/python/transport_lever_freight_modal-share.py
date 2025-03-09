@@ -31,7 +31,7 @@ with open(filepath, 'rb') as handle:
     DM = pickle.load(handle)
 
 # Set years range
-years_setting = [1990, 2023, 2050, 5]
+years_setting = [1989, 2023, 2050, 5]
 startyear = years_setting[0]
 baseyear = years_setting[1]
 lastyear = years_setting[2]
@@ -229,7 +229,8 @@ dm_tkm_pc.rename_col("tra_freight_modal-share_share","tra_freight_modal-share","
 
 # split between ots and fts
 DM_mod = {"ots": {"freight_modal-share" : []}, "fts": {"freight_modal-share" : dict()}}
-DM_mod ["ots"]["freight_modal-share"] = dm_tkm_pc.filter({"Years" : years_ots})
+DM_mod["ots"]["freight_modal-share"] = dm_tkm_pc.filter({"Years" : years_ots})
+DM_mod["ots"]["freight_modal-share"].drop("Years",startyear)
 for i in range(1,4+1):
     DM_mod["fts"]["freight_modal-share"][i] = dm_tkm_pc.filter({"Years" : years_fts})
 
@@ -242,6 +243,7 @@ with open(f, 'wb') as handle:
 dm_tkm.rename_col("tra_freight_modal-share","tra_freight_tkm","Variables")
 DM_tkm = {"ots": {"freight_tkm" : []}, "fts": {"freight_tkm" : dict()}}
 DM_tkm ["ots"]["freight_tkm"] = dm_tkm.filter({"Years" : years_ots})
+DM_tkm ["ots"]["freight_tkm"].drop("Years",startyear)
 for i in range(1,4+1):
     DM_tkm["fts"]["freight_tkm"][i] = dm_tkm.filter({"Years" : years_fts})
     

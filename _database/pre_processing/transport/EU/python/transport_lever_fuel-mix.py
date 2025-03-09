@@ -31,7 +31,7 @@ with open(filepath, 'rb') as handle:
     DM = pickle.load(handle)
 
 # Set years range
-years_setting = [1990, 2023, 2050, 5]
+years_setting = [1989, 2023, 2050, 5]
 startyear = years_setting[0]
 baseyear = years_setting[1]
 lastyear = years_setting[2]
@@ -211,9 +211,9 @@ dm_mar = dm_biof.filter({"Categories1" : ["marine"]})
 dm_biof.drop("Categories1",["IWW","marine"])
 
 dm_biof = linear_fitting(dm_biof, years_ots, min_t0=0,min_tb=0)
-dm_mar = linear_fitting(dm_mar, list(range(1990,1999+1)), min_t0=0,min_tb=0, based_on=[2000])
+dm_mar = linear_fitting(dm_mar, list(range(startyear,1999+1)), min_t0=0,min_tb=0, based_on=[2000])
 dm_mar = linear_fitting(dm_mar, list(range(2022,2023+1)), min_t0=0,min_tb=0, based_on=[2020])
-dm_iww = linear_fitting(dm_iww, list(range(1990,1999+1)), min_t0=0,min_tb=0, based_on=[2000])
+dm_iww = linear_fitting(dm_iww, list(range(startyear,1999+1)), min_t0=0,min_tb=0, based_on=[2000])
 dm_iww = linear_fitting(dm_iww, list(range(2022,2023+1)), min_t0=0,min_tb=0, based_on=[2019])
 dm_biof.append(dm_mar,"Categories1")
 dm_biof.append(dm_iww,"Categories1")
@@ -291,6 +291,7 @@ dm_biof.switch_categories_order("Categories1","Categories2")
 # split between ots and fts
 DM = {"ots": {"fuel-mix" : []}, "fts": {"fuel-mix" : dict()}}
 DM["ots"]["fuel-mix"] = dm_biof.filter({"Years" : years_ots})
+DM["ots"]["fuel-mix"].drop("Years",startyear)
 for i in range(1,4+1):
     DM["fts"]["fuel-mix"][i] = dm_biof.filter({"Years" : years_fts})
 

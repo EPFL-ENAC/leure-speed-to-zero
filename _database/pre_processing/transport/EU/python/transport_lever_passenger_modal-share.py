@@ -31,7 +31,7 @@ with open(filepath, 'rb') as handle:
     DM = pickle.load(handle)
 
 # Set years range
-years_setting = [1990, 2023, 2050, 5]
+years_setting = [1989, 2023, 2050, 5]
 startyear = years_setting[0]
 baseyear = years_setting[1]
 lastyear = years_setting[2]
@@ -210,7 +210,8 @@ dm_pkm_pc.sort("Categories1")
 
 # split between ots and fts
 DM_mod = {"ots": {"passenger_modal-share" : []}, "fts": {"passenger_modal-share" : dict()}}
-DM_mod ["ots"]["passenger_modal-share"] = dm_pkm_pc.filter({"Years" : years_ots})
+DM_mod["ots"]["passenger_modal-share"] = dm_pkm_pc.filter({"Years" : years_ots})
+DM_mod["ots"]["passenger_modal-share"].drop("Years",startyear)
 for i in range(1,4+1):
     DM_mod["fts"]["passenger_modal-share"][i] = dm_pkm_pc.filter({"Years" : years_fts})
 
@@ -222,7 +223,8 @@ with open(f, 'wb') as handle:
 # split between ots and fts
 dm_pkm.rename_col("tra_passenger_modal-share","tra_passenger_pkm","Variables")
 DM_pkm = {"ots": {"passenger_pkm" : []}, "fts": {"passenger_pkm" : dict()}}
-DM_pkm ["ots"]["passenger_pkm"] = dm_pkm.filter({"Years" : years_ots})
+DM_pkm["ots"]["passenger_pkm"] = dm_pkm.filter({"Years" : years_ots})
+DM_pkm["ots"]["passenger_pkm"].drop("Years",startyear)
 for i in range(1,4+1):
     DM_pkm["fts"]["passenger_pkm"][i] = dm_pkm.filter({"Years" : years_fts})
     

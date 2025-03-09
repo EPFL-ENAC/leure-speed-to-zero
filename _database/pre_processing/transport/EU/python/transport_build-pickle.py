@@ -32,7 +32,7 @@ with open(filepath, 'rb') as handle:
 ###############################################################################
 
 # subprocess.run(['python', os.path.join(current_file_directory, 'transport_fxa_passenger_tech.py')])
-# subprocess.run(['python', os.path.join(current_file_directory, 'transport_fxa_passenger_lifetime.py')])
+# subprocess.run(['python', os.path.join(current_file_directory, 'transport_fxa_passenger_vehicle-lifetime.py')])
 # subprocess.run(['python', os.path.join(current_file_directory, 'transport_fxa_emission-factor-electricity.py')])
 # subprocess.run(['python', os.path.join(current_file_directory, 'transport_fxa_freight_tech.py')])
 # subprocess.run(['python', os.path.join(current_file_directory, 'transport_fxa_freight_mode_road.py')])
@@ -46,7 +46,7 @@ with open(filepath, 'rb') as handle:
 # subprocess.run(['python', os.path.join(current_file_directory, 'transport_lever_pkm.py')])
 
 # subprocess.run(['python', os.path.join(current_file_directory, 'transport_lever_freight_modal-share.py')])
-# subprocess.run(['python', os.path.join(current_file_directory, 'transport_fxa_freight_mode_other.py')]) # I put this one here as for this I need tkm, which is built in transport_lever_freight_modal-share.py
+# subprocess.run(['python', os.path.join(current_file_directory, 'transport_fxa_freight_mode_other.py')])
 # subprocess.run(['python', os.path.join(current_file_directory, 'transport_lever_freight_technology-share_new.py')])
 # subprocess.run(['python', os.path.join(current_file_directory, 'transport_lever_freight_utilization-rate.py')])
 # subprocess.run(['python', os.path.join(current_file_directory, 'transport_lever_freight_vehicle-efficiency_new.py')])

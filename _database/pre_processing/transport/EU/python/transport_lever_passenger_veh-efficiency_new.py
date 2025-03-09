@@ -31,7 +31,7 @@ with open(filepath, 'rb') as handle:
     DM_tra = pickle.load(handle)
 
 # Set years range
-years_setting = [1990, 2023, 2050, 5]
+years_setting = [1989, 2023, 2050, 5]
 startyear = years_setting[0]
 baseyear = years_setting[1]
 lastyear = years_setting[2]
@@ -333,7 +333,8 @@ dm_eneff_new.sort("Categories2")
 
 # split between ots and fts
 DM_ene = {"ots": {"passenger_veh-efficiency_new" : []}, "fts": {"passenger_veh-efficiency_new" : dict()}}
-DM_ene ["ots"]["passenger_veh-efficiency_new"] = dm_eneff_new.filter({"Years" : years_ots})
+DM_ene["ots"]["passenger_veh-efficiency_new"] = dm_eneff_new.filter({"Years" : years_ots})
+DM_ene["ots"]["passenger_veh-efficiency_new"].drop("Years",1989)
 for i in range(1,4+1):
     DM_ene["fts"]["passenger_veh-efficiency_new"][i] = dm_eneff_new.filter({"Years" : years_fts})
 

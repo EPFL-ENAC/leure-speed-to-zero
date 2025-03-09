@@ -31,7 +31,7 @@ with open(filepath, 'rb') as handle:
     DM_tra = pickle.load(handle)
     
 # Set years range
-years_setting = [1990, 2023, 2050, 5]
+years_setting = [1989, 2023, 2050, 5]
 startyear = years_setting[0]
 baseyear = years_setting[1]
 lastyear = years_setting[2]
@@ -221,6 +221,7 @@ with open(filepath, 'rb') as handle:
 dm_tkm = DM_tkm["ots"]["freight_tkm"].filter({"Categories1" : ['HDVH', 'HDVL', 'HDVM']})
 dm_tkm.append(DM_tkm["fts"]["freight_tkm"][1].filter({"Categories1" : ['HDVH', 'HDVL', 'HDVM']}),"Years")
 dm_tkm.sort("Years")
+dm_vkm.drop("Years",startyear)
 
 # make tkm/vkm
 dm_uti = dm_tkm.copy()
@@ -312,6 +313,7 @@ for v in dm_hdv.col_labels["Variables"]:
     dm_hdv.rename_col(v,"tra_freight_utilisation-rate_" + v, "Variables")
 dm_hdv.deepen()
 dm_hdv.units["tra_freight_utilisation-rate"] = "vkm/year"
+dm_hdv.drop("Years",startyear)
 
 # check
 # dm_hdv.filter({"Country" : ["EU27"]}).datamatrix_plot()
@@ -321,7 +323,7 @@ dm_uti.append(dm_hdv, "Variables")
 
 # split ots and fts
 DM_uti = {"ots": {"freight_utilization-rate" : []}, "fts": {"freight_utilization-rate" : dict()}}
-DM_uti["ots"]["freight_utilization-rate"] = dm_uti.filter({"Years" : years_ots})
+DM_uti["ots"]["freight_utilization-rate"] = dm_uti.filter({"Years" : list(range(1990,baseyear+1))})
 for i in range(1,4+1):
     DM_uti["fts"]["freight_utilization-rate"][i] = dm_uti.filter({"Years" : years_fts})
 
