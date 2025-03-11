@@ -292,14 +292,14 @@ for name in dm_names:
 ##### SAVE #####
 ################
 
-# # save
-# f = os.path.join(current_file_directory, '../../../../data/datamatrix/industry.pickle')
-# my_pickle_dump(DM_industry, f)
-
 # save
 f = os.path.join(current_file_directory, '../../../../data/datamatrix/industry.pickle')
-with open(f, 'wb') as handle:
-    pickle.dump(DM_industry, handle, protocol=pickle.HIGHEST_PROTOCOL)
+my_pickle_dump(DM_industry, f)
+
+# # save
+# f = os.path.join(current_file_directory, '../../../../data/datamatrix/industry.pickle')
+# with open(f, 'wb') as handle:
+#     pickle.dump(DM_industry, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 
