@@ -24,64 +24,96 @@ current_file_directory = os.path.dirname(os.path.abspath(__file__))
 filepath = os.path.join(current_file_directory, '../data/literature/literature_review_material_recovery.xlsx')
 df = pd.read_excel(filepath)
 
-# ['aluminium', 'cement', 'chem', 'copper', 'glass', 'lime', 'other', 'paper', 'steel', 'timber']
+# name first 2 columns
+df.rename(columns={"Unnamed: 0": "material", "Unnamed: 1" : "material-sub"}, inplace=True)
 
+# melt
+indexes = ["material","material-sub"]
+df = pd.melt(df, id_vars = indexes, var_name='variable')
+
+# save materials lists
 material_sub_alu = ["cast-aluminium","wrought-aluminium"]
 material_sub_steel = ["cast-iron","iron","steel","galvanized-steel","stainless-steel"]
 material_sub_pla = ["plastics-ABS", "plastics-PP", "plastics-PA", "plastics-PBT", "plastics-PE",
                     "plastics-PMMA", "plastics-POM", "plastics-EPMD", "plastics-EPS", "plastics-PS",
                     "plastics-PU", "plastics-PUR", "plastics-PET", "plastics-PVC", 
                     "plastics-carbon-fiber-reinforced", "plastics-glass-fiber-reinforced",
-                    "plastics-mixture","plastics-EPDM","plastics-other"]
+                    "plastics-mixture","plastics-other"]
 material_current = ['aluminium', 'ammonia', 'concrete-and-inert', 'plastics-total', 'copper', 'glass', 
                     'lime', 'paper', 'iron_&_steel', 'wood']
 material_current_correct_name = ['aluminium', 'ammonia', 'cement', 'chem', 'copper', 'glass', 
                                   'lime', 'paper', 'steel', 'timber']
 
-df.columns
+def aggregate_materials(df, variable, material_current, material_current_correct_name):
+    
+    # get df for one variable
+    df_temp = df.loc[df["variable"] == variable,:]
 
-# ELV
+    # drop na in value
+    df_temp = df_temp.dropna(subset=['value'])
 
-# ['cars-EV', 'cars-FCV', 'cars-ICE', 'trucks-EV', 'trucks-FCV', 'trucks-ICE']
+    # rename missing material with sub material and drop sub material
+    df_temp.loc[df_temp["material"].isnull(),"material"] = df_temp.loc[df_temp["material"].isnull(),"material-sub"]
+    df_temp = df_temp.loc[:,["material","variable","value"]]
 
-techs = ['ELV_shredding-and-dismantling_recycling-best','ELV_shredding-and-dismantling_recovery-network-lowest',
-         'ELV_shredding-and-dismantling_recovery-network-highest','ELV_dismantling-mechanical-separation-and-recycling_recycling-best',
-         'ELV_dismantling-mechanical-separation-and-recycling_recovery-network-lowest','ELV_dismantling-mechanical-separation-and-recycling_recovery-network-highest']
-df_elv = df.loc[:,["material","material-sub"] + techs]
+    # aggregate sub materials if any
+    df_temp.loc[df_temp["material"].isin(material_sub_pla),"material"] = "plastics-total"
+    df_temp.loc[df_temp["material"].isin(material_sub_alu),"material"] = "Aluminium"
+    df_temp.loc[df_temp["material"].isin(material_sub_steel),"material"] = "iron_&_steel"
+    df_temp.loc[df_temp["value"] == 0,"value"] = np.nan
+    df_temp = df_temp.groupby(["material","variable"], as_index=False)['value'].agg(np.mean)
 
-# keep alu aggregate
-df_elv = df_elv.loc[~df_elv["material-sub"].isin(material_sub_alu),:]
+    # get df with materials of current model and change their names
+    df_temp1 = df_temp.loc[df_temp["material"].isin(material_current),:]
+    for i in range(0, len(material_current)):
+        df_temp1.loc[df_temp1["material"] == material_current[i],"material"] = material_current_correct_name[i]
+    
+    # get other materials, sum them and concat with others
+    df_temp2 = df_temp.loc[~df_temp["material"].isin(material_current),:]
+    df_temp2 = df_temp2.groupby(["variable"], as_index=False)['value'].agg(np.mean)
+    df_temp2["material"] = "other"
+    df_temp = pd.concat([df_temp1, df_temp2])
+    
+    # return
+    return df_temp
 
-# take average of steel sub
-df_temp = df_elv.loc[df_elv["material-sub"].isin(material_sub_steel),:]
-df_temp["material"] = "iron_&_steel"
-df_temp = pd.melt(df_temp, id_vars = ["material","material-sub"], var_name='tech')
-df_temp = df_temp.groupby(["material","tech"], as_index=False)['value'].agg(np.mean)
-df_temp["material-sub"] = np.nan
-df_temp = df_temp.pivot(index=["material","material-sub"], columns="tech", values='value').reset_index()
-df_elv = df_elv.loc[~df_elv["material"].isin(["iron_&_steel"]),:]
-for i in material_sub_steel:
-    df_elv = df_elv.loc[df_elv["material-sub"] != i,:]
-df_elv = pd.concat([df_elv, df_temp])
+variabs = df["variable"].unique()
+df_agg = pd.concat([aggregate_materials(df, variable, 
+                                        material_current = material_current, 
+                                        material_current_correct_name = material_current_correct_name) 
+                    for variable in variabs])
 
-# keep plastic average
-for i in material_sub_pla:
-    df_elv = df_elv.loc[df_elv["material-sub"] != i,:]
+# check
+df_check = df_agg.groupby(["variable"], as_index=False)['value'].agg(np.mean)
 
-# make average across techs
-df_elv.drop(columns="material-sub",inplace=True)
-df_elv = pd.melt(df_elv, id_vars = ["material"], var_name='tech')
-df_elv = df_elv.groupby(["material"], as_index=False)['value'].agg(np.mean)
-df_elv.sort_values(["material"], inplace=True)
+# substitue nan with zero
+df_agg.loc[df_agg["value"].isnull(),"value"] = 0
 
-# keep materials present in calculator
-df_elv = df_elv.loc[df_elv["material"].isin(material_current),:]
-# df_temp1 = df_elv.loc[~df_elv["material"].isin(material_current),:]
-# df_temp1["material"] = "other"
-# df_temp1 = df_temp1.groupby(["material"], as_index=False)['value'].agg(np.mean)
-# df_elv = pd.concat([df_temp,df_temp1])
-for old, new in zip(material_current, material_current_correct_name):
-    df_elv.loc[df_elv["material"] == old,"material"] = new
+# map to products we have in the calc (by taking the mean across products)
+dict_map = {"vehicles" : ['ELV_shredding-and-dismantling_recycling-best',
+                          'ELV_shredding-and-dismantling_recovery-network-lowest',
+                          'ELV_shredding-and-dismantling_recovery-network-highest',
+                          'ELV_dismantling-mechanical-separation-and-recycling_recycling-best',
+                          'ELV_dismantling-mechanical-separation-and-recycling_recovery-network-lowest',
+                          'ELV_dismantling-mechanical-separation-and-recycling_recovery-network-highest']}
+
+for key in dict_map.keys():
+    df_agg.loc[df_agg["variable"].isin(dict_map[key]),"variable"] = key
+df_agg.loc[df_agg["value"] == 0,"value"] = np.nan
+df_agg = df_agg.groupby(["variable","material"], as_index=False)['value'].agg(np.mean)
+
+# check
+df_check = df_agg.groupby(["variable"], as_index=False)['value'].agg(np.mean)
+
+# fix units
+df_agg["value"] = df_agg["value"]/100
+
+# select only vehicles
+df_elv = df_agg.loc[df_agg["variable"] == "vehicles",:]
+
+# fix variables
+df_elv["variable"] = [v + "_" + m for v,m in zip(df_elv["variable"],df_elv["material"])]
+df_elv.drop(["material"],axis=1,inplace=True)
 
 # create dm
 countries = ['Austria','Belgium','Bulgaria','Croatia','Cyprus','Czech Republic','Denmark',
@@ -90,7 +122,7 @@ countries = ['Austria','Belgium','Bulgaria','Croatia','Cyprus','Czech Republic',
              'Romania','Slovakia','Slovenia','Spain','Sweden','United Kingdom']
 years = list(range(1990,2023+1,1))
 years = years + list(range(2025, 2050+1, 5))
-variabs = list(df_elv["material"])
+variabs = list(df_elv["variable"])
 units = list(np.repeat("%", len(variabs)))
 units_dict = dict()
 for i in range(0, len(variabs)):
@@ -110,7 +142,8 @@ dm.idx = index_dict
 dm.array = np.zeros((len(countries), len(years), len(variabs)))
 idx = dm.idx
 for i in variabs:
-    dm.array[:,:,idx[i]] = df_elv.loc[df_elv["material"]==i,"value"]
+    dm.array[:,:,idx[i]] = df_elv.loc[df_elv["variable"]==i,"value"]
+df_check = dm.write_df()
 
 # make nan for other than EU27 for fts
 countries_oth = np.array(countries)[[i not in "EU27" for i in countries]].tolist()
@@ -120,37 +153,18 @@ for c in countries_oth:
     for y in years:
         for v in variabs:
             dm.array[idx[c],idx[y],idx[v]] = np.nan
-df = dm.write_df()
+df_check = dm.write_df()
 
 # rename
-for i in variabs:
-    dm.rename_col(i, "waste-material-recovery_elv_" + i, "Variables")
 dm.deepen()
+variabs = dm.col_labels["Variables"]
+for i in variabs:
+    dm.rename_col(i, "waste-material-recovery_" + i, "Variables")
+dm.deepen(based_on="Variables")
+dm.switch_categories_order("Categories1","Categories2")
 
-# divide everything by 100 (as in industry % is between 0 and 1)
-dm.array = dm.array/100
-
-# put the products of transport from industry
-# vehicles = ['HDV', 'LDV', 'bus']
-# engines = ['BEV', 'FCEV', 'ICE', 'ICE-diesel', 'ICE-gas', 'ICE-gasoline', 'PHEV-diesel', 'PHEV-gasoline']
-# dict_out = {}
-# for v in vehicles:
-#     dict_out[v] = [v + "_" + e for e in engines]
-# products = dict_out["HDV"].copy()
-# for v in ['LDV', 'bus']:
-#     products = products + dict_out[v].copy()
-products = ["vehicles"]
-dm_temp = dm.copy()
-dm_temp.rename_col("waste-material-recovery_elv", products[0], "Variables")
-dm_new = dm_temp.copy()
-for i in range(1, len(products)):
-    dm_temp = dm.copy()
-    dm_temp.rename_col("waste-material-recovery_elv", products[i], "Variables")
-    dm_new.append(dm_temp, "Variables")
-dm = dm_new.copy()
-
-# drop ammonia
-dm.drop("Categories1", "ammonia")
+# drop ammonia and other
+dm.drop("Categories2", ["ammonia","other"])
 
 # save
 years_ots = list(range(1990,2023+1))

@@ -206,6 +206,7 @@ df_check = cdm_check.write_df()
 # cdm_tra_veh
 variabs = df_agg["variable"].unique()
 variabs = list(np.array(variabs)[[bool(re.search("HDV|LDV|planes|trains|ships",i)) for i in variabs]])
+variabs = list(np.array(variabs)[[not bool(re.search("battery",i,re.IGNORECASE)) for i in variabs]])
 tmp = create_constant(df_agg, variabs)
 cdm_tra_veh = ConstantDataMatrix.create_from_constant(tmp, 1)
 
