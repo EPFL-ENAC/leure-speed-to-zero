@@ -37,12 +37,41 @@ def read_data(data_file, lever_setting):
     # return
     return DM_ots_fts, CMD_const
 
+def get_interface(current_file_directory, interface, from_sector, to_sector, country_list):
+    
+    if interface.has_link(from_sector=from_sector, to_sector=to_sector):
+        DM = interface.get_link(from_sector=from_sector, to_sector=to_sector)
+    else:
+        if len(interface.list_link()) != 0:
+            print("You are missing " + from_sector + " to " + to_sector + " interface")
+        filepath = os.path.join(current_file_directory, '../_database/data/interface/' + from_sector + "_to_" + to_sector + '.pickle')
+        with open(filepath, 'rb') as handle:
+            DM = pickle.load(handle)
+        if type(DM) is dict:
+            for key in DM.keys():
+                if type(DM[key]) is dict:
+                    for key2 in DM[key].keys():
+                        DM[key][key2].filter({'Country': country_list}, inplace=True)
+                else:        
+                    DM[key].filter({'Country': country_list}, inplace=True)
+        else:
+            DM.filter({'Country': country_list}, inplace=True)
+    return DM
+
 def minerals(lever_setting, years_setting, interface = Interface(), calibration = False):
     
     # minerals data file
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     minerals_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/minerals_new.pickle')
     DM_ots_fts, CDM_const = read_data(minerals_data_file, lever_setting)
+    
+    # get interfaces
+    cntr_list = DM_ots_fts["eol-material-recovery"].col_labels['Country']
+    DM_industry = get_interface(current_file_directory, interface, "industry", "minerals", cntr_list)
+    
+    # to be done:
+    # material recovered from batteries that are recycled
+    # cradle-to-gate material decomp of vehicles for EU27 (HDV, LDV, bus)
     
     return
 
