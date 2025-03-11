@@ -384,6 +384,7 @@ def end_of_life(dm_transport_waste, dm_waste_management, dm_matrec_veh,
 
     # do material decomposition for recycling
     dm_transport_waste_bywsm_recy = dm_transport_waste_bywsm_layer2.filter({"Categories3" : ["recycling"]})
+    dm_veh_eol_to_recycling = dm_transport_waste_bywsm_recy.copy()
     arr_temp = dm_transport_waste_bywsm_recy.array * cdm_matdec_veh.array[np.newaxis,np.newaxis,...]
     dm_transport_recy_bymat = DataMatrix.based_on(arr_temp, dm_transport_waste_bywsm_recy, 
                                                    {'Categories3': cdm_matdec_veh.col_labels["Categories3"]}, 
@@ -417,10 +418,14 @@ def end_of_life(dm_transport_waste, dm_waste_management, dm_matrec_veh,
     dm_temp.array = dm_temp.array + dm_temp1.array # sum back the material production, so where the difference > 0, the value of material recovered now equals the value of material production
     dm_matrecovered_corrected = dm_temp
     
+    # reshape dm_veh_eol_to_recycling
+    dm_veh_eol_to_recycling.group_all("Categories3")
+    
     # save
     DM_eol = {
         "material-towaste": dm_transport_waste_bymat,
-        "material-recovered" : dm_matrecovered_corrected
+        "material-recovered" : dm_matrecovered_corrected,
+        "veh_eol_to_recycling" : dm_veh_eol_to_recycling
         }
     
     return DM_eol
@@ -1222,90 +1227,105 @@ def industry_ccus_interface(DM_emissions, write_xls = False):
     # return
     return dm_ccus
 
-def industry_minerals_interface(DM_material_production, DM_production, DM_ots_fts, write_xls = False):
+# def industry_minerals_interface(DM_material_production, DM_production, DM_ots_fts, write_xls = False):
     
-    DM_ind = {}
+#     DM_ind = {}
     
-    # aluminium pack
-    dm_alupack = DM_production["pack"].filter({"Categories1" : ["aluminium-pack"]})
-    DM_ind["aluminium-pack"] = dm_alupack.flatten()
+#     # aluminium pack
+#     dm_alupack = DM_production["pack"].filter({"Categories1" : ["aluminium-pack"]})
+#     DM_ind["aluminium-pack"] = dm_alupack.flatten()
     
-    # material production
-    dm_matprod = DM_material_production["bymat"].filter({"Categories1": ["timber", 'glass', 'cement']})
-    dm_paper_woodpulp = DM_material_production["bytech"].filter({"Categories1": ['paper_woodpulp']})
-    dm_matprod.append(dm_paper_woodpulp, "Categories1")
-    dm_matprod.rename_col("material-production", "ind_material-production", "Variables")
-    DM_ind["material-production"] = dm_matprod.flatten()
+#     # material production
+#     dm_matprod = DM_material_production["bymat"].filter({"Categories1": ["timber", 'glass', 'cement']})
+#     dm_paper_woodpulp = DM_material_production["bytech"].filter({"Categories1": ['paper_woodpulp']})
+#     dm_matprod.append(dm_paper_woodpulp, "Categories1")
+#     dm_matprod.rename_col("material-production", "ind_material-production", "Variables")
+#     DM_ind["material-production"] = dm_matprod.flatten()
     
-    # technology development
-    dm_techdev = DM_ots_fts['technology-development'].filter(
-        {"Categories1" : ['aluminium-prim', 'aluminium-sec','copper-tech',
-                          'steel-BF-BOF', 'steel-hisarna', 'steel-hydrog-DRI', 
-                          'steel-scrap-EAF']})
-    variables = dm_techdev.col_labels["Categories1"]
-    variables_new = ['aluminium_primary', 'aluminium_secondary','copper_secondary',
-                      'steel_BF-BOF', 'steel_hisarna', 'steel_hydrog-DRI', 
-                      'steel_scrap-EAF']
-    for i in range(len(variables)):
-        dm_techdev.rename_col(variables[i], variables_new[i], dim = "Categories1")
-    dm_techdev.rename_col("ind_technology-development","ind_proportion","Variables")
-    DM_ind["technology-development"] = dm_techdev.flatten()
+#     # technology development
+#     dm_techdev = DM_ots_fts['technology-development'].filter(
+#         {"Categories1" : ['aluminium-prim', 'aluminium-sec','copper-tech',
+#                           'steel-BF-BOF', 'steel-hisarna', 'steel-hydrog-DRI', 
+#                           'steel-scrap-EAF']})
+#     variables = dm_techdev.col_labels["Categories1"]
+#     variables_new = ['aluminium_primary', 'aluminium_secondary','copper_secondary',
+#                       'steel_BF-BOF', 'steel_hisarna', 'steel_hydrog-DRI', 
+#                       'steel_scrap-EAF']
+#     for i in range(len(variables)):
+#         dm_techdev.rename_col(variables[i], variables_new[i], dim = "Categories1")
+#     dm_techdev.rename_col("ind_technology-development","ind_proportion","Variables")
+#     DM_ind["technology-development"] = dm_techdev.flatten()
     
-    # material efficiency
-    DM_ind["material-efficiency"] = DM_ots_fts['material-efficiency'].filter(
-        {"Variables" : ['ind_material-efficiency'],
-         "Categories1" : ['aluminium','copper','steel']})
+#     # material efficiency
+#     DM_ind["material-efficiency"] = DM_ots_fts['material-efficiency'].filter(
+#         {"Variables" : ['ind_material-efficiency'],
+#          "Categories1" : ['aluminium','copper','steel']})
     
-    # material switch
-    dm_temp = DM_ots_fts['material-switch'].filter(
-        {"Categories1" : ['build-steel-to-timber', 'cars-steel-to-chem', 
-                          'trucks-steel-to-aluminium', 'trucks-steel-to-chem']}).flatten()
-    dm_temp.rename_col_regex("material-switch_","material-switch-","Variables")
-    DM_ind["material-switch"] = dm_temp
+#     # material switch
+#     dm_temp = DM_ots_fts['material-switch'].filter(
+#         {"Categories1" : ['build-steel-to-timber', 'cars-steel-to-chem', 
+#                           'trucks-steel-to-aluminium', 'trucks-steel-to-chem']}).flatten()
+#     dm_temp.rename_col_regex("material-switch_","material-switch-","Variables")
+#     DM_ind["material-switch"] = dm_temp
     
-    # product net import
-    dm_temp = DM_ots_fts["product-net-import"].filter(
-        {"Variables" : ["ind_product-net-import"],
-         "Categories1" : ['cars-EV', 'cars-FCV', 'cars-ICE', 'computer', 'dishwasher', 'dryer',
-                          'freezer', 'fridge','phone','planes','rail','road', 'ships', 'trains',
-                          'trolley-cables', 'trucks-EV', 'trucks-FCV', 'trucks-ICE', 'tv', 
-                          'wmachine','new-dhg-pipe']})
-    dm_temp.rename_col_regex("cars","LDV","Categories1")
-    dm_temp.rename_col_regex("trucks","HDVL","Categories1")
-    dm_temp.rename_col("computer","electronics-computer","Categories1")
-    dm_temp.rename_col("phone","electronics-phone","Categories1")
-    dm_temp.rename_col("tv","electronics-tv","Categories1")
-    dm_temp.rename_col("dishwasher","dom-appliance-dishwasher","Categories1")
-    dm_temp.rename_col("dryer","dom-appliance-dryer","Categories1")
-    dm_temp.rename_col("freezer","dom-appliance-freezer","Categories1")
-    dm_temp.rename_col("fridge","dom-appliance-fridge","Categories1")
-    dm_temp.rename_col("wmachine","dom-appliance-wmachine","Categories1")
-    dm_temp.rename_col("new-dhg-pipe","infra-pipe","Categories1")
-    dm_temp.rename_col("rail","infra-rail","Categories1")
-    dm_temp.rename_col("road","infra-road","Categories1")
-    dm_temp.rename_col("trolley-cables","infra-trolley-cables","Categories1")
-    dm_temp.rename_col("planes","other-planes","Categories1")
-    dm_temp.rename_col("ships","other-ships","Categories1")
-    dm_temp.rename_col("trains","other-trains","Categories1")
-    dm_temp.rename_col_regex('FCV', 'FCEV', 'Categories1')
-    dm_temp.sort("Categories1")
-    DM_ind["product-net-import"] = dm_temp.flatten()
+#     # product net import
+#     dm_temp = DM_ots_fts["product-net-import"].filter(
+#         {"Variables" : ["ind_product-net-import"],
+#          "Categories1" : ['cars-EV', 'cars-FCV', 'cars-ICE', 'computer', 'dishwasher', 'dryer',
+#                           'freezer', 'fridge','phone','planes','rail','road', 'ships', 'trains',
+#                           'trolley-cables', 'trucks-EV', 'trucks-FCV', 'trucks-ICE', 'tv', 
+#                           'wmachine','new-dhg-pipe']})
+#     dm_temp.rename_col_regex("cars","LDV","Categories1")
+#     dm_temp.rename_col_regex("trucks","HDVL","Categories1")
+#     dm_temp.rename_col("computer","electronics-computer","Categories1")
+#     dm_temp.rename_col("phone","electronics-phone","Categories1")
+#     dm_temp.rename_col("tv","electronics-tv","Categories1")
+#     dm_temp.rename_col("dishwasher","dom-appliance-dishwasher","Categories1")
+#     dm_temp.rename_col("dryer","dom-appliance-dryer","Categories1")
+#     dm_temp.rename_col("freezer","dom-appliance-freezer","Categories1")
+#     dm_temp.rename_col("fridge","dom-appliance-fridge","Categories1")
+#     dm_temp.rename_col("wmachine","dom-appliance-wmachine","Categories1")
+#     dm_temp.rename_col("new-dhg-pipe","infra-pipe","Categories1")
+#     dm_temp.rename_col("rail","infra-rail","Categories1")
+#     dm_temp.rename_col("road","infra-road","Categories1")
+#     dm_temp.rename_col("trolley-cables","infra-trolley-cables","Categories1")
+#     dm_temp.rename_col("planes","other-planes","Categories1")
+#     dm_temp.rename_col("ships","other-ships","Categories1")
+#     dm_temp.rename_col("trains","other-trains","Categories1")
+#     dm_temp.rename_col_regex('FCV', 'FCEV', 'Categories1')
+#     dm_temp.sort("Categories1")
+#     DM_ind["product-net-import"] = dm_temp.flatten()
 
-    # df_min
-    if write_xls is True:
+#     # df_min
+#     if write_xls is True:
         
+#         current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        
+#         dm_min = DM_ind['aluminium-pack']
+#         dm_min.append(DM_ind['material-production'], "Variables")
+#         dm_min.append(DM_ind['technology-development'], "Variables")
+#         dm_min.append(DM_ind['material-efficiency'].flatten(), "Variables")
+#         dm_min.append(DM_ind['material-switch'], "Variables")
+#         dm_min.append(DM_ind['product-net-import'], "Variables")
+#         dm_min.sort("Variables")
+        
+#         df_min = dm_min.write_df()
+#         df_min.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-minerals.xlsx', index=False)
+        
+#     # return
+#     return DM_ind
+
+def industry_minerals_interface(DM_production, veh_eol_to_recycling, write_pickle = False):
+    
+    DM_ind = {"production" : DM_production,
+              "veh-to-recycling" : veh_eol_to_recycling}
+    
+    # of write_pickle is True, write pickle
+    if write_pickle is True:
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        
-        dm_min = DM_ind['aluminium-pack']
-        dm_min.append(DM_ind['material-production'], "Variables")
-        dm_min.append(DM_ind['technology-development'], "Variables")
-        dm_min.append(DM_ind['material-efficiency'].flatten(), "Variables")
-        dm_min.append(DM_ind['material-switch'], "Variables")
-        dm_min.append(DM_ind['product-net-import'], "Variables")
-        dm_min.sort("Variables")
-        
-        df_min = dm_min.write_df()
-        df_min.to_excel(current_file_directory + "/../_database/data/xls/" + 'industry-to-minerals.xlsx', index=False)
+        f = os.path.join(current_file_directory, '../_database/data/interface/industry_to_minerals.pickle')
+        with open(f, 'wb') as handle:
+            pickle.dump(DM_ind, handle, protocol=pickle.HIGHEST_PROTOCOL)
         
     # return
     return DM_ind
@@ -1539,7 +1559,7 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     # interface.add_link(from_sector='industry', to_sector='gtap', dm=dm_gtap)
     
     # # interface minerals
-    # DM_ind = industry_minerals_interface(DM_material_production, DM_production, DM_ots_fts)
+    # DM_ind = industry_minerals_interface(DM_production, DM_eol["veh_eol_to_recycling"], write_pickle=True)
     # interface.add_link(from_sector='industry', to_sector='minerals', dm=DM_ind)
     
     # # interface employment
@@ -1566,7 +1586,7 @@ def local_industry_run():
     # lever_setting["lever_technology-share"] = 4
     
     # get geoscale
-    global_vars = {'geoscale': 'EU27'}
+    global_vars = {'geoscale': 'EU27|Switzerland|Vaud'}
     filter_geoscale(global_vars)
 
     # run
