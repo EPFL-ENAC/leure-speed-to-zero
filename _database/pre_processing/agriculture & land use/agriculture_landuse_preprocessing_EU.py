@@ -11,7 +11,7 @@ from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database, read_database_fxa, edit_database, database_to_df, dm_to_database, database_to_dm
 from model.common.io_database import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups, read_database_to_dm
 from model.common.interface_class import Interface
-from model.common.auxiliary_functions import compute_stock,  filter_geoscale, calibration_rates
+from model.common.auxiliary_functions import compute_stock,  filter_geoscale, calibration_rates, filter_years_DM
 from model.common.auxiliary_functions import read_level_data, simulate_input
 from scipy.optimize import linprog
 import pickle
@@ -23,7 +23,8 @@ import time
 # Ensure structure coherence
 def ensure_structure(df):
     # Get unique values for geoscale, timescale, and variables
-    df = df.drop_duplicates(subset=['geoscale', 'timescale', 'level', 'variables'])
+    df['timescale'] = df['timescale'].astype(int)
+    df = df.drop_duplicates(subset=['geoscale', 'timescale', 'level', 'variables', 'lever', 'module'])
     lever_name = list(set(df['lever']))[0]
     countries = df['geoscale'].unique()
     years = df['timescale'].unique()
@@ -616,6 +617,7 @@ def self_sufficiency_processing(years_ots):
     cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
     cols.insert(cols.index('value'), cols.pop(cols.index('level')))
     df_ssr_pathwaycalc = df_ssr_pathwaycalc[cols]
+    df_ssr_pathwaycalc = df_ssr_pathwaycalc.drop_duplicates()
 
     # Rename countries to Pathaywcalc name
     df_ssr_pathwaycalc['geoscale'] = df_ssr_pathwaycalc['geoscale'].replace(
@@ -735,6 +737,7 @@ def climate_smart_crop_processing():
     # Create copy for calibration
     df_energy_demand_cal = df_energy_demand.copy()
     df_energy_demand_cal['geoscale'] = 'Switzerland'
+    df_energy_demand_cal = df_energy_demand_cal.drop_duplicates()
 
     # convert from ktoe to ktoe/ha (divide by total agricultural area) -------------------------------------------------
     # Read FAO Values (for Switzerland)
@@ -1300,8 +1303,9 @@ def climate_smart_crop_processing():
     ]
 
     # Rename from ots_agr to agr
-    df_filtered_rows['variables'] = df_filtered_rows['variables'].str.replace('ots_agr', 'agr', regex=False)
     df_filtered_rows = df_filtered_rows.copy()
+    df_filtered_rows['variables'] = df_filtered_rows['variables'].str.replace('ots_agr', 'agr', regex=False)
+
 
     # Concat
     yield_aps_pathwaycalc = pd.concat([yield_aps_pathwaycalc, df_filtered_rows])
@@ -1332,6 +1336,7 @@ def climate_smart_crop_processing():
     df_climate_smart_crop = pd.concat([df_climate_smart_crop, agroforestry_crop_pathwaycalc])
     df_climate_smart_crop = pd.concat([df_climate_smart_crop, yield_aps_pathwaycalc])
     df_climate_smart_crop = pd.concat([df_climate_smart_crop, df_energy_pathwaycalc])
+    df_climate_smart_crop = df_climate_smart_crop.drop_duplicates()
 
     # Rename countries to Pathaywcalc name
     df_climate_smart_crop['geoscale'] = df_climate_smart_crop['geoscale'].replace(
@@ -1342,7 +1347,9 @@ def climate_smart_crop_processing():
 
     # Extrapolating
     df_climate_smart_crop= ensure_structure(df_climate_smart_crop)
+    df_climate_smart_crop = df_climate_smart_crop.drop_duplicates()
     df_climate_smart_crop_pathwaycalc = linear_fitting_ots_db(df_climate_smart_crop, years_ots, countries='all')
+
 
     return df_climate_smart_crop_pathwaycalc, df_energy_demand_cal
 
@@ -2179,6 +2186,7 @@ def climate_smart_livestock_processing(df_csl_feed):
     df_csl = pd.concat([df_csl, df_csl_feed_pathwaycalc])
     df_csl = pd.concat([df_csl, df_yield_slau_liv_pathwaycalc])
     df_csl = pd.concat([df_csl, agroforestry_liv_pathwaycalc])
+    df_csl = df_csl.drop_duplicates()
 
     # Extrapolating
     df_climate_smart_livestock_pathwaycalc = ensure_structure(df_csl)
@@ -3026,6 +3034,30 @@ def biomass_bioernergy_hierarchy_processing(df_csl_feed):
     df_biomass_mix['variables'] = df_biomass_mix['variables'].str.replace('ots_agr', 'agr', regex=False)
 
     # ------------------------------------------------------------------------------------------------------------------
+    # BIOMASS RESIDUES CEREALS BURNT & SOIL
+    # ------------------------------------------------------------------------------------------------------------------
+    # Load from previous EuCalc Data
+    df_biomass_residues_data = pd.read_csv(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/agriculture_biomass-use-hierarchy_eucalc.csv', sep=';')
+
+    # Filter columns
+    df_filtered_columns = df_biomass_residues_data[['geoscale', 'timescale', 'eucalc-name', 'value']]
+
+    # rename col 'eucalc-name' in 'variables'
+    df_filtered_columns = df_filtered_columns.rename(columns={'eucalc-name': 'variables'})
+
+    # Filter rows that contains biomass-mix
+    df_filtered_rows = df_filtered_columns[
+        df_filtered_columns['variables'].str.contains('ots_agr_biomass-hierarchy_crop_cereal', case=False, na=False)
+    ]
+
+    # Drop rows where 'variables' contains '%_1'
+    df_biomass_residues = df_filtered_rows[~df_filtered_rows['variables'].str.contains('%_1', na=False)].copy()
+
+    # Rename from ots_agr to agr
+    df_biomass_residues['variables'] = df_biomass_residues['variables'].str.replace('ots_agr', 'agr', regex=False)
+
+    # ------------------------------------------------------------------------------------------------------------------
     # BIOMASS HIERARCHY
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -3069,6 +3101,7 @@ def biomass_bioernergy_hierarchy_processing(df_csl_feed):
 
     # Concat dfs
     df_biomass_hierarchy_pathwaycalc = pd.concat([df_biomass_hierarchy_pathwaycalc, df_biomass_mix])
+    df_biomass_hierarchy_pathwaycalc = pd.concat([df_biomass_hierarchy_pathwaycalc, df_biomass_residues])
 
     # PathwayCalc formatting
     df_biomass_hierarchy_pathwaycalc['module'] = 'agriculture'
@@ -4560,7 +4593,7 @@ def fxa_preprocessing():
 #  FIXME only Switzerland for now
 def init_years_lever():
     # function that can be used when running the module as standalone to initialise years and levers
-    years_setting = [1990, 2023, 2050, 5]
+    years_setting = [1990, 2024, 2050, 5]
     f = open('../../../config/lever_position.json')
     lever_setting = json.load(f)[0]
     return years_setting, lever_setting
@@ -4605,8 +4638,21 @@ def database_from_csv_to_datamatrix():
     DM_agriculture_old['fxa']['lus_land_total-area'] = dm
 
     # LeversToDatamatrix FTS based on EuCalc fts
-    for key in DM_agriculture_old['fts'].keys():
-            dm_fts = DM_agriculture_old['fts'].copy()
+    dm_fts = DM_agriculture_old['fts'].copy()
+
+    # Filter dm_fts to start year at 2025 not 2020
+    filter_years_DM(dm_fts, years_fts)
+
+    # To remove '_' at the ending of some keys as the ones for diet
+    for key in dm_fts.keys():
+        if isinstance(dm_fts[key], dict):  # Check if the value is a dictionary
+            new_dict = {}
+            for sub_key, value in dm_fts[key].items():
+                # Ensure the key is a string before modifying it
+                new_key = sub_key.rstrip('_') if isinstance(sub_key, str) else sub_key
+                new_dict[new_key] = value  # Assign value to the new key
+            dm_fts[key] = new_dict  # Replace the original dictionary
+
 
     #file = 'agriculture_fixed-assumptions_pathwaycalc'
     #lever = 'none'
@@ -4827,11 +4873,15 @@ def database_from_csv_to_datamatrix():
     lever = 'diet'
     df_ots, df_fts = database_to_df(df_diet_pathwaycalc, lever, level='all')
     df_ots = df_ots.drop(columns=[lever])  # Drop column with lever name
-    dm = DataMatrix.create_from_df(df_ots, num_cat=1)
-    dict = {}
-    dict['lfs_consumers-diet'] = dm.filter({'Variables': ['lfs_consumers-diet']})
-    dict['share'] = dm.filter({'Variables': ['share']})
-    dict_ots[lever] = dict
+    dm = DataMatrix.create_from_df(df_ots, num_cat=0)
+    dict_temp = {}
+    dm_temp = dm.filter_w_regex({'Variables': 'lfs_consumers-diet.*'})
+    dm_temp.deepen()
+    dict_temp['lfs_consumers-diet'] = dm_temp
+    dm_temp = dm.filter_w_regex({'Variables': 'share.*'})
+    dm_temp.deepen()
+    dict_temp['share'] = dm_temp
+    dict_ots[lever] = dict_temp
 
     # Data - Lever - Energy requirements
     lever = 'kcal-req'
@@ -4859,33 +4909,33 @@ def database_from_csv_to_datamatrix():
     df_ots, df_fts = database_to_df(df_climate_smart_livestock_pathwaycalc, lever, level='all')
     df_ots = df_ots.drop(columns=[lever])  # Drop column with lever name
     dm = DataMatrix.create_from_df(df_ots, num_cat=0)
-    dict = {}
+    dict_temp = {}
     dm_losses = dm.filter_w_regex({'Variables': 'agr_climate-smart-livestock_losses.*'})
     dm_losses.deepen()
-    dict['climate-smart-livestock_losses'] = dm_losses
+    dict_temp['climate-smart-livestock_losses'] = dm_losses
     dm_yield = dm.filter_w_regex({'Variables': 'agr_climate-smart-livestock_yield.*'})
     dm_yield.deepen()
-    dict['climate-smart-livestock_yield'] = dm_yield
+    dict_temp['climate-smart-livestock_yield'] = dm_yield
     dm_slau = dm.filter_w_regex({'Variables': 'agr_climate-smart-livestock_slaughtered.*'})
     dm_slau.deepen()
-    dict['climate-smart-livestock_slaughtered'] = dm_slau
+    dict_temp['climate-smart-livestock_slaughtered'] = dm_slau
     dm_density = dm.filter_w_regex({'Variables': 'agr_climate-smart-livestock_density.*'})
-    dict['climate-smart-livestock_density'] = dm_density
+    dict_temp['climate-smart-livestock_density'] = dm_density
     dm_enteric = dm.filter_w_regex({'Variables': 'agr_climate-smart-livestock_enteric.*'})
     dm_enteric.deepen()
-    dict['climate-smart-livestock_enteric'] = dm_enteric
+    dict_temp['climate-smart-livestock_enteric'] = dm_enteric
     dm_manure = dm.filter_w_regex({'Variables': 'agr_climate-smart-livestock_manure.*'})
     dm_manure.deepen()
     dm_manure.deepen(based_on='Variables')
     dm_manure.switch_categories_order(cat1='Categories2', cat2='Categories1')
-    dict['climate-smart-livestock_manure'] = dm_manure
+    dict_temp['climate-smart-livestock_manure'] = dm_manure
     dm_ration = dm.filter_w_regex({'Variables': 'agr_climate-smart-livestock_ration.*'})
     dm_ration.deepen()
-    dict['climate-smart-livestock_ration'] = dm_ration
+    dict_temp['climate-smart-livestock_ration'] = dm_ration
     dm_ef = dm.filter_w_regex({'Variables': 'agr_climate-smart-livestock_ef_agroforestry.*'})
     dm_ef.deepen()
-    dict['agr_climate-smart-livestock_ef_agroforestry'] = dm_ef
-    dict_ots[lever] = dict
+    dict_temp['agr_climate-smart-livestock_ef_agroforestry'] = dm_ef
+    dict_ots[lever] = dict_temp
     #edit_database(file,lever,column='eucalc-name',pattern={'_CH4-emission':''},mode='rename')
     #edit_database(file,lever,column='eucalc-name',pattern={'ration_crop_':'ration_crop-', 'ration_liv_':'ration_liv-'},mode='rename')
     """dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 0, 1, 2, 1, 1], baseyear=baseyear,
@@ -4901,32 +4951,32 @@ def database_from_csv_to_datamatrix():
     df_ots, df_fts = database_to_df(df_biomass_hierarchy_pathwaycalc, lever, level='all')
     df_ots = df_ots.drop(columns=[lever])  # Drop column with lever name
     dm = DataMatrix.create_from_df(df_ots, num_cat=0)
-    dict = {}
+    dict_temp = {}
     dm_temp = dm.filter_w_regex({'Variables': '.*biomass-hierarchy-bev-ibp-use-oth.*'})
     dm_temp.deepen()
-    dict['biomass-hierarchy-bev-ibp-use-oth'] = dm_temp
+    dict_temp['biomass-hierarchy-bev-ibp-use-oth'] = dm_temp
     dm_temp = dm.filter_w_regex({'Variables': 'agr_biomass-hierarchy_biomass-mix_digestor.*'})
     dm_temp.deepen()
-    dict['biomass-hierarchy_biomass-mix_digestor'] = dm_temp
+    dict_temp['biomass-hierarchy_biomass-mix_digestor'] = dm_temp
     dm_temp = dm.filter_w_regex({'Variables': 'agr_biomass-hierarchy_biomass-mix_solid.*'})
     dm_temp.deepen()
-    dict['biomass-hierarchy_biomass-mix_solid'] = dm_temp
+    dict_temp['biomass-hierarchy_biomass-mix_solid'] = dm_temp
     dm_temp = dm.filter_w_regex({'Variables': 'agr_biomass-hierarchy_biomass-mix_liquid.*'})
     dm_temp.deepen()
-    dict['biomass-hierarchy_biomass-mix_liquid'] = dm_temp
+    dict_temp['biomass-hierarchy_biomass-mix_liquid'] = dm_temp
     dm_temp = dm.filter_w_regex({'Variables': 'agr_biomass-hierarchy_bioenergy_liquid_biodiesel.*'})
     dm_temp.deepen()
-    dict['biomass-hierarchy_bioenergy_liquid_biodiesel'] = dm_temp
+    dict_temp['biomass-hierarchy_bioenergy_liquid_biodiesel'] = dm_temp
     dm_temp = dm.filter_w_regex({'Variables': 'agr_biomass-hierarchy_bioenergy_liquid_biogasoline.*'})
     dm_temp.deepen()
-    dict['biomass-hierarchy_bioenergy_liquid_biogasoline'] = dm_temp
+    dict_temp['biomass-hierarchy_bioenergy_liquid_biogasoline'] = dm_temp
     dm_temp = dm.filter_w_regex({'Variables': 'agr_biomass-hierarchy_bioenergy_liquid_biojetkerosene.*'})
     dm_temp.deepen()
-    dict['biomass-hierarchy_bioenergy_liquid_biojetkerosene'] = dm_temp
+    dict_temp['biomass-hierarchy_bioenergy_liquid_biojetkerosene'] = dm_temp
     #dm_temp = dm.filter_w_regex({'Variables': 'agr_biomass-hierarchy_crop_cereal.*'})
     #dm_temp.deepen()
     #dict['biomass-hierarchy_crop_cereal'] = dm_temp
-    dict_ots[lever] = dict
+    dict_ots[lever] = dict_temp
 
     """    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 1, 1, 1, 1, 1], baseyear=baseyear,
                                                                 years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
@@ -4945,23 +4995,23 @@ def database_from_csv_to_datamatrix():
     df_ots, df_fts = database_to_df(df_bioenergy_capacity_CH_pathwaycalc, lever, level='all')
     df_ots = df_ots.drop(columns=[lever])  # Drop column with lever name
     dm = DataMatrix.create_from_df(df_ots, num_cat=0)
-    dict = {}
+    dict_temp = {}
     dm_temp = dm.filter_w_regex({'Variables': 'agr_bioenergy-capacity_load-factor.*'})
     dm_temp.deepen()
-    dict['bioenergy-capacity_load-factor'] = dm_temp
+    dict_temp['bioenergy-capacity_load-factor'] = dm_temp
     dm_temp = dm.filter_w_regex({'Variables': 'agr_bioenergy-capacity_bgs-mix.*'})
     dm_temp.deepen()
-    dict['bioenergy-capacity_bgs-mix'] = dm_temp
+    dict_temp['bioenergy-capacity_bgs-mix'] = dm_temp
     dm_temp = dm.filter_w_regex({'Variables': 'agr_bioenergy-capacity_efficiency.*'})
     dm_temp.deepen()
-    dict['bioenergy-capacity_efficiency'] = dm_temp
+    dict_temp['bioenergy-capacity_efficiency'] = dm_temp
     dm_temp = dm.filter_w_regex({'Variables': 'agr_bioenergy-capacity_liq_b.*'})
     dm_temp.deepen()
-    dict['bioenergy-capacity_liq_b'] = dm_temp
+    dict_temp['bioenergy-capacity_liq_b'] = dm_temp
     dm_temp = dm.filter_w_regex({'Variables': 'agr_bioenergy-capacity_elec.*'})
     dm_temp.deepen()
-    dict['bioenergy-capacity_elec'] = dm_temp
-    dict_ots[lever] = dict
+    dict_temp['bioenergy-capacity_elec'] = dm_temp
+    dict_ots[lever] = dict_temp
     # Rename to correct format
     #edit_database(file,lever,column='eucalc-name',pattern={'capacity_solid-biofuel':'capacity_elec_solid-biofuel', 'capacity_biogases':'capacity_elec_biogases'},mode='rename')
     """    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 1, 1], baseyear=baseyear,
@@ -4983,20 +5033,20 @@ def database_from_csv_to_datamatrix():
     df_ots, df_fts = database_to_df(df_climate_smart_crop_pathwaycalc, lever, level='all')
     df_ots = df_ots.drop(columns=[lever])  # Drop column with lever name
     dm = DataMatrix.create_from_df(df_ots, num_cat=0)
-    dict = {}
+    dict_temp = {}
     dm_temp = dm.filter_w_regex({'Variables': 'agr_climate-smart-crop_losses.*'})
     dm_temp.deepen()
-    dict['climate-smart-crop_losses'] = dm_temp
+    dict_temp['climate-smart-crop_losses'] = dm_temp
     dm_temp = dm.filter_w_regex({'Variables': 'agr_climate-smart-crop_yield.*'})
     dm_temp.deepen()
-    dict['climate-smart-crop_yield'] = dm_temp
+    dict_temp['climate-smart-crop_yield'] = dm_temp
     dm_temp = dm.filter_w_regex({'Variables': 'agr_climate-smart-crop_input-use.*'})
     dm_temp.deepen()
-    dict['climate-smart-crop_input-use'] = dm_temp
+    dict_temp['climate-smart-crop_input-use'] = dm_temp
     dm_temp = dm.filter_w_regex({'Variables': 'agr_climate-smart-crop_energy-demand.*'})
     dm_temp.deepen()
-    dict['climate-smart-crop_energy-demand'] = dm_temp
-    dict_ots[lever] = dict
+    dict_temp['climate-smart-crop_energy-demand'] = dm_temp
+    dict_ots[lever] = dict_temp
     """dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 1],
                                                                 baseyear=baseyear,
                                                                 years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
@@ -5158,7 +5208,7 @@ def database_from_csv_to_datamatrix():
     # write datamatrix to pickle
     __file__ = "/Users/crosnier/Documents/PathwayCalc/_database"
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    f = os.path.join(current_file_directory, '_database/data/datamatrix/agriculture.pickle')
+    f = os.path.join(current_file_directory, '_database/data/datamatrix/agriculture_pathwaycalc.pickle')
     with open(f, 'wb') as handle:
         pickle.dump(DM_agriculture, handle, protocol=pickle.HIGHEST_PROTOCOL)
     return
@@ -5184,7 +5234,7 @@ df_kcal_req_pathwaycalc = energy_requirements_processing()
 df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing(years_ots)
 df_climate_smart_crop_pathwaycalc, df_energy_demand_cal = climate_smart_crop_processing()
 df_climate_smart_livestock_pathwaycalc = climate_smart_livestock_processing(df_csl_feed)
-df_climate_smart_forestry_pathwaycalc, csf_managed = climate_smart_forestry_processing()
+df_climate_smart_forestry_pathwaycalc, csf_managed = climate_smart_forestry_processing() #FutureWarning at last line
 df_land_management_pathwaycalc = land_management_processing(csf_managed)
 df_bioenergy_capacity_CH_pathwaycalc = bioernergy_capacity_processing(df_csl_feed)
 df_biomass_hierarchy_pathwaycalc = biomass_bioernergy_hierarchy_processing(df_csl_feed)
