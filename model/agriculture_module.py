@@ -19,7 +19,7 @@ import time
 
 def init_years_lever():
     # function that can be used when running the module as standalone to initialise years and levers
-    years_setting = [1990, 2015, 2050, 5]
+    years_setting = [1990, 2023, 2025, 2050, 5]
     f = open('../config/lever_position.json')
     lever_setting = json.load(f)[0]
     return years_setting, lever_setting
@@ -2586,7 +2586,7 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
 def agriculture(lever_setting, years_setting, interface = Interface()):
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    agriculture_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/agriculture.pickle')
+    agriculture_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/agriculture_pathwaycalc.pickle')
     DM_ots_fts, DM_lifestyle, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, CDM_const = read_data(agriculture_data_file, lever_setting)
 
     cntr_list = DM_food_demand['food-net-import-pro'].col_labels['Country']
@@ -2677,7 +2677,7 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     return results_run
 
 def agriculture_local_run():
-    global_vars = {'geoscale': '.*'}
+    global_vars = {'geoscale': 'Switzerland'}
     filter_geoscale(global_vars)
     years_setting, lever_setting = init_years_lever()
     agriculture(lever_setting, years_setting)
@@ -2689,7 +2689,7 @@ def agriculture_local_run():
 
 # # Run the code in local
 #start = time.time()
-#results_run = agriculture_local_run()
+results_run = agriculture_local_run()
 #end = time.time()
 #print(end-start)
 
