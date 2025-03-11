@@ -778,6 +778,7 @@ def linear_fitting(dm, years_ots, max_t0=None, max_tb=None, min_t0=None, min_tb=
 def linear_fitting_ots_db(df_db, years_ots, countries='all'):
     df_db['timescale'] = df_db['timescale'].astype(int)
     levers = list(set(df_db['lever']))
+
     if len(levers) > 1:
         raise ValueError('There is more than one lever in the file, use only one lever per file')
     lever_name = levers[0]
@@ -807,7 +808,6 @@ def linear_fitting_ots_db(df_db, years_ots, countries='all'):
         else:
             dm.append(dm_country, dim='Country')
         i = i+1
-
     # From dm to database format
     df_db_ots = dm_to_database(dm, lever=lever_name, module=module_name, level=0)
     # merge the linear fitted version in the new
@@ -1193,3 +1193,12 @@ def sort_pickle(file_path):
 
     return
 
+def filter_years_DM(DM, selected_years):
+    for key in DM.keys():
+        if isinstance(DM[key], dict):
+            filter_years_DM(DM[key], selected_years)
+        else:
+            dm = DM[key]
+            dm.filter({'Years': selected_years}, inplace=True)
+            DM[key] = dm
+    return
