@@ -325,6 +325,13 @@ for i in range(1,4+1):
     arr_uk = arr_2023_uk[np.newaxis,...] * arr_rates
     dict_dm_pop_fts_tot[i].add(arr_uk, "Country", "United Kingdom")
 
+# keep only EU27
+dm_pop_age = dm_pop_age.filter({"Country" : ["EU27"]})
+for i in range(1,4+1):
+    dict_dm_pop_fts[i] = dict_dm_pop_fts[i].filter({"Country" : ["EU27"]})
+dm_pop_tot = dm_pop_tot.filter({"Country" : ["EU27"]})
+for i in range(1,4+1):
+    dict_dm_pop_fts_tot[i] = dict_dm_pop_fts_tot[i].filter({"Country" : ["EU27"]})
 
 # Save pickle
 DM_lfs = {"ots" : {"pop" : {"lfs_demography_":[],
