@@ -393,7 +393,7 @@ def end_of_life(dm_transport_waste, dm_waste_management, dm_matrec_veh,
     # get material recovered from recycling
     dm_transport_matrecovered_veh = dm_transport_recy_bymat.copy()
     dm_transport_matrecovered_veh.array = dm_transport_matrecovered_veh.array * \
-        dm_matrec_veh.array[:,:,:,np.newaxis,np.newaxis,:]
+        dm_matrec_veh.array[:,:,:,np.newaxis,:]
     
     # sum across products
     dm_transport_matrecovered_veh.group_all("Categories1")
@@ -1430,7 +1430,7 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     # get end of life
     DM_eol = end_of_life(DM_transport["tra-waste"].filter({"Categories1" : ["HDV","LDV","bus"]}), 
                          DM_ots_fts['eol-waste-management'].filter({"Variables" : ['vehicles']}),
-                         DM_ots_fts['eol-material-recovery'].filter({"Variables" : ['vehicles']}),
+                         DM_ots_fts['eol-material-recovery'].filter({"Categories1" : ['vehicles']}),
                          CDM_const["material-decomposition_veh"].filter({"Categories1" : ["HDV","LDV","bus"]}),
                          DM_material_production["bymat"])
         
@@ -1566,7 +1566,7 @@ def local_industry_run():
     # lever_setting["lever_technology-share"] = 4
     
     # get geoscale
-    global_vars = {'geoscale': 'Switzerland|Vaud'}
+    global_vars = {'geoscale': 'EU27'}
     filter_geoscale(global_vars)
 
     # run
