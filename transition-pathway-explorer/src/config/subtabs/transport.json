@@ -69,8 +69,7 @@
         "tra_passenger_transport-demand-by-mode_metrotram[pkm]",
         "tra_passenger_transport-demand-by-mode_bus[pkm]",
         "tra_passenger_transport-demand-by-mode_2W[pkm]",
-        "tra_passenger_transport-demand-by-mode_LDV[pkm]",
-        "tra_passenger_transport-demand-by-mode_aviation[pkm]"
+        "tra_passenger_transport-demand-by-mode_LDV[pkm]"
       ]
     },
     "PassengerDistanceVkmPerMode": {
@@ -84,8 +83,7 @@
         "tra_passenger_transport-demand-vkm_metrotram[vkm]",
         "tra_passenger_transport-demand-vkm_bus[vkm]",
         "tra_passenger_transport-demand-vkm_2W[vkm]",
-        "tra_passenger_transport-demand-vkm_LDV[vkm]",
-        "tra_passenger_transport-demand-vkm_aviation[vkm]"
+        "tra_passenger_transport-demand-vkm_LDV[vkm]"
       ]
     },
     "PassengerEnergyDemandPerMode": {
