@@ -1,8 +1,8 @@
 
 # packages
-from model.common.data_matrix_class import DataMatrix
-from model.common.auxiliary_functions import linear_fitting, fix_jumps_in_dm, my_pickle_dump
-import pandas as pd
+
+from model.common.auxiliary_functions import linear_fitting
+
 import pickle
 import os
 import numpy as np

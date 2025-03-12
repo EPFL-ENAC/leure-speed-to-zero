@@ -1,13 +1,13 @@
 
 # packages
 from model.common.data_matrix_class import DataMatrix
-from model.common.auxiliary_functions import linear_fitting, fix_jumps_in_dm
+
 import pandas as pd
 import pickle
 import os
 import numpy as np
 import warnings
-import eurostat
+
 import re
 # from _database.pre_processing.api_routine_Eurostat import get_data_api_eurostat
 warnings.simplefilter("ignore")

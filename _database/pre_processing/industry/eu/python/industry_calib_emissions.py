@@ -1,7 +1,6 @@
 
 # packages
 from model.common.data_matrix_class import DataMatrix
-from model.common.auxiliary_functions import linear_fitting, fix_jumps_in_dm
 import pandas as pd
 import pickle
 import os
