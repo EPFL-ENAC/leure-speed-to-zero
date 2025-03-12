@@ -1558,9 +1558,9 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     # dm_gtap = industry_gtap_interface(DM_energy_demand, DM_material_production)
     # interface.add_link(from_sector='industry', to_sector='gtap', dm=dm_gtap)
     
-    # # interface minerals
-    # DM_ind = industry_minerals_interface(DM_production, DM_eol["veh_eol_to_recycling"], write_pickle=True)
-    # interface.add_link(from_sector='industry', to_sector='minerals', dm=DM_ind)
+    # interface minerals
+    DM_ind = industry_minerals_interface(DM_production, DM_eol["veh_eol_to_recycling"], write_pickle=True)
+    interface.add_link(from_sector='industry', to_sector='minerals', dm=DM_ind)
     
     # # interface employment
     # dm_emp = industry_employment_interface(DM_material_demand, DM_energy_demand, DM_material_production, DM_cost, DM_ots_fts)
