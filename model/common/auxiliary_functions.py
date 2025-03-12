@@ -1140,23 +1140,24 @@ def my_pickle_dump(DM_new, local_pickle_file):
     return
 
 
-def countries_in_pickles(country_list, file = None):
+def check_country_in_dm(DM, country_list, file=None):
+    for key in DM:
+        if key != 'constant':
+            if isinstance(DM[key], dict):
+                check_country_in_dm(DM[key], country_list, file)
+            else:
+                for country in country_list:
+                    if country not in DM[key].col_labels['Country']:
+                        raise ValueError(f'Country {country} not in module {file}, label {key}')
+    return
 
-    def check_country_in_dm(DM):
-        for key in DM:
-            if key != 'constant':
-                if isinstance(DM[key], dict):
-                    check_country_in_dm(DM[key])
-                else:
-                    for country in country_list:
-                        if country not in DM[key].col_labels['Country']:
-                            raise ValueError(f'Country {country} not in module {file}, label {key}')
 
+def countries_in_pickles(country_list, file=None):
     def check_country_in_pickle(file):
         if '.pickle' in file:
             with open(join(mypath, file), 'rb') as handle:
                 DM_module = pickle.load(handle)
-            check_country_in_dm(DM_module)
+            check_country_in_dm(DM_module, country_list, file)
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     mypath = os.path.join(current_file_directory, '../../_database/data/datamatrix')
@@ -1193,6 +1194,7 @@ def sort_pickle(file_path):
 
     return
 
+
 def filter_years_DM(DM, selected_years):
     for key in DM.keys():
         if isinstance(DM[key], dict):
@@ -1202,3 +1204,23 @@ def filter_years_DM(DM, selected_years):
             dm.filter({'Years': selected_years}, inplace=True)
             DM[key] = dm
     return
+
+
+def add_dummy_country_to_DM(DM, new_country, ref_country):
+    # Make sure the reference country is in the DM
+    check_country_in_dm(DM, [ref_country])
+
+    for key in DM.keys():
+        if key != 'constant':
+            if isinstance(DM[key], dict):
+                add_dummy_country_to_DM(DM[key], new_country, ref_country)
+            else:
+                dm = DM[key]
+                if new_country not in dm.col_labels['Country']:
+                    dm_ref_country = dm.filter({'Country': [ref_country]})
+                    dm_ref_country.rename_col(ref_country, new_country, 'Country')
+                    dm.append(dm_ref_country, dim='Country')
+                    dm.sort('Country')
+
+    return
+
