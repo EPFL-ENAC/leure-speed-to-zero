@@ -11,7 +11,7 @@ from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database, read_database_fxa, edit_database, database_to_df, dm_to_database, database_to_dm
 from model.common.io_database import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups, read_database_to_dm
 from model.common.interface_class import Interface
-from model.common.auxiliary_functions import compute_stock,  filter_geoscale, calibration_rates, filter_years_DM
+from model.common.auxiliary_functions import compute_stock,  filter_geoscale, calibration_rates, filter_years_DM, add_dummy_country_to_DM
 from model.common.auxiliary_functions import read_level_data, simulate_input
 from scipy.optimize import linprog
 import pickle
@@ -3018,6 +3018,7 @@ def biomass_bioernergy_hierarchy_processing(df_csl_feed):
 
     # Filter columns
     df_filtered_columns = df_biomass_mix_data[['geoscale', 'timescale', 'eucalc-name', 'value']]
+    df_filtered_columns.copy()
 
     # rename col 'eucalc-name' in 'variables'
     df_filtered_columns = df_filtered_columns.rename(columns={'eucalc-name': 'variables'})
@@ -3029,6 +3030,7 @@ def biomass_bioernergy_hierarchy_processing(df_csl_feed):
 
     # Drop rows where 'variables' contains '%_1'
     df_biomass_mix = df_filtered_rows[~df_filtered_rows['variables'].str.contains('%_1', na=False)]
+    df_biomass_mix = df_biomass_mix.copy()
 
     # Rename from ots_agr to agr
     df_biomass_mix['variables'] = df_biomass_mix['variables'].str.replace('ots_agr', 'agr', regex=False)
@@ -3778,7 +3780,7 @@ def energy_ghg_calibration():
 
     # Filtering to keep wanted columns
     columns_to_filter = ['Area', 'Element', 'Year', 'Value']
-    df_emissions = df_emissions[columns_to_filter]
+    df_emissions = df_emissions[columns_to_filter].copy()
 
     # Pivot the df
     df_emissions = df_emissions.pivot_table(index=['Area', 'Year', 'Element'],
@@ -3830,7 +3832,7 @@ def energy_ghg_calibration():
 
     # Filtering to keep wanted columns
     columns_to_filter = ['Area', 'Item', 'Year', 'Value']
-    df_energy_fao = df_energy_fao[columns_to_filter]
+    df_energy_fao = df_energy_fao[columns_to_filter].copy()
 
     # Pivot the df
     df_energy_fao = df_energy_fao.pivot_table(index=['Area', 'Year', 'Item'],
@@ -3876,7 +3878,7 @@ def energy_ghg_calibration():
 
     # Filtering to keep wanted columns
     columns_to_filter = ['Area', 'Item', 'Year', 'Value']
-    df_energy_use = df_energy_use[columns_to_filter]
+    df_energy_use = df_energy_use[columns_to_filter].copy()
 
     # Pivot the df
     df_energy_use = df_energy_use.pivot_table(index=['Area', 'Year', 'Item'],
@@ -4481,25 +4483,7 @@ def calibration_formatting(df_diet_calibration, df_domestic_supply_calibration, 
                                                 countries='all')
 
     # Filter to keep only data from 1990
-    df_calibration_ext = df_calibration_ext[df_calibration_ext["timescale"] >= 1990]
-
-    # Add dummy values for EU27, Vaud and Paris, copied respectively on Germany, Switzerland and France
-    # EU27
-    duplicated_rows = df_calibration_ext[df_calibration_ext['geoscale'] == 'Germany'].copy() # Duplicate rows where geoscale is 'Germany'
-    duplicated_rows['geoscale'] = 'EU27' # Change geoscale value to 'EU27' in duplicated rows
-    df_calibration_ext = pd.concat([df_calibration_ext, duplicated_rows], ignore_index=True) # Append duplicated rows back to the original DataFrame
-    # Vaud
-    duplicated_rows = df_calibration_ext[
-        df_calibration_ext['geoscale'] == 'Switzerland'].copy()  # Duplicate rows where geoscale is 'Germany'
-    duplicated_rows['geoscale'] = 'Vaud'  # Change geoscale value to 'EU27' in duplicated rows
-    df_calibration_ext = pd.concat([df_calibration_ext, duplicated_rows],
-                                   ignore_index=True)  # Append duplicated rows back to the original DataFrame
-    # Paris
-    duplicated_rows = df_calibration_ext[
-        df_calibration_ext['geoscale'] == 'France'].copy()  # Duplicate rows where geoscale is 'Germany'
-    duplicated_rows['geoscale'] = 'Paris'  # Change geoscale value to 'EU27' in duplicated rows
-    df_calibration_ext_agr = pd.concat([df_calibration_ext, duplicated_rows],
-                                   ignore_index=True)  # Append duplicated rows back to the original DataFrame
+    df_calibration_ext_agr = df_calibration_ext[df_calibration_ext["timescale"] >= 1990]
 
     # Exporting to csv
     df_calibration_ext_agr.to_csv('agriculture_calibration.csv', index=False)
@@ -4529,25 +4513,7 @@ def calibration_formatting(df_diet_calibration, df_domestic_supply_calibration, 
     df_calibration_struct = ensure_structure(df_calibration)
     df_calibration_ext = linear_fitting_ots_db(df_calibration_struct, years_ots,
                                                 countries='all')
-    df_calibration_ext = df_calibration_ext[df_calibration_ext["timescale"] >= 1990]
-
-    # Add dummy values for EU27, Vaud and Paris, copied respectively on Germany, Switzerland and France
-    # EU27
-    duplicated_rows = df_calibration_ext[df_calibration_ext['geoscale'] == 'Germany'].copy() # Duplicate rows where geoscale is 'Germany'
-    duplicated_rows['geoscale'] = 'EU27' # Change geoscale value to 'EU27' in duplicated rows
-    df_calibration_ext = pd.concat([df_calibration_ext, duplicated_rows], ignore_index=True) # Append duplicated rows back to the original DataFrame
-    # Vaud
-    duplicated_rows = df_calibration_ext[
-        df_calibration_ext['geoscale'] == 'Switzerland'].copy()  # Duplicate rows where geoscale is 'Germany'
-    duplicated_rows['geoscale'] = 'Vaud'  # Change geoscale value to 'EU27' in duplicated rows
-    df_calibration_ext = pd.concat([df_calibration_ext, duplicated_rows],
-                                   ignore_index=True)  # Append duplicated rows back to the original DataFrame
-    # Paris
-    duplicated_rows = df_calibration_ext[
-        df_calibration_ext['geoscale'] == 'France'].copy()  # Duplicate rows where geoscale is 'Germany'
-    duplicated_rows['geoscale'] = 'Paris'  # Change geoscale value to 'EU27' in duplicated rows
-    df_calibration_ext_landuse = pd.concat([df_calibration_ext, duplicated_rows],
-                                   ignore_index=True)  # Append duplicated rows back to the original DataFrame
+    df_calibration_ext_landuse = df_calibration_ext[df_calibration_ext["timescale"] >= 1990]
 
     # Exporting to csv
     df_calibration_ext_landuse.to_csv('land-use_calibration.csv', index=False)
@@ -5065,7 +5031,6 @@ def database_from_csv_to_datamatrix():
                                                     pattern='cp_time_days-per-year.*|cp_ibp_liv_.*_brf_fdk_afat|cp_ibp_liv_.*_brf_fdk_offal|cp_ibp_bev_.*|cp_liquid_tec.*|cp_load_hours|cp_ibp_aps_insect.*|cp_ibp_aps_algae.*|cp_efficiency_liv.*|cp_ibp_processed.*|cp_ef_urea.*|cp_ef_liming|cp_emission-factor_CO2.*',
                                                     num_cat=0)
 
-
     # Constant pre-processing ------------------------------------------------------------------------------------------
     # Creating a dictionnay with contants
     dict_const = {}
@@ -5183,8 +5148,9 @@ def database_from_csv_to_datamatrix():
         'ots': dict_ots
     }
 
-    # Levers pre-processing --------------------------------------------------------------------------------------------
-
+    # Add EU27 and Vaud as dummys
+    add_dummy_country_to_DM(DM_agriculture, 'EU27', 'Switzerland')
+    add_dummy_country_to_DM(DM_agriculture, 'Vaud', 'Switzerland')
 
     # FXA pre-processing -----------------------------------------------------------------------------------------------
 
@@ -5208,7 +5174,7 @@ def database_from_csv_to_datamatrix():
     # write datamatrix to pickle
     __file__ = "/Users/crosnier/Documents/PathwayCalc/_database"
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    f = os.path.join(current_file_directory, '_database/data/datamatrix/agriculture_pathwaycalc.pickle')
+    f = os.path.join(current_file_directory, '_database/data/datamatrix/agriculture.pickle')
     with open(f, 'wb') as handle:
         pickle.dump(DM_agriculture, handle, protocol=pickle.HIGHEST_PROTOCOL)
     return
@@ -5250,16 +5216,15 @@ df_feed_calibration = feed_calibration()
 df_land_use_fao_calibration = land_calibration()
 df_liming_urea_calibration = CO2_emissions()
 df_wood_calibration = wood_calibration()
-df_emissions_calibration = energy_ghg_calibration()
+df_emissions_calibration = energy_ghg_calibration() # Fixme PerformanceWarning ?
 df_calibration = calibration_formatting(df_diet_calibration, df_domestic_supply_calibration, df_liv_population_calibration,
                      df_nitrogen_calibration, df_liv_emissions_calibration, df_feed_calibration,
                      df_land_use_fao_calibration, df_liming_urea_calibration, df_wood_calibration,
-                     df_emissions_calibration)
-
+                     df_emissions_calibration) # Fixme PerformanceWarning ?
 
 # CalculationTree RUNNING FXA PRE-PROCESSING ---------------------------------------------------------------------------
 #fxa_preprocessing()
 # CalculationTree RUNNING PICKLE CREATION
-database_from_csv_to_datamatrix()
+database_from_csv_to_datamatrix() #Fixme duplicates in constants
 
 
