@@ -154,9 +154,12 @@ dm_lsu = compute_livestock(dm_lsu_all, dm_lsu_dairy_egg)
 
 # Multiply dm_lsu by yield to obtain total kcal produced
 dm_yield = DM_agriculture['ots']['climate-smart-livestock']['climate-smart-livestock_yield'].filter({'Country': ['Switzerland']})
+dm_yield.rename_col('Switzerland', 'Vaud', 'Country')
+linear_fitting(dm_yield, years_ots)
 
 dm_lsu.append(dm_yield, dim='Variables')
 dm_lsu.operation('agr_livestock', '*', 'agr_climate-smart-livestock_yield', out_col='agr_production', unit='kcal')
 
+dm_share = DM_agriculture['ots']['diet']['share_']
 
 print('Hello')
