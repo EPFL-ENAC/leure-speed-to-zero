@@ -303,6 +303,10 @@ def material_production(dm_material_efficiency, dm_material_net_import,
     dm_material_production_bymat = dm_matdec_agg.copy()
     dm_material_production_bymat.array = dm_matdec_agg.array * dm_temp.array
     dm_material_production_bymat.rename_col(col_in = 'material-decomp', col_out = 'material-production', dim = "Variables")
+    
+    # get material net import in kilo tonnes
+    dm_material_net_import_kt = dm_matdec_agg.copy()
+    dm_material_net_import_kt.array = dm_material_net_import_kt.array - dm_material_production_bymat.array
 
     # include other industries from fxa
     dm_material_production_bymat.append(data2 = dm_matprod_other_industries, dim = "Categories1")
@@ -310,6 +314,7 @@ def material_production(dm_material_efficiency, dm_material_net_import,
     
     # put together
     DM_material_production = {"bymat" : dm_material_production_bymat, 
+                              "material-net-import" : dm_material_net_import_kt,
                               "natfiber" : dm_material_production_natfiber}
     
     # clean
