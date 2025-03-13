@@ -1,7 +1,7 @@
 export const ExamplePathways = [
   {
     "title": "Reference",
-    "values": [1, 1, 1, 1, 1, 2, 2, 1.5, 1.5, 2.1, 1, 1, 2, 1, 1, 2, 2, 2, 1, 2, 1, 1, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1, 1, 1, 1, 4, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 2, 1, 1, 2, 2, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    "values": [1, 1, 1, 1, 1, 2, 2, 1.5, 1.5, 2.1, 1, 1, 2, 1, 1, 2, 2, 2, 1, 2, 1, 1, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1, 1, 1, 1, 4, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 2, 1, 1, 2, 2, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     "description": "Test rename for reference text."
   },
   // {
@@ -79,6 +79,8 @@ export const ExamplePathways = [
       2,
       2,
       2,
+      1,
+      1,
       1
     ],
     "description": "This scenario portraits the maximum ambition level in the EUCalculator regarding Key behaviours, which lead to a more substantial lifestyle change than that considered in the 1.5LIFE scenario. In this scenario Technology and fuels, and Land and food default to those of the EU-Reference scenario."
@@ -143,6 +145,8 @@ export const ExamplePathways = [
       2,
       2,
       2,
+      1,
+      1,
       1
     ],
     "description": "This scenario portraits the maximum ambition level in the EUCalculator for Technology and fuels while Key behaviours and Land and food evolve as those in the EU-Reference scenario."
@@ -207,6 +211,8 @@ export const ExamplePathways = [
       2,
       2,
       2,
+      1,
+      1,
       1
     ],
     "description": "Reflecting the ongoing debate that brougth about the IPCC Special Report on Climate Change and Land approved on August 2019, this scenario represents an Europe where Land and Food become climate-smart (which might not always result in lower GHG emissions). In this scenario Key behaviours and Technology and fuels evolve as in the EU-Reference scenario. "
@@ -271,6 +277,8 @@ export const ExamplePathways = [
       2,
       2,
       2,
+      1,
+      1,
       1
     ],
     "description": "This scenario is and extention of the \"Max ambition in LAND-FOOD\" by further pushing maximum ambition in Technology and fuels. In this scenario Key behaviour evolves as in the EU-Reference scenario."
