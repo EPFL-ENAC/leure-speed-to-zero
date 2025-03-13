@@ -444,6 +444,32 @@ export const levers = [
     "type": "num"
   },
   {
+    "code": "lever_eol-waste-management",
+    "title": "Waste management",
+    "group": "Manufacturing",
+    "headline": "Technology and fuels",
+    "range": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "type": "num"
+  },
+  {
+    "code": "lever_eol-material-recovery",
+    "title": "Material recovery",
+    "group": "Manufacturing",
+    "headline": "Technology and fuels",
+    "range": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "type": "num"
+  },
+  {
     "code": "lever_oil-capacity",
     "title": "Oil",
     "group": "Power",
