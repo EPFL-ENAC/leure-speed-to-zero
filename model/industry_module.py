@@ -363,11 +363,11 @@ def end_of_life(dm_transport_waste, dm_waste_management, dm_matrec_veh,
                                                           {'Categories3': layer1}, 
                                                           units = dm_transport_waste.units)
     
-    # do material decomp of waste collected (to be used in stock and flow analysis)
-    dm_temp = dm_transport_waste_bywsm_layer1.filter({"Categories3" : ["waste-collected"]})
-    arr_temp = dm_temp.array * cdm_matdec_veh.array[np.newaxis,np.newaxis,...] / 1000
+    # do material decomp of layer 1 (to be used in stock and flow analysis)
+    dm_temp = dm_transport_waste_bywsm_layer1.copy()
+    arr_temp = dm_temp.array[...,np.newaxis] * cdm_matdec_veh.array[np.newaxis,np.newaxis,:,:,:,np.newaxis,:] / 1000
     dm_transport_waste_bymat = DataMatrix.based_on(arr_temp, dm_temp, 
-                                                   {'Categories3': cdm_matdec_veh.col_labels["Categories3"]}, 
+                                                   {'Categories4': cdm_matdec_veh.col_labels["Categories3"]}, 
                                                    units = "kt")
     dm_transport_waste_bymat.units["tra_product-waste"] = "kt"
     dm_transport_waste_bymat.group_all("Categories2")
@@ -382,22 +382,23 @@ def end_of_life(dm_transport_waste, dm_waste_management, dm_matrec_veh,
                                                           {'Categories3': layer2}, 
                                                           units = dm_waste_collected.units)
 
-    # do material decomposition for recycling
-    dm_transport_waste_bywsm_recy = dm_transport_waste_bywsm_layer2.filter({"Categories3" : ["recycling"]})
-    dm_veh_eol_to_recycling = dm_transport_waste_bywsm_recy.copy()
-    arr_temp = dm_transport_waste_bywsm_recy.array * cdm_matdec_veh.array[np.newaxis,np.newaxis,...]
-    dm_transport_recy_bymat = DataMatrix.based_on(arr_temp, dm_transport_waste_bywsm_recy, 
-                                                   {'Categories3': cdm_matdec_veh.col_labels["Categories3"]}, 
+    # do material decomposition of layer 2 (to be used in material flow analysis, and recycling to be used below)
+    dm_temp = dm_transport_waste_bywsm_layer2.copy()
+    dm_veh_eol_to_recycling = dm_temp.copy()
+    arr_temp = dm_temp.array[...,np.newaxis] * cdm_matdec_veh.array[np.newaxis,np.newaxis,:,:,:,np.newaxis,:]
+    dm_transport_waste_collect_bymat = DataMatrix.based_on(arr_temp, dm_temp, 
+                                                   {'Categories4': cdm_matdec_veh.col_labels["Categories3"]}, 
                                                    units = "t")
-    dm_transport_recy_bymat.units["tra_product-waste"] = "t"
+    dm_transport_waste_collect_bymat.units["tra_product-waste"] = "t"
+    dm_transport_waste_collect_bymat.group_all("Categories2")
+    dm_transport_waste_collect_bymat.group_all("Categories1")
     
     # get material recovered from recycling
-    dm_transport_matrecovered_veh = dm_transport_recy_bymat.copy()
+    dm_transport_matrecovered_veh = dm_transport_waste_collect_bymat.filter({"Categories1" : ["recycling"]})
     dm_transport_matrecovered_veh.array = dm_transport_matrecovered_veh.array * \
-        dm_matrec_veh.array[:,:,:,np.newaxis,:]
+        dm_matrec_veh.array
     
     # sum across products
-    dm_transport_matrecovered_veh.group_all("Categories1")
     dm_transport_matrecovered_veh.group_all("Categories1")
     dm_transport_matrecovered_veh.rename_col('tra_product-waste','vehicles',"Variables")
     # dm_transport_matrecovered_veh = dm_transport_matrecovered_veh.flatten()
@@ -424,6 +425,7 @@ def end_of_life(dm_transport_waste, dm_waste_management, dm_matrec_veh,
     # save
     DM_eol = {
         "material-towaste": dm_transport_waste_bymat,
+        "material-towaste-collected" : dm_transport_waste_collect_bymat,
         "material-recovered" : dm_matrecovered_corrected,
         "veh_eol_to_recycling" : dm_veh_eol_to_recycling
         }
