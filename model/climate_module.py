@@ -105,9 +105,9 @@ def variables_to_tpe(DM_ots_fts):
     
     dm_tpe = DM_ots_fts["temp"]["clm_capacity-factor"].flatten()
     dm_tpe.append(DM_ots_fts["temp"]["clm_temp_global"], "Variables")
-    df = dm_tpe.write_df()
+    dm_tpe.flattest()
     
-    return df
+    return dm_tpe
 
 def climate_power_interface(DM_ots_fts, write_pickle = False):
     

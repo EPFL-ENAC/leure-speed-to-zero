@@ -773,6 +773,13 @@ class DataMatrix:
         dm_new.idx = dm_new.index_all()
         return dm_new
 
+
+    def flattest(self):
+        while 'Categories' in '\t'.join(self.dim_labels):
+            self = self.flatten()
+        return self
+
+
     def copy(self):
         dm = DataMatrix(col_labels=self.col_labels, units=self.units, idx=self.idx)
         dm.array = self.array.copy()
@@ -965,3 +972,5 @@ class DataMatrix:
                 dm_out = DataMatrix.based_on(arr_data, format=self, change={'Variables': vars_new}, units=units_new)
                 return dm_out
         return
+
+
