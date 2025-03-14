@@ -1,8 +1,0 @@
-#Lifestyles
-Food and Agriculture Organization of the United Nations. FAOSTAT Statistical Database, Food Balance (1990-2020). (1997).:lfs-diet-01
-Food and Agriculture Organization of the United Nations, WHO & UNU. Human energy requirements. (2001).:lfs-diet-02
-World Health Organisation. Diet, nutrition and the prevention of chronic diseases. (2003).:lfs-diet-03
-World Cancer Research Fund, American Institute for Cancer Research. Diet and Cancer.(2007).:lfs-diet-04
-
-#Undifined
-Missing Reference: missing-reference
