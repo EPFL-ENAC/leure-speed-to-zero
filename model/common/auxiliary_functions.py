@@ -197,8 +197,7 @@ def compute_stock(dm, rr_regex, tot_regex, waste_col, new_col, out_type=int):
     dm.drop(dim='Variables', col_label='.*_tmn')
     return
 
-def filter_geoscale(global_vars):
-    geo_pattern = global_vars['geoscale']
+def filter_geoscale(geo_pattern):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     mypath = os.path.join(current_file_directory, '../../_database/data/datamatrix')
     files = [f for f in listdir(mypath) if isfile(join(mypath, f))]

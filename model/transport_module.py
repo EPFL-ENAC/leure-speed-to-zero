@@ -1200,28 +1200,18 @@ def prepare_TPE_output(DM_passenger_out, DM_freight_out):
     dm_energy_tot.append(dm_energy_freight, dim='Variables')
     dm_energy_tot.groupby({'tra_energy-demand_total': '.*'}, inplace=True, regex=True, dim='Variables')
 
-    # Turn datamatrix to dataframe (because converter and TPE work with dataframes)
-    df = dm_keep_mode.write_df()
-    df2 = dm_keep_tech.write_df()
-    df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
-    df3 = dm_keep_fuel.write_df()
-    df = pd.concat([df, df3.drop(columns=['Country', 'Years'])], axis=1)
-    df4 = dm_keep_energy.write_df()
-    df = pd.concat([df, df4.drop(columns=['Country', 'Years'])], axis=1)
-    df5 = dm_freight_energy_by_mode.write_df()
-    df = pd.concat([df, df5.drop(columns=['Country', 'Years'])], axis=1)
-    df6 = dm_energy_tot.write_df()
-    df = pd.concat([df, df6.drop(columns=['Country', 'Years'])], axis=1)
-    df7 = dm_freight_energy_by_fuel.write_df()
-    df = pd.concat([df, df7.drop(columns=['Country', 'Years'])], axis=1)
-    df8 = DM_passenger_out['soft-mobility'].write_df()
-    df = pd.concat([df, df8.drop(columns=['Country', 'Years'])], axis=1)
-    #df9 = DM_passenger_out['aviation'].write_df()
-    #df = pd.concat([df, df9.drop(columns=['Country', 'Years'])], axis=1)
-    df10 = DM_passenger_out['emissions'].write_df()
-    df = pd.concat([df, df10.drop(columns=['Country', 'Years'])], axis=1)
+    # Merge datamatrices for new-app
+    dm_tpe = dm_keep_mode.flattest()
+    dm_tpe.append(dm_keep_tech.flattest(), dim='Variables')
+    dm_tpe.append(dm_keep_fuel.flattest(), dim='Variables')
+    dm_tpe.append(dm_keep_energy.flattest(), dim='Variables')
+    dm_tpe.append(dm_freight_energy_by_mode.flattest(), dim='Variables')
+    dm_tpe.append(dm_energy_tot.flattest(), dim='Variables')
+    dm_tpe.append(dm_freight_energy_by_fuel.flattest(), dim='Variables')
+    dm_tpe.append(DM_passenger_out['soft-mobility'].flattest(), dim='Variables')
+    dm_tpe.append(DM_passenger_out['emissions'].flattest(), dim='Variables')
 
-    return df
+    return dm_tpe
 
 
 # !FIXME: infrastructure dummy not OK, find real tot infrastructure data and real renewal-rates or new-infrastructure

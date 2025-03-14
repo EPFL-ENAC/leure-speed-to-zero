@@ -21,9 +21,7 @@ import os
 import json
 
 
-def runner(lever_setting, global_vars, output_nodes, logger):
-    # get years setting from global variables
-    years_setting = global_vars['years_setting']
+def runner(lever_setting, years_setting, logger):
     # lever setting dictionary convert float to integer
     lever_setting = {key: math.floor(value) for key, value in lever_setting.items()}
     # Transport module
@@ -72,7 +70,7 @@ def runner(lever_setting, global_vars, output_nodes, logger):
     #logger.info('Execution time Emissions: {0:.3g} s'.format(time.time() - start_time))
     #start_time = time.time()
 
-    logger.info('Execution time Interactions: {0:.3g} s'.format(time.time() - init_time))
+    logger.info('Total runtime: {0:.3g} s'.format(time.time() - init_time))
 
     return TPE
 

@@ -77,7 +77,7 @@ def lifestyles(lever_setting, years_setting, interface=Interface(), write_pickle
     # dm_minerals.append(DM_industry['population'], dim='Variables')
     # interface.add_link(from_sector='lifestyles', to_sector='minerals', dm=dm_minerals)
 
-    return
+    return dm_pop
 
 
 # Local run of lifestyles

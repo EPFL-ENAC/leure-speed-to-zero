@@ -1236,22 +1236,15 @@ def bld_agriculture_interface(dm_agriculture):
 
 def bld_TPE_interface(DM_energy, DM_area):
 
-    df = DM_energy['energy-emissions-by-class'].write_df()
-    df2 = DM_energy['energy-demand-heating'].write_df()
-    df3 = DM_energy['energy-demand-cooling'].write_df()
-    df4 = DM_energy['emissions'].write_df()
-    df5 = DM_area['floor-area-cumulated'].write_df()
-    df6 = DM_area['floor-area-cat'].write_df()
-    df7 = DM_area['floor-area-bld-type'].write_df()
+    dm_tpe = DM_energy['energy-emissions-by-class'].flattest()
+    dm_tpe.append(DM_energy['energy-demand-heating'].flattest(), dim='Variables')
+    dm_tpe.append(DM_energy['energy-demand-cooling'].flattest(), dim='Variables')
+    dm_tpe.append(DM_energy['emissions'].flattest(), dim='Variables')
+    dm_tpe.append(DM_area['floor-area-cumulated'].flattest(), dim='Variables')
+    dm_tpe.append(DM_area['floor-area-cat'].flattest(), dim='Variables')
+    dm_tpe.append(DM_area['floor-area-bld-type'].flattest(), dim='Variables')
 
-    df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df3.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df4.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df5.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df6.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df7.drop(columns=['Country', 'Years'])], axis=1)
-
-    return df
+    return dm_tpe
 
 
 def buildings(lever_setting, years_setting, interface=Interface()):
