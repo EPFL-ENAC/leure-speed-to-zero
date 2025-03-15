@@ -432,6 +432,8 @@ def end_of_life(dm_transport_waste, dm_waste_management, dm_matrec_veh,
         "material-towaste": dm_transport_waste_bymat,
         "material-towaste-collected" : dm_transport_waste_collect_bymat,
         "material-recovered" : dm_matrecovered_corrected,
+        "veh_eol_to_wst_mgt" : dm_transport_waste_bywsm_layer1,
+        "veh_el_to_collection" : dm_transport_waste_bywsm_layer2,
         "veh_eol_to_recycling" : dm_veh_eol_to_recycling
         }
     
