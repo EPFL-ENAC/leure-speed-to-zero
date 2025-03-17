@@ -306,7 +306,7 @@ class DataMatrix:
             else:
                 raise ValueError(f"You are trying to append data under the label {col_label} which already exists")
         if dim == 'Variables':
-            if None not in unit:
+            if unit is not None:
                 for i, col in enumerate(col_label):
                     self.units[col] = unit[i]
             else:
