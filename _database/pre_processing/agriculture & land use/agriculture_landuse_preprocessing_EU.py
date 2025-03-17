@@ -54,7 +54,7 @@ def create_ots_years_list(years_setting):
 # CalculationLeaf DIET (LIFESTYLE) ------------------------------------------------------------------------------------
 def diet_processing():
     # ----------------------------------------------------------------------------------------------------------------------
-    # CONSUMER DIET
+    # CONSUMER DIET Part 1 - including food waste
     # ----------------------------------------------------------------------------------------------------------------------
 
     # Read data ------------------------------------------------------------------------------------------------------------
@@ -165,7 +165,7 @@ def diet_processing():
     pivot_df_consumers_diet = df_consumers_diet.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
                                                             values='Value').reset_index()
     # Rename columns
-    pivot_df_consumers_diet.rename(columns={'Food supply (kcal/capita/day)': 'value'}, inplace=True)
+    #pivot_df_consumers_diet.rename(columns={'Food supply (kcal/capita/day)': 'value'}, inplace=True)
 
     # ----------------------------------------------------------------------------------------------------------------------
     # SHARE (FOR OTHER PRODUCTS)
@@ -190,6 +190,30 @@ def diet_processing():
 
     # Drop the columns
     pivot_df_share = pivot_df_share.drop(columns=['Food supply (kcal/capita/day)', 'Grand Total'])
+
+    # Normalize so that for each year and country, sum(share) = 1
+    pivot_df_share['value'] = pivot_df_share['value'] / pivot_df_share.groupby(['Area', 'Year'])['value'].transform(
+        'sum')
+
+    # ----------------------------------------------------------------------------------------------------------------------
+    # CONSUMER DIET Part 2 - including food waste
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # Food item name matching with dictionary
+    # Read excel file
+    df_dict_waste = pd.read_excel(
+        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        sheet_name='food-waste_lifestyle')
+
+    # Merge based on 'Item'
+    pivot_df_consumers_diet = pd.merge(df_dict_waste, pivot_df_consumers_diet, on='Item')
+
+    # Food waste [kcal/cap/day] = food supply [kcal/cap/day] * food waste [%]
+    pivot_df_consumers_diet['value'] = pivot_df_consumers_diet['Food supply (kcal/capita/day)'] * (1 - pivot_df_consumers_diet[
+        'Proportion'])
+
+    # Drop the unused columns
+    pivot_df_consumers_diet = pivot_df_consumers_diet.drop(columns=['variables', 'Food supply (kcal/capita/day)', 'Proportion'])
 
     # Concatenating consumer diet & share
     pivot_df_diet = pd.concat([pivot_df_consumers_diet, pivot_df_share])
@@ -343,6 +367,7 @@ def energy_requirements_processing():
         sheet_name='energy-req_lifestyle')
     df_kcal_req = pd.merge(df_dict_kcal, df_kcal_req, on='sex_age')
     df_kcal_req = df_kcal_req.drop(columns=['sex_age'])
+    df_kcal_req.rename(columns={'Calorie requirement per demography [kcal/person/day]': 'value'}, inplace=True)
 
     # Read lifestyle population
     df_population = pd.read_csv(
@@ -351,7 +376,7 @@ def energy_requirements_processing():
     df_population = df_population[['geoscale', 'timescale', 'eucalc-name', 'value']]
     df_population = df_population[df_population['eucalc-name'].str.contains('demography', case=False, na=False)]
     df_population.rename(columns={'value': 'population', 'eucalc-name': 'variables'}, inplace=True)
-    df_population = df_population[df_population['timescale'] < 2023]
+    df_population = df_population[df_population['timescale'] < 2015]
 
     # Merge with population based on geoscale and eucalc-name
     df_kcal_req_pathwaycalc = pd.merge(
@@ -362,18 +387,18 @@ def energy_requirements_processing():
     )
 
     # Multiply the kcal requirement of each group with the demography
-    df_kcal_req_pathwaycalc['value'] = df_kcal_req_pathwaycalc['population'] * \
-                                       df_kcal_req_pathwaycalc['Calorie requirement per demography [kcal/person/day]']
-    df_kcal_req_pathwaycalc.sort_values(by=['geoscale', 'timescale'], inplace=True)
+    #df_kcal_req_pathwaycalc['value'] = df_kcal_req_pathwaycalc['population'] * \
+    #                                   df_kcal_req_pathwaycalc['Calorie requirement per demography [kcal/person/day]']
+    #df_kcal_req_pathwaycalc.sort_values(by=['geoscale', 'timescale'], inplace=True)
+
+    # PAOLA FTS
 
     # Filter relevant columns
     df_kcal_req_pathwaycalc = df_kcal_req_pathwaycalc[['variables', 'geoscale', 'timescale', 'value']]
 
     # rename correctly
-    df_kcal_req_pathwaycalc['variables'] = df_kcal_req_pathwaycalc['variables'].str.replace('demography', 'kcal-req',
-                                                                                            case=False)
-    df_kcal_req_pathwaycalc['variables'] = df_kcal_req_pathwaycalc['variables'].str.replace('inhabitants',
-                                                                                            'kcal/cap/day', case=False)
+    df_kcal_req_pathwaycalc['variables'] = df_kcal_req_pathwaycalc['variables'].str.replace('demography', 'kcal-req', case=False)
+    df_kcal_req_pathwaycalc['variables'] = df_kcal_req_pathwaycalc['variables'].str.replace('inhabitants', 'kcal/cap/day', case=False)
 
     # PathwayCalc formatting --------------------------------------------------------------------------------
     # Adding the columns module, lever, level and string-pivot at the correct places
@@ -2931,9 +2956,6 @@ def land_management_processing(csf_managed):
 
     return df_land_management_pathwaycalc
 
-years_setting = [1990, 2023, 2050, 5]  # Set the timestep for historical years & scenarios
-years_ots = list(range(1990,2023))
-
 # CalculationLeaf BIOENERGY CAPACITY -----------------------------------------------------------------------------------
 
 def bioernergy_capacity_processing(df_csl_feed):
@@ -4559,30 +4581,27 @@ def fxa_preprocessing():
 #  FIXME only Switzerland for now
 def init_years_lever():
     # function that can be used when running the module as standalone to initialise years and levers
-    years_setting = [1990, 2024, 2050, 5]
-    f = open('../../../config/lever_position.json')
+    years_setting = [1990, 2023, 2025, 2050, 5]
+    f = open('/Users/crosnier/Documents/PathwayCalc/config/lever_position.json')
     lever_setting = json.load(f)[0]
     return years_setting, lever_setting
-
 def database_from_csv_to_datamatrix():
     #############################################
     ##### database_from_csv_to_datamatrix() #####
     #############################################
 
     years_setting, lever_setting = init_years_lever()
-    # file
-    #__file__ = "/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/agriculture_landuse_preprocessing_EU.py"
-    # directories
-    #current_file_directory = os.path.dirname(os.path.abspath(__file__))
 
     # Set years range
-    years_ots = create_years_list(1990, 2023, 1) # make list with years from 1990 to 2015
-    years_fts = create_years_list(2025, 2050, 5) # make list with years from 2020 to 2050 (steps of 5 years)
+    startyear = years_setting[0]
+    baseyear = years_setting[1]
+    lastyear = years_setting[2]
+    start_fts = years_setting[2]
+    stop_fts = years_setting[3]
+    step_fts = years_setting[4]
+    years_ots = list(np.linspace(start=startyear, stop=baseyear, num=(baseyear-startyear)+1).astype(int)) # make list with years from 1990 to 2015
+    years_fts = list(np.arange(start_fts, stop_fts + 1, step_fts)) # make list with years from 2020 to 2050 (steps of 5 years)
     years_all = years_ots + years_fts
-    baseyear = 1990
-    #####################
-    # FIXED ASSUMPTIONS #
-    #####################
 
     # FixedAssumptionsToDatamatrix
 
@@ -4606,8 +4625,9 @@ def database_from_csv_to_datamatrix():
     # LeversToDatamatrix FTS based on EuCalc fts
     dm_fts = DM_agriculture_old['fts'].copy()
 
-    # Filter dm_fts to start year at 2025 not 2020
+    # Filter dm_fts to start year at 2025 not 2020 PAOLA FTS
     filter_years_DM(dm_fts, years_fts)
+
 
     # To remove '_' at the ending of some keys as the ones for diet
     for key in dm_fts.keys():
@@ -5181,18 +5201,11 @@ def database_from_csv_to_datamatrix():
 
 
 # CalculationTree RUNNING LEVERS PRE-PROCESSING -----------------------------------------------------------------------------------------------
+__file__ = "/Users/crosnier/Documents/PathwayCalc/_database"
+current_file_directory = os.path.dirname(os.path.abspath(__file__))
+f = os.path.join(current_file_directory, '_database/data/datamatrix/agriculture.pickle')
 
-"""years_ots = create_years_list(1990, 2023, 1)  # make list with years from 1990 to 2015
-years_fts = create_years_list(2025, 2050, 5)  # make list with years from 2020 to 2050 (steps of 5 years)
-years_all = years_ots + years_fts
-baseyear = 1990
-dict_ots = {}
-dict_fts = {}
-df_diet_pathwaycalc, df_diet = diet_processing()
-lever = 'diet'
-dict_ots, dict_fts = read_database_to_dm(df_db=df_diet_pathwaycalc, filter={'geoscale': ['Vaud', 'Switzerland']},
-                                                 baseyear=2023, num_cat=0, level='all')"""
-
+years_ots = create_years_list(1990, 2023, 1)  # make list with years from 1990 to 2015
 
 df_diet_pathwaycalc, df_diet = diet_processing()
 df_waste_pathwaycalc = food_waste_processing(df_diet)
@@ -5205,7 +5218,6 @@ df_land_management_pathwaycalc = land_management_processing(csf_managed)
 df_bioenergy_capacity_CH_pathwaycalc = bioernergy_capacity_processing(df_csl_feed)
 df_biomass_hierarchy_pathwaycalc = biomass_bioernergy_hierarchy_processing(df_csl_feed)
 df_protein_meals_pathwaycalc = livestock_protein_meals_processing(df_csl_feed)
-
 
 # CalculationTree RUNNING CALIBRATION ----------------------------------------------------------------------------------
 df_diet_calibration = lifestyle_calibration()
