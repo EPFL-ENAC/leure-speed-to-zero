@@ -58,6 +58,26 @@ def get_interface(current_file_directory, interface, from_sector, to_sector, cou
             DM.filter({'Country': country_list}, inplace=True)
     return DM
 
+def eol_battery(dm_bev_eol, cdm_bev_matdec):
+    
+    # create batteries in eol assuming 1 battery per car
+    dm_lib_eol = dm_bev_eol.copy()
+    dm_lib_eol.array = dm_bev_eol.array * 1
+    dm_lib_eol = dm_lib_eol.flatten()
+    dm_lib_eol.rename_col("LDV_BEV","battery-lion-LDV-BEV","Categories1")
+
+    # create datamatrix for equation 2
+    cdm_temp = cdm_bev_matdec.flatten().flatten()
+    cdm_temp.deepen()
+    arr_temp = dm_lib_eol.array[...,np.newaxis] * cdm_temp.array[np.newaxis,np.newaxis,...]
+    dm_lib_matrec = DataMatrix.based_on(arr_temp, dm_lib_eol,
+                                        {"Categories2": cdm_temp.col_labels["Categories2"]},
+                                        units = "t")
+    
+    
+    
+    return
+
 def minerals(lever_setting, years_setting, interface = Interface(), calibration = False):
     
     # minerals data file
@@ -69,8 +89,16 @@ def minerals(lever_setting, years_setting, interface = Interface(), calibration 
     cntr_list = DM_ots_fts["eol-material-recovery"].col_labels['Country']
     DM_industry = get_interface(current_file_directory, interface, "industry", "minerals", cntr_list)
     
+    # batteries eol
+    eol_battery(DM_industry["veh-to-recycling"].filter({"Categories1": ["LDV"], "Categories2": ["BEV"]}),
+                CDM_const['material-decomposition_bat'].filter({"Categories1" : ["battery-lion-LDV"],
+                                                                "Categories2" : ["BEV"]}))
+    
+    # DM_ots_fts["eol-material-recovery"].filter({"Categories1":["battery-lion"]})
+    
+    
     # to be done:
-    # material recovered from batteries that are recycled
+    
     # cradle-to-gate material decomp of vehicles for EU27 (HDV, LDV, bus)
     
     return

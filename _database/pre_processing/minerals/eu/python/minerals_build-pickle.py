@@ -168,11 +168,6 @@ for name in dm_names:
 ##### SAVE #####
 ################
 
-# # save
-# f = os.path.join(current_file_directory, '../../../../data/datamatrix/minerals.pickle')
-# my_pickle_dump(DM_minerals, f)
-
 # save
 f = os.path.join(current_file_directory, '../../../../data/datamatrix/minerals_new.pickle')
-with open(f, 'wb') as handle:
-    pickle.dump(DM_minerals, handle, protocol=pickle.HIGHEST_PROTOCOL)
+my_pickle_dump(DM_minerals, f)
