@@ -11,7 +11,7 @@ from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database, read_database_fxa, edit_database, database_to_df, dm_to_database, database_to_dm
 from model.common.io_database import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups, read_database_to_dm
 from model.common.interface_class import Interface
-from model.common.auxiliary_functions import compute_stock,  filter_geoscale, calibration_rates, filter_years_DM, add_dummy_country_to_DM
+from model.common.auxiliary_functions import compute_stock,  filter_geoscale, calibration_rates, filter_DM, add_dummy_country_to_DM
 from model.common.auxiliary_functions import read_level_data, simulate_input
 from scipy.optimize import linprog
 import pickle
@@ -43,18 +43,11 @@ def ensure_structure(df):
 
     return df
 
-def create_ots_years_list(years_setting):
-    startyear: int = years_setting[0]  # Start year is argument [0], i.e., 1990
-    baseyear: int = years_setting[1]  # Base/Reference year is argument [1], i.e., 2015
-    lastyear: int = years_setting[2]  # End/Last year is argument [2], i.e., 2050
-    step_fts = years_setting[3]  # Timestep for scenario is argument [3], i.e., 5 years
-    years_ots = list(
-        np.linspace(start=startyear, stop=baseyear, num=(baseyear - startyear) + 1).astype(int).astype(str))
-    return years_ots
+
 # CalculationLeaf DIET (LIFESTYLE) ------------------------------------------------------------------------------------
 def diet_processing():
     # ----------------------------------------------------------------------------------------------------------------------
-    # CONSUMER DIET
+    # CONSUMER DIET Part 1 - including food waste
     # ----------------------------------------------------------------------------------------------------------------------
 
     # Read data ------------------------------------------------------------------------------------------------------------
@@ -165,7 +158,7 @@ def diet_processing():
     pivot_df_consumers_diet = df_consumers_diet.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
                                                             values='Value').reset_index()
     # Rename columns
-    pivot_df_consumers_diet.rename(columns={'Food supply (kcal/capita/day)': 'value'}, inplace=True)
+    #pivot_df_consumers_diet.rename(columns={'Food supply (kcal/capita/day)': 'value'}, inplace=True)
 
     # ----------------------------------------------------------------------------------------------------------------------
     # SHARE (FOR OTHER PRODUCTS)
@@ -191,14 +184,35 @@ def diet_processing():
     # Drop the columns
     pivot_df_share = pivot_df_share.drop(columns=['Food supply (kcal/capita/day)', 'Grand Total'])
 
+    # Normalize so that for each year and country, sum(share) = 1
+    pivot_df_share['value'] = pivot_df_share['value'] / pivot_df_share.groupby(['Area', 'Year'])['value'].transform(
+        'sum')
+
+    # ----------------------------------------------------------------------------------------------------------------------
+    # CONSUMER DIET Part 2 - including food waste
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # Food item name matching with dictionary
+    # Read excel file
+    df_dict_waste = pd.read_excel('dictionaries/dictionnary_agriculture_landuse.xlsx', sheet_name='food-waste_lifestyle')
+
+    # Merge based on 'Item'
+    pivot_df_consumers_diet = pd.merge(df_dict_waste, pivot_df_consumers_diet, on='Item')
+
+    # Food waste [kcal/cap/day] = food supply [kcal/cap/day] * food waste [%]
+    pivot_df_consumers_diet['value'] = pivot_df_consumers_diet['Food supply (kcal/capita/day)'] * (1 - pivot_df_consumers_diet[
+        'Proportion'])
+
+    # Drop the unused columns
+    pivot_df_consumers_diet = pivot_df_consumers_diet.drop(columns=['variables', 'Food supply (kcal/capita/day)', 'Proportion'])
+
     # Concatenating consumer diet & share
     pivot_df_diet = pd.concat([pivot_df_consumers_diet, pivot_df_share])
 
     # PathwayCalc formatting -----------------------------------------------------------------------------------------------
     # Food item name matching with dictionary
     # Read excel file
-    df_dict_diet = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+    df_dict_diet = pd.read_excel('dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='diet_lifestyle')
 
     # Merge based on 'Item'
@@ -242,8 +256,7 @@ def food_waste_processing(df_diet):
 
     # Food item name matching with dictionary
     # Read excel file
-    df_dict_waste = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+    df_dict_waste = pd.read_excel('dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='food-waste_lifestyle')
 
     # Merge based on 'Item'
@@ -285,7 +298,7 @@ def food_waste_processing(df_diet):
     return df_waste_pathwaycalc
 
 # CalculationLeaf ENERGY REQUIREMENTS -----------------------------------------------------------------------------------
-def energy_requirements_processing():
+def energy_requirements_processing(country_list, years_ots):
     # Calorie requirements [kcal/cap/day] = BMR * PAL = ( C(age, sex) + S (age,sex) * BW(age,sex)) * PAL
     # BMR : Basal Metabolic Rate, PAL : Physical Activity Level (kept constant), BW : Body Weight
     # C constant, S Slope (depend on age and sex groups)
@@ -302,8 +315,7 @@ def energy_requirements_processing():
     # Body Weight (constant through years) comes from https://pubs.acs.org/doi/10.1021/acs.est.5b05088 supplementary information
 
     # Read and format body weight
-    df_body_weight = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/body_weight.xlsx',
+    df_body_weight = pd.read_excel('data/body_weight.xlsx',
         sheet_name='body-weight')
     df_body_weight_melted = pd.melt(
         df_body_weight,
@@ -315,8 +327,7 @@ def energy_requirements_processing():
     df_body_weight_melted.sort_values(by=['geoscale', 'sex'], inplace=True)
 
     # Read and format C and S
-    df_S_C = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/body_weight.xlsx',
+    df_S_C = pd.read_excel('data/body_weight.xlsx',
         sheet_name='S_C')
 
     # Merge df based on columns age and sex
@@ -338,62 +349,41 @@ def energy_requirements_processing():
     # Create a new column combining age and sex and merging it with the variable names
     df_kcal_req['sex_age'] = df_kcal_req['sex'] + '_' + df_kcal_req['age']
     df_kcal_req = df_kcal_req[['geoscale', 'sex_age', 'Calorie requirement per demography [kcal/person/day]']]
-    df_dict_kcal = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+    df_dict_kcal = pd.read_excel('dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='energy-req_lifestyle')
     df_kcal_req = pd.merge(df_dict_kcal, df_kcal_req, on='sex_age')
     df_kcal_req = df_kcal_req.drop(columns=['sex_age'])
-
-    # Read lifestyle population
-    df_population = pd.read_csv(
-        '/Users/crosnier/Documents/PathwayCalc/_database/data/csv/lifestyles_population.csv', sep=';')
-    # Format population
-    df_population = df_population[['geoscale', 'timescale', 'eucalc-name', 'value']]
-    df_population = df_population[df_population['eucalc-name'].str.contains('demography', case=False, na=False)]
-    df_population.rename(columns={'value': 'population', 'eucalc-name': 'variables'}, inplace=True)
-    df_population = df_population[df_population['timescale'] < 2023]
-
-    # Merge with population based on geoscale and eucalc-name
-    df_kcal_req_pathwaycalc = pd.merge(
-        df_kcal_req,
-        df_population,
-        on=['variables', 'geoscale'],  # Columns to merge on
-        how='inner'  # Merge method: 'inner' will keep only matching rows
-    )
-
-    # Multiply the kcal requirement of each group with the demography
-    df_kcal_req_pathwaycalc['value'] = df_kcal_req_pathwaycalc['population'] * \
-                                       df_kcal_req_pathwaycalc['Calorie requirement per demography [kcal/person/day]']
-    df_kcal_req_pathwaycalc.sort_values(by=['geoscale', 'timescale'], inplace=True)
-
-    # Filter relevant columns
-    df_kcal_req_pathwaycalc = df_kcal_req_pathwaycalc[['variables', 'geoscale', 'timescale', 'value']]
-
-    # rename correctly
-    df_kcal_req_pathwaycalc['variables'] = df_kcal_req_pathwaycalc['variables'].str.replace('demography', 'kcal-req',
-                                                                                            case=False)
-    df_kcal_req_pathwaycalc['variables'] = df_kcal_req_pathwaycalc['variables'].str.replace('inhabitants',
-                                                                                            'kcal/cap/day', case=False)
-
-    # PathwayCalc formatting --------------------------------------------------------------------------------
-    # Adding the columns module, lever, level and string-pivot at the correct places
-    df_kcal_req_pathwaycalc['module'] = 'agriculture'
-    df_kcal_req_pathwaycalc['lever'] = 'kcal-req'
-    df_kcal_req_pathwaycalc['level'] = 0
-    cols = df_kcal_req_pathwaycalc.columns.tolist()
-    cols.insert(cols.index('value'), cols.pop(cols.index('module')))
-    cols.insert(cols.index('value'), cols.pop(cols.index('lever')))
-    cols.insert(cols.index('value'), cols.pop(cols.index('level')))
-    df_kcal_req_pathwaycalc = df_kcal_req_pathwaycalc[cols]
+    df_kcal_req.rename(columns={'Calorie requirement per demography [kcal/person/day]': 'value'}, inplace=True)
 
     # Rename countries to Pathaywcalc name
-    df_kcal_req_pathwaycalc['geoscale'] = df_kcal_req_pathwaycalc['geoscale'].replace(
-        'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
-    df_kcal_req_pathwaycalc['geoscale'] = df_kcal_req_pathwaycalc['geoscale'].replace('Netherlands (Kingdom of the)',
-                                                                                      'Netherlands')
-    df_kcal_req_pathwaycalc['geoscale'] = df_kcal_req_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
+    df_kcal_req['geoscale'] = df_kcal_req['geoscale'].replace('Czechia', 'Czech Republic')
 
-    return df_kcal_req_pathwaycalc
+    # Add missing cols
+    df_kcal_req['timescale'] = 2020
+    df_kcal_req['module'] = 'agriculture'
+    df_kcal_req['lever'] = 'kcal-req'
+    df_kcal_req['level'] = 0
+
+    lever = 'kcal-req'
+    df_ots, df_fts = database_to_df(df_kcal_req, lever, level='all')
+    df_ots = df_ots.drop(columns=[lever])  # Drop column with lever name
+    dm_kcal_req = DataMatrix.create_from_df(df_ots, num_cat=0)
+
+    dm_kcal_req.filter({'Country': country_list}, inplace=True)
+
+    # Add missing years
+    missing_years = list(set(years_ots) - set(dm_kcal_req.col_labels['Years']))
+    dm_kcal_req.add(np.nan, dim='Years', dummy=True, col_label=missing_years)
+    dm_kcal_req.fill_nans('Years')
+    dm_kcal_req.sort('Years')
+
+    #Have age groups as categories and rename variable
+    dm_kcal_req.deepen()
+    dm_kcal_req.rename_col('lfs_demography', 'agr_kcal-req', dim='Variables')
+    dm_kcal_req.change_unit('agr_kcal-req', old_unit='inhabitants', new_unit='kcal/cap/day', factor=1)
+
+    return dm_kcal_req
+
 
 # CalculationLeaf SELF-SUFFICIENCY CROP & LIVESTOCK ------------------------------------------------------------------------------
 def self_sufficiency_processing(years_ots):
@@ -596,7 +586,7 @@ def self_sufficiency_processing(years_ots):
     # Food item name matching with dictionary
     # Read excel file
     df_dict_ssr = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='self-sufficiency')
 
     # Merge based on 'Item'
@@ -650,7 +640,7 @@ def climate_smart_crop_processing():
     # BIOENERGIES
     # Read excel
     df_bioenergy = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/statistiques_energie_2023.xlsx',
+        'data/statistiques_energie_2023.xlsx',
         sheet_name='T34b',
         skiprows = 7,
         nrows = 27
@@ -663,7 +653,7 @@ def climate_smart_crop_processing():
 
     # OTHER ENERGIES
     df_oth_energy = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/statistiques_energie_2023.xlsx',
+        'data/statistiques_energie_2023.xlsx',
         sheet_name='T17d',
         skiprows=10,
         nrows=44
@@ -686,7 +676,7 @@ def climate_smart_crop_processing():
 
     # PETROLEUM PRODUCTS
     df_petroleum = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/statistiques_energie_2023.xlsx',
+        'data/statistiques_energie_2023.xlsx',
         sheet_name='T20',
         skiprows=6,
         nrows=51
@@ -697,7 +687,7 @@ def climate_smart_crop_processing():
 
     # BIOGAS
     df_biogas = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/statistiques_energie_2023.xlsx',
+        'data/statistiques_energie_2023.xlsx',
         sheet_name='T34a',
         skiprows=6,
         nrows=35
@@ -789,7 +779,7 @@ def climate_smart_crop_processing():
     df_combined['value'] = df_combined['value'] / (df_combined['Agricultural land [kha]'] * 1000)
     # Read excel file
     df_dict_csc = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='climate-smart-crops')
 
     # Merge based on 'Item'
@@ -986,7 +976,7 @@ def climate_smart_crop_processing():
     # Food item name matching with dictionary
     # Read excel file
     df_dict_csc = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='climate-smart-crops')
 
     # Merge based on 'Item'
@@ -1146,7 +1136,7 @@ def climate_smart_crop_processing():
     # Food item name matching with dictionary
     # Read excel file
     df_dict_csc = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='climate-smart-crops')
 
     # Merge based on 'Item'
@@ -1216,7 +1206,7 @@ def climate_smart_crop_processing():
 
     # Read excel
     df_kcal_t = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/kcal_to_t.xlsx',
+        'dictionaries/kcal_to_t.xlsx',
         sheet_name='kcal_per_100g')
     df_kcal_g = df_kcal_t[['Item crop yield', 'kcal per 100g']]
     # Merge
@@ -1236,7 +1226,7 @@ def climate_smart_crop_processing():
     # Food item name matching with dictionary
     # Read excel file
     df_dict_csc = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='climate-smart-crops')
 
     # Merge based on 'Item'
@@ -1288,7 +1278,7 @@ def climate_smart_crop_processing():
     # For other value : gas-energycrop
     # Load from previous EuCalc Data
     df_yield_data = pd.read_csv(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/agriculture_climate-smart-crop_eucalc.csv',
+        'data/agriculture_climate-smart-crop_eucalc.csv',
         sep=';')
 
     # Filter columns
@@ -1413,7 +1403,7 @@ def climate_smart_livestock_processing(df_csl_feed):
     # Aggregating
     # Reading excel lsu equivalent (for aggregatop,
     df_lsu = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/lsu_equivalent.xlsx',
+        'dictionaries/lsu_equivalent.xlsx',
         sheet_name='lsu_equivalent')
     # Merging
     df_density_1990_2021 = pd.merge(df_density_1990_2021, df_lsu, on='Item')
@@ -1458,7 +1448,7 @@ def climate_smart_livestock_processing(df_csl_feed):
 
     # Read excel file
     df_dict_csl = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='climate-smart-livestock')
 
     # Merge based on 'Item'
@@ -1593,7 +1583,7 @@ def climate_smart_livestock_processing(df_csl_feed):
 
     # Reading excel lsu equivalent
     df_lsu = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/lsu_equivalent.xlsx',
+        'dictionaries/lsu_equivalent.xlsx',
         sheet_name='lsu_equivalent')
     # Merging
     df_enteric_1990_2021 = pd.merge(df_enteric_1990_2021, df_lsu, on='Item')
@@ -1626,7 +1616,7 @@ def climate_smart_livestock_processing(df_csl_feed):
     # Food item name matching with dictionary
     # Read excel file
     df_dict_csl_enteric = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='climate-smart-livestock_enteric')
 
     # Merge based on 'Item' & 'Aggregation'
@@ -1702,7 +1692,7 @@ def climate_smart_livestock_processing(df_csl_feed):
 
     # Reading excel lsu equivalent (for aggregatop,
     df_lsu = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/lsu_equivalent.xlsx',
+        'dictionaries/lsu_equivalent.xlsx',
         sheet_name='lsu_equivalent')
     # Merging
     df_manure_1990_2021 = pd.merge(df_manure_1990_2021, df_lsu, on='Item')
@@ -1747,7 +1737,7 @@ def climate_smart_livestock_processing(df_csl_feed):
     # Food item name matching with dictionary
     # Read excel file
     df_dict_csl = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='climate-smart-livestock')
 
     # Merge based on 'Item' & 'Aggregation'
@@ -1850,7 +1840,7 @@ def climate_smart_livestock_processing(df_csl_feed):
     # Food item name matching with dictionary
     # Read excel file
     df_dict_csl_losses = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='climate-smart-livestock_losses')
 
     # Merge based on 'Item'
@@ -1903,7 +1893,7 @@ def climate_smart_livestock_processing(df_csl_feed):
 
     # Read excel file
     df_dict_csl = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='climate-smart-livestock')
 
     # Merge based on 'Item'
@@ -1978,7 +1968,7 @@ def climate_smart_livestock_processing(df_csl_feed):
 
     # Reading excel lsu equivalent
     df_lsu = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/lsu_equivalent.xlsx',
+        'dictionaries/lsu_equivalent.xlsx',
         sheet_name='lsu_equivalent')
     # Merging
     df_producing_animals_1990_2022 = pd.merge(df_producing_animals_1990_2022, df_lsu, on='Item')
@@ -2067,7 +2057,7 @@ def climate_smart_livestock_processing(df_csl_feed):
 
     # Reading excel lsu equivalent
     df_lsu = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/lsu_equivalent.xlsx',
+        'dictionaries/lsu_equivalent.xlsx',
         sheet_name='lsu_equivalent')
     # Merging
     df_slaughtered_1990_2022 = pd.merge(df_slaughtered_1990_2022, df_lsu, on='Item')
@@ -2122,7 +2112,7 @@ def climate_smart_livestock_processing(df_csl_feed):
 
     # Read excel
     df_kcal_t = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/kcal_to_t.xlsx',
+        'dictionaries/kcal_to_t.xlsx',
         sheet_name='kcal_per_100g')
     df_kcal_g = df_kcal_t[['Item livestock yield', 'kcal per t']]
     # Merge
@@ -2140,10 +2130,10 @@ def climate_smart_livestock_processing(df_csl_feed):
     # Food item name matching with dictionary
     # Read excel file
     df_dict_csl_yield = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='climate-smart-livestock_yield')
     df_dict_csl_slau = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='climate-smart-livestock_slau')
 
     # Merge based on 'Item'
@@ -2204,12 +2194,12 @@ def climate_smart_forestry_processing():
 
     # Read csv
     df_g_inc = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_forestry.xlsx',
+        'data/data_forestry.xlsx',
         sheet_name='annual_ginc_per_area_m3ha')
 
     # Read and format forest area for later
     df_area = pd.read_csv(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/fra-extentOfForest.csv')
+        'data/fra-extentOfForest.csv')
     df_area.columns = df_area.iloc[0]
     df_area = df_area[1:]
     # Rename column name 'geoscale'
@@ -2314,13 +2304,13 @@ def climate_smart_forestry_processing():
 
     # Read files (growing stock available fo wood supply and not)
     gstock_total = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_forestry.xlsx',
+        'data/data_forestry.xlsx',
         sheet_name='gstock_total_Mm3')
     gstock_faws = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_forestry.xlsx',
+        'data/data_forestry.xlsx',
         sheet_name='gstock_faws_Mm3')
     area_faws = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_forestry.xlsx',
+        'data/data_forestry.xlsx',
         sheet_name='forest_area_faws_1000ha')
 
     # Format correctly
@@ -2370,7 +2360,7 @@ def climate_smart_forestry_processing():
 
     # Read excel file
     df_dict_forestry = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='climate-smart-forestry')
 
     # Merge based on 'Item'
@@ -2401,7 +2391,7 @@ def climate_smart_forestry_processing():
     # ----------------------------------------------------------------------------------------------------------------------
     # Read files (growing stock available fo wood supply and not)
     h_rate = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_forestry.xlsx',
+        'data/data_forestry.xlsx',
         sheet_name='h-rate')
 
     # Replace - with Na
@@ -2449,7 +2439,7 @@ def climate_smart_forestry_processing():
 
     # Read file
     nat_losses = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_forestry.xlsx',
+        'data/data_forestry.xlsx',
         sheet_name='nat-losses_1000ha')
 
     # Format correctly
@@ -2495,7 +2485,7 @@ def climate_smart_forestry_processing():
     # PathwayCalc formatting -----------------------------------------------------------------------------------------------
     # Read excel file
     df_dict_forestry = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='climate-smart-forestry')
 
     # Merge based on 'Item'
@@ -2548,7 +2538,7 @@ def land_management_processing(csf_managed):
     # Importing UNFCCC excel files and reading them with a loop (only for Switzerland) Table 4.1 ---------------------------
     # Putting in a df in 3 dimensions (from, to, year)
     # Define the path where the Excel files are located
-    folder_path = '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_unfccc_2023'
+    folder_path = 'data/data_unfccc_2023'
 
     # List all files in the folder
     files = os.listdir(folder_path)
@@ -2719,7 +2709,7 @@ def land_management_processing(csf_managed):
     # Match with dictionary for correct names
     # Read excel file
     df_dict_land_man = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='land-management')
 
     # Merge based on 'Item'
@@ -2931,9 +2921,6 @@ def land_management_processing(csf_managed):
 
     return df_land_management_pathwaycalc
 
-years_setting = [1990, 2023, 2050, 5]  # Set the timestep for historical years & scenarios
-years_ots = list(range(1990,2023))
-
 # CalculationLeaf BIOENERGY CAPACITY -----------------------------------------------------------------------------------
 
 def bioernergy_capacity_processing(df_csl_feed):
@@ -3014,7 +3001,7 @@ def biomass_bioernergy_hierarchy_processing(df_csl_feed):
     # ------------------------------------------------------------------------------------------------------------------
     # Load from previous EuCalc Data
     df_biomass_mix_data = pd.read_csv(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/agriculture_biomass-use-hierarchy_eucalc.csv', sep=';')
+        'data/agriculture_biomass-use-hierarchy_eucalc.csv', sep=';')
 
     # Filter columns
     df_filtered_columns = df_biomass_mix_data[['geoscale', 'timescale', 'eucalc-name', 'value']]
@@ -3040,7 +3027,7 @@ def biomass_bioernergy_hierarchy_processing(df_csl_feed):
     # ------------------------------------------------------------------------------------------------------------------
     # Load from previous EuCalc Data
     df_biomass_residues_data = pd.read_csv(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/agriculture_biomass-use-hierarchy_eucalc.csv', sep=';')
+        'data/agriculture_biomass-use-hierarchy_eucalc.csv', sep=';')
 
     # Filter columns
     df_filtered_columns = df_biomass_residues_data[['geoscale', 'timescale', 'eucalc-name', 'value']]
@@ -3319,7 +3306,7 @@ def lifestyle_calibration():
     # Food item name matching with dictionary
     # Read excel file
     df_dict_calibration = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='calibration')
 
     # Prepend "Diet" to each value in the 'Item' column
@@ -3415,7 +3402,7 @@ def livestock_crop_calibration(df_energy_demand_cal):
 
     # Reading excel lsu equivalent
     df_lsu = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/lsu_equivalent.xlsx',
+        'dictionaries/lsu_equivalent.xlsx',
         sheet_name='lsu_equivalent_GLE')
 
     # Converting into lsu
@@ -3459,7 +3446,7 @@ def livestock_crop_calibration(df_energy_demand_cal):
     # Food item name matching with dictionary
     # Read excel file
     df_dict_calibration = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='calibration')
 
     # Merge based on 'Item'
@@ -3563,7 +3550,7 @@ def livestock_crop_calibration(df_energy_demand_cal):
     # Unit conversion [t] => [kcal]
     # Read excel
     df_kcal_t = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/kcal_to_t.xlsx',
+        'dictionaries/kcal_to_t.xlsx',
         sheet_name='kcal_per_100g')
     df_kcal_t = df_kcal_t[['Item', 'kcal per t']]
     # Merge
@@ -3581,7 +3568,7 @@ def livestock_crop_calibration(df_energy_demand_cal):
     # Food item name matching with dictionary
     # Read excel file
     df_dict_calibration = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='calibration')
 
     # Prepend "Diet" to each value in the 'Item' column
@@ -3707,7 +3694,7 @@ def manure_calibration():
     # Food item name matching with dictionary
     # Read excel file
     df_dict_calibration = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='calibration')
 
     # Merge based on 'Item'
@@ -3888,7 +3875,7 @@ def energy_ghg_calibration():
     # Food item name matching with dictionary
     # Read excel file
     df_dict_calibration = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='calibration')
 
     # Concat
@@ -3968,7 +3955,7 @@ def nitrogen_calibration():
     # Food item name matching with dictionary
     # Read excel file
     df_dict_calibration = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='calibration')
 
     # Prepend "Fertilizers" to each value in the 'Item' column
@@ -4151,7 +4138,7 @@ def feed_calibration():
     # Univ conversion [kt] => [kcal]
     # Read excel
     df_kcal_t = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/kcal_to_t.xlsx',
+        'dictionaries/kcal_to_t.xlsx',
         sheet_name='kcal_per_100g')
     df_kcal_t = df_kcal_t[['Item', 'kcal per t']]
     # Merge
@@ -4176,7 +4163,7 @@ def feed_calibration():
     # Food item name matching with dictionary
     # Read excel file
     df_dict_calibration = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='calibration')
 
     # Prepend "Diet" to each value in the 'Item' column
@@ -4247,7 +4234,7 @@ def land_calibration():
     # Food item name matching with dictionary
     # Read excel file
     df_dict_calibration = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='calibration')
 
     # Prepend "Fertilizers" to each value in the 'Item' column
@@ -4275,7 +4262,7 @@ def CO2_emissions():
     # Importing UNFCCC excel files and reading them with a loop (only for Switzerland) Table 4.1 ---------------------------
     # Putting in a df in 3 dimensions (from, to, year)
     # Define the path where the Excel files are located
-    folder_path = '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/data/data_unfccc_2023'
+    folder_path = 'data/data_unfccc_2023'
 
     # List all files in the folder
     files = os.listdir(folder_path)
@@ -4323,7 +4310,7 @@ def CO2_emissions():
     # Food item name matching with dictionary
     # Read excel file
     df_dict_calibration = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='calibration')
 
     # Adding a column geoscale
@@ -4423,7 +4410,7 @@ def wood_calibration():
     # Food item name matching with dictionary
     # Read excel file
     df_dict_calibration = pd.read_excel(
-        '/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/dictionaries/dictionnary_agriculture_landuse.xlsx',
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='calibration')
 
     # Merge based on 'Item'
@@ -4526,7 +4513,7 @@ def fxa_preprocessing():
 
     # Load FXA data
     df_fxa = pd.read_csv(
-        '/Users/crosnier/Documents/PathwayCalc/_database/data/csv/agriculture_fixed-assumptions.csv',
+        '../../data/csv/agriculture_fixed-assumptions.csv',
         sep=';')
 
     # Add fxa_ in front of lus_land_total-area[ha]
@@ -4550,39 +4537,20 @@ def fxa_preprocessing():
     df_fxa_pathwaycalc = linear_fitting_ots_db(df_fxa_pathwaycalc, years_ots, countries='all')
 
     # Export as csv
-    df_fxa_pathwaycalc.to_csv('/Users/crosnier/Documents/PathwayCalc/_database/data/csv/agriculture_fixed-assumptions_pathwaycalc.csv', sep=';', index=False)
+    df_fxa_pathwaycalc.to_csv('../../data/csv/agriculture_fixed-assumptions_pathwaycalc.csv', sep=';', index=False)
 
     return
 
 
 # CalculationLeaf Pickle creation
 #  FIXME only Switzerland for now
-def init_years_lever():
-    # function that can be used when running the module as standalone to initialise years and levers
-    years_setting = [1990, 2024, 2050, 5]
-    f = open('../../../config/lever_position.json')
-    lever_setting = json.load(f)[0]
-    return years_setting, lever_setting
 
-def database_from_csv_to_datamatrix():
+def database_from_csv_to_datamatrix(years_ots, years_fts, dm_kcal_req_pathwaycalc):
     #############################################
     ##### database_from_csv_to_datamatrix() #####
     #############################################
-
-    years_setting, lever_setting = init_years_lever()
-    # file
-    #__file__ = "/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/agriculture_landuse_preprocessing_EU.py"
-    # directories
-    #current_file_directory = os.path.dirname(os.path.abspath(__file__))
-
-    # Set years range
-    years_ots = create_years_list(1990, 2023, 1) # make list with years from 1990 to 2015
-    years_fts = create_years_list(2025, 2050, 5) # make list with years from 2020 to 2050 (steps of 5 years)
+     # make list with years from 2020 to 2050 (steps of 5 years)
     years_all = years_ots + years_fts
-    baseyear = 1990
-    #####################
-    # FIXED ASSUMPTIONS #
-    #####################
 
     # FixedAssumptionsToDatamatrix
 
@@ -4606,8 +4574,17 @@ def database_from_csv_to_datamatrix():
     # LeversToDatamatrix FTS based on EuCalc fts
     dm_fts = DM_agriculture_old['fts'].copy()
 
-    # Filter dm_fts to start year at 2025 not 2020
-    filter_years_DM(dm_fts, years_fts)
+    # Filter dm_fts to start year at 2025 not 2020 PAOLA FTS
+    filter_DM(dm_fts, {'Years': years_fts})
+
+    # for dm_kcal_req use linear-fitting to determine fts
+    linear_fitting(dm_kcal_req_pathwaycalc, years_fts)
+    dm_kcal_req_fts = dm_kcal_req_pathwaycalc.filter({'Years': years_fts}, inplace=False)
+    dm_kcal_req_pathwaycalc.filter({'Years': years_ots}, inplace=True)
+
+    for lev in range(4):
+        lev = lev+1
+        dm_fts['kcal-req'][lev] = dm_kcal_req_fts
 
     # To remove '_' at the ending of some keys as the ones for diet
     for key in dm_fts.keys():
@@ -4697,7 +4674,7 @@ def database_from_csv_to_datamatrix():
     dict_fxa['agr_climate-smart-forestry'] = dm_agroforestry"""
 
     # file
-    __file__ = "/Users/crosnier/Documents/PathwayCalc/_database/pre_processing/agriculture & land use/agriculture_landuse_preprocessing_EU.py"
+    __file__ = "agriculture_landuse_preprocessing_EU.py"
 
     # directories
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -4706,7 +4683,7 @@ def database_from_csv_to_datamatrix():
 
     dict_fxa = {}
     # Data - Calibration
-    #file = '/Users/crosnier/Documents/PathwayCalc/_database/data/csv/agriculture_calibration.csv'
+    #file = '../../data/csv/agriculture_calibration.csv'
     lever = 'none'
     #df_db = pd.read_csv(file)
     df_ots, df_fts = database_to_df(df_calibration, lever, level='all')
@@ -4851,10 +4828,7 @@ def database_from_csv_to_datamatrix():
 
     # Data - Lever - Energy requirements
     lever = 'kcal-req'
-    df_ots, df_fts = database_to_df(df_kcal_req_pathwaycalc, lever, level='all')
-    df_ots = df_ots.drop(columns=[lever])  # Drop column with lever name
-    dm = DataMatrix.create_from_df(df_ots, num_cat=0)
-    dict_ots[lever] = dm
+    dict_ots[lever] = dm_kcal_req_pathwaycalc
 
     # Data - Lever - Food wastes
     lever = 'fwaste'
@@ -5149,7 +5123,8 @@ def database_from_csv_to_datamatrix():
     }
 
     # Add EU27 and Vaud as dummys
-    add_dummy_country_to_DM(DM_agriculture, 'EU27', 'Switzerland')
+    add_dummy_country_to_DM(DM_agriculture, 'Germany', 'Switzerland')
+    add_dummy_country_to_DM(DM_agriculture, 'EU27', 'Germany')
     add_dummy_country_to_DM(DM_agriculture, 'Vaud', 'Switzerland')
 
     # FXA pre-processing -----------------------------------------------------------------------------------------------
@@ -5172,9 +5147,7 @@ def database_from_csv_to_datamatrix():
     #DM_agriculture['fxa']['cal_agr_emission_CH4'].deepen()
 
     # write datamatrix to pickle
-    __file__ = "/Users/crosnier/Documents/PathwayCalc/_database"
-    current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    f = os.path.join(current_file_directory, '_database/data/datamatrix/agriculture.pickle')
+    f = '../../data/datamatrix/agriculture.pickle'
     with open(f, 'wb') as handle:
         pickle.dump(DM_agriculture, handle, protocol=pickle.HIGHEST_PROTOCOL)
     return
@@ -5182,21 +5155,12 @@ def database_from_csv_to_datamatrix():
 
 # CalculationTree RUNNING LEVERS PRE-PROCESSING -----------------------------------------------------------------------------------------------
 
-"""years_ots = create_years_list(1990, 2023, 1)  # make list with years from 1990 to 2015
-years_fts = create_years_list(2025, 2050, 5)  # make list with years from 2020 to 2050 (steps of 5 years)
-years_all = years_ots + years_fts
-baseyear = 1990
-dict_ots = {}
-dict_fts = {}
-df_diet_pathwaycalc, df_diet = diet_processing()
-lever = 'diet'
-dict_ots, dict_fts = read_database_to_dm(df_db=df_diet_pathwaycalc, filter={'geoscale': ['Vaud', 'Switzerland']},
-                                                 baseyear=2023, num_cat=0, level='all')"""
-
+years_ots = create_years_list(1990, 2023, 1)  # make list with years from 1990 to 2015
+years_fts = create_years_list(2025, 2050, 5)
 
 df_diet_pathwaycalc, df_diet = diet_processing()
 df_waste_pathwaycalc = food_waste_processing(df_diet)
-df_kcal_req_pathwaycalc = energy_requirements_processing()
+dm_kcal_req_pathwaycalc = energy_requirements_processing(country_list=df_waste_pathwaycalc['geoscale'].unique(), years_ots=years_ots)
 df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing(years_ots)
 df_climate_smart_crop_pathwaycalc, df_energy_demand_cal = climate_smart_crop_processing()
 df_climate_smart_livestock_pathwaycalc = climate_smart_livestock_processing(df_csl_feed)
@@ -5205,7 +5169,6 @@ df_land_management_pathwaycalc = land_management_processing(csf_managed)
 df_bioenergy_capacity_CH_pathwaycalc = bioernergy_capacity_processing(df_csl_feed)
 df_biomass_hierarchy_pathwaycalc = biomass_bioernergy_hierarchy_processing(df_csl_feed)
 df_protein_meals_pathwaycalc = livestock_protein_meals_processing(df_csl_feed)
-
 
 # CalculationTree RUNNING CALIBRATION ----------------------------------------------------------------------------------
 df_diet_calibration = lifestyle_calibration()
@@ -5225,6 +5188,6 @@ df_calibration = calibration_formatting(df_diet_calibration, df_domestic_supply_
 # CalculationTree RUNNING FXA PRE-PROCESSING ---------------------------------------------------------------------------
 #fxa_preprocessing()
 # CalculationTree RUNNING PICKLE CREATION
-database_from_csv_to_datamatrix() #Fixme duplicates in constants
+database_from_csv_to_datamatrix(years_ots, years_fts, dm_kcal_req_pathwaycalc) #Fixme duplicates in constants
 
 
