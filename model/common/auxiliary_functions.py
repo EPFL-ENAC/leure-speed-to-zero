@@ -274,6 +274,7 @@ def read_level_data(DM, lever_setting):
         if isinstance(DM['ots'][lever], dict):
             DM_ots_fts[lever] = {}
             for group in DM['ots'][lever].keys():
+                print(lever)
                 dm = DM['ots'][lever][group]
                 dm_fts = DM['fts'][lever][group][level_value]
                 dm.append(dm_fts, dim='Years')
@@ -1195,14 +1196,17 @@ def sort_pickle(file_path):
     return
 
 
-def filter_years_DM(DM, selected_years):
+def filter_DM(DM, dict_selection):
+    # dict_selection can be for example : {'Years': years_ots} or {'Country': ['Switzerland']}
     for key in DM.keys():
         if isinstance(DM[key], dict):
-            filter_years_DM(DM[key], selected_years)
+            filter_DM(DM[key], dict_selection)
         else:
             dm = DM[key]
-            dm.filter({'Years': selected_years}, inplace=True)
-            DM[key] = dm
+            for dim in dict_selection.keys():
+                if dim in dm.dim_labels:
+                    dm.filter(dict_selection, inplace=True)
+                    DM[key] = dm
     return
 
 
