@@ -64,7 +64,7 @@ list(A["combo"].unique())
 df_temp = df.copy()
 df_temp = df_temp.loc[df_temp["geoscale"] == "AT",:]
 df_temp = df_temp.loc[:,['freq', 'wst_oper', 'waste', 'unit', 'geoscale',"2022"]]
-df_temp = df_temp.loc[df_temp["wst_oper"] == "RCY",:]
+df_temp = df_temp.loc[df_temp["wst_oper"] == "REU",:]
 df_temp_tot = df_total.copy()
 df_temp_tot = df_temp_tot.loc[df_temp_tot["geoscale"] == "AT",:]
 df_temp_tot = df_temp_tot.loc[:,['freq', 'wst_oper', 'unit', 'geoscale',"2022"]]
@@ -122,20 +122,10 @@ df_temp = df_temp.loc[df_temp["wst_oper"] == "RCV_E",:]
 # incineration: 0
 
 # mapping
-dict_mapping = {"recycling": ["RCY - ELV"],
-                "energy-recovery": ['RCV_E - DMDP','RCV_E - LIQ',
-                                    'RCV_E - W160103','RCV_E - W160107',
-                                    'RCV_E - W160119','RCV_E - W160120',
-                                    'RCV_E - W1601A', 'RCV_E - W1601B',
-                                    'RCV_E - W1601C', 'RCV_E - W1606',
-                                    'RCV_E - W1608', 'RCV_E - W1910'], # before for energy recovery we were considering only 'RCV_E - DMDP' and 'RCV_E - W1910', not sure why
-                "reuse": ["REU - ELV"],
-                "landfill": ['DSP - DMDP','DSP - LIQ',
-                             'DSP - W160103','DSP - W160107',
-                             'DSP - W160119', 'DSP - W160120',
-                             'DSP - W1601A', 'DSP - W1601B', 
-                             'DSP - W1601C', 'DSP - W1606', 
-                             'DSP - W1608', 'DSP - W1910'], # we assume that DSP (all operations that are not recovery) are landfill. Note that before for DSP we were considering only 'RCV_E - DMDP' and 'RCV_E - W1910', not sure why
+dict_mapping = {"recycling": ["RCY - DMDP", "RCY - W1910"],
+                "energy-recovery": ['RCV_E - DMDP', 'RCV_E - W1910'],
+                "reuse": ["REU - DMDP", "REU - W1910"],
+                "landfill": ['DSP - DMDP', 'DSP - W1910'],
                 "export" : ["GEN - EXP"]
                 }
 
@@ -392,10 +382,11 @@ for v in dm_elv_col.col_labels["Variables"]:
 # make dm for total waste
 dm_elv_tot.append(dm_elv.filter({"Variables" : ["export"]}), "Variables")
 dm_elv_tot.rename_col("collected","waste-collected","Variables")
-idx = dm_elv_tot.idx
-arr_temp = dm_elv_tot.array[:,:,idx["waste-collected"], np.newaxis] * 0.36/0.64
-dm_elv_tot.add(arr_temp, dim = "Variables", col_label = "waste-uncollected", unit="t")
+dm_temp = dm_elv_tot.groupby({"waste-uncollected" : ["waste-collected","export"]}, "Variables", inplace=False)
+dm_temp.array = dm_temp.array * 0.36/0.64
+dm_elv_tot.append(dm_temp,"Variables")
 dm_elv_tot.add(0, col_label="littered", dummy=True, dim='Variables', unit="t")
+dm_elv_tot.sort("Variables")
 idx = dm_elv_tot.idx
 countries = dm_elv_tot.col_labels["Country"]
 countries = list(np.array(countries)[[i != "EU27" for i in countries]])
