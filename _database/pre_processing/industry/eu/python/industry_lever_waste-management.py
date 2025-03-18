@@ -393,7 +393,7 @@ for v in dm_elv_col.col_labels["Variables"]:
 dm_elv_tot.append(dm_elv.filter({"Variables" : ["export"]}), "Variables")
 dm_elv_tot.rename_col("collected","waste-collected","Variables")
 idx = dm_elv_tot.idx
-arr_temp = dm_elv_tot.array[:,:,idx["waste-collected"], np.newaxis] / 0.8 * 0.2
+arr_temp = dm_elv_tot.array[:,:,idx["waste-collected"], np.newaxis] * 0.36/0.64
 dm_elv_tot.add(arr_temp, dim = "Variables", col_label = "waste-uncollected", unit="t")
 dm_elv_tot.add(0, col_label="littered", dummy=True, dim='Variables', unit="t")
 idx = dm_elv_tot.idx
@@ -478,7 +478,7 @@ dm_elv_col = dm_elv_col_new.copy()
 del arr_temp, baseyear, baseyear_end, baseyear_start, c, countries, dm_elv,\
     dm_temp, idx, lastyear, startyear, step_fts, v, years_all, \
     years_fts, years_ots, years_setting, y, dm_elv_col_new, dm_elv_tot_new, \
-    products, i
+    products
 
 ################
 ##### SAVE #####
