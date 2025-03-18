@@ -50,8 +50,12 @@ with open(filepath, 'rb') as handle:
     dm_new = pickle.load(handle)
 
 # normalise
+for v in dm_new.col_labels["Variables"]:
+    dm_new.rename_col(v,"tra_passenger_technology-share_new_" + v,"Variables")
+dm_new.deepen_twice()
+dm_new.add(np.nan, col_label="FCEV", dummy=True, dim="Categories2")
+dm_new.sort("Categories2")
 dm_new.normalise("Categories2")
-dm_new.rename_col("tra_passenger_new-vehicles","tra_passenger_technology-share_new","Variables")
 
 # split between ots and fts
 DM_new = {"ots": {"passenger_technology-share_new" : []}, "fts": {"passenger_technology-share_new" : dict()}}
