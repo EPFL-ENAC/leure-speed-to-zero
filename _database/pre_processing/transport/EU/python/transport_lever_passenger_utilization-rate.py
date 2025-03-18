@@ -48,8 +48,12 @@ DM_tra["ots"]["passenger_utilization-rate"].units
 filepath = os.path.join(current_file_directory, '../data/datamatrix/intermediate_files/passenger_fleet.pickle')
 with open(filepath, 'rb') as handle:
     dm_fleet = pickle.load(handle)
-dm_fleet.group_all("Categories2")
-    
+dm_fleet.deepen()
+dm_fleet.group_all("Categories1")
+for v in dm_fleet.col_labels["Variables"]:
+    dm_fleet.rename_col(v,"tra_fleet_" + v,"Variables")
+dm_fleet.deepen()
+
 # get vkm data
 filepath = os.path.join(current_file_directory, '../data/datamatrix/intermediate_files/passenger_vkm.pickle')
 with open(filepath, 'rb') as handle:
