@@ -541,8 +541,8 @@ def read_data(data_file, lever_setting):
     # Sub-matrix for LIFESTYLE
     #dm_demography = DM_ots_fts['pop']['lfs_demography_']
     dm_diet_requirement = DM_ots_fts['kcal-req']
-    dm_diet_split = DM_ots_fts['diet']['lfs_consumers-diet_']
-    dm_diet_share = DM_ots_fts['diet']['share_']
+    dm_diet_split = DM_ots_fts['diet']['lfs_consumers-diet']
+    dm_diet_share = DM_ots_fts['diet']['share']
     dm_diet_fwaste = DM_ots_fts['fwaste']
     #dm_population = DM_ots_fts['pop']['lfs_population_']
 
@@ -579,7 +579,7 @@ def read_data(data_file, lever_setting):
 
     # Sub-matrix for FEED
     dm_ration = DM_ots_fts['climate-smart-livestock']['climate-smart-livestock_ration']
-    dm_alt_protein = DM_ots_fts['alt-protein']['agr_alt-protein']
+    dm_alt_protein = DM_ots_fts['alt-protein']
 
     # Sub-matrix for CROP
     dm_food_net_import_crop = DM_ots_fts['food-net-import'].filter_w_regex({'Categories1': 'crop-.*', 'Variables': 'agr_food-net-import'}) # filtered here on purpose and not in the pickle (other parts of the datamatrix are used)
@@ -600,14 +600,14 @@ def read_data(data_file, lever_setting):
     dm_rice = DM_agriculture['fxa']['rice']
 
     # Sub-matrix for NITROGEN BALANCE
-    dm_input = DM_ots_fts['climate-smart-crop']['agr_climate-smart-crop_input-use']
+    dm_input = DM_ots_fts['climate-smart-crop']['climate-smart-crop_input-use']
     dm_fertilizer_emission = DM_agriculture['fxa']['agr_emission_fertilizer']
     dm_cal_n = DM_agriculture['fxa']['cal_agr_crop_emission_N2O-emission_fertilizer']
     #dm_fertilizer_emission.append(dm_cal_n, dim='Variables')
 
     # Sub-matrix for ENERGY & GHG EMISSIONS
     dm_cal_energy_demand = DM_agriculture['fxa']['cal_agr_energy-demand']
-    dm_energy_demand = DM_ots_fts['climate-smart-crop']['agr_climate-smart-crop_energy-demand']
+    dm_energy_demand = DM_ots_fts['climate-smart-crop']['climate-smart-crop_energy-demand']
     dm_cal_GHG = DM_agriculture['fxa']['cal_agr_emission_CH4']
     dm_cal_input = DM_agriculture['fxa']['cal_input']
 
@@ -711,7 +711,16 @@ def read_data(data_file, lever_setting):
 
     return DM_ots_fts, DM_lifestyle, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, CDM_const
 
+
 # SimulateInteractions
+def simulate_lifestyles_to_agriculture_input_new():
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(current_file_directory, "../_database/data/interface/lifestyles_to_agriculture.pickle")
+    with open(f, 'rb') as handle:
+        DM_lfs = pickle.load(handle)
+
+    return DM_lfs
+
 def simulate_lifestyles_to_agriculture_input():
     # Read input from lifestyle : food waste & diet
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -831,19 +840,25 @@ def simulate_transport_to_agriculture_input():
     return dm_tra
 
 # CalculationLeaf LIFESTYLE TO DIET/FOOD DEMAND --------------------------------------------------------------
-def lifestyle_workflow(DM_lifestyle, dm_population, CDM_const):
+def lifestyle_workflow(DM_lifestyle, DM_lfs, CDM_const):
     # Total kcal consumed
     dm_diet_split = DM_lifestyle['diet-split']
     ay_diet_intake = dm_diet_split.array[:, :, 0, :].sum(axis=-1)
 
-    # [TUTORIAL] Gap from healthy diet (Tree Parallel)
+    # [TUTORIAL] Compute tot kcal-req from kcal-req by age group
     dm_diet_requirement = DM_lifestyle['energy-requirement']
+    dm_diet_requirement.append(DM_lfs['lfs_demography_'], dim='Variables')
+    dm_diet_requirement.operation('lfs_demography', '*', 'agr_kcal-req', out_col='lfs_kcal-req', unit='kcal/day')
+    dm_diet_requirement.group_all('Categories1')
+    dm_diet_requirement.operation('lfs_kcal-req', '/', 'lfs_demography', out_col='lfs_kcal-req_req', unit='kcal/cap/day')
+    dm_diet_requirement.filter({'Variables': ['lfs_kcal-req_req']}, inplace=True)
+
+    # [TUTORIAL] Gap from healthy diet (Tree Parallel)
     dm_diet_requirement.add(ay_diet_intake, dim='Variables', col_label='lfs_energy-intake_total', unit='kcal/cap/day')
     dm_diet_requirement.operation('lfs_kcal-req_req', '-', 'lfs_energy-intake_total',
                                   dim="Variables", out_col='lfs_healthy-gap', unit='kcal/cap/day')
 
     #dm_population = DM_lifestyle['population']
-    idx_p = dm_population.idx
     # [TUTORIAL] Consumer diet (operation with matrices with different structure/array specs)
     dm_diet_share = DM_lifestyle['diet-share']
     idx = dm_diet_requirement.idx
@@ -852,6 +867,8 @@ def lifestyle_workflow(DM_lifestyle, dm_population, CDM_const):
     dm_diet_share.add(ay_diet_consumers, dim='Variables', col_label='lfs_consumers-diet', unit='kcal/cap/day')
     idx_d = dm_diet_share.idx
     # Calculate ay_total_diet
+    dm_population = DM_lfs['lfs_population_']
+    idx_p = dm_population.idx
     ay_total_diet = dm_diet_share.array[:, :, idx_d['lfs_consumers-diet'], :] * \
                     dm_population.array[:, :, idx_p['lfs_population_total'], np.newaxis] * 365
     start = time.time()
@@ -2593,13 +2610,14 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
 
     # Link interface or Simulate data from other modules
     if interface.has_link(from_sector='lifestyles', to_sector='agriculture'):
-        dm_population = interface.get_link(from_sector='lifestyles', to_sector='agriculture')
+        DM_lfs = interface.get_link(from_sector='lifestyles', to_sector='agriculture')
         #FIXME ajouter lien pour la population dm_population
     else:
         if len(interface.list_link()) != 0:
             print('You are missing lifestyles to agriculture interface')
-        dm_population = simulate_lifestyles_to_agriculture_input()
-        dm_population.filter({'Country': cntr_list}, inplace=True)
+        DM_lfs = simulate_lifestyles_to_agriculture_input_new()
+        for key in DM_lfs.keys():
+            DM_lfs[key].filter({'Country': cntr_list}, inplace=True)
         
     if interface.has_link(from_sector='buildings', to_sector='agriculture'):
         dm_bld = interface.get_link(from_sector='buildings', to_sector='agriculture')
@@ -2628,7 +2646,7 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
 
     # CalculationTree AGRICULTURE
 
-    dm_lfs, df_cal_rates_diet = lifestyle_workflow(DM_lifestyle, dm_population, CDM_const)
+    dm_lfs, df_cal_rates_diet = lifestyle_workflow(DM_lifestyle, DM_lfs, CDM_const)
     dm_lfs, dm_lfs_pro = food_demand_workflow(DM_food_demand, dm_lfs)
     DM_livestock, dm_liv_ibp, dm_liv_ibp, dm_liv_prod, dm_liv_slau_egg_dairy, df_cal_rates_liv_prod, df_cal_rates_liv_pop= livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro)
     DM_alc_bev, dm_bev_ibp_cereal_feed = alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro)
@@ -2775,3 +2793,4 @@ def agriculture_local_run():
     #    {'Country': 'Austria', 'Variables': ['agr_input-use_emissions-CO2_temp_fuel']})
 
    # dm_energy_demand.datamatrix_plot({'Variables': 'agr_energy-demand'})
+
