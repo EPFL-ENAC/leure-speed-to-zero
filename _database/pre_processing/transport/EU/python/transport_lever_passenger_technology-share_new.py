@@ -57,6 +57,9 @@ dm_new.add(np.nan, col_label="FCEV", dummy=True, dim="Categories2")
 dm_new.sort("Categories2")
 dm_new.normalise("Categories2")
 
+# check
+# dm_new.filter({"Country" : ["EU27"]}).flatten().flatten().datamatrix_plot(stacked=True)
+
 # split between ots and fts
 DM_new = {"ots": {"passenger_technology-share_new" : []}, "fts": {"passenger_technology-share_new" : dict()}}
 DM_new["ots"]["passenger_technology-share_new"] = dm_new.filter({"Years" : years_ots})
