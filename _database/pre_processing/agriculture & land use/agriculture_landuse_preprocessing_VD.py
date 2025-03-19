@@ -196,8 +196,35 @@ def get_crop_prod(table_id, file, years_ots):
     return dm
 
 
+def compute_wine_production(dm_crop_wine, wine_hl, conversion_hl_to_kcal):
+    years_wine = list(wine_hl.keys())
+    years_wine.sort()
+    arr_wine = [wine_hl[yr] for yr in years_wine]
+    arr_wine = np.array(arr_wine)
+    dm_wine = DataMatrix(col_labels={'Country': ['Vaud'], 'Years': years_wine, 'Variables': ['agr_production'],
+                                     'Categories1': ['pro-bev-wine']}, units={'agr_production': 'hl'})
+    dm_shape = tuple([len(dm_wine.col_labels[dim]) for dim in dm_wine.dim_labels])
+    dm_wine.array = np.zeros(shape=dm_shape)
+    dm_wine.array[0, :, 0, 0] = arr_wine
+    missing_years = list(set(years_ots) - set(dm_wine.col_labels['Years']))
+    dm_wine.add(np.nan, dummy=True, dim='Years', col_label=missing_years)
+
+    dm_crop_wine.append(dm_wine, dim='Variables')
+    dm_crop_wine.operation('agr_production', '/', 'agr_land-use', out_col='agr_climate-smart-crop_yield', unit='hl/ha')
+    dm_crop_wine.drop(col_label='agr_production', dim='Variables')
+    dm_crop_wine.fill_nans('Years')
+    dm_crop_wine.operation('agr_land-use', '*', 'agr_climate-smart-crop_yield', out_col='agr_production', unit='hl')
+    # Wine calories
+    # https://www.calories.info/food/wine ( avg 80 Calories/100 gr = 80 kcal/100 gr = 800 kcal/l -> 80'000 kcal/hl )
+    # FIXME you are here
+    dm_crop_wine.change_unit('agr_production_adj', old_unit='hl', new_unit='kcal', factor=conversion_hl_to_kcal)
+
+    return dm_crop_wine
+
+
 years_ots = create_years_list(1990, 2023, 1)
 years_fts = create_years_list(2025, 2050, 5)
+
 
 # Population
 data_file = '../../data/datamatrix/lifestyles.pickle'
@@ -206,7 +233,7 @@ with open(data_file, 'rb') as handle:
 dm_pop = DM_lfs['ots']['pop']['lfs_population_']
 
 # Load Agriculture pickle to read Switzerland data
-data_file = '../../data/datamatrix/agriculture_pathwaycalc.pickle'
+data_file = '../../data/datamatrix/agriculture.pickle'
 with open(data_file, 'rb') as handle:
     DM_agriculture = pickle.load(handle)
 filter_DM(DM_agriculture, {'Country': ['Switzerland']})
@@ -256,37 +283,29 @@ dm_yield_crop = dm_yield.filter({'Categories1': dm_crop_only.col_labels['Categor
 dm_crop_only.append(dm_yield_crop, dim='Variables')
 dm_crop_only.operation('agr_land-use', '*', 'agr_climate-smart-crop_yield', out_col='agr_production', unit='kcal')
 
-
 # Wine production
 # The Federal Office of Agriculture, report the hl of wine produced and the ha of land dedicated to vineyards.
 # https://www.blw.admin.ch/fr/vin
 # the reports are available for every year, and every canton, in pdf format. The values from 2021 to 2024
-wine_hl = {2015: 218026, 2019: 278474,  2020: 237740, 2021: 191463, 2022: 273762, 2023: 287379} #2024: 230916}
-years_wine = list(wine_hl.keys())
-years_wine.sort()
-arr_wine = [wine_hl[yr] for yr in years_wine]
-arr_wine = np.array(arr_wine)
-dm_wine = DataMatrix(col_labels={'Country': ['Vaud'], 'Years': years_wine, 'Variables': ['agr_production'], 'Categories1': ['pro-bev-wine']},
-                     units={'agr_production': 'hl'})
-dm_shape = tuple([len(dm_wine.col_labels[dim]) for dim in dm_wine.dim_labels])
-dm_wine.array = np.zeros(shape=dm_shape)
-dm_wine.array[0, :, 0, 0] = arr_wine
-missing_years = list(set(years_ots) - set(dm_wine.col_labels['Years']))
-dm_wine.add(np.nan, dummy=True, dim='Years', col_label=missing_years)
+wine_hl_VD = {2015: 218026, 2019: 278474,  2020: 237740, 2021: 191463, 2022: 273762, 2023: 287379} #2024: 230916}
+conversion_hl_to_kcal = 80000  # one hl of wine is 80'000 kcal
 dm_crop_wine = dm_crop_prod.filter({'Categories1': ['pro-bev-wine']}, inplace=False)
-dm_crop_wine.append(dm_wine, dim='Variables')
-dm_crop_wine.operation('agr_production', '/', 'agr_land-use', out_col='agr_climate-smart-crop_yield', unit='hl/ha')
-# FIXME you are here
+dm_crop_wine = compute_wine_production(dm_crop_wine, wine_hl_VD, conversion_hl_to_kcal)
 
+# Beer production
+# Since the cultivation of hop is small in Vaud and no data could be found on beer production we use crop-cereal
+dm_crop_beer = dm_crop_prod.filter({'Categories1': ['pro-bev-beer']}, inplace=False)
+dm_yield_beer = dm_yield.filter({'Categories1': ['cereal']}, inplace=False)
+dm_yield_beer.rename_col('cereal', 'pro-bev-beer', 'Catego')
 # Section: Supply
 # Compute supply = Demand + Waste
 # Demand = append( Consumer-diet,  )
 # Consumer-diet-other = ( kcal-req - sum(Consumer-diet) )*Share
 # Share
-dm_share = DM_agriculture['ots']['diet']['share_'].normalise('Categories1', inplace=False)
+dm_share = DM_agriculture['ots']['diet']['share'].normalise('Categories1', inplace=False)
 linear_fitting(dm_share, years_ots)
 # Consumer-diet
-dm_diet = DM_agriculture['ots']['diet']['lfs_consumers-diet_']
+dm_diet = DM_agriculture['ots']['diet']['lfs_consumers-diet']
 linear_fitting(dm_diet, years_ots)
 # kcal-req
 dm_kcal_req = DM_agriculture['ots']['kcal-req'].groupby({'lfs_kcal-req': '.*'}, regex=True, inplace=False, dim='Variables')
