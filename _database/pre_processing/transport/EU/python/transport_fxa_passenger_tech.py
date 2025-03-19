@@ -201,15 +201,15 @@ dm_fleet.sort("Country")
 # check
 # dm_fleet.flatten().filter({"Country" : ["EU27"]}).datamatrix_plot()
 
-# there is a problem with fleet LDV ice gasoline before 2014. Seeing
-# that also in Eurostat it's missing, I assume there is a problem with JRC data
-# and I put it missing
-dm_fleet = dm_fleet.flatten()
-idx = dm_fleet.idx
-years_fix = list(range(2000,2013+1))
-for y in years_fix:
-    dm_fleet.array[:,idx[y],idx["LDV_ICE-gasoline"]] = np.nan
-dm_fleet.deepen()
+# # there is a problem with fleet LDV ice gasoline before 2014. Seeing
+# # that also in Eurostat it's missing, I assume there is a problem with JRC data
+# # and I put it missing
+# dm_fleet = dm_fleet.flatten()
+# idx = dm_fleet.idx
+# years_fix = list(range(2000,2013+1))
+# for y in years_fix:
+#     dm_fleet.array[:,idx[y],idx["LDV_ICE-gasoline"]] = np.nan
+# dm_fleet.deepen()
 
 # fix units
 for v in dm_fleet.col_labels["Variables"]:
@@ -247,7 +247,7 @@ dict_call = {"2W_ICE-gasoline" : {"n_adj" : 1},
              "LDV_BEV" : {"n_adj" : 2, "year_end_first_adj" : 2010, "year_start_second_adj" : 2021},
              "LDV_ICE-diesel" : {"n_adj" : 2, "year_end_first_adj" : 2010, "year_start_second_adj" : 2020},
              "LDV_ICE-gas" : {"n_adj" : 2, "year_end_first_adj" : 2010, "year_start_second_adj" : 2020},
-             "LDV_ICE-gasoline" : {"n_adj" : 1},
+             "LDV_ICE-gasoline" : {"n_adj" : 2, "year_end_first_adj" : 2014, "year_start_second_adj" : 2014},
              "LDV_PHEV-diesel" : {"n_adj" : 2, "year_end_first_adj" : 2010, "year_start_second_adj" : 2021},
              "LDV_PHEV-gasoline" : {"n_adj" : 2, "year_end_first_adj" : 2010, "year_start_second_adj" : 2021},
              "bus_BEV" : {"n_adj" : 2, "year_end_first_adj" : 2010, "year_start_second_adj" : 2021},
@@ -329,7 +329,7 @@ dm_fleet_final = dm_fleet.copy()
 # clean
 del cat, categories2_all, categories2_missing, dict_call, dict_iso2, dict_iso2_jrc, \
     dict_new, dm_fleet_2w, dm_fleet_bus, dm_fleet_ldv, dm_fleet_rail, dm_temp, \
-    dm_temp1, filepath, handle, idx, key, v, y, years_fix, mapping_calc, mylist, \
+    dm_temp1, filepath, handle, idx, key, v, mapping_calc, mylist, \
     dm_fleet
 
 ###############################################################################
@@ -773,9 +773,9 @@ dm_new.sort("Country")
 # and I put it missing
 dm_new = dm_new.flatten()
 idx = dm_new.idx
-years_fix = list(range(2000,2013+1))
-for y in years_fix:
-    dm_new.array[:,idx[y],idx["LDV_ICE-gasoline"]] = np.nan
+# years_fix = list(range(2000,2013+1))
+# for y in years_fix:
+#     dm_new.array[:,idx[y],idx["LDV_ICE-gasoline"]] = np.nan
 
 # put LDV_ICE-gas 2000 as missing
 dm_new.array[:,idx[2000],idx["LDV_ICE-gas"]] = np.nan
@@ -815,7 +815,7 @@ dict_call = {"2W_ICE-gasoline" : {"n_adj" : 2, "year_end_first_adj" : 2007, "yea
              "LDV_BEV" : {"n_adj" : 2, "year_end_first_adj" : 2010, "year_start_second_adj" : 2021},
              "LDV_ICE-diesel" : {"n_adj" : 2, "year_end_first_adj" : 2006, "year_start_second_adj" : 2017},
              "LDV_ICE-gas" : {"n_adj" : 2, "year_end_first_adj" : 2003, "year_start_second_adj" : 2020},
-             "LDV_ICE-gasoline" : {"n_adj" : 1},
+             "LDV_ICE-gasoline" : {"n_adj" : 2, "year_end_first_adj" : 2013, "year_start_second_adj" : 2013},
              "LDV_PHEV-diesel" : {"n_adj" : 2, "year_end_first_adj" : 2010, "year_start_second_adj" : 2021},
              "LDV_PHEV-gasoline" : {"n_adj" : 2, "year_end_first_adj" : 2010, "year_start_second_adj" : 2021},
              "bus_BEV" : {"n_adj" : 2, "year_end_first_adj" : 2010, "year_start_second_adj" : 2021},
@@ -1025,7 +1025,7 @@ dm_new_final = dm_new.copy()
 # clean
 del cat, categories2_all, categories2_missing, dict_iso2, dict_call, dict_iso2_jrc, \
     dict_new, dm_new_2w, dm_new_bus, dm_new_ldv, dm_new_rail, dm_temp, \
-    dm_temp1, idx, key, v, y, years_fix, mapping_calc, mylist, \
+    dm_temp1, idx, key, v, mapping_calc, mylist, \
     dm_new
 
 ###############################################################################
@@ -1184,10 +1184,11 @@ dm_fleet = make_fts(dm_fleet, "total", baseyear_start, baseyear_end, dim = "Vari
 dm_fleet = make_fts(dm_fleet, "2W_ICE-gasoline", baseyear_start, baseyear_end, dim = "Variables")
 
 # get 2050 values for bev and phev
-# note: assuming 8% of total fleet being electric in 2050
 # source: https://www.eea.europa.eu/publications/electric-vehicles-and-the-energy/download
+# source: https://op.europa.eu/en/publication-detail/-/publication/96c2ca82-e85e-11eb-93a8-01aa75ed71a1
+# note: to try to find a way in between the two, I assign 0.20 electric in 2050
 idx = dm_fleet.idx
-electric_2050 = dm_fleet.array[idx["EU27"],idx[2050],idx["total"]] * 0.08
+electric_2050 = dm_fleet.array[idx["EU27"],idx[2050],idx["total"]] * 0.20
 dm_share = dm_fleet.filter({"Country" : ["EU27"], "Years" : [2023], "Variables" : ["LDV_BEV","LDV_PHEV-diesel","LDV_PHEV-gasoline","bus_BEV"]})
 dm_share.normalise("Variables")
 idx_share = dm_share.idx
@@ -1196,6 +1197,13 @@ PHEV_diesel_2050 = dm_share.array[:,:,idx_share["LDV_PHEV-diesel"]] * electric_2
 PHEV_gasoline_2050 = dm_share.array[:,:,idx_share["LDV_PHEV-gasoline"]] * electric_2050
 bus_BEV_2050 = dm_share.array[:,:,idx_share["bus_BEV"]] * electric_2050
 
+# # get 2050 values for bev and phev
+# # link: https://op.europa.eu/en/publication-detail/-/publication/96c2ca82-e85e-11eb-93a8-01aa75ed71a1
+# BEV_2050 = 100000000
+# PHEV_diesel_2050 = 10000000
+# PHEV_gasoline_2050 = 40000000
+# bus_BEV_2050 = 200000
+
 # # drop 2022-2023 for the electric vehicles (to avoid a flat line)
 # idx = dm_fleet.idx
 # for v in ["LDV_BEV","LDV_PHEV-diesel","LDV_PHEV-gasoline","bus_BEV"]:
@@ -1203,6 +1211,7 @@ bus_BEV_2050 = dm_share.array[:,:,idx_share["bus_BEV"]] * electric_2050
 #     dm_fleet.array[idx["EU27"],idx[2023],idx[v]] = np.nan
 
 # bev
+idx = dm_fleet.idx
 dm_fleet.array[idx["EU27"],idx[2050],idx["LDV_BEV"]] = BEV_2050
 dm_temp = linear_fitting(dm_fleet.filter({"Country" : ["EU27"], "Variables" : ["LDV_BEV"]}), years_ots + years_fts)
 idx_temp = dm_temp.idx
@@ -1323,7 +1332,7 @@ idx_temp = dm_temp.idx
 dm_new.array[idx["EU27"],:,idx[product]] = dm_temp.array[idx_temp["EU27"],:,idx_temp[product]]
 
 # ice
-dm_new = make_fts(dm_new, "LDV_ICE-diesel", 2017, baseyear_end, dim = "Variables")
+dm_new = make_fts(dm_new, "LDV_ICE-diesel", 2002, baseyear_end, dim = "Variables")
 dm_new = make_fts(dm_new, "LDV_ICE-gas", baseyear_start, baseyear_end, dim = "Variables")
 dm_new = make_fts(dm_new, "LDV_ICE-gasoline", baseyear_start, baseyear_end, dim = "Variables")
 
@@ -1411,6 +1420,9 @@ dm_tech.add(np.nan, col_label=years_fts, dummy=True, dim='Years')
 dm_fleet_pc = dm_tech.filter({"Variables" : ["tra_passenger_technology-share_fleet"]})
 dm_fleet_pc = dm_fleet_pc.normalise("Categories2",inplace=False)
 dm_fleet_pc.rename_col_regex("_share","","Variables")
+idx = dm_fleet_pc.idx
+for y in list(range(2025,2050+5,5)):
+    dm_fleet_pc.array[:,idx[y],...] = np.nan
 dm_tech.drop("Variables","tra_passenger_technology-share_fleet")
 dm_tech.append(dm_fleet_pc,"Variables")
 dm_tech.sort("Variables")
@@ -1432,10 +1444,10 @@ DM_tra["fxa"]["passenger_tech"].units
 dm_tech.units
 
 # save
-f = os.path.join(current_file_directory, '../data/datamatrix/intermediate_files/passenger_fleet.pickle')
+f = os.path.join(current_file_directory, '../data/datamatrix/intermediate_files/passenger_fleet.pickle') # to be used in passenger utilisation rate
 with open(f, 'wb') as handle:
     pickle.dump(dm_fleet, handle, protocol=pickle.HIGHEST_PROTOCOL)
-f = os.path.join(current_file_directory, '../data/datamatrix/intermediate_files/passenger_new-vehicles.pickle')
+f = os.path.join(current_file_directory, '../data/datamatrix/intermediate_files/passenger_new-vehicles.pickle') # to be used in passenger tech share new
 with open(f, 'wb') as handle:
     pickle.dump(dm_new, handle, protocol=pickle.HIGHEST_PROTOCOL)
 f = os.path.join(current_file_directory, '../data/datamatrix/intermediate_files/passenger_renewal-rate.pickle')
