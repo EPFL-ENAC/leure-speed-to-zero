@@ -1139,6 +1139,16 @@ def climate_smart_crop_processing(list_countries, file_dict):
     # Drop the columns Production, Import Quantity and Export Quantity
     pivot_df = pivot_df.drop(columns=['Production', 'Losses'])
 
+
+    # Create a dummy for Rice as no products
+    # Create a DataFrame for the new "Rice" rows
+    new_rows = pivot_df[['Area', 'Year']].drop_duplicates().copy()
+    new_rows['Item'] = 'Rice and products'
+    new_rows['Losses[%]'] = 0
+
+    # Append the new rows to the original DataFrame
+    pivot_df = pd.concat([pivot_df, new_rows], ignore_index=True)
+
     # PathwayCalc formatting -----------------------------------------------------------------------------------------------
 
     # Food item name matching with dictionary
@@ -1232,6 +1242,15 @@ def climate_smart_crop_processing(list_countries, file_dict):
     merged_df['Yield'] = merged_df['Yield'] * merged_df['kcal per 100g']
     pivot_df_yield = merged_df[['Area', 'Year', 'Item', 'Yield']]
     pivot_df_yield = pivot_df_yield.copy()
+
+    # Create a dummy for Rice as no products
+    # Create a DataFrame for the new "Rice" rows
+    new_rows = pivot_df_yield[['Area', 'Year']].drop_duplicates().copy()
+    new_rows['Item'] = 'Rice and products'
+    new_rows['Losses[%]'] = 0
+
+    # Append the new rows to the original DataFrame
+    pivot_df_yield = pd.concat([pivot_df_yield, new_rows], ignore_index=True)
 
     # PathwayCalc formatting -----------------------------------------------------------------------------------------------
 
@@ -2960,7 +2979,7 @@ def bioernergy_capacity_processing(df_csl_feed):
     df_bioenergy_capacity_CH['agr_bioenergy-capacity_bgs-mix_other-biogases[%]'] = 0.0
     df_bioenergy_capacity_CH['agr_bioenergy-capacity_bgs-mix_ren-mun-wastes[%]'] = 0.3567258574556069
     df_bioenergy_capacity_CH['agr_bioenergy-capacity_bgs-mix_sewage[%]'] = 0.6352468985648261
-    df_bioenergy_capacity_CH['agr_bioenergy-capacity_bgs-mix_themal-biogases[%]'] = 0.0
+    df_bioenergy_capacity_CH['agr_bioenergy-capacity_bgs-mix_thermal-biogases[%]'] = 0.0
 
     # Drop columns 'Total feed' and 'Feed ratio'
     df_bioenergy_capacity_CH = df_bioenergy_capacity_CH.drop(columns=['Total feed', 'Feed ratio'])
@@ -5087,6 +5106,10 @@ def database_from_csv_to_datamatrix(years_ots, years_fts, dm_kcal_req_pathwaycal
 # CalculationTree RUNNING LEVERS PRE-PROCESSING -----------------------------------------------------------------------------------------------
 years_ots = create_years_list(1990, 2023, 1)  # make list with years from 1990 to 2015
 years_fts = create_years_list(2025, 2050, 5)
+
+if not os.path.exists('data/faostat'):
+    os.makedirs('data/faostat')
+
 list_countries = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czechia', 'Denmark',
                   'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
                   'Lithuania', 'Luxembourg', 'Malta', 'Netherlands (Kingdom of the)', 'Poland', 'Portugal',

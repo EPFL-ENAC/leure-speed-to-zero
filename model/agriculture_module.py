@@ -5,7 +5,7 @@ from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.io_database import read_database, read_database_fxa, edit_database, database_to_df, dm_to_database
 from model.common.io_database import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups
 from model.common.interface_class import Interface
-from model.common.auxiliary_functions import compute_stock,  filter_geoscale, calibration_rates
+from model.common.auxiliary_functions import compute_stock,  filter_geoscale, calibration_rates, check_ots_fts_match
 from model.common.auxiliary_functions import read_level_data, simulate_input
 from scipy.optimize import linprog
 import pickle
@@ -523,6 +523,7 @@ def read_data(data_file, lever_setting):
         DM_agriculture = pickle.load(handle)
 
     # Read fts based on lever_setting
+    DM_check = check_ots_fts_match(DM_agriculture, lever_setting)
     DM_ots_fts = read_level_data(DM_agriculture, lever_setting)
 
     # FXA data matrix
@@ -2707,7 +2708,7 @@ def agriculture_local_run():
 
 # # Run the code in local
 #start = time.time()
-#results_run = agriculture_local_run()
+results_run = agriculture_local_run()
 #end = time.time()
 #print(end-start)
 
