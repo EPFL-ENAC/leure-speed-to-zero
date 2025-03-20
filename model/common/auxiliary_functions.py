@@ -265,6 +265,45 @@ def filter_geoscale(global_vars):
     return
 
 
+def check_ots_fts_match(DM, lever_setting):
+    DM_ots_fts = {}
+    for lever in DM['ots'].keys():
+        level_value = lever_setting['lever_' + lever]
+        # If there are groups
+        if isinstance(DM['ots'][lever], dict):
+            DM_ots_fts[lever] = {}
+            for group in DM['ots'][lever].keys():
+                dm = DM['ots'][lever][group]
+                dm_fts = DM['fts'][lever][group][level_value]
+                if 'Categories1' in dm.dim_labels:
+                    missing_cat_ots = list(set(dm_fts.col_labels['Categories1']) - set(dm.col_labels['Categories1']))
+                    if len(missing_cat_ots) > 0:
+                        dm_fts.drop(dim='Categories1', col_label=missing_cat_ots)
+                        print(f'dm_ots in {lever},{group} missing {missing_cat_ots}')
+                    missing_cat_fts = list(set(dm.col_labels['Categories1']) - set(dm_fts.col_labels['Categories1']))
+                    if len(missing_cat_fts) > 0:
+                        dm.drop(dim='Categories1', col_label=missing_cat_fts)
+                        print(f'dm_fts in {lever},{group} missing {missing_cat_fts}')
+                dm.append(dm_fts, dim='Years')
+                DM_ots_fts[lever][group] = dm
+        else:
+            dm = DM['ots'][lever]
+            dm_fts = DM['fts'][lever][level_value]
+            missing_cat_ots = list(set(dm_fts.col_labels['Categories1']) - set(dm.col_labels['Categories1']))
+            if 'Categories1' in dm.dim_labels:
+                if len(missing_cat_ots) > 0:
+                    dm_fts.drop(dim='Categories1', col_label=missing_cat_ots)
+                    print(f'dm_ots in {lever} missing {missing_cat_ots}')
+                missing_cat_fts = list(set(dm.col_labels['Categories1']) - set(dm_fts.col_labels['Categories1']))
+                if len(missing_cat_fts) > 0:
+                    dm.drop(dim='Categories1', col_label=missing_cat_fts)
+                    print(f'dm_fts in {lever} missing {missing_cat_fts}')
+            dm.append(dm_fts, dim='Years')
+            DM_ots_fts[lever] = dm
+
+    return DM_ots_fts
+
+
 def read_level_data(DM, lever_setting):
     # Reads the pickle database for ots and fts for the right lever_setting and returns a dictionary of datamatrix
     DM_ots_fts = {}
