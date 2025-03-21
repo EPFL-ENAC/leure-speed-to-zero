@@ -37,10 +37,12 @@ material_sub_pla = ["plastics-ABS", "plastics-PP", "plastics-PA", "plastics-PBT"
                     "plastics-PU", "plastics-PUR", "plastics-PET", "plastics-PVC", 
                     "plastics-carbon-fiber-reinforced", "plastics-glass-fiber-reinforced",
                     "plastics-mixture","plastics-other"]
-material_current = ['Aluminium', 'ammonia', 'concrete-and-inert', 'plastics-total', 'copper', 'glass', 
-                    'lime', 'paper', 'iron_&_steel', 'wood']
+material_current = ['aluminium', 'ammonia', 'concrete-and-inert', 'plastics-total', 'copper', 'glass', 
+                    'lime', 'paper', 'iron_&_steel', 'wood', 'HDPE', 'latex', 'paint', 'resin', 'rubber', 'fibreglass-composites',
+                    'fluids-and-lubricants','refrigerant-R-134a']
 material_current_correct_name = ['aluminium', 'ammonia', 'cement', 'chem', 'copper', 'glass', 
-                                  'lime', 'paper', 'steel', 'timber']
+                                  'lime', 'paper', 'steel', 'timber', 'chem', 'chem', 'chem', 'chem', 'chem', 'chem', 
+                                  'chem', 'chem']
 
 def aggregate_materials(df, variable, material_current, material_current_correct_name):
     
@@ -56,7 +58,7 @@ def aggregate_materials(df, variable, material_current, material_current_correct
 
     # aggregate sub materials if any
     df_temp.loc[df_temp["material"].isin(material_sub_pla),"material"] = "plastics-total"
-    df_temp.loc[df_temp["material"].isin(material_sub_alu),"material"] = "Aluminium"
+    df_temp.loc[df_temp["material"].isin(material_sub_alu),"material"] = "aluminium"
     df_temp.loc[df_temp["material"].isin(material_sub_steel),"material"] = "iron_&_steel"
     df_temp = df_temp.groupby(["material","variable"], as_index=False)['value'].agg(sum)
 
@@ -64,6 +66,7 @@ def aggregate_materials(df, variable, material_current, material_current_correct
     df_temp1 = df_temp.loc[df_temp["material"].isin(material_current),:]
     for i in range(0, len(material_current)):
         df_temp1.loc[df_temp1["material"] == material_current[i],"material"] = material_current_correct_name[i]
+    df_temp1 = df_temp1.groupby(["material","variable"], as_index=False)['value'].agg(sum)
     
     # get other materials, sum them and concat with others
     df_temp2 = df_temp.loc[~df_temp["material"].isin(material_current),:]
@@ -75,10 +78,12 @@ def aggregate_materials(df, variable, material_current, material_current_correct
     return df_temp
 
 variabs = df["variable"].unique()
-df_agg = pd.concat([aggregate_materials(df, variable, 
-                                        material_current = material_current, 
-                                        material_current_correct_name = material_current_correct_name) 
-                    for variable in variabs])
+DF = {}
+for v in variabs:
+    DF[v] = aggregate_materials(df, v, 
+                                material_current = material_current, 
+                                material_current_correct_name = material_current_correct_name)
+df_agg = pd.concat(DF.values(), ignore_index=True)
 
 # check
 df_check = df_agg.groupby(["variable"], as_index=False)['value'].agg(sum)
@@ -126,7 +131,11 @@ dict_map = {"LDV_ICE-gasoline[kg/num]" : ["LDV_ICE-gasoline[kg/unit]"],
             "aluminium-pack[t/t]" : ["Aluminium packaging [t/t]"],
             "glass-pack[t/t]" : ["Glass packaging [t/t]"],
             "paper-print[t/t]" : ["Paper printing and graphic [t/t]"],
-            "paper-san[t/t]" : ["Paper sanitary and household [t/t]"]}
+            "paper-san[t/t]" : ["Paper sanitary and household [t/t]"],
+            "battery-lion-HDV_BEV[kg/num]" : ['Battery Li-Ion-HDVL_EV[kg/unit]'],
+            "battery-lion-HDV_PHEV[kg/num]" : ['Battery Li-Ion-HDVL_PHEV[kg/unit]'],
+            "battery-lion-LDV_BEV[kg/num]" : ["Battery Li-Ion-LDV_EV[kg/unit]"],
+            "battery-lion-LDV_PHEV[kg/num]" : ["Battery Li-Ion-LDV_PHEV[kg/unit]"],}
 
 for key in dict_map.keys():
     df_agg.loc[df_agg["variable"].isin(dict_map[key]),"variable"] = key
@@ -187,13 +196,13 @@ tmp = create_constant(df_agg, ["floor-area-new-residential[t/m2]", "floor-area-n
                                "floor-area-reno-residential[t/m2]", "floor-area-reno-non-residential[t/m2]"])
 cdm_bld_floor = ConstantDataMatrix.create_from_constant(tmp, 1)
 cdm_check = cdm_bld_floor.group_all("Categories1",inplace=False)
-df_check = cdm_check.write_df()
+df_check = pd.melt(cdm_check.write_df())
 
 # cdm_bld_pipe
 tmp = create_constant(df_agg, ["new-dhg-pipe[t/km]"])
 cdm_bld_pipe = ConstantDataMatrix.create_from_constant(tmp, 1)
 cdm_check = cdm_bld_pipe.group_all("Categories1",inplace=False)
-df_check = cdm_check.write_df()
+df_check = pd.melt(cdm_check.write_df())
 
 # cdm_domapp
 tmp = create_constant(df_agg, ["fridge[t/num]", "dishwasher[t/num]","wmachine[t/num]", 
@@ -201,7 +210,8 @@ tmp = create_constant(df_agg, ["fridge[t/num]", "dishwasher[t/num]","wmachine[t/
                                "phone[t/num]", "computer[t/num]"])
 cdm_domapp = ConstantDataMatrix.create_from_constant(tmp, 1)
 cdm_check = cdm_domapp.group_all("Categories1",inplace=False)
-df_check = cdm_check.write_df()
+df_check = pd.melt(cdm_check.write_df())
+# TODO: computer is still way to heavy, at some point review its decomposition
 
 # cdm_tra_veh
 variabs = df_agg["variable"].unique()
@@ -229,32 +239,51 @@ cdm_tra_veh.add(cdm_tra_veh.array[idx["trains_CEV"],:], "Variables", "trains_ICE
 cdm_tra_veh.sort("Variables")
 cdm_tra_veh.deepen(based_on="Variables")
 cdm_tra_veh.switch_categories_order("Categories1","Categories2")
-cdm_check = cdm_tra_veh.group_all("Categories1",inplace=False)
-df_check = cdm_check.write_df()
+cdm_check = cdm_tra_veh.group_all("Categories2",inplace=False)
+df_check = pd.melt(cdm_check.write_df())
+
+# batteries
+tmp = create_constant(df_agg, ['battery-lion-HDV_BEV[t/num]', 'battery-lion-HDV_PHEV[t/num]',
+                               'battery-lion-LDV_BEV[t/num]', 'battery-lion-LDV_PHEV[t/num]'])
+cdm_tra_bat = ConstantDataMatrix.create_from_constant(tmp, 2)
+
+# add missing categories for PHEV
+idx = cdm_tra_bat.idx
+cdm_tra_bat.rename_col("PHEV", "PHEV-gasoline", "Categories1")
+cdm_tra_bat.add(cdm_tra_bat.array[:,idx["PHEV-gasoline"],:], "Categories1", "PHEV-diesel", unit="t/num")
+cdm_tra_bat.add(cdm_tra_bat.array[:,idx["PHEV-gasoline"],:], "Categories1", "FCEV", unit="t/num")
+
+# add other missing categories
+missing = ['CEV', 'ICE', 'ICE-diesel', 'ICE-gas', 'ICE-gasoline']
+cdm_tra_bat.add(0, col_label=missing, dummy=True, dim='Categories1')
+cdm_tra_bat.sort("Categories1")
+cdm_check = cdm_tra_bat.group_all("Categories2",inplace=False)
+df_check = pd.melt(cdm_check.write_df())
 
 # cdm_tra_infra
 tmp = create_constant(df_agg, ["road[t/km]", "rail[t/km]", "trolley-cables[t/km]"])
 cdm_tra_infra = ConstantDataMatrix.create_from_constant(tmp, 1)
 cdm_check = cdm_tra_infra.group_all("Categories1",inplace=False)
-df_check = cdm_check.write_df()
+df_check = pd.melt(cdm_check.write_df())
 
 # cdm_fert
 tmp = create_constant(df_agg, ["fertilizer[t/t]"])
 cdm_fert = ConstantDataMatrix.create_from_constant(tmp, 1)
 cdm_check = cdm_fert.group_all("Categories1",inplace=False)
-df_check = cdm_check.write_df()
+df_check = pd.melt(cdm_check.write_df())
 
 # cdm_pack
 tmp = create_constant(df_agg, ["plastic-pack[t/t]", "paper-pack[t/t]", "aluminium-pack[t/t]",
                             "glass-pack[t/t]", "paper-print[t/t]", "paper-san[t/t]"])
 cdm_pack = ConstantDataMatrix.create_from_constant(tmp, 1)
 cdm_check = cdm_pack.group_all("Categories1",inplace=False)
-df_check = cdm_check.write_df()
+df_check = pd.melt(cdm_check.write_df())
 
 # put together
 CDM_matdec = {
     "pack" : cdm_pack,
     "tra_veh" : cdm_tra_veh,
+    "tra_bat" : cdm_tra_bat,
     "tra_infra" : cdm_tra_infra,
     "bld_floor" : cdm_bld_floor,
     "bld_pipe" : cdm_bld_pipe,
@@ -270,23 +299,24 @@ for key in ['pack', 'tra_infra', 'bld_floor', 'bld_pipe', 'bld_domapp', 'fertili
     CDM_matdec[key] = CDM_matdec[key].flatten()
     CDM_matdec[key].deepen_twice()
 
-key = "tra_veh"
-variabs = CDM_matdec[key].col_labels["Variables"]
-for v in variabs:
-    CDM_matdec[key].rename_col(v, "material-decomp_" + v, "Variables")
-CDM_matdec[key] = CDM_matdec[key].flatten()
-CDM_matdec[key].deepen(based_on="Variables")
-CDM_matdec[key].switch_categories_order("Categories1","Categories2")
-CDM_matdec[key].deepen(based_on="Categories2")
+for key in ["tra_veh","tra_bat"]:
+    variabs = CDM_matdec[key].col_labels["Variables"]
+    for v in variabs:
+        CDM_matdec[key].rename_col(v, "material-decomp_" + v, "Variables")
+    CDM_matdec[key] = CDM_matdec[key].flatten()
+    CDM_matdec[key].deepen(based_on="Variables")
+    CDM_matdec[key].switch_categories_order("Categories1","Categories2")
+    CDM_matdec[key].deepen(based_on="Categories2")
 
-# drop other
-# note: in general we drop other as we do not have a general technology for other materials
-# we could keep "other" and use it in industry module until the technology part, though we would need to adjust
-# net import to add other raw materials ... we'll do it only if we decide
-# to add a general tech for other at some point.
-for key in ['pack', 'tra_infra', 'bld_floor', 'bld_pipe', 'bld_domapp', 'fertilizer']:
-    CDM_matdec[key].drop("Categories2","other")
-CDM_matdec["tra_veh"].drop("Categories3","other")
+# # drop other
+# # note: in general we drop other as we do not have a general technology for other materials
+# # we could keep "other" and use it in industry module until the technology part, though we would need to adjust
+# # net import to add other raw materials ... we'll do it only if we decide
+# # to add a general tech for other at some point.
+# for key in ['pack', 'tra_infra', 'bld_floor', 'bld_pipe', 'bld_domapp', 'fertilizer']:
+#     CDM_matdec[key].drop("Categories2","other")
+# CDM_matdec["tra_veh"].drop("Categories3","other")
+# CDM_matdec["tra_bat"].drop("Categories3","other")
 
 # save
 f = os.path.join(current_file_directory, '../data/datamatrix/const_material-decomposition.pickle')
