@@ -204,16 +204,73 @@ dm_pkm_pc.rename_col('tra_passenger_modal-share_share','tra_passenger_modal-shar
 dm_pkm_pc.add(0, col_label=["bike","walk"], dummy=True, dim='Categories1')
 dm_pkm_pc.sort("Categories1")
 
+# drop 1989
+dm_pkm_pc.drop("Years",1989)
+dm_pkm.drop("Years",1989)
+years_ots = list(range(1990,2023+1))
+years_fts = list(range(2025,2055,5))
+
+###############
+##### OTS #####
+###############
+
+dm_pkm_pc_ots = dm_pkm_pc.filter({"Years" : years_ots})
+
+#######################
+##### FTS LEVEL 1 #####
+#######################
+
+# level 1: continuing as is
+dm_pkm_pc_fts_level1 = dm_pkm_pc.filter({"Years" : years_fts})
+
+#######################
+##### FTS LEVEL 2 #####
+#######################
+
+# TODO: level 2 to do, for the moment we set it continuing as is
+dm_pkm_pc_fts_level2 = dm_pkm_pc.filter({"Years" : years_fts})
+
+#######################
+##### FTS LEVEL 3 #####
+#######################
+
+# TODO: level 3 to do, for the moment we set it continuing as is
+dm_pkm_pc_fts_level3 = dm_pkm_pc.filter({"Years" : years_fts})
+
+#######################
+##### FTS LEVEL 4 #####
+#######################
+
+# make level 4 with levels in eucalc
+dm_pkm_pc_level4 = dm_pkm_pc.copy()
+years_fts = list(range(2025,2055,5))
+idx = dm_pkm_pc_level4.idx
+for y in years_fts:
+    dm_pkm_pc_level4.array[idx["EU27"],idx[y],:,:] = np.nan
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["LDV"]] = 0.544
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["bus"]] = 0.173
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["metrotram"]] = 0.075
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["rail"]] = 0.19 # i put this at 0.19 instead of 0.185 so that 2W also goes down
+twowheel = 1 - dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["LDV"]] - dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["bus"]] - dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["metrotram"]] - dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["rail"]]
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["2W"]] = twowheel 
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["bike"]] = 0
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["walk"]] = 0
+dm_pkm_pc_level4 = linear_fitting(dm_pkm_pc_level4, years_fts)
+# dm_pkm_pc_level4.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
+dm_pkm_pc_fts_level4 = dm_pkm_pc_level4.filter({"Years" : years_fts})
+# dm_pkm_pc_fts_level4.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
+
 ################
 ##### SAVE #####
 ################
 
 # split between ots and fts
 DM_mod = {"ots": {"passenger_modal-share" : []}, "fts": {"passenger_modal-share" : dict()}}
-DM_mod["ots"]["passenger_modal-share"] = dm_pkm_pc.filter({"Years" : years_ots})
-DM_mod["ots"]["passenger_modal-share"].drop("Years",startyear)
-for i in range(1,4+1):
-    DM_mod["fts"]["passenger_modal-share"][i] = dm_pkm_pc.filter({"Years" : years_fts})
+DM_mod["ots"]["passenger_modal-share"] = dm_pkm_pc_ots.copy()
+DM_mod["fts"]["passenger_modal-share"][1] = dm_pkm_pc_fts_level1.copy()
+DM_mod["fts"]["passenger_modal-share"][2] = dm_pkm_pc_fts_level2.copy()
+DM_mod["fts"]["passenger_modal-share"][3] = dm_pkm_pc_fts_level3.copy()
+DM_mod["fts"]["passenger_modal-share"][4] = dm_pkm_pc_fts_level4.copy()
 
 # save
 f = os.path.join(current_file_directory, '../data/datamatrix/lever_passenger_modal-share.pickle')
@@ -224,7 +281,6 @@ with open(f, 'wb') as handle:
 dm_pkm.rename_col("tra_passenger_modal-share","tra_passenger_pkm","Variables")
 DM_pkm = {"ots": {"passenger_pkm" : []}, "fts": {"passenger_pkm" : dict()}}
 DM_pkm["ots"]["passenger_pkm"] = dm_pkm.filter({"Years" : years_ots})
-DM_pkm["ots"]["passenger_pkm"].drop("Years",startyear)
 for i in range(1,4+1):
     DM_pkm["fts"]["passenger_pkm"][i] = dm_pkm.filter({"Years" : years_fts})
     

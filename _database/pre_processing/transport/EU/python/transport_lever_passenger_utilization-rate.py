@@ -71,11 +71,64 @@ dm_uti.rename_col("tra_passenger_vkm","tra_passenger_utilisation-rate","Variable
 # check
 # dm_uti.filter({"Country" : ["EU27"]}).datamatrix_plot()
 
+###############
+##### OTS #####
+###############
+
+dm_uti_ots = dm_uti.filter({"Years" : years_ots})
+
+#######################
+##### FTS LEVEL 1 #####
+#######################
+
+# level 1: continuing as is
+dm_uti_fts_level1 = dm_uti.filter({"Years" : years_fts})
+
+#######################
+##### FTS LEVEL 2 #####
+#######################
+
+# TODO: level 2 to do, for the moment we set it continuing as is
+dm_uti_fts_level2 = dm_uti.filter({"Years" : years_fts})
+
+#######################
+##### FTS LEVEL 3 #####
+#######################
+
+# TODO: level 3 to do, for the moment we set it continuing as is
+dm_uti_fts_level3 = dm_uti.filter({"Years" : years_fts})
+
+#######################
+##### FTS LEVEL 4 #####
+#######################
+
+# make level 4 with levels in eucalc
+dm_uti_level4 = dm_uti.copy()
+years_fts = list(range(2025,2055,5))
+idx = dm_uti_level4.idx
+for y in years_fts:
+    dm_uti_level4.array[idx["EU27"],idx[y],:,:] = np.nan
+dm_uti_level4.array[idx["EU27"],idx[2050],:,idx["LDV"]] = dm_uti_level4.array[idx["EU27"],idx[2023],:,idx["LDV"]]*(1+9)
+dm_uti_level4.array[idx["EU27"],idx[2050],:,idx["2W"]] = dm_uti_level4.array[idx["EU27"],idx[2023],:,idx["2W"]]*(1+0.15)
+dm_uti_level4.array[idx["EU27"],idx[2050],:,idx["bus"]] = dm_uti_level4.array[idx["EU27"],idx[2023],:,idx["bus"]]*(1+0.45)
+dm_uti_level4.array[idx["EU27"],idx[2050],:,idx["rail"]] = dm_uti_level4.array[idx["EU27"],idx[2023],:,idx["rail"]]*(1+0.45)
+dm_uti_level4.array[idx["EU27"],idx[2050],:,idx["metrotram"]] = dm_uti_level4.array[idx["EU27"],idx[2023],:,idx["metrotram"]]*(1+0.45)
+dm_uti_level4 = linear_fitting(dm_uti_level4, years_fts)
+# dm_uti_level4.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot()
+dm_uti_fts_level4 = dm_uti_level4.filter({"Years" : years_fts})
+# dm_uti_fts_level4.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
+
+################
+##### SAVE #####
+################
+
 # split between ots and fts
 DM_uti = {"ots": {"passenger_utilization-rate" : []}, "fts": {"passenger_utilization-rate" : dict()}}
-DM_uti["ots"]["passenger_utilization-rate"] = dm_uti.filter({"Years" : years_ots})
-for i in range(1,4+1):
-    DM_uti["fts"]["passenger_utilization-rate"][i] = dm_uti.filter({"Years" : years_fts})
+DM_uti["ots"]["passenger_utilization-rate"] = dm_uti_ots.copy()
+DM_uti["fts"]["passenger_utilization-rate"][1] = dm_uti_fts_level1.copy()
+DM_uti["fts"]["passenger_utilization-rate"][2] = dm_uti_fts_level2.copy()
+DM_uti["fts"]["passenger_utilization-rate"][3] = dm_uti_fts_level3.copy()
+DM_uti["fts"]["passenger_utilization-rate"][4] = dm_uti_fts_level4.copy()
 
 # save
 f = os.path.join(current_file_directory, '../data/datamatrix/lever_passenger_utilization-rate.pickle')
