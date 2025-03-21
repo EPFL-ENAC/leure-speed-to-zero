@@ -1226,6 +1226,14 @@ def climate_smart_crop_processing(list_countries, file_dict):
     pivot_df = df_yield_1990_2022.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
                                               values='Value').reset_index()
 
+    # DataFrame with only 'Fibre Crops, Fibre Equivalent'
+    df_fibre = pivot_df[pivot_df['Item'] == 'Fibre Crops, Fibre Equivalent']
+    df_fibre = df_fibre.copy()
+    df_fibre.rename(columns={'Value': 'Yield'}, inplace=True)
+
+    # DataFrame with all other items
+    df_other_items = pivot_df[pivot_df['Item'] != 'Fibre Crops, Fibre Equivalent']
+
     # Read excel
     df_kcal_t = pd.read_excel(
         'dictionaries/kcal_to_t.xlsx',
@@ -1234,7 +1242,7 @@ def climate_smart_crop_processing(list_countries, file_dict):
     # Merge
     merged_df = pd.merge(
         df_kcal_g,
-        pivot_df,  # Only keep the needed columns
+        df_other_items.copy(),  # Only keep the needed columns
         left_on=['Item crop yield'],
         right_on=['Item']
     )
@@ -1243,14 +1251,17 @@ def climate_smart_crop_processing(list_countries, file_dict):
     pivot_df_yield = merged_df[['Area', 'Year', 'Item', 'Yield']]
     pivot_df_yield = pivot_df_yield.copy()
 
+    # Append with fibers crops (different unit as other yields)
+    pivot_df_yield = pd.concat([pivot_df_yield, df_fibre.copy()], ignore_index=True)
+
     # Create a dummy for Rice as no products
     # Create a DataFrame for the new "Rice" rows
     new_rows = pivot_df_yield[['Area', 'Year']].drop_duplicates().copy()
-    new_rows['Item'] = 'Rice and products'
-    new_rows['Losses[%]'] = 0
+    #new_rows['Item'] = 'Rice and products' # If rice is missing in Switzerland
+    #new_rows['Losses[%]'] = 0
 
     # Append the new rows to the original DataFrame
-    pivot_df_yield = pd.concat([pivot_df_yield, new_rows], ignore_index=True)
+    #pivot_df_yield = pd.concat([pivot_df_yield, new_rows], ignore_index=True)
 
     # PathwayCalc formatting -----------------------------------------------------------------------------------------------
 
