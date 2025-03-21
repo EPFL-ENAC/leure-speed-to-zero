@@ -208,6 +208,60 @@ dm_occ.units["tra_passenger_occupancy"] = "pkm/vkm"
 # dm_occ.filter({"Country" : ["EU27"]}).datamatrix_plot()
 # df = dm_occ.group_all("Categories1", inplace=False).write_df()
 
+years_ots = list(range(1990,2023+1))
+years_fts = list(range(2025,2055,5))
+
+###############
+##### OTS #####
+###############
+
+dm_occ_ots = dm_occ.filter({"Years" : years_ots})
+
+#######################
+##### FTS LEVEL 1 #####
+#######################
+
+# level 1: continuing as is
+dm_occ_fts_level1 = dm_occ.filter({"Years" : years_fts})
+
+#######################
+##### FTS LEVEL 2 #####
+#######################
+
+# TODO: level 2 to do, for the moment we set it continuing as is
+dm_occ_fts_level2 = dm_occ.filter({"Years" : years_fts})
+
+#######################
+##### FTS LEVEL 3 #####
+#######################
+
+# TODO: level 3 to do, for the moment we set it continuing as is
+dm_occ_fts_level3 = dm_occ.filter({"Years" : years_fts})
+
+#######################
+##### FTS LEVEL 4 #####
+#######################
+
+# make level 4 with levels in eucalc
+dm_occ_level4 = dm_occ.copy()
+years_fts = list(range(2025,2055,5))
+idx = dm_occ_level4.idx
+for y in years_fts:
+    dm_occ_level4.array[idx["EU27"],idx[y],:,:] = np.nan
+dm_occ_level4.array[idx["EU27"],idx[2050],:,idx["LDV"]] = 2.6
+dm_occ_level4.array[idx["EU27"],idx[2050],:,idx["2W"]] = 1.3
+dm_occ_level4.array[idx["EU27"],idx[2050],:,idx["bus"]] = 27.2
+bus_2023 = dm_occ_level4.array[idx["EU27"],idx[2023],:,idx["bus"]]
+bus_2050 = dm_occ_level4.array[idx["EU27"],idx[2050],:,idx["bus"]]
+rate_bus = (bus_2050-bus_2023)/bus_2023
+dm_occ_level4.array[idx["EU27"],idx[2050],:,idx["metrotram"]] = \
+    dm_occ_level4.array[idx["EU27"],idx[2023],:,idx["metrotram"]] * (1+rate_bus)
+dm_occ_level4.array[idx["EU27"],idx[2050],:,idx["rail"]] = \
+    dm_occ_level4.array[idx["EU27"],idx[2023],:,idx["rail"]] * (1+rate_bus)
+dm_occ_level4 = linear_fitting(dm_occ_level4, years_fts)
+# dm_occ_level4.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot()
+dm_occ_fts_level4 = dm_occ_level4.filter({"Years" : years_fts})
+# dm_occ_level4.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot()
 
 ################
 ##### SAVE #####
@@ -215,9 +269,11 @@ dm_occ.units["tra_passenger_occupancy"] = "pkm/vkm"
 
 # split between ots and fts
 DM_occ = {"ots": {"passenger_occupancy" : []}, "fts": {"passenger_occupancy" : dict()}}
-DM_occ["ots"]["passenger_occupancy"] = dm_occ.filter({"Years" : list(range(1990,baseyear+1))})
-for i in range(1,4+1):
-    DM_occ["fts"]["passenger_occupancy"][i] = dm_occ.filter({"Years" : years_fts})
+DM_occ["ots"]["passenger_occupancy"] = dm_occ_ots.copy()
+DM_occ["fts"]["passenger_occupancy"][1] = dm_occ_fts_level1.copy()
+DM_occ["fts"]["passenger_occupancy"][2] = dm_occ_fts_level2.copy()
+DM_occ["fts"]["passenger_occupancy"][3] = dm_occ_fts_level3.copy()
+DM_occ["fts"]["passenger_occupancy"][4] = dm_occ_fts_level4.copy()
 
 # save
 f = os.path.join(current_file_directory, '../data/datamatrix/lever_passenger_occupancy.pickle')
