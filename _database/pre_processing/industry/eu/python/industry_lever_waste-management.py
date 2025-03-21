@@ -1464,10 +1464,9 @@ for k in keys:
 #     name = k + "_temp.xlsx"
 #     df_temp.to_excel("~/Desktop/" + name)
 
-
-################################################
-################### SAVE ALL ###################
-################################################
+########################################################
+##################### PUT TOGETHER #####################
+########################################################
 
 # put together
 dm = DM_wst_mgt["elv-total"].copy()
@@ -1479,11 +1478,91 @@ keys = ['domapp-col','electronics-col','pack-col']
 for key in keys:
     dm_col.append(DM_wst_mgt[key], dim="Variables")
 dm.append(dm_col,"Categories1")
+
+# set years
 years_ots = list(range(1990,2023+1))
 years_fts = list(range(2025,2055,5))
+
+###############
+##### OTS #####
+###############
+
 dm_ots = dm.filter({"Years" : years_ots})
-dm_fts = dm.filter({"Years" : years_fts})
-DM_fts = {1: dm_fts.copy(), 2: dm_fts.copy(), 3: dm_fts.copy(), 4: dm_fts.copy()} # for now we set all levels to be the same
+
+#######################
+##### FTS LEVEL 1 #####
+#######################
+
+# level 1: continuing as is
+dm_fts_level1 = dm.filter({"Years" : years_fts})
+
+#######################
+##### FTS LEVEL 2 #####
+#######################
+
+# TODO: level 2 to do, for the moment we set it continuing as is
+dm_fts_level2 = dm.filter({"Years" : years_fts})
+
+#######################
+##### FTS LEVEL 3 #####
+#######################
+
+# TODO: level 3 to do, for the moment we set it continuing as is
+dm_fts_level3 = dm.filter({"Years" : years_fts})
+
+#######################
+##### FTS LEVEL 4 #####
+#######################
+
+# TODO: for now we do it only for vehicles, to be done for others
+
+# for layer 1 we put waste collected to zero
+dm_level4_veh = dm.filter({"Variables" : ["vehicles"]})
+dm_level4_tot = dm_level4_veh.filter({"Categories1" : ["export","littered","waste-collected","waste-uncollected"]})
+years_fts = list(range(2025,2055,5))
+idx = dm_level4_tot.idx
+for y in years_fts:
+    dm_level4_tot.array[idx["EU27"],idx[y],:,:] = np.nan
+export = dm_level4_tot.array[idx["EU27"],idx[2023],:,idx["export"]]
+collected = dm_level4_tot.array[idx["EU27"],idx[2023],:,idx["waste-collected"]]
+tot = export + collected
+dm_level4_tot.array[idx["EU27"],idx[2050],:,idx["export"]] = np.round(export/tot,2)
+dm_level4_tot.array[idx["EU27"],idx[2050],:,idx["waste-collected"]] = np.round(collected/tot,2)
+dm_level4_tot.array[idx["EU27"],idx[2050],:,idx["littered"]] = 0
+dm_level4_tot.array[idx["EU27"],idx[2050],:,idx["waste-uncollected"]] = 0
+dm_level4_tot = linear_fitting(dm_level4_tot, years_fts)
+# dm_level4_tot.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
+
+# for layer 2
+dm_level4_col = dm_level4_veh.filter({"Categories1" : ["energy-recovery","landfill","incineration","reuse","recycling"]})
+idx = dm_level4_col.idx
+for y in years_fts:
+    dm_level4_col.array[idx["EU27"],idx[y],:,:] = np.nan
+dm_level4_col.array[idx["EU27"],idx[2050],:,idx["recycling"]] = 1
+dm_level4_col.array[idx["EU27"],idx[2050],:,idx["energy-recovery"]] = 0
+dm_level4_col.array[idx["EU27"],idx[2050],:,idx["landfill"]] = 0
+dm_level4_col.array[idx["EU27"],idx[2050],:,idx["incineration"]] = 0
+dm_level4_col.array[idx["EU27"],idx[2050],:,idx["reuse"]] = 0
+dm_level4_col = linear_fitting(dm_level4_col, years_fts)
+# dm_level4_col.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
+
+# substitute back in
+dm_level4 = dm.copy()
+dm_level4_veh = dm_level4_tot.copy()
+dm_level4_veh.append(dm_level4_col,"Categories1")
+dm_level4_veh.sort("Categories1")
+dm_level4.drop("Variables","vehicles")
+dm_level4.append(dm_level4_veh,"Variables")
+dm_level4.sort("Variables")
+# dm_level4.filter({"Country" : ["EU27"], "Variables" : ["vehicles"]}).flatten().datamatrix_plot(stacked=True)
+dm_fts_level4 = dm_level4.filter({"Years" : years_fts})
+# dm_fts_level4.filter({"Country" : ["EU27"], "Variables" : ["vehicles"]}).flatten().datamatrix_plot(stacked=True)
+
+################
+##### SAVE #####
+################
+
+DM_fts = {1: dm_fts_level1.copy(), 2: dm_fts_level2.copy(), 3: dm_fts_level3.copy(), 4: dm_fts_level4.copy()}
 DM = {"ots" : dm_ots,
       "fts" : DM_fts}
 f = os.path.join(current_file_directory, '../data/datamatrix/lever_waste-management.pickle')

@@ -3,6 +3,7 @@
 
 # packages
 from model.common.data_matrix_class import DataMatrix
+from model.common.auxiliary_functions import linear_fitting
 import pickle
 import os
 import numpy as np
@@ -23,7 +24,7 @@ countries = ['Austria','Belgium','Bulgaria','Croatia','Cyprus','Czech Republic',
 years = list(range(1990,2023+1,1))
 years = years + list(range(2025, 2050+1, 5))
 variabs = ['aluminium', 'ammonia', 'cement', 'chem', 'copper', 'fbt', 'glass', 'lime', 
-           'mae', 'ois', 'paper', 'steel', 'textiles', 'timber', 'tra-equip', 'wwp']
+           'mae', 'ois', 'other', 'paper', 'steel', 'textiles', 'timber', 'tra-equip', 'wwp']
 variabs = ["material-efficiency_" + i for i in variabs]
 units = list(np.repeat("%", len(variabs)))
 units_dict = dict()
@@ -55,16 +56,68 @@ df = dm.write_df()
 # deepen
 dm.deepen()
 
-# split between ots and fts
+# set years
 years_ots = list(range(1990,2023+1))
 years_fts = list(range(2025,2055,5))
+
+###############
+##### OTS #####
+###############
+
 dm_ots = dm.filter({"Years" : years_ots})
-dm_fts = dm.filter({"Years" : years_fts})
-DM_fts = {1: dm_fts.copy(), 2: dm_fts.copy(), 3: dm_fts.copy(), 4: dm_fts.copy()} # for now we set all levels to be the same
+
+#######################
+##### FTS LEVEL 1 #####
+#######################
+
+# level 1: continuing as is
+dm_fts_level1 = dm.filter({"Years" : years_fts})
+
+#######################
+##### FTS LEVEL 2 #####
+#######################
+
+# TODO: level 2 to do, for the moment we set it continuing as is
+dm_fts_level2 = dm.filter({"Years" : years_fts})
+
+#######################
+##### FTS LEVEL 3 #####
+#######################
+
+# TODO: level 3 to do, for the moment we set it continuing as is
+dm_fts_level3 = dm.filter({"Years" : years_fts})
+
+#######################
+##### FTS LEVEL 4 #####
+#######################
+
+# we take levels for 2050 from eucalc, and do a linear trend for 2025-2050
+dm_level4 = dm.copy()
+idx = dm_level4.idx
+years_fts = list(range(2025,2055,5))
+for y in years_fts:
+    dm_level4.array[idx["EU27"],idx[y],:,:] = np.nan
+dm_level4.array[idx["EU27"],idx[2050],:,idx["steel"]] = 0.33
+dm_level4.array[idx["EU27"],idx[2050],:,idx["cement"]] = 0.20
+dm_level4.array[idx["EU27"],idx[2050],:,idx["ammonia"]] = 0.10
+dm_level4.array[idx["EU27"],idx[2050],:,idx["chem"]] = 0.30
+dm_level4.array[idx["EU27"],idx[2050],:,idx["paper"]] = 0.10
+dm_level4.array[idx["EU27"],idx[2050],:,idx["aluminium"]] = 0.14
+dm_level4.array[idx["EU27"],idx[2050],:,idx["glass"]] = 0.12
+dm_level4.array[idx["EU27"],idx[2050],:,idx["lime"]] = 0.14
+dm_level4.array[idx["EU27"],idx[2050],:,idx["copper"]] = 0.14
+dm_level4 = linear_fitting(dm_level4, years_fts)
+# dm_level4.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot()
+dm_fts_level4 = dm_level4.filter({"Years" : years_fts})
+# dm_fts_level4.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot()
+
+################
+##### SAVE #####
+################
+
+DM_fts = {1: dm_fts_level1.copy(), 2: dm_fts_level2.copy(), 3: dm_fts_level3.copy(), 4: dm_fts_level4.copy()}
 DM = {"ots" : dm_ots,
       "fts" : DM_fts}
-
-# save
 f = os.path.join(current_file_directory, '../data/datamatrix/lever_material-efficiency.pickle')
 with open(f, 'wb') as handle:
     pickle.dump(DM, handle, protocol=pickle.HIGHEST_PROTOCOL)
