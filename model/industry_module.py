@@ -131,7 +131,7 @@ def product_production(dm_demand_bld_floor, dm_demand_tra_infra, dm_demand_tra_v
 def apply_material_decomposition(dm_production_bld_floor,
                                  dm_production_tra_infra, dm_production_tra_veh, dm_production_pack,
                                  cdm_matdec_floor,
-                                 cdm_matdec_tra_infra, cdm_matdec_tra_veh, cdm_matdec_pack):
+                                 cdm_matdec_tra_infra, cdm_matdec_tra_veh, cdm_matdec_pack, cdm_matdec_tra_bat):
     
     countries = dm_production_bld_floor.col_labels["Country"]
     years = dm_production_bld_floor.col_labels["Years"]
@@ -157,7 +157,15 @@ def apply_material_decomposition(dm_production_bld_floor,
     dm_tra_infra_matdec.units['material-decomp'] = "t"
 
     # veh
+    
+    # add battery weight
     dm_tra_veh_matdec = cdm_to_dm(cdm_matdec_tra_veh, countries, years)
+    dm_tra_bat_matdec = cdm_to_dm(cdm_matdec_tra_bat, countries, years)
+    dm_tra_veh_matdec.append(dm_tra_bat_matdec,"Categories1")
+    dm_tra_veh_matdec.groupby({"HDV" : ["HDV","battery-lion-HDV"], "LDV" : ["LDV","battery-lion-LDV"]}, 
+                              "Categories1", inplace=True)
+    
+    # do material decomp
     dm_tra_veh_matdec.array = dm_production_tra_veh.array[...,np.newaxis] * dm_tra_veh_matdec.array
     dm_tra_veh_matdec.units['material-decomp'] = "t"
 
@@ -344,16 +352,20 @@ def calibration_material_production(DM_cal, dm_material_production_bymat, DM_mat
     
     return
 
-def end_of_life(dm_transport_waste, dm_waste_management, dm_matrec_veh, 
-                cdm_matdec_veh, dm_material_production_bymat):
+def end_of_life(dm_transport_waste, dm_waste_management, 
+                dm_matrec_veh, cdm_matdec_veh, 
+                dm_matrec_bat, cdm_matdec_bat,
+                dm_material_production_bymat):
     
     # in general:
     # littered + export + uncolleted + collected = 1
     # recycling + energy recovery + reuse + landfill + incineration = 1
     # note on incineration: transport will not have incineration, while electric waste yes
     
-    # TODO: for the moment I am doing waste management only for cars and trucks, this will have to be done
-    # for 'planes', 'ships', 'trains', batteries (probably this will be in minerals), 
+    # TODO: for the moment I am doing waste management only for cars and trucks. I am
+    # also adding the recycling of batteries of the cars that are recycled.
+    # this will have to be done
+    # for 'planes', 'ships', 'trains', batteries (to understand if to treat them as a separate product), 
     # appliances (for which we'll have to update buildings) and
     # buildings (which is already present in buildings, though we need to develop the data on their eol).
     # So far, the split of waste categories should be the same for transport and appliances, with the
@@ -402,18 +414,34 @@ def end_of_life(dm_transport_waste, dm_waste_management, dm_matrec_veh,
     dm_transport_matrecovered_veh = dm_transport_waste_collect_bymat.filter({"Categories1" : ["recycling"]})
     dm_transport_matrecovered_veh.array = dm_transport_matrecovered_veh.array * \
         dm_matrec_veh.array
+        
+    # add material recovered from battery recycling
+    # note: assuming 1 battery pack per vehicle
+    dm_tra_batteries_torecy = dm_transport_waste_bywsm_layer2.filter(
+        {"Categories1" : ['HDV', 'LDV'], 
+         "Categories3" : ['recycling']})
+    arr_temp = dm_tra_batteries_torecy.array * cdm_matdec_bat.array[np.newaxis,np.newaxis,...]
+    dm_batteries_matrecovered = DataMatrix.based_on(arr_temp, dm_tra_batteries_torecy, 
+                                                         {'Categories3': cdm_matdec_bat.col_labels["Categories3"]}, 
+                                                         units = "t")
+    dm_batteries_matrecovered.units["tra_product-waste"] = "t"
+    dm_batteries_matrecovered.array = dm_batteries_matrecovered.array * dm_matrec_bat.array[:,:,:,:,np.newaxis,:]
     
     # sum across products
     dm_transport_matrecovered_veh.group_all("Categories1")
     dm_transport_matrecovered_veh.rename_col('tra_product-waste','vehicles',"Variables")
     # dm_transport_matrecovered_veh = dm_transport_matrecovered_veh.flatten()
     # dm_transport_matrecovered_veh.rename_col_regex("vehicles_","","Variables")
+    dm_batteries_matrecovered.group_all("Categories2")
+    dm_batteries_matrecovered.group_all("Categories1")
+    dm_batteries_matrecovered.rename_col('tra_product-waste','batteries',"Variables")
     
     # get material recovered across sectors
-    # TODO!: later on add here the other sectors, like buildings and batteries
+    # TODO!: later on add here the other sectors, like buildings
     dm_matrecovered = dm_transport_matrecovered_veh.copy()
-    dm_matrecovered.change_unit('vehicles', factor=1e-3, old_unit='t', new_unit='kt')
-    dm_matrecovered.rename_col_regex("vehicles","material-recovered","Variables")
+    dm_matrecovered.append(dm_batteries_matrecovered,"Variables")
+    dm_matrecovered.groupby({"material-recovered" : ["vehicles","batteries"]}, "Variables", inplace=True)
+    dm_matrecovered.change_unit('material-recovered', factor=1e-3, old_unit='t', new_unit='kt')
     
     # if material recovered is larger than material produced, impose material recovered to be equal to material produced
     materials = dm_matrecovered.col_labels["Categories1"]
@@ -459,10 +487,10 @@ def material_production_by_technology(dm_technology_share, dm_material_productio
         dm_material_production_bymat_adj.array[...,idx_matprod_bymat[m]] - \
         dm_material_recovered.array[...,idx_recovered[m]]
         
-    # add timber to wood and wooden products (wwp)
-    dm_material_production_bymat.groupby({'wwp': 'timber|wwp'}, 
+    # add timber to wood and wooden products (wwp), and other ot other industrial sector (ois)
+    dm_material_production_bymat.groupby({'wwp': 'timber|wwp', 'ois' : 'other|ois'}, 
                                           dim='Categories1', aggregation = "sum", regex=True, inplace=True)
-    dm_material_production_bymat_adj.groupby({'wwp': 'timber|wwp'}, 
+    dm_material_production_bymat_adj.groupby({'wwp': 'timber|wwp', 'ois' : 'other|ois'}, 
                                               dim='Categories1', aggregation = "sum", regex=True, inplace=True)
     
     # create dm_material_production_bytech with production data and shape of tech share
@@ -488,6 +516,7 @@ def material_production_by_technology(dm_technology_share, dm_material_productio
     # put in dm_material_production_bytech the material recovered as post consumer tech
     dm_temp = dm_material_recovered.copy()
     dm_temp.rename_col("timber","wwp","Categories1") # rename timber as wwp as it will be called wwp-tech-sec-post-consumer
+    dm_temp.rename_col("other","ois","Categories1") # rename other as ois as it will be called ois-tech-sec-post-consumer
     for material in dm_temp.col_labels["Categories1"]:
         dm_temp.rename_col(material, material + "-sec-post-consumer","Categories1")
     dm_temp.rename_col('material-recovered','material-production','Variables')
@@ -524,8 +553,12 @@ def energy_demand(dm_material_production_bytech, CDM_const):
     # this is by material-technology and carrier
     
     # drop post consumer techs for lime and wood, as we assume they are not
-    # widely used at the moment
-    dm_material_production_bytech.drop("Categories1",['lime-sec-post-consumer','wwp-sec-post-consumer'])
+    # widely used at the moment. Also drop ois-sec-post-consumer, as for the
+    # moment we assume that it negligible for energy demand and emissions.
+    # TODO: do the energy demand and emissions for these and their respective pre consumer techs
+    dm_material_production_bytech.drop("Categories1",['lime-sec-post-consumer',
+                                                      'wwp-sec-post-consumer',
+                                                      'ois-sec-post-consumer'])
 
     # get energy demand for material production by technology both without and with feedstock
     feedstock = ["excl-feedstock", "feedstock"]
@@ -1436,11 +1469,14 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     
     # get material demand
     DM_material_demand = apply_material_decomposition(DM_production["bld-floor"],
-                                                      DM_production["tra-infra"], DM_production["tra-veh"], 
+                                                      DM_production["tra-infra"], 
+                                                      DM_production["tra-veh"], 
                                                       DM_production["pack"].copy(),
                                                       CDM_const["material-decomposition_floor"],
-                                                      CDM_const["material-decomposition_infra"], CDM_const["material-decomposition_veh"], 
-                                                      CDM_const["material-decomposition_pack"])
+                                                      CDM_const["material-decomposition_infra"], 
+                                                      CDM_const["material-decomposition_veh"], 
+                                                      CDM_const["material-decomposition_pack"],
+                                                      CDM_const["material-decomposition_bat"])
     
     # do material switch (writes in DM_material_demand and DM_input_matswitchimpact)
     DM_input_matswitchimpact = {} # create dict to save material switch that will be used later for environmental impact
@@ -1461,6 +1497,8 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
                          DM_ots_fts['eol-waste-management'].filter({"Variables" : ['vehicles']}),
                          DM_ots_fts['eol-material-recovery'].filter({"Categories1" : ['vehicles']}),
                          CDM_const["material-decomposition_veh"].filter({"Categories1" : ["HDV","LDV","bus"]}),
+                         DM_ots_fts['eol-material-recovery'].filter({"Categories1" : ['battery-lion']}),
+                         CDM_const["material-decomposition_bat"].filter({"Categories1" : ['battery-lion-HDV', 'battery-lion-LDV']}),
                          DM_material_production["bymat"])
         
     # get material production by technology (writes in DM_material_production)
