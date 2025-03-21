@@ -52,8 +52,8 @@ def lifestyles(lever_setting, years_setting, interface=Interface(), write_pickle
     # send population to agriculture
     if write_pickle is True:
         f = os.path.join(current_file_directory, '../_database/data/interface/lifestyles_to_agriculture.pickle')
-        my_pickle_dump(DM_new={'pop': dm_pop}, local_pickle_file=f)
-    interface.add_link(from_sector='lifestyles', to_sector='agriculture', dm={'pop': dm_pop})
+        my_pickle_dump(DM_new=DM_pop['pop'], local_pickle_file=f)
+    interface.add_link(from_sector='lifestyles', to_sector='agriculture', dm=DM_pop['pop'])
     
     # send population to transport
     if write_pickle is True:
