@@ -185,6 +185,7 @@ CDM_const["material-decomposition_floor"] = CDM["bld_floor"].filter({"Categories
 # CDM_const["material-decomposition_domapp"] = CDM["bld_domapp"] # do not load domestic appliances for now as this needs to be implemented in buildings
 CDM_const["material-decomposition_infra"] = CDM["tra_infra"]
 CDM_const["material-decomposition_veh"] = CDM["tra_veh"]
+CDM_const["material-decomposition_bat"] = CDM["tra_bat"]
 CDM_const["material-decomposition_pack"] = CDM["pack"]
 
 # energy demand
@@ -207,6 +208,7 @@ lever_names = ['material-decomposition_floor', 'material-decomposition_infra',
 for n in lever_names:
     CDM_const[n].drop("Categories2","ammonia")
 CDM_const['material-decomposition_veh'].drop("Categories3","ammonia")
+CDM_const['material-decomposition_bat'].drop("Categories3","ammonia")
 lever_names = ['energy_excl-feedstock', 'energy_feedstock', 
                'emission-factor-process']
 for n in lever_names:
