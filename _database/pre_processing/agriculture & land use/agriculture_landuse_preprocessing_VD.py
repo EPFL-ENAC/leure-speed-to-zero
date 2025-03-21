@@ -7,7 +7,7 @@ import re
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from _database.pre_processing.api_routines_CH import get_data_api_CH
-from model.common.auxiliary_functions import create_years_list, linear_fitting, filter_DM
+from model.common.auxiliary_functions import create_years_list, linear_fitting, filter_DM, add_dummy_country_to_DM
 
 import pickle
 import json
@@ -28,7 +28,7 @@ def get_livestock_all(table_id, file, years_ots):
                                              'Cheptel - Chèvres', 'Cheptel - Porcs', 'Cheptel - Volailles',
                                              'Cheptel - Autres animaux'],
                      'Canton': ['Vaud'],
-                     'Zone de production agricole' : ['Zone de production agricole - total'],
+                     'Zone de production agricole': ['Zone de production agricole - total'],
                      'Classe de taille': ['Classe de taille - total'],
                      "Système d'exploitation": ["Système d'exploitation - total"],
                      "Forme d'exploitation": ["Forme d'exploitation - total"],
@@ -41,7 +41,7 @@ def get_livestock_all(table_id, file, years_ots):
 
         # Extract new fleet
         dm = get_data_api_CH(table_id, mode='extract', filter=filtering, mapping_dims=mapping_dim,
-                             units=['lsu'], language='fr')
+                             units=['animals'], language='fr')
         dm.rename_col('Zone de production agricole - total', 'agr_livestock', 'Variables')
         dm.rename_col_regex('Cheptel - ', '', dim='Categories1')
         dict_cat = {'bovine': ['Bovins'], 'sheep': ['Moutons'], 'pig': ['Porcs'],
@@ -82,7 +82,7 @@ def get_livestock_dairy_egg(table_id, file, years_ots):
 
         # Extract new fleet
         dm = get_data_api_CH(table_id, mode='extract', filter=filtering, mapping_dims=mapping_dim,
-                             units=['lsu'], language='fr')
+                             units=['animals'], language='fr')
         dm.rename_col('Zone de production agricole - total', 'agr_livestock-dairy-egg', 'Variables')
         dm.rename_col_regex('Cheptel - ', '', dim='Categories1')
         dict_cat = {'bovine': ['Vaches laitières'], 'sheep': ['Brebis laitières'], 'oth-animals': ['Chèvres laitières'],
@@ -106,7 +106,7 @@ def compute_livestock(dm_all, dm_dairy_egg):
 
     dm_meat = dm_all.filter({'Categories1': dm_dairy_egg.col_labels['Categories1']})
     dm_meat.append(dm_dairy_egg, dim='Variables')
-    dm_meat.operation('agr_livestock', '-', 'agr_livestock-dairy-egg', out_col='agr_livestock-meat', unit='lsu')
+    dm_meat.operation('agr_livestock', '-', 'agr_livestock-dairy-egg', out_col='agr_livestock-meat', unit='animals')
     dm_meat.filter({'Variables': ['agr_livestock-meat']}, inplace=True)
 
     dm_meat_other = dm_all.filter({'Categories1': missing_cat})
@@ -217,10 +217,64 @@ def compute_wine_production(dm_crop_wine, wine_hl, conversion_hl_to_kcal):
     # Wine calories
     # https://www.calories.info/food/wine ( avg 80 Calories/100 gr = 80 kcal/100 gr = 800 kcal/l -> 80'000 kcal/hl )
     # FIXME you are here
-    dm_crop_wine.change_unit('agr_production_adj', old_unit='hl', new_unit='kcal', factor=conversion_hl_to_kcal)
-
+    dm_crop_wine.change_unit('agr_production', old_unit='hl', new_unit='kcal', factor=conversion_hl_to_kcal)
+    dm_crop_wine.filter({'Variables': ['agr_production']}, inplace=True)
     return dm_crop_wine
 
+
+def compute_crop_prod(dm_crop_land, dm_yield, wine_hl_VD, conversion_hl_to_kcal, beer_proxy ):
+    dm_crop_only = dm_crop_land.filter_w_regex({'Categories1': 'crop-.*'}, inplace=False)
+    dm_crop_only.rename_col_regex('crop-', '', dim='Categories1')
+    dm_crop_only.drop(col_label='stm', dim='Categories1')
+    dm_yield_crop = dm_yield.filter({'Categories1': dm_crop_only.col_labels['Categories1']}, inplace=False)
+    dm_crop_only.append(dm_yield_crop, dim='Variables')
+    dm_crop_only.operation('agr_land-use', '*', 'agr_climate-smart-crop_yield', out_col='agr_production', unit='kcal')
+    dm_crop_only.filter({'Variables': ['agr_production']}, inplace=True)
+    for cat in dm_crop_only.col_labels['Categories1']:
+        cat_new = 'crop-'+cat
+        dm_crop_only.rename_col(cat, cat_new, 'Categories1')
+
+    # Wine production
+    # The Federal Office of Agriculture, report the hl of wine produced and the ha of land dedicated to vineyards.
+    # https://www.blw.admin.ch/fr/vin
+    # the reports are available for every year, and every canton, in pdf format. The values from 2021 to 2024
+    # one hl of wine is 80'000 kcal
+    dm_crop_wine = dm_crop_land.filter({'Categories1': ['pro-bev-wine']}, inplace=False)
+    dm_crop_wine = compute_wine_production(dm_crop_wine, wine_hl_VD, conversion_hl_to_kcal)
+
+    # Beer production
+    # Since the cultivation of hop is small in Vaud and no data could be found on beer production we use crop-cereal
+    dm_crop_beer = dm_crop_land.filter({'Categories1': ['pro-bev-beer']}, inplace=False)
+    dm_yield_beer = dm_yield.filter({'Categories1': [beer_proxy]}, inplace=False)
+    dm_yield_beer.rename_col(beer_proxy, 'pro-bev-beer', 'Categories1')
+    dm_crop_beer.append(dm_yield_beer, dim='Variables')
+    dm_crop_beer.operation('agr_land-use', '*', 'agr_climate-smart-crop_yield', out_col='agr_production', unit='kcal')
+    dm_crop_beer.filter({'Variables': ['agr_production']}, inplace=True)
+
+    dm_crop_only.append(dm_crop_wine, dim='Categories1')
+    dm_crop_only.append(dm_crop_beer, dim='Categories1')
+    dm_crop_only.sort('Categories1')
+
+    return dm_crop_only
+
+
+def rename_categories(dm, cat_list, dummy_val):
+    missing_cat = []
+    for cat in dm.col_labels['Categories1']:
+        cat_full_name = [full_name for full_name in cat_list if cat in full_name]
+        if len(cat_full_name) > 1:
+            print(f'{cat} is matching with {cat_full_name}')
+        elif len(cat_full_name) == 1:
+            dm.rename_col(cat, cat_full_name[0], dim='Categories1')
+        else:
+            missing_cat.append(cat)
+
+    missing_dummy_cat = list(set(cat_list) - set(dm.col_labels['Categories1']))
+    dm.add(dummy_val, dim='Categories1', col_label=missing_dummy_cat, dummy=True)
+
+    dm.sort('Categories1')
+
+    return dm, missing_cat
 
 years_ots = create_years_list(1990, 2023, 1)
 years_fts = create_years_list(2025, 2050, 5)
@@ -230,13 +284,16 @@ years_fts = create_years_list(2025, 2050, 5)
 data_file = '../../data/datamatrix/lifestyles.pickle'
 with open(data_file, 'rb') as handle:
     DM_lfs = pickle.load(handle)
-dm_pop = DM_lfs['ots']['pop']['lfs_population_']
+dm_pop = DM_lfs['ots']['pop']['lfs_population_'].filter({'Country': ['Vaud']}, inplace=False)
+dm_demo = DM_lfs['ots']['pop']['lfs_demography_'].filter({'Country': ['Vaud']}, inplace=False)
 
-# Load Agriculture pickle to read Switzerland data
+# Load Agriculture pickle to read fake Vaud data (as Switzerland)
 data_file = '../../data/datamatrix/agriculture.pickle'
 with open(data_file, 'rb') as handle:
     DM_agriculture = pickle.load(handle)
 filter_DM(DM_agriculture, {'Country': ['Switzerland']})
+add_dummy_country_to_DM(DM_agriculture, 'Vaud', 'Switzerland')
+filter_DM(DM_agriculture, {'Country': ['Vaud']})
 
 #dm_kcal = DM_agriculture['ots']['kcal-req']
 #linear_fitting(dm_kcal, years_ots)
@@ -253,10 +310,28 @@ file = 'data/agr_livestock_dairy_egg.pickle'
 dm_lsu_dairy_egg = get_livestock_dairy_egg(table_id, file, years_ots)
 # All livestock (meat, dairy, egg)
 dm_lsu = compute_livestock(dm_lsu_meat, dm_lsu_dairy_egg)
+# Convert animals to lsu
+lsu_conversion = {'meat-bovine': 0.6, 'meat-oth-animals': 0.8, 'meat-pig': 0.22, 'meat-poultry': 0.007,
+                  'meat-sheep': 0.1, 'abp-dairy-milk': 0.7, 'abp-hens-egg': 0.014}
+idx = dm_lsu.idx
+for cat in dm_lsu.col_labels['Categories1']:
+    dm_lsu.array[:, :, idx['agr_livestock'], idx[cat]] = lsu_conversion[cat]*dm_lsu.array[:, :, idx['agr_livestock'], idx[cat]]
+dm_lsu.change_unit('agr_livestock', old_unit='animals', new_unit='lsu', factor=1)
+
+# Slaughtered = Stock x slaughtered-rate
+dm_slaughtered_rate = DM_agriculture['ots']['climate-smart-livestock']['climate-smart-livestock_slaughtered']
+dm_lsu_meat = dm_lsu.filter_w_regex({'Categories1': 'meat.*'}, inplace=False)
+dm_lsu_other = dm_lsu.filter_w_regex({'Categories1': 'abp.*'}, inplace=False)
+dm_lsu_meat.append(dm_slaughtered_rate, dim='Variables')
+dm_lsu_meat.operation('agr_livestock', '*', 'agr_climate-smart-livestock_slaughtered', out_col='agr_slaughtered', unit='lsu')
+dm_lsu_meat.filter({'Variables': ['agr_slaughtered']}, inplace=True)
+dm_lsu_meat.rename_col('agr_slaughtered', 'agr_livestock', dim='Variables')
+
+dm_lsu = dm_lsu_other
+dm_lsu.append(dm_lsu_meat, dim='Categories1')
 
 # Multiply dm_lsu by yield to obtain total kcal produced
-dm_yield = DM_agriculture['ots']['climate-smart-livestock']['climate-smart-livestock_yield'].filter({'Country': ['Switzerland']})
-dm_yield.rename_col('Switzerland', 'Vaud', 'Country')
+dm_yield = DM_agriculture['ots']['climate-smart-livestock']['climate-smart-livestock_yield']
 if 'meat-oth-animals' not in dm_yield.col_labels['Categories1']:
     idx = dm_yield.idx
     arr_poultry = dm_yield.array[:, :, :, idx['meat-poultry']]
@@ -270,33 +345,24 @@ dm_lsu.operation('agr_livestock', '*', 'agr_climate-smart-livestock_yield', out_
 # Section: Production - Crop & Co
 table_id = 'px-x-0702000000_106'
 file = 'data/agr_crop_prod.pickle'
-# Production in ha
-dm_crop_prod = get_crop_prod(table_id, file, years_ots)
+# Production in *ha* / Land-Use
+dm_crop_land = get_crop_prod(table_id, file, years_ots)
 # Production in kcal = Production in ha x yield in kcal/ha
-dm_yield = DM_agriculture['ots']['climate-smart-crop']['climate-smart-crop_yield'].filter({'Country': ['Switzerland']})
-dm_yield.rename_col('Switzerland', 'Vaud', dim='Country')
+dm_yield = DM_agriculture['ots']['climate-smart-crop']['climate-smart-crop_yield']
 linear_fitting(dm_yield, years_ots)
-dm_crop_only = dm_crop_prod.filter_w_regex({'Categories1': 'crop-.*'}, inplace=False)
-dm_crop_only.rename_col_regex('crop-', '', dim='Categories1')
-dm_crop_only.drop(col_label='stm', dim='Categories1')
-dm_yield_crop = dm_yield.filter({'Categories1': dm_crop_only.col_labels['Categories1']}, inplace=False)
-dm_crop_only.append(dm_yield_crop, dim='Variables')
-dm_crop_only.operation('agr_land-use', '*', 'agr_climate-smart-crop_yield', out_col='agr_production', unit='kcal')
-
 # Wine production
 # The Federal Office of Agriculture, report the hl of wine produced and the ha of land dedicated to vineyards.
 # https://www.blw.admin.ch/fr/vin
 # the reports are available for every year, and every canton, in pdf format. The values from 2021 to 2024
 wine_hl_VD = {2015: 218026, 2019: 278474,  2020: 237740, 2021: 191463, 2022: 273762, 2023: 287379} #2024: 230916}
-conversion_hl_to_kcal = 80000  # one hl of wine is 80'000 kcal
-dm_crop_wine = dm_crop_prod.filter({'Categories1': ['pro-bev-wine']}, inplace=False)
-dm_crop_wine = compute_wine_production(dm_crop_wine, wine_hl_VD, conversion_hl_to_kcal)
+conversion_hl_to_kcal = 80000
+beer_proxy = 'cereal'
+dm_crop_prod = compute_crop_prod(dm_crop_land, dm_yield, wine_hl_VD, conversion_hl_to_kcal, beer_proxy )
 
-# Beer production
-# Since the cultivation of hop is small in Vaud and no data could be found on beer production we use crop-cereal
-dm_crop_beer = dm_crop_prod.filter({'Categories1': ['pro-bev-beer']}, inplace=False)
-dm_yield_beer = dm_yield.filter({'Categories1': ['cereal']}, inplace=False)
-dm_yield_beer.rename_col('cereal', 'pro-bev-beer', 'Catego')
+# Production join crop and lsu
+dm_prod = dm_lsu.filter({'Variables': ['agr_production']}, inplace=False)
+dm_prod.append(dm_crop_prod, dim='Categories1')
+
 # Section: Supply
 # Compute supply = Demand + Waste
 # Demand = append( Consumer-diet,  )
@@ -308,8 +374,13 @@ linear_fitting(dm_share, years_ots)
 dm_diet = DM_agriculture['ots']['diet']['lfs_consumers-diet']
 linear_fitting(dm_diet, years_ots)
 # kcal-req
-dm_kcal_req = DM_agriculture['ots']['kcal-req'].groupby({'lfs_kcal-req': '.*'}, regex=True, inplace=False, dim='Variables')
+dm_kcal_req = DM_agriculture['ots']['kcal-req']
 linear_fitting(dm_kcal_req, years_ots)
+dm_kcal_req.append(dm_demo, dim='Variables')
+dm_kcal_req.operation('agr_kcal-req', '*', 'lfs_demography', out_col='agr_kcal', unit='kcal/day')
+dm_kcal_req.group_all('Categories1')
+dm_kcal_req.operation('agr_kcal', '/', 'lfs_demography', out_col='agr_kcal-req_avg', unit='kcal/cap/day')
+dm_kcal_req.filter({'Variables': ['agr_kcal-req_avg']}, inplace=True)
 
 #  Consumer-diet-other = ( kcal-req - sum(Consumer-diet) )*Share
 dm_tot_diet = dm_diet.group_all('Categories1', inplace=False)
@@ -324,11 +395,31 @@ dm_diet.append(dm_diet_other, 'Categories1')
 dm_waste = DM_agriculture['ots']['fwaste']
 linear_fitting(dm_waste, years_ots)
 dm_supply = dm_waste
+if 'rice' not in dm_supply.col_labels['Categories1']:
+    dm_supply.add(np.nan, dim='Categories1', col_label=['rice'], dummy=True)
 dm_supply.append(dm_diet, dim='Variables')
 dm_supply.operation('lfs_consumers-food-wastes', '+', 'lfs_consumers-diet', out_col='lfs_supply', unit='kcal/cap/day')
 
 # Net-import = Production/Suppy ( = production/(production + import - export))
+dm_netimport_dummy = DM_agriculture['ots']['food-net-import']
 dm_supply.change_unit('lfs_supply', old_unit='kcal/cap/day', new_unit='kcal/cap', factor=365)
+idx = dm_supply.idx
+dm_supply.array[:, :, idx['lfs_supply'], :] = dm_supply.array[:, :, idx['lfs_supply'], :]*dm_pop.array[:, :, :]
+dm_supply.change_unit('lfs_supply', old_unit='kcal/cap', new_unit='kcal', factor=1)
+dm_supply.rename_col(['pigs', 'cereals', 'fruits', 'oilcrops', 'pulses', 'afats', 'sugar'],
+                     ['pig', 'cereal', 'fruit', 'oilcrop', 'pulse', 'afat', 'pro-crop-processed-sugar'], dim='Categories1')
+dm_supply, missing_cat_sup = rename_categories(dm_supply, dm_netimport_dummy.col_labels['Categories1'], dummy_val=np.nan)
+dm_prod, missing_cat_prod = rename_categories(dm_prod, dm_netimport_dummy.col_labels['Categories1'], dummy_val=0)
 
+dm_supply.drop(col_label=missing_cat_sup, dim='Categories1')
+dm_supply.append(dm_prod, dim='Variables')
+dm_supply.operation('agr_production', '/', 'lfs_supply', out_col='agr_food-net-import', unit='%')
+# FIXME! How to compute processed cake, molasse, sugar etc.
+# FIXME! Difference between VD and CH
+
+# Overwrite Vaud net-import in DM
+DM_agriculture['ots']['food-net-import'].drop(col_label='Vaud', dim='Country')
+DM_agriculture['ots']['food-net-import'].append(dm_supply.filter({'Variables': ['agr_food-net-import']}), dim='Country')
+DM_agriculture['ots']['food-net-import'].sort('Country')
 
 print('Hello')
