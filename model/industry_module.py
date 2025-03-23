@@ -115,6 +115,23 @@ def product_production(dm_demand_bld_floor, dm_demand_tra_infra, dm_demand_tra_v
     # production (units) = demand * production [%]
     dm_prod_pack.array = dm_prod_pack.array * dm_demand_pack.array
     dm_prod_pack.units["product-production"] = dm_demand_pack.units["product-demand"]
+    
+    ############################
+    ##### NET IMPORT ITEMS #####
+    ############################
+
+    # get net import in items
+    dm_import_bld_floor_item = dm_import.filter_w_regex({"Categories1": "floor-area"})
+    dm_import_bld_floor_item.array = dm_import_bld_floor_item.array * dm_demand_bld_floor.array[:,:,np.newaxis,:]
+    dm_import_tra_infra_item = dm_import.filter({"Categories1": ['rail', 'road', 'trolley-cables']})
+    dm_import_tra_infra_item.array = dm_import_tra_infra_item.array * dm_demand_tra_infra.array
+    dm_import_tra_veh_item = dm_import.filter_w_regex({"Categories1": "HDV|LDV|bus|planes|ships|trains"})
+    dm_import_tra_veh_item.deepen()
+    dm_import_tra_veh_item.array = dm_import_tra_veh_item.array * dm_demand_tra_veh.array
+    dm_import_pack_item = dm_import.filter({"Categories1": ['aluminium-pack', 'glass-pack', 'paper-pack',
+                                                            'paper-print', 'paper-san', 'plastic-pack']})
+    dm_import_pack_item.array = dm_import_pack_item.array * dm_demand_pack.array
+    
 
     ########################
     ##### PUT TOGETHER #####
@@ -123,7 +140,11 @@ def product_production(dm_demand_bld_floor, dm_demand_tra_infra, dm_demand_tra_v
     DM_production = {"bld-floor": dm_prod_bld_floor,
                      "tra-infra": dm_prod_tra_infra,
                      "tra-veh": dm_prod_tra_veh,
-                     "pack": dm_prod_pack}
+                     "pack": dm_prod_pack,
+                     "bld-floor-net-import" : dm_import_bld_floor_item,
+                     "tra-infra-net-import" : dm_import_tra_infra_item,
+                     "tra-veh-net-import" : dm_import_tra_veh_item,
+                     "pack-net-import" : dm_import_pack_item}
         
     # return
     return DM_production
