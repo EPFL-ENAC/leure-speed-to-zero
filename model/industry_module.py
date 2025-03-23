@@ -335,7 +335,7 @@ def material_production(dm_material_efficiency, dm_material_net_import,
     
     # get material net import in kilo tonnes
     dm_material_net_import_kt = dm_matdec_agg.copy()
-    dm_material_net_import_kt.array = dm_material_net_import_kt.array - dm_material_production_bymat.array
+    dm_material_net_import_kt.array = dm_material_net_import_kt.array * dm_material_net_import.array
 
     # include other industries from fxa
     dm_material_production_bymat.append(data2 = dm_matprod_other_industries, dim = "Categories1")
