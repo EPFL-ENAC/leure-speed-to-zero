@@ -76,7 +76,7 @@ def product_production(dm_demand_bld_floor, dm_demand_tra_infra, dm_demand_tra_v
     # transport infra
     dm_netimport_tra_infra = dm_import.filter({"Categories1": ['rail', 'road', 'trolley-cables']})
     dm_netimport_tra_infra.array = dm_netimport_tra_infra.array * dm_demand_tra_infra.array
-    dm_netimport_tra_infra.units["product-net-import"] = dm_demand_bld_floor.units["product-demand"]
+    dm_netimport_tra_infra.units["product-net-import"] = dm_demand_tra_infra.units["tra_product-demand"]
     dm_prod_tra_infra = dm_demand_tra_infra.copy()
     dm_prod_tra_infra.array = dm_demand_tra_infra.array - dm_netimport_tra_infra.array
     dm_prod_tra_infra.rename_col("tra_product-demand","product-production","Variables")
@@ -85,7 +85,7 @@ def product_production(dm_demand_bld_floor, dm_demand_tra_infra, dm_demand_tra_v
     dm_netimport_tra_veh = dm_import.filter_w_regex({"Categories1": "HDV|LDV|bus|planes|ships|trains"})
     dm_netimport_tra_veh.deepen()
     dm_netimport_tra_veh.array = dm_netimport_tra_veh.array * dm_demand_tra_veh.array
-    dm_netimport_tra_veh.units["product-net-import"] = dm_demand_bld_floor.units["product-demand"]
+    dm_netimport_tra_veh.units["product-net-import"] = dm_demand_tra_veh.units["tra_product-demand"]
     dm_prod_tra_veh = dm_demand_tra_veh.copy()
     dm_prod_tra_veh.array = dm_demand_tra_veh.array - dm_netimport_tra_veh.array
     dm_prod_tra_veh.rename_col("tra_product-demand","product-production","Variables")
@@ -97,7 +97,7 @@ def product_production(dm_demand_bld_floor, dm_demand_tra_infra, dm_demand_tra_v
     dm_netimport_pack = dm_import.filter({"Categories1": ['aluminium-pack', 'glass-pack', 'paper-pack',
                                                           'paper-print', 'paper-san', 'plastic-pack']})
     dm_netimport_pack.array = dm_netimport_pack.array * dm_demand_pack.array
-    dm_netimport_pack.units["product-net-import"] = dm_demand_bld_floor.units["product-demand"]
+    dm_netimport_pack.units["product-net-import"] = dm_demand_pack.units["product-demand"]
     dm_prod_pack = dm_demand_pack.copy()
     dm_prod_pack.array = dm_demand_pack.array - dm_netimport_pack.array
     dm_prod_pack.rename_col("product-demand","product-production","Variables")
