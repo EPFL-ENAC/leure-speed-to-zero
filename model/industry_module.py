@@ -58,79 +58,49 @@ def product_production(dm_demand_bld_floor, dm_demand_tra_infra, dm_demand_tra_v
                        dm_pop, dm_demand_packaging_percapita, 
                        dm_import):
     
-    # production [%] = 1 - net import [%]
-    # note: production [%] is production [unit] / demand [unit]
+    # net import [%] is net import [unit] / demand [unit]
+    # production [unit] = demand [unit] - net import [unit]
     
-    dm_prod = dm_import.copy()
-    dm_prod.array = 1 - dm_prod.array
-    dm_prod.rename_col(col_in="product-net-import", col_out="product-production", dim="Variables")
-
-    #####################
-    ##### BUILDINGS #####
-    #####################
-
-    # get production for buildings
-    dm_prod_bld_floor = dm_prod.filter_w_regex({"Categories1": "floor-area"})
-
-    # production (units) = production [%] * demand
-
-    # floor
-    dm_prod_bld_floor.array = dm_prod_bld_floor.array * dm_demand_bld_floor.array[:,:,np.newaxis,:]
-    dm_prod_bld_floor.units["product-production"] = dm_demand_bld_floor.units['floor-area-reno-residential']
-
-
-    #####################
-    ##### TRANSPORT #####
-    #####################
-
-    # get production for transport
-    dm_prod_tra_infra = dm_prod.filter({"Categories1": ['rail', 'road', 'trolley-cables']})
-    dm_prod_tra_veh = dm_prod.filter_w_regex({"Categories1" : "HDV|LDV|bus|planes|ships|trains"})
-    dm_prod_tra_veh.deepen()
+    # buildings
+    variabs = dm_demand_bld_floor.col_labels["Variables"]
+    for v in variabs:
+        dm_demand_bld_floor.rename_col(v, "product-demand_" + v, "Variables")
+    dm_demand_bld_floor.deepen()
+    dm_netimport_bld_floor = dm_import.filter_w_regex({"Categories1": "floor-area"})
+    dm_netimport_bld_floor.array = dm_netimport_bld_floor.array * dm_demand_bld_floor.array
+    dm_netimport_bld_floor.units["product-net-import"] = dm_demand_bld_floor.units["product-demand"]
+    dm_prod_bld_floor = dm_demand_bld_floor.copy()
+    dm_prod_bld_floor.array = dm_demand_bld_floor.array - dm_netimport_bld_floor.array
+    dm_prod_bld_floor.rename_col("product-demand","product-production","Variables")
     
-    # production (units) = demand * production [%]
-
-    # infra
-    dm_prod_tra_infra.array = dm_prod_tra_infra.array * dm_demand_tra_infra.array
-    dm_prod_tra_infra.units["product-production"] = dm_demand_tra_infra.units["tra_product-demand"]
-
-    # veh
-    dm_prod_tra_veh.array = dm_prod_tra_veh.array * dm_demand_tra_veh.array
-    dm_prod_tra_veh.units["product-production"] = dm_demand_tra_veh.units["tra_product-demand"]
-
-
-    ######################
-    ##### LIFESTYLES #####
-    ######################
-
-    # get demand of packaging = demand of packaging per capita * pop
+    # transport infra
+    dm_netimport_tra_infra = dm_import.filter({"Categories1": ['rail', 'road', 'trolley-cables']})
+    dm_netimport_tra_infra.array = dm_netimport_tra_infra.array * dm_demand_tra_infra.array
+    dm_netimport_tra_infra.units["product-net-import"] = dm_demand_bld_floor.units["product-demand"]
+    dm_prod_tra_infra = dm_demand_tra_infra.copy()
+    dm_prod_tra_infra.array = dm_demand_tra_infra.array - dm_netimport_tra_infra.array
+    dm_prod_tra_infra.rename_col("tra_product-demand","product-production","Variables")
+    
+    # transport vehicles
+    dm_netimport_tra_veh = dm_import.filter_w_regex({"Categories1": "HDV|LDV|bus|planes|ships|trains"})
+    dm_netimport_tra_veh.deepen()
+    dm_netimport_tra_veh.array = dm_netimport_tra_veh.array * dm_demand_tra_veh.array
+    dm_netimport_tra_veh.units["product-net-import"] = dm_demand_bld_floor.units["product-demand"]
+    dm_prod_tra_veh = dm_demand_tra_veh.copy()
+    dm_prod_tra_veh.array = dm_demand_tra_veh.array - dm_netimport_tra_veh.array
+    dm_prod_tra_veh.rename_col("tra_product-demand","product-production","Variables")
+    
+    # packaging
     dm_demand_pack = dm_demand_packaging_percapita.copy()
     dm_demand_pack.array = dm_demand_pack.array * dm_pop.array[...,np.newaxis]
     dm_demand_pack.units["product-demand"] = "t"
-    
-    # get production % for packaging
-    dm_prod_pack = dm_prod.filter({"Categories1": ['aluminium-pack', 'glass-pack', 'paper-pack',
-                                                   'paper-print', 'paper-san', 'plastic-pack']})
-
-    # production (units) = demand * production [%]
-    dm_prod_pack.array = dm_prod_pack.array * dm_demand_pack.array
-    dm_prod_pack.units["product-production"] = dm_demand_pack.units["product-demand"]
-    
-    ############################
-    ##### NET IMPORT ITEMS #####
-    ############################
-
-    # get net import in items
-    dm_import_bld_floor_item = dm_import.filter_w_regex({"Categories1": "floor-area"})
-    dm_import_bld_floor_item.array = dm_import_bld_floor_item.array * dm_demand_bld_floor.array[:,:,np.newaxis,:]
-    dm_import_tra_infra_item = dm_import.filter({"Categories1": ['rail', 'road', 'trolley-cables']})
-    dm_import_tra_infra_item.array = dm_import_tra_infra_item.array * dm_demand_tra_infra.array
-    dm_import_tra_veh_item = dm_import.filter_w_regex({"Categories1": "HDV|LDV|bus|planes|ships|trains"})
-    dm_import_tra_veh_item.deepen()
-    dm_import_tra_veh_item.array = dm_import_tra_veh_item.array * dm_demand_tra_veh.array
-    dm_import_pack_item = dm_import.filter({"Categories1": ['aluminium-pack', 'glass-pack', 'paper-pack',
-                                                            'paper-print', 'paper-san', 'plastic-pack']})
-    dm_import_pack_item.array = dm_import_pack_item.array * dm_demand_pack.array
+    dm_netimport_pack = dm_import.filter({"Categories1": ['aluminium-pack', 'glass-pack', 'paper-pack',
+                                                          'paper-print', 'paper-san', 'plastic-pack']})
+    dm_netimport_pack.array = dm_netimport_pack.array * dm_demand_pack.array
+    dm_netimport_pack.units["product-net-import"] = dm_demand_bld_floor.units["product-demand"]
+    dm_prod_pack = dm_demand_pack.copy()
+    dm_prod_pack.array = dm_demand_pack.array - dm_netimport_pack.array
+    dm_prod_pack.rename_col("product-demand","product-production","Variables")
     
 
     ########################
@@ -141,10 +111,10 @@ def product_production(dm_demand_bld_floor, dm_demand_tra_infra, dm_demand_tra_v
                      "tra-infra": dm_prod_tra_infra,
                      "tra-veh": dm_prod_tra_veh,
                      "pack": dm_prod_pack,
-                     "bld-floor-net-import" : dm_import_bld_floor_item,
-                     "tra-infra-net-import" : dm_import_tra_infra_item,
-                     "tra-veh-net-import" : dm_import_tra_veh_item,
-                     "pack-net-import" : dm_import_pack_item}
+                     "bld-floor-net-import" : dm_netimport_bld_floor,
+                     "tra-infra-net-import" : dm_netimport_tra_infra,
+                     "tra-veh-net-import" : dm_netimport_tra_veh,
+                     "pack-net-import" : dm_netimport_pack}
         
     # return
     return DM_production
