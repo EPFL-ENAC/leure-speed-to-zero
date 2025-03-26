@@ -965,3 +965,10 @@ class DataMatrix:
                 dm_out = DataMatrix.based_on(arr_data, format=self, change={'Variables': vars_new}, units=units_new)
                 return dm_out
         return
+
+    def __getitem__(self, key):
+        if not isinstance(key, tuple):  # Ensure key is a tuple
+            key = (key,)
+        key = tuple(self.idx.get(k, k) if isinstance(k, str) else k for k in key)
+        arr = self.array[key]
+        return arr
