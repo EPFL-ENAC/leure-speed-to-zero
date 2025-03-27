@@ -17,6 +17,7 @@ geo_pattern = 'Switzerland|Vaud|EU27'
 # from _database/data/datamatrix/.* reads the pickles, filters the geoscale, and saves new filtered pickles to geoscale/
 filter_geoscale(geo_pattern)
 # Main model run
-output = runner(lever_setting, years_setting, logger)
-
+output = runner(lever_setting, years_setting, logger, )
 logger.info('Run over')
+
+output["buildings"].datamatrix_plot(stacked=True, title="Buildings")
