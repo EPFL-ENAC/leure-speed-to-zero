@@ -276,6 +276,33 @@ def rename_categories(dm, cat_list, dummy_val):
 
     return dm, missing_cat
 
+
+def extract_variables_to_file():
+    f = '../_database/data/datamatrix/agriculture.pickle'
+    with open(f, 'rb') as handle:
+        DM_agriculture = pickle.load(handle)
+
+    def extract_all_variables_to_list(DM, list_var):
+        for key in DM:
+            if key == 'constant' or key == 'fts':
+                continue
+            if isinstance(DM[key], dict):
+                list_var = extract_all_variables_to_list(DM[key], list_var)
+            else:
+                dm = DM[key].flattest()
+                new_vars = [f"{k}[{v}]" for k, v in dm.units.items()]
+                list_var.append(new_vars)
+        return list_var
+
+    list_agr_var = []
+    list_agr_var = extract_all_variables_to_list(DM_agriculture, list_agr_var)
+    df = pd.DataFrame({'Column1': [str(lst) for lst in list_agr_var]})  # Convert lists to strings
+    df.to_excel("../_database/pre_processing/agriculture & land use/data/agriculture_var_list.xlsx", index=False,
+                engine="openpyxl")
+
+    return
+
+
 years_ots = create_years_list(1990, 2023, 1)
 years_fts = create_years_list(2025, 2050, 5)
 
