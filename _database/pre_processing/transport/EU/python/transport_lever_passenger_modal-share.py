@@ -247,10 +247,10 @@ years_fts = list(range(2025,2055,5))
 idx = dm_pkm_pc_level4.idx
 for y in years_fts:
     dm_pkm_pc_level4.array[idx["EU27"],idx[y],:,:] = np.nan
-dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["LDV"]] = 0.544
-dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["bus"]] = 0.173
-dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["metrotram"]] = 0.075
-dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["rail"]] = 0.19 # i put this at 0.19 instead of 0.185 so that 2W also goes down
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["LDV"]] = 0.613 # i put level 3 for now
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["bus"]] = 0.144 # i put level 3 for now
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["metrotram"]] = 0.057 # i put level 3 for now
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["rail"]] = 0.156 # i put level 3 for now (old: i put this at 0.19 instead of 0.185 so that 2W also goes down)
 twowheel = 1 - dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["LDV"]] - dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["bus"]] - dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["metrotram"]] - dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["rail"]]
 dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["2W"]] = twowheel 
 dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["bike"]] = 0
