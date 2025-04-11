@@ -248,7 +248,7 @@ years_fts = list(range(2025,2055,5))
 idx = dm_occ_level4.idx
 for y in years_fts:
     dm_occ_level4.array[idx["EU27"],idx[y],:,:] = np.nan
-dm_occ_level4.array[idx["EU27"],idx[2050],:,idx["LDV"]] = 2 # i put it at 2 instead of 2.6 for the moment
+dm_occ_level4.array[idx["EU27"],idx[2050],:,idx["LDV"]] = 2 # i put it at 1.8 instead of 2.6 for the moment
 dm_occ_level4.array[idx["EU27"],idx[2050],:,idx["2W"]] = 1.3
 dm_occ_level4.array[idx["EU27"],idx[2050],:,idx["bus"]] = 27.2
 bus_2023 = dm_occ_level4.array[idx["EU27"],idx[2023],:,idx["bus"]]

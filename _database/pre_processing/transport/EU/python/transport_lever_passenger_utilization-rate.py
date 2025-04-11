@@ -108,7 +108,7 @@ years_fts = list(range(2025,2055,5))
 idx = dm_uti_level4.idx
 for y in years_fts:
     dm_uti_level4.array[idx["EU27"],idx[y],:,:] = np.nan
-dm_uti_level4.array[idx["EU27"],idx[2050],:,idx["LDV"]] = dm_uti_level4.array[idx["EU27"],idx[2023],:,idx["LDV"]]*(1+0.45) # I do not put 900% here as it would blow all the results
+dm_uti_level4.array[idx["EU27"],idx[2050],:,idx["LDV"]] = dm_uti_level4.array[idx["EU27"],idx[2023],:,idx["LDV"]]*(1+0.30) # I do not put 900% here as it would blow all the results
 dm_uti_level4.array[idx["EU27"],idx[2050],:,idx["2W"]] = dm_uti_level4.array[idx["EU27"],idx[2023],:,idx["2W"]]*(1+0.15)
 dm_uti_level4.array[idx["EU27"],idx[2050],:,idx["bus"]] = dm_uti_level4.array[idx["EU27"],idx[2023],:,idx["bus"]]*(1+0.45)
 dm_uti_level4.array[idx["EU27"],idx[2050],:,idx["rail"]] = dm_uti_level4.array[idx["EU27"],idx[2023],:,idx["rail"]]*(1+0.45)
