@@ -20,4 +20,5 @@ filter_geoscale(geo_pattern)
 output = runner(lever_setting, years_setting, logger, )
 logger.info('Run over')
 
-output["buildings"].datamatrix_plot(stacked=True, title="Buildings")
+# data = pickle.load('database/datamatrix/transport.pickle')
+# output["buildings"].datamatrix_plot(stacked=True, title="Buildings")
