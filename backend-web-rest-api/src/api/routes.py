@@ -106,12 +106,15 @@ lever_setting = {"lever_pkm":1,
 # Implement caching for frequent requests with the same parameters
 # The file path to lever_position.json assumes the current working directory is the project root. You may need to adjust this path.
 
+years_setting = [1990, 2023, 2025, 2050, 5]
+geo_pattern = 'Switzerland|Vaud|EU27'
+filter_geoscale(geo_pattern)
+
+
 @router.get("/run-model")
 async def run_model():
     try:
-        years_setting = [1990, 2023, 2025, 2050, 5]
-        geo_pattern = 'Switzerland|Vaud|EU27'
-        filter_geoscale(geo_pattern)
+
         output = runner(lever_setting, years_setting, logger)
 
         def serialize(obj):
