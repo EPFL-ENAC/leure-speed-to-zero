@@ -28,3 +28,4 @@ transition-pathway-explorer/node_modules/.cache/**
 
 #Remove history
 .Rhistory
+.venv
