@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastAPI Application</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        header {
+            background-color: #0f766e;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        footer {
+            background-color: #f4f4f4;
+            padding: 1rem;
+            text-align: center;
+            margin-top: 2rem;
+        }
+        .endpoint-list {
+            margin: 2rem 0;
+        }
+        .endpoint {
+            background-color: #f9f9f9;
+            border-left: 4px solid #0f766e;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin-right: 0.5rem;
+            font-size: 0.8rem;
+        }
+        .get {
+            background-color: #22c55e;
+            color: white;
+        }
+        .post {
+            background-color: #3b82f6;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>FastAPI Application</h1>
+        <p>Welcome to the API documentation</p>
+    </header>
+
+    <div class="container">
+        <main>
+            <section>
+                <h2>API Overview</h2>
+                <p>This API provides functionality for [Your Service Description]. Use the endpoints below to interact with the service.</p>
+                <p>The API is built with FastAPI, a modern, fast web framework for building APIs with Python.</p>
+            </section>
+
+            <section class="endpoint-list">
+                <h2>Available Endpoints</h2>
+                <div class="endpoint">
+                    <span class="badge get">GET</span>
+                    <code>/api/items</code>
+                    <p>Retrieve all items</p>
+                </div>
+                <div class="endpoint">
+                    <span class="badge post">POST</span>
+                    <code>/api/items</code>
+                    <p>Create a new item</p>
+                </div>
+                <div class="endpoint">
+                    <span class="badge get">GET</span>
+                    <code>/api/items/{item_id}</code>
+                    <p>Retrieve a specific item by ID</p>
+                </div>
+                <p>For complete API documentation, visit <a href="/docs">/docs</a> or <a href="/redoc">/redoc</a></p>
+            </section>
+        </main>
+    </div>
+
+    <footer>
+        <p>&copy; 2023 FastAPI Application</p>
+    </footer>
+
+    <script>
+        // You can add JavaScript here to fetch data from your API
+        // Example:
+        // fetch('/api/health')
+        //     .then(response => response.json())
+        //     .then(data => console.log('API Status:', data));
+    </script>
+</body>
+</html>
