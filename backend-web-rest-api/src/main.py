@@ -3,8 +3,10 @@ from src.api.routes import router
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 import logging
+from fastapi.responses import ORJSONResponse
 
-app = FastAPI()
+
+app = FastAPI(default_response_class=ORJSONResponse)
 
 logging.basicConfig(
     level=logging.INFO,
