@@ -8,7 +8,10 @@ sync:
 	uv export > requirements.txt
 
 run:
-	uv run fastapi dev src/main.py  --reload --host 0.0.0.0 --port 8000
+	#uv run fastapi dev src/main.py  --reload --host 0.0.0.0 --port 8000
+	@echo "Open your browser at http://localhost:8000/docs"
+	PYTHONPATH=$(PWD)/.. uv run --active python -m uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+
 
 docker-build:
 	@echo "Building docker image"
