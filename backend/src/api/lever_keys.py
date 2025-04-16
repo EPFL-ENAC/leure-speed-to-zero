@@ -81,5 +81,5 @@ LEVER_KEYS = [
     "lever_non-residential-cooling-profile",
     "lever_residential-cooling-profile",
     "lever_eol-waste-management",
-    "lever_eol-material-recovery"
+    "lever_eol-material-recovery",
 ]
