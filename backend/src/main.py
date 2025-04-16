@@ -1,16 +1,19 @@
-from fastapi import FastAPI, Request
 from backend.src.api.routes import router
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 import logging
 from fastapi.responses import ORJSONResponse
+# Set servers in OpenAPI schema
+from fastapi.openapi.utils import get_openapi
 
 
 app = FastAPI(
     openapi_url="/api/v1/docs/openapi.json",
     docs_url="/api/v1/docs",
     redoc_url="/api/v1/redoc",
-    default_response_class=ORJSONResponse)
+    default_response_class=ORJSONResponse,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -18,9 +21,6 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-
-# Set servers in OpenAPI schema
-from fastapi.openapi.utils import get_openapi
 
 def custom_openapi():
     if app.openapi_schema:
@@ -34,6 +34,7 @@ def custom_openapi():
     openapi_schema["servers"] = [{"url": "/api/v1"}]
     app.openapi_schema = openapi_schema
     return app.openapi_schema
+
 
 app.openapi = custom_openapi
 
