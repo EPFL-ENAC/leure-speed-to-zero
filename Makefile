@@ -12,6 +12,10 @@ login:
 	docker login ghcr.io
 
 run:
+	@echo "Running the app locally"
+	uv run python -m uvicorn backend.src.main:app --reload --host 0.0.0.0 --port 8000
+
+run-docker:
 	@make login
 	docker compose -f docker-compose.yml -f docker-compose.prod.yml up --pull=always -d --remove-orphans
 
