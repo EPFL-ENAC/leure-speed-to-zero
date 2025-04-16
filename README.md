@@ -8,8 +8,8 @@ In order to run PathwayCalc you first need to:
 
 Get the data from
 <a href="https://drive.google.com/drive/u/1/folders/1UrYny7mcWQuBrL6KdOKrfEQEkwU0vV8E" target="_blank"> Google Drive</a> (2050-Calculator's drive)
-Extract the dataset in the following folder: *YourWorkspace/_database/data*
-Go to the google drive EPFL-Calc, there navigate to PathwayCalc/_database/ here you find the a zipped data folder.
+Extract the dataset in the following folder: *YourWorkspace/database/data*
+Go to the google drive EPFL-Calc, there navigate to PathwayCalc/database/ here you find the a zipped data folder.
 You need to download it and extract it in your local directory PathwayCalc/_database with name "data".
 Inside you should see the folders csv, xls, datamatrix. The folder datamatrix contains the empty subfolder geoscale.
 
