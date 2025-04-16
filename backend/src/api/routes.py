@@ -8,7 +8,8 @@ import numpy as np
 import time
 import re
 from pathlib import Path
-from src.api.lever_keys import LEVER_KEYS
+from backend.src.api.lever_keys import LEVER_KEYS
+import pickle
 
 router = APIRouter()
 logger = logging.getLogger("uvicorn")
@@ -102,3 +103,42 @@ async def get_version():
                     version = match.group(1)
                     break
     return {"version": version}
+
+
+@router.get("/v1/datamatrix/{name}")
+async def get_datamatrix(name: str):
+    """Return the content of a single datamatrix pickle file as a JSON-serializable object."""
+
+    def serialize(obj):
+        if hasattr(obj, "to_dict"):
+            return obj.to_dict()
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, (np.integer, np.int_, np.intc, np.intp, np.int8, np.int16, np.int32, np.int64)):
+            return int(obj)
+        elif isinstance(obj, (np.floating, np.float_, np.float16, np.float32, np.float64)):
+            return float(obj)
+        elif hasattr(obj, "__dict__"):
+            return {str(k): serialize(v) for k, v in obj.__dict__.items()}
+        elif isinstance(obj, (list, tuple)):
+            return [serialize(i) for i in obj]
+        elif isinstance(obj, dict):
+            return {str(k): serialize(v) for k, v in obj.items()}
+        else:
+            return obj
+    try:
+        allowed = [
+            "agriculture", "ammonia", "buildings", "climate", "district-heating", 
+            "emissions", "industry", "landuse", "lifestyles", "minerals_new", 
+            "minerals", "oil-refinery", "transport"
+        ]
+        if name not in allowed:
+            return ORJSONResponse(content={"status": "error", "message": f"Unknown datamatrix: {name}"}, status_code=404)
+        file = f"_database/data/datamatrix/{name}.pickle"
+        
+        with open(file, "rb") as f:
+            data = pickle.load(f)
+        result = serialize(data)
+        return ORJSONResponse(content={"status": "success", "data": result})
+    except Exception as e:
+        return ORJSONResponse(content={"status": "error", "message": str(e)}, status_code=500)

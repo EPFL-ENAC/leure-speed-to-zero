@@ -16,7 +16,7 @@ RUN pip install -r requirements.txt
 
 COPY ./knime2python ./knime2python
 COPY ./model ./model
-COPY ./_database ./_database
+COPY ./database ./database
 COPY ./config ./config
 # Set environment variable for python code to find sources
 ENV PYTHONPATH /eucalc

@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from src.api.routes import router
+from backend.src.api.routes import router
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 import logging
