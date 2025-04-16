@@ -1,5 +1,10 @@
 # https://github.com/EPFL-ENAC/epfl-enac-build-push-deploy-action#readme
 name: deploy
+description: Build, push and deploy a Docker image to the EPFL ENAC Docker registry
+
+permissions:
+  contents: read
+  packages: write
 
 'on':
   push:
