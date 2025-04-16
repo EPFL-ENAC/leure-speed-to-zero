@@ -57,45 +57,38 @@
 </head>
 <body>
     <header>
-        <h1>FastAPI Application</h1>
-        <p>Welcome to the API documentation</p>
+        <h1>Speed to Zero: FastAPI Application</h1>
     </header>
 
     <div class="container">
         <main>
             <section>
                 <h2>API Overview</h2>
-                <p>This API provides functionality for [Your Service Description]. Use the endpoints below to interact with the service.</p>
-                <p>The API is built with FastAPI, a modern, fast web framework for building APIs with Python.</p>
-            </section>
-
-            <section class="endpoint-list">
-                <h2>Available Endpoints</h2>
-                <div class="endpoint">
-                    <span class="badge get">GET</span>
-                    <code>/api/items</code>
-                    <p>Retrieve all items</p>
-                </div>
-                <div class="endpoint">
-                    <span class="badge post">POST</span>
-                    <code>/api/items</code>
-                    <p>Create a new item</p>
-                </div>
-                <div class="endpoint">
-                    <span class="badge get">GET</span>
-                    <code>/api/items/{item_id}</code>
-                    <p>Retrieve a specific item by ID</p>
-                </div>
-                <p>For complete API documentation, visit <a href="/docs">/docs</a> or <a href="/redoc">/redoc</a></p>
+                <p>The API is built with FastAPI, a modern, fast web framework for building APIs with Python.
+                    It provides functionality for speed-to-zero.
+                </p>
+                <p>For complete API documentation, visit <a href="/docs">/docs</a>.</p>
+                <p>View the source code on <a href="https://github.com/2050Calculators/PathwayCalc" target="_blank">GitHub</a>.</p>
+                <p><strong>Contact support:</strong> <a href="mailto:enacti4research@epfl.ch">enacti4research@epfl.ch</a></p>
+                <p><strong>API Version:</strong> <span id="api-version">Loading...</span></p>
             </section>
         </main>
     </div>
 
     <footer>
-        <p>&copy; 2023 FastAPI Application</p>
+        <p>2050Calculators &copy; 2025</p>
     </footer>
 
     <script>
+        // Fetch and display API version from /api/version if available
+        fetch('/v1/version')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('api-version').textContent = data.version || 'Unknown';
+            })
+            .catch(() => {
+                document.getElementById('api-version').textContent = 'Unavailable';
+            });
         // You can add JavaScript here to fetch data from your API
         // Example:
         // fetch('/api/health')

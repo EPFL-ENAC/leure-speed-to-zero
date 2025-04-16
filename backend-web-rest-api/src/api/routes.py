@@ -5,6 +5,9 @@ import json
 from model.interactions import runner
 from model.common.auxiliary_functions import filter_geoscale
 import numpy as np
+import time
+import re
+from pathlib import Path
 
 router = APIRouter()
 logger = logging.getLogger("uvicorn")
@@ -16,87 +19,89 @@ async def health_check() -> dict:
         "status": "healthy",
     }
 
-lever_setting = {"lever_pkm":1,
-  "lever_passenger_modal-share":1,
-  "lever_passenger_occupancy":1,
-  "lever_passenger_utilization-rate":1,
-  "lever_floor-intensity":1,
-  "lever_floor-area-fraction":1,
-  "lever_heatcool-behaviour":1,
-  "lever_appliance-own":1,
-  "lever_appliance-use":1,
-  "lever_kcal-req":1,
-  "lever_diet":1,
-  "lever_paperpack":1,
-  "lever_product-substitution-rate":1,
-  "lever_fwaste":1,
-  "lever_freight_tkm":1,
-  "lever_passenger_veh-efficiency_new":1,
-  "lever_passenger_technology-share_new":1,
-  "lever_freight_vehicle-efficiency_new":1,
-  "lever_freight_technology-share_new":1,
-  "lever_freight_modal-share":1,
-  "lever_freight_utilization-rate":1,
-  "lever_fuel-mix":1,
-  "lever_building-renovation-rate":1,
-  "lever_district-heating-share":1,
-  "lever_heating-technology-fuel":1,
-  "lever_heating-efficiency":1,
-  "lever_appliance-efficiency":1,
-  "lever_material-efficiency":1,
-  "lever_material-switch":1,
-  "lever_technology-share":1,
-  "lever_technology-development":1,
-  "lever_energy-carrier-mix":1,
-  "lever_cc":1,
-  "lever_ccus":1,
-  "lever_decom_fossil":1,
-  "lever_ccs":1,
-  "lever_capacity_nuclear":1,
-  "lever_capacity_RES_wind":1,
-  "lever_capacity_RES_solar":1,
-  "lever_capacity_RES_other":1,
-  "lever_bal-strat":1,
-  "lever_str_charging":1,
-  "lever_climate-smart-crop":1,
-  "lever_climate-smart-livestock":1,
-  "lever_bioenergy-capacity":1,
-  "lever_alt-protein":1,
-  "lever_climate-smart-forestry":1,
-  "lever_land-man":1,
-  "lever_biomass-hierarchy":1,
-  "lever_biodiversity":1,
-  "lever_land-prioritisation":1,
-  "lever_pop":1,
-  "lever_urbpop":1,
-  "lever_ems-after-2050":1,
-  "lever_food-net-import":1,
-  "lever_product-net-import":1,
-  "lever_material-net-import":1,
-  "lever_temp":1,
-  "lever_passenger_aviation-pkm":1,
-  "lever_pv-capacity":1,
-  "lever_csp-capacity":1,
-  "lever_onshore-wind-capacity":1,
-  "lever_offshore-wind-capacity":1,
-  "lever_biogas-capacity":1,
-  "lever_biomass-capacity":1,
-  "lever_hydroelectric-capacity":1,
-  "lever_geothermal-capacity":1,
-  "lever_marine-capacity":1,
-  "lever_gas-capacity":1,
-  "lever_oil-capacity":1,
-  "lever_coal-capacity":1,
-  "lever_nuclear-capacity":1,
-  "lever_carbon-storage-capacity":1,
-  "lever_ev-charging-profile": 1,
-  "lever_non-residential-heat-profile": 1,
-  "lever_residential-heat-profile": 1,
-  "lever_non-residential-cooling-profile": 1,
-  "lever_residential-cooling-profile": 1,
-  "lever_eol-waste-management": 1,
-  "lever_eol-material-recovery": 1
-}
+# Define the order of levers
+LEVER_KEYS = [
+    "lever_pkm",
+    "lever_passenger_modal-share",
+    "lever_passenger_occupancy",
+    "lever_passenger_utilization-rate",
+    "lever_floor-intensity",
+    "lever_floor-area-fraction",
+    "lever_heatcool-behaviour",
+    "lever_appliance-own",
+    "lever_appliance-use",
+    "lever_kcal-req",
+    "lever_diet",
+    "lever_paperpack",
+    "lever_product-substitution-rate",
+    "lever_fwaste",
+    "lever_freight_tkm",
+    "lever_passenger_veh-efficiency_new",
+    "lever_passenger_technology-share_new",
+    "lever_freight_vehicle-efficiency_new",
+    "lever_freight_technology-share_new",
+    "lever_freight_modal-share",
+    "lever_freight_utilization-rate",
+    "lever_fuel-mix",
+    "lever_building-renovation-rate",
+    "lever_district-heating-share",
+    "lever_heating-technology-fuel",
+    "lever_heating-efficiency",
+    "lever_appliance-efficiency",
+    "lever_material-efficiency",
+    "lever_material-switch",
+    "lever_technology-share",
+    "lever_technology-development",
+    "lever_energy-carrier-mix",
+    "lever_cc",
+    "lever_ccus",
+    "lever_decom_fossil",
+    "lever_ccs",
+    "lever_capacity_nuclear",
+    "lever_capacity_RES_wind",
+    "lever_capacity_RES_solar",
+    "lever_capacity_RES_other",
+    "lever_bal-strat",
+    "lever_str_charging",
+    "lever_climate-smart-crop",
+    "lever_climate-smart-livestock",
+    "lever_bioenergy-capacity",
+    "lever_alt-protein",
+    "lever_climate-smart-forestry",
+    "lever_land-man",
+    "lever_biomass-hierarchy",
+    "lever_biodiversity",
+    "lever_land-prioritisation",
+    "lever_pop",
+    "lever_urbpop",
+    "lever_ems-after-2050",
+    "lever_food-net-import",
+    "lever_product-net-import",
+    "lever_material-net-import",
+    "lever_temp",
+    "lever_passenger_aviation-pkm",
+    "lever_pv-capacity",
+    "lever_csp-capacity",
+    "lever_onshore-wind-capacity",
+    "lever_offshore-wind-capacity",
+    "lever_biogas-capacity",
+    "lever_biomass-capacity",
+    "lever_hydroelectric-capacity",
+    "lever_geothermal-capacity",
+    "lever_marine-capacity",
+    "lever_gas-capacity",
+    "lever_oil-capacity",
+    "lever_coal-capacity",
+    "lever_nuclear-capacity",
+    "lever_carbon-storage-capacity",
+    "lever_ev-charging-profile",
+    "lever_non-residential-heat-profile",
+    "lever_residential-heat-profile",
+    "lever_non-residential-cooling-profile",
+    "lever_residential-cooling-profile",
+    "lever_eol-waste-management",
+    "lever_eol-material-recovery"
+]
 
 # For a production implementation, you might want to:
 
@@ -111,11 +116,24 @@ geo_pattern = 'Switzerland|Vaud|EU27'
 filter_geoscale(geo_pattern)
 
 
-@router.get("/run-model")
-async def run_model():
+@router.get("/v1/run-model")
+async def run_model(levers: str = None):
     try:
+        # Parse levers string or use default (all 1s)
+        if levers is None:
+            lever_values = [1] * len(LEVER_KEYS)
+        else:
+            lever_values = [int(c) for c in levers]
+            if len(lever_values) != len(LEVER_KEYS):
+                return ORJSONResponse(content={
+                    "status": "error",
+                    "message": f"levers string must be {len(LEVER_KEYS)} digits"
+                }, status_code=400)
+        lever_setting = dict(zip(LEVER_KEYS, lever_values))
 
+        start = time.perf_counter()
         output = runner(lever_setting, years_setting, logger)
+        duration = (time.perf_counter() - start) * 1000  # ms
 
         def serialize(obj):
             if hasattr(obj, "to_dict"):
@@ -137,14 +155,33 @@ async def run_model():
 
         serializable_output = {k: serialize(v) for k, v in output.items()}
 
-        return ORJSONResponse(content={
+        response = ORJSONResponse(content={
             "status": "success",
             "sectors": list(serializable_output.keys()),
             "data": serializable_output
         })
+        response.headers["Server-Timing"] = f"runmodel;dur={duration:.2f}"
+        return response
     except Exception as e:
         logger.error(f"Model execution failed: {str(e)}")
-        return ORJSONResponse(content={
+        response = ORJSONResponse(content={
             "status": "error",
             "message": f"Failed to run model: {str(e)}"
         }, status_code=500)
+        response.headers["Server-Timing"] = "runmodel;dur=0"
+        return response
+
+
+@router.get("/v1/version")
+async def get_version():
+    """Return the current API version from the CHANGELOG.md file."""
+    changelog_path = Path(__file__).parent.parent.parent.parent / "CHANGELOG.md"
+    version = "Unknown"
+    if changelog_path.exists():
+        with open(changelog_path, "r") as f:
+            for line in f:
+                match = re.match(r"## \[([0-9]+\.[0-9]+\.[0-9]+)\]", line)
+                if match:
+                    version = match.group(1)
+                    break
+    return {"version": version}
