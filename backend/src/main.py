@@ -6,13 +6,36 @@ import logging
 from fastapi.responses import ORJSONResponse
 
 
-app = FastAPI(default_response_class=ORJSONResponse)
+app = FastAPI(
+    openapi_url="/api/v1/docs/openapi.json",
+    docs_url="/api/v1/docs",
+    redoc_url="/api/v1/redoc",
+    default_response_class=ORJSONResponse)
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+
+
+# Set servers in OpenAPI schema
+from fastapi.openapi.utils import get_openapi
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title="My API",
+        version="1.0.0",
+        description="API docs",
+        routes=app.routes,
+    )
+    openapi_schema["servers"] = [{"url": "/api/v1"}]
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
 
 
 @app.exception_handler(ValidationError)

@@ -1,38 +1,46 @@
-FROM python:3.9-slim
+# Stage 1: Build dependencies
+FROM python:3.12-slim-bookworm AS builder
 
-ARG MODEL_VERSION=master
+# Copy uv binary from official UV image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Root directory in the container
-WORKDIR /eucalc
+# Set environment variables for uv
+ENV UV_LINK_MODE=copy
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_PROJECT_ENVIRONMENT=/app/.venv
 
-# Install python dependencies
-RUN pip install --upgrade setuptools
-COPY requirements.txt .
-RUN pip install -r requirements.txt
+# Create the app directory
+WORKDIR /app
 
-# Copy all source files for production
-# COPY ./knime2python/scripts ./knime2python/scripts
-# COPY ./knime2python/src ./knime2python/src
+# Copy project files needed for dependency installation
+COPY pyproject.toml uv.lock ./
 
-COPY ./knime2python ./knime2python
-COPY ./model ./model
-COPY ./database ./database
-COPY ./config ./config
-# Set environment variable for python code to find sources
-ENV PYTHONPATH /eucalc
+# Install dependencies using uv sync
+RUN uv sync --frozen --no-cache
 
-# API interface port, to match with API config
-EXPOSE 5000
+# Stage 2: Build the final image
 
-# Run the API
+FROM python:3.13.3-slim-bullseye
 
-# Entrypoint for Green Unicorn, sets timeout to 500 to allow the model time to build.
-# These parameters are not meant to be changed at run time.
-ENTRYPOINT ["gunicorn", "knime2python.src.api.app:build_app(\"knime2python/config/config_docker_eu.yml\")", "--timeout", "500", "--bind", "0.0.0.0:5000", "--backlog", "0"]
 
-# This sets the default to 1 worker, works with 4GB RAM
-# To override, run `docker run -p 5000:5000 <image> -w 2`
-CMD ["--workers", "1"]
+# Copy the installed dependencies from the builder stage
+# Copy the uv binary from builder stage to final image
+COPY --from=builder /usr/local/bin/uv /usr/local/bin/uv
 
-# For testing purposes: run the app with Flask
-# CMD ["python", "/eucalc/scripts/eucalc-app.py", "-c", "config/config_docker.yml"]
+# Copy the installed dependencies from the builder stage
+COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /app/uv.lock /app/uv.lock
+
+# Create the app directory
+WORKDIR /app
+
+# Copy the rest of the application code
+COPY . .
+
+# Set the path to include the virtual environment's binaries
+ENV PATH="/app/.venv/bin:$PATH"
+
+EXPOSE 8081
+
+# Run the application using uv run
+CMD ["uv", "run", "uvicorn", "backend.src.main:app", "--host", "0.0.0.0", "--port", "8081", "--proxy-headers", "--log-level", "debug", "--access-log"]
