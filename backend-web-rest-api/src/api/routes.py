@@ -8,6 +8,7 @@ import numpy as np
 import time
 import re
 from pathlib import Path
+from src.api.lever_keys import LEVER_KEYS
 
 router = APIRouter()
 logger = logging.getLogger("uvicorn")
@@ -18,90 +19,6 @@ async def health_check() -> dict:
     return {
         "status": "healthy",
     }
-
-# Define the order of levers
-LEVER_KEYS = [
-    "lever_pkm",
-    "lever_passenger_modal-share",
-    "lever_passenger_occupancy",
-    "lever_passenger_utilization-rate",
-    "lever_floor-intensity",
-    "lever_floor-area-fraction",
-    "lever_heatcool-behaviour",
-    "lever_appliance-own",
-    "lever_appliance-use",
-    "lever_kcal-req",
-    "lever_diet",
-    "lever_paperpack",
-    "lever_product-substitution-rate",
-    "lever_fwaste",
-    "lever_freight_tkm",
-    "lever_passenger_veh-efficiency_new",
-    "lever_passenger_technology-share_new",
-    "lever_freight_vehicle-efficiency_new",
-    "lever_freight_technology-share_new",
-    "lever_freight_modal-share",
-    "lever_freight_utilization-rate",
-    "lever_fuel-mix",
-    "lever_building-renovation-rate",
-    "lever_district-heating-share",
-    "lever_heating-technology-fuel",
-    "lever_heating-efficiency",
-    "lever_appliance-efficiency",
-    "lever_material-efficiency",
-    "lever_material-switch",
-    "lever_technology-share",
-    "lever_technology-development",
-    "lever_energy-carrier-mix",
-    "lever_cc",
-    "lever_ccus",
-    "lever_decom_fossil",
-    "lever_ccs",
-    "lever_capacity_nuclear",
-    "lever_capacity_RES_wind",
-    "lever_capacity_RES_solar",
-    "lever_capacity_RES_other",
-    "lever_bal-strat",
-    "lever_str_charging",
-    "lever_climate-smart-crop",
-    "lever_climate-smart-livestock",
-    "lever_bioenergy-capacity",
-    "lever_alt-protein",
-    "lever_climate-smart-forestry",
-    "lever_land-man",
-    "lever_biomass-hierarchy",
-    "lever_biodiversity",
-    "lever_land-prioritisation",
-    "lever_pop",
-    "lever_urbpop",
-    "lever_ems-after-2050",
-    "lever_food-net-import",
-    "lever_product-net-import",
-    "lever_material-net-import",
-    "lever_temp",
-    "lever_passenger_aviation-pkm",
-    "lever_pv-capacity",
-    "lever_csp-capacity",
-    "lever_onshore-wind-capacity",
-    "lever_offshore-wind-capacity",
-    "lever_biogas-capacity",
-    "lever_biomass-capacity",
-    "lever_hydroelectric-capacity",
-    "lever_geothermal-capacity",
-    "lever_marine-capacity",
-    "lever_gas-capacity",
-    "lever_oil-capacity",
-    "lever_coal-capacity",
-    "lever_nuclear-capacity",
-    "lever_carbon-storage-capacity",
-    "lever_ev-charging-profile",
-    "lever_non-residential-heat-profile",
-    "lever_residential-heat-profile",
-    "lever_non-residential-cooling-profile",
-    "lever_residential-cooling-profile",
-    "lever_eol-waste-management",
-    "lever_eol-material-recovery"
-]
 
 # For a production implementation, you might want to:
 
