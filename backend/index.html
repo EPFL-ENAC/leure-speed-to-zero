@@ -67,7 +67,7 @@
                 <p>The API is built with FastAPI, a modern, fast web framework for building APIs with Python.
                     It provides functionality for speed-to-zero.
                 </p>
-                <p>For complete API documentation, visit <a href="/docs">/docs</a>.</p>
+                <p>For complete API documentation, visit <a href="/api/v1/docs">/docs</a>.</p>
                 <p>View the source code on <a href="https://github.com/2050Calculators/PathwayCalc" target="_blank">GitHub</a>.</p>
                 <p><strong>Contact support:</strong> <a href="mailto:enacti4research@epfl.ch">enacti4research@epfl.ch</a></p>
                 <p><strong>API Version:</strong> <span id="api-version">Loading...</span></p>
@@ -81,7 +81,7 @@
 
     <script>
         // Fetch and display API version from /api/version if available
-        fetch('/v1/version')
+        fetch('/api/v1/version')
             .then(response => response.json())
             .then(data => {
                 document.getElementById('api-version').textContent = data.version || 'Unknown';
