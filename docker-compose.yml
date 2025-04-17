@@ -24,6 +24,8 @@ services:
     image: backend
     build:
       context: ./
+    environment:
+      - USE_TRAEFIK=1
     labels:
       - "traefik.http.routers.backend.priority=1001"
       - "traefik.http.routers.backend.tls=true"
