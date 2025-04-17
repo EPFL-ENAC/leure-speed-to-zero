@@ -6,15 +6,22 @@ import logging
 from fastapi.responses import ORJSONResponse
 # Set servers in OpenAPI schema
 from fastapi.openapi.utils import get_openapi
+import os
 
-
-app = FastAPI(
-    openapi_url="/api/v1/docs/openapi.json",
-    docs_url="/api/v1/docs",
-    redoc_url="/api/v1/redoc",
-    default_response_class=ORJSONResponse,
-)
-
+if os.getenv("USE_TRAEFIK"):
+    app = FastAPI(
+        openapi_url="/api/v1/docs/openapi.json",
+        docs_url="/api/v1/docs",
+        redoc_url="/api/v1/redoc",
+        default_response_class=ORJSONResponse,
+    )
+else:
+    app = FastAPI(
+        openapi_url="/openapi.json",
+        docs_url="/docs",
+        redoc_url="/redoc",
+        default_response_class=ORJSONResponse,
+    )
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -31,7 +38,8 @@ def custom_openapi():
         description="API docs",
         routes=app.routes,
     )
-    openapi_schema["servers"] = [{"url": "/api/v1"}]
+    if os.getenv("USE_TRAEFIK"):
+        openapi_schema["servers"] = [{"url": "/api/v1/"}]
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
