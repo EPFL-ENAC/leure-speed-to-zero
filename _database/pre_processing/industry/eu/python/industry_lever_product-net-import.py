@@ -674,6 +674,16 @@ DM_trade["pipe"] = make_fts(DM_trade["pipe"], "new-dhg-pipe", baseyear_start, ba
 ##### MAKE PRODUCT NET IMPORT #####
 ###################################
 
+# dm_temp = DM_trade["tra-veh"].filter_w_regex({"Categories1": "LDV"})
+# dm_temp.group_all("Categories1")
+# dm_temp.operation("product-export","/","product-demand",'Variables',
+#                   'product-export-share',unit="%")
+# dm_temp.operation("product-import","/","product-demand",'Variables',
+#                   'product-import-share',unit="%")
+# idx = dm_temp.idx
+# dm_temp.array[idx["EU27"],idx[2021],idx["product-import-share"]] # 0.14
+# dm_temp.array[idx["EU27"],idx[2021],idx["product-export-share"]] # 0.19
+
 # product-net-import[%] = (product-import - product-export)/product-demand
 DM_trade_net_share = {}
 keys = ['domapp', 'tra-veh', 'pack', 'pack-alu', 'pipe', 'tra-infra', 'bld-floor']

@@ -49,6 +49,7 @@ for c in countries:
     dm_temp = dm_lifetime_ch.copy()
     dm_temp.rename_col("Switzerland",c,"Country")
     dm_lifetime.append(dm_temp,"Country")
+# dm_lifetime.flatten().flatten().filter({"Country" : ["EU27"]}).datamatrix_plot()
 
 # save
 f = os.path.join(current_file_directory, '../data/datamatrix/fxa_passenger_vehicle-lifetime.pickle')

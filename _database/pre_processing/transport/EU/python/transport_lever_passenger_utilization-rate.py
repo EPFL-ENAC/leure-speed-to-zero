@@ -85,20 +85,6 @@ dm_uti_ots = dm_uti.filter({"Years" : years_ots})
 dm_uti_fts_level1 = dm_uti.filter({"Years" : years_fts})
 
 #######################
-##### FTS LEVEL 2 #####
-#######################
-
-# TODO: level 2 to do, for the moment we set it continuing as is
-dm_uti_fts_level2 = dm_uti.filter({"Years" : years_fts})
-
-#######################
-##### FTS LEVEL 3 #####
-#######################
-
-# TODO: level 3 to do, for the moment we set it continuing as is
-dm_uti_fts_level3 = dm_uti.filter({"Years" : years_fts})
-
-#######################
 ##### FTS LEVEL 4 #####
 #######################
 
@@ -117,6 +103,51 @@ dm_uti_level4 = linear_fitting(dm_uti_level4, years_fts)
 # dm_uti_level4.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot()
 dm_uti_fts_level4 = dm_uti_level4.filter({"Years" : years_fts})
 # dm_uti_fts_level4.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
+
+# get levels for 2 and 3
+variabs = dm_uti_fts_level1.col_labels["Categories1"]
+df_temp = pd.DataFrame({"level" : np.tile(range(1,4+1),len(variabs)), 
+                        "variable": np.repeat(variabs, 4)})
+df_temp["value"] = np.nan
+df_temp = df_temp.pivot(index=['level'], 
+                        columns=['variable'], values="value").reset_index()
+for v in variabs:
+    idx = dm_uti_fts_level1.idx
+    level1 = dm_uti_fts_level1.array[idx["EU27"],idx[2050],:,idx[v]][0]
+    idx = dm_uti_fts_level4.idx
+    level4 = dm_uti_fts_level4.array[idx["EU27"],idx[2050],:,idx[v]][0]
+    arr = np.array([level1,np.nan,np.nan,level4])
+    df_temp[v] = pd.Series(arr).interpolate().to_numpy()
+
+#######################
+##### FTS LEVEL 2 #####
+#######################
+
+dm_uti_level2 = dm_uti.copy()
+idx = dm_uti_level2.idx
+for y in range(2030,2055,5):
+    dm_uti_level2.array[idx["EU27"],idx[y],:,:] = np.nan
+for v in variabs:
+    dm_uti_level2.array[idx["EU27"],idx[2050],:,idx[v]] = df_temp.loc[df_temp["level"] == 2,v]
+dm_uti_level2 = linear_fitting(dm_uti_level2, years_fts)
+# dm_uti_level2.filter({"Country" : ["EU27"], "Categories1":["LDV"]}).flatten().datamatrix_plot()
+dm_uti_fts_level2 = dm_uti_level2.filter({"Years" : years_fts})
+# dm_uti_fts_level2.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot()
+
+#######################
+##### FTS LEVEL 3 #####
+#######################
+
+dm_uti_level3 = dm_uti.copy()
+idx = dm_uti_level3.idx
+for y in range(2030,2055,5):
+    dm_uti_level3.array[idx["EU27"],idx[y],:,:] = np.nan
+for v in variabs:
+    dm_uti_level3.array[idx["EU27"],idx[2050],:,idx[v]] = df_temp.loc[df_temp["level"] == 3,v]
+dm_uti_level3 = linear_fitting(dm_uti_level3, years_fts)
+# dm_uti_level3.filter({"Country" : ["EU27"], "Categories1":["LDV"]}).flatten().datamatrix_plot()
+dm_uti_fts_level3 = dm_uti_level3.filter({"Years" : years_fts})
+# dm_uti_fts_level3.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot()
 
 ################
 ##### SAVE #####
