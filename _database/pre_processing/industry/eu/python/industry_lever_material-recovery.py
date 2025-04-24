@@ -214,50 +214,88 @@ dm_ots = dm.filter({"Years" : years_ots})
 #######################
 
 # level 1: continuing as is
-dm_fts_level1 = dm.filter({"Years" : years_fts})
-
-#######################
-##### FTS LEVEL 2 #####
-#######################
-
-# TODO: level 2 to do, for the moment we set it continuing as is
-dm_fts_level2 = dm.filter({"Years" : years_fts})
-
-#######################
-##### FTS LEVEL 3 #####
-#######################
-
-# TODO: level 3 to do, for the moment we set it continuing as is
-dm_fts_level3 = dm.filter({"Years" : years_fts})
+dm_fts_level1 = dm.filter({"Years" : years_fts}).flatten()
+# dm_fts_level1.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot()
 
 #######################
 ##### FTS LEVEL 4 #####
 #######################
 
-# we set all to 1
-dm_level4 = dm.copy()
-years_fts = list(range(2025,2055,5))
+# we set all to 1 but for chemicals and others
+dm_level4 = dm.flatten()
 idx = dm_level4.idx
-for y in years_fts:
-    dm_level4.array[idx["EU27"],idx[y],:,:,:] = np.nan
-dm_level4.array[idx["EU27"],idx[2050],:,idx["battery-lion"],idx["aluminium"]] = 1
-dm_level4.array[idx["EU27"],idx[2050],:,idx["battery-lion"],idx["other"]] = 1
-dm_level4.array[idx["EU27"],idx[2050],:,idx["battery-lion"],idx["steel"]] = 1
-dm_level4.array[idx["EU27"],idx[2050],:,idx["vehicles"],idx["aluminium"]] = 1
-dm_level4.array[idx["EU27"],idx[2050],:,idx["vehicles"],idx["chem"]] = 1
-dm_level4.array[idx["EU27"],idx[2050],:,idx["vehicles"],idx["copper"]] = 1
-dm_level4.array[idx["EU27"],idx[2050],:,idx["vehicles"],idx["other"]] = 1
-dm_level4.array[idx["EU27"],idx[2050],:,idx["vehicles"],idx["steel"]] = 1
+for y in range(2030,2055,5):
+    dm_level4.array[idx["EU27"],idx[y],:,:] = np.nan
+dm_level4.array[idx["EU27"],idx[2050],:,idx["battery-lion_aluminium"]] = 1
+dm_level4.array[idx["EU27"],idx[2050],:,idx["battery-lion_other"]] = 1
+dm_level4.array[idx["EU27"],idx[2050],:,idx["battery-lion_steel"]] = 1
+dm_level4.array[idx["EU27"],idx[2050],:,idx["vehicles_aluminium"]] = 1
+dm_level4.array[idx["EU27"],idx[2050],:,idx["vehicles_chem"]] = 0.9
+dm_level4.array[idx["EU27"],idx[2050],:,idx["vehicles_copper"]] = 1
+dm_level4.array[idx["EU27"],idx[2050],:,idx["vehicles_other"]] = 0.9
+dm_level4.array[idx["EU27"],idx[2050],:,idx["vehicles_steel"]] = 1
 
 dm_level4 = linear_fitting(dm_level4, years_fts)
-# dm_level4.filter({"Country" : ["EU27"]}).flatten().flatten().datamatrix_plot()
+# dm_level4.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot()
 dm_fts_level4 = dm_level4.filter({"Years" : years_fts})
-# dm_fts_level4.filter({"Country" : ["EU27"]}).flatten().flatten().datamatrix_plot()
+# dm_fts_level4.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot()
+
+# get levels for 2 and 3
+variabs = dm_fts_level1.col_labels["Categories1"]
+df_temp = pd.DataFrame({"level" : np.tile(range(1,4+1),len(variabs)), 
+                        "variable": np.repeat(variabs, 4)})
+df_temp["value"] = np.nan
+df_temp = df_temp.pivot(index=['level'], 
+                        columns=['variable'], values="value").reset_index()
+for v in variabs:
+    idx = dm_fts_level1.idx
+    level1 = dm_fts_level1.array[idx["EU27"],idx[2050],:,idx[v]][0]
+    idx = dm_fts_level4.idx
+    level4 = dm_fts_level4.array[idx["EU27"],idx[2050],:,idx[v]][0]
+    arr = np.array([level1,np.nan,np.nan,level4])
+    df_temp[v] = pd.Series(arr).interpolate().to_numpy()
+
+#######################
+##### FTS LEVEL 2 #####
+#######################
+
+dm_level2 = dm.flatten()
+idx = dm_level2.idx
+for y in range(2030,2055,5):
+    dm_level2.array[idx["EU27"],idx[y],:,:] = np.nan
+for v in variabs:
+    dm_level2.array[idx["EU27"],idx[2050],:,idx[v]] = df_temp.loc[df_temp["level"] == 2,v]
+dm_level2 = linear_fitting(dm_level2, years_fts)
+# dm_level2.filter({"Country" : ["EU27"], "Categories1":["LDV"]}).flatten().datamatrix_plot()
+dm_fts_level2 = dm_level2.filter({"Years" : years_fts})
+# dm_fts_level2.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot()
+
+#######################
+##### FTS LEVEL 3 #####
+#######################
+
+dm_level3 = dm.flatten()
+idx = dm_level3.idx
+for y in range(2030,2055,5):
+    dm_level3.array[idx["EU27"],idx[y],:,:] = np.nan
+for v in variabs:
+    dm_level3.array[idx["EU27"],idx[2050],:,idx[v]] = df_temp.loc[df_temp["level"] == 3,v]
+dm_level3 = linear_fitting(dm_level3, years_fts)
+# dm_level3.filter({"Country" : ["EU27"], "Categories1":["LDV"]}).flatten().datamatrix_plot()
+dm_fts_level3 = dm_level3.filter({"Years" : years_fts})
+# dm_fts_level3.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot()
 
 ################
 ##### SAVE #####
 ################
 
+# deepen
+dm_fts_level1.deepen(based_on="Categories1")
+dm_fts_level2.deepen(based_on="Categories1")
+dm_fts_level3.deepen(based_on="Categories1")
+dm_fts_level4.deepen(based_on="Categories1")
+
+# put together
 DM_fts = {1: dm_fts_level1.copy(), 2: dm_fts_level2.copy(), 3: dm_fts_level3.copy(), 4: dm_fts_level4.copy()}
 DM = {"ots" : dm_ots,
       "fts" : DM_fts}
