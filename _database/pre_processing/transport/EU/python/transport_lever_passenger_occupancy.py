@@ -223,32 +223,20 @@ dm_occ_ots = dm_occ.filter({"Years" : years_ots})
 
 # level 1: continuing as is
 dm_occ_fts_level1 = dm_occ.filter({"Years" : years_fts})
-
-#######################
-##### FTS LEVEL 2 #####
-#######################
-
-# TODO: level 2 to do, for the moment we set it continuing as is
-dm_occ_fts_level2 = dm_occ.filter({"Years" : years_fts})
-
-#######################
-##### FTS LEVEL 3 #####
-#######################
-
-# TODO: level 3 to do, for the moment we set it continuing as is
-dm_occ_fts_level3 = dm_occ.filter({"Years" : years_fts})
+# dm_occ.filter({"Country" : ["EU27"], "Categories1":["LDV"]}).flatten().datamatrix_plot()
 
 #######################
 ##### FTS LEVEL 4 #####
 #######################
 
-# make level 4 with levels in eucalc
+# for ldv source: page 56-57 https://www.itf-oecd.org/sites/default/files/docs/itf-transport-outlook-2023-launch.pdf
+# rest is eucalc
+
 dm_occ_level4 = dm_occ.copy()
-years_fts = list(range(2025,2055,5))
 idx = dm_occ_level4.idx
-for y in years_fts:
+for y in range(2030,2055,5):
     dm_occ_level4.array[idx["EU27"],idx[y],:,:] = np.nan
-dm_occ_level4.array[idx["EU27"],idx[2050],:,idx["LDV"]] = 2 # i put it at 1.8 instead of 2.6 for the moment
+dm_occ_level4.array[idx["EU27"],idx[2050],:,idx["LDV"]] = dm_occ_level4.array[idx["EU27"],idx[2023],:,idx["LDV"]]*(1+0.0815)
 dm_occ_level4.array[idx["EU27"],idx[2050],:,idx["2W"]] = 1.3
 dm_occ_level4.array[idx["EU27"],idx[2050],:,idx["bus"]] = 27.2
 bus_2023 = dm_occ_level4.array[idx["EU27"],idx[2023],:,idx["bus"]]
@@ -259,9 +247,54 @@ dm_occ_level4.array[idx["EU27"],idx[2050],:,idx["metrotram"]] = \
 dm_occ_level4.array[idx["EU27"],idx[2050],:,idx["rail"]] = \
     dm_occ_level4.array[idx["EU27"],idx[2023],:,idx["rail"]] * (1+rate_bus)
 dm_occ_level4 = linear_fitting(dm_occ_level4, years_fts)
-# dm_occ_level4.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot()
+# dm_occ_level4.filter({"Country" : ["EU27"], "Categories1":["LDV"]}).flatten().datamatrix_plot()
 dm_occ_fts_level4 = dm_occ_level4.filter({"Years" : years_fts})
 # dm_occ_level4.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot()
+
+# get levels for 2 and 3
+variabs = dm_occ_fts_level1.col_labels["Categories1"]
+df_temp = pd.DataFrame({"level" : np.tile(range(1,4+1),len(variabs)), 
+                        "variable": np.repeat(variabs, 4)})
+df_temp["value"] = np.nan
+df_temp = df_temp.pivot(index=['level'], 
+                        columns=['variable'], values="value").reset_index()
+for v in variabs:
+    idx = dm_occ_fts_level1.idx
+    level1 = dm_occ_fts_level1.array[idx["EU27"],idx[2050],:,idx[v]][0]
+    idx = dm_occ_fts_level4.idx
+    level4 = dm_occ_fts_level4.array[idx["EU27"],idx[2050],:,idx[v]][0]
+    arr = np.array([level1,np.nan,np.nan,level4])
+    df_temp[v] = pd.Series(arr).interpolate().to_numpy()
+
+#######################
+##### FTS LEVEL 2 #####
+#######################
+
+dm_occ_level2 = dm_occ.copy()
+idx = dm_occ_level2.idx
+for y in range(2030,2055,5):
+    dm_occ_level2.array[idx["EU27"],idx[y],:,:] = np.nan
+for v in variabs:
+    dm_occ_level2.array[idx["EU27"],idx[2050],:,idx[v]] = df_temp.loc[df_temp["level"] == 2,v]
+dm_occ_level2 = linear_fitting(dm_occ_level2, years_fts)
+# dm_occ_level2.filter({"Country" : ["EU27"], "Categories1":["LDV"]}).flatten().datamatrix_plot()
+dm_occ_fts_level2 = dm_occ_level2.filter({"Years" : years_fts})
+# dm_occ_fts_level2.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot()
+
+#######################
+##### FTS LEVEL 3 #####
+#######################
+
+dm_occ_level3 = dm_occ.copy()
+idx = dm_occ_level3.idx
+for y in range(2030,2055,5):
+    dm_occ_level3.array[idx["EU27"],idx[y],:,:] = np.nan
+for v in variabs:
+    dm_occ_level3.array[idx["EU27"],idx[2050],:,idx[v]] = df_temp.loc[df_temp["level"] == 3,v]
+dm_occ_level3 = linear_fitting(dm_occ_level3, years_fts)
+# dm_occ_level3.filter({"Country" : ["EU27"], "Categories1":["LDV"]}).flatten().datamatrix_plot()
+dm_occ_fts_level3 = dm_occ_level3.filter({"Years" : years_fts})
+# dm_occ_fts_level3.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot()
 
 ################
 ##### SAVE #####

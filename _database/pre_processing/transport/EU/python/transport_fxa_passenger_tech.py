@@ -387,7 +387,7 @@ for v in ldvs:
 # dm_temp.group_all("Categories1")
 # dm_temp.filter({"Country" : ["EU27"], "Years" : [2022]}).array == \
 #     dm_eurostat_fleet_total.filter({"Country" : ["EU27"], "Years" : [2022]}).array
-# dm_fleet.filter({"Country" : ["EU27"]}).datamatrix_plot(stacked=True)
+# dm_fleet.filter({"Country" : ["EU27"]}).datamatrix_plot()
 
 ####################################
 ##### MAKE AS FINAL DATAMATRIX #####
@@ -405,7 +405,7 @@ dm_fleet.deepen_twice()
 dm_fleet_final = dm_fleet.copy()
 
 # check
-# dm_fleet_pc.flatten().flatten().filter({"Country" : ["EU27"]}).datamatrix_plot()
+# dm_fleet_final.flatten().flatten().filter({"Country" : ["EU27"]}).datamatrix_plot()
 
 # clean
 del cat, categories2_all, categories2_missing, dict_call, dict_iso2, dict_iso2_jrc, \
@@ -692,6 +692,8 @@ del cat, categories2_all, categories2_missing, dict_iso2, dict_iso2_jrc, \
 ################################## NEW VEHICLES ###############################
 ###############################################################################
 
+# dm_fleet_final.flatten().flatten().filter({"Country":["EU27"]}).datamatrix_plot()
+
 ################################################
 ################### GET DATA ###################
 ################################################
@@ -883,7 +885,7 @@ dm_new.sort("Country")
 # dm_new.deepen()
 
 # check
-# dm_new.flatten().filter({"Country" : ["EU27"]}).datamatrix_plot(stacked=True)
+# dm_new.flatten().filter({"Country" : ["EU27"]}).datamatrix_plot()
 
 
 ###################
@@ -892,6 +894,11 @@ dm_new.sort("Country")
 
 # flatten
 dm_new = dm_new.flatten()
+# dm_new.filter({"Country" : ["EU27"]}).datamatrix_plot()
+
+# adjust ICE-gasoline: put in 2000 the same value of 2019 to mimin the u-shaped curve of fleet
+idx = dm_new.idx
+dm_new.array[idx["EU27"],idx[2000],idx['LDV_ICE-gasoline']] = dm_new.array[idx["EU27"],idx[2019],idx['LDV_ICE-gasoline']]
 
 # new variabs list
 dict_new = {}
@@ -914,7 +921,7 @@ dict_call = {"2W_ICE-gasoline" : {"n_adj" : 2, "year_end_first_adj" : 2007, "yea
              "LDV_BEV" : {"n_adj" : 2, "year_end_first_adj" : 2013, "year_start_second_adj" : 2021},
              "LDV_ICE-diesel" : {"n_adj" : 2, "year_end_first_adj" : 2016, "year_start_second_adj" : 2017},
              "LDV_ICE-gas" : {"n_adj" : 2, "year_end_first_adj" : 2019, "year_start_second_adj" : 2020},
-             "LDV_ICE-gasoline" : {"n_adj" : 2, "year_end_first_adj" : 2012, "year_start_second_adj" : 2013},
+             "LDV_ICE-gasoline" : {"n_adj" : 2, "year_end_first_adj" : 2013, "year_start_second_adj" : 2020},
              "LDV_PHEV-diesel" : {"n_adj" : 2, "year_end_first_adj" : 2013, "year_start_second_adj" : 2021},
              "LDV_PHEV-gasoline" : {"n_adj" : 2, "year_end_first_adj" : 2013, "year_start_second_adj" : 2021},
              "bus_BEV" : {"n_adj" : 2, "year_end_first_adj" : 2010, "year_start_second_adj" : 2021},
@@ -1043,7 +1050,7 @@ for v in ldvs:
 # dm_temp.group_all("Categories1")
 # dm_temp.filter({"Country" : ["EU27"], "Years" : [2023]}).array == \
 #     dm_eurostat_new_total.filter({"Country" : ["EU27"], "Years" : [2023]}).array
-# dm_new.filter({"Country" : ["EU27"]}).datamatrix_plot(stacked=True)
+# dm_new.filter({"Country" : ["EU27"]}).datamatrix_plot()
 
 ####################
 ##### MAKE FTS #####
@@ -1295,11 +1302,10 @@ dm_tech.append(dm_temp,"Variables")
 dm_tech.sort("Variables")
 
 # check
-# dm_tech.filter({"Country" : ["EU27"], "Variables" : ['tra_passenger_new-vehicles']}).flatten().flatten().datamatrix_plot(stacked=True)
-# dm_tech.filter({"Country" : ["EU27"], "Variables" : ['tra_passenger_vehicle-waste']}).flatten().flatten().datamatrix_plot(stacked=True)
+# dm_tech.filter({"Country" : ["EU27"], "Variables" : ['tra_passenger_new-vehicles']}).flatten().flatten().datamatrix_plot()
+# dm_tech.filter({"Country" : ["EU27"], "Variables" : ['tra_passenger_vehicle-waste']}).flatten().flatten().datamatrix_plot()
 # dm_tech.filter({"Country" : ["EU27"], "Variables" : ['tra_passenger_technology-share_fleet']}).flatten().flatten().datamatrix_plot(stacked=True)
 
-# note: here the adjustments with the fleet makes new registration go from 10.6 mil in 2023 to about 14 mil in 2023
 
 ########################################################
 ################## MAKE FTS FOR FLEET ##################
@@ -1312,17 +1318,12 @@ dm_fleet = dm_tech.filter({"Variables" : ["tra_passenger_technology-share_fleet"
 dm_fleet = dm_fleet.flatten().flatten()
 dm_fleet.rename_col_regex("tra_passenger_technology-share_fleet_","","Variables")
 
-# make a total
-dm_total = dm_fleet.groupby({"total" : '2W|LDV|bus'}, dim='Variables', 
-                            aggregation = "sum", regex=True, inplace=False)
-dm_fleet.append(dm_total,"Variables")
-
 # add nan for fts
 dm_fleet.add(np.nan, col_label=years_fts, dummy=True, dim='Years')
 
 # make function to fill in missing years fts for EU27 with linear fitting
-def make_fts(dm, variable, year_start, year_end, country = "EU27", dim = "Categories1", 
-             min_t0=0.1, min_tb=0.1, years_fts = years_fts): # I put minimum to 1 so it does not go to zero
+def make_fts(dm, variable, year_start=2023, year_end=2050, country = "EU27", dim = "Categories1", 
+             min_t0=0, min_tb=0, years_fts = years_fts):
     dm = dm.copy()
     idx = dm.idx
     based_on_yars = list(range(year_start, year_end + 1, 1))
@@ -1344,100 +1345,86 @@ def make_fts(dm, variable, year_start, year_end, country = "EU27", dim = "Catego
     
     return dm
 
-# set default time window for linear trend
+###############
+##### LDV #####
+###############
+
+# get 2050 values
+# source: https://op.europa.eu/en/publication-detail/-/publication/96c2ca82-e85e-11eb-93a8-01aa75ed71a1
+# note: in 2050, 32% bev, 18% PHEV, 3% FCEV, 16% ICE-gasoline, 27% ICE-diesel, 4% ICE-gas, 3% FCEV (total is 300 million vehicles)
+
+idx = dm_fleet.idx
+total_2050 = 300000000
+dm_fleet.array[idx["EU27"],idx[2050],idx["LDV_BEV"]] = total_2050 * 0.32
+phev_total_2023 = dm_fleet.array[idx["EU27"],idx[2023],idx["LDV_PHEV-diesel"]]+\
+    dm_fleet.array[idx["EU27"],idx[2023],idx["LDV_PHEV-gasoline"]]
+dm_fleet.array[idx["EU27"],idx[2050],idx["LDV_PHEV-diesel"]] = total_2050 * 0.18 * \
+    dm_fleet.array[idx["EU27"],idx[2023],idx["LDV_PHEV-diesel"]]/phev_total_2023
+dm_fleet.array[idx["EU27"],idx[2050],idx["LDV_PHEV-gasoline"]] = total_2050 * 0.18 * \
+    dm_fleet.array[idx["EU27"],idx[2023],idx["LDV_PHEV-gasoline"]]/phev_total_2023
+dm_fleet.array[idx["EU27"],idx[2050],idx["LDV_ICE-gasoline"]] = total_2050 * 0.16
+dm_fleet.array[idx["EU27"],idx[2050],idx["LDV_ICE-diesel"]] = total_2050 * 0.27
+dm_fleet.array[idx["EU27"],idx[2050],idx["LDV_ICE-gas"]] = total_2050 * 0.04
+dm_fleet.add(0, "Variables", "LDV_FCEV",dummy=True) # add fcev
+idx = dm_fleet.idx
+for y in range(2030,2055,5): dm_fleet.array[idx["EU27"],idx[y],idx["LDV_FCEV"]] = np.nan
+dm_fleet.array[idx["EU27"],idx[2050],idx["LDV_FCEV"]] = total_2050 * 0.03
+
+# extrapolate missing
+dm_fleet = make_fts(dm_fleet, "LDV_BEV", dim = "Variables")
+dm_fleet = make_fts(dm_fleet, "LDV_PHEV-diesel", dim = "Variables")
+dm_fleet = make_fts(dm_fleet, "LDV_PHEV-gasoline", dim = "Variables")
+dm_fleet = make_fts(dm_fleet, "LDV_ICE-gasoline", dim = "Variables")
+dm_fleet = make_fts(dm_fleet, "LDV_ICE-diesel", dim = "Variables")
+dm_fleet = make_fts(dm_fleet, "LDV_ICE-gas", dim = "Variables")
+dm_fleet = make_fts(dm_fleet, "LDV_FCEV", dim = "Variables")
+# dm_fleet.filter({"Country":["EU27"]}).datamatrix_plot()
+
+###############
+##### BUS #####
+###############
+
+# get 2050 values
+# source: https://op.europa.eu/en/publication-detail/-/publication/96c2ca82-e85e-11eb-93a8-01aa75ed71a1
+
+dm_fleet.append(dm_fleet.groupby({"bus_total" : "bus"}, dim='Variables', 
+                                 aggregation = "sum", regex=True, inplace=False),
+                "Variables")
+idx = dm_fleet.idx
+for y in range(2025,2055,5): 
+    dm_fleet.array[...,idx[y],idx["bus_total"]] = np.nan
+dm_fleet = make_fts(dm_fleet, "bus_total", year_start=2013, year_end=2023, dim = "Variables")
+idx = dm_fleet.idx
+bus_total_2050 = dm_fleet.array[idx["EU27"],idx[2050],idx["bus_total"]]
+dm_fleet.array[idx["EU27"],idx[2050],idx['bus_BEV']] = 0.03*bus_total_2050
+dm_fleet.array[idx["EU27"],idx[2050],idx['bus_ICE-gas']] = 0.18*bus_total_2050
+total_bus_ice_2023 = dm_fleet.array[idx["EU27"],idx[2023],idx['bus_ICE-diesel']] + dm_fleet.array[idx["EU27"],idx[2023],idx['bus_ICE-gasoline']]
+dm_fleet.array[idx["EU27"],idx[2050],idx['bus_ICE-diesel']] = 0.78 * bus_total_2050 * \
+    dm_fleet.array[idx["EU27"],idx[2023],idx['bus_ICE-diesel']] / total_bus_ice_2023
+dm_fleet.array[idx["EU27"],idx[2050],idx['bus_ICE-gasoline']] = 0.78 * bus_total_2050 * \
+    dm_fleet.array[idx["EU27"],idx[2023],idx['bus_ICE-gasoline']] / total_bus_ice_2023
+
+# extrapolate missing
+dm_fleet = make_fts(dm_fleet, "bus_BEV", dim = "Variables")
+dm_fleet = make_fts(dm_fleet, "bus_ICE-gasoline", dim = "Variables")
+dm_fleet = make_fts(dm_fleet, "bus_ICE-diesel", dim = "Variables")
+dm_fleet = make_fts(dm_fleet, "bus_ICE-gas", dim = "Variables")
+# dm_fleet.filter({"Country":["EU27"]}).datamatrix_plot()
+dm_fleet.drop("Variables", ["bus_total"])
+dm_fleet.sort("Variables")
+
+##################
+##### OTHERS #####
+##################
+
 baseyear_start = 2000
 baseyear_end = 2023
-
-# check
-# dm_fleet.filter({"Country" : ["EU27"]}).datamatrix_plot()
-
-# # try fts
-# product = "LDV_PHEV-diesel"
-# (make_fts(dm_fleet, product, baseyear_start, baseyear_end, dim = "Variables").
-#   datamatrix_plot(selected_cols={"Country" : ["EU27"], "Variables" : [product]}))
-
-# make fts
-dm_fleet = make_fts(dm_fleet, "total", baseyear_start, baseyear_end, dim = "Variables")
 dm_fleet = make_fts(dm_fleet, "2W_ICE-gasoline", baseyear_start, baseyear_end, dim = "Variables")
-
-# get 2050 values for bev and phev
-# source: https://www.eea.europa.eu/publications/electric-vehicles-and-the-energy/download
-# source: https://op.europa.eu/en/publication-detail/-/publication/96c2ca82-e85e-11eb-93a8-01aa75ed71a1
-# note: to try to find a way in between the two, I assign 0.20 electric in 2050
-idx = dm_fleet.idx
-electric_2050 = dm_fleet.array[idx["EU27"],idx[2050],idx["total"]] * 0.20
-dm_share = dm_fleet.filter({"Country" : ["EU27"], "Years" : [2023], "Variables" : ["LDV_BEV","LDV_PHEV-diesel","LDV_PHEV-gasoline","bus_BEV"]})
-dm_share.normalise("Variables")
-idx_share = dm_share.idx
-BEV_2050 = dm_share.array[:,:,idx_share["LDV_BEV"]] * electric_2050
-PHEV_diesel_2050 = dm_share.array[:,:,idx_share["LDV_PHEV-diesel"]] * electric_2050
-PHEV_gasoline_2050 = dm_share.array[:,:,idx_share["LDV_PHEV-gasoline"]] * electric_2050
-bus_BEV_2050 = dm_share.array[:,:,idx_share["bus_BEV"]] * electric_2050
-
-# # get 2050 values for bev and phev
-# # link: https://op.europa.eu/en/publication-detail/-/publication/96c2ca82-e85e-11eb-93a8-01aa75ed71a1
-# BEV_2050 = 100000000
-# PHEV_diesel_2050 = 10000000
-# PHEV_gasoline_2050 = 40000000
-# bus_BEV_2050 = 200000
-
-# # drop 2022-2023 for the electric vehicles (to avoid a flat line)
-# idx = dm_fleet.idx
-# for v in ["LDV_BEV","LDV_PHEV-diesel","LDV_PHEV-gasoline","bus_BEV"]:
-#     dm_fleet.array[idx["EU27"],idx[2022],idx[v]] = np.nan
-#     dm_fleet.array[idx["EU27"],idx[2023],idx[v]] = np.nan
-
-# bev
-idx = dm_fleet.idx
-dm_fleet.array[idx["EU27"],idx[2050],idx["LDV_BEV"]] = BEV_2050
-dm_temp = linear_fitting(dm_fleet.filter({"Country" : ["EU27"], "Variables" : ["LDV_BEV"]}), years_ots + years_fts)
-idx_temp = dm_temp.idx
-dm_fleet.array[idx["EU27"],:,idx["LDV_BEV"]] = dm_temp.array[idx_temp["EU27"],:,idx_temp["LDV_BEV"]]
-
-# ice
-dm_fleet = make_fts(dm_fleet, "LDV_ICE-diesel", 2020, baseyear_end, dim = "Variables")
-dm_fleet = make_fts(dm_fleet, "LDV_ICE-gas", baseyear_start, baseyear_end, dim = "Variables")
-dm_fleet = make_fts(dm_fleet, "LDV_ICE-gasoline", baseyear_start, baseyear_end, dim = "Variables")
-
-# phev
-dm_fleet.array[idx["EU27"],idx[2050],idx["LDV_PHEV-diesel"]] = PHEV_diesel_2050
-dm_temp = linear_fitting(dm_fleet.filter({"Country" : ["EU27"], "Variables" : ["LDV_PHEV-diesel"]}), years_ots + years_fts)
-idx_temp = dm_temp.idx
-dm_fleet.array[idx["EU27"],:,idx["LDV_PHEV-diesel"]] = dm_temp.array[idx_temp["EU27"],:,idx_temp["LDV_PHEV-diesel"]]
-dm_fleet.array[idx["EU27"],idx[2050],idx["LDV_PHEV-gasoline"]] = PHEV_gasoline_2050
-dm_temp = linear_fitting(dm_fleet.filter({"Country" : ["EU27"], "Variables" : ["LDV_PHEV-gasoline"]}), years_ots + years_fts)
-idx_temp = dm_temp.idx
-dm_fleet.array[idx["EU27"],:,idx["LDV_PHEV-gasoline"]] = dm_temp.array[idx_temp["EU27"],:,idx_temp["LDV_PHEV-gasoline"]]
-
-# bus bev
-dm_fleet.array[idx["EU27"],idx[2050],idx["bus_BEV"]] = bus_BEV_2050
-dm_temp = linear_fitting(dm_fleet.filter({"Country" : ["EU27"], "Variables" : ["bus_BEV"]}), years_ots + years_fts)
-idx_temp = dm_temp.idx
-dm_fleet.array[idx["EU27"],:,idx["bus_BEV"]] = dm_temp.array[idx_temp["EU27"],:,idx_temp["bus_BEV"]]
-
-# rest
-dm_fleet = make_fts(dm_fleet, "bus_ICE-diesel", baseyear_start, baseyear_end, dim = "Variables")
-dm_fleet = make_fts(dm_fleet, "bus_ICE-gas", baseyear_start, baseyear_end, dim = "Variables")
-dm_fleet = make_fts(dm_fleet, "bus_ICE-gasoline", baseyear_start, baseyear_end, dim = "Variables")
 dm_fleet = make_fts(dm_fleet, "metrotram_mt", baseyear_start, baseyear_end, dim = "Variables")
 dm_fleet = make_fts(dm_fleet, "rail_CEV", baseyear_start, baseyear_end, dim = "Variables")
 dm_fleet = make_fts(dm_fleet, "rail_ICE-diesel", baseyear_start, baseyear_end, dim = "Variables")
-
-# check
-# dm_fleet.filter({"Country" : ["EU27"]}).datamatrix_plot(stacked=True)
-
-# drop total
-dm_fleet.drop("Variables","total")
-
-# # append
-# dm_tech.drop("Variables","tra_passenger_technology-share_fleet")
-# dm_fleet.drop("Variables","total")
-# for v in dm_fleet.col_labels["Variables"]:
-#     dm_fleet.rename_col(v,"tra_passenger_technology-share_fleet_" + v,"Variables")
-# dm_fleet.deepen_twice()
-# dm_tech.add(np.nan, col_label=years_fts, dummy=True, dim='Years')
-# dm_tech.append(dm_fleet,"Variables")
-# dm_tech.sort("Variables")
+# dm_fleet.filter({"Country":["EU27"]}).datamatrix_plot()
+# dm_fleet.filter({"Country":["EU27"]}).datamatrix_plot(stacked=True)
 
 ######################################################
 ################## MAKE FTS FOR NEW ##################
@@ -1453,115 +1440,32 @@ dm_new.rename_col_regex("tra_passenger_new-vehicles_","","Variables")
 # add nan for fts
 dm_new.add(np.nan, col_label=years_fts, dummy=True, dim='Years')
 
-# make function to fill in missing years fts for EU27 with linear fitting
-def make_fts(dm, variable, year_start, year_end, country = "EU27", dim = "Categories1", 
-             min_t0=0.1, min_tb=0.1, years_fts = years_fts): # I put minimum to 1 so it does not go to zero
-    dm = dm.copy()
-    idx = dm.idx
-    based_on_yars = list(range(year_start, year_end + 1, 1))
-    dm_temp = linear_fitting(dm.filter({"Country" : [country], dim : [variable]}), 
-                             years_ots = years_fts, min_t0=min_t0, min_tb=min_tb, based_on = based_on_yars)
-    idx_temp = dm_temp.idx
-    if dim == "Variables":
-        dm.array[idx[country],:,idx[variable],...] = \
-            dm_temp.array[idx_temp[country],:,idx_temp[variable],...]
-    if dim == "Categories1":
-        dm.array[idx[country],:,:,idx[variable]] = \
-            dm_temp.array[idx_temp[country],:,:,idx_temp[variable]]
-    if dim == "Categories2":
-        dm.array[idx[country],:,:,:,idx[variable]] = \
-            dm_temp.array[idx_temp[country],:,:,:,idx_temp[variable]]
-    if dim == "Categories3":
-        dm.array[idx[country],:,:,:,:,idx[variable]] = \
-            dm_temp.array[idx_temp[country],:,:,:,:,idx_temp[variable]]
-    
-    return dm
+# make FCEV as zero
+dm_new.add(0, col_label="LDV_FCEV", dummy=True, dim='Variables')
+dm_new.sort("Variables")
 
-# check
-# dm_new.filter({"Country" : ["EU27"]}).datamatrix_plot()
-
-# # drop 2022-2023 for the electric vehicles (to avoid a flat line)
-# idx = dm_new.idx
-# for v in ["LDV_BEV","LDV_PHEV-diesel","LDV_PHEV-gasoline","bus_BEV"]:
-#     dm_new.array[idx["EU27"],idx[2022],idx[v]] = np.nan
-#     dm_new.array[idx["EU27"],idx[2023],idx[v]] = np.nan
-
-# set default time window for linear trend
-baseyear_start = 2000
-baseyear_end = 2023
-
-# 2W
-dm_new = make_fts(dm_new, "2W_ICE-gasoline", 2012, baseyear_end, dim = "Variables")
-
-# for electric vehicles, get % change of fleet over 2023-2050 and apply it to new vehicles
-
-# bev
-idx = dm_fleet.idx
-product = "LDV_BEV"
-rate_increase = (dm_fleet.array[idx["EU27"],idx[2050],idx[product]] - 
-                 dm_fleet.array[idx["EU27"],idx[2023],idx[product]])/\
-    dm_fleet.array[idx["EU27"],idx[2023],idx[product]]
+# apply similar trends than fleet
+variables = dm_new.col_labels["Variables"]
+for v in variables:
+    idx_new = dm_new.idx
+    idx_fleet = dm_fleet.idx
+    rate = (dm_fleet.array[idx_fleet["EU27"],idx_fleet[2050],idx_fleet[v]] - \
+            dm_fleet.array[idx_fleet["EU27"],idx_fleet[2023],idx_fleet[v]])/\
+        dm_fleet.array[idx_fleet["EU27"],idx_fleet[2023],idx_fleet[v]]
+    dm_new.array[idx_new["EU27"],idx_new[2050],idx_new[v]] = dm_new.array[idx_new["EU27"],idx_new[2023],idx_new[v]] * (1+rate)
+    dm_new = make_fts(dm_new, v, dim = "Variables")
 idx = dm_new.idx
-value_2050 = round(dm_new.array[idx["EU27"],idx[2023],idx[product]] * rate_increase,0)
-dm_new.array[idx["EU27"],idx[2050],idx[product]] = value_2050
-dm_temp = linear_fitting(dm_new.filter({"Country" : ["EU27"], "Variables" : [product]}), years_ots + years_fts)
-idx_temp = dm_temp.idx
-dm_new.array[idx["EU27"],:,idx[product]] = dm_temp.array[idx_temp["EU27"],:,idx_temp[product]]
+dm_new.array[dm_new.array<0]=0
+# dm_fleet.filter({"Country":["EU27"]}).datamatrix_plot()
+# dm_new.filter({"Country":["EU27"]}).datamatrix_plot()
 
-# ice
-dm_new = make_fts(dm_new, "LDV_ICE-diesel", 2002, baseyear_end, dim = "Variables")
-dm_new = make_fts(dm_new, "LDV_ICE-gas", baseyear_start, baseyear_end, dim = "Variables")
-dm_new = make_fts(dm_new, "LDV_ICE-gasoline", baseyear_start, baseyear_end, dim = "Variables")
-
-# LDV_PHEV-diesel
-idx = dm_fleet.idx
-product = "LDV_PHEV-diesel"
-rate_increase = (dm_fleet.array[idx["EU27"],idx[2050],idx[product]] - 
-                 dm_fleet.array[idx["EU27"],idx[2021],idx[product]])/\
-    dm_fleet.array[idx["EU27"],idx[2021],idx[product]]
+# fix FCEV
 idx = dm_new.idx
-value_2050 = round(dm_new.array[idx["EU27"],idx[2021],idx[product]] * rate_increase,0)
-dm_new.array[idx["EU27"],idx[2050],idx[product]] = value_2050
-dm_temp = linear_fitting(dm_new.filter({"Country" : ["EU27"], "Variables" : [product]}), years_ots + years_fts)
-idx_temp = dm_temp.idx
-dm_new.array[idx["EU27"],:,idx[product]] = dm_temp.array[idx_temp["EU27"],:,idx_temp[product]]
-
-# LDV_PHEV-gasoline
-idx = dm_fleet.idx
-product = "LDV_PHEV-gasoline"
-rate_increase = (dm_fleet.array[idx["EU27"],idx[2050],idx[product]] - 
-                 dm_fleet.array[idx["EU27"],idx[2021],idx[product]])/\
-    dm_fleet.array[idx["EU27"],idx[2021],idx[product]]
-idx = dm_new.idx
-value_2050 = round(dm_new.array[idx["EU27"],idx[2021],idx[product]] * rate_increase,0)
-dm_new.array[idx["EU27"],idx[2050],idx[product]] = value_2050
-dm_temp = linear_fitting(dm_new.filter({"Country" : ["EU27"], "Variables" : [product]}), years_ots + years_fts)
-idx_temp = dm_temp.idx
-dm_new.array[idx["EU27"],:,idx[product]] = dm_temp.array[idx_temp["EU27"],:,idx_temp[product]]
-
-# bus_BEV
-idx = dm_fleet.idx
-product = "bus_BEV"
-rate_increase = (dm_fleet.array[idx["EU27"],idx[2050],idx[product]] - 
-                 dm_fleet.array[idx["EU27"],idx[2021],idx[product]])/\
-    dm_fleet.array[idx["EU27"],idx[2021],idx[product]]
-idx = dm_new.idx
-value_2050 = round(dm_new.array[idx["EU27"],idx[2021],idx[product]] * rate_increase,0)
-dm_new.array[idx["EU27"],idx[2050],idx[product]] = value_2050
-dm_temp = linear_fitting(dm_new.filter({"Country" : ["EU27"], "Variables" : [product]}), years_ots + years_fts)
-idx_temp = dm_temp.idx
-dm_new.array[idx["EU27"],:,idx[product]] = dm_temp.array[idx_temp["EU27"],:,idx_temp[product]]
-
-# rest
-dm_new = make_fts(dm_new, "bus_ICE-diesel", 2012, 2019, dim = "Variables")
-dm_new = make_fts(dm_new, "bus_ICE-gas", baseyear_start, baseyear_end, dim = "Variables")
-dm_new = make_fts(dm_new, "bus_ICE-gasoline", baseyear_start, baseyear_end, dim = "Variables")
-dm_new = make_fts(dm_new, "metrotram_mt", 2022, 2023, dim = "Variables")
-dm_new = make_fts(dm_new, "rail_CEV", 2000, 2016, dim = "Variables")
-dm_new = make_fts(dm_new, "rail_ICE-diesel", baseyear_start, baseyear_end, dim = "Variables")
-
-# check
-# dm_new.filter({"Country" : ["EU27"]}).datamatrix_plot(stacked=True)
+idx_fleet = dm_fleet.idx
+dm_new.array[idx["EU27"],idx[2050],idx["LDV_FCEV"]] = dm_fleet.array[idx_fleet ["EU27"],idx_fleet [2050],idx_fleet ["LDV_FCEV"]]
+for y in range(2030,2050,5): dm_new.array[idx["EU27"],idx[y],idx["LDV_FCEV"]] = np.nan
+dm_new = make_fts(dm_new, "LDV_FCEV", dim = "Variables")
+# dm_new.filter({"Country":["EU27"]}).datamatrix_plot()
 
 ###############################################
 ################## DROP 1989 ##################
@@ -1586,6 +1490,14 @@ dm_fleet.drop("Years",startyear)
 # fleet_2021 - fleet_2020 + waste_2021 == new_2021
 # # yes ok
 
+# add FCEV to tech
+dm_tech.add(np.nan, col_label="FCEV", dummy=True, dim="Categories2")
+dm_tech.sort("Categories2")
+idx = dm_tech.idx
+dm_tech.array[:,:,idx['tra_passenger_new-vehicles'],idx["LDV"],idx["FCEV"]] = 0
+dm_tech.array[:,:,idx['tra_passenger_technology-share_fleet'],idx["LDV"],idx["FCEV"]] = 0
+dm_tech.array[:,:,idx['tra_passenger_vehicle-waste'],idx["LDV"],idx["FCEV"]] = 0
+
 # add nan for fts for tech
 dm_tech.add(np.nan, col_label=years_fts, dummy=True, dim='Years')
 
@@ -1604,10 +1516,6 @@ dm_tech.drop("Variables","tra_passenger_technology-share_fleet")
 dm_tech.append(dm_fleet_pc,"Variables")
 dm_tech.sort("Variables")
 
-# add FCEV as missing
-dm_tech.add(np.nan, col_label="FCEV", dummy=True, dim="Categories2")
-dm_tech.sort("Categories2")
-
 # order
 dm_temp = dm_tech.filter({"Variables" : ['tra_passenger_technology-share_fleet']})
 dm_temp.append(dm_tech.filter({"Variables" : ['tra_passenger_veh-efficiency_fleet']}),"Variables")
@@ -1619,6 +1527,8 @@ dm_tech = dm_temp.copy()
 list(DM_tra["fxa"])
 DM_tra["fxa"]["passenger_tech"].units
 dm_tech.units
+# dm_new.filter({"Country" : ["EU27"]}).datamatrix_plot()
+# dm_tech.filter({"Country" : ["EU27"]}).flatten().flatten().datamatrix_plot()
 
 # save
 f = os.path.join(current_file_directory, '../data/datamatrix/intermediate_files/passenger_fleet.pickle') # to be used in passenger utilisation rate

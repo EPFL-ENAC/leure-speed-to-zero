@@ -209,6 +209,7 @@ dm_pkm_pc.drop("Years",1989)
 dm_pkm.drop("Years",1989)
 years_ots = list(range(1990,2023+1))
 years_fts = list(range(2025,2055,5))
+# dm_pkm_pc.filter({"Country" : ["EU27"]}).datamatrix_plot(stacked=True)
 
 ###############
 ##### OTS #####
@@ -222,43 +223,79 @@ dm_pkm_pc_ots = dm_pkm_pc.filter({"Years" : years_ots})
 
 # level 1: continuing as is
 dm_pkm_pc_fts_level1 = dm_pkm_pc.filter({"Years" : years_fts})
-
-#######################
-##### FTS LEVEL 2 #####
-#######################
-
-# TODO: level 2 to do, for the moment we set it continuing as is
-dm_pkm_pc_fts_level2 = dm_pkm_pc.filter({"Years" : years_fts})
-
-#######################
-##### FTS LEVEL 3 #####
-#######################
-
-# TODO: level 3 to do, for the moment we set it continuing as is
-dm_pkm_pc_fts_level3 = dm_pkm_pc.filter({"Years" : years_fts})
+# dm_pkm_pc_fts_level1.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
 
 #######################
 ##### FTS LEVEL 4 #####
 #######################
 
-# make level 4 with levels in eucalc
+# source: page 95 https://www.itf-oecd.org/sites/default/files/docs/itf-transport-outlook-2023-launch.pdf
+
 dm_pkm_pc_level4 = dm_pkm_pc.copy()
-years_fts = list(range(2025,2055,5))
 idx = dm_pkm_pc_level4.idx
-for y in years_fts:
+for y in range(2030,2055,5):
     dm_pkm_pc_level4.array[idx["EU27"],idx[y],:,:] = np.nan
-dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["LDV"]] = 0.613 # i put level 3 for now
-dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["bus"]] = 0.144 # i put level 3 for now
-dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["metrotram"]] = 0.057 # i put level 3 for now
-dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["rail"]] = 0.156 # i put level 3 for now (old: i put this at 0.19 instead of 0.185 so that 2W also goes down)
-twowheel = 1 - dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["LDV"]] - dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["bus"]] - dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["metrotram"]] - dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["rail"]]
-dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["2W"]] = twowheel 
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["LDV"]] = 0.70
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["bus"]] = 0.08 # i put 8% for buses and 2% for metro tram
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["metrotram"]] = 0.02 
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["rail"]] = 0.19 # i put 19% so I can put 1% for 2W
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["2W"]] = 0.01 
 dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["bike"]] = 0
 dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["walk"]] = 0
 dm_pkm_pc_level4 = linear_fitting(dm_pkm_pc_level4, years_fts)
 # dm_pkm_pc_level4.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
 dm_pkm_pc_fts_level4 = dm_pkm_pc_level4.filter({"Years" : years_fts})
 # dm_pkm_pc_fts_level4.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
+
+# get levels for 2 and 3
+variabs = dm_pkm_pc_fts_level1.col_labels["Categories1"]
+df_temp = pd.DataFrame({"level" : np.tile(range(1,4+1),len(variabs)), 
+                        "variable": np.repeat(variabs, 4)})
+df_temp["value"] = np.nan
+df_temp = df_temp.pivot(index=['level'], 
+                        columns=['variable'], values="value").reset_index()
+for v in variabs:
+    idx = dm_pkm_pc_fts_level1.idx
+    level1 = dm_pkm_pc_fts_level1.array[idx["EU27"],idx[2050],:,idx[v]][0]
+    idx = dm_pkm_pc_fts_level4.idx
+    level4 = dm_pkm_pc_fts_level4.array[idx["EU27"],idx[2050],:,idx[v]][0]
+    arr = np.array([level1,np.nan,np.nan,level4])
+    df_temp[v] = pd.Series(arr).interpolate().to_numpy()
+# no need to normalise
+# df_temp = pd.melt(df_temp,["level"]).pivot(index=['variable'], columns=['level'], values="value").reset_index()
+# df_temp[2] = df_temp[2] / df_temp[2].sum()
+# df_temp[3] = df_temp[3] / df_temp[3].sum()
+
+
+#######################
+##### FTS LEVEL 2 #####
+#######################
+
+dm_pkm_pc_level2 = dm_pkm_pc.copy()
+idx = dm_pkm_pc_level2.idx
+for y in range(2030,2055,5):
+    dm_pkm_pc_level2.array[idx["EU27"],idx[y],:,:] = np.nan
+for v in variabs:
+    dm_pkm_pc_level2.array[idx["EU27"],idx[2050],:,idx[v]] = df_temp.loc[df_temp["level"] == 2,v]
+dm_pkm_pc_level2 = linear_fitting(dm_pkm_pc_level2, years_fts)
+# dm_pkm_pc_level2.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
+dm_pkm_pc_fts_level2 = dm_pkm_pc_level2.filter({"Years" : years_fts})
+# dm_pkm_pc_fts_level2.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
+
+#######################
+##### FTS LEVEL 3 #####
+#######################
+
+dm_pkm_pc_level3 = dm_pkm_pc.copy()
+idx = dm_pkm_pc_level3.idx
+for y in range(2030,2055,5):
+    dm_pkm_pc_level3.array[idx["EU27"],idx[y],:,:] = np.nan
+for v in variabs:
+    dm_pkm_pc_level3.array[idx["EU27"],idx[2050],:,idx[v]] = df_temp.loc[df_temp["level"] == 3,v]
+dm_pkm_pc_level3 = linear_fitting(dm_pkm_pc_level3, years_fts)
+# dm_pkm_pc_level3.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
+dm_pkm_pc_fts_level3 = dm_pkm_pc_level3.filter({"Years" : years_fts})
+# dm_pkm_pc_fts_level3.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
 
 ################
 ##### SAVE #####
