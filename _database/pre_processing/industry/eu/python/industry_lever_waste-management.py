@@ -1506,9 +1506,8 @@ dm_fts_level1 = dm.filter({"Years" : years_fts})
 # for layer 1 we put waste collected to zero
 dm_level4_veh = dm.filter({"Variables" : ["vehicles"]})
 dm_level4_tot = dm_level4_veh.filter({"Categories1" : ["export","littered","waste-collected","waste-uncollected"]})
-years_fts = list(range(2025,2055,5))
 idx = dm_level4_tot.idx
-for y in years_fts:
+for y in range(2030,2055,5):
     dm_level4_tot.array[idx["EU27"],idx[y],:,:] = np.nan
 export = dm_level4_tot.array[idx["EU27"],idx[2023],:,idx["export"]]
 collected = dm_level4_tot.array[idx["EU27"],idx[2023],:,idx["waste-collected"]]

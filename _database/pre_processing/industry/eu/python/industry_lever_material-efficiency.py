@@ -82,8 +82,7 @@ dm_fts_level1 = dm.filter({"Years" : years_fts})
 # we take levels for 2050 from eucalc, and do a linear trend for 2025-2050
 dm_level4 = dm.copy()
 idx = dm_level4.idx
-years_fts = list(range(2025,2055,5))
-for y in years_fts:
+for y in range(2030,2055,5):
     dm_level4.array[idx["EU27"],idx[y],:,:] = np.nan
 dm_level4.array[idx["EU27"],idx[2050],:,idx["steel"]] = 0.33
 dm_level4.array[idx["EU27"],idx[2050],:,idx["cement"]] = 0.20
