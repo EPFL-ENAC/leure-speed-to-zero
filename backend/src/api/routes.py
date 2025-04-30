@@ -1,6 +1,9 @@
+import hashlib
 from fastapi import APIRouter
 from fastapi.responses import ORJSONResponse
 import logging
+
+import orjson
 from model.interactions import runner
 from model.common.auxiliary_functions import filter_geoscale
 import numpy as np
@@ -53,6 +56,7 @@ async def run_model(levers: str = None):
                     status_code=400,
                 )
         lever_setting = dict(zip(LEVER_KEYS, lever_values))
+        logger.info(f"Levers input: {str(lever_setting)}")
 
         start = time.perf_counter()
         output = runner(lever_setting, years_setting, logger)
@@ -91,9 +95,13 @@ async def run_model(levers: str = None):
                 return obj
 
         serializable_output = {k: serialize(v) for k, v in output.items()}
-
+        output_str = orjson.dumps(serializable_output)
+        fingerprint_result = hashlib.md5(output_str).hexdigest()[:12]
+        fingerprint_input = hashlib.md5(orjson.dumps(lever_setting)).hexdigest()[:12]
         response = ORJSONResponse(
             content={
+                "fingerprint_result": fingerprint_result,
+                "fingerprint_input": fingerprint_input,
                 "status": "success",
                 "sectors": list(serializable_output.keys()),
                 "data": serializable_output,
