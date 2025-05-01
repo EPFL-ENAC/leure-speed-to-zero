@@ -24,21 +24,19 @@ services:
     image: backend
     build:
       context: ./
-    environment:
-      - USE_TRAEFIK=1
     labels:
       - "traefik.http.routers.backend.priority=1001"
       - "traefik.http.routers.backend.tls=true"
-      - "traefik.http.routers.backend.rule=PathPrefix(`/api/v1`)"
+      - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
       - "traefik.http.services.backend.loadbalancer.server.port=8081"
       - "traefik.http.routers.backend.middlewares=backend-compress,backend-ratelimit,backend-strip"
       - "traefik.http.middlewares.backend-ratelimit.ratelimit.average=50"
       - "traefik.http.middlewares.backend-ratelimit.ratelimit.burst=25"
       - "traefik.http.middlewares.backend-ratelimit.ratelimit.period=1"
       - "traefik.http.middlewares.backend-compress.compress=true"
-      - "traefik.http.middlewares.backend-strip.replacepathregex.regex=^/api/v1/?(.*)"
+      - "traefik.http.middlewares.backend-strip.replacepathregex.regex=^/api/?(.*)"
       - "traefik.http.middlewares.backend-strip.replacepathregex.replacement=/$1"
-      - "traefik.http.routers.backend-docs.rule=PathPrefix(`/api/v1/docs`)"
+      - "traefik.http.routers.backend-docs.rule=PathPrefix(`/api/docs`)"
       - "traefik.http.routers.backend-docs.tls=true"
       - "traefik.http.routers.backend-docs.priority=1002"
       - "traefik.http.routers.backend-docs.service=backend"
