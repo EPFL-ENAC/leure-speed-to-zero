@@ -71,11 +71,8 @@
                 <p>The API is built with FastAPI, a modern, fast web framework for building APIs with Python.
                     It provides functionality for speed-to-zero.
                 </p>
-                <p>For complete API documentation, visit <a id="docs-link" href="/docs">docs</a>.</p>
-                <script>
-                    // Set correct docs URL based on hostname
-                    document.getElementById('docs-link').href = isLocalhost ? '/docs' : '/api/v1/docs';
-                </script>
+                <p>For complete API documentation, visit <a id="docs-link" href="/api/docs">docs</a>.</p>
+
                 <p>View the source code on <a href="https://github.com/2050Calculators/PathwayCalc" target="_blank">GitHub</a>.</p>
                 <p><strong>Contact support:</strong> <a href="mailto:enacti4research@epfl.ch">enacti4research@epfl.ch</a></p>
                 <p><strong>API Version:</strong> <span id="api-version">Loading...</span></p>
@@ -90,8 +87,7 @@
     <script>
         // Fetch and display API version from /api/version if available
         const apiVersion = document.getElementById('api-version');
-        const apiVersionUrl = isLocalhost ? '/v1/version' : '/api/v1/version';
-        fetch(apiVersionUrl)
+        fetch('/api/v1/version')
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
