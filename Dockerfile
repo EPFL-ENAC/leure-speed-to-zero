@@ -1,5 +1,5 @@
 # Stage 1: Build dependencies
-FROM python:3.12-slim-bookworm AS builder
+FROM python:3.13.3-slim-bullseye AS builder
 
 # Copy uv binary from official UV image
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
