@@ -102,7 +102,15 @@ export default defineConfig((/* ctx */) => {
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#devserver
     devServer: {
       // https: true,
-      open: true, // opens browser window automatically
+      open: true,
+      proxy: {
+        // proxy all requests starting with /api to your API server
+        '/api': {
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+          // No need for pathRewrite because your API path already starts with /api
+        },
+      },
     },
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#framework

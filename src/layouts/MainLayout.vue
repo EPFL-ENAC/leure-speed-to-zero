@@ -12,9 +12,18 @@
 
     <q-drawer v-model="leftDrawerOpen" bordered>
       <q-list>
-        <q-item-label header> Essential Links </q-item-label>
+        <q-item-label header>Navigation</q-item-label>
 
-        <EssentialLink v-for="link in linksList" :key="link.title" v-bind="link" />
+        <q-item v-for="link in linksList" :key="link.title" :to="link.link" clickable v-ripple>
+          <q-item-section avatar>
+            <q-icon :name="link.icon" />
+          </q-item-section>
+
+          <q-item-section>
+            <q-item-label>{{ link.title }}</q-item-label>
+            <q-item-label caption>{{ link.caption }}</q-item-label>
+          </q-item-section>
+        </q-item>
       </q-list>
     </q-drawer>
 
@@ -26,20 +35,26 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import EssentialLink, { type EssentialLinkProps } from 'components/EssentialLink.vue';
 
-const linksList: EssentialLinkProps[] = [
+interface NavLink {
+  title: string;
+  caption: string;
+  icon: string;
+  link: string;
+}
+
+const linksList: NavLink[] = [
   {
-    title: 'Docs',
-    caption: 'quasar.dev',
-    icon: 'school',
-    link: 'https://quasar.dev',
+    title: 'Home',
+    caption: 'Dashboard',
+    icon: 'home',
+    link: '/',
   },
   {
-    title: 'Github',
-    caption: 'github.com/quasarframework',
-    icon: 'code',
-    link: 'https://github.com/quasarframework',
+    title: 'Climate Levers',
+    caption: 'Adjust lever settings',
+    icon: 'tune',
+    link: '/levers',
   },
 ];
 

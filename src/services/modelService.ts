@@ -4,7 +4,7 @@ import axios from 'axios';
 const getBaseUrl = () => {
   // In development mode, point to the dev server
   if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost:8000/api';
+    return '/api';
   }
 
   // In production, use relative path (will use the same host as the frontend)
