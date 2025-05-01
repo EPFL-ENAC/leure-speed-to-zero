@@ -41,7 +41,18 @@ export default defineConfig((/* ctx */) => {
       typescript: {
         strict: true,
         vueShim: true,
-        // extendTsConfig (tsConfig) {}
+        extendTsConfig(tsConfig) {
+          tsConfig.compilerOptions = {
+            ...tsConfig.compilerOptions,
+            paths: {
+              ...tsConfig.compilerOptions?.paths,
+              utils: ['./../src/utils'],
+              'utils/*': ['./../src/utils/*'],
+              'services/*': ['./../src/services/*'],
+              services: ['./../src/services'],
+            },
+          };
+        },
       },
 
       vueRouterMode: 'hash', // available values: 'hash', 'history'
@@ -67,6 +78,8 @@ export default defineConfig((/* ctx */) => {
         viteConf.resolve.alias = {
           ...viteConf.resolve.alias,
           '@': path.join(__dirname, './src'),
+          utils: path.join(__dirname, './src/utils'),
+          services: path.join(__dirname, './src/services'),
         };
       },
       // viteVuePluginOptions: {},
