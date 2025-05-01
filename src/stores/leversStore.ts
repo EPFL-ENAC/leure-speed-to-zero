@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
-import { levers as leversData } from '@/utils/leversData';
-import { ExamplePathways } from '@/utils/examplePathways';
-import { modelService } from '@/services/modelService';
+import { levers as leversData } from 'utils/leversData';
+import { ExamplePathways } from 'utils/examplePathways';
+import { modelService } from 'services/modelService';
+import { AxiosError } from 'axios';
 
 interface ModelResults {
   [key: string]: string | number | object;
@@ -155,20 +156,55 @@ export const useLeverStore = defineStore('lever', () => {
       error.value = null;
 
       // Get all lever values as a flat array
-      const leverValues = leversData.map(
-        (lever) => levers.value[lever.code] || getDefaultLeverValue(lever.code),
-      );
+      const leverValues = leversData
+        .map((lever) => levers.value[lever.code] || getDefaultLeverValue(lever.code))
+        .map((value) => {
+          if (typeof value === 'string') {
+            // If value is a string (e.g., A, B, C), convert to its position in the alphabet
+            if (value.length === 1 && value.toUpperCase() >= 'A' && value.toUpperCase() <= 'Z') {
+              return value.toUpperCase().charCodeAt(0) - 64; // A=1, B=2, etc.
+            }
+            return value.toString();
+          } else {
+            return value;
+          }
+        });
 
       // Convert to string format expected by API
       const leverString = leverValues.join('');
 
       // Use the API service
       const response = await modelService.runModel(leverString);
+
+      // Check if the response contains an error status
+      if (response.data && response.data.status === 'error') {
+        error.value = response.data.message || 'An error occurred in the model';
+        return null;
+      }
+
       modelResults.value = response.data;
       return response.data;
     } catch (err) {
       console.error('Error running model:', err);
-      error.value = err instanceof Error ? err.message : 'Unknown error occurred';
+      if (err instanceof AxiosError) {
+        if (err.response && err.response.data) {
+          if (err.response.data.message) {
+            error.value = err.response.data.message;
+          } else {
+            error.value = `Server error (${err.response.status}): ${err.response.statusText}`;
+          }
+        } else if (err.request) {
+          // Request was made but no response received
+          error.value = 'No response from server. Please check if the API server is running.';
+        }
+      } else if (err instanceof Error) {
+        // Something happened in setting up the request
+        error.value = err.message || 'Unknown error occurred';
+      } else {
+        // Handle any other types of errors
+        error.value = 'An unknown error occurred';
+      }
+
       throw err;
     } finally {
       isLoading.value = false;
