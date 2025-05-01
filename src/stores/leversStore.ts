@@ -165,6 +165,8 @@ export const useLeverStore = defineStore('lever', () => {
               return value.toUpperCase().charCodeAt(0) - 64; // A=1, B=2, etc.
             }
             return value.toString();
+          } else if (typeof value === 'number') {
+            return Math.round(value);
           } else {
             return value;
           }
