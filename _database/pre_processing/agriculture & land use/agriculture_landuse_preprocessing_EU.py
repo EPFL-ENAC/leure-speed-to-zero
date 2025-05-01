@@ -723,7 +723,7 @@ def climate_smart_crop_processing(list_countries, file_dict):
     # convert from ktoe to ktoe/ha (divide by total agricultural area) -------------------------------------------------
     # Read FAO Values (for Switzerland)
     # List of countries
-    list_countries = ['Switzerland']
+    list_countries_CH = ['Switzerland']
 
     # List of elements
     list_elements = ['Area']
@@ -737,7 +737,7 @@ def climate_smart_crop_processing(list_countries, file_dict):
         ld = faostat.list_datasets()
         code = 'RL'
         pars = faostat.list_pars(code)
-        my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+        my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries_CH]
         my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
         my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
         list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
@@ -1218,6 +1218,9 @@ def climate_smart_crop_processing(list_countries, file_dict):
             'year': my_years
         }
         df_yield_1990_2022 = faostat.get_data_df(code, pars=my_pars, strval=False)
+        df_yield_1990_2022.loc[
+            df_yield_1990_2022['Item'].str.contains('Rice', case=False,
+                                                    na=False), 'Item'] = 'Rice and products'
         df_yield_1990_2022.to_csv(file_dict['yield'], index=False)
 
     # Unit conversion from [100g/ha] to [kcal/ha]  ----------------------------------------------------------------------------
@@ -2852,7 +2855,7 @@ def land_management_processing(csf_managed):
 
     # Read FAO Values (for Switzerland) --------------------------------------------------------------------------------------------
     # List of countries
-    list_countries = ['Switzerland']
+    list_countries_CH = ['Switzerland']
 
     # List of elements
     list_elements = ['Area']
@@ -2863,7 +2866,7 @@ def land_management_processing(csf_managed):
     ld = faostat.list_datasets()
     code = 'RL'
     pars = faostat.list_pars(code)
-    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+    my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries_CH]
     my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
     my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
     list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
@@ -3055,6 +3058,11 @@ def biomass_bioernergy_hierarchy_processing(df_csl_feed):
     # Rename from ots_agr to agr
     df_biomass_mix['variables'] = df_biomass_mix['variables'].str.replace('ots_agr', 'agr', regex=False)
 
+    # Delete additional countries (Vaud, EU27, Paris)
+    df_biomass_mix = df_biomass_mix[df_biomass_mix['geoscale'] != 'Vaud']
+    df_biomass_mix = df_biomass_mix[df_biomass_mix['geoscale'] != 'EU27']
+    df_biomass_mix = df_biomass_mix[df_biomass_mix['geoscale'] != 'Paris']
+
     # ------------------------------------------------------------------------------------------------------------------
     # BIOMASS RESIDUES CEREALS BURNT & SOIL
     # ------------------------------------------------------------------------------------------------------------------
@@ -3078,6 +3086,11 @@ def biomass_bioernergy_hierarchy_processing(df_csl_feed):
 
     # Rename from ots_agr to agr
     df_biomass_residues['variables'] = df_biomass_residues['variables'].str.replace('ots_agr', 'agr', regex=False)
+
+    # Delete additional countries (Vaud, EU27, Paris)
+    df_biomass_residues = df_biomass_residues[df_biomass_residues['geoscale'] != 'Vaud']
+    df_biomass_residues = df_biomass_residues[df_biomass_residues['geoscale'] != 'EU27']
+    df_biomass_residues = df_biomass_residues[df_biomass_residues['geoscale'] != 'Paris']
 
     # ------------------------------------------------------------------------------------------------------------------
     # BIOMASS HIERARCHY
@@ -3120,6 +3133,14 @@ def biomass_bioernergy_hierarchy_processing(df_csl_feed):
     # Melt df
     df_biomass_hierarchy_pathwaycalc = pd.melt(df_biomass_hierarchy_all, id_vars=['geoscale', 'timescale'],
                                                var_name='variables', value_name='value')
+
+    # Rename countries to match with PathwayCalc
+    df_biomass_hierarchy_pathwaycalc['geoscale'] = df_biomass_hierarchy_pathwaycalc['geoscale'].replace(
+        'United Kingdom of Great Britain and Northern Ireland', 'United Kingdom')
+    df_biomass_hierarchy_pathwaycalc['geoscale'] = df_biomass_hierarchy_pathwaycalc['geoscale'].replace('Netherlands (Kingdom of the)',
+                                                                            'Netherlands')
+    df_biomass_hierarchy_pathwaycalc['geoscale'] = df_biomass_hierarchy_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
+
 
     # Concat dfs
     df_biomass_hierarchy_pathwaycalc = pd.concat([df_biomass_hierarchy_pathwaycalc, df_biomass_mix])
@@ -4874,9 +4895,10 @@ def database_from_csv_to_datamatrix(years_ots, years_fts, dm_kcal_req_pathwaycal
     dm_temp = dm.filter_w_regex({'Variables': 'agr_biomass-hierarchy_bioenergy_liquid_biojetkerosene.*'})
     dm_temp.deepen()
     dict_temp['biomass-hierarchy_bioenergy_liquid_biojetkerosene'] = dm_temp
-    #dm_temp = dm.filter_w_regex({'Variables': 'agr_biomass-hierarchy_crop_cereal.*'})
-    #dm_temp.deepen()
-    #dict['biomass-hierarchy_crop_cereal'] = dm_temp
+    dm_temp = dm.filter_w_regex({'Variables': 'agr_biomass-hierarchy_crop_cereal.*'})
+    dm_temp.deepen()
+    # FIXME DOES NOT WORK
+    dict['biomass-hierarchy_crop_cereal'] = dm_temp
     dict_ots[lever] = dict_temp
 
     """    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 1, 1, 1, 1, 1], baseyear=baseyear,

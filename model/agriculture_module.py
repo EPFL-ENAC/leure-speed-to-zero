@@ -523,7 +523,8 @@ def read_data(data_file, lever_setting):
         DM_agriculture = pickle.load(handle)
 
     # Read fts based on lever_setting
-    DM_check = check_ots_fts_match(DM_agriculture, lever_setting)
+    # FIXME error it adds ots and fts
+    #DM_check = check_ots_fts_match(DM_agriculture, lever_setting)
     DM_ots_fts = read_level_data(DM_agriculture, lever_setting)
 
     # FXA data matrix
@@ -2708,7 +2709,7 @@ def agriculture_local_run():
 
 # # Run the code in local
 #start = time.time()
-#results_run = agriculture_local_run()
+results_run = agriculture_local_run()
 #end = time.time()
 #print(end-start)
 
