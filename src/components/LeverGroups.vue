@@ -9,33 +9,43 @@
           v-for="(groupLevers, group) in getGroupedLevers(levers)"
           :key="group"
           expand-separator
+          switch-toggle-side
           class="lever-group"
         >
           <template v-slot:header>
-            <div class="row items-center full-width justify-between">
-              <div class="text-subtitle3 lever-group-header">{{ group }}</div>
-              <div class="row items-center">
+            <div class="row items-center full-width q-col-gutter-sm">
+              <div class="col-12 col-md-6">
+                <div class="text-subtitle3 lever-group-header">{{ group }}</div>
+              </div>
+              <div class="col-8 col-md-4 content-center">
                 <q-slider
                   :model-value="getGroupValue(groupLevers)"
                   :min="minValue"
                   :max="maxValue"
                   :step="1"
                   dense
-                  class="group-slider q-mr-sm"
+                  class="q-mr-sm"
                   @update:model-value="(value) => updateGroupLevers(groupLevers, value ?? 0)"
                 />
               </div>
+              <div class="col-4 col-md-2 flex justify-center content-center">
+                <q-chip outline circle class="text-weight-bold" size="sm">
+                  {{ Math.round(getGroupValue(groupLevers) * 10) / 10 }}
+                </q-chip>
+              </div>
             </div>
           </template>
-          <div class="">
-            <div v-for="lever in groupLevers" :key="lever.code" class="lever-item q-mb-xs">
-              <LeverSelector
-                :lever="lever"
-                :value="leverStore.getLeverValue(lever.code)"
-                @change="(value) => leverStore.setLeverValue(lever.code, value)"
-              />
-            </div>
-          </div>
+          <q-card>
+            <q-card-section>
+              <div v-for="lever in groupLevers" :key="lever.code" class="lever-item">
+                <LeverSelector
+                  :lever="lever"
+                  :value="leverStore.getLeverValue(lever.code)"
+                  @change="(value) => leverStore.setLeverValue(lever.code, value)"
+                />
+              </div>
+            </q-card-section>
+          </q-card>
         </q-expansion-item>
       </q-list>
     </div>
