@@ -9,20 +9,27 @@ interface ModelResults {
   [key: string]: string | number | object;
 }
 
-function getDefaultLeverValue(leverCode: string): number | string {
+function getDefaultLeverValue(leverCode: string): number {
   const lever = leversData.find((l) => l.code === leverCode);
 
   if (!lever) {
     console.error(`Lever with code ${leverCode} not found`);
     return 0;
+  }
+
+  lever.range = lever.range || [];
+
+  if (lever.type === 'num') {
+    return Math.min(...lever.range.filter((v) => typeof v === 'number'));
   } else {
-    lever.range = lever.range || [];
-    return lever.type === 'num' ? Math.min(...(lever.range as number[])) : (lever.range[0] ?? '');
+    // For character levers, return the index 1
+    return 1;
   }
 }
 
 export const useLeverStore = defineStore('lever', () => {
-  const levers = ref<Record<string, number | string>>({});
+  // All lever values are now stored as numbers
+  const levers = ref<Record<string, number>>({});
   const selectedPathway = ref<string | null>(null);
   const customPathwayName = ref('Custom Pathway');
 
@@ -30,12 +37,12 @@ export const useLeverStore = defineStore('lever', () => {
   const isLoading = ref(false);
   const error = ref<string | null>(null);
 
-  const getLeverValue = (leverCode: string) => {
-    return levers.value[leverCode] || getDefaultLeverValue(leverCode);
+  const getLeverValue = (leverCode: string): number => {
+    return levers.value[leverCode] ?? getDefaultLeverValue(leverCode);
   };
 
   const getAllLeverValues = computed(() => {
-    return leversData.map((lever) => levers.value[lever.code] || getDefaultLeverValue(lever.code));
+    return leversData.map((lever) => levers.value[lever.code] ?? getDefaultLeverValue(lever.code));
   });
 
   const leversByHeadline = computed(() => {
@@ -75,7 +82,7 @@ export const useLeverStore = defineStore('lever', () => {
     const pathwayValues = ExamplePathways[pathwayIndex]?.values as number[];
     const currentValues = leversData
       .map((lever, index) => {
-        const value = levers.value[lever.code] || getDefaultLeverValue(lever.code);
+        const value = levers.value[lever.code] ?? getDefaultLeverValue(lever.code);
         return index < pathwayValues.length ? value : null;
       })
       .filter((v) => v !== null);
@@ -89,7 +96,7 @@ export const useLeverStore = defineStore('lever', () => {
     return false;
   });
 
-  function setLeverValue(leverCode: string, value: number | string) {
+  function setLeverValue(leverCode: string, value: number) {
     const lever = leversData.find((l) => l.code === leverCode);
 
     if (!lever) {
@@ -98,19 +105,15 @@ export const useLeverStore = defineStore('lever', () => {
     }
 
     if (lever.type === 'num') {
-      const numValue = value as number;
-      const range = lever.range as number[];
-
-      if (numValue < Math.min(...range) || numValue > Math.max(...range)) {
+      const range = lever.range.filter((v) => typeof v === 'number');
+      if (value < Math.min(...range) || value > Math.max(...range)) {
         console.error(`Value ${value} out of range for lever ${leverCode}`);
         return;
       }
     } else if (lever.type === 'char') {
-      const charValue = value as string;
-      const range = lever.range as string[];
-
-      if (!range.includes(charValue)) {
-        console.error(`Value ${value} not allowed for lever ${leverCode}`);
+      // For character levers, check if index is valid, + 1 because [1,2,3] => [A,B,C]
+      if (value < 1 || value > lever.range.length + 1) {
+        console.error(`Index ${value} out of range for lever ${leverCode}`);
         return;
       }
     }
@@ -156,21 +159,12 @@ export const useLeverStore = defineStore('lever', () => {
       error.value = null;
 
       // Get all lever values as a flat array
-      const leverValues = leversData
-        .map((lever) => levers.value[lever.code] || getDefaultLeverValue(lever.code))
-        .map((value) => {
-          if (typeof value === 'string') {
-            // If value is a string (e.g., A, B, C), convert to its position in the alphabet
-            if (value.length === 1 && value.toUpperCase() >= 'A' && value.toUpperCase() <= 'Z') {
-              return value.toUpperCase().charCodeAt(0) - 64; // A=1, B=2, etc.
-            }
-            return value.toString();
-          } else if (typeof value === 'number') {
-            return Math.round(value);
-          } else {
-            return value;
-          }
-        });
+      const leverValues = leversData.map((lever) => {
+        const value = levers.value[lever.code] ?? getDefaultLeverValue(lever.code);
+
+        // For model service, we always send numbers
+        return Math.round(value);
+      });
 
       // Convert to string format expected by API
       const leverString = leverValues.join('');

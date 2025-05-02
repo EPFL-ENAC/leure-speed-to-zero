@@ -5,59 +5,69 @@
       :key="headline"
       class="lever-headline-section"
     >
-      <q-expansion-item
-        :label="headline"
-        header-class="text-subtitle1 bg-primary-1 lever-headline"
-        expand-icon-class="lever-headline-icon"
-        :default-opened="false"
-      >
-        <div class="q-pt-md">
-          <div
-            v-for="(groupLevers, group) in getGroupedLevers(levers)"
-            :key="group"
-            class="lever-group q-mb-sm"
+      <div class="text-subtitle1 bg-primary-1 lever-headline q-pa-md">
+        {{ headline }}
+      </div>
+      <div class="q-pt-md">
+        <div
+          v-for="(groupLevers, group) in getGroupedLevers(levers)"
+          :key="group"
+          class="lever-group q-mb-sm"
+        >
+          <q-expansion-item
+            header-class="text-subtitle2 bg-grey-3 q-py-xs lever-group-header"
+            :default-opened="false"
           >
-            <q-expansion-item
-              :label="group"
-              header-class="text-subtitle2 bg-grey-3 q-py-xs q-pl-sm lever-group-header"
-              :default-opened="false"
-            >
-              <div class="q-py-sm">
-                <div v-for="lever in groupLevers" :key="lever.code" class="lever-item q-mb-xs">
-                  <LeverSelector
-                    :lever="lever"
-                    :value="getLeverValue(lever.code)"
-                    @change="(value) => setLeverValue(lever.code, value)"
+            <template v-slot:header>
+              <div class="row items-center full-width justify-between">
+                <div class="text-subtitle2 lever-group-header">{{ group }}</div>
+                <div class="row items-center q-mr-md">
+                  <q-slider
+                    :model-value="getGroupValue(groupLevers)"
+                    :min="minValue"
+                    :max="maxValue"
+                    :step="1"
+                    dense
+                    class="group-slider q-mr-sm"
+                    @update:model-value="(value) => updateGroupLevers(groupLevers, value ?? 0)"
                   />
                 </div>
               </div>
-            </q-expansion-item>
-          </div>
+            </template>
+            <div class="q-py-sm">
+              <div v-for="lever in groupLevers" :key="lever.code" class="lever-item q-mb-xs">
+                <LeverSelector
+                  :lever="lever"
+                  :value="leverStore.getLeverValue(lever.code)"
+                  @change="(value) => leverStore.setLeverValue(lever.code, value)"
+                />
+              </div>
+            </div>
+          </q-expansion-item>
         </div>
-      </q-expansion-item>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-// Same script as before
 import { computed } from 'vue';
 import { useLeverStore } from 'stores/leversStore';
+import type { Lever } from 'utils/leversData';
 import LeverSelector from 'components/LeverSelector.vue';
 
 const leverStore = useLeverStore();
 
+const minValue = 1,
+  maxValue = 4;
+
 // Get all levers organized by headline
 const leversByHeadline = computed(() => leverStore.leversByHeadline);
 
-// Define the Lever interface to match your data structure
-interface Lever {
-  code: string;
-  title: string;
-  group: string;
-  headline: string;
-  range: (string | number)[];
-  type: string;
+function getGroupValue(levers: Lever[]): number {
+  return (
+    levers.reduce((acc, lever) => acc + leverStore.getLeverValue(lever.code), 0) / levers.length
+  );
 }
 
 // Group levers by their group property within each headline
@@ -74,13 +84,11 @@ function getGroupedLevers(levers: Lever[]): Record<string, Lever[]> {
   return result;
 }
 
-// Methods to interact with the store
-function getLeverValue(leverCode: string) {
-  return leverStore.getLeverValue(leverCode);
-}
-
-function setLeverValue(leverCode: string, value: number | string) {
-  leverStore.setLeverValue(leverCode, value);
+// Update all levers in a group with the same value
+function updateGroupLevers(levers: Lever[], value: number): void {
+  levers.forEach((lever) => {
+    leverStore.setLeverValue(lever.code, value);
+  });
 }
 </script>
 
@@ -89,6 +97,7 @@ function setLeverValue(leverCode: string, value: number | string) {
   font-weight: 600;
   background-color: #e6f2ff !important;
   font-size: 0.95rem;
+  border-radius: 4px;
 }
 
 .lever-group-header {
@@ -98,5 +107,9 @@ function setLeverValue(leverCode: string, value: number | string) {
 
 .lever-headline-section {
   margin-bottom: 10px;
+}
+
+.group-slider {
+  width: 100px;
 }
 </style>
