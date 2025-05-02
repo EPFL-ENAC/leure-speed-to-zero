@@ -1,7 +1,7 @@
 <template>
   <q-page class="row">
     <!-- Left sidebar for levers -->
-    <div class="col-3 bg-grey-2 lever-sidebar">
+    <div class="col-3 lever-sidebar">
       <q-scroll-area style="height: 100%">
         <div class="q-pa-md">
           <div class="text-h5 q-mb-md">Climate Action Levers</div>

@@ -1,51 +1,43 @@
 <template>
   <div class="lever-groups">
-    <div
-      v-for="(levers, headline) in leversByHeadline"
-      :key="headline"
-      class="lever-headline-section"
-    >
-      <div class="text-subtitle1 bg-primary-1 lever-headline q-pa-md">
-        {{ headline }}
-      </div>
-      <div class="q-pt-md">
-        <div
+    <div v-for="(levers, headline) in leversByHeadline" :key="headline" class="q-mb-xl">
+      <q-list>
+        <div class="text-subtitle1 q-ml-md q-mb-sm">
+          {{ headline }}
+        </div>
+        <q-expansion-item
           v-for="(groupLevers, group) in getGroupedLevers(levers)"
           :key="group"
-          class="lever-group q-mb-sm"
+          expand-separator
+          class="lever-group"
         >
-          <q-expansion-item
-            header-class="text-subtitle2 bg-grey-3 q-py-xs lever-group-header"
-            :default-opened="false"
-          >
-            <template v-slot:header>
-              <div class="row items-center full-width justify-between">
-                <div class="text-subtitle2 lever-group-header">{{ group }}</div>
-                <div class="row items-center q-mr-md">
-                  <q-slider
-                    :model-value="getGroupValue(groupLevers)"
-                    :min="minValue"
-                    :max="maxValue"
-                    :step="1"
-                    dense
-                    class="group-slider q-mr-sm"
-                    @update:model-value="(value) => updateGroupLevers(groupLevers, value ?? 0)"
-                  />
-                </div>
-              </div>
-            </template>
-            <div class="q-py-sm">
-              <div v-for="lever in groupLevers" :key="lever.code" class="lever-item q-mb-xs">
-                <LeverSelector
-                  :lever="lever"
-                  :value="leverStore.getLeverValue(lever.code)"
-                  @change="(value) => leverStore.setLeverValue(lever.code, value)"
+          <template v-slot:header>
+            <div class="row items-center full-width justify-between">
+              <div class="text-subtitle3 lever-group-header">{{ group }}</div>
+              <div class="row items-center">
+                <q-slider
+                  :model-value="getGroupValue(groupLevers)"
+                  :min="minValue"
+                  :max="maxValue"
+                  :step="1"
+                  dense
+                  class="group-slider q-mr-sm"
+                  @update:model-value="(value) => updateGroupLevers(groupLevers, value ?? 0)"
                 />
               </div>
             </div>
-          </q-expansion-item>
-        </div>
-      </div>
+          </template>
+          <div class="">
+            <div v-for="lever in groupLevers" :key="lever.code" class="lever-item q-mb-xs">
+              <LeverSelector
+                :lever="lever"
+                :value="leverStore.getLeverValue(lever.code)"
+                @change="(value) => leverStore.setLeverValue(lever.code, value)"
+              />
+            </div>
+          </div>
+        </q-expansion-item>
+      </q-list>
     </div>
   </div>
 </template>
@@ -93,22 +85,6 @@ function updateGroupLevers(levers: Lever[], value: number): void {
 </script>
 
 <style lang="scss" scoped>
-.lever-headline {
-  font-weight: 600;
-  background-color: #e6f2ff !important;
-  font-size: 0.95rem;
-  border-radius: 4px;
-}
-
-.lever-group-header {
-  font-weight: 500;
-  font-size: 0.85rem;
-}
-
-.lever-headline-section {
-  margin-bottom: 10px;
-}
-
 .group-slider {
   width: 100px;
 }
