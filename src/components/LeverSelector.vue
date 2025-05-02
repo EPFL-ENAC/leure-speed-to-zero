@@ -3,43 +3,26 @@
     <div class="row items-center q-mb-sm">
       <div class="col lever-title">{{ lever.title }}</div>
       <div class="col-auto">
-        <q-chip dense v-if="lever.type === 'num'">{{ value }}</q-chip>
-        <q-chip dense v-else>{{ value }}</q-chip>
+        <q-chip dense>{{ displayValue }}</q-chip>
       </div>
     </div>
 
-    <!-- Numeric lever slider -->
-    <template v-if="lever.type === 'num'">
-      <q-slider
-        v-model="localValue as number"
-        :min="minValue"
-        :max="maxValue"
-        :step="1"
-        markers
-        label
-        :marker-labels="markerLabels"
-        @change="onChange"
-      />
-    </template>
-
-    <!-- Character lever button group -->
-    <template v-else>
-      <div class="row q-gutter-sm">
-        <q-btn
-          v-for="option in lever.range"
-          :key="option"
-          :label="option"
-          :color="value === option ? 'primary' : 'grey-4'"
-          :text-color="value === option ? 'white' : 'black'"
-          dense
-          @click="onChange(option)"
-        />
-      </div>
-    </template>
+    <!-- Slider for all lever types -->
+    <q-slider
+      :model-value="value"
+      :min="1"
+      :max="maxValue"
+      :step="1"
+      markers
+      label
+      :label-value="displayValue"
+      :marker-labels="markerLabels"
+      @update:model-value="onChange"
+    />
   </div>
 </template>
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed } from 'vue';
 
 // Define the Lever interface
 interface Lever {
@@ -53,53 +36,53 @@ interface Lever {
 
 const props = defineProps<{
   lever: Lever;
-  value: number | string;
+  value: number;
 }>();
 
 const emit = defineEmits<{
-  change: [value: number | string];
+  change: [value: number];
 }>();
 
-// Create a local value for two-way binding
-const localValue = ref<number | string>(props.value);
-
-// Watch for prop changes to update local value
-watch(
-  () => props.value,
-  (newValue) => {
-    localValue.value = newValue;
-  },
-);
-
-// Computed properties for numeric levers
-const minValue = computed(() => {
-  if (props.lever.type === 'num' && props.lever.range?.length) {
-    return Math.min(...props.lever.range.filter((v) => typeof v === 'number'));
+const displayValue = computed(() => {
+  if (props.lever.type === 'num') {
+    return props.value;
+  } else {
+    // For letter levers, convert number to letter for display
+    return props.lever.range[props.value - 1] || props.lever.range[0];
   }
-  return 1;
 });
 
 const maxValue = computed(() => {
   if (props.lever.type === 'num' && props.lever.range?.length) {
     return Math.max(...props.lever.range.filter((v) => typeof v === 'number'));
   }
-  return 4;
+  return props.lever.range.length;
 });
 
 // Create marker labels for the slider
 const markerLabels = computed(() => {
-  if (props.lever.type !== 'num') return {};
+  const labels: Record<number, string> = {};
 
-  const labels: Record<string | number, string> = {};
-  for (const value of props.lever.range) {
-    labels[value] = value.toString();
+  if (props.lever.type === 'num') {
+    // For numeric levers, use the number values
+    props.lever.range.forEach((value) => {
+      if (typeof value === 'number') {
+        labels[value] = value.toString();
+      }
+    });
+  } else {
+    // For letter levers, use the letter values at their indices
+    props.lever.range.forEach((value, index) => {
+      labels[index + 1] = value.toString();
+    });
   }
+
   return labels;
 });
 
 // Handle value changes
-function onChange(newValue: number | string) {
-  emit('change', newValue);
+function onChange(newValue: number | null) {
+  if (newValue) emit('change', newValue);
 }
 </script>
 

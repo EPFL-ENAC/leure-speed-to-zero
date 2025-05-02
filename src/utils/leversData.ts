@@ -1,4 +1,13 @@
-export const levers = [
+export interface Lever {
+  code: string;
+  title: string;
+  group: string;
+  headline: string;
+  range: (string | number)[];
+  type: string;
+}
+
+export const levers: Lever[] = [
   {
     code: 'lever_pkm',
     title: 'Passenger distance',
