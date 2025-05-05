@@ -315,7 +315,6 @@ def read_level_data(DM, lever_setting):
             for group in DM['ots'][lever].keys():
                 dm = DM['ots'][lever][group]
                 dm_fts = DM['fts'][lever][group][level_value]
-                print(lever)
                 dm.append(dm_fts, dim='Years')
                 DM_ots_fts[lever][group] = dm
         else:
