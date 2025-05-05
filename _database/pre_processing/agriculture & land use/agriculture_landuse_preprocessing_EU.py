@@ -4898,7 +4898,7 @@ def database_from_csv_to_datamatrix(years_ots, years_fts, dm_kcal_req_pathwaycal
     dm_temp = dm.filter_w_regex({'Variables': 'agr_biomass-hierarchy_crop_cereal.*'})
     dm_temp.deepen()
     # FIXME DOES NOT WORK
-    dict['biomass-hierarchy_crop_cereal'] = dm_temp
+    dict_temp['biomass-hierarchy_crop_cereal'] = dm_temp
     dict_ots[lever] = dict_temp
 
     """    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 1, 1, 1, 1, 1], baseyear=baseyear,
