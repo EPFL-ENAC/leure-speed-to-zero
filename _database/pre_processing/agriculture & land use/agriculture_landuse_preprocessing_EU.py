@@ -1385,6 +1385,7 @@ def climate_smart_crop_processing(list_countries, file_dict):
     df_climate_smart_crop = df_climate_smart_crop.drop_duplicates()
     df_climate_smart_crop_pathwaycalc = linear_fitting_ots_db(df_climate_smart_crop, years_ots, countries='all')
 
+    # Fill na with zeros when the all column is NA
 
     return df_climate_smart_crop_pathwaycalc, df_energy_demand_cal
 
@@ -2087,6 +2088,10 @@ def climate_smart_livestock_processing(df_csl_feed, list_countries):
         df_slaughtered_1990_2022['Item'].str.contains('Horses', case=False, na=False), 'Item'] = 'Horse'
     df_slaughtered_1990_2022.loc[
         df_slaughtered_1990_2022['Item'].str.contains('Rabbits and hares', case=False, na=False), 'Item'] = 'Rabbit'
+    df_slaughtered_1990_2022.loc[
+        df_slaughtered_1990_2022['Item'].str.contains('Sheep', case=False, na=False), 'Item'] = 'Sheep'
+    df_slaughtered_1990_2022.loc[
+        df_slaughtered_1990_2022['Item'].str.contains('Goats', case=False, na=False), 'Item'] = 'Goat'
 
     # Unit conversion Poultry : [1000 An] => [An]
     df_slaughtered_1990_2022.loc[df_slaughtered_1990_2022['Unit'] == '1000 An', 'Value'] *= 1000
