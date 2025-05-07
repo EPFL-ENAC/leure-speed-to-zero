@@ -30,20 +30,65 @@
           <div class="text-h6">Model Output</div>
           <q-separator class="q-my-md" />
 
-          <div v-if="typeof modelResults === 'object'" class="results-content">
-            <q-list v-for="(value, key) in modelResults" :key="key">
-              <q-item>
-                <q-item-section>
-                  <q-item-label caption>{{ key }}</q-item-label>
-                  <q-item-label>
-                    <pre>{{ JSON.stringify(value, null, 2) }}</pre>
-                  </q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-separator spaced inset />
-            </q-list>
+          <!-- Display format toggle -->
+          <div class="q-mb-md">
+            <q-btn-toggle
+              v-model="displayFormat"
+              toggle-color="primary"
+              :options="[
+                { label: 'Pretty JSON', value: 'pretty' },
+                { label: 'Raw JSON', value: 'raw' },
+              ]"
+              dense
+              outline
+              class="q-mb-md"
+            />
           </div>
-          <pre v-else>{{ modelResults }}</pre>
+
+          <!-- Vue JSON Pretty view -->
+          <div
+            v-if="displayFormat === 'pretty' && typeof modelResults === 'object'"
+            class="results-content"
+          >
+            <vue-json-pretty
+              :data="modelResults"
+              :deep="2"
+              :showLength="true"
+              :showDoubleQuotes="false"
+              :showLineNumber="false"
+              path="root"
+              @click="handleClick"
+            />
+          </div>
+
+          <!-- Original view -->
+          <div v-else-if="displayFormat === 'raw'" class="results-content">
+            <div v-if="typeof modelResults === 'object'">
+              <q-list v-for="(value, key) in modelResults" :key="key">
+                <q-item>
+                  <q-item-section>
+                    <q-item-label caption>{{ key }}</q-item-label>
+                    <q-item-label>
+                      <pre>{{ JSON.stringify(value, null, 2) }}</pre>
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-separator spaced inset />
+              </q-list>
+            </div>
+            <pre v-else>{{ modelResults }}</pre>
+          </div>
+
+          <!-- Copy button -->
+          <div class="text-right q-mt-md">
+            <q-btn
+              flat
+              color="primary"
+              icon="content_copy"
+              label="Copy to Clipboard"
+              @click="copyToClipboard"
+            />
+          </div>
         </q-card-section>
       </q-card>
     </div>
@@ -60,8 +105,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useLeverStore } from 'stores/leversStore';
+import VueJsonPretty from 'vue-json-pretty';
+import 'vue-json-pretty/lib/styles.css';
+import { Notify } from 'quasar';
 
 const leverStore = useLeverStore();
 
@@ -69,6 +117,7 @@ const leverStore = useLeverStore();
 const modelResults = computed(() => leverStore.modelResults);
 const isLoading = computed(() => leverStore.isLoading);
 const error = computed(() => leverStore.error);
+const displayFormat = ref('pretty');
 
 // Methods
 async function runModel() {
@@ -82,6 +131,35 @@ async function runModel() {
 function dismissError() {
   leverStore.error = null;
 }
+
+function handleClick(path: string, data: unknown) {
+  console.log('Node clicked:', path, data);
+}
+
+function copyToClipboard() {
+  const textToCopy =
+    typeof modelResults.value === 'object'
+      ? JSON.stringify(modelResults.value, null, 2)
+      : String(modelResults.value);
+
+  navigator.clipboard
+    .writeText(textToCopy)
+    .then(() => {
+      Notify.create({
+        message: 'Copied to clipboard',
+        color: 'positive',
+        position: 'top',
+        timeout: 2000,
+      });
+    })
+    .catch((err) => {
+      console.error('Failed to copy: ', err);
+      Notify.create({
+        message: 'Failed to copy',
+        color: 'negative',
+      });
+    });
+}
 </script>
 
 <style lang="scss" scoped>
@@ -93,10 +171,37 @@ function dismissError() {
 .results-content {
   max-height: 60vh;
   overflow-y: auto;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
 }
 
 pre {
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+:deep(.vjs-tree) {
+  font-family: monospace !important;
+  font-size: 14px !important;
+
+  .vjs-key {
+    color: #0b5394 !important;
+  }
+
+  .vjs-value {
+    &.vjs-value-number {
+      color: #0000ff !important;
+    }
+    &.vjs-value-string {
+      color: #008000 !important;
+    }
+    &.vjs-value-null {
+      color: #a52a2a !important;
+    }
+    &.vjs-value-boolean {
+      color: #9c27b0 !important;
+    }
+  }
 }
 </style>
