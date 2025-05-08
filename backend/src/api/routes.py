@@ -13,6 +13,10 @@ from pathlib import Path
 from backend.src.api.lever_keys import LEVER_KEYS
 import pickle
 
+from backend.src.utils.serialize_model import serialize_model_output
+from backend.src.utils.transform_model import transform_datamatrix_to_clean_structure
+
+
 router = APIRouter()
 logger = logging.getLogger("uvicorn")
 
@@ -34,7 +38,13 @@ async def health_check() -> dict:
 # The file path to lever_position.json assumes the current working directory
 # is the project root. You may need to adjust this path.
 
-years_setting = [1990, 2023, 2025, 2050, 5]
+years_setting = [
+    1990,
+    2023,
+    2025,
+    2050,
+    5,
+]  # [start_year, current_year, future_year, end_year, step]
 geo_pattern = "Switzerland|Vaud|EU27"
 filter_geoscale(geo_pattern)
 
@@ -62,39 +72,7 @@ async def run_model(levers: str = None):
         output = runner(lever_setting, years_setting, logger)
         duration = (time.perf_counter() - start) * 1000  # ms
 
-        def serialize(obj):
-            if hasattr(obj, "to_dict"):
-                return obj.to_dict()
-            elif isinstance(obj, np.ndarray):
-                return obj.tolist()
-            elif isinstance(
-                obj,
-                (
-                    np.integer,
-                    np.int_,
-                    np.intc,
-                    np.intp,
-                    np.int8,
-                    np.int16,
-                    np.int32,
-                    np.int64,
-                ),
-            ):
-                return int(obj)
-            elif isinstance(
-                obj, (np.floating, np.float_, np.float16, np.float32, np.float64)
-            ):
-                return float(obj)
-            elif hasattr(obj, "__dict__"):
-                return {str(k): serialize(v) for k, v in obj.__dict__.items()}
-            elif isinstance(obj, (list, tuple)):
-                return [serialize(i) for i in obj]
-            elif isinstance(obj, dict):
-                return {str(k): serialize(v) for k, v in obj.items()}
-            else:
-                return obj
-
-        serializable_output = {k: serialize(v) for k, v in output.items()}
+        serializable_output = {k: serialize_model_output(v) for k, v in output.items()}
         output_str = orjson.dumps(serializable_output)
         fingerprint_result = hashlib.md5(output_str).hexdigest()[:12]
         fingerprint_input = hashlib.md5(orjson.dumps(lever_setting)).hexdigest()[:12]
@@ -111,6 +89,79 @@ async def run_model(levers: str = None):
         return response
     except Exception as e:
         logger.error(f"Model execution failed: {str(e)}")
+        response = ORJSONResponse(
+            content={"status": "error", "message": f"Failed to run model: {str(e)}"},
+            status_code=500,
+        )
+        response.headers["Server-Timing"] = "runmodel;dur=0"
+        return response
+
+
+@router.get("/v1/run-model-clean-structure")
+async def run_model_clean_structure(levers: str = None):
+    try:
+        # Parse levers string or use default (all 1s)
+        if levers is None:
+            lever_values = [1] * len(LEVER_KEYS)
+        else:
+            lever_values = [int(c) for c in levers]
+            if len(lever_values) != len(LEVER_KEYS):
+                return ORJSONResponse(
+                    content={
+                        "status": "error",
+                        "message": f"levers string must be {len(LEVER_KEYS)} digits",
+                    },
+                    status_code=400,
+                )
+
+        lever_setting = dict(zip(LEVER_KEYS, lever_values))
+        logger.info(f"Levers input: {str(lever_setting)}")
+
+        start = time.perf_counter()
+        logger.info("Starting model run...")
+        output = runner(lever_setting, years_setting, logger)
+        logger.info(
+            f"Model run completed in {(time.perf_counter() - start) * 1000:.2f}ms"
+        )
+
+        duration = (time.perf_counter() - start) * 1000  # ms
+        # Use the transformer utility
+        logger.info("Starting data transformation...")
+        transform_start = time.perf_counter()
+        cleaned_output = transform_datamatrix_to_clean_structure(
+            output, years_setting, geo_pattern
+        )
+        transform_duration = (time.perf_counter() - transform_start) * 1000
+        logger.info(f"Data transformation completed in {transform_duration:.2f}ms")
+
+        # Log information about the transformed output
+        logger.info(f"Transformed output contains {len(cleaned_output)} sectors")
+        for sector in cleaned_output:
+            logger.info(
+                f"Sector {sector} has {len(cleaned_output[sector]['countries'])} countries"
+            )
+
+        # Generate fingerprints
+        output_str = orjson.dumps(cleaned_output)
+        fingerprint_result = hashlib.md5(output_str).hexdigest()[:12]
+        fingerprint_input = hashlib.md5(orjson.dumps(lever_setting)).hexdigest()[:12]
+
+        response = ORJSONResponse(
+            content={
+                "fingerprint_result": fingerprint_result,
+                "fingerprint_input": fingerprint_input,
+                "status": "success",
+                "sectors": list(cleaned_output.keys()),
+                "data": cleaned_output,
+            }
+        )
+        response.headers["Server-Timing"] = f"runmodel;dur={duration:.2f}"
+        logger.info("Returning transformed data response")
+        return response
+    except Exception as e:
+        logger.error(
+            f"Model execution failed: {str(e)}", exc_info=True
+        )  # Include full traceback
         response = ORJSONResponse(
             content={"status": "error", "message": f"Failed to run model: {str(e)}"},
             status_code=500,
@@ -138,38 +189,6 @@ async def get_version():
 async def get_datamatrix(name: str):
     """Return the content of a single datamatrix pickle file as a JSON-serializable object."""
 
-    def serialize(obj):
-        if hasattr(obj, "to_dict"):
-            return obj.to_dict()
-        elif isinstance(obj, np.ndarray):
-            return obj.tolist()
-        elif isinstance(
-            obj,
-            (
-                np.integer,
-                np.int_,
-                np.intc,
-                np.intp,
-                np.int8,
-                np.int16,
-                np.int32,
-                np.int64,
-            ),
-        ):
-            return int(obj)
-        elif isinstance(
-            obj, (np.floating, np.float_, np.float16, np.float32, np.float64)
-        ):
-            return float(obj)
-        elif hasattr(obj, "__dict__"):
-            return {str(k): serialize(v) for k, v in obj.__dict__.items()}
-        elif isinstance(obj, (list, tuple)):
-            return [serialize(i) for i in obj]
-        elif isinstance(obj, dict):
-            return {str(k): serialize(v) for k, v in obj.items()}
-        else:
-            return obj
-
     try:
         allowed = [
             "agriculture",
@@ -195,7 +214,7 @@ async def get_datamatrix(name: str):
 
         with open(file, "rb") as f:
             data = pickle.load(f)
-        result = serialize(data)
+        result = serialize_model_output(data)
         return ORJSONResponse(content={"status": "success", "data": result})
     except Exception as e:
         return ORJSONResponse(
