@@ -5,13 +5,16 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 import logging
 from fastapi.responses import ORJSONResponse
+
 # Set servers in OpenAPI schema
 from fastapi.openapi.utils import get_openapi
 import os
+from fastapi.middleware.gzip import GZipMiddleware
 
 
 app = FastAPI(root_path=settings.PATH_PREFIX)
 app.include_router(router)
+app.add_middleware(GZipMiddleware, minimum_size=100000, compresslevel=1)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -41,4 +44,3 @@ async def get_index():
     if index_path.exists():
         return FileResponse(index_path)
     return {"message": "Welcome to AddLidar API"}
-

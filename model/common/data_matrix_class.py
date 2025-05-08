@@ -36,9 +36,9 @@ class DataMatrix:
         self.col_labels = {}
         self.units = {}
 
-        for i in range(len(col_labels)-3):
+        for i in range(len(col_labels) - 3):
             cat_num = str(i + 1)
-            self.dim_labels.append('Categories'+cat_num)
+            self.dim_labels.append("Categories" + cat_num)
 
         for k, v in col_labels.items():
             self.col_labels[k] = v.copy()  # dictionary with dim_labels[i] as key
@@ -56,7 +56,7 @@ class DataMatrix:
         return
 
     def __repr__(self):
-        
+
         if len(self.col_labels) == 3:
             return f'DataMatrix with shape {self.array.shape} and variables {self.col_labels["Variables"]}'
         if len(self.col_labels) == 4:
@@ -71,10 +71,10 @@ class DataMatrix:
         # It is used to transform a dataframe df (table) into a datamatrix by specifying the number of categories
         # ATT: to be run after extract_structure which initialises dim_labels, col_labels and units
         if df.empty:
-            ValueError(f'You cannot create a datamatrix from an empty dataframe.')
+            ValueError(f"You cannot create a datamatrix from an empty dataframe.")
 
         dims = []
-        df.sort_values(by=['Country', 'Years'], inplace=True)
+        df.sort_values(by=["Country", "Years"], inplace=True)
         if num_cat > 3:
             raise Exception("You can only set maximum 3 categories")
 
@@ -94,24 +94,30 @@ class DataMatrix:
 
         # Iterate over the dataframe columns & extract the string _xxx[ as category and the rest as variable
         for col in df.columns:
-            last_bracket_index = col.rfind('[')
+            last_bracket_index = col.rfind("[")
             v = col[:last_bracket_index]
             series_data = df[col]
             c = {}
             for i in range(num_cat):
-                last_underscore_index = v.rfind('_')
-                c[i] = v[last_underscore_index + 1:]
+                last_underscore_index = v.rfind("_")
+                c[i] = v[last_underscore_index + 1 :]
                 v = col[:last_underscore_index]
             if num_cat == 0:
-                array[:, :, self.idx[v]] = np.reshape(series_data.values, (dims[0], dims[1]))
+                array[:, :, self.idx[v]] = np.reshape(
+                    series_data.values, (dims[0], dims[1])
+                )
             if num_cat == 1:
-                array[:, :, self.idx[v], self.idx[c[0]]] = np.reshape(series_data.values, (dims[0], dims[1]))
+                array[:, :, self.idx[v], self.idx[c[0]]] = np.reshape(
+                    series_data.values, (dims[0], dims[1])
+                )
             if num_cat == 2:
-                array[:, :, self.idx[v], self.idx[c[1]], self.idx[c[0]]] = np.reshape(series_data.values,
-                                                                                      (dims[0], dims[1]))
+                array[:, :, self.idx[v], self.idx[c[1]], self.idx[c[0]]] = np.reshape(
+                    series_data.values, (dims[0], dims[1])
+                )
             if num_cat == 3:
-                array[:, :, self.idx[v], self.idx[c[2]], self.idx[c[1]], self.idx[c[0]]] = \
-                    np.reshape(series_data.values, (dims[0], dims[1]))
+                array[
+                    :, :, self.idx[v], self.idx[c[2]], self.idx[c[1]], self.idx[c[0]]
+                ] = np.reshape(series_data.values, (dims[0], dims[1]))
 
         df.reset_index(inplace=True)
         self.array = array
@@ -124,14 +130,18 @@ class DataMatrix:
 
         # checks if cols 'Country' and 'Years' are in the datafram
         def check_columns(dataframe):
-            required_columns = ['Years', 'Country']
-            missing_columns = [col for col in required_columns if col not in dataframe.columns]
+            required_columns = ["Years", "Country"]
+            missing_columns = [
+                col for col in required_columns if col not in dataframe.columns
+            ]
             if missing_columns:
-                raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
+                raise ValueError(
+                    f"Missing required columns: {', '.join(missing_columns)}"
+                )
             return
 
         if df.empty:
-            ValueError(f'You cannot create a datamatrix from an empty dataframe.')
+            ValueError(f"You cannot create a datamatrix from an empty dataframe.")
 
         check_columns(df)
 
@@ -151,27 +161,31 @@ class DataMatrix:
         units = dict()
         for col in cols:
             try:
-                unit = re.search(r'\[(.*?)\]', col).group(1)
+                unit = re.search(r"\[(.*?)\]", col).group(1)
             except AttributeError:
-                raise AttributeError('Error: try to remove the lever column from the dataframe and make sure all variables have units in eucalc-name')
+                raise AttributeError(
+                    "Error: try to remove the lever column from the dataframe and make sure all variables have units in eucalc-name"
+                )
                 exit()
-            col_tmp = col.replace(f'[{unit}]', '')
+            col_tmp = col.replace(f"[{unit}]", "")
             for i in range(num_cat):
                 i = i + 1
-                last_underscore_index = col_tmp.rfind('_')
-                cat = col_tmp[last_underscore_index + 1:]
+                last_underscore_index = col_tmp.rfind("_")
+                cat = col_tmp[last_underscore_index + 1 :]
                 if i not in categories.keys():
                     categories[i] = [cat]
                 else:
                     if cat not in categories[i]:
                         categories[i].append(cat)
-                col_tmp = re.sub(f'_{cat}$', '', col_tmp)
+                col_tmp = re.sub(f"_{cat}$", "", col_tmp)
             var = col_tmp
             if var not in variables:
                 variables.append(var)
             if var in units.keys():
                 if unit != units[var]:
-                    print("Variables " + var + " has two different units, change its name")
+                    print(
+                        "Variables " + var + " has two different units, change its name"
+                    )
             else:
                 units[var] = unit
 
@@ -194,7 +208,7 @@ class DataMatrix:
         # Note that df needs to have columns 'Country' and 'Years'
         # it returns a datamatrix
         if df.empty:
-            ValueError(f'You cannot create a datamatrix from an empty dataframe.')
+            ValueError(f"You cannot create a datamatrix from an empty dataframe.")
         dm = cls()
         dm.extract_structure(df, num_cat)
         dm.read_data(df, num_cat)
@@ -208,7 +222,7 @@ class DataMatrix:
         # dm_new = DataMatrix.based_on(arr, dm_ref, {'Variables': ['new_var1', new_var2'], 'Categories2': None},
         #                              units = {'new_var1': 'TWh', 'new_var2': 'GWh'})
         dm = format
-        #col_labels = copy.deepcopy(dm.col_labels)
+        # col_labels = copy.deepcopy(dm.col_labels)
         col_labels = {}
         for key, value in dm.col_labels.items():
             col_labels[key] = value.copy()
@@ -230,26 +244,34 @@ class DataMatrix:
                         for col in col_labels[dim]:
                             idx.pop(col)
                         col_labels[dim] = new_labels
-                        for (i, new_col) in enumerate(new_labels):
+                        for i, new_col in enumerate(new_labels):
                             idx[new_col] = i
-                        if dim == 'Variables':
+                        if dim == "Variables":
                             new_units = units
                     else:
-                        raise ValueError(f'The argument change can only be a list or None')
+                        raise ValueError(
+                            f"The argument change can only be a list or None"
+                        )
             else:
-                num_cat = int(dim[-1])  # extract the categorie number that they want to add
+                num_cat = int(
+                    dim[-1]
+                )  # extract the categorie number that they want to add
                 current_cat = len(dim_labels) - 3
                 if num_cat != current_cat + 1:
-                    raise ValueError(f'You can add Categories{int(current_cat) + 1} not {dim}')
+                    raise ValueError(
+                        f"You can add Categories{int(current_cat) + 1} not {dim}"
+                    )
                 dim_labels.append(dim)
                 col_labels[dim] = change[dim]
-                for (i, new_col) in enumerate(change[dim]):
+                for i, new_col in enumerate(change[dim]):
                     idx[new_col] = i
         dm_new = DataMatrix(col_labels, new_units, idx)
         dm_new.array = array
         for i, dim in enumerate(dim_labels):
             if len(col_labels[dim]) != array.shape[i]:
-                raise ValueError(f'Mismatch between array shape and col_labels for dim={dim}')
+                raise ValueError(
+                    f"Mismatch between array shape and col_labels for dim={dim}"
+                )
 
         return dm_new
 
@@ -265,10 +287,12 @@ class DataMatrix:
 
         # Iterate over the dataframe columns
         for col in df.columns:
-            last_bracket_index = col.rfind('[')
+            last_bracket_index = col.rfind("[")
             v = col[:last_bracket_index]
             series_data = df[col]
-            array[:, :, self.idx[v]] = np.reshape(series_data.values, (dims[0], dims[1]))
+            array[:, :, self.idx[v]] = np.reshape(
+                series_data.values, (dims[0], dims[1])
+            )
 
         self.array = array
 
@@ -296,21 +320,25 @@ class DataMatrix:
             new_array = np.moveaxis(new_array, -1, a)
         # Else check that the new array dimension is correct
         if new_array.shape != new_shape and dummy is False:
-            raise AttributeError(f'The new_array should have dimension {new_shape} instead of {new_array.shape}, '
-                                 f'unless you want to add dummy dimensions, then you should add dummy = True and new_array should be a float')
+            raise AttributeError(
+                f"The new_array should have dimension {new_shape} instead of {new_array.shape}, "
+                f"unless you want to add dummy dimensions, then you should add dummy = True and new_array should be a float"
+            )
         for col in col_label:
             self.col_labels[dim].append(col)
             i_v = self.single_index(col, dim)
             if col not in list(self.idx.keys()):
                 self.idx[col] = i_v[col]
             else:
-                raise ValueError(f"You are trying to append data under the label {col_label} which already exists")
-        if dim == 'Variables':
+                raise ValueError(
+                    f"You are trying to append data under the label {col_label} which already exists"
+                )
+        if dim == "Variables":
             if None not in unit:
                 for i, col in enumerate(col_label):
                     self.units[col] = unit[i]
             else:
-                raise ValueError(f'You need to input the units when adding a variables')
+                raise ValueError(f"You need to input the units when adding a variables")
         self.array = np.concatenate((self.array, new_array), axis=a)
 
     def drop(self, dim, col_label):
@@ -351,19 +379,29 @@ class DataMatrix:
         # (e.g. 'tra_passenger_.*|tra_freight_.*')
         # the dimension is always 'Variables' and it lags by a integer 'shift'
         # new column labels across dimension 'Variables' are added with subfix 'subfix'
-        vars = [(vi, v) for (vi, v) in enumerate(self.col_labels["Variables"]) if re.match(pattern, v)]
+        vars = [
+            (vi, v)
+            for (vi, v) in enumerate(self.col_labels["Variables"])
+            if re.match(pattern, v)
+        ]
         dim_label = "Variables"
-        for (vi, v) in vars:
+        for vi, v in vars:
             v_sub = v + subfix  # new variable name
             unit = self.units[v]
-            new_array = np.roll(self.array[:, :, vi, ...], shift, axis=1)  # shift along Years axis
+            new_array = np.roll(
+                self.array[:, :, vi, ...], shift, axis=1
+            )  # shift along Years axis
             if shift == 1:
                 new_array[:, 0, ...] = new_array[:, 1, ...]  # copy 1991 value to 1990
             elif shift == -1:
                 new_array[:, -1, ...] = new_array[:, -2, ...]  # copy 2045 value to 2050
             else:
-                raise Exception("You can only shift by +1 or -1 in lag_variable func of DataMatrix class")
-            self.add(new_array, dim_label, v_sub, unit)  # append new_array to self_array
+                raise Exception(
+                    "You can only shift by +1 or -1 in lag_variable func of DataMatrix class"
+                )
+            self.add(
+                new_array, dim_label, v_sub, unit
+            )  # append new_array to self_array
 
     def single_index(self, var_names, dim):
         # it extract the positional index of the labels in var_names across dimension dim
@@ -381,8 +419,8 @@ class DataMatrix:
     def index_all(self):
         # extracts all the indexes and returns the dictionary idx (as well as re-assinging self.idx)
         idx = {}
-        for (di, d) in enumerate(self.dim_labels):
-            for (ci, c) in enumerate(self.col_labels[d]):
+        for di, d in enumerate(self.dim_labels):
+            for ci, c in enumerate(self.col_labels[d]):
                 idx[c] = ci
         self.idx = idx
 
@@ -403,29 +441,47 @@ class DataMatrix:
             mesh = np.ix_(i_c, i_y, i_v, i_cat)  # Create meshgrid
             self.array[mesh] = matrix2.array
         else:
-            raise Exception("You are try to overwrite a DataMatrix with another DataMatrix that isn't a subset")
+            raise Exception(
+                "You are try to overwrite a DataMatrix with another DataMatrix that isn't a subset"
+            )
 
     def fill_nans(self, dim_to_interp):
 
         axis_to_interp = self.dim_labels.index(dim_to_interp)
+
         def interpolate_nans(arr, x_values):
             nan_indices = np.isnan(arr)
             if nan_indices.any():
                 if len(x_values[~nan_indices]) > 0:
-                    arr[nan_indices] = np.interp(x_values[nan_indices], x_values[~nan_indices], arr[~nan_indices])
+                    arr[nan_indices] = np.interp(
+                        x_values[nan_indices], x_values[~nan_indices], arr[~nan_indices]
+                    )
             return arr
 
         # Apply interpolation along the specified axis
         if np.isnan(self.array).any():
-            if dim_to_interp == 'Years':
-                x_values = np.array(self.col_labels['Years'])
+            if dim_to_interp == "Years":
+                x_values = np.array(self.col_labels["Years"])
             else:
                 x_values = np.arange(len(self.array))
-            self.array = np.apply_along_axis(interpolate_nans, axis_to_interp, self.array, x_values)
+            self.array = np.apply_along_axis(
+                interpolate_nans, axis_to_interp, self.array, x_values
+            )
 
         return
 
-    def operation(self, col1, operator, col2, dim="Variables", out_col=None, unit=None, div0="error", nansum=False, type=float):
+    def operation(
+        self,
+        col1,
+        operator,
+        col2,
+        dim="Variables",
+        out_col=None,
+        unit=None,
+        div0="error",
+        nansum=False,
+        type=float,
+    ):
         # operation allows to perform operation between two columns belonging to the same
         # dimensions in DataMatrix and to append/overwrite the result to the dataframe
         i = self.idx
@@ -438,7 +494,9 @@ class DataMatrix:
             if nan_indices.any():
                 x_values = np.arange(len(arr))
                 if len(x_values[~nan_indices]) > 0:
-                    arr[nan_indices] = np.interp(x_values[nan_indices], x_values[~nan_indices], arr[~nan_indices])
+                    arr[nan_indices] = np.interp(
+                        x_values[nan_indices], x_values[~nan_indices], arr[~nan_indices]
+                    )
             return arr
 
         if operator == "/":
@@ -446,9 +504,12 @@ class DataMatrix:
                 tmp = self.array[..., i[col1]] / self.array[..., i[col2]]
             if div0 == "interpolate":
                 axis_to_interp = 1
-                tmp = np.divide(self.array[..., i[col1]], self.array[..., i[col2]],
-                                out=np.nan * np.ones_like(self.array[..., i[col1]]),
-                                where=self.array[..., i[col2]] != 0)
+                tmp = np.divide(
+                    self.array[..., i[col1]],
+                    self.array[..., i[col2]],
+                    out=np.nan * np.ones_like(self.array[..., i[col1]]),
+                    where=self.array[..., i[col2]] != 0,
+                )
                 # Apply interpolation along the specified axis
                 if np.isnan(tmp).any():
                     tmp = np.apply_along_axis(interpolate_nans, axis_to_interp, tmp)
@@ -457,13 +518,17 @@ class DataMatrix:
             if not nansum:
                 tmp = self.array[..., i[col1]] - self.array[..., i[col2]]
             else:
-                tmp = np.nan_to_num(self.array[..., i[col1]]) - np.nan_to_num(self.array[..., i[col2]])
+                tmp = np.nan_to_num(self.array[..., i[col1]]) - np.nan_to_num(
+                    self.array[..., i[col2]]
+                )
 
         if operator == "+":
             if not nansum:
                 tmp = self.array[..., i[col1]] + self.array[..., i[col2]]
             else:
-                tmp = np.nan_to_num(self.array[..., i[col1]]) + np.nan_to_num(self.array[..., i[col2]])
+                tmp = np.nan_to_num(self.array[..., i[col1]]) + np.nan_to_num(
+                    self.array[..., i[col2]]
+                )
 
         if operator == "*":
             tmp = self.array[..., i[col1]] * self.array[..., i[col2]]
@@ -486,7 +551,9 @@ class DataMatrix:
         # Repeat countries n_year number of times
         country_list = [item for item in countries for _ in range(n_y)]
         years_list = years * n_c
-        df = pd.DataFrame(data=zip(country_list, years_list), columns=["Country", "Years"])
+        df = pd.DataFrame(
+            data=zip(country_list, years_list), columns=["Country", "Years"]
+        )
 
         num_cat = len(dm.dim_labels) - 3
 
@@ -512,6 +579,84 @@ class DataMatrix:
                     col_value = dm.array[:, :, dm.idx[v], dm.idx[c]].flatten()
                     if not np.isnan(col_value).all():
                         df[col_name] = col_value
+        return df
+
+    def fast_write_df(self):
+        """
+        Convert DataMatrix to a pandas DataFrame with improved performance.
+        """
+        # Avoid full copy when possible
+        if len(self.dim_labels) <= 5:  # Only copy if we need to flatten
+            dm = self
+        else:
+            dm = self.copy()
+
+        years = dm.col_labels["Years"]
+        countries = dm.col_labels["Country"]
+        n_y = len(years)
+        n_c = len(countries)
+
+        # Pre-allocate arrays instead of list comprehensions
+        country_indices = np.repeat(np.arange(n_c), n_y)
+        year_indices = np.tile(np.arange(n_y), n_c)
+
+        # Create base dataframe with optimized memory usage
+        df = pd.DataFrame(
+            {
+                "Country": np.array(countries)[country_indices],
+                "Years": np.array(years)[year_indices],
+            }
+        )
+
+        num_cat = len(dm.dim_labels) - 3
+
+        # Combine repeated flattening operations
+        if num_cat > 1:
+            while num_cat > 1:
+                dm_new = dm.flatten()
+                dm.__dict__.update(dm_new.__dict__)
+                num_cat = len(dm.dim_labels) - 3
+
+        # Process variables in a vectorized way
+        if num_cat == 0:
+            # Prepare all data columns at once
+            var_names = dm.col_labels["Variables"]
+            var_indices = [dm.idx[v] for v in var_names]
+            col_names = [f"{v}[{dm.units[v]}]" for v in var_names]
+
+            # Extract and reshape data efficiently
+            all_values = dm.array[:, :, var_indices]
+            all_values_flat = all_values.reshape(n_c * n_y, len(var_names))
+
+            # Add columns to dataframe at once
+            df_cols = pd.DataFrame(all_values_flat, columns=col_names)
+            df = pd.concat([df, df_cols], axis=1)
+
+        elif num_cat == 1:
+            # Prepare columns with non-null data
+            data_columns = {}
+            var_names = dm.col_labels["Variables"]
+            cat_names = dm.col_labels["Categories1"]
+
+            # Instead of nested loops, use vectorized operations
+            for v_idx, v in enumerate(var_names):
+                v_array = dm.array[
+                    :, :, dm.idx[v], :
+                ]  # Get all categories for this variable
+
+                for c_idx, c in enumerate(cat_names):
+                    col_name = f"{v}_{c}[{dm.units[v]}]"
+                    col_values = v_array[:, :, c_idx].flatten()
+
+                    # Only add column if it contains non-NaN values
+                    if not np.isnan(col_values).all():
+                        data_columns[col_name] = col_values
+
+            # Add all columns to dataframe at once
+            if data_columns:
+                df_cols = pd.DataFrame(data_columns)
+                df = pd.concat([df, df_cols], axis=1)
+
         return df
 
     def rename_col(self, col_in, col_out, dim):
@@ -544,7 +689,9 @@ class DataMatrix:
                     sorted_cols[d] = self.col_labels[d].copy()
                 # otherwise keep selected cols but ordered as in the original dm
                 else:
-                    sorted_cols[d] = sorted(selected_cols[d], key=lambda x: self.col_labels[d].index(x))
+                    sorted_cols[d] = sorted(
+                        selected_cols[d], key=lambda x: self.col_labels[d].index(x)
+                    )
             keep_units = {key: self.units[key] for key in sorted_cols["Variables"]}
             out = DataMatrix(col_labels=sorted_cols, units=keep_units)
             # Extract list of indices
@@ -556,14 +703,18 @@ class DataMatrix:
             out.array = self.array[mesh].copy()
             # check if out datamatrix is empty
             if (np.array(out.array.shape) == 0).any():
-                raise ValueError('.filter() return an empty datamatrix across at least one dimension')
+                raise ValueError(
+                    ".filter() return an empty datamatrix across at least one dimension"
+                )
             return out
         else:
             for dim, col_to_keep in selected_cols.items():
                 cols_to_drop = list(set(self.col_labels[dim]) - set(col_to_keep))
                 self.drop(dim=dim, col_label=cols_to_drop)
             if (np.array(self.array.shape) == 0).any():
-                raise ValueError('.filter() return an empty datamatrix across at least one dimension')
+                raise ValueError(
+                    ".filter() return an empty datamatrix across at least one dimension"
+                )
             return
 
     def filter_w_regex(self, dict_dim_pattern, inplace=False):
@@ -586,10 +737,12 @@ class DataMatrix:
     def sort(self, dim):
         sort_index = np.argsort(np.array(self.col_labels[dim]))
         self.col_labels[dim] = sorted(self.col_labels[dim])  # sort labels
-        for (ci, c) in enumerate(self.col_labels[dim]):  # sort indexes
+        for ci, c in enumerate(self.col_labels[dim]):  # sort indexes
             self.idx[c] = ci
         a = self.dim_labels.index(dim)
-        self.array = np.take(self.array, sort_index, axis=a)  # re-orders the array according to sort_index
+        self.array = np.take(
+            self.array, sort_index, axis=a
+        )  # re-orders the array according to sort_index
 
     def append(self, data2, dim):
         # appends DataMatrix data2 to self in dimension dim.
@@ -603,17 +756,22 @@ class DataMatrix:
                 self.sort(dim=d)
                 data2.sort(dim=d)
                 if self.col_labels[d] != data2.col_labels[d]:
-                    raise ValueError(f'columns {self.col_labels[d]} do not match columns {data2.col_labels[d]}')
+                    raise ValueError(
+                        f"columns {self.col_labels[d]} do not match columns {data2.col_labels[d]}"
+                    )
         # Check that units are the same
-        if dim != 'Variables':
+        if dim != "Variables":
             if self.units != data2.units:
-                raise ValueError(f'The units should be the same')
+                raise ValueError(f"The units should be the same")
         # Check that across the dimension where you want to append the labels are different
         cols1 = set(self.col_labels[dim])
         cols2 = set(data2.col_labels[dim])
         same_col = cols2.intersection(cols1)
         if len(same_col) != 0:
-            raise Exception("The DataMatrix that you are trying to append contains the same labels across dimension ", dim)
+            raise Exception(
+                "The DataMatrix that you are trying to append contains the same labels across dimension ",
+                dim,
+            )
 
         # Concatenate the two arrays
         a = self.dim_labels.index(dim)
@@ -621,7 +779,7 @@ class DataMatrix:
         # Concatenate the two lists of labels across dimension dim
         self.col_labels[dim] = self.col_labels[dim] + data2.col_labels[dim]
         # Re initialise the indexes
-        for (ci, c) in enumerate(self.col_labels[dim]):  # sort indexes
+        for ci, c in enumerate(self.col_labels[dim]):  # sort indexes
             self.idx[c] = ci
         # Add the units if you are appending over "Variables"
         if dim == "Variables":
@@ -635,19 +793,21 @@ class DataMatrix:
 
         # Add one category to the dim_labels list depending on the current structure
         if self.dim_labels[-1] == "Variables":
-            new_dim = 'Categories1'
-            root_dim = 'Variables'
+            new_dim = "Categories1"
+            root_dim = "Variables"
             self.dim_labels.append(new_dim)
-        elif self.dim_labels[-1] == 'Categories1':
-            new_dim = 'Categories2'
-            root_dim = 'Categories1'
+        elif self.dim_labels[-1] == "Categories1":
+            new_dim = "Categories2"
+            root_dim = "Categories1"
             self.dim_labels.append(new_dim)
-        elif self.dim_labels[-1] == 'Categories2':
-            new_dim = 'Categories3'
-            root_dim = 'Categories2'
+        elif self.dim_labels[-1] == "Categories2":
+            new_dim = "Categories3"
+            root_dim = "Categories2"
             self.dim_labels.append(new_dim)
         else:
-            raise Exception('You cannot deepen (aka add a dimension) to a datamatrix with already 3 categories')
+            raise Exception(
+                "You cannot deepen (aka add a dimension) to a datamatrix with already 3 categories"
+            )
 
         if based_on is not None:
             root_dim = based_on
@@ -661,8 +821,8 @@ class DataMatrix:
         for col in self.col_labels[root_dim]:
             last_underscore_index = col.rfind(sep)
             if last_underscore_index == -1:
-                raise Exception('No separator _ could be found in the last category')
-            new_cat = col[last_underscore_index + 1:]
+                raise Exception("No separator _ could be found in the last category")
+            new_cat = col[last_underscore_index + 1 :]
             root_cat = col[:last_underscore_index]
             rename_mapping[col] = [root_cat, new_cat]
             # crates col_labels list for the new dimension
@@ -672,7 +832,7 @@ class DataMatrix:
             if root_cat not in root_cols:
                 root_cols.append(root_cat)
             # renames units dict
-            if root_dim == 'Variables':
+            if root_dim == "Variables":
                 if root_cat not in self.units.keys():
                     self.units[root_cat] = self.units[col]
                 self.units.pop(col)
@@ -694,7 +854,9 @@ class DataMatrix:
             array_old = np.moveaxis(array_old, a_root, -1)
         for col in rename_mapping.keys():
             [root_cat, new_cat] = rename_mapping[col]
-            array_new[..., idx_new[root_cat], idx_new[new_cat]] = array_old[..., idx_old[col]]
+            array_new[..., idx_new[root_cat], idx_new[new_cat]] = array_old[
+                ..., idx_old[col]
+            ]
         if based_on is not None:
             array_new = np.moveaxis(array_new, -2, a_root)
         self.array = array_new
@@ -707,31 +869,31 @@ class DataMatrix:
 
         for col in self.col_labels[root_dim]:
             last_index = col.rfind("_")
-            new_col = col[:last_index] + '?' + col[last_index+1:]
+            new_col = col[:last_index] + "?" + col[last_index + 1 :]
             tmp_cols.append(new_col)
-            if root_dim == 'Variables':
+            if root_dim == "Variables":
                 self.units[new_col] = self.units[col]
                 self.units.pop(col)
         self.col_labels[root_dim] = tmp_cols
 
-        self.deepen(sep='_')
+        self.deepen(sep="_")
 
         tmp_cols = []
         root_dim = self.dim_labels[-1]
         for col in self.col_labels[root_dim]:
             last_index = col.rfind("?")
-            new_col = col[:last_index] + '_' + col[last_index+1:]
+            new_col = col[:last_index] + "_" + col[last_index + 1 :]
             tmp_cols.append(new_col)
-            if root_dim == 'Variables':
+            if root_dim == "Variables":
                 self.units[new_col] = self.units[col]
                 self.units.pop(col)
         self.col_labels[root_dim] = tmp_cols
 
-        self.deepen(sep='_')
+        self.deepen(sep="_")
 
         return
 
-    def flatten(self, sep='_'):
+    def flatten(self, sep="_"):
         # you can flatten only if you have at least one category
         assert len(self.dim_labels) > 3
         d_2 = self.dim_labels[-1]
@@ -755,17 +917,17 @@ class DataMatrix:
             for c2 in cols_2:
                 col_value = self.array[..., self.idx[c1], self.idx[c2], np.newaxis]
                 if not np.isnan(col_value).all():
-                    new_cols.append(f'{c1}{sep}{c2}')
+                    new_cols.append(f"{c1}{sep}{c2}")
                     if i == 0:
-                        i = i+1
+                        i = i + 1
                         new_array = col_value
                     else:
                         new_array = np.concatenate([new_array, col_value], axis=-1)
-                    if d_1 == 'Variables':
-                        new_units[f'{c1}{sep}{c2}'] = self.units[c1]
+                    if d_1 == "Variables":
+                        new_units[f"{c1}{sep}{c2}"] = self.units[c1]
 
         new_col_labels[d_1] = new_cols
-        if d_1 == 'Variables':
+        if d_1 == "Variables":
             dm_new = DataMatrix(col_labels=new_col_labels, units=new_units)
         else:
             dm_new = DataMatrix(col_labels=new_col_labels, units=self.units)
@@ -773,21 +935,19 @@ class DataMatrix:
         dm_new.idx = dm_new.index_all()
         return dm_new
 
-
     def flattest(self):
-        while 'Categories' in '\t'.join(self.dim_labels):
+        while "Categories" in "\t".join(self.dim_labels):
             self = self.flatten()
         return self
-
 
     def copy(self):
         dm = DataMatrix(col_labels=self.col_labels, units=self.units, idx=self.idx)
         dm.array = self.array.copy()
         return dm
 
-    def switch_categories_order(self, cat1='Categories1', cat2='Categories2'):
-        if 'Categories' not in cat1 or 'Categories' not in cat2:
-            raise ValueError(' You can only switch the order of two Categories')
+    def switch_categories_order(self, cat1="Categories1", cat2="Categories2"):
+        if "Categories" not in cat1 or "Categories" not in cat2:
+            raise ValueError(" You can only switch the order of two Categories")
         # Extract axis of cat1, cat2
         a1 = self.dim_labels.index(cat1)
         a2 = self.dim_labels.index(cat2)
@@ -800,7 +960,9 @@ class DataMatrix:
         self.col_labels[cat2] = col1
         return
 
-    def groupby(self, group_cols={}, dim=str, aggregation = "sum", regex=False, inplace=False):
+    def groupby(
+        self, group_cols={}, dim=str, aggregation="sum", regex=False, inplace=False
+    ):
         # Sum values in group, e.g.
         # dm.groupby({'road': ['LDV', '2W']}, dim='Categories1') sums LDV and 2W and calls it road
         # dm.groupby({'freight': 'HDV.*|marine.*', 'passenger': 'LDV|bus|aviation'}, dim='Categories2', regex = True)
@@ -818,11 +980,13 @@ class DataMatrix:
                 self.drop(dim=dim, col_label=col_to_group)
             a = self.dim_labels.index(dim)  # extract the index of the dimension
             new_array = np.moveaxis(dm_to_group.array, a, -1)  # move dimension to end
-            if aggregation == "sum": # nansum
+            if aggregation == "sum":  # nansum
                 new_array = np.nansum(new_array, axis=-1, keepdims=True)
-            if aggregation == "mean": # mean
+            if aggregation == "mean":  # mean
                 new_array = np.nanmean(new_array, axis=-1, keepdims=True)
-            dm_to_group.array = np.moveaxis(new_array, -1, a)  # put dimension back to right place
+            dm_to_group.array = np.moveaxis(
+                new_array, -1, a
+            )  # put dimension back to right place
             # remove the idx of the grouped columns
             for col in dm_to_group.col_labels[dim]:
                 dm_to_group.idx.pop(col)
@@ -830,11 +994,13 @@ class DataMatrix:
             dm_to_group.col_labels[dim] = [out_col]
             # Add idx of new column name using iterator
             dm_to_group.idx[out_col] = i
-            if dim == 'Variables':
+            if dim == "Variables":
                 # Check that all the variables have the same unit
                 new_unit_set = set(dm_to_group.units.values())
                 if len(new_unit_set) != 1:
-                    raise ValueError(f'the Variables {col_to_group} in groupby do not have the same unit')
+                    raise ValueError(
+                        f"the Variables {col_to_group} in groupby do not have the same unit"
+                    )
                 dm_to_group.units = {out_col: new_unit_set.pop()}
             if i == 0:
                 dm_out = dm_to_group
@@ -849,13 +1015,13 @@ class DataMatrix:
             dm_out.sort(dim=dim)
             return dm_out
 
-    def group_all(self, dim=str, inplace=True, aggregation = "sum"):
+    def group_all(self, dim=str, inplace=True, aggregation="sum"):
         # Function to drop a dimension by summing all categories
         # Call example: dm_to_group.group_all(dim='Categories2', inplace=True)
         # or dm_grouped = dm_to_group.group_all(dim='Categories1', inplace=False)
         # when inplace = False dm_to_group remains unchanged and the grouped dm is return as output
-        if 'Categories' not in dim:
-            raise ValueError(f'You can only use group_all() on Categories')
+        if "Categories" not in dim:
+            raise ValueError(f"You can only use group_all() on Categories")
         if inplace:
             dm = self
         else:
@@ -869,11 +1035,11 @@ class DataMatrix:
         for col in dm.col_labels[dim]:
             dm.idx.pop(col)
         # Rename categories
-        categories_to_rename = [cat for cat in dm.dim_labels if 'Categories' in cat]
+        categories_to_rename = [cat for cat in dm.dim_labels if "Categories" in cat]
         categories_to_rename.remove(dim)
         i = 1
         for old_cat in categories_to_rename:
-            new_cat = 'Categories' + str(i)
+            new_cat = "Categories" + str(i)
             dm.col_labels[new_cat] = dm.col_labels[old_cat]
             i = i + 1
         # Remove last category and dimension
@@ -884,56 +1050,72 @@ class DataMatrix:
             return dm
         return
 
-    def change_unit(self, var, factor, old_unit, new_unit, operator='*'):
+    def change_unit(self, var, factor, old_unit, new_unit, operator="*"):
         idx = self.idx
         if self.units[var] != old_unit:
-            raise ValueError(f'The original unit is not {old_unit}')
+            raise ValueError(f"The original unit is not {old_unit}")
         self.units[var] = new_unit
-        if operator == '*':
+        if operator == "*":
             self.array[:, :, idx[var], ...] = self.array[:, :, idx[var], ...] * factor
-        elif operator == '/':
+        elif operator == "/":
             self.array[:, :, idx[var], ...] = self.array[:, :, idx[var], ...] / factor
         else:
-            raise ValueError(f'Only * and / operators are possible in change_unit')
+            raise ValueError(f"Only * and / operators are possible in change_unit")
         return
 
-    def datamatrix_plot(self, selected_cols={}, title='title', stacked=None):
+    def datamatrix_plot(self, selected_cols={}, title="title", stacked=None):
 
         if stacked is not None:
-            stacked = 'one'
+            stacked = "one"
 
         dims = len(self.dim_labels)
         if (dims != 3) & (dims != 4):
-            raise Exception("plot function has been implemented only for DataMatrix with max one category")
+            raise Exception(
+                "plot function has been implemented only for DataMatrix with max one category"
+            )
 
         i = self.idx
 
         plot_cols = self.col_labels.copy()
 
         for key, value in selected_cols.items():
-            if value != 'all':
+            if value != "all":
                 if isinstance(value, str):
                     plot_cols[key] = [value]
                 else:
                     plot_cols[key] = value
 
-        years_idx = [i[x] for x in plot_cols['Years']]
+        years_idx = [i[x] for x in plot_cols["Years"]]
         # Create an empty figure
-        fig = px.line(x=plot_cols['Years'], labels={'x': 'Years', 'y': 'Values'}, title=title)
-        fig.data[0]['y'] = np.nan*np.ones(shape=np.shape(fig.data[0]['y']))
+        fig = px.line(
+            x=plot_cols["Years"], labels={"x": "Years", "y": "Values"}, title=title
+        )
+        fig.data[0]["y"] = np.nan * np.ones(shape=np.shape(fig.data[0]["y"]))
         if dims == 3:
-            for c in plot_cols['Country']:
-                for v in plot_cols['Variables']:
+            for c in plot_cols["Country"]:
+                for v in plot_cols["Variables"]:
                     y_values = self.array[i[c], years_idx, i[v]]
                     label = c + "_" + v
-                    fig.add_scatter(x=plot_cols['Years'], y=y_values, name=label, mode='lines', stackgroup=stacked)
+                    fig.add_scatter(
+                        x=plot_cols["Years"],
+                        y=y_values,
+                        name=label,
+                        mode="lines",
+                        stackgroup=stacked,
+                    )
         if dims == 4:
-            for c in plot_cols['Country']:
-                for v in plot_cols['Variables']:
-                    for cat in plot_cols['Categories1']:
+            for c in plot_cols["Country"]:
+                for v in plot_cols["Variables"]:
+                    for cat in plot_cols["Categories1"]:
                         y_values = self.array[i[c], years_idx, i[v], i[cat]]
                         label = c + "_" + v + "_" + cat
-                        fig.add_scatter(x=plot_cols['Years'], y=y_values, name=label, mode='lines', stackgroup=stacked)
+                        fig.add_scatter(
+                            x=plot_cols["Years"],
+                            y=y_values,
+                            name=label,
+                            mode="lines",
+                            stackgroup=stacked,
+                        )
 
         fig.show()
 
@@ -947,30 +1129,38 @@ class DataMatrix:
             # Overwrites datamatrix with normalised data and changes the units to '%'
             arr_sum = np.nansum(self.array, axis=a, keepdims=True)
             arr_sum = np.nan_to_num(arr_sum)
-            with np.errstate(divide='ignore', invalid='ignore'):
+            with np.errstate(divide="ignore", invalid="ignore"):
                 self.array = np.where(arr_sum != 0, self.array / arr_sum, np.nan)
-            for v in self.col_labels['Variables']:
-                self.units[v] = '%'
+            for v in self.col_labels["Variables"]:
+                self.units[v] = "%"
         else:
             # Create a new normalised array
             arr_data = self.array.copy()
             arr_sum = np.nansum(arr_data, axis=a, keepdims=True)
             arr_sum = np.nan_to_num(arr_sum)
-            with np.errstate(divide='ignore', invalid='ignore'):
+            with np.errstate(divide="ignore", invalid="ignore"):
                 arr_data = np.where(arr_sum != 0, arr_data / arr_sum, np.nan)
-            new_var_cols = [var + '_share' for var in self.col_labels['Variables']]
+            new_var_cols = [var + "_share" for var in self.col_labels["Variables"]]
             # Adds the normalised array to the existing data in the same database
             if inplace and keep_original:
-                self.add(arr_data, dim='Variables', col_label=new_var_cols, unit=['%']*len(new_var_cols))
+                self.add(
+                    arr_data,
+                    dim="Variables",
+                    col_label=new_var_cols,
+                    unit=["%"] * len(new_var_cols),
+                )
             if not inplace:
                 units_new = {}
                 vars_new = []
-                for var in self.col_labels['Variables']:
-                    var_new = var + '_share'
+                for var in self.col_labels["Variables"]:
+                    var_new = var + "_share"
                     vars_new.append(var_new)
-                    units_new[var_new] = '%'
-                dm_out = DataMatrix.based_on(arr_data, format=self, change={'Variables': vars_new}, units=units_new)
+                    units_new[var_new] = "%"
+                dm_out = DataMatrix.based_on(
+                    arr_data,
+                    format=self,
+                    change={"Variables": vars_new},
+                    units=units_new,
+                )
                 return dm_out
         return
-
-
