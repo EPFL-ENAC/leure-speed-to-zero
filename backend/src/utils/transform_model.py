@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 import json
+import time
 
 logger = logging.getLogger("uvicorn")
 
@@ -31,14 +32,42 @@ def _convert_numpy_types(obj):
         return obj
 
 
-def transform_datamatrix_to_clean_structure(output, years_setting, geo_pattern=None):
+def transform_datamatrix_to_clean_structure_by_dataframe(output):
+    """
+    Transform DataMatrix objects into a clean, hierarchical JSON structure using the
+    built-in fast_write_df method.
+    """
+    logger.info(f"Starting transformation for {len(output)} sectors")
+    cleaned_output = {}
+
+    for sector, datamatrix in output.items():
+        if not hasattr(datamatrix, "fast_write_df"):
+            logger.warning(
+                f"DataMatrix for {sector} missing required methods, skipping"
+            )
+            continue
+
+        try:
+            # Convert DataMatrix to DataFrame, then to dict records
+            df = datamatrix.fast_write_df()
+            dict_data = df.to_dict(orient="records")
+
+            # Store the results
+            cleaned_output[sector] = dict_data
+
+        except Exception as e:
+            logger.error(f"Error processing sector {sector}: {str(e)}")
+
+    logger.info(f"Transformation completed for {len(cleaned_output)} sectors")
+    return cleaned_output
+
+
+def transform_datamatrix_to_clean_structure(output):
     """
     Transform DataMatrix objects into a clean, hierarchical JSON structure.
 
     Args:
         output (dict): Dictionary of DataMatrix objects from model runner
-        years_setting (list): Year settings [start_year, current_year, future_year, end_year, step]
-        geo_pattern (str): Geographic pattern string (defaults to "Switzerland|Vaud|EU27")
 
     Returns:
         dict: Cleaned hierarchical structure with countries and years
@@ -46,17 +75,6 @@ def transform_datamatrix_to_clean_structure(output, years_setting, geo_pattern=N
     logger.info(f"Starting transformation for {len(output)} sectors")
 
     cleaned_output = {}
-
-    # Countries mapping based on geo_pattern
-    if geo_pattern:
-        countries = geo_pattern.split("|")
-    else:
-        countries = ["Switzerland", "Vaud", "EU27"]  # Default
-
-    # Base years derived from years_setting
-    base_years = list(range(years_setting[0], years_setting[1] + 1, years_setting[4]))
-    base_years.extend([years_setting[2], years_setting[3]])
-    base_years = sorted(set(base_years))  # Remove duplicates and sort
 
     for sector, datamatrix in output.items():
         # Get DataMatrix elements
@@ -85,7 +103,6 @@ def transform_datamatrix_to_clean_structure(output, years_setting, geo_pattern=N
 
         # Log array shape
         array_shape = array.shape if hasattr(array, "shape") else "unknown"
-        logger.info(f"Processing {sector}: array shape {array_shape}")
 
         # Get country and year labels from col_labels
         country_labels = col_labels.get("Country", [])
@@ -96,25 +113,37 @@ def transform_datamatrix_to_clean_structure(output, years_setting, geo_pattern=N
         if not variable_labels and isinstance(col_labels, list):
             variable_labels = col_labels
 
-        # Fix: Check if we have at least countries, years and variables
-        if not country_labels:
-            country_labels = countries
-        if not year_labels:
-            year_labels = [str(y) for y in base_years]
-
         # Initialize the country structure
-        cleaned_output[sector] = {"countries": {}}
+        cleaned_output[sector] = {"countries": {}, "units": {}}
+
+        # Extract unit information if available
+        units = {}
+        # Try to get units from col_labels
+        if "Units" in col_labels and isinstance(col_labels["Units"], dict):
+            units = col_labels["Units"]
+        # Check if units are stored in a separate attribute
+        elif hasattr(datamatrix, "units") and datamatrix.units:
+            units = datamatrix.units
+        # Check if units are stored in the dm_dict
+        elif "units" in dm_dict and dm_dict["units"]:
+            units = dm_dict["units"]
+
+        # Store units in output
+        for var_name in variable_labels:
+            if var_name in units:
+                cleaned_output[sector]["units"][var_name] = units[var_name]
+            else:
+                cleaned_output[sector]["units"][
+                    var_name
+                ] = ""  # Empty string if no unit is found
 
         # Process each country
         country_stats = {}
         for country_name in country_labels:
-            # Get country index either from idx or by position
+            # Get country index from idx
             country_idx = idx.get(country_name)
             if country_idx is None:
-                try:
-                    country_idx = countries.index(country_name)
-                except ValueError:
-                    continue  # Skip if country can't be found
+                continue  # Skip if country can't be found
 
             cleaned_output[sector]["countries"][country_name] = []
             values_by_year = 0
@@ -133,14 +162,7 @@ def transform_datamatrix_to_clean_structure(output, years_setting, geo_pattern=N
                 )
 
                 if year_idx is None:
-                    try:
-                        year_int = int(year) if year.isdigit() else None
-                        if year_int and year_int in base_years:
-                            year_idx = base_years.index(year_int)
-                        else:
-                            continue  # Skip if year can't be found
-                    except (ValueError, TypeError):
-                        continue  # Skip if year can't be processed
+                    continue  # Skip if year can't be found
 
                 year_data = {"year": str(year)}
                 values_found = 0
@@ -186,7 +208,6 @@ def transform_datamatrix_to_clean_structure(output, years_setting, geo_pattern=N
         )
 
     # Convert NumPy types to standard Python types
-    logger.info("Finalizing data structure for JSON serialization")
     cleaned_output = _convert_numpy_types(cleaned_output)
 
     return cleaned_output

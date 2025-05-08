@@ -14,7 +14,9 @@ from backend.src.api.lever_keys import LEVER_KEYS
 import pickle
 
 from backend.src.utils.serialize_model import serialize_model_output
-from backend.src.utils.transform_model import transform_datamatrix_to_clean_structure
+from backend.src.utils.transform_model import (
+    transform_datamatrix_to_clean_structure,
+)
 
 
 router = APIRouter()
@@ -115,7 +117,6 @@ async def run_model_clean_structure(levers: str = None):
                 )
 
         lever_setting = dict(zip(LEVER_KEYS, lever_values))
-        logger.info(f"Levers input: {str(lever_setting)}")
 
         start = time.perf_counter()
         logger.info("Starting model run...")
@@ -128,19 +129,14 @@ async def run_model_clean_structure(levers: str = None):
         # Use the transformer utility
         logger.info("Starting data transformation...")
         transform_start = time.perf_counter()
-        cleaned_output = transform_datamatrix_to_clean_structure(
-            output, years_setting, geo_pattern
-        )
+        cleaned_output = transform_datamatrix_to_clean_structure(output)
         transform_duration = (time.perf_counter() - transform_start) * 1000
         logger.info(f"Data transformation completed in {transform_duration:.2f}ms")
 
         # Log information about the transformed output
         logger.info(f"Transformed output contains {len(cleaned_output)} sectors")
-        for sector in cleaned_output:
-            logger.info(
-                f"Sector {sector} has {len(cleaned_output[sector]['countries'])} countries"
-            )
 
+        json_parse_start = time.perf_counter()
         # Generate fingerprints
         output_str = orjson.dumps(cleaned_output)
         fingerprint_result = hashlib.md5(output_str).hexdigest()[:12]
@@ -157,6 +153,9 @@ async def run_model_clean_structure(levers: str = None):
         )
         response.headers["Server-Timing"] = f"runmodel;dur={duration:.2f}"
         logger.info("Returning transformed data response")
+        logger.info(
+            f"JSON serialization completed in {(time.perf_counter() - json_parse_start) * 1000:.2f}ms"
+        )
         return response
     except Exception as e:
         logger.error(
