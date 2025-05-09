@@ -18,6 +18,8 @@ from backend.src.utils.transform_model import (
     transform_datamatrix_to_clean_structure,
 )
 
+from fastapi_cache.decorator import cache
+
 
 router = APIRouter()
 logger = logging.getLogger("uvicorn")
@@ -100,6 +102,7 @@ async def run_model(levers: str = None):
 
 
 @router.get("/v1/run-model-clean-structure")
+@cache(expire=600)
 async def run_model_clean_structure(levers: str = None):
     try:
         # Parse levers string or use default (all 1s)
