@@ -1,156 +1,92 @@
 import { defineStore } from 'pinia';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+import type { Lever } from 'utils/leversData';
 import { levers as leversData } from 'utils/leversData';
 import { ExamplePathways } from 'utils/examplePathways';
 import { modelService } from 'services/modelService';
 import { AxiosError } from 'axios';
 
+// Types
 interface ModelResults {
   [key: string]: string | number | object;
 }
 
+// Helper functions moved outside the store
 function getDefaultLeverValue(leverCode: string): number {
   const lever = leversData.find((l) => l.code === leverCode);
-
-  if (!lever) {
-    console.error(`Lever with code ${leverCode} not found`);
-    return 0;
-  }
+  if (!lever) return 0;
 
   lever.range = lever.range || [];
 
   if (lever.type === 'num') {
     return Math.min(...lever.range.filter((v) => typeof v === 'number'));
   } else {
-    // For character levers, return the index 1
-    return 1;
+    return 1; // For character levers, return the index 1
   }
 }
 
 export const useLeverStore = defineStore('lever', () => {
-  // All lever values are now stored as numbers
+  // State
   const levers = ref<Record<string, number>>({});
   const selectedPathway = ref<string | null>(null);
   const customPathwayName = ref('Custom Pathway');
-
   const modelResults = ref<ModelResults | null>(null);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
+  const autoRun = ref(true);
 
-  const getLeverValue = (leverCode: string): number => {
-    return levers.value[leverCode] ?? getDefaultLeverValue(leverCode);
-  };
+  // Private variables (not exposed in the return)
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  const debounceDelay = 500;
 
-  const getAllLeverValues = computed(() => {
-    return leversData.map((lever) => levers.value[lever.code] ?? getDefaultLeverValue(lever.code));
-  });
+  // Computed values
+  const getLeverValue = (leverCode: string): number =>
+    levers.value[leverCode] ?? getDefaultLeverValue(leverCode);
+
+  const getAllLeverValues = computed(() =>
+    leversData.map((lever) => levers.value[lever.code] ?? getDefaultLeverValue(lever.code)),
+  );
 
   const leversByHeadline = computed(() => {
     const result: Record<string, typeof leversData> = {};
-
     leversData.forEach((lever) => {
-      if (!result[lever.headline]) {
-        result[lever.headline] = [];
-      }
+      if (!result[lever.headline]) result[lever.headline] = [];
       result[lever.headline]?.push(lever);
     });
-
     return result;
   });
 
   const leversByGroup = computed(() => {
     const result: Record<string, typeof leversData> = {};
-
     leversData.forEach((lever) => {
-      if (!result[lever.group]) {
-        result[lever.group] = [];
-      } else result[lever.group]?.push(lever);
+      if (!result[lever.group]) result[lever.group] = [];
+      result[lever.group]?.push(lever);
     });
-
     return result;
   });
 
   const isCustomPathway = computed(() => {
     if (!selectedPathway.value) return true;
 
-    const pathwayIndex = ExamplePathways.findIndex(
-      (pathway) => pathway.title === selectedPathway.value,
-    );
+    const pathway = ExamplePathways.find((p) => p.title === selectedPathway.value);
+    if (!pathway) return true;
 
-    if (pathwayIndex === -1) return true;
-
-    const pathwayValues = ExamplePathways[pathwayIndex]?.values as number[];
-    const currentValues = leversData
-      .map((lever, index) => {
-        const value = levers.value[lever.code] ?? getDefaultLeverValue(lever.code);
-        return index < pathwayValues.length ? value : null;
-      })
-      .filter((v) => v !== null);
-
-    for (let i = 0; i < currentValues.length; i++) {
-      if (currentValues[i] !== pathwayValues[i]) {
-        return true;
-      }
-    }
-
-    return false;
+    return leversData.some((lever, index) => {
+      const currentValue = levers.value[lever.code] ?? getDefaultLeverValue(lever.code);
+      return index < pathway.values.length && currentValue !== pathway.values[index];
+    });
   });
 
-  function setLeverValue(leverCode: string, value: number) {
-    const lever = leversData.find((l) => l.code === leverCode);
+  // Model operations
+  function debouncedRunModel() {
+    if (!autoRun.value) return;
 
-    if (!lever) {
-      console.error(`Lever with code ${leverCode} not found`);
-      return;
-    }
+    if (debounceTimer) clearTimeout(debounceTimer);
 
-    if (lever.type === 'num') {
-      const range = lever.range.filter((v) => typeof v === 'number');
-      if (value < Math.min(...range) || value > Math.max(...range)) {
-        console.error(`Value ${value} out of range for lever ${leverCode}`);
-        return;
-      }
-    } else if (lever.type === 'char') {
-      // For character levers, check if index is valid, + 1 because [1,2,3] => [A,B,C]
-      if (value < 1 || value > lever.range.length + 1) {
-        console.error(`Index ${value} out of range for lever ${leverCode}`);
-        return;
-      }
-    }
-
-    levers.value[leverCode] = value;
-
-    if (selectedPathway.value && isCustomPathway.value) {
-      selectedPathway.value = null;
-    }
-  }
-
-  function applyPathway(pathwayTitle: string) {
-    const pathway = ExamplePathways.find((p) => p.title === pathwayTitle);
-
-    if (!pathway) {
-      console.error(`Pathway "${pathwayTitle}" not found`);
-      return;
-    }
-
-    levers.value = {};
-
-    leversData.forEach((lever, index) => {
-      if (index < pathway.values.length && pathway.values[index]) {
-        levers.value[lever.code] = pathway.values[index];
-      }
-    });
-
-    selectedPathway.value = pathwayTitle;
-  }
-
-  function resetToDefaults() {
-    levers.value = {};
-    selectedPathway.value = null;
-  }
-
-  function setCustomPathwayName(name: string) {
-    customPathwayName.value = name;
+    debounceTimer = setTimeout(() => {
+      runModel().catch((err) => console.error('Auto-run model failed:', err));
+      debounceTimer = null;
+    }, debounceDelay);
   }
 
   async function runModel() {
@@ -159,21 +95,18 @@ export const useLeverStore = defineStore('lever', () => {
       error.value = null;
 
       // Get all lever values as a flat array
-      const leverValues = leversData.map((lever) => {
-        const value = levers.value[lever.code] ?? getDefaultLeverValue(lever.code);
-
-        // For model service, we always send numbers
-        return Math.round(value);
-      });
+      const leverValues = leversData.map((lever) =>
+        Math.round(levers.value[lever.code] ?? getDefaultLeverValue(lever.code)),
+      );
 
       // Convert to string format expected by API
       const leverString = leverValues.join('');
 
       // Use the API service
       const response = await modelService.runModel(leverString);
-
-      // Check if the response contains an error status
-      if (response.data && response.data.status === 'error') {
+      console.log('Running model with lever string:', leverString);
+      // Handle error status from API
+      if (response.data?.status === 'error') {
         error.value = response.data.message || 'An error occurred in the model';
         return null;
       }
@@ -181,51 +114,150 @@ export const useLeverStore = defineStore('lever', () => {
       modelResults.value = response.data;
       return response.data;
     } catch (err) {
-      console.error('Error running model:', err);
-      if (err instanceof AxiosError) {
-        if (err.response && err.response.data) {
-          if (err.response.data.message) {
-            error.value = err.response.data.message;
-          } else {
-            error.value = `Server error (${err.response.status}): ${err.response.statusText}`;
-          }
-        } else if (err.request) {
-          // Request was made but no response received
-          error.value = 'No response from server. Please check if the API server is running.';
-        }
-      } else if (err instanceof Error) {
-        // Something happened in setting up the request
-        error.value = err.message || 'Unknown error occurred';
-      } else {
-        // Handle any other types of errors
-        error.value = 'An unknown error occurred';
-      }
-
+      handleModelError(err);
       throw err;
     } finally {
       isLoading.value = false;
     }
   }
 
+  // Error handling extracted to a separate function
+  function handleModelError(err: unknown) {
+    console.error('Error running model:', err);
+
+    if (err instanceof AxiosError) {
+      if (err.response?.data?.message) {
+        error.value = err.response.data.message;
+      } else if (err.response) {
+        error.value = `Server error (${err.response.status}): ${err.response.statusText}`;
+      } else if (err.request) {
+        error.value = 'No response from server. Please check if the API server is running.';
+      }
+    } else if (err instanceof Error) {
+      error.value = err.message || 'Unknown error occurred';
+    } else {
+      error.value = 'An unknown error occurred';
+    }
+  }
+
+  // Lever operations
+  function setLeverValue(leverCode: string, value: number) {
+    const lever = leversData.find((l) => l.code === leverCode);
+    if (!lever || !isValidLeverValue(lever, value)) return;
+
+    levers.value[leverCode] = value;
+  }
+
+  function batchUpdateLevers(updates: Record<string, number>) {
+    // Create a new object combining current state with updates
+    const newLevers = { ...levers.value };
+
+    // Process all updates
+    Object.entries(updates).forEach(([leverCode, value]) => {
+      const lever = leversData.find((l) => l.code === leverCode);
+      if (lever && isValidLeverValue(lever, value)) {
+        newLevers[leverCode] = value;
+      }
+    });
+
+    // Update the state in a single operation
+    levers.value = newLevers;
+  }
+
+  function isValidLeverValue(lever: Lever, value: number): boolean {
+    if (lever.type === 'num') {
+      const range = lever.range.filter((v) => typeof v === 'number');
+      if (value < Math.min(...range) || value > Math.max(...range)) {
+        console.error(`Value ${value} out of range for lever ${lever.code}`);
+        return false;
+      }
+    } else if (lever.type === 'char') {
+      if (value < 1 || value > lever.range.length) {
+        console.error(`Index ${value} out of range for lever ${lever.code}`);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // Pathway operations
+  function applyPathway(pathwayTitle: string) {
+    const pathway = ExamplePathways.find((p) => p.title === pathwayTitle);
+    if (!pathway) {
+      console.error(`Pathway "${pathwayTitle}" not found`);
+      return;
+    }
+
+    const updates: Record<string, number> = {};
+
+    // Add all lever updates to the batch
+    leversData.forEach((lever, index) => {
+      if (index < pathway.values.length && pathway.values[index]) {
+        updates[lever.code] = pathway.values[index];
+      }
+    });
+
+    // Flag that we're doing a batch update
+
+    levers.value = updates;
+    selectedPathway.value = pathwayTitle;
+  }
+
+  function resetToDefaults() {
+    // Reset state
+    levers.value = {};
+    selectedPathway.value = null;
+  }
+
+  // Watchers
+  watch(
+    levers,
+    () => {
+      // Handle pathway selection
+      if (selectedPathway.value && isCustomPathway.value) {
+        selectedPathway.value = null;
+      }
+
+      // Run the model
+      debouncedRunModel();
+    },
+    { deep: true, immediate: true },
+  );
+
+  // Store interface
   return {
+    // State
     levers,
     selectedPathway,
     customPathwayName,
+    autoRun,
+    modelResults,
+    isLoading,
+    error,
 
+    // Getters
     getLeverValue,
     getAllLeverValues,
     leversByHeadline,
     leversByGroup,
     isCustomPathway,
 
-    modelResults,
-    isLoading,
-    error,
+    // Actions
+    batchUpdateLevers,
     runModel,
-
     setLeverValue,
     applyPathway,
     resetToDefaults,
-    setCustomPathwayName,
+    setCustomPathwayName: (name: string) => {
+      customPathwayName.value = name;
+    },
+    toggleAutoRun: () => {
+      autoRun.value = !autoRun.value;
+      if (autoRun.value) {
+        runModel().catch((err) =>
+          console.error('Error running model after enabling auto-run:', err),
+        );
+      }
+    },
   };
 });
