@@ -6,7 +6,7 @@
     <div class="col-8 col-md-3 content-center">
       <q-slider
         :model-value="value"
-        :min="0"
+        :min="1"
         :max="maxValue"
         :step="1"
         dense

@@ -7,8 +7,31 @@ import { modelService } from 'services/modelService';
 import { AxiosError } from 'axios';
 
 // Types
-interface ModelResults {
-  [key: string]: string | number | object;
+export interface YearData {
+  year: number;
+  [key: string]: number;
+}
+
+type CountryName = 'Switzerland' | 'EU27' | 'Vaud';
+export interface SectorData {
+  countries: {
+    [key in CountryName]: YearData[];
+  };
+  units: {
+    [key: string]: string;
+  };
+}
+export interface ModelResults {
+  fingerprint_result: string;
+  fingerprint_input: string;
+  status: string;
+  sectors: string[];
+  data: {
+    climate: SectorData;
+    lifestyles: SectorData;
+    transport: SectorData;
+    buildings: SectorData;
+  };
 }
 
 // Helper functions moved outside the store
@@ -75,6 +98,12 @@ export const useLeverStore = defineStore('lever', () => {
       const currentValue = levers.value[lever.code] ?? getDefaultLeverValue(lever.code);
       return index < pathway.values.length && currentValue !== pathway.values[index];
     });
+  });
+
+  // Sectors computed values
+  const buildings = computed(() => {
+    if (!modelResults.value) return null;
+    return modelResults.value.data.buildings;
   });
 
   // Model operations
@@ -241,6 +270,8 @@ export const useLeverStore = defineStore('lever', () => {
     leversByHeadline,
     leversByGroup,
     isCustomPathway,
+
+    buildings,
 
     // Actions
     batchUpdateLevers,

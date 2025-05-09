@@ -9,7 +9,7 @@
           <p>No data available for this chart</p>
         </div>
         <div v-else class="chart-visualization">
-          <v-chart class="chart" :option="chartOption" autoresize />
+          <v-chart ref="chartRef" class="chart" :option="chartOption" autoresize />
         </div>
       </div>
     </q-card-section>
@@ -17,10 +17,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { LineChart, BarChart } from 'echarts/charts';
+import type { SectorData } from 'stores/leversStore';
 import {
   TitleComponent,
   TooltipComponent,
@@ -80,34 +81,26 @@ interface ChartConfig {
   outputs: Array<string | OutputConfig>;
 }
 
-// Type for model data props
-interface ModelData {
-  data?: {
-    buildings?: {
-      countries?: {
-        Switzerland?: YearData[];
-      };
-    };
-  };
-}
-
 const props = defineProps<{
   chartConfig: ChartConfig;
-  modelData: ModelData;
+  modelData: SectorData;
 }>();
+
+const chartRef = ref(null);
 
 // Extract the chart data from the model results
 const chartData = computed<ChartSeries[]>(() => {
-  if (!props.modelData || !props.modelData.data) {
+  if (!props.modelData) {
     return [];
   }
 
   // Get outputs from chart config
   const outputs = props.chartConfig.outputs;
-  const countryData = props.modelData.data.buildings?.countries?.Switzerland;
+  const countryData = props.modelData.countries?.Vaud;
   if (!countryData || !outputs) return [];
+  const newData = extractChartData(outputs, countryData);
 
-  return extractChartData(outputs, countryData);
+  return newData;
 });
 
 function extractChartData(
@@ -153,7 +146,6 @@ function extractChartData(
       });
     }
   });
-  // console.log('Extracted series:', series);
   return series;
 }
 
@@ -166,7 +158,6 @@ const chartOption = computed(() => {
   // Get unique years from all series
   const allYears = chartData.value.flatMap((series) => series.years);
   const uniqueYears = [...new Set(allYears)].sort();
-  // console.log('Unique years:', uniqueYears);
   // Create series array for ECharts
   const series = chartData.value.map((series) => {
     return {
@@ -234,6 +225,29 @@ const chartOption = computed(() => {
     series: series,
   };
 });
+
+// // Debug watches
+// watch(
+//   () => props.modelData,
+//   (newVal) => {},
+//   { deep: true },
+// );
+
+// watch(
+//   () => chartOption.value,
+//   (newVal) => {},
+//   { deep: true },
+// );
+
+// // Keep your existing watch for debugging purposes
+// watch(
+//   () => chartData.value,
+//   (newVal) => {
+//     if (newVal) {
+//     }
+//   },
+//   { deep: true },
+// );
 </script>
 
 <style lang="scss" scoped>
