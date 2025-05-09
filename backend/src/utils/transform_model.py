@@ -117,8 +117,6 @@ def transform_datamatrix_to_clean_structure(output):
         # Initialize the country structure
         cleaned_output[sector] = {"countries": {}, "units": {}}
 
-        logger.info(col_labels)
-
         # Extract unit information if available
         units = {}
         # Try to get units from col_labels

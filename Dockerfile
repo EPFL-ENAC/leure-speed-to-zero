@@ -35,6 +35,8 @@ COPY --from=builder /app/uv.lock /app/uv.lock
 # Create the app directory
 WORKDIR /app
 
+COPY backend ./backend
+
 # Copy the rest of the application code
 COPY . .
 
