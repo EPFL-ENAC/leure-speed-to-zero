@@ -74,8 +74,50 @@ watch(currentTab, async (newTab) => {
   }
 });
 
-// Access model state
-const modelResults = computed(() => leverStore.modelResults);
+// Properly typed computed property
+const modelResults = computed(() => {
+  const newData = leverStore.buildings;
+
+  return newData;
+});
+
+// let previousResults: typeof leverStore.buildings = null;
+// watch(
+//   () => leverStore.buildings,
+//   (newData) => {
+//     if (!newData?.countries?.Vaud || !previousResults?.countries?.Vaud) {
+//       previousResults = JSON.parse(JSON.stringify(newData)); // Deep copy
+//       return;
+//     }
+
+//     const newYears = newData.countries.Vaud;
+//     const prevYears = previousResults.countries.Vaud;
+
+//     // Check each year's data
+//     newYears.forEach((newYearData, index) => {
+//       if (index >= prevYears.length) return;
+
+//       const year = newYearData.year;
+//       const prevYearData = prevYears[index];
+//       if (!prevYearData) return;
+//       // Compare all properties
+//       Object.keys(newYearData).forEach((key) => {
+//         const newValue = newYearData[key] as number;
+//         const prevValue = prevYearData[key] as number;
+//         const diff = Math.abs(newValue - prevValue);
+//         const change = diff / Math.max(Math.abs(newValue), Math.abs(prevValue));
+//         if (change > 0.01) {
+//           console.log({ year, key, newValue, prevValue, diff, change });
+//         }
+//       });
+//     });
+
+//     // Store current data for next comparison
+//     previousResults = JSON.parse(JSON.stringify(newData));
+//   },
+//   { deep: true },
+// );
+
 const isLoading = computed(() => leverStore.isLoading);
 
 // Method to run the model
