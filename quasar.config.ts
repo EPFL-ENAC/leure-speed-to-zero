@@ -47,6 +47,8 @@ export default defineConfig((/* ctx */) => {
             paths: {
               ...tsConfig.compilerOptions?.paths,
               utils: ['./../src/utils'],
+              config: ['./../src/config'],
+              'config/*': ['./../src/config/*'],
               'utils/*': ['./../src/utils/*'],
               'services/*': ['./../src/services/*'],
               services: ['./../src/services'],
@@ -79,6 +81,7 @@ export default defineConfig((/* ctx */) => {
           ...viteConf.resolve.alias,
           '@': path.join(__dirname, './src'),
           utils: path.join(__dirname, './src/utils'),
+          config: path.join(__dirname, './src/config'),
           services: path.join(__dirname, './src/services'),
         };
       },
