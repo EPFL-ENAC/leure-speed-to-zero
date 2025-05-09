@@ -86,11 +86,17 @@ function getGroupedLevers(levers: Lever[]): Record<string, Lever[]> {
   return result;
 }
 
-// Update all levers in a group with the same value
 function updateGroupLevers(levers: Lever[], value: number): void {
+  // Create a batch update object
+  const updates: Record<string, number> = {};
+
+  // Collect all lever updates
   levers.forEach((lever) => {
-    leverStore.setLeverValue(lever.code, value);
+    updates[lever.code] = value;
   });
+
+  // Apply all updates in a single operation
+  leverStore.batchUpdateLevers(updates);
 }
 </script>
 

@@ -105,7 +105,6 @@ const chartData = computed<ChartSeries[]>(() => {
   // Get outputs from chart config
   const outputs = props.chartConfig.outputs;
   const countryData = props.modelData.data.buildings?.countries?.Switzerland;
-  debugger;
   if (!countryData || !outputs) return [];
 
   return extractChartData(outputs, countryData);
@@ -154,7 +153,7 @@ function extractChartData(
       });
     }
   });
-
+  // console.log('Extracted series:', series);
   return series;
 }
 
@@ -167,7 +166,7 @@ const chartOption = computed(() => {
   // Get unique years from all series
   const allYears = chartData.value.flatMap((series) => series.years);
   const uniqueYears = [...new Set(allYears)].sort();
-  console.log('Unique years:', uniqueYears);
+  // console.log('Unique years:', uniqueYears);
   // Create series array for ECharts
   const series = chartData.value.map((series) => {
     return {
