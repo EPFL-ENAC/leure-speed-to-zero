@@ -19,7 +19,8 @@ def _convert_numpy_types(obj):
     if isinstance(obj, np.integer):
         return int(obj)
     elif isinstance(obj, np.floating):
-        return float(obj)
+        # Preserve the precision of floating-point numbers up to 10 decimal
+        return round(float(obj), 10)
     elif isinstance(obj, np.ndarray):
         return obj.tolist()
     elif isinstance(obj, dict):
@@ -115,6 +116,8 @@ def transform_datamatrix_to_clean_structure(output):
 
         # Initialize the country structure
         cleaned_output[sector] = {"countries": {}, "units": {}}
+
+        logger.info(col_labels)
 
         # Extract unit information if available
         units = {}
