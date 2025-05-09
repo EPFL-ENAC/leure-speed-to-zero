@@ -26,7 +26,7 @@ export const modelService = {
    * @returns Promise with model results
    */
   runModel(levers: string) {
-    return apiClient.get('/v1/run-model', {
+    return apiClient.get('/v1/run-model-clean-structure', {
       params: { levers },
     });
   },
