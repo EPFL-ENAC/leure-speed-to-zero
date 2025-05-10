@@ -1,16 +1,12 @@
 <template>
-  <q-card class="chart-card">
-    <q-card-section>
-      <div class="text-h6">{{ chartConfig.title }}</div>
-    </q-card-section>
-    <q-card-section>
-      <div class="chart-container">
-        <div v-if="!chartData.length" class="chart-placeholder">
-          <p>No data available for this chart</p>
-        </div>
-        <div v-else class="chart-visualization">
-          <v-chart ref="chartRef" class="chart" :option="chartOption" autoresize />
-        </div>
+  <q-card class="chart-card" flat>
+    <q-card-section class="chart-section">
+      <div v-if="!chartData.length" class="chart-placeholder">
+        <q-icon name="mdi-chart-line-variant" size="2rem" color="grey-5" />
+        <p>No data available</p>
+      </div>
+      <div v-else class="chart-visualization">
+        <v-chart ref="chartRef" class="chart" :option="chartOption" autoresize />
       </div>
     </q-card-section>
   </q-card>
@@ -45,13 +41,12 @@ use([
   DataZoomComponent,
 ]);
 
-// Define types for output configuration
+// Types
 interface OutputConfig {
   id: string;
   color?: string;
 }
 
-// Define types for chart data series
 interface ChartSeries {
   name: string;
   color: string | null;
@@ -59,13 +54,11 @@ interface ChartSeries {
   data: number[];
 }
 
-// Define type for year data
 interface YearData {
   year: number;
   [key: string]: unknown;
 }
 
-// Define type for ECharts tooltip params
 interface EChartsTooltipParam {
   axisValueLabel: string;
   seriesName: string;
@@ -73,7 +66,6 @@ interface EChartsTooltipParam {
   marker: string;
 }
 
-// Type for chart configuration props
 interface ChartConfig {
   title: string;
   type: string;
@@ -81,6 +73,7 @@ interface ChartConfig {
   outputs: Array<string | OutputConfig>;
 }
 
+// Props
 const props = defineProps<{
   chartConfig: ChartConfig;
   modelData: SectorData;
@@ -88,19 +81,15 @@ const props = defineProps<{
 
 const chartRef = ref(null);
 
-// Extract the chart data from the model results
+// Extract chart data from model results
 const chartData = computed<ChartSeries[]>(() => {
-  if (!props.modelData) {
-    return [];
-  }
+  if (!props.modelData) return [];
 
-  // Get outputs from chart config
   const outputs = props.chartConfig.outputs;
   const countryData = props.modelData.countries?.Vaud;
   if (!countryData || !outputs) return [];
-  const newData = extractChartData(outputs, countryData);
 
-  return newData;
+  return extractChartData(outputs, countryData);
 });
 
 function extractChartData(
@@ -109,18 +98,13 @@ function extractChartData(
 ): ChartSeries[] {
   const series: ChartSeries[] = [];
 
-  // Handle both array of objects and array of strings
+  // Normalize outputs to OutputConfig objects
   const outputConfigs: OutputConfig[] = outputs.map((output) => {
-    if (typeof output === 'string') {
-      return { id: output };
-    }
-    return output;
+    return typeof output === 'string' ? { id: output } : output;
   });
 
   outputConfigs.forEach((outputConfig) => {
-    // Parse the output ID to match data structure
     const outputId = outputConfig.id;
-    // Extract the base field name (before the [unit])
     const fieldMatch = outputId.match(/(.+?)\[(.+?)\]/);
 
     if (!fieldMatch || !fieldMatch[1]) return;
@@ -132,7 +116,6 @@ function extractChartData(
     countryData.forEach((yearData: YearData) => {
       if (fieldName in yearData) {
         years.push(yearData.year);
-        // Using type assertion here since we've verified fieldName exists in yearData
         values.push(yearData[fieldName] as number);
       }
     });
@@ -146,69 +129,61 @@ function extractChartData(
       });
     }
   });
+
   return series;
 }
 
 // Format data for ECharts
 const chartOption = computed(() => {
-  if (!chartData.value.length) {
-    return {};
-  }
+  if (!chartData.value.length) return {};
 
   // Get unique years from all series
-  const allYears = chartData.value.flatMap((series) => series.years);
-  const uniqueYears = [...new Set(allYears)].sort();
+  const uniqueYears = [...new Set(chartData.value.flatMap((series) => series.years))].sort();
+
   // Create series array for ECharts
-  const series = chartData.value.map((series) => {
-    return {
-      name: series.name,
-      type: props.chartConfig.type.toLowerCase() === 'stackedarea' ? 'line' : 'bar',
-      stack: props.chartConfig.type.toLowerCase() === 'stackedarea' ? 'total' : null,
-      areaStyle: props.chartConfig.type.toLowerCase() === 'stackedarea' ? {} : null,
-      emphasis: {
-        focus: 'series',
-      },
-      itemStyle: {
-        color: series.color,
-      },
-      data: series.data,
-    };
-  });
+  const isStacked = props.chartConfig.type.toLowerCase() === 'stackedarea';
+  const series = chartData.value.map((series) => ({
+    name: series.name,
+    type: isStacked ? 'line' : 'bar',
+    stack: isStacked ? 'total' : undefined,
+    symbol: 'none',
+    areaStyle: isStacked ? {} : undefined,
+    emphasis: { focus: 'series' },
+    itemStyle: { color: series.color },
+    data: series.data,
+  }));
 
   return {
+    title: {
+      text: props.chartConfig.title,
+    },
     tooltip: {
       trigger: 'axis',
-      formatter: function (params: EChartsTooltipParam[]) {
-        let result = params[0]?.axisValueLabel + '<br/>';
-        params.forEach((param) => {
-          result += `${param.marker} ${param.seriesName}: ${param.value} ${props.chartConfig.unit}<br/>`;
-        });
-        return result;
+      formatter: (params: EChartsTooltipParam[]) => {
+        const year = params[0]?.axisValueLabel;
+        const unit = props.chartConfig.unit;
+
+        return params.reduce(
+          (text, param, i) =>
+            `${text}${i === 0 ? `${year}<br/>` : ''}${param.marker} ${param.seriesName}: ${param.value} ${unit}<br/>`,
+          '',
+        );
       },
     },
     legend: {
+      orient: 'vertical',
       type: 'scroll',
-      orient: 'horizontal',
-      bottom: 0,
+      right: '0',
+      top: 'center',
     },
     grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '15%',
-      top: '3%',
+      top: '20%',
+      left: '5%',
+      right: '20%',
+      bottom: '3%',
       containLabel: true,
     },
-    dataZoom: [
-      {
-        type: 'inside',
-        start: 0,
-        end: 100,
-      },
-      {
-        start: 0,
-        end: 100,
-      },
-    ],
+
     xAxis: {
       type: 'category',
       boundaryGap: false,
@@ -218,63 +193,55 @@ const chartOption = computed(() => {
       type: 'value',
       name: props.chartConfig.unit,
       nameLocation: 'end',
-      nameTextStyle: {
-        padding: [0, 0, 0, 5],
+      nameTextStyle: { padding: [0, 0, 0, 5] },
+      axisLabel: {
+        formatter: function (value: number) {
+          // Use scientific notation for values larger than 10,000 or smaller than 0.001
+          if (Math.abs(value) >= 10000 || (Math.abs(value) > 0 && Math.abs(value) < 0.001)) {
+            return value.toExponential(2);
+          }
+          return value;
+        },
       },
     },
-    series: series,
+    series,
   };
 });
-
-// // Debug watches
-// watch(
-//   () => props.modelData,
-//   (newVal) => {},
-//   { deep: true },
-// );
-
-// watch(
-//   () => chartOption.value,
-//   (newVal) => {},
-//   { deep: true },
-// );
-
-// // Keep your existing watch for debugging purposes
-// watch(
-//   () => chartData.value,
-//   (newVal) => {
-//     if (newVal) {
-//     }
-//   },
-//   { deep: true },
-// );
 </script>
 
 <style lang="scss" scoped>
 .chart-card {
-  height: 400px;
+  height: 450px;
+  display: flex;
+  flex-direction: column;
 }
 
-.chart-container {
-  height: 300px;
+.chart-section {
+  flex-grow: 1;
+  padding-top: 8px;
 }
 
 .chart-placeholder {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
-  background-color: #f0f8ff;
+  background-color: #f9f9f9;
   border-radius: 8px;
+  color: #999;
+
+  p {
+    margin-top: 8px;
+    font-size: 0.9rem;
+  }
 }
 
 .chart-visualization {
   height: 100%;
-  width: 100%;
 }
 
 .chart {
   height: 100%;
-  width: 100%;
 }
 </style>

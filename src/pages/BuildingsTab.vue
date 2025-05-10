@@ -1,19 +1,6 @@
 <template>
-  <q-page padding>
-    <div class="row">
-      <div class="col-12">
-        <h1 class="text-h4 q-mb-md">Buildings</h1>
-      </div>
-    </div>
-
-    <q-tabs
-      v-model="currentTab"
-      class="text-primary q-mb-lg"
-      no-caps
-      active-color="primary"
-      indicator-color="primary"
-      align="justify"
-    >
+  <q-page>
+    <q-tabs v-model="currentTab" no-caps align="justify">
       <q-tab v-for="tab in subtabs" :key="tab.route" :name="tab.route" :label="tab.title" />
     </q-tabs>
 
@@ -32,7 +19,7 @@
     <q-tab-panels v-else v-model="currentTab" animated>
       <q-tab-panel v-for="tab in subtabs" :key="tab.route" :name="tab.route">
         <div class="row q-col-gutter-md">
-          <div v-for="chartId in tab.charts" :key="chartId" class="col-12 col-md-6">
+          <div v-for="chartId in tab.charts" :key="chartId" class="col-12">
             <chart-card :chart-config="charts[chartId as ChartId]" :model-data="modelResults" />
           </div>
         </div>
@@ -80,43 +67,6 @@ const modelResults = computed(() => {
 
   return newData;
 });
-
-// let previousResults: typeof leverStore.buildings = null;
-// watch(
-//   () => leverStore.buildings,
-//   (newData) => {
-//     if (!newData?.countries?.Vaud || !previousResults?.countries?.Vaud) {
-//       previousResults = JSON.parse(JSON.stringify(newData)); // Deep copy
-//       return;
-//     }
-
-//     const newYears = newData.countries.Vaud;
-//     const prevYears = previousResults.countries.Vaud;
-
-//     // Check each year's data
-//     newYears.forEach((newYearData, index) => {
-//       if (index >= prevYears.length) return;
-
-//       const year = newYearData.year;
-//       const prevYearData = prevYears[index];
-//       if (!prevYearData) return;
-//       // Compare all properties
-//       Object.keys(newYearData).forEach((key) => {
-//         const newValue = newYearData[key] as number;
-//         const prevValue = prevYearData[key] as number;
-//         const diff = Math.abs(newValue - prevValue);
-//         const change = diff / Math.max(Math.abs(newValue), Math.abs(prevValue));
-//         if (change > 0.01) {
-//           console.log({ year, key, newValue, prevValue, diff, change });
-//         }
-//       });
-//     });
-
-//     // Store current data for next comparison
-//     previousResults = JSON.parse(JSON.stringify(newData));
-//   },
-//   { deep: true },
-// );
 
 const isLoading = computed(() => leverStore.isLoading);
 
