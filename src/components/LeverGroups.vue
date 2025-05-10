@@ -29,8 +29,8 @@
                 />
               </div>
               <div class="col-4 col-md-2 flex justify-center content-center">
-                <q-chip outline circle class="text-weight-bold" size="sm">
-                  {{ Math.round(getGroupValue(groupLevers) * 10) / 10 }}
+                <q-chip outline circle class="text-weight-bold" size="sm"
+                  >{{ Math.round(getGroupValue(groupLevers)) }}
                 </q-chip>
               </div>
             </div>
@@ -103,5 +103,9 @@ function updateGroupLevers(levers: Lever[], value: number): void {
 <style lang="scss" scoped>
 .group-slider {
   width: 100px;
+}
+.lever-group:deep(.q-item__section--side) {
+  padding-right: 4px;
+  min-width: auto;
 }
 </style>
