@@ -171,16 +171,15 @@ const chartOption = computed(() => {
       },
     },
     legend: {
-      orient: 'vertical',
+      orient: 'horizontal',
       type: 'scroll',
-      right: '0',
-      top: 'center',
+      bottom: '0%',
     },
     grid: {
       top: '20%',
       left: '5%',
-      right: '20%',
-      bottom: '3%',
+      right: '5%',
+      bottom: '10%',
       containLabel: true,
     },
 
