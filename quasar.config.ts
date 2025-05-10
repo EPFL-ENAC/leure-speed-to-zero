@@ -104,14 +104,14 @@ export default defineConfig((/* ctx */) => {
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#devserver
     devServer: {
-      // https: true,
       open: true,
       proxy: {
         // proxy all requests starting with /api to your API server
         '/api': {
-          target: 'http://localhost:8000',
+          target: 'http://localhost:8000', // When run development server directly
+          // target: 'https://localhost:80', // When using Docker
           changeOrigin: true,
-          // No need for pathRewrite because your API path already starts with /api
+          // secure: false,
         },
       },
     },

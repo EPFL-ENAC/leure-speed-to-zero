@@ -107,15 +107,29 @@ export const useLeverStore = defineStore('lever', () => {
   });
 
   // Model operations
+  let lastRunTime = 0;
+
   function debouncedRunModel() {
     if (!autoRun.value) return;
 
+    // Clear existing timer if there is one
     if (debounceTimer) clearTimeout(debounceTimer);
 
-    debounceTimer = setTimeout(() => {
+    const now = Date.now();
+    const timeElapsed = now - lastRunTime;
+
+    // If we recently ran the model, schedule a delayed run
+    if (timeElapsed < debounceDelay) {
+      debounceTimer = setTimeout(() => {
+        lastRunTime = Date.now();
+        debounceTimer = null;
+        runModel().catch((err) => console.error('Auto-run model failed:', err));
+      }, debounceDelay);
+    } else {
+      // Otherwise run immediately
+      lastRunTime = now;
       runModel().catch((err) => console.error('Auto-run model failed:', err));
-      debounceTimer = null;
-    }, debounceDelay);
+    }
   }
 
   async function runModel() {
