@@ -3352,6 +3352,9 @@ def lifestyle_calibration(list_countries):
     merged_df['Food supply (kcal)'] = 365.25 * 1000 * merged_df['Total Population - Both sexes'] * merged_df['Food supply (kcal/capita/day)']
     merged_df = merged_df[['Area', 'Year', 'Item', 'Food supply (kcal)']]
 
+    # Unit conversion [million kcal] => [kcal] (based on the definitions in FAOSTAT, even though it's written kcal)
+    pivot_df_diet_2010_2022['Food supply (kcal)'] = pivot_df_diet_2010_2022['Food supply (kcal)'] * 10**6
+
     # Concatenating all the years together
     pivot_df_diet = pd.concat([merged_df, pivot_df_diet_2010_2022])
 
@@ -4680,7 +4683,7 @@ def database_from_csv_to_datamatrix(years_ots, years_fts, dm_kcal_req_pathwaycal
     # Data - Fixed assumptions - Calibration factors - Diet
     dm_cal_diet = dm_cal.filter_w_regex({'Variables': 'cal_agr_diet.*'})
     dm_cal_diet.deepen(based_on='Variables')
-    dict_fxa['cal_diet'] = dm_cal_diet
+    DM_agriculture_old['fxa']['cal_agr_diet'] = dm_cal_diet
 
     # Data - Fixed assumptions - Calibration factors - Food waste
     #dm_cal_food_waste = dm_cal.filter_w_regex({'Variables': 'cal_agr_food-wastes.*'})
@@ -4690,61 +4693,61 @@ def database_from_csv_to_datamatrix(years_ots, years_fts, dm_kcal_req_pathwaycal
     # Data - Fixed assumptions - Calibration factors - Livestock domestic production
     dm_cal_liv_dom_prod = dm_cal.filter_w_regex({'Variables': 'cal_agr_domestic-production-liv.*'})
     dm_cal_liv_dom_prod.deepen(based_on='Variables')
-    dict_fxa['cal_agr_domestic-production-liv'] = dm_cal_liv_dom_prod
+    DM_agriculture_old['fxa']['cal_agr_domestic-production-liv'] = dm_cal_liv_dom_prod
 
     # Data - Fixed assumptions - Calibration factors - Livestock population
     dm_cal_liv_pop = dm_cal.filter_w_regex({'Variables': 'cal_agr_liv-population.*'})
     dm_cal_liv_pop.deepen(based_on='Variables')
-    dict_fxa['cal_agr_liv-population'] = dm_cal_liv_pop
+    DM_agriculture_old['fxa']['cal_agr_liv-population'] = dm_cal_liv_pop
 
     # Data - Fixed assumptions - Calibration factors - Livestock CH4 emissions
     dm_cal_liv_CH4 = dm_cal.filter_w_regex({'Variables': 'cal_agr_liv_CH4-emission.*'})
     dm_cal_liv_CH4.deepen(based_on='Variables')
     dm_cal_liv_CH4.deepen(based_on='Variables')
-    dict_fxa['cal_agr_liv_CH4-emission'] = dm_cal_liv_CH4
+    DM_agriculture_old['fxa']['cal_agr_liv_CH4-emission'] = dm_cal_liv_CH4
 
     # Data - Fixed assumptions - Calibration factors - Livestock N2O emissions
     dm_cal_liv_N2O = dm_cal.filter_w_regex({'Variables': 'cal_agr_liv_N2O-emission.*'})
     dm_cal_liv_N2O.deepen(based_on='Variables')
     dm_cal_liv_N2O.deepen(based_on='Variables')
-    dict_fxa['cal_agr_liv_N2O-emission'] = dm_cal_liv_N2O
+    DM_agriculture_old['fxa']['cal_agr_liv_N2O-emission'] = dm_cal_liv_N2O
 
     # Data - Fixed assumptions - Calibration factors - Feed demand
     dm_cal_feed = dm_cal.filter_w_regex({'Variables': 'cal_agr_demand_feed.*'})
     dm_cal_feed.deepen(based_on='Variables')
-    dict_fxa['cal_agr_demand_feed'] = dm_cal_feed
+    DM_agriculture_old['fxa']['cal_agr_demand_feed'] = dm_cal_feed
 
     # Data - Fixed assumptions - Calibration factors - Crop production
     dm_cal_crop = dm_cal.filter_w_regex({'Variables': 'cal_agr_domestic-production_food.*'})
     dm_cal_crop.deepen(based_on='Variables')
-    dict_fxa['cal_agr_domestic-production_food'] = dm_cal_crop
+    DM_agriculture_old['fxa']['cal_agr_domestic-production_food'] = dm_cal_crop
 
     # Data - Fixed assumptions - Calibration factors - Land
     dm_cal_land = dm_cal.filter_w_regex({'Variables': 'cal_agr_lus_land.*'})
     dm_cal_land.deepen(based_on='Variables')
-    dict_fxa['cal_agr_lus_land'] = dm_cal_land
+    DM_agriculture_old['fxa']['cal_agr_lus_land'] = dm_cal_land
 
     # Data - Fixed assumptions - Calibration factors - Nitrogen balance
     dm_cal_n = dm_cal.filter_w_regex({'Variables': 'cal_agr_crop_emission_N2O-emission_fertilizer.*'})
-    dict_fxa['cal_agr_crop_emission_N2O-emission_fertilizer'] = dm_cal_n
+    DM_agriculture_old['fxa']['cal_agr_crop_emission_N2O-emission_fertilizer'] = dm_cal_n
 
     # Data - Fixed assumptions - Calibration factors - Energy demand for agricultural land
     dm_cal_energy_demand = dm_cal.filter_w_regex({'Variables': 'cal_agr_energy-demand.*'})
     dm_cal_energy_demand.deepen(based_on='Variables')
-    dict_fxa['cal_agr_energy-demand'] = dm_cal_energy_demand
+    DM_agriculture_old['fxa']['cal_agr_energy-demand'] = dm_cal_energy_demand
 
     # Data - Fixed assumptions - Calibration factors - Agricultural emissions total (CH4, N2O, CO2)
     dm_cal_CH4 = dm_cal.filter_w_regex({'Variables': 'cal_agr_emissions-CH4'})
-    dict_fxa['cal_agr_emissions_CH4'] = dm_cal_CH4
+    DM_agriculture_old['fxa']['cal_agr_emissions_CH4'] = dm_cal_CH4
     dm_cal_N2O = dm_cal.filter_w_regex({'Variables': 'cal_agr_emissions-N2O'})
-    dict_fxa['cal_agr_emissions_N2O'] = dm_cal_N2O
+    DM_agriculture_old['fxa']['cal_agr_emissions_N2O'] = dm_cal_N2O
     dm_cal_CO2 = dm_cal.filter_w_regex({'Variables': 'cal_agr_emissions-CO2'})
-    dict_fxa['cal_agr_emissions_CO2'] = dm_cal_CO2
+    DM_agriculture_old['fxa']['cal_agr_emissions_CO2'] = dm_cal_CO2
 
     # Data - Fixed assumptions - Calibration factors - CO2 emissions (fuel, liming, urea)
     dm_cal_input = dm_cal.filter_w_regex({'Variables': 'cal_agr_input-use_emissions-CO2.*'})
     dm_cal_input.deepen(based_on='Variables')
-    dict_fxa['cal_agr_input-use_emissions-CO2'] = dm_cal_input
+    DM_agriculture_old['fxa']['cal_agr_input-use_emissions-CO2'] = dm_cal_input
 
     # Create a dictionnay with all the fixed assumptions (only for calibration since the other comes from pickle)
     """dict_fxa = {
