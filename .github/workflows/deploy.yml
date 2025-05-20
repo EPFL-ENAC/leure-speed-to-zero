@@ -13,9 +13,9 @@ jobs:
     permissions:
       contents: read
       packages: write
-    uses: EPFL-ENAC/epfl-enac-build-push-deploy-action/.github/workflows/deploy.yml@v2.3.0
+    uses: EPFL-ENAC/epfl-enac-build-push-deploy-action/.github/workflows/deploy.yml@v2.4.0
     secrets:
       token: ${{ secrets.CD_TOKEN }}
     with:
       org: epfl-leure # your org
-      repo: speed-to--zero # your app name, usual convention is name of your repository
+      repo: speed-to-zero-frontend # your app name, usual convention is name of your repository
