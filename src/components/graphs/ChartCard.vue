@@ -51,7 +51,7 @@ interface ChartSeries {
   name: string;
   color: string | null;
   years: number[];
-  data: number[];
+  data: number[] | [number, number][];
 }
 
 interface YearData {
@@ -111,12 +111,12 @@ function extractChartData(
 
     const fieldName = fieldMatch[1];
     const years: number[] = [];
-    const values: number[] = [];
+    const values: [number, number][] = [];
 
     countryData.forEach((yearData: YearData) => {
       if (fieldName in yearData) {
         years.push(yearData.year);
-        values.push(yearData[fieldName] as number);
+        values.push([yearData.year, yearData[fieldName] as number]);
       }
     });
 
@@ -136,9 +136,6 @@ function extractChartData(
 // Format data for ECharts
 const chartOption = computed(() => {
   if (!chartData.value.length) return {};
-
-  // Get unique years from all series
-  const uniqueYears = [...new Set(chartData.value.flatMap((series) => series.years))].sort();
 
   // Create series array for ECharts
   const isStacked = props.chartConfig.type.toLowerCase() === 'stackedarea';
@@ -184,9 +181,8 @@ const chartOption = computed(() => {
     },
 
     xAxis: {
-      type: 'category',
-      boundaryGap: false,
-      data: uniqueYears,
+      type: 'time',
+      // boundaryGap: false,
     },
     yAxis: {
       type: 'value',
