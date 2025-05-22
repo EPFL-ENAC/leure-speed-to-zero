@@ -1034,22 +1034,24 @@ def livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro, years_setting):
                                     dim="Variables", out_col='agr_liv_population_raw', unit='lsu')
 
     # Livestock population for meat [lsu] = Livestock slaughtered [lsu] / slaughter rate [%]
-    dm_liv_slau_meat = DM_livestock['yield'].filter({'Variables': ['agr_liv_population_raw'],
-                                                     'Categories1': ['meat-bovine', 'meat-pig', 'meat-poultry',
-                                                                     'meat-sheep', 'meat-oth-animals']})
-    DM_livestock['liv_slaughtered_rate'].append(dm_liv_slau_meat, dim='Variables')
+    dm_liv_slau_egg_dairy = DM_livestock['yield'].filter({'Variables': ['agr_liv_population_raw']})
+    DM_livestock['liv_slaughtered_rate'].append(dm_liv_slau_egg_dairy, dim='Variables')
+    #dm_liv_slau_meat = DM_livestock['yield'].filter({'Variables': ['agr_liv_population_raw'],
+    #                                                 'Categories1': ['meat-bovine', 'meat-pig', 'meat-poultry',
+    #                                                                 'meat-sheep', 'meat-oth-animals']})
+    #DM_livestock['liv_slaughtered_rate'].append(dm_liv_slau_meat, dim='Variables')
     DM_livestock['liv_slaughtered_rate'].operation('agr_liv_population_raw', '/', 'agr_climate-smart-livestock_slaughtered',
                                                    dim="Variables", out_col='agr_liv_population_meat', unit='lsu')
 
     # Processing for calibration: Livestock population for meat, eggs and dairy ( meat pop & slaughtered livestock for eggs and dairy)
     # Filtering eggs, dairy and meat
-    dm_liv_slau_egg_dairy = DM_livestock['yield'].filter(
-        {'Variables': ['agr_liv_population_raw'], 'Categories1': ['abp-dairy-milk', 'abp-hens-egg']})
-    dm_liv_slau_meat = DM_livestock['liv_slaughtered_rate'].filter({'Variables': ['agr_liv_population_meat']})
+    #dm_liv_slau_egg_dairy = DM_livestock['yield'].filter(
+    #    {'Variables': ['agr_liv_population_raw'], 'Categories1': ['abp-dairy-milk', 'abp-hens-egg']})
+    #dm_liv_slau_meat = DM_livestock['liv_slaughtered_rate'].filter({'Variables': ['agr_liv_population_meat']})
     # Rename dm_liv_slau_meat variable to match with dm_liv_slau_egg_dairy
-    dm_liv_slau_meat.rename_col('agr_liv_population_meat', 'agr_liv_population_raw', dim='Variables')
+    #dm_liv_slau_meat.rename_col('agr_liv_population_meat', 'agr_liv_population_raw', dim='Variables')
     # Appending between livestock population
-    dm_liv_slau_egg_dairy.append(dm_liv_slau_meat, dim='Categories1')
+    #dm_liv_slau_egg_dairy.append(dm_liv_slau_meat, dim='Categories1')
 
     # Calibration Livestock population
     dm_cal_liv_pop = DM_livestock['cal_liv_population']
