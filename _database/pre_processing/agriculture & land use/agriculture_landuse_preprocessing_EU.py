@@ -1390,7 +1390,7 @@ def climate_smart_crop_processing(list_countries, file_dict):
     return df_climate_smart_crop_pathwaycalc, df_energy_demand_cal
 
 # CalculationLeaf CLIMATE SMART LIVESTOCK ------------------------------------------------------------------------------
-def climate_smart_livestock_processing(df_csl_feed, df_liv_population_calibration, list_countries):
+def climate_smart_livestock_processing(df_csl_feed, df_liv_pop, list_countries):
 
     # ----------------------------------------------------------------------------------------------------------------------
     # LIVESTOCK DENSITY & GRAZING INTENSITY ---------------------------------------------------------------------------------
@@ -2001,7 +2001,11 @@ def climate_smart_livestock_processing(df_csl_feed, df_liv_population_calibratio
                                                             na=False), 'Item'] = 'Other laying hens'
 
     # Unit conversion Poultry : [1000 An] => [An]
-    df_producing_animals_1990_2022.loc[df_producing_animals_1990_2022['Unit'] == '1000 An', 'Value'] *= 1000
+    df_producing_animals_1990_2022['Value'] = pd.to_numeric(df_producing_animals_1990_2022['Value'], errors='coerce')
+    mask = df_producing_animals_1990_2022['Unit'].str.strip() == '1000 An'
+    df_producing_animals_1990_2022.loc[mask, 'Value'] *= 1000
+    df_producing_animals_1990_2022.loc[mask, 'Unit'] = 'An'
+    df_producing_animals_1990_2022 = df_producing_animals_1990_2022.copy()
 
     # Reading excel lsu equivalent
     df_lsu = pd.read_excel(
@@ -2099,7 +2103,11 @@ def climate_smart_livestock_processing(df_csl_feed, df_liv_population_calibratio
         df_slaughtered_1990_2022['Item'].str.contains('Goats', case=False, na=False), 'Item'] = 'Goat'
 
     # Unit conversion Poultry : [1000 An] => [An]
-    df_slaughtered_1990_2022.loc[df_slaughtered_1990_2022['Unit'] == '1000 An', 'Value'] *= 1000
+    df_slaughtered_1990_2022['Value'] = pd.to_numeric(df_slaughtered_1990_2022['Value'], errors='coerce')
+    mask = df_slaughtered_1990_2022['Unit'].str.strip() == '1000 An'
+    df_slaughtered_1990_2022.loc[mask, 'Value'] *= 1000
+    df_slaughtered_1990_2022.loc[mask, 'Unit'] = 'An'
+    df_slaughtered_1990_2022 = df_slaughtered_1990_2022.copy()
 
     # Reading excel lsu equivalent
     df_lsu = pd.read_excel(
@@ -2124,32 +2132,56 @@ def climate_smart_livestock_processing(df_csl_feed, df_liv_population_calibratio
     pivot_df_slau['Producing Animals/Slaughtered'].fillna(0, inplace=True)
     pivot_df_slau['Production'].fillna(0, inplace=True)
 
-    # ----------------------------------------------------------------------------------------------------------------------
-    # SLAUGHTERED RATE (MEAT, EGGS & MILK) --------------------------------------------------------------------------------
-    # ----------------------------------------------------------------------------------------------------------------------
-
-    # Load STOCKS from df_liv_population_calibration
-
-
-
-    # Slaughtered animals [%] = 'Producing Animals/Slaughtered' / 'Stocks'
-    pivot_df_slau['Slaughtered animals [%]'] = pivot_df_slau['Producing Animals/Slaughtered'] / pivot_df_slau['Stocks']
+    # Create a copy for slau rate
+    df_slau_meat = pivot_df_slau.copy()
 
     # Yield [t/lsu] = Production quantity / Producing animals/Slaugthered
     pivot_df_slau['Yield [t/lsu]'] = pivot_df_slau['Production'] / pivot_df_slau['Producing Animals/Slaughtered']
 
     # Drop the columns
-    pivot_df_slau = pivot_df_slau.drop(columns=['Producing Animals/Slaughtered', 'Stocks', 'Production'])
+    pivot_df_slau = pivot_df_slau.drop(columns=['Producing Animals/Slaughtered', 'Production'])
 
     # Replace NaN with 0
     pivot_df_slau['Yield [t/lsu]'].fillna(0, inplace=True)
-    pivot_df_slau['Slaughtered animals [%]'].fillna(0, inplace=True)
+
+    # ----------------------------------------------------------------------------------------------------------------------
+    # SLAUGHTERED RATE (MEAT, EGGS & MILK) --------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # Concat df_slau_meat (meat) and df_slau_eggs_milk (eggs,dairy)
+    df_slau_meat.rename(columns={'Producing Animals/Slaughtered': 'Producing Animals'}, inplace=True)
+    df_slau_meat = df_slau_meat.drop(columns=['Production'])
+    df_slau = pd.concat([df_slau_meat, df_slau_eggs_milk], ignore_index=True)
+
+    # Rename for merge (df_liv_pop => pivot_df_slau (meat) or df_slau_eggs_milk (eggs,dairy))
+    terms = {
+        'Cattle, dairy': 'Dairy-milk',
+        'Cattle, non-dairy': 'Bovine',
+        'Chickens, layers': 'Hens-egg',
+        'Sheep and Goats': 'Sheep',
+        'Swine': 'Pig',
+        'Others Stocks': 'Other animal',
+        'Poultry Stocks': 'Poultry'
+    }
+
+    # Apply the replacement
+    df_liv_pop['Item'] = df_liv_pop['Item'].replace(terms)
+
+    # Merge with stock from df_liv_pop
+    df_slau = pd.merge(df_slau, df_liv_pop,
+                         left_on=['Area', 'Year','Aggregation'],
+                         right_on=['Area', 'Year','Item'],
+                         how='inner')
+
+    # Slaughtered animals [%] = 'Producing Animals/Slaughtered' / 'Value' (value = stocks [lsu])
+    df_slau['Slaughtered animals [%]'] = df_slau['Producing Animals']/df_slau['Value']
+    df_slau['Slaughtered animals [%]'].fillna(0, inplace=True)
 
     # PathwayCalc formatting -----------------------------------------------------------------------------------------------
 
     # Separating between slaugthered animals and yield (for meat)
     df_yield_meat = pivot_df_slau[['Area', 'Year', 'Aggregation', 'Yield [t/lsu]']]
-    df_slau_meat = pivot_df_slau[['Area', 'Year', 'Aggregation', 'Slaughtered animals [%]']]
+    df_slau_meat = df_slau[['Area', 'Year', 'Aggregation', 'Slaughtered animals [%]']]
 
     # Creating copies
     df_yield_meat = df_yield_meat.copy()
@@ -3505,6 +3537,9 @@ def livestock_crop_calibration(df_energy_demand_cal, list_countries):
     df_liv_population = pd.concat([df_liv_population, df_liv_population_others])
     df_liv_population = pd.concat([df_liv_population, df_liv_population_poultry])
 
+    # Creating a copy for Livestock workflow
+    df_liv_pop = df_liv_population.copy()
+
     # PathwayCalc formatting -----------------------------------------------------------------------------------------------
     # Food item name matching with dictionary
     # Read excel file
@@ -3645,7 +3680,7 @@ def livestock_crop_calibration(df_energy_demand_cal, list_countries):
     # Drop the 'Item' column
     df_domestic_supply_calibration = df_domestic_supply_calibration.drop(columns=['Item'])
 
-    return df_domestic_supply_calibration, df_liv_population_calibration
+    return df_domestic_supply_calibration, df_liv_population_calibration, df_liv_pop
 
 
 
@@ -4580,6 +4615,16 @@ def database_from_csv_to_datamatrix(years_ots, years_fts, dm_kcal_req_pathwaycal
     # Filter dm_fts to start year at 2025 not 2020 PAOLA FTS
     filter_DM(dm_fts, {'Years': years_fts})
 
+    # Append dummy variables for climate-smart-livestock_slaughtered categories1 abp-dairy-milk & abp-hens-egg to do only once
+    #or lev in range(4):
+        #lev = lev + 1
+        # dm_fts['climate-smart-livestock']['climate-smart-livestock_slaughtered'][lev].add(0.0, dummy=True,
+        #                                                                              col_label='abp-dairy-milk',
+        #                                                                              dim='Categories1', unit='%')
+        #dm_fts['climate-smart-livestock']['climate-smart-livestock_slaughtered'][lev].add(0.0, dummy=True,
+        #                                                                              col_label='abp-hens-egg',
+        #                                                                              dim='Categories1', unit='%')
+
     # for dm_kcal_req use linear-fitting to determine fts
     linear_fitting(dm_kcal_req_pathwaycalc, years_fts)
     dm_kcal_req_fts = dm_kcal_req_pathwaycalc.filter({'Years': years_fts}, inplace=False)
@@ -5183,8 +5228,8 @@ file_dict = {'losses': 'data/faostat/losses.csv', 'yield': 'data/faostat/yield.c
              'pesticide': 'data/faostat/pesticide.csv', 'liming': 'data/faostat/liming.csv'}
 df_climate_smart_crop_pathwaycalc, df_energy_demand_cal = climate_smart_crop_processing(list_countries, file_dict)
 # Exceptionnally running livestock calibration before to use the livestock population in livestock after
-df_domestic_supply_calibration, df_liv_population_calibration = livestock_crop_calibration(df_energy_demand_cal, list_countries)
-df_climate_smart_livestock_pathwaycalc = climate_smart_livestock_processing(df_csl_feed, df_liv_population_calibration, list_countries)
+df_domestic_supply_calibration, df_liv_population_calibration, df_liv_pop = livestock_crop_calibration(df_energy_demand_cal, list_countries)
+df_climate_smart_livestock_pathwaycalc = climate_smart_livestock_processing(df_csl_feed, df_liv_pop, list_countries)
 df_climate_smart_forestry_pathwaycalc, csf_managed = climate_smart_forestry_processing() #FutureWarning at last line
 df_land_management_pathwaycalc = land_management_processing(csf_managed)
 df_bioenergy_capacity_CH_pathwaycalc = bioernergy_capacity_processing(df_csl_feed)
