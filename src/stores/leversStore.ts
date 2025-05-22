@@ -94,9 +94,9 @@ export const useLeverStore = defineStore('lever', () => {
     const pathway = ExamplePathways.find((p) => p.title === selectedPathway.value);
     if (!pathway) return true;
 
-    return leversData.some((lever, index) => {
+    return leversData.some((lever) => {
       const currentValue = levers.value[lever.code] ?? getDefaultLeverValue(lever.code);
-      return index < pathway.values.length && currentValue !== pathway.values[index];
+      return pathway.values[lever.code] && currentValue !== pathway.values[lever.code];
     });
   });
 
@@ -234,9 +234,9 @@ export const useLeverStore = defineStore('lever', () => {
     const updates: Record<string, number> = {};
 
     // Add all lever updates to the batch
-    leversData.forEach((lever, index) => {
-      if (index < pathway.values.length && pathway.values[index]) {
-        updates[lever.code] = pathway.values[index];
+    leversData.forEach((lever) => {
+      if (pathway.values[lever.code]) {
+        updates[lever.code] = pathway.values[lever.code] as number;
       }
     });
 
