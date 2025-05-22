@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 f = open('config/lever_position.json')
 lever_setting = json.load(f)[0]
 years_setting = [1990, 2023, 2025, 2050, 5]
-geo_pattern = 'Switzerland|Vaud|EU27'
+geo_pattern = 'Vaud'
 
 # Filter geoscale
 # from database/data/datamatrix/.* reads the pickles, filters the geoscale, and saves new filtered pickles to geoscale/
