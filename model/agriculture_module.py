@@ -909,17 +909,24 @@ def lifestyle_workflow(DM_lifestyle, DM_lfs, CDM_const, years_setting):
                     * cdm_lifestyle.array[idx_const['cp_time_days-per-year']]
     dm_diet_food = DataMatrix.based_on(ay_total_food[:, :, np.newaxis, :], dm_diet_split,
                                        change={'Variables': ['lfs_diet_raw']}, units={'lfs_diet_raw': 'kcal'})
+
+    # Total calorie demand = food intake + food waste
+    dm_diet_food.append(dm_diet_tmp, dim='Categories1') # Append all food categories
+    dm_diet_food.append(dm_diet_fwaste, dim='Variables') # Append with fwaste
+    dm_diet_food.operation('lfs_diet_raw', '+', 'lfs_food-wastes', dim='Variables', out_col='lfs_total-cal-demand_raw', unit='kcal')
+    dm_diet_food.filter({'Variables': ['lfs_total-cal-demand_raw']}, inplace=True)
+
     # Calibration factors
     dm_cal_diet = DM_lifestyle['cal_diet']
     # Add dummy caf for afats and rice
     #dm_cal_diet.add(1, dummy=True, col_label=['afats', 'rice'], dim='Categories1')
 
-    # Calibration - Food supply
-    dm_diet_food.append(dm_diet_tmp, dim='Categories1')
+    # Calibration - Food supply (accounting for food wastes)
+    #dm_diet_food.append(dm_diet_tmp, dim='Categories1')
     dm_cal_rates_diet = calibration_rates(dm_diet_food, dm_cal_diet, calibration_start_year=1990, calibration_end_year=2023,
                       years_setting=years_setting)
     dm_diet_food.append(dm_cal_rates_diet, dim='Variables')
-    dm_diet_food.operation('lfs_diet_raw', '*', 'cal_rate', dim='Variables', out_col='lfs_diet', unit='kcal')
+    dm_diet_food.operation('lfs_total-cal-demand_raw', '*', 'cal_rate', dim='Variables', out_col='lfs_total-cal-demand', unit='kcal')
     df_cal_rates_diet = dm_to_database(dm_cal_rates_diet, 'none', 'agriculture', level=0) # Exporting calibration rates to check at the end
 
 
