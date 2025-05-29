@@ -175,14 +175,15 @@ def diet_processing(list_countries, file):
     pivot_df_share = pivot_df_share[pivot_df_share['Item'] != 'Grand Total']
 
     # Divide the consumption by the total kcal to obtain the share
-    pivot_df_share['value'] = pivot_df_share['Food supply (kcal/capita/day)'] / pivot_df_share['Grand Total']
+    #pivot_df_share['value'] = pivot_df_share['Food supply (kcal/capita/day)'] / pivot_df_share['Grand Total']
+    pivot_df_share['value'] = pivot_df_share['Food supply (kcal/capita/day)'] # Test with Paola 28.05.2025
 
     # Drop the columns
     pivot_df_share = pivot_df_share.drop(columns=['Food supply (kcal/capita/day)', 'Grand Total'])
 
     # Normalize so that for each year and country, sum(share) = 1
-    pivot_df_share['value'] = pivot_df_share['value'] / pivot_df_share.groupby(['Area', 'Year'])['value'].transform(
-        'sum')
+    #pivot_df_share['value'] = pivot_df_share['value'] / pivot_df_share.groupby(['Area', 'Year'])['value'].transform(
+    #    'sum')
 
     # ----------------------------------------------------------------------------------------------------------------------
     # CONSUMER DIET Part 2 - including food waste
@@ -195,7 +196,7 @@ def diet_processing(list_countries, file):
     # Merge based on 'Item'
     pivot_df_consumers_diet = pd.merge(df_dict_waste, pivot_df_consumers_diet, on='Item')
 
-    # Food waste [kcal/cap/day] = food supply [kcal/cap/day] * food waste [%]
+    # Diet [kcal/cap/day] = food supply [kcal/cap/day] * (1-food waste [%])
     pivot_df_consumers_diet['value'] = pivot_df_consumers_diet['Food supply (kcal/capita/day)'] * (1 - pivot_df_consumers_diet[
         'Proportion'])
 
@@ -3321,7 +3322,7 @@ def lifestyle_calibration(list_countries):
     df_diet_1990_2013 = faostat.get_data_df(code, pars=my_pars, strval=False)
 
     # 1990 - 2013 - Population
-    list_elements = ['Total Population - Both sexes']
+    """list_elements = ['Total Population - Both sexes']
     list_items = ['Population']
     ld = faostat.list_datasets()
     code = 'FBSH'
@@ -3340,10 +3341,11 @@ def lifestyle_calibration(list_countries):
         'item': my_items,
         'year': my_years
     }
-    df_population_1990_2013 = faostat.get_data_df(code, pars=my_pars, strval=False)
+    df_population_1990_2013 = faostat.get_data_df(code, pars=my_pars, strval=False)"""
 
     # 2010-2022
-    list_elements = ['Food supply (kcal)']
+    list_elements = ['Food supply (kcal/capita/day)']
+    #list_elements = ['Food supply (kcal)']
     list_items = ['Cereals - Excluding Beer + (Total)', 'Fruits - Excluding Wine + (Total)', 'Oilcrops + (Total)',
                   'Pulses + (Total)', 'Rice and products',
                   'Starchy Roots + (Total)', 'Stimulants + (Total)', 'Sugar Crops + (Total)', 'Vegetables + (Total)',
@@ -3376,32 +3378,36 @@ def lifestyle_calibration(list_countries):
     # Filtering to keep wanted columns
     columns_to_filter = ['Area', 'Element', 'Item', 'Year', 'Value']
     df_diet_1990_2013 = df_diet_1990_2013[columns_to_filter]
-    df_population_1990_2013 = df_population_1990_2013[columns_to_filter]
+    # df_population_1990_2013 = df_population_1990_2013[columns_to_filter]
     df_diet_2010_2022 = df_diet_2010_2022[columns_to_filter]
 
     # Pivot the df
     pivot_df_diet_1990_2013 = df_diet_1990_2013.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
                                           values='Value').reset_index()
-    pivot_df_population_1990_2013 = df_population_1990_2013.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
-                                                            values='Value').reset_index()
+    #pivot_df_population_1990_2013 = df_population_1990_2013.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
+    #                                                        values='Value').reset_index()
     pivot_df_diet_2010_2022 = df_diet_2010_2022.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
                                                             values='Value').reset_index()
     # Merge the DataFrames on 'Area' and 'Year'
-    merged_df = pd.merge(
-        pivot_df_diet_1990_2013,
-        pivot_df_population_1990_2013[['Area', 'Year', 'Total Population - Both sexes']],  # Only keep the needed columns
-        on=['Area', 'Year']
-    )
+    #merged_df = pd.merge(
+    #    pivot_df_diet_1990_2013,
+    #    pivot_df_population_1990_2013[['Area', 'Year', 'Total Population - Both sexes']],  # Only keep the needed columns
+    #    on=['Area', 'Year']
+    #)
 
     # Multiplying population [capita] with food supply [kcal/capita/day] to have food supply [kcal] (per year implicitely)
-    merged_df['Food supply (kcal)'] = 365.25 * 1000 * merged_df['Total Population - Both sexes'] * merged_df['Food supply (kcal/capita/day)']
-    merged_df = merged_df[['Area', 'Year', 'Item', 'Food supply (kcal)']]
-
-    # Unit conversion [million kcal] => [kcal] (based on the definitions in FAOSTAT, even though it's written kcal)
-    pivot_df_diet_2010_2022['Food supply (kcal)'] = pivot_df_diet_2010_2022['Food supply (kcal)'] * 10**6
+    #merged_df['Food supply (kcal)'] = 365.25 * 1000 * merged_df['Total Population - Both sexes'] * merged_df['Food supply (kcal/capita/day)']
+    #merged_df = merged_df[['Area', 'Year', 'Item', 'Food supply (kcal)']]
 
     # Concatenating all the years together
-    pivot_df_diet = pd.concat([merged_df, pivot_df_diet_2010_2022])
+    pivot_df_diet = pd.concat([pivot_df_diet_1990_2013, pivot_df_diet_2010_2022])
+    #pivot_df_diet = pd.concat([merged_df, pivot_df_diet_2010_2022])
+
+    # Unit conversion [million kcal] => [kcal] (based on the definitions in FAOSTAT, even though it's written kcal)
+    #pivot_df_diet_2010_2022['Food supply (kcal)'] = pivot_df_diet_2010_2022['Food supply (kcal)'] * 10 ** 6
+
+    # Concatenating all the years together
+    #pivot_df_diet = pd.concat([merged_df, pivot_df_diet_2010_2022])
 
     # PathwayCalc formatting -----------------------------------------------------------------------------------------------
     # Food item name matching with dictionary
@@ -3420,7 +3426,8 @@ def lifestyle_calibration(list_countries):
     df_diet_calibration = df_diet_calibration.drop(columns=['Item'])
 
     # Renaming existing columns (geoscale, timsecale, value)
-    df_diet_calibration.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Food supply (kcal)': 'value'}, inplace=True)
+    df_diet_calibration.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Food supply (kcal/capita/day)': 'value'}, inplace=True)
+    # df_diet_calibration.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Food supply (kcal)': 'value'}, inplace=True)
 
     return df_diet_calibration
 
@@ -5255,4 +5262,95 @@ df_calibration = calibration_formatting(df_diet_calibration, df_domestic_supply_
 # CalculationTree RUNNING PICKLE CREATION
 database_from_csv_to_datamatrix(years_ots, years_fts, dm_kcal_req_pathwaycalc) #Fixme duplicates in constants
 
+# CalculationTree NEW ENERGY REQUIREMENTS ------------------------------------------------------------------------------
+# The idea was to have energy requirements per demography (agr_kcal-req) based on the current consumption and not the
+# calculated based on the metabolism.
+# AND update the calibration values for cal_diet.
+# ----------------------------------------------------------------------------------------------------------------------
 
+# Load pickles
+with open('../../data/datamatrix/agriculture.pickle', 'rb') as handle:
+    DM_agriculture = pickle.load(handle)
+
+with open('../../data/datamatrix/lifestyles.pickle', 'rb') as handle:
+    DM_lifestyles = pickle.load(handle)
+
+# Filter countries
+filter_DM(DM_agriculture, {'Country': ['Switzerland', 'EU27', 'Vaud']})
+
+# Load data
+dm_others = DM_agriculture['ots']['diet']['share'].copy()
+dm_others.change_unit('share', old_unit='%', new_unit='kcal/cap/day', factor=1)
+dm_diet = DM_agriculture['ots']['diet']['lfs_consumers-diet'].copy()
+dm_waste = DM_agriculture['ots']['fwaste'].copy()
+dm_waste.filter({'Categories1':dm_others.col_labels['Categories1']}, inplace=True)
+dm_req = DM_agriculture['ots']['kcal-req'].copy()
+dm_demography = DM_lifestyles['ots']['pop']['lfs_demography_'].copy()
+dm_population = DM_lifestyles['ots']['pop']['lfs_population_'].copy()
+dm_cal_diet = DM_agriculture['fxa']['cal_agr_diet'].copy() # Now it's actually in (kcal/capita/day)
+
+# Diet demand [kcal/cap/day] = food supply [kcal/cap/day] - food waste [kcal/cap/day]
+dm_others.append(dm_waste, dim='Variables')
+dm_others.operation('share', '-', 'lfs_consumers-food-wastes', out_col='lfs_consumers-diet', unit='kcal/cap/day')
+
+# In dm_diet, compute lfs_consumers-diet + lfs_consumers-food-wastes
+
+# Append together
+dm_diet.append(dm_others.filter({'Variables':['lfs_consumers-diet']}), dim='Categories1')
+
+# Sum total food demand (based on actual consumption)
+dm_diet.group_all(dim='Categories1', inplace=True)
+
+# Divide share by the total food supply available
+arr = dm_others[:,:,'lfs_consumers-diet',:] / dm_diet[:,:,'lfs_consumers-diet', np.newaxis]
+dm_others.add(arr, dim='Variables', col_label='share_total', unit='%')
+
+# Normalise to obtain a ratio sum = 1
+dm_others.normalise('Categories1', inplace=True)
+
+# Diet demand [kcal/day] = Diet demand [kcal/cap/day] * Population [cap]
+dm_diet.append(dm_population, dim='Variables')
+dm_diet.operation('lfs_consumers-diet', '*', 'lfs_population_total', out_col='lfs_consumers-diet_tot', unit='kcal/day')
+
+# Normalise dm_req to obtain the share of kcal by age & gender categorie
+dm_req.append(dm_demography, dim='Variables')
+dm_req.operation('agr_kcal-req', '*', 'lfs_demography', out_col='agr_kcal-req_req', unit='kcal/day')
+dm_req.normalise('Categories1', keep_original=True)
+
+# Filter for same countries
+dm_diet.filter({'Country':dm_req.col_labels['Country']}, inplace=True)
+
+# Check country order
+dm_diet.sort('Country')
+dm_req.sort('Country')
+
+# Demand per age gender group [kcal/day]= share kcal per age gender group [%] * total food demand [kcal/day]
+arr = dm_diet[:,:,'lfs_consumers-diet_tot', np.newaxis] * dm_req[:,:,'agr_kcal-req_req_share',:]
+dm_req.add(arr, dim='Variables', col_label='demand_per_group', unit='kcal/day')
+
+# Demand per age gender group [kcal/cap/day] = Demand per age gender group [kcal/day] / Demography [cap]
+dm_req.operation('demand_per_group', '/', 'lfs_demography', out_col='agr_kcal-req_temp', unit='kcal/cap/day')
+
+# For calibration : cal_agr_diet [kcal/year] = cal_agr_diet [kcal/cap/day] * population [capita] * 365,25
+arr = dm_cal_diet[:,:,'cal_agr_diet', :] * dm_population[:,:,'lfs_population_total',np.newaxis] * 365.25
+dm_cal_diet.add(arr, dim='Variables', col_label='cal_agr_diet_new', unit='kcal/year')
+
+# Save in DM_agriculture
+DM_agriculture['ots']['kcal-req']['Switzerland', :,'agr_kcal-req',:] = dm_req['Switzerland',:,'agr_kcal-req_temp',:]
+DM_agriculture['ots']['kcal-req']['Vaud', :,'agr_kcal-req',:] = dm_req['Vaud',:,'agr_kcal-req_temp',:]
+DM_agriculture['ots']['kcal-req']['EU27', :,'agr_kcal-req',:] = dm_req['EU27',:,'agr_kcal-req_temp',:]
+# Overwrite shares
+DM_agriculture['ots']['diet']['share']['Switzerland', :,'share',:] = dm_others['Switzerland', :,'share',:]
+DM_agriculture['ots']['diet']['share']['EU27', :,'share',:] = dm_others['EU27', :,'share',:]
+DM_agriculture['ots']['diet']['share']['Vaud', :,'share',:] = dm_others['Vaud', :,'share',:]
+# Overwrite cal_diet
+DM_agriculture['fxa']['cal_agr_diet']['Switzerland', :,'cal_agr_diet',:] = dm_cal_diet['Switzerland', :,'cal_agr_diet_new',:]
+DM_agriculture['fxa']['cal_agr_diet']['EU27', :,'cal_agr_diet',:] = dm_cal_diet['EU27', :,'cal_agr_diet_new',:]
+DM_agriculture['fxa']['cal_agr_diet']['Vaud', :,'cal_agr_diet',:] = dm_cal_diet['Vaud', :,'cal_agr_diet_new',:]
+
+# Overwrite in pickle
+f = '../../data/datamatrix/agriculture.pickle'
+with open(f, 'wb') as handle:
+    pickle.dump(DM_agriculture, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+# Dans other enlever waste
