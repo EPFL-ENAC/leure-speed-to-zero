@@ -967,7 +967,7 @@ def lifestyle_workflow(DM_lifestyle, DM_lfs, CDM_const, years_setting):
 def food_demand_workflow(DM_food_demand, dm_lfs):
 
     # Overall food demand [kcal] = food demand [kcal] + food waste [kcal]
-    dm_lfs.operation('lfs_diet', '+', 'lfs_food-wastes', out_col='agr_demand', unit='kcal')
+    dm_lfs.operation('lfs_total-cal-demand', '+', 'lfs_food-wastes', out_col='agr_demand', unit='kcal')
 
     # Filtering dms to only keep pro
     dm_lfs_pro = dm_lfs.filter_w_regex({'Categories1': 'pro-.*', 'Variables': 'agr_demand'})
@@ -2379,13 +2379,19 @@ def agriculture_storage_interface(DM_energy_ghg, write_xls=False):
 
     return dm_storage
 
-def agriculture_power_interface(DM_energy_ghg, write_xls=False):
+def agriculture_power_interface(DM_energy_ghg, DM_bioenergy, write_xls=False):
     
     dm_pow = DM_energy_ghg['energy_demand'].filter_w_regex({'Variables': 'agr_energy-demand', 'Categories1': '.*electricity.*'})
     dm_pow = dm_pow.flatten()
     ktoe_to_gwh = 0.0116222 * 1000  # from KNIME factor
     dm_pow.array = dm_pow.array * ktoe_to_gwh
     dm_pow.units["agr_energy-demand_electricity"] = "GWh"
+
+    dm_wood = DM_bioenergy['solid-mix'].filter({"Variables" : ["agr_bioenergy_biomass-demand_solid"],
+                                                "Categories1" : ['fuelwood-and-res']})
+
+    DM_pow = {"wood": dm_wood,
+              "pow": dm_pow}
     
     # write
     if write_xls is True:
@@ -2395,7 +2401,7 @@ def agriculture_power_interface(DM_energy_ghg, write_xls=False):
             current_file_directory + "/../_database/data/xls/" + 'All-Countries_interface_from-agriculture-to-power.xlsx',
             index=False)
     
-    return dm_pow
+    return DM_pow
 
 def agriculture_minerals_interface(DM_nitrogen, DM_bioenergy, dm_lgn,  write_xls=False):
 
@@ -2723,8 +2729,8 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     # interface.add_link(from_sector='agriculture', to_sector='power', dm=dm_storage)
     
     # interface to Power
-    dm_power = agriculture_power_interface(DM_energy_ghg)
-    interface.add_link(from_sector='agriculture', to_sector='power', dm=dm_power)
+    DM_pow = agriculture_power_interface(DM_energy_ghg, DM_bioenergy)
+    interface.add_link(from_sector='agriculture', to_sector='power', dm=DM_pow)
 
     # interface to Minerals
     dm_minerals = agriculture_minerals_interface(DM_nitrogen, DM_bioenergy, dm_lgn)
