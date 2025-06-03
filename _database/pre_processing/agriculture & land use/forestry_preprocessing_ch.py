@@ -6,6 +6,7 @@ import pickle
 import os
 import requests
 import deepl
+import faostat
 from model.common.data_matrix_class import DataMatrix
 
 # Initialize the Deepl Translator
@@ -137,6 +138,127 @@ def get_wood_energy_by_sector(file_url, local_filename):
     return dm_wood_demand_energy
 
 ##########################################################################################################
+# Wood consumption in CH and Cantons
+##########################################################################################################
+
+def get_wood_energy_by_use(file_url, local_filename):
+    ### Creates the file
+    save_url_to_file(file_url, local_filename)
+    ### Read the file
+    df_raw = pd.read_excel(local_filename, sheet_name='R')
+
+    # Filtering the matrix for wood use in m3 (TJ to follow)
+    df = df_raw
+    df = df.iloc[0:11]
+
+    # header change
+    df.columns = df.iloc[0]
+    df = df[1:].reset_index(drop=True)
+    # Nan remove
+    df = df.dropna(how='all')
+    df.columns = [str(int(col)) if isinstance(col, float) else str(col) for col in df.columns]
+    ### translate
+    new_names=['Years']
+    for i in range(1):
+        # Use deepl to translate variables from de to en
+        variables_de = list(set(df[df.columns[i]]))
+        variables_en = [translate_text(var) for var in variables_de]
+        var_dict = dict(zip(variables_de, variables_en))
+        df[new_names[i]] = df[df.columns[i]].map(var_dict)
+
+    df.drop([df.columns[0]], axis=1, inplace=True)
+
+    # change the column position
+    df = df[[df.columns[-1]] + list(df.columns[:-1])]
+
+    ##Transpose
+    #df = df.T
+    df = df.T
+    df = df.reset_index()
+    df = df.rename(columns={'index': 'year'})
+    df.columns = df.iloc[0]
+    df = df[1:].reset_index(drop=True)
+
+    #Country
+    df.insert(0, "Country", "Switzerland")
+
+    # New names
+    df = df.rename(columns={
+        'Total incl. KVA (Cat 1-20)': 'fst_wood-energy-use_total[m3]',
+        'Waste wood without MSWI (without cat. 20)': 'fst_wood-energy-use_waste-without-incineration[m3]',
+        'Waste wood in MSWI (only cat. 20)':'fst_wood-energy-use_waste-incineration[m3]',
+        'Residual wood from wood processing plants': 'fst_wood-energy-use_wood-byproducts[m3]',
+        'Wood pellets *)':'fst_wood-energy-use_pellets[m3]',
+        'Natural logs':'fst_wood-energy-use_natural-logs[m3]',
+        'Natural non-chunky wood':'fst_wood-energy-use_natural-non-chunky-wood[m3]',
+        'Total without KVA (Cat 1-19)': 'fst_wood-energy-use_total-without-incineration[m3]'
+    })
+    # Convert to DM
+    dm_wood_energy_use_m3 = DataMatrix.create_from_df(df, num_cat=1)
+
+    # Filtering the matrix for wood use in TJ
+    df = df_raw
+    df = df.iloc[14:25]
+
+    # header change
+    df.columns = df.iloc[0]
+    df = df[1:].reset_index(drop=True)
+    # Nan remove
+    df = df.dropna(how='all')
+    df.columns = [str(int(col)) if isinstance(col, float) else str(col) for col in df.columns]
+    ### translate
+    new_names = ['Years']
+    for i in range(1):
+        # Use deepl to translate variables from de to en
+        variables_de = list(set(df[df.columns[i]]))
+        variables_en = [translate_text(var) for var in variables_de]
+        var_dict = dict(zip(variables_de, variables_en))
+        df[new_names[i]] = df[df.columns[i]].map(var_dict)
+
+    df.drop([df.columns[0]], axis=1, inplace=True)
+
+    # change the column position
+    df = df[[df.columns[-1]] + list(df.columns[:-1])]
+
+    ##Transpose
+    # df = df.T
+    df = df.T
+    df = df.reset_index()
+    df = df.rename(columns={'index': 'year'})
+    df.columns = df.iloc[0]
+    df = df[1:].reset_index(drop=True)
+
+    # Country
+    df.insert(0, "Country", "Switzerland")
+
+    # New names
+    df = df.rename(columns={
+        'Total incl. KVA (Cat 1-20)': 'fst_wood-energy-use_total[TJ]',
+        'Waste wood without MSWI (without cat. 20)': 'fst_wood-energy-use_waste-without-incineration[TJ]',
+        'Waste wood in MSWI (only cat. 20)': 'fst_wood-energy-use_waste-incineration[TJ]',
+        'Residual wood from wood processing plants': 'fst_wood-energy-use_wood-byproducts[TJ]',
+        'Wood pellets *)': 'fst_wood-energy-use_pellets[TJ]',
+        'Natural logs': 'fst_wood-energy-use_natural-logs[TJ]',
+        'Natural non-chunky wood': 'fst_wood-energy-use_natural-non-chunky-wood[TJ]',
+        'Total without KVA (Cat 1-19)': 'fst_wood-energy-use_total-without-incineration[TJ]'
+    })
+    # Convert to DM
+    dm_wood_energy_use_gwh = DataMatrix.create_from_df(df, num_cat=1)
+
+    # Conversion from TJ to GWh:
+    dm_wood_energy_use_gwh.change_unit('fst_wood-energy-use', factor=0.27778, old_unit='TJ', new_unit='GWh')
+    dm_wood_energy_use_gwh.rename_col("fst_wood-energy-use","fst_wood-energy-use-gwh","Variables")
+    dm_wood_energy_use_m3.rename_col("fst_wood-energy-use", "fst_wood-energy-use-m3", "Variables")
+    #dm_wood_demand_energy.datamatrix_plot()
+
+    dm_wood_energy_use=dm_wood_energy_use_gwh
+    dm_wood_energy_use.append(dm_wood_energy_use_m3, dim='Variables')
+    dm_wood_energy_use.operation('fst_wood-energy-use-gwh', '/', 'fst_wood-energy-use-m3', out_col='fst_energy-density', unit='gwh/m3')
+    dm_wood_energy_use.datamatrix_plot({'Variables': ['fst_energy-density']})
+
+    return dm_wood_energy_use
+
+##########################################################################################################
 # Wood production in CH and Cantons
 ##########################################################################################################
 def get_forest_area(table_id, file):
@@ -171,11 +293,83 @@ def get_forest_area(table_id, file):
 
     return dm
 
+def get_wood_trade_balance(file):
+    try:
+        with open(file, 'rb') as handle:
+            dm = pickle.load(handle)
+    except OSError:
+        # My PARSE -------------------------------------------------
+        code = 'FO'
+
+        # Metadata
+        list_data = faostat.list_datasets()
+        list_data
+        list_items = faostat.get_par(code, 'items')
+        list_items
+        list_itemsagg = faostat.get_par(code, 'itemsagg')
+        list_itemsagg
+        list_area = faostat.get_par(code, 'area')
+        list_area
+        list_pars = faostat.list_pars(code)
+        list_pars
+
+        # My selection
+        areas = ['Switzerland']
+        years = [str(y) for y in range(1990, 2024)]
+        elements = ['Export quantity','Import quantity','Production Quantity']
+        itemsagg = ['Roundwood + (Total)','Roundwood > (List)',
+                    'Roundwood, coniferous > (List)',
+                    'Roundwood, non-coniferous > (List)']
+
+        my_areas = [faostat.get_par(code, 'area')[c] for c in areas]
+        my_elements = [faostat.get_par(code, 'elements')[e] for e in elements]
+        my_itemsagg = [faostat.get_par(code, 'itemsagg')[i] for i in itemsagg]
+        my_years = [faostat.get_par(code, 'year')[y] for y in years]
+
+        my_pars = {
+            'area': my_areas,
+            'element': my_elements,
+            'year':my_years,
+            'itemsagg':my_itemsagg
+        }
+        dm = faostat.get_data_df(code, pars=my_pars, strval=False)
+
+        # Filter out FAOSTAT columns
+        dm = dm[['Area', 'Year', 'Value', 'Element', 'Item', 'Unit']]
+
+        # Shaping to turn into DM
+        dm = dm.rename(columns={'Year': 'Years', 'Area': 'Country'})
+
+        dm['Variable'] = dm.apply(
+            lambda row: f"{row['Item'].lower()}_{row['Element'].lower()}[{row['Unit'].lower()}]", axis=1)
+        dm = dm.drop(columns=['Item', 'Element', 'Unit'])
+        dm = dm.pivot(index=['Country', 'Years'], columns='Variable', values='Value').reset_index()
+        dm = DataMatrix.create_from_df(dm, num_cat=1)
+        dm = dm.filter_w_regex({'Variables': 'industrial roundwood|industrial roundwood, coniferous|industrial roundwood, non-coniferous|\
+        other industrial roundwood|pulp for paper|\
+        roundwood|roundwood, coniferous|roundwood, non-coniferous|\
+        sawlogs and veneer logs|sawlogs and veneer logs, coniferous|\
+        sawlogs and veneer logs, non-coniferous|\
+        wood fuel|wood fuel, coniferous|wood fuel, non-coniferous'})
+
+        return dm
+
 ######################################################################
 ######################################################################
 # DATA
 ######################################################################
 ######################################################################
+
+################################################################
+# Trade Wood - FAOSTAT (Switzerland)
+################################################################
+
+file = 'data/faostat/forestry-trade.csv'
+dm = get_wood_trade_balance(file)
+dm_roundwood_export = dm.filter_w_regex({'Variables':'roundwood'})
+dm_roundwood_export = dm.filter_w_regex({'Categories1':'export quantity'})
+df = dm_roundwood_export.write_df()
+#dm_roundwood_export.datamatrix_plot({'Categories1': ['export quantity']})
 
 ################################################################
 # Calibration: Energy demand per sector (Switzerland)
@@ -201,8 +395,8 @@ dm.rename_col(
     dim='Variables')
 
 dm.rename_col(
-    ['Softwood (conifers)', 'Hardwood (deciduous)'],
-    ['coniferous','non-coniferous'],
+    ['Species - total', 'Softwood (conifers)', 'Hardwood (deciduous)'],
+    ['overall','coniferous','non-coniferous'],
     dim='Categories1')
 
 # Merge the category to match FAOSTAT classification
@@ -244,13 +438,24 @@ dm.operation('unproductive-forest-area', '/', 'total-forest-area', out_col='unpr
 
 dm_forest_area=dm
 #dm_forest_area.datamatrix_plot()
-dm_forest_area.datamatrix_plot({'Variables': ['productive-share','unproductive-share']}, stacked=True)
+#dm_forest_area.datamatrix_plot({'Variables': ['productive-share','unproductive-share']}, stacked=True)
 
 ################################################################
 # Harvest rate
 ################################################################
 
-ay_harvest_rate = dm_wood_production.array[:, :, 'productive-forest-area', :] \
-                             / dm_forest_area[:, :, 'total', np.newaxis]
+ay_harvest_rate = dm_wood_production[:, :, 'total', :] \
+                             / dm_forest_area[:, :,'productive-forest-area', np.newaxis]
+dm_wood_production.add(ay_harvest_rate,col_label='harvest-rate',dim='Variables',unit='m3/ha')
 
-dm_forest_area.datamatrix_plot()
+#dm_wood_production.datamatrix_plot({'Variables': ['harvest-rate']})
+
+#dm_forest_area.datamatrix_plot()
+
+################################################################
+# FXA: Wood fuel demand per use (Switzerland)
+################################################################
+
+file_url = 'https://www.bfe.admin.ch/bfe/en/home/versorgung/statistik-und-geodaten/energiestatistiken/teilstatistiken.exturl.html/aHR0cHM6Ly9wdWJkYi5iZmUuYWRtaW4uY2gvZGUvcHVibGljYX/Rpb24vZG93bmxvYWQvMTE0NDA=.html'
+local_filename = 'data/Swiss-wood-energy-statistics.xlsx'
+dm_wood_energy_use = get_wood_energy_by_use(file_url, local_filename)
