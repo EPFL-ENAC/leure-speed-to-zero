@@ -8,6 +8,7 @@ import requests
 import deepl
 import faostat
 from model.common.data_matrix_class import DataMatrix
+from model.common.constant_data_matrix_class import ConstantDataMatrix
 
 # Initialize the Deepl Translator
 deepl_api_key = '9ecffb3f-5386-4254-a099-8bfc47167661:fx'
@@ -25,6 +26,7 @@ def translate_text(text):
 # Download of files from URL
 ##########################################################################################################
 def save_url_to_file(file_url, local_filename):
+    # Loop for URL
     if not os.path.exists(local_filename):
         response = requests.get(file_url, stream=True)
         # Check if the request was successful
@@ -46,8 +48,11 @@ def save_url_to_file(file_url, local_filename):
 ##########################################################################################################
 def get_wood_production(table_id, file):
     try:
+        # Try to look for the pickle
         with open(file, 'rb') as handle:
             dm = pickle.load(handle)
+
+    # No pickle available
     except OSError:
         structure, title = get_data_api_CH(table_id, mode='example')
 
@@ -67,6 +72,8 @@ def get_wood_production(table_id, file):
         dm = get_data_api_CH(table_id, mode='extract', filter=filtering, mapping_dims=mapping_dim,
                                    units=['m3'] * len(structure['Observation unit']))
         dm.sort('Years')
+
+        #Write the pickle
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
         f = os.path.join(current_file_directory, file)
         with open(f, 'wb') as handle:
@@ -286,8 +293,6 @@ def get_forest_area(table_id, file):
         df = dm.write_df()
         dm.sort('Years')
 
-
-
         with open(file, 'wb') as handle:
             pickle.dump(dm, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -352,7 +357,10 @@ def get_wood_trade_balance(file):
         sawlogs and veneer logs, non-coniferous|\
         wood fuel|wood fuel, coniferous|wood fuel, non-coniferous'})
 
-        return dm
+        with open(file, 'wb') as handle:
+            pickle.dump(dm, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    return dm
 
 ######################################################################
 ######################################################################
@@ -364,7 +372,7 @@ def get_wood_trade_balance(file):
 # Trade Wood - FAOSTAT (Switzerland)
 ################################################################
 
-file = 'data/faostat/forestry-trade.csv'
+file = 'data/forestry-trade.pickle'
 dm = get_wood_trade_balance(file)
 dm_roundwood_export = dm.filter_w_regex({'Variables':'roundwood'})
 dm_roundwood_export = dm.filter_w_regex({'Categories1':'export quantity'})
@@ -459,3 +467,107 @@ dm_wood_production.add(ay_harvest_rate,col_label='harvest-rate',dim='Variables',
 file_url = 'https://www.bfe.admin.ch/bfe/en/home/versorgung/statistik-und-geodaten/energiestatistiken/teilstatistiken.exturl.html/aHR0cHM6Ly9wdWJkYi5iZmUuYWRtaW4uY2gvZGUvcHVibGljYX/Rpb24vZG93bmxvYWQvMTE0NDA=.html'
 local_filename = 'data/Swiss-wood-energy-statistics.xlsx'
 dm_wood_energy_use = get_wood_energy_by_use(file_url, local_filename)
+
+################################################################
+# DM pre-processing Forestry
+################################################################
+
+DM_preprocessing_forestry = {'calibration': dm_wood_energy_calibration,
+                             'production': dm_wood_production,
+                             'wood-energy-use': dm_wood_energy_use,
+                             'forest-area': dm_forest_area,
+                             'wood-trade':dm_roundwood_export}
+
+DM_preprocessing_forestry
+
+################################################################
+################################################################
+# Constants
+################################################################
+################################################################
+
+################################################################
+# Constants - Wood density
+################################################################
+
+forestry_wood_density = {'pulp-to-softwood': 1.4,
+                         'pulp-to-hardwood': 1.25,
+                         'timber-to-softwood': 1.82,
+                         'timber-to-hardwood': 1.43,
+                         'industrial-to-softwood': 1.43,
+                         'industrial-to-hardwood': 1.25,
+                         'woodfuel-to-softwood': 1.43,
+                         'woodfuel-to-hardwood': 1.25,
+                         }
+cdm_wood_density = ConstantDataMatrix(col_labels={'Variables': ['fst_wood-density'],
+                                              'Categories1': ['pulp-to-softwood',
+                                                              'pulp-to-hardwood',
+                                                              'timber-to-softwood',
+                                                              'timber-to-hardwood',
+                                                              'industrial-to-softwood',
+                                                              'industrial-to-hardwood',
+                                                              'woodfuel-to-softwood',
+                                                              'woodfuel-to-hardwood']},
+                                  units={'fst_wood-density': 'm3/t'})
+
+cdm_wood_density.array = np.zeros((len(cdm_wood_density.col_labels['Variables']),
+                                    len(cdm_wood_density.col_labels['Categories1'])))
+idx = cdm_wood_density.idx
+for key, value in forestry_wood_density.items():
+    cdm_wood_density.array[0, idx[key]] = value
+
+cdm_wood_density.sort('Categories1')
+
+################################################################
+# Constants - Wood energy density
+################################################################
+
+forestry_energy_density = {'woodfuel-average': 0.002326,
+                         'woodfuel-hardwood': 0.0026749,
+                         'woodfuel-softwood': 0.00250045
+                         }
+cdm_energy_density = ConstantDataMatrix(col_labels={'Variables': ['fst_energy-density'],
+                                                    'Categories1': ['woodfuel-average',
+                                                                    'woodfuel-hardwood',
+                                                                    'woodfuel-softwood']},
+                                        units={'fst_energy-density': 'GWh/m3'})
+
+cdm_energy_density.array = np.zeros((len(cdm_energy_density.col_labels['Variables']),
+                                    len(cdm_energy_density.col_labels['Categories1'])))
+idx = cdm_energy_density.idx
+for key, value in forestry_energy_density.items():
+    cdm_energy_density.array[0, idx[key]] = value
+
+cdm_energy_density.sort('Categories1')
+
+################################################################
+# Constants - Wood energy density
+################################################################
+
+forestry_industry_loop = {'wood-fuel-byproducts': 0.002326}
+
+cdm_industry_loop = ConstantDataMatrix(col_labels={'Variables': ['fst_industry-byproducts'],
+                                                    'Categories1': ['wood-fuel-byproducts']},
+                                        units={'fst_industry-byproducts': '%'})
+
+cdm_industry_loop.array = np.zeros((len(cdm_industry_loop.col_labels['Variables']),
+                                    len(cdm_industry_loop.col_labels['Categories1'])))
+idx = cdm_industry_loop.idx
+for key, value in forestry_industry_loop.items():
+    cdm_energy_density.array[0, idx[key]] = value
+
+cdm_energy_density.sort('Categories1')
+
+
+
+################################################################
+# Pickle for Forestry
+################################################################
+
+DM_forestry = {'ots': dict(), 'fts': dict(), 'fxa': dict(), 'constant': dict()}
+DM_forestry['constant']['energy-density'] = cdm_energy_density
+DM_forestry['constant']['wood-density'] = cdm_wood_density
+DM_forestry['constant']['industry-byproducts'] = cdm_industry_loop
+DM_forestry
+
+### Final DM is ots:, fts:, fxa:, (keys of ots must be lever name)
