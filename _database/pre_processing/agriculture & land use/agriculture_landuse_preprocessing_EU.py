@@ -1865,8 +1865,11 @@ def climate_smart_livestock_processing(df_csl_feed, df_liv_pop, list_countries):
     pivot_df = df_losses_csl.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
                                          values='Value').reset_index()
 
+    # Replace NaN with 0
+    pivot_df['Losses'].fillna(0, inplace=True)
+
     # Step 2: Compute the Losses [%] (really it's unit less)
-    pivot_df['Losses[%]'] = 1 / (1 - pivot_df['Losses'] / pivot_df['Production'])
+    pivot_df['Losses[%]'] = 1 + (pivot_df['Losses'] / pivot_df['Production'])
 
     # Drop the columns Production, Import Quantity and Export Quantity
     pivot_df = pivot_df.drop(columns=['Production', 'Losses'])
@@ -3575,7 +3578,7 @@ def livestock_crop_calibration(df_energy_demand_cal, list_countries):
 
     # FOOD BALANCE SHEETS (FBS) - -------------------------------------------------
     # List of elements
-    list_elements = ['Production Quantity']
+    list_elements = ['Production Quantity', 'Losses']
 
     list_items = ['Cereals - Excluding Beer + (Total)', 'Fruits - Excluding Wine + (Total)', 'Oilcrops + (Total)',
                   'Pulses + (Total)', 'Rice (Milled Equivalent)',
