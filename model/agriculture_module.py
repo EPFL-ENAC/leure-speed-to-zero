@@ -913,8 +913,8 @@ def lifestyle_workflow(DM_lifestyle, DM_lfs, CDM_const, years_setting):
     # Total calorie demand = food intake + food waste
     dm_diet_food.append(dm_diet_tmp, dim='Categories1') # Append all food categories
     dm_diet_food.append(dm_diet_fwaste, dim='Variables') # Append with fwaste
-    dm_diet_food.operation('lfs_diet_raw', '+', 'lfs_food-wastes', dim='Variables', out_col='lfs_total-cal-demand_raw', unit='kcal')
-    dm_diet_food.filter({'Variables': ['lfs_total-cal-demand_raw']}, inplace=True)
+    dm_diet_food.operation('lfs_diet_raw', '+', 'lfs_food-wastes', dim='Variables', out_col='agr_demand_raw', unit='kcal')
+    dm_diet_food.filter({'Variables': ['agr_demand_raw']}, inplace=True)
 
     # Calibration factors
     dm_cal_diet = DM_lifestyle['cal_diet']
@@ -926,20 +926,8 @@ def lifestyle_workflow(DM_lifestyle, DM_lfs, CDM_const, years_setting):
     dm_cal_rates_diet = calibration_rates(dm_diet_food, dm_cal_diet, calibration_start_year=1990, calibration_end_year=2023,
                       years_setting=years_setting)
     dm_diet_food.append(dm_cal_rates_diet, dim='Variables')
-    dm_diet_food.operation('lfs_total-cal-demand_raw', '*', 'cal_rate', dim='Variables', out_col='lfs_total-cal-demand', unit='kcal')
+    dm_diet_food.operation('agr_demand_raw', '*', 'cal_rate', dim='Variables', out_col='agr_demand', unit='kcal')
     df_cal_rates_diet = dm_to_database(dm_cal_rates_diet, 'none', 'agriculture', level=0) # Exporting calibration rates to check at the end
-
-
-    #dm_energy_demand_calib_rates_bycarr = calibration_rates(dm = dm_energy_demand_bycarr.copy(),
-    #                                                        dm_cal = DM_cal["energy-demand"].copy(),
-    #                                                        calibration_start_year = 2000, calibration_end_year = 2021,
-    #                                                        years_setting=years_setting)
-
-    # Calibration - Food wastes
-    #dm_diet_fwaste.append(dm_fxa_caf_food, dim='Variables')
-    #dm_diet_fwaste.operation('lfs_food-wastes_raw', '*', 'caf_lfs_food-wastes',
-    #                         dim="Variables", out_col='lfs_food-wastes', unit='kcal')
-    #dm_diet_fwaste.filter({'Variables': ['lfs_food-wastes']}, inplace=True)
 
     # Data to return to the TPE
     dm_diet_food.append(dm_diet_fwaste, dim='Variables')
@@ -966,8 +954,8 @@ def lifestyle_workflow(DM_lifestyle, DM_lfs, CDM_const, years_setting):
 # CalculationLeaf FOOD DEMAND TO DOMESTIC FOOD PRODUCTION --------------------------------------------------------------
 def food_demand_workflow(DM_food_demand, dm_lfs):
 
-    # Overall food demand [kcal] = food demand [kcal] + food waste [kcal]
-    dm_lfs.operation('lfs_total-cal-demand', '+', 'lfs_food-wastes', out_col='agr_demand', unit='kcal')
+    # Overall food demand [kcal] = food demand [kcal] + food waste [kcal] NOW IN lifestyle_workflow()
+    #dm_lfs.operation('lfs_total-cal-demand', '+', 'lfs_food-wastes', out_col='agr_demand', unit='kcal')
 
     # Filtering dms to only keep pro
     dm_lfs_pro = dm_lfs.filter_w_regex({'Categories1': 'pro-.*', 'Variables': 'agr_demand'})

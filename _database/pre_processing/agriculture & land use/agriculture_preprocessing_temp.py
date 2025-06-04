@@ -3,16 +3,23 @@ import pickle
 import numpy as np
 from model.common.auxiliary_functions import filter_DM
 from model.common.data_matrix_class import DataMatrix
+import faostat
+import pandas as pd
+
+
+# CALIBRATION DOMESTIC PROD WITH LOSSES ----------------------------------------------------------------------------------------
 
 # Load pickles
 with open('../../data/datamatrix/agriculture.pickle', 'rb') as handle:
     DM_agriculture = pickle.load(handle)
 
-with open('../../data/datamatrix/lifestyles.pickle', 'rb') as handle:
-    DM_lifestyles = pickle.load(handle)
 
-# Filter countries
-filter_DM(DM_agriculture, {'Country': ['Switzerland', 'EU27', 'Vaud']})
+
+# DIET ----------------------------------------------------------------------------------------
+
+# Load pickles
+with open('../../data/datamatrix/agriculture.pickle', 'rb') as handle:
+    DM_agriculture = pickle.load(handle)
 
 # Load data
 dm_others = DM_agriculture['ots']['diet']['share'].copy()
