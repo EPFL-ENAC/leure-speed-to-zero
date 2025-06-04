@@ -5,6 +5,7 @@ name: deploy
   push:
     branches:
       - dev
+<<<<<<< HEAD
       - test
       - stage
     tags: ['v*.*.*']
@@ -22,3 +23,21 @@ jobs:
       repo: speed-to-zero
       build_context: '["./backend", "./frontend"]'
 
+||||||| parent of 59589388 (chore: update issue templates and workflows for improved clarity and functionality)
+=======
+    tags: ['v*.*.*']
+
+jobs:
+  deploy:
+    permissions:
+      contents: read
+      packages: write
+    uses: EPFL-ENAC/epfl-enac-build-push-deploy-action/.github/workflows/deploy.yml@v2.4.0
+    secrets:
+      token: ${{ secrets.CD_TOKEN }}
+    with:
+      # Optional inputs can be passed here
+      ORG: {YOUR-LAB-NAME} #.e.g epfl-cryos
+      REPO: {YOUR-REPO-NAME} # ex. lgb-trsc
+      build_context: '[ "./"]'
+>>>>>>> 59589388 (chore: update issue templates and workflows for improved clarity and functionality)
