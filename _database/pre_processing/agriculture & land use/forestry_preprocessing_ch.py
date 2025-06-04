@@ -1,4 +1,3 @@
-import dm as dm
 import pandas as pd
 import numpy as np
 from _database.pre_processing.api_routines_CH import get_data_api_CH
@@ -9,6 +8,7 @@ import deepl
 import faostat
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
+from model.common.auxiliary_functions import create_years_list, linear_fitting
 
 # Initialize the Deepl Translator
 deepl_api_key = '9ecffb3f-5386-4254-a099-8bfc47167661:fx'
@@ -367,6 +367,8 @@ def get_wood_trade_balance(file):
 # DATA
 ######################################################################
 ######################################################################
+years_ots = create_years_list(1990, 2023, 1)
+years_fts = create_years_list(2025, 2050, 5)
 
 ################################################################
 # Trade Wood - FAOSTAT (Switzerland)
@@ -558,6 +560,26 @@ for key, value in forestry_industry_loop.items():
 
 cdm_energy_density.sort('Categories1')
 
+################################################################
+# Create fts example
+################################################################
+
+# Extract harvest-rate
+dm_harvest = dm_wood_production.filter({'Variables': ['harvest-rate']})
+dm_harvest.filter({'Years': years_ots}, inplace=True)
+dm_harvest_clean = dm_harvest.copy()
+# Remove anomalies for extrapolation
+dm_harvest_clean[:, 2000, ...] = np.nan
+dm_harvest_clean[:, 1990, ...] = np.nan
+dm_harvest_clean.add(np.nan, col_label=years_fts, dim='Years', dummy=True)
+# Linear extrapolation on future years
+linear_fitting(dm_harvest_clean, years_fts)
+#dm_harvest_clean.array = np.maximum(1, dm_harvest_clean.array)  # Example if you want to have at least 1 as harvest-rate
+# Keep only fts years
+dm_harvest_clean.filter({'Years': years_fts}, inplace=True)
+# Append to original data
+dm_harvest.append(dm_harvest_clean, dim='Years')
+
 
 
 ################################################################
@@ -571,3 +593,16 @@ DM_forestry['constant']['industry-byproducts'] = cdm_industry_loop
 DM_forestry
 
 ### Final DM is ots:, fts:, fxa:, (keys of ots must be lever name)
+
+DM_forestry['ots']['harvest-rate'] = dm_harvest.filter({'Years': years_ots})
+DM_forestry['fts']['harvest-rate'] = dict()
+for lev in range(4):
+    DM_forestry['fts']['harvest-rate'][lev+1] = dm_harvest.filter({'Years': years_fts})
+
+# Fake Industry to Forestry interface
+
+# save
+
+f = '../../data/datamatrix/forestry.pickle'
+with open(f, 'wb') as handle:
+    pickle.dump(DM_forestry, handle, protocol=pickle.HIGHEST_PROTOCOL)
