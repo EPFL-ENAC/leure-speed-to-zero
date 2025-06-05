@@ -8,7 +8,7 @@ import deepl
 import faostat
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
-from model.common.auxiliary_functions import create_years_list, linear_fitting
+from model.common.auxiliary_functions import create_years_list, linear_fitting, my_pickle_dump
 
 # Initialize the Deepl Translator
 deepl_api_key = '9ecffb3f-5386-4254-a099-8bfc47167661:fx'
@@ -362,6 +362,27 @@ def get_wood_trade_balance(file):
 
     return dm
 
+################################################################
+# Simulate Industry Interface as a Pickle
+################################################################
+def simulate_industry_input(write_pickle= True):
+    if write_pickle is True:
+        # Path for the input from industry
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        f = os.path.join(current_file_directory, "../../data/xls/fake_ind-to-fst.xlsx")
+        # Read the file:
+        df = pd.read_excel(f, sheet_name="ind-to-fst")
+        # Build DataMatrix
+        dm = DataMatrix.create_from_df(df, num_cat=1)
+        DM_industry_to_forestry = dm
+        # Write Pickle
+        f = os.path.join(current_file_directory, '../../data/interface/industry_to_forestry.pickle')
+        my_pickle_dump(DM_new=DM_industry_to_forestry, local_pickle_file=f)
+
+    return
+
+simulate_industry_input()
+
 ######################################################################
 ######################################################################
 # DATA
@@ -410,17 +431,18 @@ dm.rename_col(
     dim='Categories1')
 
 # Merge the category to match FAOSTAT classification
-dm.groupby( {'industrial-wood': ['industrial-wood','sawlogs']}, dim='Variables', inplace=True)
 
 # Filter out the column that we do not use
 dm.drop(dim='Variables', col_label='chopped-wood|wood-chips')
-dm.drop(dim='Categories1', col_label='Species - total')
+dm.drop(dim='Categories1', col_label='overall')
 
 #dm.datamatrix_plot()
 
 # Compute coniferous, non-coniferous share
+
 dm.normalise('Categories1',  keep_original=True)
 dm_wood_production=dm
+dm_wood_type = dm.filter_w_regex({'Variables': '.*_share'})
 
 #checks
 df = dm.write_df()
@@ -561,6 +583,22 @@ for key, value in forestry_industry_loop.items():
 cdm_energy_density.sort('Categories1')
 
 ################################################################
+# Missing Values - Wood type share - Any other industrial wood
+################################################################
+
+linear_fitting(dm_wood_type,dm_wood_type.col_labels['Years'],based_on=create_years_list(2004,2023,1))
+
+################################################################
+# FXA - Wood type
+################################################################
+
+# Extract OTS & Add FTS
+dm_wood_type.filter({'Years': years_ots}, inplace=True)
+dm_wood_type.add(np.nan, col_label=years_fts, dim='Years', dummy=True)
+# Linear extrapolation on future years
+linear_fitting(dm_wood_type, years_fts)
+
+################################################################
 # Create fts example
 ################################################################
 
@@ -590,6 +628,7 @@ DM_forestry = {'ots': dict(), 'fts': dict(), 'fxa': dict(), 'constant': dict()}
 DM_forestry['constant']['energy-density'] = cdm_energy_density
 DM_forestry['constant']['wood-density'] = cdm_wood_density
 DM_forestry['constant']['industry-byproducts'] = cdm_industry_loop
+DM_forestry['fxa']['coniferous-share'] = dm_wood_type
 DM_forestry
 
 ### Final DM is ots:, fts:, fxa:, (keys of ots must be lever name)
