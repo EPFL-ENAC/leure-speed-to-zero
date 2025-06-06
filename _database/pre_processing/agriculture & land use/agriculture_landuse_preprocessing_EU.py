@@ -1224,7 +1224,7 @@ def climate_smart_crop_processing(list_countries, file_dict):
                                                     na=False), 'Item'] = 'Rice and products'
         df_yield_1990_2022.to_csv(file_dict['yield'], index=False)
 
-    # Unit conversion from [100g/ha] to [kcal/ha]  ----------------------------------------------------------------------------
+    # Unit conversion from [kg/ha] to [kcal/ha]  ----------------------------------------------------------------------------
 
     # Pivot the DataFrame
     pivot_df = df_yield_1990_2022.pivot_table(index=['Area', 'Year', 'Item'], columns='Element',
@@ -1251,7 +1251,7 @@ def climate_smart_crop_processing(list_countries, file_dict):
         right_on=['Item']
     )
     # Operation
-    merged_df['Yield'] = merged_df['Yield'] * merged_df['kcal per 100g']
+    merged_df['Yield'] = merged_df['Yield'] * merged_df['kcal per 100g'] / 0.1
     pivot_df_yield = merged_df[['Area', 'Year', 'Item', 'Yield']]
     pivot_df_yield = pivot_df_yield.copy()
 

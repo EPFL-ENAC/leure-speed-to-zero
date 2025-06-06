@@ -1052,7 +1052,7 @@ def livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro, years_setting):
     dm_cal_liv_pop = DM_livestock['cal_liv_population']
     dm_liv_pop = DM_livestock['liv_slaughtered_rate'].filter({'Variables': ['agr_liv_population_raw']})
     dm_cal_rates_liv_pop = calibration_rates(dm_liv_pop, dm_cal_liv_pop, calibration_start_year=1990,
-                                          calibration_end_year=2023, years_setting=years_setting)
+                                          calibration_end_year=2022, years_setting=years_setting)
     dm_liv_pop.append(dm_cal_rates_liv_pop, dim='Variables')
     dm_liv_pop.operation('agr_liv_population_raw', '*', 'cal_rate', dim='Variables', out_col='agr_liv_population', unit='lsu')
     #dm_liv_slau_egg_dairy.operation('agr_liv_population_raw', '*', 'cal_rate', dim='Variables', out_col='agr_liv_population', unit='lsu')
@@ -1060,7 +1060,7 @@ def livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro, years_setting):
 
     # GRAZING LIVESTOCK
     # Filtering ruminants (bovine & sheep)
-    dm_liv_ruminants = dm_liv_slau_egg_dairy.filter(
+    dm_liv_ruminants = dm_liv_pop.filter(
         {'Variables': ['agr_liv_population'], 'Categories1': ['meat-bovine', 'meat-sheep']})
     # Ruminant livestock [lsu] = population bovine + population sheep
     dm_liv_ruminants.operation('meat-bovine', '+', 'meat-sheep', dim="Categories1", out_col='ruminant')
@@ -1081,7 +1081,7 @@ def livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro, years_setting):
     cdm_cp_ibp_afat = CDM_const['cdm_cp_ibp_afat']
 
     # Filter cal_agr_liv_population for meat
-    cal_liv_population_meat = dm_liv_slau_egg_dairy.filter_w_regex(
+    cal_liv_population_meat = dm_liv_pop.filter_w_regex(
         {'Variables': 'agr_liv_population', 'Categories1': 'meat'})
     #DM_livestock['liv_slaughtered_rate'].append(cal_liv_population_meat,
     #                                            dim='Variables')  # Appending to the dm that has the same categories
@@ -1129,7 +1129,7 @@ def livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro, years_setting):
     dm_ibp_fdk = dm_liv_ibp.filter({'Variables': ['agr_ibp_liv_fdk']})
     dm_liv_ibp.groupby({'total': '.*'}, dim='Categories1', regex=True, inplace=True)
 
-    return DM_livestock, dm_liv_ibp, dm_liv_ibp, dm_liv_prod, dm_liv_slau_egg_dairy,  df_cal_rates_liv_prod, df_cal_rates_liv_pop
+    return DM_livestock, dm_liv_ibp, dm_liv_ibp, dm_liv_prod, dm_liv_pop,  df_cal_rates_liv_prod, df_cal_rates_liv_pop
 
 # CalculationLeaf ALCOHOLIC BEVERAGES INDUSTRY -------------------------------------------------------------------------
 def alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro):
@@ -1506,10 +1506,10 @@ def bioenergy_workflow(DM_bioenergy, CDM_const, DM_ind, dm_bld, dm_tra):
     return DM_bioenergy, dm_oil, dm_lgn, dm_eth, dm_biofuel_fdk
 
 # CalculationLeaf LIVESTOCK MANURE MANAGEMENT & GHG EMISSIONS ----------------------------------------------------------
-def livestock_manure_workflow(DM_manure, DM_livestock, dm_liv_slau_egg_dairy,  cdm_const, years_setting):
+def livestock_manure_workflow(DM_manure, DM_livestock, dm_liv_pop,  cdm_const, years_setting):
 
     # Pre processing livestock population
-    dm_liv_pop = dm_liv_slau_egg_dairy.filter({'Variables': ['agr_liv_population']})
+    dm_liv_pop = dm_liv_pop.filter({'Variables': ['agr_liv_population']})
     DM_manure['liv_n-stock'].append(dm_liv_pop, dim='Variables')
     DM_manure['enteric_emission'].append(dm_liv_pop, dim='Variables')
     DM_manure['ef_liv_CH4_treated'].append(dm_liv_pop, dim='Variables')
@@ -1743,22 +1743,24 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
     # Filling the dummy columns with zeros and sorting alphabetically
     dm_feed_processed.sort(dim='Categories1')
     # dm_feed_processed = np.nan_to_num(dm_feed_processed.array)
-
+    # HERE !
     # Processed Food crop demand [kcal] = processed crops [kcal] / processing yield [%] (only for sweets FIXME check if okay with Gino)
     dm_food_processed = dm_lfs_pro.filter(
-        {'Variables': ['agr_domestic_production'], 'Categories1': ['pro-crop-processed-sweet']})
-    dm_food_processed.rename_col('pro-crop-processed-sweet', 'sweet-to-sugarcrop', dim='Categories1')
+        {'Variables': ['agr_demand'], 'Categories1': ['pro-crop-processed-sweet']})
+    dm_food_processed.rename_col('pro-crop-processed-sweet', 'crop-sugarcrop', dim='Categories1')
     idx_cdm = cdm_food_yield.idx
     idx_food = dm_food_processed.idx
-    dm_temp = dm_food_processed.array[:, :, idx_food['agr_domestic_production'], :] \
+    dm_temp = dm_food_processed.array[:, :, idx_food['agr_demand'], :] \
               / cdm_food_yield.array[idx_cdm['cp_ibp_processed'], :]
-    dm_food_processed.add(dm_temp, dim='Variables', col_label='agr_demand_food_processed', unit='kcal')
+    dm_food_processed.add(dm_temp, dim='Variables', col_label='agr_demand', unit='kcal')
 
     # Pre processing total food demand per category (with dummy categories when necessary)
     # Categories x8 : cereals, oilcrop, pulse, fruit, veg, starch, sugarcrop, rice (+ maybe lgn, alage and insect)
-    dm_crop_demand = dm_lfs.filter_w_regex({'Variables': 'agr_demand', 'Categories1': 'crop-|rice'})
+    dm_crop_demand = dm_lfs.filter({'Variables': ['agr_demand']})
+    dm_crop_demand = dm_crop_demand.filter_w_regex({'Variables': 'agr_demand', 'Categories1': 'crop-|rice'})
     # Accounting for processed food demand :Adding the column for sugarcrops (processed sweets) from previous calculation
-    dm_crop_demand.add(dm_temp, dim='Categories1', col_label='crop-sugarcrop', unit='kcal')
+    dm_sugarcrop = dm_food_processed.filter({'Variables': ['agr_demand']})
+    dm_crop_demand.append(dm_sugarcrop, dim='Categories1')
     # Sorting alphabetically and renaming col
     dm_crop_demand.sort(dim='Categories1')
     dm_crop_demand.rename_col('agr_demand', 'agr_demand_food', dim='Variables')
@@ -1870,7 +1872,7 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
     #dm_crop_demand.drop(dim='Categories1', col_label='insect')
     DM_crop['crop'].append(dm_crop_demand, dim='Variables')
 
-    # Domestic production [kcal] = Food-demand [kcal] * net import [%] (not for lgn, alage, insect)
+    # Domestic production [kcal] = Food-demand [kcal] * net import [%] (not for lgn, algae, insect)
     DM_crop['crop'].operation('agr_demand', '*', 'agr_food-net-import', out_col='agr_domestic-production_food',
                               unit='kcal')
 
@@ -2452,13 +2454,13 @@ def agriculture_refinery_interface(DM_energy_ghg):
     return dm_ref
 
 
-def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_aps, dm_input_use_CO2, dm_crop_residues, dm_CH4, dm_liv_N2O, dm_CH4_rice, dm_fertilizer_N2O, DM_energy_ghg, DM_bioenergy, dm_lgn, dm_eth, dm_oil, dm_aps_ibp, DM_food_demand, dm_lfs_pro, dm_lfs, DM_land, dm_fiber, dm_aps_ibp_oil, dm_voil_tpe, DM_alc_bev, dm_biofuel_fdk, dm_liv_slau_egg_dairy):
+def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_aps, dm_input_use_CO2, dm_crop_residues, dm_CH4, dm_liv_N2O, dm_CH4_rice, dm_fertilizer_N2O, DM_energy_ghg, DM_bioenergy, dm_lgn, dm_eth, dm_oil, dm_aps_ibp, DM_food_demand, dm_lfs_pro, dm_lfs, DM_land, dm_fiber, dm_aps_ibp_oil, dm_voil_tpe, DM_alc_bev, dm_biofuel_fdk, dm_liv_pop):
 
     kcal_to_TWh = 1.163e-12
 
     # Livestock population
     # Note : check if it includes the poultry for eggs
-    dm_liv_meat = dm_liv_slau_egg_dairy.filter_w_regex({'Variables': 'agr_liv_population', 'Categories1': 'meat.*'}, inplace=False)
+    dm_liv_meat = dm_liv_pop.filter_w_regex({'Variables': 'agr_liv_population', 'Categories1': 'meat.*'}, inplace=False)
     df = dm_liv_meat.write_df()
 
     # Meat
@@ -2685,10 +2687,10 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
 
     dm_lfs, df_cal_rates_diet = lifestyle_workflow(DM_lifestyle, DM_lfs, CDM_const, years_setting)
     dm_lfs, dm_lfs_pro = food_demand_workflow(DM_food_demand, dm_lfs)
-    DM_livestock, dm_liv_ibp, dm_liv_ibp, dm_liv_prod, dm_liv_slau_egg_dairy, df_cal_rates_liv_prod, df_cal_rates_liv_pop= livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro, years_setting)
+    DM_livestock, dm_liv_ibp, dm_liv_ibp, dm_liv_prod, dm_liv_pop, df_cal_rates_liv_prod, df_cal_rates_liv_pop= livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro, years_setting)
     DM_alc_bev, dm_bev_ibp_cereal_feed = alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro)
     DM_bioenergy, dm_oil, dm_lgn, dm_eth, dm_biofuel_fdk = bioenergy_workflow(DM_bioenergy, CDM_const, DM_ind, dm_bld, dm_tra)
-    dm_liv_N2O, dm_CH4, df_cal_rates_liv_N2O, df_cal_rates_liv_CH4 = livestock_manure_workflow(DM_manure, DM_livestock, dm_liv_slau_egg_dairy, CDM_const, years_setting)
+    dm_liv_N2O, dm_CH4, df_cal_rates_liv_N2O, df_cal_rates_liv_CH4 = livestock_manure_workflow(DM_manure, DM_livestock, dm_liv_pop, CDM_const, years_setting)
     DM_feed, dm_aps_ibp, dm_feed_req, dm_aps, dm_feed_demand, df_cal_rates_feed = feed_workflow(DM_feed, dm_liv_prod, dm_bev_ibp_cereal_feed, CDM_const, years_setting)
     dm_voil, dm_aps_ibp_oil, dm_voil_tpe = biomass_allocation_workflow(dm_aps_ibp, dm_oil)
     DM_crop, dm_crop, dm_crop_other, dm_feed_processed, dm_food_processed, df_cal_rates_crop = crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const, dm_oil, years_setting)
