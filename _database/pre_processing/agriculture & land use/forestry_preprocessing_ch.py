@@ -365,7 +365,7 @@ def get_wood_trade_balance(file):
 ################################################################
 # Simulate Industry Interface as a Pickle
 ################################################################
-def simulate_industry_input(write_pickle= False):
+def simulate_industry_input(write_pickle= True):
     if write_pickle is True:
         # Path for the input from industry
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -381,7 +381,7 @@ def simulate_industry_input(write_pickle= False):
 
     return
 
-#simulate_industry_input()
+simulate_industry_input()
 
 ######################################################################
 ######################################################################
