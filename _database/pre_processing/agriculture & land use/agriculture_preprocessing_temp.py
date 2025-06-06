@@ -7,19 +7,49 @@ import faostat
 import pandas as pd
 
 
-# CALIBRATION DOMESTIC PROD WITH LOSSES ----------------------------------------------------------------------------------------
 
 # Load pickles
 with open('../../data/datamatrix/agriculture.pickle', 'rb') as handle:
     DM_agriculture = pickle.load(handle)
+
+with open('../../data/datamatrix/lifestyles.pickle', 'rb') as handle:
+    DM_lifestyles = pickle.load(handle)
+# CALIBRATION DOMESTIC PROD WITH LOSSES ----------------------------------------------------------------------------------------
+
+# Load data
+dm_dom_prod_liv = DM_agriculture['fxa']['cal_agr_domestic-production-liv'].copy()
+dm_losses_liv = DM_agriculture['ots']['climate-smart-livestock']['climate-smart-livestock_losses'].copy()
+
+# Livestock domestic prod with losses [kcal] = livestock domestic prod [kcal] * Production losses livestock [%]
+dm_losses_liv.drop(dim='Categories1', col_label=['abp-processed-afat', 'abp-processed-offal'])
+dm_dom_prod_liv.rename_col('cal_agr_domestic-production-liv', 'cal_agr_domestic-production-liv_raw', dim='Variables')
+dm_dom_prod_liv.append(dm_losses_liv, dim='Variables')
+dm_dom_prod_liv.operation('agr_climate-smart-livestock_losses', '*', 'cal_agr_domestic-production-liv_raw',
+                                 out_col='cal_agr_domestic-production-liv', unit='kcal')
+
+# Overwrite
+DM_agriculture['fxa']['cal_agr_domestic-production-liv'][:, :,'cal_agr_domestic-production-liv',:] \
+    = dm_dom_prod_liv[:, :,'cal_agr_domestic-production-liv',:]
+
+# YIELD USING CALIBRATION DOMESTIC PROD WITH LOSSES ----------------------------------------------------------------------------------------
+
+# Load data
+dm_dom_prod_liv = DM_agriculture['fxa']['cal_agr_domestic-production-liv'].copy()
+dm_yield = DM_agriculture['ots']['climate-smart-livestock']['climate-smart-livestock_yield'].copy()
+
+# Yield [kcal/lsu] = Domestic prod with losses [kcal] / producing-slaugthered animals [lsu]
+dm_yield.rename_col('agr_climate-smart-livestock_yield', 'agr_climate-smart-livestock_yield_raw', dim='Variables')
+dm_dom_prod_liv.append(dm_yield, dim='Variables')
+dm_dom_prod_liv.operation('cal_agr_domestic-production-liv', '/', 'agr_climate-smart-livestock_yield_raw',
+                                 out_col='agr_climate-smart-livestock_yield', unit='kcal/lsu')
+
+# Overwrite
+DM_agriculture['ots']['climate-smart-livestock']['climate-smart-livestock_yield'][:, :,'agr_climate-smart-livestock_yield',:] \
+    = dm_dom_prod_liv[:, :,'agr_climate-smart-livestock_yield',:]
 
 
 
 # DIET ----------------------------------------------------------------------------------------
-
-# Load pickles
-with open('../../data/datamatrix/agriculture.pickle', 'rb') as handle:
-    DM_agriculture = pickle.load(handle)
 
 # Load data
 dm_others = DM_agriculture['ots']['diet']['share'].copy()
@@ -90,5 +120,11 @@ DM_agriculture['ots']['diet']['share']['Vaud', :,'share',:] = dm_others['Vaud', 
 DM_agriculture['fxa']['cal_agr_diet']['Switzerland', :,'cal_agr_diet',:] = dm_cal_diet['Switzerland', :,'cal_agr_diet_new',:]
 DM_agriculture['fxa']['cal_agr_diet']['EU27', :,'cal_agr_diet',:] = dm_cal_diet['EU27', :,'cal_agr_diet_new',:]
 DM_agriculture['fxa']['cal_agr_diet']['Vaud', :,'cal_agr_diet',:] = dm_cal_diet['Vaud', :,'cal_agr_diet_new',:]
+
+# Overwrite in pickle
+f = '../../data/datamatrix/agriculture.pickle'
+with open(f, 'wb') as handle:
+    pickle.dump(DM_agriculture, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
 
 print('hello')

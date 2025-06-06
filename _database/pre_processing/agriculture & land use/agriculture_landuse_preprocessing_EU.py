@@ -2039,8 +2039,9 @@ def climate_smart_livestock_processing(df_csl_feed, df_liv_pop, list_countries):
     # Sum the columns to create the 'Producing Animals' column
     pivot_df['Producing Animals'] = pivot_df['Laying'] + pivot_df['Milk Animals']
 
-    # Yield [t/lsu] = Production quantity / Producing animals/Slaugthered
-    pivot_df['Yield [t/lsu]'] = pivot_df['Production'] / pivot_df['Producing Animals']
+    # Yield [t/lsu] = Production quantity / Producing animals/Slaugthered NOW done after using cal values
+    pivot_df['Yield [t/lsu]'] = pivot_df['Producing Animals']
+    #pivot_df['Yield [t/lsu]'] = pivot_df['Production'] / pivot_df['Producing Animals']
 
     # Create a copy
     df_slau_eggs_milk = pivot_df.copy()
@@ -2055,9 +2056,9 @@ def climate_smart_livestock_processing(df_csl_feed, df_liv_pop, list_countries):
     # ----------------------------------------------------------------------------------------------------------------------
     list_elements = ['Producing Animals/Slaughtered', 'Production Quantity']
 
-    list_items = ['Meat, Total > (List)', 'Live Animals > (List)']
+    list_items = ['Meat, Total > (List)']
 
-    # 1990 - 2022
+    # 1990 - 2022 HERE
     code = 'QCL'
     my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
     my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
@@ -2086,27 +2087,37 @@ def climate_smart_livestock_processing(df_csl_feed, df_liv_pop, list_countries):
     df_slaughtered_1990_2022.loc[
         df_slaughtered_1990_2022['Item'].str.contains('Buffalo', case=False, na=False), 'Item'] = 'Cattle'
     df_slaughtered_1990_2022.loc[
-        df_slaughtered_1990_2022['Item'].str.contains('Camel', case=False, na=False), 'Item'] = 'Other non-specified'
-    df_slaughtered_1990_2022.loc[
-        df_slaughtered_1990_2022['Item'].str.contains('Rodent', case=False, na=False), 'Item'] = 'Other non-specified'
-    df_slaughtered_1990_2022.loc[
         df_slaughtered_1990_2022['Item'].str.contains('Chicken', case=False, na=False), 'Item'] = 'Chicken'
     df_slaughtered_1990_2022.loc[
         df_slaughtered_1990_2022['Item'].str.contains('Duck', case=False, na=False), 'Item'] = 'Duck'
+    df_slaughtered_1990_2022.loc[
+        df_slaughtered_1990_2022['Item'].str.contains('Turkeys', case=False, na=False), 'Item'] = 'Turkey'
     df_slaughtered_1990_2022.loc[
         df_slaughtered_1990_2022['Item'].str.contains('Geese', case=False, na=False), 'Item'] = 'Goose'
     df_slaughtered_1990_2022.loc[
         df_slaughtered_1990_2022['Item'].str.contains('Pigeon', case=False, na=False), 'Item'] = 'Pigeon'
     df_slaughtered_1990_2022.loc[
-        df_slaughtered_1990_2022['Item'].str.contains('Horses', case=False, na=False), 'Item'] = 'Horse'
+        df_slaughtered_1990_2022['Item'].str.contains('Horse', case=False, na=False), 'Item'] = 'Horse'
     df_slaughtered_1990_2022.loc[
         df_slaughtered_1990_2022['Item'].str.contains('Rabbits and hares', case=False, na=False), 'Item'] = 'Rabbit'
     df_slaughtered_1990_2022.loc[
         df_slaughtered_1990_2022['Item'].str.contains('Sheep', case=False, na=False), 'Item'] = 'Sheep'
     df_slaughtered_1990_2022.loc[
-        df_slaughtered_1990_2022['Item'].str.contains('Goats', case=False, na=False), 'Item'] = 'Goat'
+        df_slaughtered_1990_2022['Item'].str.contains('Goat', case=False, na=False), 'Item'] = 'Goat'
+    df_slaughtered_1990_2022.loc[
+        df_slaughtered_1990_2022['Item'].str.contains('Asse', case=False, na=False), 'Item'] = 'Asse'
+    df_slaughtered_1990_2022.loc[
+        df_slaughtered_1990_2022['Item'].str.contains('Camel', case=False, na=False), 'Item'] = 'Other non-specified'
+    df_slaughtered_1990_2022.loc[
+        df_slaughtered_1990_2022['Item'].str.contains('Rodent', case=False, na=False), 'Item'] = 'Other non-specified'
+    df_slaughtered_1990_2022.loc[
+        df_slaughtered_1990_2022['Item'].str.contains('Other', case=False, na=False), 'Item'] = 'Other non-specified'
+    df_slaughtered_1990_2022.loc[
+        df_slaughtered_1990_2022['Item'].str.contains('Game', case=False, na=False), 'Item'] = 'Game'
+    df_slaughtered_1990_2022.loc[
+        df_slaughtered_1990_2022['Item'].str.contains('Mule', case=False, na=False), 'Item'] = 'Mule'
 
-    # Unit conversion Poultry : [1000 An] => [An]
+    # HERE! Unit conversion Poultry : [1000 An] => [An]
     df_slaughtered_1990_2022['Value'] = pd.to_numeric(df_slaughtered_1990_2022['Value'], errors='coerce')
     mask = df_slaughtered_1990_2022['Unit'].str.strip() == '1000 An'
     df_slaughtered_1990_2022.loc[mask, 'Value'] *= 1000
@@ -2139,8 +2150,9 @@ def climate_smart_livestock_processing(df_csl_feed, df_liv_pop, list_countries):
     # Create a copy for slau rate
     df_slau_meat = pivot_df_slau.copy()
 
-    # Yield [t/lsu] = Production quantity / Producing animals/Slaugthered
-    pivot_df_slau['Yield [t/lsu]'] = pivot_df_slau['Production'] / pivot_df_slau['Producing Animals/Slaughtered']
+    # Yield [t/lsu] = Production quantity / Producing animals/Slaugthered NOW DONE AFTER using cal values
+    pivot_df_slau['Yield [t/lsu]'] = pivot_df_slau['Producing Animals/Slaughtered']
+    #pivot_df_slau['Yield [t/lsu]'] = pivot_df_slau['Production'] / pivot_df_slau['Producing Animals/Slaughtered']
 
     # Drop the columns
     pivot_df_slau = pivot_df_slau.drop(columns=['Producing Animals/Slaughtered', 'Production'])
@@ -2212,8 +2224,8 @@ def climate_smart_livestock_processing(df_csl_feed, df_liv_pop, list_countries):
         left_on=['Item livestock yield'],
     right_on=['Aggregation']
     )
-    # Operation
-    merged_df['value'] = merged_df['value'] * merged_df['kcal per t']
+    # Operation Unit conversion t => kcal (not necessary since it's the producing animals now)
+    #merged_df['value'] = merged_df['value'] * merged_df['kcal per t']
     df_yield_liv = merged_df[['geoscale', 'timescale', 'Aggregation', 'value']]
     df_yield_liv = df_yield_liv.copy()
 
@@ -5278,8 +5290,44 @@ with open('../../data/datamatrix/agriculture.pickle', 'rb') as handle:
 with open('../../data/datamatrix/lifestyles.pickle', 'rb') as handle:
     DM_lifestyles = pickle.load(handle)
 
-# Filter countries
-filter_DM(DM_agriculture, {'Country': ['Switzerland', 'EU27', 'Vaud']})
+# Filter DM
+filter_DM(DM_agriculture, {'Country': ['Switzerland', 'Vaud', 'EU27']})
+filter_DM(DM_lifestyles, {'Country': ['Switzerland', 'Vaud', 'EU27']})
+
+# CALIBRATION DOMESTIC PROD WITH LOSSES ----------------------------------------------------------------------------------------
+
+# Load data
+dm_dom_prod_liv = DM_agriculture['fxa']['cal_agr_domestic-production-liv'].copy()
+dm_losses_liv = DM_agriculture['ots']['climate-smart-livestock']['climate-smart-livestock_losses'].copy()
+
+# Livestock domestic prod with losses [kcal] = livestock domestic prod [kcal] * Production losses livestock [%]
+dm_losses_liv.drop(dim='Categories1', col_label=['abp-processed-afat', 'abp-processed-offal'])
+dm_dom_prod_liv.rename_col('cal_agr_domestic-production-liv', 'cal_agr_domestic-production-liv_raw', dim='Variables')
+dm_dom_prod_liv.append(dm_losses_liv, dim='Variables')
+dm_dom_prod_liv.operation('agr_climate-smart-livestock_losses', '*', 'cal_agr_domestic-production-liv_raw',
+                                 out_col='cal_agr_domestic-production-liv', unit='kcal')
+
+# Overwrite
+DM_agriculture['fxa']['cal_agr_domestic-production-liv'][:, :,'cal_agr_domestic-production-liv',:] \
+    = dm_dom_prod_liv[:, :,'cal_agr_domestic-production-liv',:]
+
+# YIELD USING CALIBRATION DOMESTIC PROD WITH LOSSES ----------------------------------------------------------------------------------------
+
+# Load data
+dm_dom_prod_liv = DM_agriculture['fxa']['cal_agr_domestic-production-liv'].copy()
+dm_yield = DM_agriculture['ots']['climate-smart-livestock']['climate-smart-livestock_yield'].copy()
+
+# Yield [kcal/lsu] = Domestic prod with losses [kcal] / producing-slaugthered animals [lsu]
+dm_yield.rename_col('agr_climate-smart-livestock_yield', 'agr_climate-smart-livestock_yield_raw', dim='Variables')
+dm_dom_prod_liv.append(dm_yield, dim='Variables')
+dm_dom_prod_liv.operation('cal_agr_domestic-production-liv', '/', 'agr_climate-smart-livestock_yield_raw',
+                                 out_col='agr_climate-smart-livestock_yield', unit='kcal/lsu')
+
+# Overwrite
+DM_agriculture['ots']['climate-smart-livestock']['climate-smart-livestock_yield'][:, :,'agr_climate-smart-livestock_yield',:] \
+    = dm_dom_prod_liv[:, :,'agr_climate-smart-livestock_yield',:]
+
+# DIET ----------------------------------------------------------------------------------------
 
 # Load data
 dm_others = DM_agriculture['ots']['diet']['share'].copy()
