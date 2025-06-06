@@ -35,7 +35,7 @@ def read_data(data_file, lever_setting):
                           'wood-yields':cdm_wood_conversion}
 
     DM_forestry = {'fxa': dict_fxa,
-        'constant': dict_const}
+                   'constant': dict_const}
 
     return DM_forestry, DM_wood_conversion
 
@@ -67,7 +67,7 @@ def forestry(lever_setting, years_setting, interface=Interface()):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     forestry_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/forestry.pickle')
     # Read forestry pickle data based on lever setting and return data in a structured DM
-    DM_forestry = read_data(forestry_data_file, lever_setting)
+    DM_forestry, DM_wood_conversion = read_data(forestry_data_file, lever_setting)
     #cntr_list = DM['key'].col_labels['Country']
     cntr_list = ['Switzerland']
 
@@ -104,7 +104,7 @@ def forestry(lever_setting, years_setting, interface=Interface()):
     # Functions - Wood demand in m3
     ####################################################################################################################
 
-    dm_wood_demand_m3 = wood_demand_m3(dm_wood_demand, DM_forestry)
+    dm_wood_demand_m3 = wood_demand_m3(dm_wood_demand, DM_wood_conversion)
 
     ####################################################################################################################
     # Interface - Forestry to TPE :
