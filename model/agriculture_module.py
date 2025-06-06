@@ -1026,17 +1026,17 @@ def livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro, years_setting):
     dm_liv_slau = dm_liv_prod.filter({'Variables': ['agr_domestic_production_liv_afw']})
     DM_livestock['yield'].append(dm_liv_slau, dim='Variables')  # Append cal_agr_domestic_production_liv_afw in yield
     DM_livestock['yield'].operation('agr_domestic_production_liv_afw', '/', 'agr_climate-smart-livestock_yield',
-                                    dim="Variables", out_col='agr_liv_population_raw', unit='lsu')
+                                    dim="Variables", out_col='agr_liv_population_slau', unit='lsu')
 
-    # Livestock population for meat [lsu] = Livestock slaughtered [lsu] / slaughter rate [%]
-    dm_liv_slau_egg_dairy = DM_livestock['yield'].filter({'Variables': ['agr_liv_population_raw']})
+    # Livestock population (stock) [lsu] = Livestock slaughtered [lsu] / slaughter rate [%]
+    dm_liv_slau_egg_dairy = DM_livestock['yield'].filter({'Variables': ['agr_liv_population_slau']})
     DM_livestock['liv_slaughtered_rate'].append(dm_liv_slau_egg_dairy, dim='Variables')
     #dm_liv_slau_meat = DM_livestock['yield'].filter({'Variables': ['agr_liv_population_raw'],
     #                                                 'Categories1': ['meat-bovine', 'meat-pig', 'meat-poultry',
     #                                                                 'meat-sheep', 'meat-oth-animals']})
     #DM_livestock['liv_slaughtered_rate'].append(dm_liv_slau_meat, dim='Variables')
-    DM_livestock['liv_slaughtered_rate'].operation('agr_liv_population_raw', '/', 'agr_climate-smart-livestock_slaughtered',
-                                                   dim="Variables", out_col='agr_liv_population_meat', unit='lsu')
+    DM_livestock['liv_slaughtered_rate'].operation('agr_liv_population_slau', '/', 'agr_climate-smart-livestock_slaughtered',
+                                                   dim="Variables", out_col='agr_liv_population_raw', unit='lsu')
 
     # Processing for calibration: Livestock population for meat, eggs and dairy ( meat pop & slaughtered livestock for eggs and dairy)
     # Filtering eggs, dairy and meat
@@ -1050,10 +1050,12 @@ def livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro, years_setting):
 
     # Calibration Livestock population
     dm_cal_liv_pop = DM_livestock['cal_liv_population']
-    dm_cal_rates_liv_pop = calibration_rates(dm_liv_slau_egg_dairy, dm_cal_liv_pop, calibration_start_year=1990,
+    dm_liv_pop = DM_livestock['liv_slaughtered_rate'].filter({'Variables': ['agr_liv_population_raw']})
+    dm_cal_rates_liv_pop = calibration_rates(dm_liv_pop, dm_cal_liv_pop, calibration_start_year=1990,
                                           calibration_end_year=2023, years_setting=years_setting)
-    dm_liv_slau_egg_dairy.append(dm_cal_rates_liv_pop, dim='Variables')
-    dm_liv_slau_egg_dairy.operation('agr_liv_population_raw', '*', 'cal_rate', dim='Variables', out_col='agr_liv_population', unit='lsu')
+    dm_liv_pop.append(dm_cal_rates_liv_pop, dim='Variables')
+    dm_liv_pop.operation('agr_liv_population_raw', '*', 'cal_rate', dim='Variables', out_col='agr_liv_population', unit='lsu')
+    #dm_liv_slau_egg_dairy.operation('agr_liv_population_raw', '*', 'cal_rate', dim='Variables', out_col='agr_liv_population', unit='lsu')
     df_cal_rates_liv_pop = dm_to_database(dm_cal_rates_liv_pop, 'none', 'agriculture', level=0)
 
     # GRAZING LIVESTOCK
