@@ -381,7 +381,7 @@ def simulate_industry_input(write_pickle= True):
 
     return
 
-simulate_industry_input()
+#simulate_industry_input()
 
 ######################################################################
 ######################################################################
@@ -437,11 +437,57 @@ dm.drop(dim='Variables', col_label='chopped-wood|wood-chips')
 dm.drop(dim='Categories1', col_label='overall')
 
 #dm.datamatrix_plot()
+for col in dm.col_labels['Variables']:
+    dm.rename_col(col, 'fst_production-m3_'+col, dim='Variables')
+dm.deepen(based_on='Variables')
+dm.switch_categories_order()
+dm.drop(dim='Categories1', col_label='total')
 
-# Compute coniferous, non-coniferous share
+################################################################
+# Constants - Wood density
+################################################################
 
+"""forestry_wood_density = {'pulp_coniferous': 1.4,
+                         'pulp_non-coniferous': 1.25,
+                         'timber_coniferous': 1.82,
+                         'timber_non-coniferous': 1.43,
+                         'industrial-wood_coniferous': 1.43,
+                         'industrial-wood_non-coniferous': 1.25,
+                         'woodfuel_coniferous': 1.43,
+                         'woodfuel_non-coniferous': 1.25,
+                         }"""
+forestry_wood_density = {'pulp_coniferous': 1.4,
+                         'pulp_non-coniferous': 1.25,
+                         'sawlogs_coniferous': 1.82,
+                         'sawlogs_non-coniferous': 1.43,
+                         'industrial-wood_coniferous': 1.43,
+                         'industrial-wood_non-coniferous': 1.25,
+                         'woodfuel_coniferous': 1.43,
+                         'woodfuel_non-coniferous': 1.25,
+                         'any-other-wood_coniferous': 1.43,
+                         'any-other-wood_non-coniferous': 1.25,
+                         }
+cdm_wood_density = ConstantDataMatrix(col_labels={'Variables': ['fst_wood-density'],
+                                              'Categories1': list(forestry_wood_density.keys())},
+                                  units={'fst_wood-density': 'm3/t'})
+
+cdm_wood_density.array = np.zeros((len(cdm_wood_density.col_labels['Variables']),
+                                    len(cdm_wood_density.col_labels['Categories1'])))
+idx = cdm_wood_density.idx
+for key, value in forestry_wood_density.items():
+    cdm_wood_density.array[0, idx[key]] = value
+
+cdm_wood_density.deepen(based_on='Categories1')
+
+cdm_conv = cdm_wood_density.filter({'Categories1': dm.col_labels['Categories1']})
+
+#### Convert m3 to tonnes
+arr_tonnes = dm[:, :, 'fst_production-m3', :, :] / cdm_conv[np.newaxis, np.newaxis, 'fst_wood-density', :, :]
+dm.add(arr_tonnes, dim='Variables', col_label='fst_production-t', unit='t')
+
+## Normalise
 dm.normalise('Categories1',  keep_original=True)
-dm_wood_production=dm
+dm_wood_production = dm
 dm_wood_type = dm.filter_w_regex({'Variables': '.*_share'})
 
 #checks
@@ -510,37 +556,7 @@ DM_preprocessing_forestry
 ################################################################
 ################################################################
 
-################################################################
-# Constants - Wood density
-################################################################
 
-forestry_wood_density = {'pulp-to-softwood': 1.4,
-                         'pulp-to-hardwood': 1.25,
-                         'timber-to-softwood': 1.82,
-                         'timber-to-hardwood': 1.43,
-                         'industrial-to-softwood': 1.43,
-                         'industrial-to-hardwood': 1.25,
-                         'woodfuel-to-softwood': 1.43,
-                         'woodfuel-to-hardwood': 1.25,
-                         }
-cdm_wood_density = ConstantDataMatrix(col_labels={'Variables': ['fst_wood-density'],
-                                              'Categories1': ['pulp-to-softwood',
-                                                              'pulp-to-hardwood',
-                                                              'timber-to-softwood',
-                                                              'timber-to-hardwood',
-                                                              'industrial-to-softwood',
-                                                              'industrial-to-hardwood',
-                                                              'woodfuel-to-softwood',
-                                                              'woodfuel-to-hardwood']},
-                                  units={'fst_wood-density': 'm3/t'})
-
-cdm_wood_density.array = np.zeros((len(cdm_wood_density.col_labels['Variables']),
-                                    len(cdm_wood_density.col_labels['Categories1'])))
-idx = cdm_wood_density.idx
-for key, value in forestry_wood_density.items():
-    cdm_wood_density.array[0, idx[key]] = value
-
-cdm_wood_density.sort('Categories1')
 
 ################################################################
 # Constants - Wood energy density
