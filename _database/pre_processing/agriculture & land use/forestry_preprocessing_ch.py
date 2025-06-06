@@ -261,7 +261,7 @@ def get_wood_energy_by_use(file_url, local_filename):
     dm_wood_energy_use=dm_wood_energy_use_gwh
     dm_wood_energy_use.append(dm_wood_energy_use_m3, dim='Variables')
     dm_wood_energy_use.operation('fst_wood-energy-use-gwh', '/', 'fst_wood-energy-use-m3', out_col='fst_energy-density', unit='gwh/m3')
-    dm_wood_energy_use.datamatrix_plot({'Variables': ['fst_energy-density']})
+    #dm_wood_energy_use.datamatrix_plot({'Variables': ['fst_energy-density']})
 
     return dm_wood_energy_use
 
@@ -365,7 +365,7 @@ def get_wood_trade_balance(file):
 ################################################################
 # Simulate Industry Interface as a Pickle
 ################################################################
-def simulate_industry_input(write_pickle= True):
+def simulate_industry_input(write_pickle= False):
     if write_pickle is True:
         # Path for the input from industry
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -441,6 +441,9 @@ for col in dm.col_labels['Variables']:
     dm.rename_col(col, 'fst_production-m3_'+col, dim='Variables')
 dm.deepen(based_on='Variables')
 dm.switch_categories_order()
+dm_harvest_rate = dm.filter_w_regex({'Categories1': 'total'})
+dm_harvest_rate_all =dm_harvest_rate.groupby({'total': ['coniferous','non-coniferous']},dim='Categories2', inplace=False)
+dm_harvest_rate_all.append(dm_harvest_rate, dim='Categories2')
 dm.drop(dim='Categories1', col_label='total')
 
 ################################################################
@@ -466,7 +469,10 @@ forestry_wood_density = {'pulp_coniferous': 1.4,
                          'woodfuel_non-coniferous': 1.25,
                          'any-other-wood_coniferous': 1.43,
                          'any-other-wood_non-coniferous': 1.25,
+                         'timber_coniferous': 1.82,
+                         'timber_non-coniferous': 1.43
                          }
+
 cdm_wood_density = ConstantDataMatrix(col_labels={'Variables': ['fst_wood-density'],
                                               'Categories1': list(forestry_wood_density.keys())},
                                   units={'fst_wood-density': 'm3/t'})
@@ -486,7 +492,7 @@ arr_tonnes = dm[:, :, 'fst_production-m3', :, :] / cdm_conv[np.newaxis, np.newax
 dm.add(arr_tonnes, dim='Variables', col_label='fst_production-t', unit='t')
 
 ## Normalise
-dm.normalise('Categories1',  keep_original=True)
+dm.normalise('Categories2',  keep_original=True)
 dm_wood_production = dm
 dm_wood_type = dm.filter_w_regex({'Variables': '.*_share'})
 
@@ -522,9 +528,15 @@ dm_forest_area=dm
 # Harvest rate
 ################################################################
 
-ay_harvest_rate = dm_wood_production[:, :, 'total', :] \
-                             / dm_forest_area[:, :,'productive-forest-area', np.newaxis]
-dm_wood_production.add(ay_harvest_rate,col_label='harvest-rate',dim='Variables',unit='m3/ha')
+dm_harvest_rate_all = dm_harvest_rate_all.flatten()
+dm_harvest_rate_all.rename_col(
+    ['total_total', 'total_coniferous', 'total_non-coniferous'],
+    ['total', 'coniferous', 'non-coniferous'],
+    dim='Categories1')
+
+ay_harvest_rate = dm_harvest_rate_all[:, :, :,:] \
+                             / dm_forest_area[:, :,'productive-forest-area',np.newaxis, np.newaxis]
+dm_harvest_rate_all.add(ay_harvest_rate,col_label='harvest-rate',dim='Variables',unit='m3/ha')
 
 #dm_wood_production.datamatrix_plot({'Variables': ['harvest-rate']})
 
@@ -581,22 +593,48 @@ for key, value in forestry_energy_density.items():
 cdm_energy_density.sort('Categories1')
 
 ################################################################
-# Constants - Wood energy density
+# Constants - Industry yields
 ################################################################
 
-forestry_industry_loop = {'wood-fuel-byproducts': 0.002326}
+forestry_industry_yields = {'wood-fuel-byproducts': 0.5,
+                          'timber-to-sawlogs:':1.67,
+                          'pulp-to-industrial-wood':2.5
+                          }
 
-cdm_industry_loop = ConstantDataMatrix(col_labels={'Variables': ['fst_industry-byproducts'],
-                                                    'Categories1': ['wood-fuel-byproducts']},
+cdm_industry_yields = ConstantDataMatrix(col_labels={'Variables': ['fst_industry-yields'],
+                                                    'Categories1': ['wood-fuel-byproducts',
+                                                                    'timber-to-sawlogs:',
+                                                                    'pulp-to-industrial-wood']},
                                         units={'fst_industry-byproducts': '%'})
 
-cdm_industry_loop.array = np.zeros((len(cdm_industry_loop.col_labels['Variables']),
-                                    len(cdm_industry_loop.col_labels['Categories1'])))
-idx = cdm_industry_loop.idx
-for key, value in forestry_industry_loop.items():
-    cdm_energy_density.array[0, idx[key]] = value
+cdm_industry_yields.array = np.zeros((len(cdm_industry_yields.col_labels['Variables']),
+                                    len(cdm_industry_yields.col_labels['Categories1'])))
+idx = cdm_industry_yields.idx
+for key, value in forestry_industry_yields.items():
+    cdm_industry_yields.array[0, idx[key]] = value
 
-cdm_energy_density.sort('Categories1')
+cdm_industry_yields.sort('Categories1')
+
+################################################################
+# Constants - Conversion to match STATS categories
+################################################################
+
+forestry_conversion_industry_to_wood = {'other-industrial': 1,
+                          'timber:':1.67,
+                          'pulp':2.5
+                          }
+
+cdm_forestry_conversion_industry_to_wood = ConstantDataMatrix(col_labels={'Variables': ['fst_industry-to-wood-category'],
+                                                    'Categories1': list(forestry_conversion_industry_to_wood.keys())},
+                                        units={'fst_industry-to-wood-category': '%'})
+
+cdm_forestry_conversion_industry_to_wood.array = np.zeros((len(cdm_forestry_conversion_industry_to_wood.col_labels['Variables']),
+                                    len(cdm_forestry_conversion_industry_to_wood.col_labels['Categories1'])))
+idx = cdm_forestry_conversion_industry_to_wood.idx
+for key, value in forestry_conversion_industry_to_wood.items():
+    cdm_forestry_conversion_industry_to_wood.array[0, idx[key]] = value
+
+cdm_forestry_conversion_industry_to_wood.sort('Categories1')
 
 ################################################################
 # Missing Values - Wood type share - Any other industrial wood
@@ -619,7 +657,7 @@ linear_fitting(dm_wood_type, years_fts)
 ################################################################
 
 # Extract harvest-rate
-dm_harvest = dm_wood_production.filter({'Variables': ['harvest-rate']})
+dm_harvest = dm_harvest_rate_all.filter({'Variables': ['harvest-rate']})
 dm_harvest.filter({'Years': years_ots}, inplace=True)
 dm_harvest_clean = dm_harvest.copy()
 # Remove anomalies for extrapolation
@@ -643,7 +681,8 @@ dm_harvest.append(dm_harvest_clean, dim='Years')
 DM_forestry = {'ots': dict(), 'fts': dict(), 'fxa': dict(), 'constant': dict()}
 DM_forestry['constant']['energy-density'] = cdm_energy_density
 DM_forestry['constant']['wood-density'] = cdm_wood_density
-DM_forestry['constant']['industry-byproducts'] = cdm_industry_loop
+DM_forestry['constant']['industry-byproducts'] = cdm_industry_yields
+DM_forestry['constant']['wood-category-conversion-factors'] = cdm_forestry_conversion_industry_to_wood
 DM_forestry['fxa']['coniferous-share'] = dm_wood_type
 DM_forestry
 

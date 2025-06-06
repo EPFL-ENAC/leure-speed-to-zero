@@ -21,13 +21,23 @@ def read_data(data_file, lever_setting):
     dict_const = DM_forestry['constant']
     dict_fxa = DM_forestry['fxa']
 
+    # Split of wood used for each use (e.g., share of coniferous used for fuelwood)
+    dm_wood_type_split_per_use = DM_forestry['fxa']['coniferous-share']
+    dm_wood_type_split_per_use.filter(({'Variables': ['fst_production-t_share']}))
+    cdm_wood_conversion = DM_forestry['constant']['wood-category-conversion-factors']
+    cdm_wood_yields = DM_forestry['constant']['industry-byproducts']
+
     # Read fts based on lever_setting
     #DM_ots_fts = read_level_data(DM_forestry, lever_setting)
+
+    DM_wood_conversion = {'coniferous-share':dm_wood_type_split_per_use,
+                          'industry-yields':cdm_wood_yields,
+                          'wood-yields':cdm_wood_conversion}
 
     DM_forestry = {'fxa': dict_fxa,
         'constant': dict_const}
 
-    return DM_forestry
+    return DM_forestry, DM_wood_conversion
 
 #####################################################################################################################
 #####################################################################################################################
@@ -38,9 +48,11 @@ def read_data(data_file, lever_setting):
 #####################################################################################################################
 # Calculation Tree - Wood demand in m3:
 #####################################################################################################################
-def wood_demand_m3 (dm_wood_demand, DM_forestry):
+def wood_demand_m3 (dm_wood_demand, DM_wood_conversion):
     # Wood demand in tonnes
-    dm_wood_demand_industry = dm_wood_demand
+    dm_wood_demand_industry_m3 = dm_wood_demand
+    dm_wood_yields = DM_wood_conversion['wood-yields']
+    dm_wood_demand_industry_m3 = dm_wood_demand
     dm_wood_demand
 
     return dm_wood_demand
