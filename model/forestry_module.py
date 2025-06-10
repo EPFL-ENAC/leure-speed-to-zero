@@ -26,13 +26,17 @@ def read_data(data_file, lever_setting):
     dm_wood_type_split_per_use.filter(({'Variables': ['fst_production-t_share']}))
     cdm_wood_conversion = DM_forestry['constant']['wood-category-conversion-factors']
     cdm_wood_yields = DM_forestry['constant']['industry-byproducts']
+    cdm_wood_density = DM_forestry['constant']['wood-density']
+    cdm_other_industrial_wood_demand = DM_forestry['fxa']['any-other-industrial-wood']
 
     # Read fts based on lever_setting
     #DM_ots_fts = read_level_data(DM_forestry, lever_setting)
 
     DM_wood_conversion = {'coniferous-share':dm_wood_type_split_per_use,
                           'industry-yields':cdm_wood_yields,
-                          'wood-yields':cdm_wood_conversion}
+                          'wood-yields':cdm_wood_conversion,
+                          'wood-density':cdm_wood_density,
+                          'any-other-wood-demand':cdm_other_industrial_wood_demand }
 
     DM_forestry = {'fxa': dict_fxa,
                    'constant': dict_const}
@@ -74,6 +78,15 @@ def wood_demand_m3 (dm_wood_demand, DM_wood_conversion):
         ['industrial-wood','any-other-wood','sawlogs'],
         dim='Categories1')
 
+    # Adding the wood demand for calibration / uncovered by the model
+    dm_fxa = DM_wood_conversion['any-other-wood-demand']
+    dm_fxa.rename_col('fxa_any-other-wood', 'wood-category-eq', dim='Variables')
+    arr = dm_fxa.array
+    dm_fxa.add(arr, dim='Variables', col_label='ind_wood', unit='t')
+    dm_wood_demand_industry_m3.append(dm_fxa, dim='Categories1')
+    dm_wood_demand_industry_m3.groupby({'any-other-wood':['any-other-wood','any-other-industrial-demand']}, dim='Categories1',inplace=True)
+
+
     # Split between coniferous and non-coniferous wood
     dm_wood_split = DM_wood_conversion['coniferous-share'].filter_w_regex({'Variables': 'fst_production-t_share'})
     dm_wood_split.drop(dim='Categories1', col_label='woodfuel')
@@ -83,11 +96,17 @@ def wood_demand_m3 (dm_wood_demand, DM_wood_conversion):
     dm_wood_demand_t.add(ay_wood_split, col_label='wood-demand-per-type', dim='Variables', unit='t',dummy = True)
 
     # Turn wood demand in tonnes to wood demand in m3
+    dm_wood_density = DM_wood_conversion['wood-density'].filter({'Categories1': ['any-other-wood', 'industrial-wood', 'sawlogs','woodfuel']})
+    dm_wood_density.drop(dim='Categories1', col_label='woodfuel')
+    dm_wood_use_m3 = dm_wood_demand_t.filter({'Variables': ['wood-demand-per-type']})
+    ay_wood_density = dm_wood_use_m3[:, :, :, :, :] * \
+                    dm_wood_density[np.newaxis, np.newaxis,:, :, :]
+    dm_wood_use_m3.add(ay_wood_density, col_label='wood-use', dim='Variables', unit='m3', dummy=True)
 
     # Compute the by-products of wood industry to wood fuel
     ### Warning - Trade is tricky to compute industrial byproducts ####
 
-    return dm_wood_demand_t
+    return dm_wood_use_m3
 
 
 def forestry(lever_setting, years_setting, interface=Interface()):

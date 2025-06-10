@@ -9,6 +9,7 @@ import faostat
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.auxiliary_functions import create_years_list, linear_fitting, my_pickle_dump
+from model.common.interface_class import Interface
 
 # Initialize the Deepl Translator
 deepl_api_key = '9ecffb3f-5386-4254-a099-8bfc47167661:fx'
@@ -365,7 +366,7 @@ def get_wood_trade_balance(file):
 ################################################################
 # Simulate Industry Interface as a Pickle
 ################################################################
-def simulate_industry_input(write_pickle= True):
+def simulate_industry_input(write_pickle= False):
     if write_pickle is True:
         # Path for the input from industry
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -382,6 +383,44 @@ def simulate_industry_input(write_pickle= True):
     return
 
 simulate_industry_input()
+
+def simulate_industry_other_wood(refresh = True,interface=Interface()):
+    if refresh is True:
+        # Path for the input from industry
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        f = os.path.join(current_file_directory, "../../data/xls/fake_ind-to-fst.xlsx")
+        # Read the file:
+        df_industry_calibration = pd.read_excel(f, sheet_name="ind-to-fst")
+        dm_industry_calibration = DataMatrix.create_from_df(df_industry_calibration, num_cat=1)
+
+        cntr_list = ['Switzerland','Vaud']
+        if interface.has_link(from_sector='industry', to_sector='forestry'):
+            dm_wood_demand = interface.get_link(from_sector='industry', to_sector='forestry')
+        else:
+            if len(interface.list_link()) != 0:
+                print("You are missing " + 'industry' + " to " + 'forestry' + " interface")
+            lfs_interface_data_file = os.path.join(current_file_directory,
+                                                   '../../data/interface/industry_to_forestry.pickle')
+            with open(lfs_interface_data_file, 'rb') as handle:
+                dm_industry_wood_demand = pickle.load(handle)
+            dm_industry_wood_demand.filter({'Country': cntr_list}, inplace=True)
+
+        # Compute the FXA/Calibration for "any-other-wood"
+        # that is any wood that is not covered by EUCalc and that is used a biomaterial (not energy)
+        # Gap between EUCalc and Calibration
+        ay_fxa_wood_other = dm_industry_calibration[...] -\
+                            dm_industry_wood_demand[...]
+        dm_industry_wood_demand.add(ay_fxa_wood_other, col_label='fxa_any-other-wood', dim='Variables', unit='t')
+        dm_fxa_wood_demand = dm_industry_wood_demand
+        # Sum-up the missing wood
+        dm_fxa_wood_demand.filter({'Variables': ['fxa_any-other-wood']})
+        dm_fxa_wood_demand.groupby({'any-other-industrial-demand': ['other-industrial', 'pulp','timber']},
+                                 dim='Categories1',  inplace=True)
+        dm_fxa_wood_demand.drop(dim='Variables',  col_label= 'ind_wood')
+
+    return dm_fxa_wood_demand
+
+dm_fxa_wood_demand = simulate_industry_other_wood()
 
 ######################################################################
 ######################################################################
@@ -558,7 +597,8 @@ DM_preprocessing_forestry = {'calibration': dm_wood_energy_calibration,
                              'production': dm_wood_production,
                              'wood-energy-use': dm_wood_energy_use,
                              'forest-area': dm_forest_area,
-                             'wood-trade':dm_roundwood_export}
+                             'wood-trade':dm_roundwood_export,
+                             'any-other-industrial-wood':dm_fxa_wood_demand}
 
 DM_preprocessing_forestry
 
@@ -684,6 +724,7 @@ DM_forestry['constant']['wood-density'] = cdm_wood_density
 DM_forestry['constant']['industry-byproducts'] = cdm_industry_yields
 DM_forestry['constant']['wood-category-conversion-factors'] = cdm_forestry_conversion_industry_to_wood
 DM_forestry['fxa']['coniferous-share'] = dm_wood_type
+DM_forestry['fxa']['any-other-industrial-wood'] = dm_fxa_wood_demand
 DM_forestry
 
 ### Final DM is ots:, fts:, fxa:, (keys of ots must be lever name)
