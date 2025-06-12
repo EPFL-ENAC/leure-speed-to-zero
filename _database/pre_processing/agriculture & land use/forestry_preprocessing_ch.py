@@ -614,15 +614,15 @@ DM_preprocessing_forestry
 # Constants - Wood energy density
 ################################################################
 
-forestry_energy_density = {'woodfuel-average': 0.002326,
-                         'woodfuel-hardwood': 0.0026749,
-                         'woodfuel-softwood': 0.00250045
+forestry_energy_density = {'average': 2.326,
+                         'non-coniferous': 2.6749,
+                         'coniferous': 2.50045
                          }
 cdm_energy_density = ConstantDataMatrix(col_labels={'Variables': ['fst_energy-density'],
-                                                    'Categories1': ['woodfuel-average',
-                                                                    'woodfuel-hardwood',
-                                                                    'woodfuel-softwood']},
-                                        units={'fst_energy-density': 'GWh/m3'})
+                                                    'Categories1': ['average',
+                                                                    'non-coniferous',
+                                                                    'coniferous']},
+                                        units={'fst_energy-density': 'MWh/m3'})
 
 cdm_energy_density.array = np.zeros((len(cdm_energy_density.col_labels['Variables']),
                                     len(cdm_energy_density.col_labels['Categories1'])))
