@@ -1674,6 +1674,10 @@ def feed_workflow(DM_feed, dm_liv_prod, dm_bev_ibp_cereal_feed, CDM_const, years
     DM_feed['ration'].operation('agr_demand_feed_raw', '*', 'cal_rate', dim='Variables', out_col='agr_demand_feed', unit='kcal')
     df_cal_rates_feed = dm_to_database(dm_cal_rates_feed, 'none', 'agriculture',
                                        level=0)  # Exporting calibration rates to check at the end
+    df_cal_feed = dm_to_database(dm_cal_feed, 'none', 'agriculture',
+                                       level=0)  # Exporting calibration rates to check at the end
+    df_feed_demand = dm_to_database(dm_feed_demand, 'none', 'agriculture',
+                                       level=0)  # Exporting calibration rates to check at the end
 
     return DM_feed, dm_aps_ibp, dm_feed_req, dm_aps, dm_feed_demand, df_cal_rates_feed
 
@@ -1744,13 +1748,16 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
     dm_feed_processed.sort(dim='Categories1')
     # dm_feed_processed = np.nan_to_num(dm_feed_processed.array)
     # HERE !
-    # Processed Food crop demand [kcal] = processed crops [kcal] / processing yield [%] (only for sweets FIXME check if okay with Gino)
+    # Processed Food crop demand [kcal] = processed crops [kcal] / processing yield [%] (only for sweets & processed sugar)
     dm_food_processed = dm_lfs_pro.filter(
-        {'Variables': ['agr_demand'], 'Categories1': ['pro-crop-processed-sweet']})
+        {'Variables': ['agr_demand'], 'Categories1': ['pro-crop-processed-sweet', 'pro-crop-processed-sugar']})
+    # sum processed sugar in one variable : sweets : sweets + processed sugar
+    dm_food_processed.groupby({'pro-crop-processed-sweet': '.*'}, dim='Categories1', regex=True, inplace=True)
     dm_food_processed.rename_col('pro-crop-processed-sweet', 'crop-sugarcrop', dim='Categories1')
+    dm_food_processed.rename_col('agr_demand', 'agr_demand_temp', dim='Variables')
     idx_cdm = cdm_food_yield.idx
     idx_food = dm_food_processed.idx
-    dm_temp = dm_food_processed.array[:, :, idx_food['agr_demand'], :] \
+    dm_temp = dm_food_processed.array[:, :, idx_food['agr_demand_temp'], :] \
               / cdm_food_yield.array[idx_cdm['cp_ibp_processed'], :]
     dm_food_processed.add(dm_temp, dim='Variables', col_label='agr_demand', unit='kcal')
 
@@ -1776,6 +1783,11 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
     # Dropping processed crops feed demand
     dm_crop_feed_demand.drop(dim='Categories1', col_label=['crop-processed-cake', 'crop-processed-molasse',
                                                            'crop-processed-sugar', 'crop-processed-voil'])
+    # Fill NaN with 0.0
+    array_temp = dm_crop_feed_demand.array[:,:,:,:]
+    array_temp = np.nan_to_num(array_temp, nan=0)
+    dm_crop_feed_demand.array[:, :, :, :] = array_temp
+
     # Accounting for processed feed demand : Adding the columns for sugarcrops and oilcrops from previous calculation
     # Appending with dm_feed_processed
     dm_crop_feed_demand.append(dm_feed_processed, dim='Variables')
@@ -1880,7 +1892,7 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
     DM_crop['crop'].operation('agr_domestic-production_food', '*', 'agr_climate-smart-crop_losses',
                               out_col='agr_domestic-production_afw_raw', unit='kcal')
 
-    # CALIBRATION CROP PRODUCTION --------------------------------------------------------------------------------------
+    # CALIBRATION CROP PRODUCTION HERE! --------------------------------------------------------------------------------------
     dm_cal_crop = DM_crop['cal_crop']
     dm_crop = DM_crop['crop'].filter({'Variables': ['agr_domestic-production_afw_raw']})
     dm_cal_rates_crop = calibration_rates(dm_crop, dm_cal_crop, calibration_start_year=1990,
@@ -1891,8 +1903,10 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
     df_cal_crop = dm_to_database(dm_cal_crop, 'none', 'agriculture', level=0)
     df_crop = dm_to_database(dm_crop.filter({'Variables': ['agr_domestic-production_afw_raw']}), 'none', 'agriculture', level=0)
 
-    #DM_crop['crop'].operation('agr_domestic-production_afw', '*', 'caf_agr_domestic-production_food',
-    #                          out_col='cal_agr_domestic-production_food', unit='kcal')
+    # Fill NaN with 0.0 for rice (because no rice produced in Switzerland)
+    array_temp = DM_crop['crop'].array[:,:,:,:]
+    array_temp = np.nan_to_num(array_temp, nan=0)
+    DM_crop['crop'].array[:, :, :, :] = array_temp
 
     # CROP RESIDUES ----------------------------------------------------------------------------------------------------
 
@@ -1905,7 +1919,7 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
 
     # Total crop residues = sum(Crop residues per crop type) (In KNIME but not used)
 
-    # Residues per use (only for cereal residues) [Mt] = residues [kcal] * biomass hierarchy use [Mt/kcal]FIXME check with Gino if KNIME error assumption is correct (to use residues instead of dom prod afw)
+    # Residues per use (only for cereal residues) [Mt] = residues [kcal] * biomass hierarchy use [Mt/kcal] FIXME check with Gino if KNIME error assumption is correct (to use residues instead of dom prod afw)
     dm_residues_cereal = DM_crop['residues_yield'].filter({'Variables': ['agr_residues'], 'Categories1': ['cereal']})
     dm_residues_cereal = dm_residues_cereal.flatten()
     idx_residues = dm_residues_cereal.idx

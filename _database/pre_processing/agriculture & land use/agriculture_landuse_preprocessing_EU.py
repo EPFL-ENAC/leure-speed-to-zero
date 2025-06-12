@@ -466,6 +466,11 @@ def self_sufficiency_processing(years_ots, list_countries, file_dict):
             df_ssr_2010_2021['Element'].str.contains('Export quantity', case=False, na=False), 'Element'] = 'Export'
         df_ssr = pd.concat([df_ssr_1990_2013, df_ssr_2010_2021])
 
+        # Renaming the items for name matching
+        df_ssr.loc[
+            df_ssr['Item'].str.contains('Rice \(Milled Equivalent\)', case=False,
+                                                   na=False), 'Item'] = 'Rice and products'
+
         df_ssr.to_csv(file_dict['ssr'], index=False)
 
     # COMMODITY BALANCES (NON-FOOD) (OLD METHODOLOGY) - For molasse and cakes ----------------------------------------------
@@ -565,6 +570,11 @@ def self_sufficiency_processing(years_ots, list_countries, file_dict):
     # SSR [%] = (100*Production) / (Production + Imports - Exports)
     # Step 1: Pivot the DataFrame to get 'Production', 'Import Quantity', and 'Export Quantity' in separate columns
     pivot_df = df_ssr.pivot_table(index=['Area', 'Year', 'Item'], columns='Element', values='Value').reset_index()
+
+    # Fill na with 0
+    pivot_df['Production'].fillna(0.0, inplace=True)
+    pivot_df['Import'].fillna(0.0, inplace=True)
+    pivot_df['Export'].fillna(0.0, inplace=True)
 
     # Create a copy for feed pre-processing and drop irrelevant columns
     df_csl_feed = pivot_df.copy()
@@ -1866,7 +1876,7 @@ def climate_smart_livestock_processing(df_csl_feed, df_liv_pop, list_countries):
                                          values='Value').reset_index()
 
     # Replace NaN with 0
-    pivot_df['Losses'].fillna(0, inplace=True)
+    pivot_df['Losses'].fillna(0.0, inplace=True)
 
     # Step 2: Compute the Losses [%] (really it's unit less)
     pivot_df['Losses[%]'] = 1 + (pivot_df['Losses'] / pivot_df['Production'])
@@ -1913,7 +1923,7 @@ def climate_smart_livestock_processing(df_csl_feed, df_liv_pop, list_countries):
     df_losses_csl_pathwaycalc['geoscale'] = df_losses_csl_pathwaycalc['geoscale'].replace('Czechia', 'Czech Republic')
 
     # ----------------------------------------------------------------------------------------------------------------------
-    # FEED RATION ----------------------------------------------------------------------------------------------------------
+    # FEED RATION HERE! ----------------------------------------------------------------------------------------------------------
     # ---------------------------------------------------------------------------------------------------------------------
     # Fill nan with zeros
     df_csl_feed['Feed'].fillna(0, inplace=True)
@@ -4059,7 +4069,7 @@ def nitrogen_calibration(list_countries):
 
 def feed_calibration(list_countries):
     # ----------------------------------------------------------------------------------------------------------------------
-    # FEED DEMAND PART I --------------------------------------------------------------------------------------------
+    # HERE! FEED DEMAND PART I --------------------------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------------------------------------------
 
     # Read data ------------------------------------------------------------------------------------------------------------
@@ -5299,6 +5309,9 @@ filter_DM(DM_lifestyles, {'Country': ['Switzerland', 'Vaud', 'EU27']})
 # Load data
 dm_dom_prod_liv = DM_agriculture['fxa']['cal_agr_domestic-production-liv'].copy()
 dm_losses_liv = DM_agriculture['ots']['climate-smart-livestock']['climate-smart-livestock_losses'].copy()
+dm_dom_prod_crop = DM_agriculture['fxa']['cal_agr_domestic-production_food'].copy()
+dm_losses_crop = DM_agriculture['ots']['climate-smart-crop']['climate-smart-crop_losses'].copy()
+
 
 # Livestock domestic prod with losses [kcal] = livestock domestic prod [kcal] * Production losses livestock [%]
 dm_losses_liv.drop(dim='Categories1', col_label=['abp-processed-afat', 'abp-processed-offal'])
@@ -5307,9 +5320,17 @@ dm_dom_prod_liv.append(dm_losses_liv, dim='Variables')
 dm_dom_prod_liv.operation('agr_climate-smart-livestock_losses', '*', 'cal_agr_domestic-production-liv_raw',
                                  out_col='cal_agr_domestic-production-liv', unit='kcal')
 
+# Crop domestic prod with losses [kcal] = crop domestic prod [kcal] * Production losses crop [%]
+dm_dom_prod_crop.rename_col('cal_agr_domestic-production_food', 'cal_agr_domestic-production_food_raw', dim='Variables')
+dm_dom_prod_crop.append(dm_losses_crop, dim='Variables')
+dm_dom_prod_crop.operation('agr_climate-smart-crop_losses', '*', 'cal_agr_domestic-production_food_raw',
+                                 out_col='cal_agr_domestic-production_food', unit='kcal')
+
 # Overwrite
 DM_agriculture['fxa']['cal_agr_domestic-production-liv'][:, :,'cal_agr_domestic-production-liv',:] \
     = dm_dom_prod_liv[:, :,'cal_agr_domestic-production-liv',:]
+DM_agriculture['fxa']['cal_agr_domestic-production_food'][:, :,'cal_agr_domestic-production_food',:] \
+    = dm_dom_prod_crop[:, :,'cal_agr_domestic-production_food',:]
 
 # YIELD USING CALIBRATION DOMESTIC PROD WITH LOSSES ----------------------------------------------------------------------------------------
 
