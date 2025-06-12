@@ -6,6 +6,15 @@ from model.common.data_matrix_class import DataMatrix
 import faostat
 import pandas as pd
 
+# FEED PER LIVESTOCK TYPE (fxa) ----------------------------------------------------------------------------------------
+
+# Load Excel
+
+# Duplicate for
+
+
+
+
 
 
 # Load pickles
