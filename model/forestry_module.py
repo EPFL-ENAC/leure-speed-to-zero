@@ -27,6 +27,7 @@ def read_data(data_file, lever_setting):
     cdm_wood_conversion = DM_forestry['constant']['wood-category-conversion-factors']
     cdm_wood_yields = DM_forestry['constant']['industry-byproducts']
     cdm_wood_density = DM_forestry['constant']['wood-density']
+    cdm_energy_density = DM_forestry['constant']['energy-density']
     cdm_other_industrial_wood_demand = DM_forestry['fxa']['any-other-industrial-wood']
 
     # Read fts based on lever_setting
@@ -36,7 +37,8 @@ def read_data(data_file, lever_setting):
                           'industry-yields':cdm_wood_yields,
                           'wood-yields':cdm_wood_conversion,
                           'wood-density':cdm_wood_density,
-                          'any-other-wood-demand':cdm_other_industrial_wood_demand }
+                          'any-other-wood-demand':cdm_other_industrial_wood_demand,
+                          'energy-density': cdm_energy_density}
 
     DM_forestry = {'fxa': dict_fxa,
                    'constant': dict_const}
@@ -55,7 +57,7 @@ def read_data(data_file, lever_setting):
 def wood_demand_m3 (dm_wood_demand, DM_wood_conversion):
 
     #################################################################################################################
-    # Wood demand in tonnes
+    # Provides the Wood demand in m3
     # 1. Wood product in tonnes (e.g., timber) to express in wood category (e.g., saw-logs) in tonnes given the yields
     # 2. Wood category to split between soft/hard wood (coniferous and non-coniferous)
     # 3. Express the wood demand in m3 given the hard/soft wood density
@@ -103,11 +105,46 @@ def wood_demand_m3 (dm_wood_demand, DM_wood_conversion):
                     dm_wood_density[np.newaxis, np.newaxis,:, :, :]
     dm_wood_use_m3.add(ay_wood_density, col_label='wood-use', dim='Variables', unit='m3', dummy=True)
 
-    # Compute the by-products of wood industry to wood fuel
-    ### Warning - Trade is tricky to compute industrial byproducts ####
-
     return dm_wood_use_m3
 
+def fuelwood_demand_m3 (dm_fuelwood_demand, DM_wood_conversion):
+
+    #################################################################################################################
+    # Provides the Fuel wood demand in m3
+    # 1. Wood product per wood type (coniferous and non-coniferous) in GWh
+    # 2. Express the wood demand in m3 given the hard/soft wood energy density (GWh/m3)
+    #################################################################################################################
+
+    # Wood demand from industry [t]
+    dm_fuelwood_demand = dm_fuelwood_demand
+
+    # Split between coniferous and non-coniferous wood
+    dm_wood_split = DM_wood_conversion['coniferous-share'].filter_w_regex({'Variables': 'fst_production-t_share'})
+    dm_wood_split = dm_wood_split.filter({'Categories1': ['woodfuel']})
+    # Split between coniferous and non-coniferous wood
+    ay_wood_split = dm_fuelwood_demand[:, :, 'pow_energy-supply' , :, np.newaxis] *\
+                         dm_wood_split[:,:,'fst_production-t_share',:,:]
+    dm_wood_split.add(ay_wood_split, col_label='wood-demand-per-type', dim='Variables', unit='TWh',dummy = True)
+
+    # Wood fuel to wood [TWh to tonnes]
+    # look for factors TWh to tonnes
+    dm_wood_yields = DM_wood_conversion['energy-density'].filter(({'Categories1': ['coniferous','non-coniferous']}))
+    dm_fuelwood_t = dm_wood_split.filter(({'Variables': ['wood-demand-per-type']}))
+    ay_fuelwood_t = dm_fuelwood_t[:, :, 'wood-demand-per-type', :, :] *\
+                    1000000/dm_wood_yields[np.newaxis,np.newaxis, :,:]
+    dm_fuelwood_t.add(ay_fuelwood_t, col_label='wood-demand-per-species', dim='Variables', unit='m3', dummy=True)
+
+    ###################################
+    # Checks
+    ###################################
+    #dm_fuelwood_t.flatten().datamatrix_plot({'Country': ['Switzerland'], 'Variables': ['wood-demand-per-type']},
+    #                                        stacked=True)
+    #dm_fuelwood_t.flatten().datamatrix_plot({'Country': ['Switzerland'], 'Variables': ['wood-demand-per-species']},
+    #                                        stacked=True)
+
+    dm_fuelwood_m3 = dm_fuelwood_t.filter(({'Variables': ['wood-demand-per-species']}))
+
+    return dm_fuelwood_m3
 
 def forestry(lever_setting, years_setting, interface=Interface()):
 
@@ -155,7 +192,8 @@ def forestry(lever_setting, years_setting, interface=Interface()):
     # Functions - Wood demand in m3
     ####################################################################################################################
 
-    dm_wood_demand_m3 = wood_demand_m3(dm_wood_demand, DM_wood_conversion)
+    dm_wood_demand_m3 = wood_demand_m3(dm_wood_demand,DM_wood_conversion)
+    dm_fuelwood_demand_m3 = fuelwood_demand_m3(dm_fuelwood_demand,DM_wood_conversion)
 
     ####################################################################################################################
     # Interface - Forestry to TPE :
