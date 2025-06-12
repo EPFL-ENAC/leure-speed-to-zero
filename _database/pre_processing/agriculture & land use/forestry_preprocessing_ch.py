@@ -149,113 +149,109 @@ def get_wood_energy_by_sector(file_url, local_filename):
 # Wood consumption in CH and Cantons
 ##########################################################################################################
 
-def get_wood_energy_by_use(file_url, local_filename):
+def get_wood_energy_by_use(file_url, local_filename, clean_local_filename):
+
+    def clean_excel_bloc(df):
+        # header change
+        df.columns = df.iloc[0]
+        df = df[1:].reset_index(drop=True)
+        # Nan remove
+        df = df.dropna(how='all')
+        df.columns = [str(int(col)) if isinstance(col, float) else str(col) for col in df.columns]
+        ### translate
+        new_names = ['Years']
+        for i in range(1):
+            # Use deepl to translate variables from de to en
+            variables_de = list(set(df[df.columns[i]]))
+            variables_en = [translate_text(var) for var in variables_de]
+            var_dict = dict(zip(variables_de, variables_en))
+            df[new_names[i]] = df[df.columns[i]].map(var_dict)
+
+        df.drop([df.columns[0]], axis=1, inplace=True)
+
+        # change the column position
+        df = df[[df.columns[-1]] + list(df.columns[:-1])]
+
+        ##Transpose
+        # df = df.T
+        df = df.T
+        df = df.reset_index()
+        df = df.rename(columns={'index': 'year'})
+        df.columns = df.iloc[0]
+        df = df[1:].reset_index(drop=True)
+
+        return df
+
     ### Creates the file
     save_url_to_file(file_url, local_filename)
-    ### Read the file
-    df_raw = pd.read_excel(local_filename, sheet_name='R')
 
-    # Filtering the matrix for wood use in m3 (TJ to follow)
-    df = df_raw
-    df = df.iloc[0:11]
+    if not os.path.exists(clean_local_filename['energy-use-m3']):
+        ### Read the file
+        df_raw = pd.read_excel(local_filename, sheet_name='R')
 
-    # header change
-    df.columns = df.iloc[0]
-    df = df[1:].reset_index(drop=True)
-    # Nan remove
-    df = df.dropna(how='all')
-    df.columns = [str(int(col)) if isinstance(col, float) else str(col) for col in df.columns]
-    ### translate
-    new_names=['Years']
-    for i in range(1):
-        # Use deepl to translate variables from de to en
-        variables_de = list(set(df[df.columns[i]]))
-        variables_en = [translate_text(var) for var in variables_de]
-        var_dict = dict(zip(variables_de, variables_en))
-        df[new_names[i]] = df[df.columns[i]].map(var_dict)
+        # Filtering the matrix for wood use in m3 (TJ to follow)
+        df = df_raw.copy()
+        df = df.iloc[0:11]
 
-    df.drop([df.columns[0]], axis=1, inplace=True)
+        # Clean dataframe
+        df = clean_excel_bloc(df)
 
-    # change the column position
-    df = df[[df.columns[-1]] + list(df.columns[:-1])]
+        # Country
+        df.insert(0, "Country", "Switzerland")
 
-    ##Transpose
-    #df = df.T
-    df = df.T
-    df = df.reset_index()
-    df = df.rename(columns={'index': 'year'})
-    df.columns = df.iloc[0]
-    df = df[1:].reset_index(drop=True)
+        # New names
+        df = df.rename(columns={
+            'Total incl. KVA (Cat 1-20)': 'fst_wood-energy-use_total[m3]',
+            'Waste wood without MSWI (without cat. 20)': 'fst_wood-energy-use_waste-without-incineration[m3]',
+            'Waste wood in MSWI (only cat. 20)': 'fst_wood-energy-use_waste-incineration[m3]',
+            'Residual wood from wood processing plants': 'fst_wood-energy-use_wood-byproducts[m3]',
+            'Wood pellets *)': 'fst_wood-energy-use_pellets[m3]',
+            'Natural logs': 'fst_wood-energy-use_natural-logs[m3]',
+            'Natural non-chunky wood': 'fst_wood-energy-use_natural-non-chunky-wood[m3]',
+            'Total without MWIP (Cat 1-19)': 'fst_wood-energy-use_total-without-incineration[m3]'
+        })
 
-    #Country
-    df.insert(0, "Country", "Switzerland")
+        df.to_csv(clean_local_filename['energy-use-m3'], sep=",", index=False)
 
-    # New names
-    df = df.rename(columns={
-        'Total incl. KVA (Cat 1-20)': 'fst_wood-energy-use_total[m3]',
-        'Waste wood without MSWI (without cat. 20)': 'fst_wood-energy-use_waste-without-incineration[m3]',
-        'Waste wood in MSWI (only cat. 20)':'fst_wood-energy-use_waste-incineration[m3]',
-        'Residual wood from wood processing plants': 'fst_wood-energy-use_wood-byproducts[m3]',
-        'Wood pellets *)':'fst_wood-energy-use_pellets[m3]',
-        'Natural logs':'fst_wood-energy-use_natural-logs[m3]',
-        'Natural non-chunky wood':'fst_wood-energy-use_natural-non-chunky-wood[m3]',
-        'Total without KVA (Cat 1-19)': 'fst_wood-energy-use_total-without-incineration[m3]'
-    })
+    if not os.path.exists(clean_local_filename['energy-use-ghw']):
+        ### Read the file
+        df_raw = pd.read_excel(local_filename, sheet_name='R')
+
+        # Filtering the matrix for wood use in TJ
+        df = df_raw.copy()
+        df = df.iloc[14:25]
+
+        # Clean dataframe
+        df = clean_excel_bloc(df)
+
+        # Country
+        df.insert(0, "Country", "Switzerland")
+
+        # New names
+        df = df.rename(columns={
+            'Total incl. KVA (Cat 1-20)': 'fst_wood-energy-use_total[TJ]',
+            'Waste wood without MSWI (without cat. 20)': 'fst_wood-energy-use_waste-without-incineration[TJ]',
+            'Waste wood in MSWI (only cat. 20)': 'fst_wood-energy-use_waste-incineration[TJ]',
+            'Residual wood from wood processing plants': 'fst_wood-energy-use_wood-byproducts[TJ]',
+            'Wood pellets *)': 'fst_wood-energy-use_pellets[TJ]',
+            'Natural logs': 'fst_wood-energy-use_natural-logs[TJ]',
+            'Natural non-chunky wood': 'fst_wood-energy-use_natural-non-chunky-wood[TJ]',
+            'Total without KVA (Cat 1-19)': 'fst_wood-energy-use_total-without-incineration[TJ]'
+        })
+
+        df.to_csv(clean_local_filename['energy-use-ghw'], sep=",", index=False)
+
+    df = pd.read_csv(clean_local_filename['energy-use-m3'])
     # Convert to DM
     dm_wood_energy_use_m3 = DataMatrix.create_from_df(df, num_cat=1)
 
-    # Filtering the matrix for wood use in TJ
-    df = df_raw
-    df = df.iloc[14:25]
-
-    # header change
-    df.columns = df.iloc[0]
-    df = df[1:].reset_index(drop=True)
-    # Nan remove
-    df = df.dropna(how='all')
-    df.columns = [str(int(col)) if isinstance(col, float) else str(col) for col in df.columns]
-    ### translate
-    new_names = ['Years']
-    for i in range(1):
-        # Use deepl to translate variables from de to en
-        variables_de = list(set(df[df.columns[i]]))
-        variables_en = [translate_text(var) for var in variables_de]
-        var_dict = dict(zip(variables_de, variables_en))
-        df[new_names[i]] = df[df.columns[i]].map(var_dict)
-
-    df.drop([df.columns[0]], axis=1, inplace=True)
-
-    # change the column position
-    df = df[[df.columns[-1]] + list(df.columns[:-1])]
-
-    ##Transpose
-    # df = df.T
-    df = df.T
-    df = df.reset_index()
-    df = df.rename(columns={'index': 'year'})
-    df.columns = df.iloc[0]
-    df = df[1:].reset_index(drop=True)
-
-    # Country
-    df.insert(0, "Country", "Switzerland")
-
-    # New names
-    df = df.rename(columns={
-        'Total incl. KVA (Cat 1-20)': 'fst_wood-energy-use_total[TJ]',
-        'Waste wood without MSWI (without cat. 20)': 'fst_wood-energy-use_waste-without-incineration[TJ]',
-        'Waste wood in MSWI (only cat. 20)': 'fst_wood-energy-use_waste-incineration[TJ]',
-        'Residual wood from wood processing plants': 'fst_wood-energy-use_wood-byproducts[TJ]',
-        'Wood pellets *)': 'fst_wood-energy-use_pellets[TJ]',
-        'Natural logs': 'fst_wood-energy-use_natural-logs[TJ]',
-        'Natural non-chunky wood': 'fst_wood-energy-use_natural-non-chunky-wood[TJ]',
-        'Total without KVA (Cat 1-19)': 'fst_wood-energy-use_total-without-incineration[TJ]'
-    })
+    df = pd.read_csv(clean_local_filename['energy-use-ghw'])
     # Convert to DM
     dm_wood_energy_use_gwh = DataMatrix.create_from_df(df, num_cat=1)
 
     # Conversion from TJ to GWh:
     dm_wood_energy_use_gwh.change_unit('fst_wood-energy-use', factor=0.27778, old_unit='TJ', new_unit='GWh')
-    dm_wood_energy_use_gwh.rename_col("fst_wood-energy-use","fst_wood-energy-use-gwh","Variables")
+    dm_wood_energy_use_gwh.rename_col("fst_wood-energy-use","fst_wood-energy-use-gwh", "Variables")
     dm_wood_energy_use_m3.rename_col("fst_wood-energy-use", "fst_wood-energy-use-m3", "Variables")
     #dm_wood_demand_energy.datamatrix_plot()
 
@@ -587,7 +583,8 @@ dm_harvest_rate_all.add(ay_harvest_rate,col_label='harvest-rate',dim='Variables'
 
 file_url = 'https://www.bfe.admin.ch/bfe/en/home/versorgung/statistik-und-geodaten/energiestatistiken/teilstatistiken.exturl.html/aHR0cHM6Ly9wdWJkYi5iZmUuYWRtaW4uY2gvZGUvcHVibGljYX/Rpb24vZG93bmxvYWQvMTE0NDA=.html'
 local_filename = 'data/Swiss-wood-energy-statistics.xlsx'
-dm_wood_energy_use = get_wood_energy_by_use(file_url, local_filename)
+clean_files = {'energy-use-m3': 'data/wood-energy-m3.csv', 'energy-use-ghw': 'data/wood-energy-ghw.csv'}
+dm_wood_energy_use = get_wood_energy_by_use(file_url, local_filename, clean_local_filename=clean_files)
 
 ################################################################
 # DM pre-processing Forestry
