@@ -689,7 +689,8 @@ def read_data(data_file, lever_setting):
         'cal_crop': dm_cal_crop,
         'ef_residues': dm_ef_residues,
         'residues_yield': dm_residues_yield,
-        'hierarchy_residues_cereals': dm_hierarchy_residues_cereals
+        'hierarchy_residues_cereals': dm_hierarchy_residues_cereals,
+        'food-net-import-pro': dm_food_net_import_pro
 
     }
 
@@ -1714,6 +1715,9 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
 
     # ( Domestic production processed voil [kcal])
 
+
+    # PROCESSED FEED ---------------------------------------------------------------------------------------------------
+
     # Constant pre-processing
     cdm_feed_yield = CDM_const['cdm_feed_yield']
     cdm_food_yield = CDM_const['cdm_food_yield']
@@ -1726,10 +1730,23 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
     dm_feed_processed.rename_col('crop-processed-sugar', 'sugar-to-sugarcrop', dim='Categories1')
     dm_feed_processed.rename_col('crop-processed-voil', 'voil-to-oilcrop', dim='Categories1')
 
-    # Processed Feed crop demand [kcal] = processed crops [kcal] / processing yield [%]
+    # Processed Feed - Accounting for SSR
+    # Domestic production [kcal] = Processed Feed-demand [kcal] * net import [%]
+    dm_ssr_feed_pro = DM_crop['food-net-import-pro'].filter(
+        {'Variables': ['agr_food-net-import'], 'Categories1': ['pro-crop-processed-cake', 'pro-crop-processed-molasse',
+                                                      'pro-crop-processed-sugar','pro-crop-processed-voil']}).copy()
+    dm_ssr_feed_pro.rename_col('pro-crop-processed-cake', 'cake-to-oilcrop', dim='Categories1')
+    dm_ssr_feed_pro.rename_col('pro-crop-processed-molasse', 'molasse-to-sugarcrop', dim='Categories1')
+    dm_ssr_feed_pro.rename_col('pro-crop-processed-sugar', 'sugar-to-sugarcrop', dim='Categories1')
+    dm_ssr_feed_pro.rename_col('pro-crop-processed-voil', 'voil-to-oilcrop', dim='Categories1')
+    dm_feed_processed.append(dm_ssr_feed_pro, dim='Variables')
+    dm_feed_processed.operation('agr_demand_feed', '*', 'agr_food-net-import', out_col='agr_domestic-production_feed_pro',
+                                  unit='kcal')
+
+    # Processed Feed crop dom prod [kcal] = processed crops [kcal] / processing yield [%]
     idx_cdm = cdm_feed_yield.idx
     idx_feed = dm_feed_processed.idx
-    dm_temp = dm_feed_processed.array[:, :, idx_feed['agr_demand_feed'], :] \
+    dm_temp = dm_feed_processed.array[:, :, idx_feed['agr_domestic-production_feed_pro'], :] \
               / cdm_feed_yield.array[idx_cdm['cp_ibp_processed'], :]
     dm_feed_processed.add(dm_temp, dim='Variables', col_label='agr_demand_feed_processed', unit='kcal')
     dm_feed_processed.drop(dim='Variables', col_label=['agr_demand_feed'])
@@ -1747,19 +1764,34 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
     # Filling the dummy columns with zeros and sorting alphabetically
     dm_feed_processed.sort(dim='Categories1')
     # dm_feed_processed = np.nan_to_num(dm_feed_processed.array)
-    # HERE !
-    # Processed Food crop demand [kcal] = processed crops [kcal] / processing yield [%] (only for sweets & processed sugar)
+
+    # PROCESSED FOOD ---------------------------------------------------------------------------------------------------
+
+    # Processed food - Accounting for SSR
+    # Domestic production [kcal] = Processed Food-demand [kcal] * net import [%]
     dm_food_processed = dm_lfs_pro.filter(
         {'Variables': ['agr_demand'], 'Categories1': ['pro-crop-processed-sweet', 'pro-crop-processed-sugar']})
+    dm_ssr_food_pro = DM_crop['food-net-import-pro'].filter(
+        {'Variables': ['agr_food-net-import'], 'Categories1': ['pro-crop-processed-sweet', 'pro-crop-processed-sugar']}).copy()
+    dm_food_processed.append(dm_ssr_food_pro, dim='Variables')
+    dm_food_processed.operation('agr_demand', '*', 'agr_food-net-import', out_col='agr_domestic-production_food_pro',
+                                  unit='kcal')
+
+    # Processed Food crop demand [kcal] = processed crops [kcal] / processing yield [%] (only for sweets & processed sugar)
     # sum processed sugar in one variable : sweets : sweets + processed sugar
     dm_food_processed.groupby({'pro-crop-processed-sweet': '.*'}, dim='Categories1', regex=True, inplace=True)
     dm_food_processed.rename_col('pro-crop-processed-sweet', 'crop-sugarcrop', dim='Categories1')
-    dm_food_processed.rename_col('agr_demand', 'agr_demand_temp', dim='Variables')
+    dm_food_processed.rename_col('agr_domestic-production_food_pro', 'agr_domestic-production_food_pro_temp', dim='Variables')
     idx_cdm = cdm_food_yield.idx
     idx_food = dm_food_processed.idx
-    dm_temp = dm_food_processed.array[:, :, idx_food['agr_demand_temp'], :] \
+    dm_temp = dm_food_processed.array[:, :, idx_food['agr_domestic-production_food_pro_temp'], :] \
               / cdm_food_yield.array[idx_cdm['cp_ibp_processed'], :]
-    dm_food_processed.add(dm_temp, dim='Variables', col_label='agr_demand', unit='kcal')
+    dm_food_processed.add(dm_temp, dim='Variables', col_label='agr_domestic-production_food', unit='kcal')
+
+    # PROCESSED FOOD ---------------------------------------------------------------------------------------------------
+
+    # Processed food - Accounting for SSR
+    # Domestic production [kcal] = Processed Food-demand [kcal] * net import [%]
 
     # Pre processing total food demand per category (with dummy categories when necessary)
     # Categories x8 : cereals, oilcrop, pulse, fruit, veg, starch, sugarcrop, rice (+ maybe lgn, alage and insect)
@@ -1801,19 +1833,34 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
     dm_crop_feed_demand.add(0.0, dummy=True, col_label='crop-algae', dim='Categories1', unit='kcal')
     dm_crop_feed_demand.add(0.0, dummy=True, col_label='crop-insect', dim='Categories1', unit='kcal')
 
+    # PROCESSED BEV ----------------------------------------------------------------------------------------------------
+
     # Pre processing total non-food demand per category (with dummy categories when necessary)
     # Cereals = agr_ibp_bev_beer_crop_cereal + agr_ibp_bev_bev-fer_crop_cereal
     # From ALCOHOLIC BEVERAGES (cereals and fruits) FIXME find correct way to implement
+    # FIXME SSR
+
+    # PROCESSED BIOENERGY ----------------------------------------------------------------------------------------------
 
     # From BIOENERGY (oilcrop from voil + lgn from solid & liquid) (not accounted for in KNIME probably due to regex error)
     # Pre processing
     dm_oilcrop_voil = dm_oil.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_oil'], 'Categories1': ['oil-voil']})
+    # Accounting for SSR FIXME SSR
+    # Processed bioenergy - Accounting for SSR
+    # Domestic production [kcal] = Processed Food-demand [kcal] * net import [%]
+    dm_ssr_bioe_pro = DM_crop['food-net-import-pro'].filter(
+        {'Variables': ['agr_food-net-import'], 'Categories1': ['pro-crop-processed-voil']}).copy()
+    dm_ssr_bioe_pro.rename_col('pro-crop-processed-voil', 'oil-voil', dim='Categories1')
+    dm_oilcrop_voil.append(dm_ssr_bioe_pro, dim='Variables')
+    dm_oilcrop_voil.operation('agr_bioenergy_biomass-demand_liquid_oil', '*', 'agr_food-net-import', out_col='agr_domestic-production_bioe_pro',
+                                  unit='kcal')
+
     # Accounting for processing yield
     idx_voil = dm_oilcrop_voil.idx
     idx_cdm = cdm_feed_yield.idx
-    array_temp = dm_oilcrop_voil.array[:, :, idx_voil['agr_bioenergy_biomass-demand_liquid_oil'], :] \
+    array_temp = dm_oilcrop_voil.array[:, :, idx_voil['agr_domestic-production_bioe_pro'], :] \
                  / cdm_feed_yield.array[idx_cdm['cp_ibp_processed'], idx_cdm['voil-to-oilcrop']]
-    dm_oilcrop_voil.add(array_temp, dim='Variables', col_label='agr_demand_bioenergy', unit='kcal')
+    dm_oilcrop_voil.add(array_temp, dim='Variables', col_label='agr_domestic-production_bioe', unit='kcal')
     # Filtering and renaming for name matching
     dm_voil = dm_oilcrop_voil.filter({'Variables': ['agr_demand_bioenergy']})
     dm_voil.rename_col('oil-voil', 'crop-oilcrop', dim='Categories1')
@@ -1865,6 +1912,8 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
     dm_crop_demand.append(dm_voil, dim='Variables')
     dm_crop_demand.append(dm_aps, dim='Variables')
 
+    # FOOD + FEED + NON-FOOD ---------------------------------------------------------------------------------------------------
+
     # Total crop demand by type [kcal] = Sum crop demand (feed + food + non-food)
     dm_crop_demand.operation('agr_demand_feed_temp', '+', 'agr_demand_food', out_col='agr_demand_feed_food', unit='kcal')
     dm_crop_demand.operation('agr_demand_feed_food', '+', 'agr_demand_bioenergy', out_col='agr_demand_feed_food_bioenergy', unit='kcal')
@@ -1892,7 +1941,7 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
     DM_crop['crop'].operation('agr_domestic-production_food', '*', 'agr_climate-smart-crop_losses',
                               out_col='agr_domestic-production_afw_raw', unit='kcal')
 
-    # CALIBRATION CROP PRODUCTION HERE! --------------------------------------------------------------------------------------
+    # CALIBRATION CROP PRODUCTION --------------------------------------------------------------------------------------
     dm_cal_crop = DM_crop['cal_crop']
     dm_crop = DM_crop['crop'].filter({'Variables': ['agr_domestic-production_afw_raw']})
     dm_cal_rates_crop = calibration_rates(dm_crop, dm_cal_crop, calibration_start_year=1990,
