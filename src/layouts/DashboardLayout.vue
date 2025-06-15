@@ -49,7 +49,10 @@
 
         <!-- Right Column -->
         <div class="col">
-          <router-view />
+          <q-page>
+            <kpi-list class="q-pa-md" />
+            <router-view />
+          </q-page>
         </div>
       </div>
     </q-page-container>
@@ -62,6 +65,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useLeverStore } from 'stores/leversStore';
 import { ExamplePathways } from 'utils/examplePathways';
 import LeverGroups from 'components/LeverGroups.vue';
+import KpiList from 'components/kpi/KpiList.vue';
 
 const leverStore = useLeverStore();
 const route = useRoute();
