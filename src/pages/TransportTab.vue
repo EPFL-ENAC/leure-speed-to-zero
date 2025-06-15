@@ -49,15 +49,24 @@ const leverStore = useLeverStore();
 
 // Tab state
 const currentTab = ref(
-  typeof route.params.subtab === 'string' ? route.params.subtab : subtabs[0]?.route,
+  typeof route.params.subtab === 'string' && route.params.subtab
+    ? route.params.subtab
+    : subtabs[0]?.route,
 );
+
+// If no subtab is present in the URL, redirect to the default one.
+if (!route.params.subtab && subtabs[0]?.route) {
+  void router.replace({ name: 'transport', params: { subtab: subtabs[0]?.route } });
+}
 
 // Watch for tab changes to update URL
 watch(currentTab, async (newTab) => {
-  try {
-    await router.push({ name: 'transport', params: { subtab: newTab } });
-  } catch (error) {
-    console.error('Navigation error:', error);
+  if (newTab && newTab !== route.params.subtab) {
+    try {
+      await router.push({ name: 'transport', params: { subtab: newTab } });
+    } catch (error) {
+      console.error('Navigation error:', error);
+    }
   }
 });
 
