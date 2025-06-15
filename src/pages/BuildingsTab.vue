@@ -1,5 +1,5 @@
 <template>
-  <q-page>
+  <div>
     <q-tabs v-model="currentTab" no-caps align="justify">
       <q-tab v-for="tab in subtabs" :key="tab.route" :name="tab.route" :label="tab.title" />
     </q-tabs>
@@ -16,16 +16,18 @@
       />
     </div>
 
-    <q-tab-panels v-else v-model="currentTab" animated>
-      <q-tab-panel v-for="tab in subtabs" :key="tab.route" :name="tab.route">
-        <div class="row q-col-gutter-md">
-          <div v-for="chartId in tab.charts" :key="chartId" class="col-12">
-            <chart-card :chart-config="charts[chartId as ChartId]" :model-data="modelResults" />
+    <template v-else>
+      <q-tab-panels v-model="currentTab" animated>
+        <q-tab-panel v-for="tab in subtabs" :key="tab.route" :name="tab.route">
+          <div class="row q-col-gutter-md">
+            <div v-for="chartId in tab.charts" :key="chartId" class="col-12">
+              <chart-card :chart-config="charts[chartId as ChartId]" :model-data="modelResults" />
+            </div>
           </div>
-        </div>
-      </q-tab-panel>
-    </q-tab-panels>
-  </q-page>
+        </q-tab-panel>
+      </q-tab-panels>
+    </template>
+  </div>
 </template>
 
 <script setup lang="ts">
