@@ -27,6 +27,7 @@ import {
   DataZoomComponent,
 } from 'echarts/components';
 import VChart from 'vue-echarts';
+import { getPlotLabel } from 'utils/labelsPlot'; // Add this import
 
 // Register ECharts components
 use([
@@ -122,7 +123,7 @@ function extractChartData(
 
     if (years.length > 0) {
       series.push({
-        name: outputId,
+        name: getPlotLabel(outputId),
         color: outputConfig.color || null,
         years,
         data: values,
