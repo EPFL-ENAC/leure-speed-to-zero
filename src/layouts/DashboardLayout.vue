@@ -45,9 +45,8 @@
 
         <!-- Main tab navigation -->
         <q-tabs dense no-caps align="center" class="q-ml-md">
-          <q-route-tab name="emissions" to="/" exact label="Emissions" />
-          <q-route-tab name="energy" to="/energy" label="Energy" />
           <q-route-tab name="buildings" to="/buildings" label="Buildings" />
+          <q-route-tab name="transport" to="/transport" label="Transport" />
           <q-route-tab name="test-api" to="/test-api" label="Test API" />
         </q-tabs>
       </q-toolbar>
