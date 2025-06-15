@@ -106,6 +106,11 @@ export const useLeverStore = defineStore('lever', () => {
     return modelResults.value.data.buildings;
   });
 
+  const transport = computed(() => {
+    if (!modelResults.value) return null;
+    return modelResults.value.data.transport;
+  });
+
   // Model operations
   let lastRunTime = 0;
 
@@ -286,6 +291,7 @@ export const useLeverStore = defineStore('lever', () => {
     isCustomPathway,
 
     buildings,
+    transport,
 
     // Actions
     batchUpdateLevers,
