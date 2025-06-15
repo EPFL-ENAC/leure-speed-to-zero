@@ -1,71 +1,91 @@
 <template>
   <q-layout view="hHh lpR fFf">
-    <!-- Left sidebar for levers -->
-    <q-drawer v-model="leftDrawerOpen" show-if-above bordered :width="400" class="lever-sidebar">
-      <q-scroll-area style="height: 100%">
-        <div class="q-pa-md">
-          <div class="text-h5 q-mb-md">Levers</div>
-
-          <q-select
-            v-model="selectedPathway"
-            :options="pathwayOptions"
-            label="Select Pathway"
-            outlined
-            dense
-            emit-value
-            map-options
-            class="q-mb-md"
-          />
-
-          <q-btn
-            label="Reset to Defaults"
-            color="grey"
-            outline
-            class="full-width q-mb-md"
-            @click="resetToDefaults"
-          />
-
-          <LeverGroups />
-        </div>
-      </q-scroll-area>
-    </q-drawer>
-
-    <q-header elevated class="bg-primary text-white">
-      <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          aria-label="Menu"
-          @click="leftDrawerOpen = !leftDrawerOpen"
-        />
-
-        <q-toolbar-title> Speed To Zero </q-toolbar-title>
-
-        <!-- Main tab navigation -->
-        <q-tabs dense no-caps align="center" class="q-ml-md">
-          <q-route-tab name="buildings" to="/buildings" label="Buildings" />
-          <q-route-tab name="transport" to="/transport" label="Transport" />
-          <q-route-tab name="test-api" to="/test-api" label="Test API" />
-        </q-tabs>
-      </q-toolbar>
-    </q-header>
-
     <q-page-container>
-      <router-view />
+      <div class="row no-wrap" style="height: 100vh">
+        <!-- Left Column -->
+        <div class="col-auto" style="width: 400px; border-right: 1px solid #e0e0e0">
+          <div class="q-pa-md column full-height">
+            <!-- Sector & Levers Header -->
+            <div class="non-scrollable-part">
+              <div class="text-h5 q-mb-md">Sector</div>
+              <q-btn-toggle
+                v-model="currentSector"
+                :options="[
+                  { label: 'Buildings', value: 'buildings' },
+                  { label: 'Transport', value: 'transport' },
+                ]"
+                toggle-color="primary"
+                unelevated
+                spread
+                class="q-mb-md"
+              />
+
+              <div class="text-h5 q-mb-md">Levers</div>
+              <q-select
+                v-model="selectedPathway"
+                :options="pathwayOptions"
+                label="Select Pathway"
+                outlined
+                dense
+                emit-value
+                map-options
+                class="q-mb-md"
+              />
+              <q-btn
+                label="Reset to Defaults"
+                color="grey"
+                outline
+                class="full-width q-mb-md"
+                @click="resetToDefaults"
+              />
+            </div>
+
+            <!-- Scrollable Levers -->
+            <q-scroll-area class="col">
+              <LeverGroups :sector="currentSector" />
+            </q-scroll-area>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col">
+          <router-view />
+        </div>
+      </div>
     </q-page-container>
   </q-layout>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useLeverStore } from 'stores/leversStore';
 import { ExamplePathways } from 'utils/examplePathways';
 import LeverGroups from 'components/LeverGroups.vue';
 
 const leverStore = useLeverStore();
-const leftDrawerOpen = ref(true);
+const route = useRoute();
+const router = useRouter();
+
+// Sector selection
+const currentSector = ref(route.path.split('/')[1] || 'buildings');
+
+watch(currentSector, (newSector) => {
+  if (newSector !== route.path.split('/')[1]) {
+    void router.push(`/${newSector}`);
+  }
+});
+
+watch(
+  () => route.path,
+  (newPath) => {
+    const sector = newPath.split('/')[1];
+    if (sector && sector !== currentSector.value) {
+      currentSector.value = sector;
+    }
+  },
+  { immediate: true },
+);
 
 // Pathway selection
 const selectedPathway = computed({
@@ -91,7 +111,5 @@ function resetToDefaults() {
 </script>
 
 <style lang="scss" scoped>
-.lever-sidebar {
-  border-right: 1px solid #e0e0e0;
-}
+/* No custom styles needed for this basic layout */
 </style>

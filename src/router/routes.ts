@@ -5,9 +5,7 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     component: () => import('layouts/DashboardLayout.vue'),
     children: [
-      { path: '', component: () => import('pages/BuildingsTab.vue') },
-      { path: 'energy', component: () => import('pages/EnergyPage.vue') },
-      { path: 'test-api', component: () => import('pages/ApiTestPage.vue') },
+      { path: '', redirect: '/buildings' }, // Redirect to default sector
       {
         path: 'buildings/:subtab?',
         name: 'buildings',
