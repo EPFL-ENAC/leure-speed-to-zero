@@ -5,13 +5,18 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     component: () => import('layouts/DashboardLayout.vue'),
     children: [
-      { path: '', component: () => import('pages/EmissionsPage.vue') },
+      { path: '', component: () => import('pages/BuildingsTab.vue') },
       { path: 'energy', component: () => import('pages/EnergyPage.vue') },
       { path: 'test-api', component: () => import('pages/ApiTestPage.vue') },
       {
         path: 'buildings/:subtab?',
         name: 'buildings',
         component: () => import('pages/BuildingsTab.vue'),
+      },
+      {
+        path: 'transport/:subtab?',
+        name: 'transport',
+        component: () => import('pages/TransportTab.vue'),
       },
     ],
   },
