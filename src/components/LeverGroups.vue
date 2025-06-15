@@ -55,8 +55,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useLeverStore } from 'stores/leversStore';
-import type { Lever } from 'utils/leversData';
 import LeverSelector from 'components/LeverSelector.vue';
+import type { Lever } from 'utils/leversData';
 
 const leverStore = useLeverStore();
 

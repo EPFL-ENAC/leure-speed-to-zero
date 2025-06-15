@@ -1,7 +1,7 @@
 <template>
   <q-layout view="hHh lpR fFf">
     <!-- Left sidebar for levers -->
-    <q-drawer v-model="leftDrawerOpen" show-if-above bordered :width="300" class="lever-sidebar">
+    <q-drawer v-model="leftDrawerOpen" show-if-above bordered :width="400" class="lever-sidebar">
       <q-scroll-area style="height: 100%">
         <div class="q-pa-md">
           <div class="text-h5 q-mb-md">Levers</div>

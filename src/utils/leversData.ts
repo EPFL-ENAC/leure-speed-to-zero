@@ -1,3 +1,10 @@
+export interface DifficultyArea {
+  min: number;
+  max: number;
+  color: string;
+  label: string;
+}
+
 export interface Lever {
   code: string;
   title: string;
@@ -5,6 +12,7 @@ export interface Lever {
   headline: string;
   range: (string | number)[];
   type: string;
+  difficultyColors: DifficultyArea[];
 }
 
 export const levers: Lever[] = [
@@ -15,6 +23,12 @@ export const levers: Lever[] = [
     headline: 'Key behaviours',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_passenger_modal-share',
@@ -23,6 +37,12 @@ export const levers: Lever[] = [
     headline: 'Key behaviours',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_passenger_occupancy',
@@ -31,6 +51,12 @@ export const levers: Lever[] = [
     headline: 'Key behaviours',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_passenger_utilization-rate',
@@ -39,6 +65,12 @@ export const levers: Lever[] = [
     headline: 'Key behaviours',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_floor-intensity',
@@ -47,6 +79,12 @@ export const levers: Lever[] = [
     headline: 'Key behaviours',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_floor-area-fraction',
@@ -55,6 +93,12 @@ export const levers: Lever[] = [
     headline: 'Key behaviours',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_heatcool-behaviour',
@@ -63,6 +107,12 @@ export const levers: Lever[] = [
     headline: 'Key behaviours',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_appliance-own',
@@ -71,6 +121,12 @@ export const levers: Lever[] = [
     headline: 'Key behaviours',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_appliance-use',
@@ -79,6 +135,12 @@ export const levers: Lever[] = [
     headline: 'Key behaviours',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_kcal-req',
@@ -87,6 +149,12 @@ export const levers: Lever[] = [
     headline: 'Key behaviours',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_diet',
@@ -95,6 +163,12 @@ export const levers: Lever[] = [
     headline: 'Key behaviours',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_paperpack',
@@ -103,6 +177,12 @@ export const levers: Lever[] = [
     headline: 'Key behaviours',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_product-substitution-rate',
@@ -111,6 +191,12 @@ export const levers: Lever[] = [
     headline: 'Key behaviours',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_fwaste',
@@ -119,6 +205,12 @@ export const levers: Lever[] = [
     headline: 'Key behaviours',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_freight_tkm',
@@ -127,6 +219,12 @@ export const levers: Lever[] = [
     headline: 'Key behaviours',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_passenger_veh-efficiency_new',
@@ -135,6 +233,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_passenger_technology-share_new',
@@ -143,6 +247,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_freight_vehicle-efficiency_new',
@@ -151,6 +261,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_freight_technology-share_new',
@@ -159,6 +275,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_freight_modal-share',
@@ -167,6 +289,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_freight_utilization-rate',
@@ -175,6 +303,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_fuel-mix',
@@ -183,6 +317,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_building-renovation-rate',
@@ -191,6 +331,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_district-heating-share',
@@ -199,6 +345,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_heating-technology-fuel',
@@ -207,6 +359,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_heating-efficiency',
@@ -215,6 +373,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_appliance-efficiency',
@@ -223,6 +387,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_material-efficiency',
@@ -231,6 +401,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_material-switch',
@@ -239,6 +415,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_technology-share',
@@ -247,6 +429,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_technology-development',
@@ -255,6 +443,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_energy-carrier-mix',
@@ -263,6 +457,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_cc',
@@ -271,6 +471,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_ccus',
@@ -279,6 +485,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_decom_fossil',
@@ -287,6 +499,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_ccs',
@@ -295,6 +513,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_capacity_nuclear',
@@ -303,6 +527,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_capacity_RES_wind',
@@ -311,6 +541,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_capacity_RES_solar',
@@ -319,6 +555,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_capacity_RES_other',
@@ -327,6 +569,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_bal-strat',
@@ -335,6 +583,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_str_charging',
@@ -343,6 +597,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: ['A', 'B', 'C', 'D'],
     type: 'char',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_climate-smart-crop',
@@ -351,6 +611,12 @@ export const levers: Lever[] = [
     headline: 'Resources and land use',
     range: ['A', 'B', 'C', 'D'],
     type: 'char',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_climate-smart-livestock',
@@ -359,6 +625,12 @@ export const levers: Lever[] = [
     headline: 'Resources and land use',
     range: ['A', 'B', 'C', 'D'],
     type: 'char',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_bioenergy-capacity',
@@ -367,6 +639,12 @@ export const levers: Lever[] = [
     headline: 'Resources and land use',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_alt-protein',
@@ -375,6 +653,12 @@ export const levers: Lever[] = [
     headline: 'Resources and land use',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_climate-smart-forestry',
@@ -383,6 +667,12 @@ export const levers: Lever[] = [
     headline: 'Resources and land use',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_land-man',
@@ -391,6 +681,12 @@ export const levers: Lever[] = [
     headline: 'Resources and land use',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_biomass-hierarchy',
@@ -399,6 +695,12 @@ export const levers: Lever[] = [
     headline: 'Resources and land use',
     range: ['A', 'B', 'C', 'D'],
     type: 'char',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_biodiversity',
@@ -407,6 +709,12 @@ export const levers: Lever[] = [
     headline: 'Resources and land use',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_land-prioritisation',
@@ -415,6 +723,12 @@ export const levers: Lever[] = [
     headline: 'Resources and land use',
     range: ['A', 'B'],
     type: 'char',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_pop',
@@ -423,6 +737,12 @@ export const levers: Lever[] = [
     headline: 'Boundary conditions',
     range: ['A', 'B', 'C', 'D'],
     type: 'char',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_urbpop',
@@ -431,6 +751,12 @@ export const levers: Lever[] = [
     headline: 'Boundary conditions',
     range: ['A', 'B', 'C', 'D'],
     type: 'char',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_ems-after-2050',
@@ -439,6 +765,12 @@ export const levers: Lever[] = [
     headline: 'Boundary conditions',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_food-net-import',
@@ -447,6 +779,12 @@ export const levers: Lever[] = [
     headline: 'Boundary conditions',
     range: ['A', 'B', 'C', 'D'],
     type: 'char',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_product-net-import',
@@ -455,6 +793,12 @@ export const levers: Lever[] = [
     headline: 'Boundary conditions',
     range: ['A', 'B', 'C', 'D'],
     type: 'char',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_material-net-import',
@@ -463,6 +807,12 @@ export const levers: Lever[] = [
     headline: 'Boundary conditions',
     range: ['A', 'B', 'C', 'D'],
     type: 'char',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_temp',
@@ -471,6 +821,12 @@ export const levers: Lever[] = [
     headline: 'Boundary conditions',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_passenger_aviation-pkm',
@@ -479,6 +835,12 @@ export const levers: Lever[] = [
     headline: 'Key behaviours',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_pv-capacity',
@@ -487,6 +849,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_csp-capacity',
@@ -495,6 +863,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_onshore-wind-capacity',
@@ -503,6 +877,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_offshore-wind-capacity',
@@ -511,6 +891,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_biogas-capacity',
@@ -519,6 +905,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_biomass-capacity',
@@ -527,6 +919,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_hydroelectric-capacity',
@@ -535,6 +933,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_geothermal-capacity',
@@ -543,6 +947,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_marine-capacity',
@@ -551,6 +961,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_gas-capacity',
@@ -559,6 +975,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_oil-capacity',
@@ -567,6 +989,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_coal-capacity',
@@ -575,6 +1003,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_nuclear-capacity',
@@ -583,6 +1017,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_carbon-storage-capacity',
@@ -591,6 +1031,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_ev-charging-profile',
@@ -599,6 +1045,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_non-residential-heat-profile',
@@ -607,6 +1059,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_residential-heat-profile',
@@ -615,6 +1073,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_non-residential-cooling-profile',
@@ -623,6 +1087,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_residential-cooling-profile',
@@ -631,6 +1101,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_eol-waste-management',
@@ -639,6 +1115,12 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
   {
     code: 'lever_eol-material-recovery',
@@ -647,5 +1129,11 @@ export const levers: Lever[] = [
     headline: 'Technology and fuels',
     range: [1, 2, 3, 4],
     type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
   },
 ];
