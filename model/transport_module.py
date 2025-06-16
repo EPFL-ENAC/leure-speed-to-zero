@@ -661,7 +661,8 @@ def passenger_fleet_energy(DM_passenger, dm_lfs, DM_other, cdm_const, years_sett
 
     # SECTION Passenger - Demand-vkm by mode
     # demand [vkm] = demand [pkm] / occupancy [pkm/vkm]
-    dm_mode.operation
+    dm_mode.operation('tra_passenger_transport-demand', '/', 'tra_passenger_occupancy',
+                      dim="Variables", out_col='tra_passenger_transport-demand-vkm', unit='vkm', div0="error")
     # SECTION Passenger - Vehicle-fleet by mode
     # vehicle-fleet [number] = demand [vkm] / utilisation-rate [vkm/veh/year]
     dm_mode.operation('tra_passenger_transport-demand-vkm', '/', 'tra_passenger_utilisation-rate',
