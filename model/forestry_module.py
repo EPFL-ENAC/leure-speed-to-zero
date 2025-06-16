@@ -31,7 +31,7 @@ def read_data(data_file, lever_setting):
     cdm_other_industrial_wood_demand = DM_forestry['fxa']['any-other-industrial-wood']
 
     # Read fts based on lever_setting
-    #DM_ots_fts = read_level_data(DM_forestry, lever_setting)
+    DM_ots_fts = read_level_data(DM_forestry, lever_setting)
 
     DM_wood_conversion = {'coniferous-share':dm_wood_type_split_per_use,
                           'industry-yields':cdm_wood_yields,
@@ -105,6 +105,8 @@ def wood_demand_m3 (dm_wood_demand, DM_wood_conversion):
                     dm_wood_density[np.newaxis, np.newaxis,:, :, :]
     dm_wood_use_m3.add(ay_wood_density, col_label='wood-use', dim='Variables', unit='m3', dummy=True)
 
+
+
     return dm_wood_use_m3
 
 def fuelwood_demand_m3 (dm_fuelwood_demand, DM_wood_conversion):
@@ -146,6 +148,33 @@ def fuelwood_demand_m3 (dm_fuelwood_demand, DM_wood_conversion):
 
     return dm_fuelwood_m3
 
+def wood_supply (dm_forest_area, DM_forestry, DM_ots_fts):
+
+    #################################################################################################################
+    # Provides the Fuel wood supply in m3
+    # 1. Share of forest exploited (% of ha)
+    # 2. Wood produced given the harvest rate
+    #################################################################################################################
+
+    # Exploited forest[ha] = Forest are [ha] * Share of exploited forest [%]
+
+    dm_exploited = DM_forestry['fxa']['forest-exploited-share']
+    dm_exploited.append(dm_forest_area, dim='Variables')
+    dm_exploited.operation('productive-share', '*', 'total-forest-area',
+                      out_col='exploited-forest', unit='ha')
+    dm_exploited.operation('unproductive-share', '*', 'total-forest-area',
+                           out_col='unexploited-forest', unit='ha')
+
+    dm_forest_land = dm_exploited.filter(({'Variables': ['exploited-forest','unexploited-forest']}))
+
+    # Harvested wood [m3] = Exploited forest [ha] * Harvest rate [m3/ha]
+    dm_harvested_wood = DM_ots_fts
+
+
+
+    return dm_forest_land, dm_harvested_wood
+
+
 def forestry(lever_setting, years_setting, interface=Interface()):
 
     ##############################################################
@@ -155,7 +184,7 @@ def forestry(lever_setting, years_setting, interface=Interface()):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     forestry_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/forestry.pickle')
     # Read forestry pickle data based on lever setting and return data in a structured DM
-    DM_forestry, DM_wood_conversion = read_data(forestry_data_file, lever_setting)
+    DM_forestry, DM_wood_conversion, DM_ots_fts = read_data(forestry_data_file, lever_setting)
     #cntr_list = DM['key'].col_labels['Country']
     cntr_list = ['Switzerland']
 
@@ -189,11 +218,32 @@ def forestry(lever_setting, years_setting, interface=Interface()):
         dm_wood_demand.filter({'Country': cntr_list}, inplace=True)
 
     ####################################################################################################################
+    # Interface - Land to Forestry:
+    ####################################################################################################################
+
+    if interface.has_link(from_sector='land', to_sector='forestry'):
+        dm_wood_demand = interface.get_link(from_sector='land', to_sector='forestry')
+    else:
+        if len(interface.list_link()) != 0:
+            print("You are missing " + 'land' + " to " + 'forestry' + " interface")
+        lfs_interface_data_file = os.path.join(current_file_directory,
+                                               '../_database/data/interface/land_to_forestry.pickle')
+        with open(lfs_interface_data_file, 'rb') as handle:
+            dm_forest_area = pickle.load(handle)
+        dm_forest_area.filter({'Country': cntr_list}, inplace=True)
+
+    ####################################################################################################################
     # Functions - Wood demand in m3
     ####################################################################################################################
 
     dm_wood_demand_m3 = wood_demand_m3(dm_wood_demand,DM_wood_conversion)
     dm_fuelwood_demand_m3 = fuelwood_demand_m3(dm_fuelwood_demand,DM_wood_conversion)
+
+    ####################################################################################################################
+    # Functions - Wood supply in m3
+    ####################################################################################################################
+
+    dm_wood_supply = wood_supply(dm_forest_area, DM_forestry, DM_ots_fts)
 
     ####################################################################################################################
     # Interface - Forestry to TPE :

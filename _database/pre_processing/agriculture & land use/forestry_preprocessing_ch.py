@@ -208,7 +208,7 @@ def get_wood_energy_by_use(file_url, local_filename, clean_local_filename):
             'Wood pellets *)': 'fst_wood-energy-use_pellets[m3]',
             'Natural logs': 'fst_wood-energy-use_natural-logs[m3]',
             'Natural non-chunky wood': 'fst_wood-energy-use_natural-non-chunky-wood[m3]',
-            'Total without MWIP (Cat 1-19)': 'fst_wood-energy-use_total-without-incineration[m3]'
+            'Total without KVA (Cat 1-19)': 'fst_wood-energy-use_total-without-incineration[m3]'
         })
 
         df.to_csv(clean_local_filename['energy-use-m3'], sep=",", index=False)
@@ -236,7 +236,7 @@ def get_wood_energy_by_use(file_url, local_filename, clean_local_filename):
             'Wood pellets *)': 'fst_wood-energy-use_pellets[TJ]',
             'Natural logs': 'fst_wood-energy-use_natural-logs[TJ]',
             'Natural non-chunky wood': 'fst_wood-energy-use_natural-non-chunky-wood[TJ]',
-            'Total without KVA (Cat 1-19)': 'fst_wood-energy-use_total-without-incineration[TJ]'
+            'Total without KVA (Cat 1-19)': 'fst_wood-energy-use_total-without-incineration[TJ]',
         })
 
         df.to_csv(clean_local_filename['energy-use-ghw'], sep=",", index=False)
@@ -379,6 +379,26 @@ def simulate_industry_input(write_pickle= False):
     return
 
 simulate_industry_input()
+
+################################################################
+# Simulate Industry Interface as a Pickle
+################################################################
+def simulate_land_input(dm_forest_area, write_pickle= True):
+    if write_pickle is True:
+        # Build DataMatrix
+        dm = dm_forest_area.filter({'Variables': ['total-forest-area']})
+        # Extract OTS & Add FTS
+        dm.filter({'Years': years_ots}, inplace=True)
+        dm.add(np.nan, col_label=years_fts, dim='Years', dummy=True)
+        # Linear extrapolation on future years
+        linear_fitting(dm, years_fts)
+        DM_land_to_forestry = dm
+        # Write Pickle
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        f = os.path.join(current_file_directory, '../../data/interface/land_to_forestry.pickle')
+        my_pickle_dump(DM_new=DM_land_to_forestry, local_pickle_file=f)
+
+    return
 
 def simulate_industry_other_wood(refresh = True,interface=Interface()):
     if refresh is True:
@@ -556,6 +576,9 @@ dm.operation('total-forest-area', '-', 'productive-forest-area', out_col='unprod
 dm.operation('unproductive-forest-area', '/', 'total-forest-area', out_col='unproductive-share', unit='%')
 
 dm_forest_area=dm
+
+simulate_land_input(dm_forest_area)
+
 #dm_forest_area.datamatrix_plot()
 #dm_forest_area.datamatrix_plot({'Variables': ['productive-share','unproductive-share']}, stacked=True)
 
@@ -690,6 +713,20 @@ dm_wood_type.add(np.nan, col_label=years_fts, dim='Years', dummy=True)
 linear_fitting(dm_wood_type, years_fts)
 
 ################################################################
+# FXA - Exploited forest shares
+################################################################
+
+# Extract OTS & Add FTS
+dm_forest_exploited_share=dm_forest_area.filter_w_regex({'Variables': '.*-share'})
+dm_forest_exploited_share.filter({'Years': years_ots}, inplace=True)
+dm_forest_exploited_share.add(np.nan, col_label=years_fts, dim='Years', dummy=True)
+# Linear extrapolation on future years
+linear_fitting(dm_forest_exploited_share, years_fts)
+#dm_forest_exploited_share.datamatrix_plot(stacked=True)
+
+
+
+################################################################
 # Create fts example
 ################################################################
 
@@ -722,6 +759,7 @@ DM_forestry['constant']['industry-byproducts'] = cdm_industry_yields
 DM_forestry['constant']['wood-category-conversion-factors'] = cdm_forestry_conversion_industry_to_wood
 DM_forestry['fxa']['coniferous-share'] = dm_wood_type
 DM_forestry['fxa']['any-other-industrial-wood'] = dm_fxa_wood_demand
+DM_forestry['fxa']['forest-exploited-share'] = dm_forest_exploited_share
 DM_forestry
 
 ### Final DM is ots:, fts:, fxa:, (keys of ots must be lever name)
