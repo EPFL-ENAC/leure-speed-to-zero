@@ -78,8 +78,8 @@
   "lever_residential-heat-profile": 1,
   "lever_non-residential-cooling-profile": 1,
   "lever_residential-cooling-profile": 1,
-  "lever_lca-material-decomp": 1
-
+  "lever_lca-material-decomp": 1,
+  "lever_harvest-rate": 1
 }]
 
 

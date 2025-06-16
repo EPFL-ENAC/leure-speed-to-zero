@@ -43,7 +43,7 @@ def read_data(data_file, lever_setting):
     DM_forestry = {'fxa': dict_fxa,
                    'constant': dict_const}
 
-    return DM_forestry, DM_wood_conversion
+    return DM_forestry, DM_wood_conversion, DM_ots_fts
 
 #####################################################################################################################
 #####################################################################################################################
@@ -104,6 +104,15 @@ def wood_demand_m3 (dm_wood_demand, DM_wood_conversion):
     ay_wood_density = dm_wood_use_m3[:, :, :, :, :] * \
                     dm_wood_density[np.newaxis, np.newaxis,:, :, :]
     dm_wood_use_m3.add(ay_wood_density, col_label='wood-use', dim='Variables', unit='m3', dummy=True)
+
+    # Industrial by-production for fuelwood
+    cdm_byproduct = DM_wood_conversion['industry-yields']#.filter({'Categories1': ['wood-fuel-byproducts']})
+    cdm_byproduct = cdm_byproduct.filter({'Categories1': ['wood-fuel-byproducts']})
+
+    ay_byproduct= dm_wood_use_m3[:, :, :, :, :] * \
+                    cdm_byproduct[np.newaxis, np.newaxis,:, :, :]
+
+
 
 
 
@@ -168,12 +177,30 @@ def wood_supply (dm_forest_area, DM_forestry, DM_ots_fts):
     dm_forest_land = dm_exploited.filter(({'Variables': ['exploited-forest','unexploited-forest']}))
 
     # Harvested wood [m3] = Exploited forest [ha] * Harvest rate [m3/ha]
-    dm_harvested_wood = DM_ots_fts
+    dm_harvested_wood = DM_ots_fts['harvest-rate']
+    dm_productive_area = dm_forest_land.filter(({'Variables':['exploited-forest']}))
+    ay_harvest = dm_productive_area[:, :, 'exploited-forest' , np.newaxis] *\
+                         dm_harvested_wood[:,:,'harvest-rate',:]
+    dm_harvested_wood.add(ay_harvest, col_label='wood-harvested', dim='Variables', unit='m3',dummy = True)
 
+    # Exogeneous wood supply & append the matrix for overall supply
 
+    dm_wood_supply = DM_forestry['fxa']['wood-waste-energy']
 
-    return dm_forest_land, dm_harvested_wood
+    # Append
+    dm_wood_supply.deepen()
+    dm_wood_supply.rename_col(['fst_wood-energy-use-m3'], ['wood-supply'], dim='Variables')
+    dm_harvested_wood = dm_harvested_wood.filter(({'Variables':['wood-harvested']}))
+    dm_harvested_wood.rename_col(['wood-harvested'],['wood-supply'],dim='Variables')
+    dm_wood_supply.append(dm_harvested_wood, dim='Categories1')
+    dm_wood_supply.rename_col(['total'], ['all-species'], dim='Categories1')
 
+    DM_supply = {
+        'wood-supply': dm_wood_supply,
+        'forest-supply': dm_forest_land
+    }
+
+    return DM_supply
 
 def forestry(lever_setting, years_setting, interface=Interface()):
 
@@ -243,7 +270,7 @@ def forestry(lever_setting, years_setting, interface=Interface()):
     # Functions - Wood supply in m3
     ####################################################################################################################
 
-    dm_wood_supply = wood_supply(dm_forest_area, DM_forestry, DM_ots_fts)
+    DM_supply = wood_supply(dm_forest_area, DM_forestry, DM_ots_fts)
 
     ####################################################################################################################
     # Interface - Forestry to TPE :

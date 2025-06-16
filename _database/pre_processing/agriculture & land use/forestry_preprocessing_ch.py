@@ -383,7 +383,7 @@ simulate_industry_input()
 ################################################################
 # Simulate Industry Interface as a Pickle
 ################################################################
-def simulate_land_input(dm_forest_area, write_pickle= True):
+def simulate_land_input(dm_forest_area, write_pickle= False):
     if write_pickle is True:
         # Build DataMatrix
         dm = dm_forest_area.filter({'Variables': ['total-forest-area']})
@@ -724,7 +724,20 @@ dm_forest_exploited_share.add(np.nan, col_label=years_fts, dim='Years', dummy=Tr
 linear_fitting(dm_forest_exploited_share, years_fts)
 #dm_forest_exploited_share.datamatrix_plot(stacked=True)
 
+################################################################
+# FXA - Exogenous wood supply from wastes incineration
+################################################################
 
+# Extract OTS & Add FTS
+dm_wood_wastes_incineration =dm_wood_energy_use.flatten()
+dm_wood_wastes_incineration =dm_wood_wastes_incineration.filter({'Variables': ['fst_wood-energy-use-m3_waste-incineration']})
+dm_wood_wastes_incineration.add(np.nan, col_label=[2023], dim='Years', dummy=True)
+dm_wood_wastes_incineration.filter({'Years': years_ots}, inplace=True)
+dm_wood_wastes_incineration.add(np.nan, col_label=years_fts, dim='Years', dummy=True)
+
+# Linear extrapolation on future years
+linear_fitting(dm_wood_wastes_incineration, years_fts)
+#dm_wood_wastes_incineration.datamatrix_plot(stacked=True)
 
 ################################################################
 # Create fts example
@@ -760,6 +773,7 @@ DM_forestry['constant']['wood-category-conversion-factors'] = cdm_forestry_conve
 DM_forestry['fxa']['coniferous-share'] = dm_wood_type
 DM_forestry['fxa']['any-other-industrial-wood'] = dm_fxa_wood_demand
 DM_forestry['fxa']['forest-exploited-share'] = dm_forest_exploited_share
+DM_forestry['fxa']['wood-waste-energy'] = dm_wood_wastes_incineration
 DM_forestry
 
 ### Final DM is ots:, fts:, fxa:, (keys of ots must be lever name)
