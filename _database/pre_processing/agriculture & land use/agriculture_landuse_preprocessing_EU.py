@@ -5157,7 +5157,7 @@ def database_from_csv_to_datamatrix(years_ots, years_fts, dm_kcal_req_pathwaycal
     cdm_aps_ibp.deepen(based_on='Categories1')
     dict_const['cdm_aps_ibp'] = cdm_aps_ibp
 
-    # Feed yield
+    # Food & Feed yield
     cdm_feed_yield = cdm_const.filter_w_regex({'Variables': 'cp_ibp_processed'})
     cdm_feed_yield.rename_col_regex(str1="_to_", str2="-to-", dim="Variables")
     cdm_feed_yield.deepen()
