@@ -665,7 +665,7 @@ cdm_industry_yields = ConstantDataMatrix(col_labels={'Variables': ['fst_industry
                                                     'Categories1': ['wood-fuel-byproducts',
                                                                     'timber-to-sawlogs:',
                                                                     'pulp-to-industrial-wood']},
-                                        units={'fst_industry-byproducts': '%'})
+                                        units={'fst_industry-yields': '%'})
 
 cdm_industry_yields.array = np.zeros((len(cdm_industry_yields.col_labels['Variables']),
                                     len(cdm_industry_yields.col_labels['Categories1'])))
@@ -729,14 +729,15 @@ linear_fitting(dm_forest_exploited_share, years_fts)
 ################################################################
 
 # Extract OTS & Add FTS
-dm_wood_wastes_incineration =dm_wood_energy_use.flatten()
-dm_wood_wastes_incineration =dm_wood_wastes_incineration.filter({'Variables': ['fst_wood-energy-use-m3_waste-incineration']})
-dm_wood_wastes_incineration.add(np.nan, col_label=[2023], dim='Years', dummy=True)
-dm_wood_wastes_incineration.filter({'Years': years_ots}, inplace=True)
-dm_wood_wastes_incineration.add(np.nan, col_label=years_fts, dim='Years', dummy=True)
+dm_wood_wastes =dm_wood_energy_use.flatten()
+dm_wood_wastes =dm_wood_wastes.filter({'Variables': ['fst_wood-energy-use-m3_waste-incineration','fst_wood-energy-use-m3_waste-without-incineration']})
+dm_wood_wastes.groupby({'fst_waste-wood': '.*'}, regex=True, inplace=True, dim='Variables')
+dm_wood_wastes.add(np.nan, col_label=[2023], dim='Years', dummy=True)
+dm_wood_wastes.filter({'Years': years_ots}, inplace=True)
+dm_wood_wastes.add(np.nan, col_label=years_fts, dim='Years', dummy=True)
 
 # Linear extrapolation on future years
-linear_fitting(dm_wood_wastes_incineration, years_fts)
+linear_fitting(dm_wood_wastes, years_fts)
 #dm_wood_wastes_incineration.datamatrix_plot(stacked=True)
 
 ################################################################
@@ -773,7 +774,7 @@ DM_forestry['constant']['wood-category-conversion-factors'] = cdm_forestry_conve
 DM_forestry['fxa']['coniferous-share'] = dm_wood_type
 DM_forestry['fxa']['any-other-industrial-wood'] = dm_fxa_wood_demand
 DM_forestry['fxa']['forest-exploited-share'] = dm_forest_exploited_share
-DM_forestry['fxa']['wood-waste-energy'] = dm_wood_wastes_incineration
+DM_forestry['fxa']['wood-waste-energy'] = dm_wood_wastes
 DM_forestry
 
 ### Final DM is ots:, fts:, fxa:, (keys of ots must be lever name)
