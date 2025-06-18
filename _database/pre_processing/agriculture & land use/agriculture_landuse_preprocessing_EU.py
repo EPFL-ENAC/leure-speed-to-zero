@@ -906,7 +906,7 @@ def climate_smart_crop_processing(list_countries, file_dict):
         my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
         my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
         list_years = ['2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
-                      '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021']
+                      '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023']
         my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
 
         my_pars = {
@@ -1219,7 +1219,7 @@ def climate_smart_crop_processing(list_countries, file_dict):
         my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
         list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
                       '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
-                      '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022']
+                      '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023']
         my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
 
         my_pars = {
@@ -1985,7 +1985,7 @@ def climate_smart_livestock_processing(df_csl_feed, df_liv_pop, list_countries):
     my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
     list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
                   '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
-                  '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022']
+                  '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023']
     my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
 
     my_pars = {
@@ -2075,7 +2075,7 @@ def climate_smart_livestock_processing(df_csl_feed, df_liv_pop, list_countries):
     my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
     list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
                   '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
-                  '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022']
+                  '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023']
     my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
 
     my_pars = {
@@ -4274,7 +4274,7 @@ def land_calibration(list_countries):
     # List of elements
     list_elements = ['Area']
 
-    list_items = ['-- Cropland', '-- Permanent meadows and pastures']
+    list_items = ['--- Temporary crops', '--- Temporary fallow', '-- Permanent meadows and pastures']
 
     # 1990 - 2022
     ld = faostat.list_datasets()
@@ -4307,6 +4307,21 @@ def land_calibration(list_countries):
     # Unit conversion [k ha] => [ha]
     df_land_use_fao['Value'] = df_land_use_fao['Value'] * 1000
 
+    # Cropland = temporary crops + temporary fallow
+    # 1. Filter only the rows for the items of interest
+    df_crop_fallow = df_land_use_fao[df_land_use_fao['Item'].isin(['Temporary crops', 'Temporary fallow'])]
+    # 2. Group by Area and Year, then sum the values
+    df_cropland = (
+        df_crop_fallow
+        .groupby(['Area', 'Year'], as_index=False)['Value']
+        .sum()
+    )
+    # 3. Assign the new item name
+    df_cropland['Item'] = 'Temporary crops and fallow'
+    # 4. Optional: Remove original items and append the new one
+    df_cleaned = df_land_use_fao[~df_land_use_fao['Item'].isin(['Temporary crops', 'Temporary fallow'])]
+    df_land_use_fao= pd.concat([df_cleaned, df_cropland], ignore_index=True)
+
     # PathwayCalc formatting -----------------------------------------------------------------------------------------------
     # Food item name matching with dictionary
     # Read excel file
@@ -4314,7 +4329,7 @@ def land_calibration(list_countries):
         'dictionaries/dictionnary_agriculture_landuse.xlsx',
         sheet_name='calibration')
 
-    # Prepend "Fertilizers" to each value in the 'Item' column
+    # Prepend "Land" to each value in the 'Item' column
     df_land_use_fao['Item'] = df_land_use_fao['Item'].apply(lambda x: f"Land {x}")
 
     # Merge based on 'Item'
@@ -4328,6 +4343,72 @@ def land_calibration(list_countries):
                                    inplace=True)
 
     return df_land_use_fao_calibration
+
+# CalculationLeaf CAL - CROPLAND -----------------------------------------------------------------------------------
+def cropland_calibration(list_countries):
+    # ----------------------------------------------------------------------------------------------------------------------
+    # CROPLAND ----------------------------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # CROPS  (QCL) (for everything except lgn-energycrop, gas-energycrop, algae and insect)
+    try:
+        df_cropland_1990_2022 = pd.read_csv(file_dict['cropland'])
+    except OSError:
+        # List of elements
+        list_elements = ['Area harvested']
+
+        list_items = ['Cereals, primary + (Total)', 'Fibre Crops, Fibre Equivalent + (Total)', 'Fruit Primary + (Total)',
+                      'Oilcrops, Oil Equivalent + (Total)', 'Pulses, Total + (Total)', 'Rice',
+                      'Roots and Tubers, Total + (Total)',
+                      'Sugar Crops Primary + (Total)', 'Vegetables Primary + (Total)']
+
+        # 1990 - 2022
+        code = 'QCL'
+        my_countries = [faostat.get_par(code, 'area')[c] for c in list_countries]
+        my_elements = [faostat.get_par(code, 'elements')[e] for e in list_elements]
+        my_items = [faostat.get_par(code, 'item')[i] for i in list_items]
+        list_years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001',
+                      '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
+                      '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023']
+        my_years = [faostat.get_par(code, 'year')[y] for y in list_years]
+
+        my_pars = {
+            'area': my_countries,
+            'element': my_elements,
+            'item': my_items,
+            'year': my_years
+        }
+        df_cropland_1990_2022 = faostat.get_data_df(code, pars=my_pars, strval=False)
+        df_cropland_1990_2022.loc[
+            df_cropland_1990_2022['Item'].str.contains('Rice', case=False,
+                                                    na=False), 'Item'] = 'Rice and products'
+        df_cropland_1990_2022.to_csv(file_dict['cropland'], index=False)
+
+    # Filter columns
+    list_filter = ['Area', 'Item', 'Year', 'Value']
+    df_cropland_1990_2022 = df_cropland_1990_2022[list_filter]
+
+    # Prepend "Cropland" to each value in the 'Item' column
+    df_cropland_1990_2022['Item'] = df_cropland_1990_2022['Item'].apply(lambda x: f"Cropland {x}")
+
+    # PathwayCalc formatting -----------------------------------------------------------------------------------------------
+
+    # Food item name matching with dictionary
+    # Read excel file
+    df_dict_csc = pd.read_excel(
+        'dictionaries/dictionnary_agriculture_landuse.xlsx',
+        sheet_name='calibration')
+
+    # Merge based on 'Item'
+    df_cropland_pathwaycalc = pd.merge(df_dict_csc, df_cropland_1990_2022, on='Item')
+
+    # Drop the 'Item' column
+    df_cropland_pathwaycalc = df_cropland_pathwaycalc.drop(columns=['Item'])
+
+    # Renaming existing columns (geoscale, timsecale, value)
+    df_cropland_pathwaycalc.rename(columns={'Area': 'geoscale', 'Year': 'timescale', 'Value': 'value'}, inplace=True)
+
+    return df_cropland_pathwaycalc
 
 # CalculationLeaf CAL - LIMING & UREA CO2 EMISSIONS -----------------------------------------------------------------------------------
 
@@ -4499,7 +4580,7 @@ def wood_calibration(list_countries):
 def calibration_formatting(df_diet_calibration, df_domestic_supply_calibration, df_liv_population_calibration,
                      df_nitrogen_calibration, df_liv_emissions_calibration, df_feed_calibration,
                      df_land_use_fao_calibration, df_liming_urea_calibration, df_wood_calibration,
-                     df_emissions_calibration):
+                     df_emissions_calibration, df_cropland_fao_calibration):
 
     # AGRICULTURE MODULE -----------------------------------------------------------------------------------------------
 
@@ -4513,6 +4594,7 @@ def calibration_formatting(df_diet_calibration, df_domestic_supply_calibration, 
     df_calibration = pd.concat([df_calibration, df_liming_urea_calibration], axis=0)
     #df_calibration = pd.concat([df_calibration, df_wood_calibration], axis=0)
     df_calibration = pd.concat([df_calibration, df_emissions_calibration], axis=0)
+    df_calibration = pd.concat([df_calibration, df_cropland_fao_calibration], axis=0)
 
     # Adding the columns module, lever, level and string-pivot at the correct places
     df_calibration['module'] = 'agriculture'
@@ -4812,8 +4894,14 @@ def database_from_csv_to_datamatrix(years_ots, years_fts, dm_kcal_req_pathwaycal
     dm_cal_crop.deepen(based_on='Variables')
     DM_agriculture_old['fxa']['cal_agr_domestic-production_food'] = dm_cal_crop
 
+    # Data - Fixed assumptions - Calibration factors - Cropland
+    dm_cal_cropland = dm_cal.filter_w_regex({'Variables': 'cal_agr_lus_land_cropland.*'})
+    dm_cal_cropland.drop("Variables", ['cal_agr_lus_land_cropland'])# Drop total cropland
+    dm_cal_cropland.deepen(based_on='Variables')
+    DM_agriculture_old['fxa']['cal_agr_lus_land_cropland'] = dm_cal_cropland
+
     # Data - Fixed assumptions - Calibration factors - Land
-    dm_cal_land = dm_cal.filter_w_regex({'Variables': 'cal_agr_lus_land.*'})
+    dm_cal_land = dm_cal.filter({'Variables': ['cal_agr_lus_land_cropland', 'cal_agr_lus_land_grassland']})
     dm_cal_land.deepen(based_on='Variables')
     DM_agriculture_old['fxa']['cal_agr_lus_land'] = dm_cal_land
 
@@ -5255,7 +5343,7 @@ dm_kcal_req_pathwaycalc = energy_requirements_processing(country_list=df_waste_p
 file_dict = {'ssr': 'data/faostat/ssr.csv', 'cake': 'data/faostat/ssr_cake.csv',
              'molasse': 'data/faostat/ssr_2010_2021_molasse_cake.csv'}
 df_ssr_pathwaycalc, df_csl_feed = self_sufficiency_processing(years_ots, list_countries, file_dict)
-file_dict = {'losses': 'data/faostat/losses.csv', 'yield': 'data/faostat/yield.csv', 'urea': 'data/faostat/urea.csv',
+file_dict = {'losses': 'data/faostat/losses.csv', 'yield': 'data/faostat/yield.csv','cropland': 'data/faostat/cropand.csv', 'urea': 'data/faostat/urea.csv',
              'land': 'data/faostat/land.csv', 'nitro': 'data/faostat/nitro.csv',
              'pesticide': 'data/faostat/pesticide.csv', 'liming': 'data/faostat/liming.csv'}
 df_climate_smart_crop_pathwaycalc, df_energy_demand_cal = climate_smart_crop_processing(list_countries, file_dict)
@@ -5274,13 +5362,14 @@ df_nitrogen_calibration = nitrogen_calibration(list_countries)
 df_liv_emissions_calibration = manure_calibration(list_countries)
 df_feed_calibration = feed_calibration(list_countries)
 df_land_use_fao_calibration = land_calibration(list_countries)
+df_cropland_fao_calibration = cropland_calibration(list_countries)
 df_liming_urea_calibration = CO2_emissions()
 df_wood_calibration = wood_calibration(list_countries)
 df_emissions_calibration = energy_ghg_calibration(list_countries) # Fixme PerformanceWarning ?
 df_calibration = calibration_formatting(df_diet_calibration, df_domestic_supply_calibration, df_liv_population_calibration,
                      df_nitrogen_calibration, df_liv_emissions_calibration, df_feed_calibration,
                      df_land_use_fao_calibration, df_liming_urea_calibration, df_wood_calibration,
-                     df_emissions_calibration) # Fixme PerformanceWarning ?
+                     df_emissions_calibration, df_cropland_fao_calibration) # Fixme PerformanceWarning ?
 
 # CalculationTree RUNNING FXA PRE-PROCESSING ---------------------------------------------------------------------------
 #fxa_preprocessing()

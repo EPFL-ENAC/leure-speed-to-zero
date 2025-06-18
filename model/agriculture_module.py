@@ -29,494 +29,7 @@ def init_years_lever():
 ######################################### LOAD AGRICULTURE DATA #########################################
 #######################################################################################################
 
-# DatabaseToDatamatrix
-def database_from_csv_to_datamatrix():
-    #############################################
-    ##### database_from_csv_to_datamatrix() #####
-    #############################################
-
-    years_setting, lever_setting = init_years_lever()
-
-    # Set years range
-    startyear = years_setting[0]
-    baseyear = years_setting[1]
-    lastyear = years_setting[2]
-    step_fts = years_setting[3]
-    years_ots = list(np.linspace(start=startyear, stop=baseyear, num=(baseyear-startyear)+1).astype(int)) # make list with years from 1990 to 2015
-    years_fts = list(np.linspace(start=baseyear+step_fts, stop=lastyear, num=int((lastyear-baseyear)/step_fts)).astype(int)) # make list with years from 2020 to 2050 (steps of 5 years)
-    years_all = years_ots + years_fts
-
-    #####################
-    # FIXED ASSUMPTIONS #
-    #####################
-
-    # FixedAssumptionsToDatamatrix
-    dict_fxa = {}
-    file = 'agriculture_fixed-assumptions'
-    lever = 'none'
-    #edit_database(file, lever, column='eucalc-name', mode='rename',pattern={'meat_': 'meat-', 'abp_': 'abp-'})
-    #edit_database(file, lever, column='eucalc-name', mode='rename',pattern={'_rem_': '_', '_to_': '_', 'land-man_ef': 'fxa_land-man_ef'})
-    #edit_database(file, lever, column='eucalc-name', mode='rename',pattern={'land-man_soil-type': 'fxa_land-man_soil-type'})
-    #edit_database(file, lever, column='eucalc-name', mode='rename',pattern={'_def_': '_def-', '_gstock_': '_gstock-', '_nat-losses_': '_nat-losses-'})
-    # AGRICULTURE ------------------------------------------------------------------------------------------------------
-    # LIVESTOCK MANURE - N2O emissions
-    df = read_database_fxa(file, filter_dict={'eucalc-name': 'ef_liv_N2O-emission_ef.*'})
-    dm_ef_N2O = DataMatrix.create_from_df(df, num_cat=2)
-    dict_fxa['ef_liv_N2O-emission'] = dm_ef_N2O
-    # LIVESTOCK MANURE - CH4 emissions
-    df = read_database_fxa(file, filter_dict={'eucalc-name': 'ef_liv_CH4-emission_treated.*'})
-    dm_ef_CH4 = DataMatrix.create_from_df(df, num_cat=1)
-    dict_fxa['ef_liv_CH4-emission_treated'] = dm_ef_CH4
-    # LIVESTOCK MANURE - N stock
-    df = read_database_fxa(file, filter_dict={'eucalc-name': 'liv_manure_n-stock.*'})
-    dm_nstock = DataMatrix.create_from_df(df, num_cat=1)
-    dict_fxa['liv_manure_n-stock'] = dm_nstock
-    # CROP PRODUCTION - Burnt residues emission
-    df = read_database_fxa(file, filter_dict={'eucalc-name': 'ef_burnt-residues.*'})
-    dm_ef_burnt = DataMatrix.create_from_df(df, num_cat=1)
-    dict_fxa['ef_burnt-residues'] = dm_ef_burnt
-    # CROP PRODUCTION - Soil residues emission
-    df = read_database_fxa(file, filter_dict={'eucalc-name': 'ef_soil-residues.*'})
-    dm_ef_soil = DataMatrix.create_from_df(df, num_cat=1)
-    dict_fxa['ef_soil-residues'] = dm_ef_soil
-    # CROP PRODUCTION - Residue yield
-    df = read_database_fxa(file, filter_dict={'eucalc-name': 'residues_yield.*'})
-    dm_residues_yield = DataMatrix.create_from_df(df, num_cat=1)
-    dict_fxa['residues_yield'] = dm_residues_yield
-    # LAND - Fibers domestic-self-sufficiency
-    df = read_database_fxa(file, filter_dict={'eucalc-name': 'domestic-self-sufficiency_fibres-plant-eq'})
-    dm_fibers = DataMatrix.create_from_df(df, num_cat=0)
-    dict_fxa['domestic-self-sufficiency_fibres-plant-eq'] = dm_fibers
-    # LAND - Fibers domestic supply quantity
-    df = read_database_fxa(file, filter_dict={'eucalc-name': 'domestic-supply-quantity_fibres-plant-eq'})
-    dm_fibers_sup = DataMatrix.create_from_df(df, num_cat=0)
-    dict_fxa['domestic-supply-quantity_fibres-plant-eq'] = dm_fibers_sup
-    dm_fibers.append(dm_fibers_sup, dim='Variables')
-    # LAND - Emission crop rice
-    df = read_database_fxa(file, filter_dict={'eucalc-name': 'emission_crop_rice'})
-    dm_rice = DataMatrix.create_from_df(df, num_cat=0)
-    dict_fxa['emission_crop_rice'] = dm_rice
-    # NITROGEN BALANCE - Emission fertilizer
-    df = read_database_fxa(file, filter_dict={'eucalc-name': 'agr_emission_fertilizer'})
-    dm_n_fertilizer = DataMatrix.create_from_df(df, num_cat=0)
-    dict_fxa['agr_emission_fertilizer'] = dm_n_fertilizer
-
-
-    # LAND USE --------------------------------------------------------------------------------------------------------
-    # LAND ALLOCATION - Total area
-    df = read_database_fxa(file, filter_dict={'eucalc-name': 'lus_land_total-area'})
-    dm_land_total = DataMatrix.create_from_df(df, num_cat=0)
-    dict_fxa['lus_land_total-area'] = dm_land_total
-    # CARBON STOCK - c-stock biomass & soil
-    df = read_database_fxa(file, filter_dict={'eucalc-name': 'land-man_ef'})
-    dm_ef_biomass = DataMatrix.create_from_df(df, num_cat=0)
-    dict_fxa['land-man_ef'] = dm_ef_biomass
-    # CARBON STOCK - soil type
-    df = read_database_fxa(file, filter_dict={'eucalc-name': 'land-man_soil-type'})
-    dm_soil = DataMatrix.create_from_df(df, num_cat=0)
-    dict_fxa['land-man_soil-type'] = dm_soil
-    # AGROFORESTRY CROP - emission factors
-    df = read_database_fxa(file, filter_dict={'eucalc-name': 'agr_climate-smart-crop_ef_agroforestry'})
-    dm_crop_ef_agroforestry = DataMatrix.create_from_df(df, num_cat=1)
-    dict_fxa['agr_climate-smart-crop_ef_agroforestry'] = dm_crop_ef_agroforestry
-    # AGROFORESTRY livestock - emission factors
-    df = read_database_fxa(file, filter_dict={'eucalc-name': 'agr_climate-smart-livestock_ef_agroforestry'})
-    dm_livestock_ef_agroforestry = DataMatrix.create_from_df(df, num_cat=1)
-    dict_fxa['agr_climate-smart-livestock_ef_agroforestry'] = dm_livestock_ef_agroforestry
-    # AGROFORESTRY Forestry - natural losses & others
-    df = read_database_fxa(file, filter_dict={'eucalc-name': 'agr_climate-smart-forestry'})
-    dm_agroforestry = DataMatrix.create_from_df(df, num_cat=1)
-    dict_fxa['agr_climate-smart-forestry'] = dm_agroforestry
-
-
-
-    # CalibrationDataToDatamatrix
-
-    # Data - Calibration
-    file = '/Users/crosnier/Documents/PathwayCalc/_database/data/csv/agriculture_calibration.csv'
-    lever = 'none'
-    df_db = pd.read_csv(file)
-    df_ots, df_fts = database_to_df(df_db, lever, level='all')
-    df_ots = df_ots.drop(columns=['none']) # Drop column 'none'
-    dm_cal = DataMatrix.create_from_df(df_ots, num_cat=0)
-
-    # Data - Fixed assumptions - Calibration factors - Diet
-    dm_cal_diet = dm_cal.filter_w_regex({'Variables': 'cal_agr_diet.*'})
-    dm_cal_diet.deepen(based_on='Variables')
-    dict_fxa['cal_diet'] = dm_cal_diet
-
-    # Data - Fixed assumptions - Calibration factors - Food waste
-    #dm_cal_food_waste = dm_cal.filter_w_regex({'Variables': 'cal_agr_food-wastes.*'})
-    #dm_cal_food_waste.deepen(based_on='Variables')
-    #dict_fxa['cal_food_waste'] = dm_cal_food_waste
-
-    # Data - Fixed assumptions - Calibration factors - Livestock domestic production
-    dm_cal_liv_dom_prod = dm_cal.filter_w_regex({'Variables': 'cal_agr_domestic-production-liv.*'})
-    dm_cal_liv_dom_prod.deepen(based_on='Variables')
-    dict_fxa['cal_agr_domestic-production-liv'] = dm_cal_liv_dom_prod
-
-    # Data - Fixed assumptions - Calibration factors - Livestock population
-    dm_cal_liv_pop = dm_cal.filter_w_regex({'Variables': 'cal_agr_liv-population.*'})
-    dm_cal_liv_pop.deepen(based_on='Variables')
-    dict_fxa['cal_agr_liv-population'] = dm_cal_liv_pop
-
-    # Data - Fixed assumptions - Calibration factors - Livestock CH4 emissions
-    dm_cal_liv_CH4 = dm_cal.filter_w_regex({'Variables': 'cal_agr_liv_CH4-emission.*'})
-    dm_cal_liv_CH4.deepen(based_on='Variables')
-    dm_cal_liv_CH4.deepen(based_on='Variables')
-    dict_fxa['cal_agr_liv_CH4-emission'] = dm_cal_liv_CH4
-
-    # Data - Fixed assumptions - Calibration factors - Livestock N2O emissions
-    dm_cal_liv_N2O = dm_cal.filter_w_regex({'Variables': 'cal_agr_liv_N2O-emission.*'})
-    dm_cal_liv_N2O.deepen(based_on='Variables')
-    dm_cal_liv_N2O.deepen(based_on='Variables')
-    dict_fxa['cal_agr_liv_N2O-emission'] = dm_cal_liv_N2O
-
-    # Data - Fixed assumptions - Calibration factors - Feed demand
-    dm_cal_feed = dm_cal.filter_w_regex({'Variables': 'cal_agr_demand_feed.*'})
-    dm_cal_feed.deepen(based_on='Variables')
-    dict_fxa['cal_agr_demand_feed'] = dm_cal_feed
-
-    # Data - Fixed assumptions - Calibration factors - Crop production
-    dm_cal_crop = dm_cal.filter_w_regex({'Variables': 'cal_agr_domestic-production_food.*'})
-    dm_cal_crop.deepen(based_on='Variables')
-    dict_fxa['cal_agr_domestic-production_food'] = dm_cal_crop
-
-    # Data - Fixed assumptions - Calibration factors - Land
-    dm_cal_land = dm_cal.filter_w_regex({'Variables': 'cal_agr_lus_land.*'})
-    dm_cal_land.deepen(based_on='Variables')
-    dict_fxa['cal_agr_lus_land'] = dm_cal_land
-
-    # Data - Fixed assumptions - Calibration factors - Nitrogen balance
-    dm_cal_n = dm_cal.filter_w_regex({'Variables': 'cal_agr_crop_emission_N2O-emission_fertilizer.*'})
-    dict_fxa['cal_agr_crop_emission_N2O-emission_fertilizer'] = dm_cal_n
-
-    # Data - Fixed assumptions - Calibration factors - Energy demand for agricultural land
-    dm_cal_energy_demand = dm_cal.filter_w_regex({'Variables': 'cal_agr_energy-demand.*'})
-    dm_cal_energy_demand.deepen(based_on='Variables')
-    dict_fxa['cal_agr_energy-demand'] = dm_cal_energy_demand
-
-    # Data - Fixed assumptions - Calibration factors - Agricultural emissions total (CH4, N2O, CO2)
-    dm_cal_CH4 = dm_cal.filter_w_regex({'Variables': 'cal_agr_emissions-CH4'})
-    dict_fxa['cal_agr_emissions_CH4'] = dm_cal_CH4
-    dm_cal_N2O = dm_cal.filter_w_regex({'Variables': 'cal_agr_emissions-N2O'})
-    dict_fxa['cal_agr_emissions_N2O'] = dm_cal_N2O
-    dm_cal_CO2 = dm_cal.filter_w_regex({'Variables': 'cal_agr_emissions-CO2'})
-    dict_fxa['cal_agr_emissions_CO2'] = dm_cal_CO2
-
-    # Data - Fixed assumptions - Calibration factors - CO2 emissions (fuel, liming, urea)
-    dm_cal_input = dm_cal.filter_w_regex({'Variables': 'cal_agr_input-use_emissions-CO2.*'})
-    dm_cal_input.deepen(based_on='Variables')
-    dict_fxa['cal_agr_input-use_emissions-CO2'] = dm_cal_input
-
-    # Create a dictionnay with all the fixed assumptions
-    dict_fxa = {
-        'cal_agr_diet': dm_cal_diet,
-        'cal_agr_domestic-production-liv': dm_cal_liv_dom_prod,
-        'cal_agr_liv-population': dm_cal_liv_pop,
-        'cal_agr_liv_CH4-emission': dm_cal_liv_CH4,
-        'cal_agr_liv_N2O-emission': dm_cal_liv_N2O,
-        'cal_agr_domestic-production_food': dm_cal_crop,
-        'cal_agr_demand_feed': dm_cal_feed,
-        'cal_agr_lus_land': dm_cal_land,
-        'cal_agr_crop_emission_N2O-emission_fertilizer': dm_cal_n,
-        'cal_agr_emission_CH4': dm_cal_CH4,
-        'cal_agr_emission_N2O': dm_cal_N2O,
-        'cal_agr_emission_CO2': dm_cal_CO2,
-        'cal_agr_energy-demand': dm_cal_energy_demand,
-        'cal_input': dm_cal_input,
-        'ef_liv_N2O-emission': dm_ef_N2O,
-        'ef_liv_CH4-emission_treated': dm_ef_CH4,
-        'liv_manure_n-stock': dm_nstock,
-        'ef_burnt-residues': dm_ef_burnt,
-        'ef_soil-residues': dm_ef_soil,
-        'residues_yield': dm_residues_yield,
-        'fibers': dm_fibers,
-        'rice': dm_rice,
-        'agr_emission_fertilizer' : dm_n_fertilizer,
-        'lus_land_total-area' : dm_land_total,
-        'land-man_ef' : dm_ef_biomass,
-        'land-man_soil-type' : dm_soil,
-        'agr_climate-smart-crop_ef_agroforestry' : dm_crop_ef_agroforestry,
-        'agr_climate-smart-livestock_ef_agroforestry': dm_livestock_ef_agroforestry,
-        'agr_climate-smart-forestry' : dm_agroforestry
-    }
-
-
-    #####################
-    ###### LEVERS #######
-    #####################
-    # LeversToDatamatrix
-    dict_ots = {}
-    dict_fts = {}
-
-    # [TUTORIAL] Data - Lever - Population
-    #file = 'lifestyles_population'  # File name to read
-    #lever = 'pop'  # Lever name to match the JSON?
-
-    # Creates the datamatrix for lifestyles population
-    #dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 0, 0], baseyear=baseyear,
-    #                                                            years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
-    #                                                            column='eucalc-name',
-    #                                                            group_list=['lfs_demography_.*',
-    #                                                                        'lfs_macro-scenarii_.*',
-    #                                                                        'lfs_population_.*'])
-
-
-    # Data - Lever - Diet
-    file = 'lifestyles_diet'
-    lever = 'diet'
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1], baseyear=baseyear,
-                                                                years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
-                                                                column='eucalc-name',
-                                                                group_list=['lfs_consumers-diet_.*', 'share_.*'])
-
-    # Data - Lever - Energy requirements
-    file = 'lifestyles_energy-requirement'
-    lever = 'kcal-req'
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=0, baseyear=baseyear,
-                                                       years=years_all, dict_ots=dict_ots, dict_fts=dict_fts)
-    # Data - Lever - Food wastes
-    file = 'lifestyles_food-wastes'
-    lever = 'fwaste'
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1, baseyear=baseyear,
-                                                       years=years_all, dict_ots=dict_ots, dict_fts=dict_fts)
-
-    # Data - Lever - self-sufficiency
-    file = 'agriculture_self-sufficiency'
-    lever = 'food-net-import'
-    # Rename to correct format
-    #edit_database(file,lever,column='eucalc-name',pattern={'processeced':'processed'},mode='rename')
-    #edit_database(file,lever,column='eucalc-name',pattern={'meat_':'meat-', 'abp_':'abp-', 'processed_':'processed-', 'pro_':'pro-','liv_':'liv-','crop_':'crop-','bev_':'bev-'},mode='rename')
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(file, lever, num_cat=1, baseyear=baseyear, years=years_all,
-                                                           dict_ots=dict_ots, dict_fts=dict_fts)
-
-    # Data - Lever - climate smart livestock
-    file = 'agriculture_climate-smart-livestock'
-    lever = 'climate-smart-livestock'
-    #edit_database(file,lever,column='eucalc-name',pattern={'_CH4-emission':''},mode='rename')
-    #edit_database(file,lever,column='eucalc-name',pattern={'ration_crop_':'ration_crop-', 'ration_liv_':'ration_liv-'},mode='rename')
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 0, 1, 2, 1, 1], baseyear=baseyear,
-                                                                years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
-                                                                column='eucalc-name',
-                                                                group_list=['climate-smart-livestock_losses.*', 'climate-smart-livestock_yield.*',
-                                                                            'climate-smart-livestock_slaughtered.*', 'climate-smart-livestock_density',
-                                                                            'climate-smart-livestock_enteric.*', 'climate-smart-livestock_manure.*',
-                                                                            'climate-smart-livestock_ration.*', 'agr_climate-smart-livestock_ef_agroforestry.*'])
-
-    # Data - Lever - biomass hierarchy
-    file = 'agriculture_biomass-use-hierarchy'
-    lever = 'biomass-hierarchy'
-    # Rename to correct format
-    #edit_database(file,lever,column='eucalc-name',pattern={'bev_ibp_use_oth':'bev-ibp-use-oth', 'biomass-hierarchy_bev':'biomass-hierarchy-bev', 'solid_bioenergy':'solid-bioenergy'},mode='rename')
-    #edit_database(file,lever,column='eucalc-name',pattern={'liquid_eth_':'liquid_eth-', 'liquid_oil_':'liquid_oil-', 'lgn_btl_':'lgn-btl-', 'lgn_ezm_':'lgn-ezm-'},mode='rename')
-    #edit_database(file,lever,column='eucalc-name',pattern={'biodiesel_tec_':'biodiesel_', 'biogasoline_tec_':'biogasoline_', 'biojetkerosene_tec_':'biojetkerosene_'},mode='rename')
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 1, 1, 1, 1, 1], baseyear=baseyear,
-                                                                years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
-                                                                column='eucalc-name',
-                                                                group_list=['.*biomass-hierarchy-bev-ibp-use-oth.*',
-                                                                            'biomass-hierarchy_biomass-mix_digestor.*',
-                                                                            'biomass-hierarchy_biomass-mix_solid.*',
-                                                                            'biomass-hierarchy_biomass-mix_liquid.*',
-                                                                            'biomass-hierarchy_bioenergy_liquid_biodiesel.*',
-                                                                            'biomass-hierarchy_bioenergy_liquid_biogasoline.*',
-                                                                            'biomass-hierarchy_bioenergy_liquid_biojetkerosene.*',
-                                                                            'biomass-hierarchy_crop_cereal.*'])
-
-    # Data - Lever - bioenergy capacity
-    file = 'agriculture_bioenergy-capacity'
-    lever = 'bioenergy-capacity'
-    # Rename to correct format
-    #edit_database(file,lever,column='eucalc-name',pattern={'capacity_solid-biofuel':'capacity_elec_solid-biofuel', 'capacity_biogases':'capacity_elec_biogases'},mode='rename')
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 1, 1], baseyear=baseyear,
-                                                                years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
-                                                                column='eucalc-name',
-                                                                group_list=['bioenergy-capacity_load-factor.*', 'bioenergy-capacity_bgs-mix.*',
-                                                                            'bioenergy-capacity_efficiency.*', 'bioenergy-capacity_liq_b.*', 'bioenergy-capacity_elec.*'])
-
-    # Data - Lever - livestock protein meals
-    file = 'agriculture_livestock-protein-meals'
-    lever = 'alt-protein'
-    #edit_database(file,lever,column='eucalc-name',pattern={'meat_':'meat-', 'abp_':'abp-'},mode='rename')
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[2],
-                                                                baseyear=baseyear,
-                                                                years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
-                                                                column='eucalc-name',
-                                                                group_list=['agr_alt-protein.*'])
-
-    # Data - Lever - climate smart crop
-    file = 'agriculture_climate-smart-crop'
-    lever = 'climate-smart-crop'
-    #edit_database(file,lever,column='eucalc-name',pattern={'meat_':'meat-', 'abp_':'abp-'},mode='rename')
-    #edit_database(file,lever,column='eucalc-name',pattern={'_energycrop':'-energycrop'},mode='rename')
-    #edit_database(file,lever,column='eucalc-name',pattern={'liquid_':'liquid-', 'gas_':'gas-'},mode='rename')
-    dict_ots, dict_fts = read_database_to_ots_fts_dict_w_groups(file, lever, num_cat_list=[1, 1, 1, 1],
-                                                                baseyear=baseyear,
-                                                                years=years_all, dict_ots=dict_ots, dict_fts=dict_fts,
-                                                                column='eucalc-name',
-                                                                group_list=['climate-smart-crop_losses.*',
-                                                                            'climate-smart-crop_yield.*',
-                                                                            'agr_climate-smart-crop_input-use.*',
-                                                                            'agr_climate-smart-crop_energy-demand.*'])
-
-    #####################
-    ###### CONSTANTS #######
-    #####################
-    # ConstantsToDatamatrix
-    # Data - Read Constants (use 'xx|xx|xx' to add)
-    cdm_const = ConstantDataMatrix.extract_constant('interactions_constants',
-                                                    pattern='cp_time_days-per-year.*|cp_ibp_liv_.*_brf_fdk_afat|cp_ibp_liv_.*_brf_fdk_offal|cp_ibp_bev_.*|cp_liquid_tec.*|cp_load_hours|cp_ibp_aps_insect.*|cp_ibp_aps_algae.*|cp_efficiency_liv.*|cp_ibp_processed.*|cp_ef_urea.*|cp_ef_liming|cp_emission-factor_CO2.*',
-                                                    num_cat=0)
-
-
-    # Constant pre-processing ------------------------------------------------------------------------------------------
-    # Creating a dictionnay with contants
-    dict_const = {}
-
-    # Time per year
-    cdm_lifestyle = cdm_const.filter({'Variables': ['cp_time_days-per-year']})
-    dict_const['cdm_lifestyle'] = cdm_lifestyle
-
-    # Filter ibp constants for offal
-    cdm_cp_ibp_offal = cdm_const.filter_w_regex({'Variables': 'cp_ibp_liv_.*_brf_fdk_offal'})
-    cdm_cp_ibp_offal.rename_col_regex('_brf_fdk_offal', '', dim='Variables')
-    cdm_cp_ibp_offal.rename_col_regex('liv_', 'liv_meat-', dim='Variables')
-    cdm_cp_ibp_offal.deepen(based_on='Variables')  # Creating categories
-    dict_const['cdm_cp_ibp_offal'] = cdm_cp_ibp_offal
-
-    # Filter ibp constants for afat
-    cdm_cp_ibp_afat = cdm_const.filter_w_regex({'Variables': 'cp_ibp_liv_.*_brf_fdk_afat'})
-    cdm_cp_ibp_afat.rename_col_regex('_brf_fdk_afat', '', dim='Variables')
-    cdm_cp_ibp_afat.rename_col_regex('liv_', 'liv_meat-', dim='Variables')
-    cdm_cp_ibp_afat.deepen(based_on='Variables')  # Creating categories
-    dict_const['cdm_cp_ibp_afat'] = cdm_cp_ibp_afat
-
-    # Filtering relevant constants and sorting according to bev type (beer, wine, bev-alc, bev-fer)
-    cdm_cp_ibp_bev_beer = cdm_const.filter_w_regex({'Variables': 'cp_ibp_bev_beer.*'})
-    dict_const['cdm_cp_ibp_bev_beer'] = cdm_cp_ibp_bev_beer
-    cdm_cp_ibp_bev_wine = cdm_const.filter_w_regex({'Variables': 'cp_ibp_bev_wine.*'})
-    dict_const['cdm_cp_ibp_bev_wine'] = cdm_cp_ibp_bev_wine
-    cdm_cp_ibp_bev_alc = cdm_const.filter_w_regex({'Variables': 'cp_ibp_bev_bev-alc.*'})
-    dict_const['cdm_cp_ibp_bev_alc'] = cdm_cp_ibp_bev_alc
-    cdm_cp_ibp_bev_fer = cdm_const.filter_w_regex({'Variables': 'cp_ibp_bev_bev-fer.*'})
-    dict_const['cdm_cp_ibp_bev_fer'] = cdm_cp_ibp_bev_fer
-
-    # Constants for biofuels
-    cdm_biodiesel = cdm_const.filter_w_regex(({'Variables': 'cp_liquid_tec_biodiesel'}))
-    cdm_biodiesel.rename_col_regex(str1="_fdk_oil", str2="", dim="Variables")
-    cdm_biodiesel.rename_col_regex(str1="_fdk_lgn", str2="", dim="Variables")
-    cdm_biodiesel.deepen()
-    dict_const['cdm_biodiesel'] = cdm_biodiesel
-    cdm_biogasoline = cdm_const.filter_w_regex(({'Variables': 'cp_liquid_tec_biogasoline'}))
-    cdm_biogasoline.rename_col_regex(str1="_fdk_eth", str2="", dim="Variables")
-    cdm_biogasoline.rename_col_regex(str1="_fdk_lgn", str2="", dim="Variables")
-    cdm_biogasoline.deepen()
-    dict_const['cdm_biogasoline'] = cdm_biogasoline
-    cdm_biojetkerosene = cdm_const.filter_w_regex(({'Variables': 'cp_liquid_tec_biojetkerosene'}))
-    cdm_biojetkerosene.rename_col_regex(str1="_fdk_oil", str2="", dim="Variables")
-    cdm_biojetkerosene.rename_col_regex(str1="_fdk_lgn", str2="", dim="Variables")
-    cdm_biojetkerosene.deepen()
-    dict_const['cdm_biojetkerosene'] = cdm_biojetkerosene
-
-    # Filter protein conversion efficiency constant
-    cdm_cp_efficiency = cdm_const.filter_w_regex({'Variables': 'cp_efficiency_liv.*'})
-    cdm_cp_efficiency.rename_col_regex('meat_', 'meat-', dim='Variables')
-    cdm_cp_efficiency.rename_col_regex('abp_', 'abp-', dim='Variables')
-    cdm_cp_efficiency.deepen(based_on='Variables')  # Creating categories
-    dict_const['cdm_cp_efficiency'] = cdm_cp_efficiency
-
-    # Constants for APS byproducts
-    cdm_aps_ibp = cdm_const.filter_w_regex({'Variables': 'cp_ibp_aps.*'})
-    cdm_aps_ibp.drop(dim='Variables', col_label=['cp_ibp_aps_insect_brf_fdk_manure'])
-    cdm_aps_ibp.rename_col_regex('brf_', '', dim='Variables')
-    cdm_aps_ibp.rename_col_regex('crop_algae', 'crop', dim='Variables')
-    cdm_aps_ibp.rename_col_regex('crop_insect', 'crop', dim='Variables')
-    cdm_aps_ibp.rename_col_regex('fdk_', 'fdk-', dim='Variables')
-    cdm_aps_ibp.rename_col_regex('algae_', 'algae-', dim='Variables')  # Extra steps to have the correct cat order
-    cdm_aps_ibp.rename_col_regex('insect_', 'insect-', dim='Variables')
-    cdm_aps_ibp.deepen(based_on='Variables')  # Creating categories
-    cdm_aps_ibp.rename_col_regex('algae-', 'algae_', dim='Categories1')  # Extra steps to have the correct cat order
-    cdm_aps_ibp.rename_col_regex('insect-', 'insect_', dim='Categories1')
-    cdm_aps_ibp.deepen(based_on='Categories1')
-    dict_const['cdm_aps_ibp'] = cdm_aps_ibp
-
-    # Feed yield
-    cdm_feed_yield = cdm_const.filter_w_regex({'Variables': 'cp_ibp_processed'})
-    cdm_feed_yield.rename_col_regex(str1="_to_", str2="-to-", dim="Variables")
-    cdm_feed_yield.deepen()
-    cdm_food_yield = cdm_feed_yield.filter({'Categories1': ['sweet-to-sugarcrop']})
-    cdm_feed_yield.drop(dim='Categories1', col_label=['sweet-to-sugarcrop'])
-    dict_const['cdm_food_yield'] = cdm_food_yield
-    dict_const['cdm_feed_yield'] = cdm_feed_yield
-
-    # Fertilizer
-    cdm_fertilizer_co = cdm_const.filter({'Variables': ['cp_ef_liming', 'cp_ef_urea']})
-    cdm_fertilizer_co.deepen()
-    dict_const['cdm_fertilizer_co'] = cdm_fertilizer_co
-
-    # CO2 emissions factor bioenergy
-    cdm_const.rename_col_regex(str1="liquid_", str2="liquid-", dim="Variables")
-    cdm_const.rename_col_regex(str1="gas_", str2="gas-", dim="Variables")
-    cdm_const.rename_col_regex(str1="solid_", str2="solid-", dim="Variables")
-    cdm_CO2 = cdm_const.filter({'Variables': ['cp_emission-factor_CO2_bioenergy-gas-biogas',
-                                              'cp_emission-factor_CO2_bioenergy-liquid-biodiesels',
-                                              'cp_emission-factor_CO2_bioenergy-liquid-ethanol',
-                                              'cp_emission-factor_CO2_bioenergy-liquid-oth',
-                                              'cp_emission-factor_CO2_bioenergy-solid-wood',
-                                              'cp_emission-factor_CO2_electricity',
-                                              'cp_emission-factor_CO2_gas-ff-natural', 'cp_emission-factor_CO2_heat',
-                                              'cp_emission-factor_CO2_liquid-ff-diesel',
-                                              'cp_emission-factor_CO2_liquid-ff-fuel-oil',
-                                              'cp_emission-factor_CO2_liquid-ff-gasoline',
-                                              'cp_emission-factor_CO2_liquid-ff-lpg', 'cp_emission-factor_CO2_oth',
-                                              'cp_emission-factor_CO2_solid-ff-coal'],
-                                'units': ['MtCO2/ktoe']})
-    cdm_CO2.deepen()
-    dict_const['cdm_CO2'] = cdm_CO2
-
-    # Electricity
-    cdm_load = cdm_const.filter({'Variables': ['cp_load_hours-per-year-twh']})
-    dict_const['cdm_load'] = cdm_load
-
-    # Group all datamatrix in a single structure -----------------------------------------------------------------------
-    DM_agriculture = {
-        'fxa': dict_fxa,
-        'constant': dict_const,
-        'fts': dict_fts,
-        'ots': dict_ots
-    }
-
-    # Levers pre-processing --------------------------------------------------------------------------------------------
-
-
-    # FXA pre-processing -----------------------------------------------------------------------------------------------
-
-    # Emssion factors residues residues
-    DM_agriculture['fxa']['ef_soil-residues'].add(0.0, dummy=True, col_label='CH4-emission', dim='Categories1', unit='Mt')
-    DM_agriculture['fxa']['ef_soil-residues'].sort(dim='Categories1')
-    DM_agriculture['fxa']['ef_burnt-residues'].append(DM_agriculture['fxa']['ef_soil-residues'], dim='Variables')
-    DM_agriculture['fxa']['ef_burnt-residues'] = DM_agriculture['fxa']['ef_burnt-residues'].flatten()  # extra steps to have correct deepening
-    DM_agriculture['fxa']['ef_burnt-residues'].rename_col_regex(str1="residues_", str2="residues-", dim="Variables")
-    DM_agriculture['fxa']['ef_burnt-residues'].rename_col_regex(str1="fxa_", str2="", dim="Variables")
-    DM_agriculture['fxa']['ef_burnt-residues'].deepen()
-    DM_agriculture['fxa']['ef_burnt-residues'].rename_col_regex(str1="residues-", str2="residues_", dim="Categories1")
-    DM_agriculture['fxa']['ef_burnt-residues'].deepen()
-
-    # caf GHG emissions
-    DM_agriculture['fxa']['cal_agr_emission_CH4'].append(DM_agriculture['fxa']['cal_agr_emission_N2O'], dim='Variables')
-    DM_agriculture['fxa']['cal_agr_emission_CH4'].append(DM_agriculture['fxa']['cal_agr_emission_CO2'], dim='Variables')
-    DM_agriculture['fxa']['cal_agr_emission_CH4'].rename_col_regex(str1='cal_agr_emissions-', str2='cal_agr_emissions_', dim='Variables')
-    DM_agriculture['fxa']['cal_agr_emission_CH4'].deepen()
-
-    # write datamatrix to pickle
-    current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    f = os.path.join(current_file_directory, '../_database/data/datamatrix/agriculture.pickle')
-    with open(f, 'wb') as handle:
-        pickle.dump(DM_agriculture, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    return
-
-
+# CalculationLeaf READ PICKLE
 def read_data(data_file, lever_setting):
 
     with open(data_file, 'rb') as handle:
@@ -600,6 +113,7 @@ def read_data(data_file, lever_setting):
     dm_yield = DM_ots_fts['climate-smart-crop']['climate-smart-crop_yield']
     dm_fibers = DM_agriculture['fxa']['fibers']
     dm_rice = DM_agriculture['fxa']['rice']
+    dm_cal_cropland = DM_agriculture['fxa']['cal_agr_lus_land_cropland']
 
     # Sub-matrix for NITROGEN BALANCE
     dm_input = DM_ots_fts['climate-smart-crop']['climate-smart-crop_input-use']
@@ -691,12 +205,12 @@ def read_data(data_file, lever_setting):
         'residues_yield': dm_residues_yield,
         'hierarchy_residues_cereals': dm_hierarchy_residues_cereals,
         'food-net-import-pro': dm_food_net_import_pro
-
     }
 
     # Aggregated Data Matrix - LAND
     DM_land = {
         'cal_land': dm_cal_land,
+        'cal_cropland': dm_cal_cropland,
         'yield': dm_yield,
         'fibers': dm_fibers,
         'rice': dm_rice
@@ -2013,7 +1527,12 @@ def land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, DM_ind, years_s
     DM_land['fibers'].append(dm_fiber_yield, dim='Variables')
     DM_land['fibers'].operation('agr_domestic-production_fibres-plant-eq', '/',
                                 'agr_climate-smart-crop_yield_fibres-plant-eq',
-                                out_col='agr_land_cropland_fibres-plant-eq', unit='ha')
+                                out_col='agr_land_cropland_raw_fibres-plant-eq', unit='ha')
+
+    # Fill NaN with 0.0
+    array_temp = DM_land['fibers'].array[:,:,:]
+    array_temp = np.nan_to_num(array_temp, nan=0)
+    DM_land['fibers'].array[:, :, :] = array_temp
 
     # Copy for TPE
     dm_fiber = DM_land['fibers'].copy()
@@ -2034,24 +1553,40 @@ def land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, DM_ind, years_s
     # Cropland by crop type [ha] = domestic prod afw & losses [kcal] / yields [kcal/ha]
     DM_land['yield'].operation('agr_domestic-production_afw', '/',
                                'agr_climate-smart-crop_yield',
-                               out_col='agr_land_cropland', unit='ha')
+                               out_col='agr_land_cropland_raw', unit='ha')
 
     # When yield = 0, change so that cropland = 0 (and not Nan because divided by 0)
     idx_land = DM_land['yield'].idx
-    DM_land['yield'].array[:, :, idx_land['agr_land_cropland'], :] = np.where(
+    DM_land['yield'].array[:, :, idx_land['agr_land_cropland_raw'], :] = np.where(
         DM_land['yield'].array[:, :, idx_land['agr_climate-smart-crop_yield'], :] == 0,
         0,
-        DM_land['yield'].array[:, :, idx_land['agr_land_cropland'], :]
+        DM_land['yield'].array[:, :, idx_land['agr_land_cropland_raw'], :]
     )
 
     # Appending with fiber crop land
-    DM_land['fibers'] = DM_land['fibers'].filter({'Variables': ['agr_land_cropland_fibres-plant-eq']})
+    DM_land['fibers'] = DM_land['fibers'].filter({'Variables': ['agr_land_cropland_raw_fibres-plant-eq']})
     DM_land['fibers'].deepen()
     DM_land['yield'].drop(dim='Variables', col_label=['agr_climate-smart-crop_yield', 'agr_domestic-production_afw'])
     DM_land['yield'].append(DM_land['fibers'], dim='Categories1')
 
+    # Calibration cropland per type (without algae, insect and lgn-energycrop)
+    dm_cal_cropland = DM_land['cal_cropland']
+    dm_cropland = DM_land['yield'].copy()
+    dm_cropland.drop(dim='Categories1', col_label=['algae', 'insect', 'lgn-energycrop'])
+    dm_cal_rates_cropland = calibration_rates(dm_cropland, dm_cal_cropland, calibration_start_year=1990,
+                                          calibration_end_year=2023, years_setting=years_setting)
+    dm_cropland.append(dm_cal_rates_cropland, dim='Variables')
+    dm_cropland.operation('agr_land_cropland_raw', '*', 'cal_rate', dim='Variables',
+                      out_col='agr_land_cropland', unit='ha')
+
+    # Append with cropland for lgn-energycrop, algae & insect
+    dm_cropland_others = DM_land['yield'].filter({'Categories1': ['algae', 'insect', 'lgn-energycrop']})
+    dm_cropland_others.rename_col('agr_land_cropland_raw', 'agr_land_cropland', dim='Variables')
+    dm_cropland = dm_cropland.filter({'Variables': ['agr_land_cropland']})
+    dm_cropland.append(dm_cropland_others, dim='Categories1')
+
     # Overall cropland [ha] = sum of cropland by type [ha]
-    dm_land = DM_land['yield'].copy()
+    dm_land = dm_cropland.copy()
     dm_land.groupby({'cropland': '.*'}, dim='Categories1', regex=True, inplace=True)
     dm_land.rename_col('agr_land_cropland', 'agr_lus_land_raw', dim='Variables')
 
@@ -2060,7 +1595,7 @@ def land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, DM_ind, years_s
     dm_grassland.deepen()
     dm_land.append(dm_grassland, dim='Categories1')
 
-    # Calibration cropland & grassland
+    # Calibration total cropland & grassland
     dm_cal_land = DM_land['cal_land']
     dm_cal_rates_land = calibration_rates(dm_land, dm_cal_land, calibration_start_year=1990,
                                           calibration_end_year=2023, years_setting=years_setting)
