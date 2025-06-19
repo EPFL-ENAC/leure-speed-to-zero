@@ -4358,6 +4358,7 @@ def cropland_calibration(list_countries):
         list_elements = ['Area harvested']
 
         list_items = ['Cereals, primary + (Total)', 'Fibre Crops, Fibre Equivalent + (Total)', 'Fruit Primary + (Total)',
+                      'Citrus Fruit + (Total)',
                       'Oilcrops, Oil Equivalent + (Total)', 'Pulses, Total + (Total)', 'Rice',
                       'Roots and Tubers, Total + (Total)',
                       'Sugar Crops Primary + (Total)', 'Vegetables Primary + (Total)']
@@ -5392,6 +5393,9 @@ with open('../../data/datamatrix/lifestyles.pickle', 'rb') as handle:
 # Filter DM
 filter_DM(DM_agriculture, {'Country': ['Switzerland', 'Vaud', 'EU27']})
 filter_DM(DM_lifestyles, {'Country': ['Switzerland', 'Vaud', 'EU27']})
+
+# ADDING CONSTANTS ----------------------------------------------------------------------------------------
+
 
 # CALIBRATION DOMESTIC PROD WITH LOSSES ----------------------------------------------------------------------------------------
 

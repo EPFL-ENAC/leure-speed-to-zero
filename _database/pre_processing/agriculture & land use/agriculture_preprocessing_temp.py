@@ -6,16 +6,6 @@ from model.common.data_matrix_class import DataMatrix
 import faostat
 import pandas as pd
 
-# FEED PER LIVESTOCK TYPE (fxa) ----------------------------------------------------------------------------------------
-
-# Load Excel
-
-# Duplicate for
-
-
-
-
-
 
 # Load pickles
 with open('../../data/datamatrix/agriculture.pickle', 'rb') as handle:
@@ -23,6 +13,11 @@ with open('../../data/datamatrix/agriculture.pickle', 'rb') as handle:
 
 with open('../../data/datamatrix/lifestyles.pickle', 'rb') as handle:
     DM_lifestyles = pickle.load(handle)
+
+
+# ADDING CONSTANTS ----------------------------------------------------------------------------------------
+
+
 # CALIBRATION DOMESTIC PROD WITH LOSSES ----------------------------------------------------------------------------------------
 
 # Load data
