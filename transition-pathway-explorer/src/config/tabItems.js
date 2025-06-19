@@ -41,6 +41,11 @@ export const Tabs = [
     "detailsKey": "agriculture"
   },
   {
+    "title": "Forestry",
+    "route": "forestry",
+    "detailsKey": "forestry"
+  },
+  {
     "title": "Water",
     "route": "water",
     "detailsKey": "water"
