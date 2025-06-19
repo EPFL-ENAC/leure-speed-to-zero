@@ -221,18 +221,53 @@ def wood_supply (dm_forest_area, DM_forestry, DM_ots_fts):
 
     return DM_supply
 
-def forestry_to_tpe(DM_supply):
+def forestry_to_tpe(DM_supply, DM_power, DM_industry):
     #############################################################
     # DM to plot
     #############################################################
 
+    # Wood demand per use
+    tpe_wood_demand = DM_industry['wood-demand'].filter(({'Variables': ['wood-use']})).flatten().flatten()
+    tpe_supply_species = tpe_wood_demand.copy()
+    tpe_supply_species.groupby({'wood-supply_coniferous': '.*_coniferous','wood-supply_non-coniferous': '.*_non-coniferous'}, regex=True, inplace=True, dim='Variables')
+    tpe_wood_demand.groupby({'any-other-wood': '.*any-other-wood.*', 'industrial-wood': '.*industrial-wood.*', 'sawlogs': '.*sawlogs.*'},
+                                 dim='Variables', regex=True, inplace=True)
+
+    tpe_energy_wood_demand = DM_power['total-demand'].filter(({'Variables': ['fuelwood']})).flatten()
+    tpe_wood_demand.append(tpe_energy_wood_demand, dim='Variables')
+    tpe_wood_demand.rename_col(
+        ['fuelwood_total-demand'],
+        ['woodfuel'], dim='Variables')
+
+    #tpe_wood_demand.datamatrix_plot({'Country': ['Switzerland']}, stacked=True)
+
+    # Wood demand per use per species
+    tpe_industry_wood_species = DM_industry['wood-demand'].filter(({'Variables': ['wood-use']})).flatten()
+    tpe_energy_wood_species = DM_power['tpe'].flatten().flatten()
+
+    #tpe_industry_wood_species.datamatrix_plot({'Country': ['Switzerland']}, stacked=True)
+
     # Harvested wood
     dm_harvested_wood = DM_supply['harvested'].filter(({'Categories1':['coniferous','non-coniferous']}))
-    dm_harvested_wood.datamatrix_plot({'Country': ['Switzerland']}, stacked=True)
+    #dm_harvested_wood.datamatrix_plot({'Country': ['Switzerland']}, stacked=True)
 
     # Exploited forest area
     dm_forest_area = DM_supply['forest-supply']
-    dm_forest_area.datamatrix_plot({'Country': ['Switzerland']}, stacked=True)
+    #dm_forest_area.datamatrix_plot({'Country': ['Switzerland']}, stacked=True)
+
+    # Wood supply per source
+    tpe_wood_supply = DM_industry['woodfuel-supply'].flatten()
+    dm_waste_supply = DM_supply['wood-supply-per type'].flatten()
+
+    dm_harvest_supply = dm_harvested_wood
+    dm_harvest_supply.groupby({'harvested-wood': '.*'}, regex=True, inplace=True, dim='Categories1')
+    dm_harvest_supply=dm_harvest_supply.flatten()
+    tpe_wood_supply.append(dm_harvest_supply, dim='Variables')
+    tpe_wood_supply.append(dm_waste_supply, dim='Variables')
+    tpe_wood_supply.rename_col(
+        ['woodfuel-byproducts_total-industry'],
+        ['wood-supply_industrial-byproducts'],
+        dim='Variables')
 
     #############################################################
     # DM to df for tpe
@@ -240,7 +275,16 @@ def forestry_to_tpe(DM_supply):
     df = dm_harvested_wood.write_df()
     df2 = dm_forest_area.write_df()
     df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
-
+    df3 = tpe_wood_demand.write_df()
+    df = pd.concat([df, df3.drop(columns=['Country', 'Years'])], axis=1)
+    df4 = tpe_industry_wood_species.write_df()
+    df = pd.concat([df, df4.drop(columns=['Country', 'Years'])], axis=1)
+    df5 = tpe_energy_wood_species.write_df()
+    df = pd.concat([df, df5.drop(columns=['Country', 'Years'])], axis=1)
+    df6 = tpe_wood_supply.write_df()
+    df = pd.concat([df, df6.drop(columns=['Country', 'Years'])], axis=1)
+    df7 = tpe_supply_species.write_df()
+    df = pd.concat([df, df7.drop(columns=['Country', 'Years'])], axis=1)
     return df
 
 def forestry(lever_setting, years_setting, interface=Interface()):
@@ -345,7 +389,7 @@ def forestry(lever_setting, years_setting, interface=Interface()):
     ####################################################################################################################
 
 
-    results_run = forestry_to_tpe(DM_supply)
+    results_run = forestry_to_tpe(DM_supply, DM_power, DM_industry)
 
 
     return results_run
@@ -366,4 +410,4 @@ def local_forestry_run():
     return results_run
 
 
-local_forestry_run()
+#local_forestry_run()

@@ -961,4 +961,17 @@ export const levers = [
     ],
     "type": "num"
   },
+    {
+    "code": "lever_harvest-rate",
+    "title": "Forest management",
+    "group": "Forestry",
+    "headline": "Resources and land use",
+    "range": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "type": "num"
+  },
 ];

@@ -5,6 +5,7 @@ export { default as buildings} from './buildings.json';
 export { default as industry} from './industry.json';
 export { default as landuse} from './landuse.json';
 export { default as agriculture} from './agriculture.json';
+export { default as forestry} from './forestry.json';
 export { default as water} from './water.json';
 export { default as materials} from './materials.json';
 export { default as air} from './air.json';
