@@ -1158,6 +1158,62 @@ def alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro):
     cdm_cp_ibp_bev_alc = CDM_const['cdm_cp_ibp_bev_alc']
     cdm_cp_ibp_bev_fer = CDM_const['cdm_cp_ibp_bev_fer']
 
+    # FRUIT & CEREAL DEMAND FOR BEVERAGES ------------------------------------------------------------------------------
+
+    # Beer - Crop Cereal
+    idx_dm_bev_beer = dm_bev_beer.idx
+    idx_cdm_ibp_beer = cdm_cp_ibp_bev_beer.idx
+    agr_ibp_bev_beer_crop_cereal = dm_bev_beer.array[:, :, idx_dm_bev_beer['agr_domestic_production_beer']] \
+                                   * cdm_cp_ibp_bev_beer.array[idx_cdm_ibp_beer['cp_ibp_bev_beer_brf_crop_cereal']]
+    dm_bev_beer.add(agr_ibp_bev_beer_crop_cereal, dim='Variables', col_label='agr_ibp_bev_beer_crop_cereal',
+                    unit='kcal')
+
+    # Bev-fer - Crop cereal
+    idx_dm_bev_fer = dm_bev_fer.idx
+    idx_cdm_ibp_fer = cdm_cp_ibp_bev_fer.idx
+    agr_ibp_bev_fer_crop_cereal = dm_bev_fer.array[:, :, idx_dm_bev_fer['agr_domestic_production_bev-fer']] \
+                                  * cdm_cp_ibp_bev_fer.array[idx_cdm_ibp_fer['cp_ibp_bev_bev-fer_brf_crop_cereal']]
+    dm_bev_fer.add(agr_ibp_bev_fer_crop_cereal, dim='Variables', col_label='agr_ibp_bev_bev-fer_crop_cereal',
+                   unit='kcal')
+
+    # Bev-alc - Crop fruit
+    idx_dm_bev_alc = dm_bev_alc.idx
+    idx_cdm_ibp_alc = cdm_cp_ibp_bev_alc.idx
+    agr_ibp_bev_alc_crop_fruit = dm_bev_alc.array[:, :, idx_dm_bev_alc['agr_domestic_production_bev-alc']] \
+                                 * cdm_cp_ibp_bev_alc.array[idx_cdm_ibp_alc['cp_ibp_bev_bev-alc_brf_crop_fruit']]
+    dm_bev_alc.add(agr_ibp_bev_alc_crop_fruit, dim='Variables', col_label='agr_ibp_bev_bev-alc_crop_fruit',
+                   unit='kcal')
+
+    # Wine - Crop Grape (fruit)
+    idx_dm_bev_wine = dm_bev_wine.idx
+    idx_cdm_ibp_wine = cdm_cp_ibp_bev_wine.idx
+    agr_ibp_bev_wine_crop_grape = dm_bev_wine.array[:, :, idx_dm_bev_wine['agr_domestic_production_wine']] \
+                                  * cdm_cp_ibp_bev_wine.array[idx_cdm_ibp_wine['cp_ibp_bev_wine_brf_crop_grape']]
+    dm_bev_wine.add(agr_ibp_bev_wine_crop_grape, dim='Variables', col_label='agr_ibp_bev_wine_crop_fruit', unit='kcal')
+
+    # Append together
+    dm_bev_dom_prod = dm_bev_beer.copy()
+    dm_bev_dom_prod.append(dm_bev_alc, dim='Variables')
+    dm_bev_dom_prod.append(dm_bev_fer, dim='Variables')
+    dm_bev_dom_prod.append(dm_bev_wine, dim='Variables')
+
+    # Cereals domestic production for beverages = cereals for beer + cereals for bev fer
+    dm_bev_dom_prod.operation('agr_ibp_bev_beer_crop_cereal', '+',
+               'agr_ibp_bev_bev-fer_crop_cereal',
+               out_col='agr_domestic-production_bev_cereal', unit='kcal')
+
+    # Fruit domestic production for beverages = fruits for bev-alc + fruits for wine
+    dm_bev_dom_prod.operation('agr_ibp_bev_bev-alc_crop_fruit', '+',
+                              'agr_ibp_bev_wine_crop_fruit',
+                              out_col='agr_domestic-production_bev_fruit', unit='kcal')
+
+    # Filter and deepen
+    dm_bev_dom_prod = dm_bev_dom_prod.filter({'Variables': ['agr_domestic-production_bev_cereal',
+                                                            'agr_domestic-production_bev_fruit']})
+    dm_bev_dom_prod.deepen()
+
+    # BYPRODUCT PRODUCTION OF BEVERAGES ------------------------------------------------------------------------------
+
     # Byproducts per bev type [kcal] = agr_domestic_production bev [kcal] * yields [%]
     # Beer - Feedstock Yeast
     idx_dm_bev_beer = dm_bev_beer.idx
@@ -1173,30 +1229,6 @@ def alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro):
                                   * cdm_cp_ibp_bev_beer.array[idx_cdm_ibp_beer['cp_ibp_bev_beer_brf_fdk_cereal']]
     dm_bev_beer.add(agr_ibp_bev_beer_fdk_cereal, dim='Variables', col_label='agr_ibp_bev_beer_fdk_cereal', unit='kcal')
 
-    # Beer - Crop Cereal
-    idx_dm_bev_beer = dm_bev_beer.idx
-    idx_cdm_ibp_beer = cdm_cp_ibp_bev_beer.idx
-    agr_ibp_bev_beer_crop_cereal = dm_bev_beer.array[:, :, idx_dm_bev_beer['agr_domestic_production_beer']] \
-                                   * cdm_cp_ibp_bev_beer.array[idx_cdm_ibp_beer['cp_ibp_bev_beer_brf_crop_cereal']]
-    dm_bev_beer.add(agr_ibp_bev_beer_crop_cereal, dim='Variables', col_label='agr_ibp_bev_beer_crop_cereal',
-                    unit='kcal')
-
-    # Bev-alc - Crop fruit
-    idx_dm_bev_alc = dm_bev_alc.idx
-    idx_cdm_ibp_alc = cdm_cp_ibp_bev_alc.idx
-    agr_ibp_bev_alc_crop_fruit = dm_bev_alc.array[:, :, idx_dm_bev_alc['agr_domestic_production_bev-alc']] \
-                                 * cdm_cp_ibp_bev_alc.array[idx_cdm_ibp_alc['cp_ibp_bev_bev-alc_brf_crop_fruit']]
-    dm_bev_alc.add(agr_ibp_bev_alc_crop_fruit, dim='Variables', col_label='agr_ibp_bev_bev-alc_crop_fruit',
-                   unit='kcal')
-
-    # Bev-fer - Crop cereal
-    idx_dm_bev_fer = dm_bev_fer.idx
-    idx_cdm_ibp_fer = cdm_cp_ibp_bev_fer.idx
-    agr_ibp_bev_fer_crop_cereal = dm_bev_fer.array[:, :, idx_dm_bev_fer['agr_domestic_production_bev-fer']] \
-                                  * cdm_cp_ibp_bev_fer.array[idx_cdm_ibp_fer['cp_ibp_bev_bev-fer_brf_crop_cereal']]
-    dm_bev_fer.add(agr_ibp_bev_fer_crop_cereal, dim='Variables', col_label='agr_ibp_bev_bev-fer_crop_cereal',
-                   unit='kcal')
-
     # Wine - Feedstock Marc
     idx_dm_bev_wine = dm_bev_wine.idx
     idx_cdm_ibp_wine = cdm_cp_ibp_bev_wine.idx
@@ -1210,13 +1242,6 @@ def alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro):
     agr_ibp_bev_wine_fdk_lees = dm_bev_wine.array[:, :, idx_dm_bev_wine['agr_domestic_production_wine']] \
                                 * cdm_cp_ibp_bev_wine.array[idx_cdm_ibp_wine['cp_ibp_bev_wine_brf_fdk_lees']]
     dm_bev_wine.add(agr_ibp_bev_wine_fdk_lees, dim='Variables', col_label='agr_ibp_bev_wine_fdk_lees', unit='kcal')
-
-    # Wine - Crop Grape
-    idx_dm_bev_wine = dm_bev_wine.idx
-    idx_cdm_ibp_wine = cdm_cp_ibp_bev_wine.idx
-    agr_ibp_bev_wine_crop_grape = dm_bev_wine.array[:, :, idx_dm_bev_wine['agr_domestic_production_wine']] \
-                                  * cdm_cp_ibp_bev_wine.array[idx_cdm_ibp_wine['cp_ibp_bev_wine_brf_crop_grape']]
-    dm_bev_wine.add(agr_ibp_bev_wine_crop_grape, dim='Variables', col_label='agr_ibp_bev_wine_crop_grape', unit='kcal')
 
     # Byproducts for other uses [kcal] = sum (wine byproducts [kcal])
     dm_bev_wine.operation('agr_ibp_bev_wine_fdk_marc', '+',
@@ -1245,7 +1270,7 @@ def alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro):
     # change the double count of bev byproducts for fertilizer in fruits/cereals bev allocated to non-food [kcal]
 
     # (Not used after) Fruits bev allocated to bioenergy [kcal] = bp bev for solid bioenergy (+ bp use for ethanol (not found in knime))
-    return DM_alc_bev, dm_bev_ibp_cereal_feed
+    return DM_alc_bev, dm_bev_ibp_cereal_feed, dm_bev_dom_prod
 
 # CalculationLeaf BIOENERGY CAPACITY ----------------------------------------------------------------------------------
 def bioenergy_workflow(DM_bioenergy, CDM_const, DM_ind, dm_bld, dm_tra):
@@ -1709,7 +1734,7 @@ def biomass_allocation_workflow(dm_aps_ibp, dm_oil):
     return dm_voil, dm_aps_ibp_oil, dm_voil_tpe
 
  # CalculationLeaf CROP PRODUCTION ----------------------------------------------------------------------------------
-def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const, dm_oil, years_setting):
+def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const, dm_oil, dm_bev_dom_prod, years_setting):
 
     # DOMESTIC PRODUCTION ACCOUNTING FOR LOSSES ------------------------------------------------------------------------
 
@@ -1842,12 +1867,18 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
 
     # PROCESSED BEV ----------------------------------------------------------------------------------------------------
 
-    # Pre processing total non-food demand per category (with dummy categories when necessary)
-    # Cereals = agr_ibp_bev_beer_crop_cereal + agr_ibp_bev_bev-fer_crop_cereal
-    # From ALCOHOLIC BEVERAGES (cereals and fruits) FIXME find correct way to implement
-    # FIXME SSR
-
-
+    # Here the SSR is already accounted for, but not the losses
+    # Adding dummy categories
+    dm_bev_dom_prod.add(0.0, dummy=True, col_label='oilcrop', dim='Categories1', unit='kcal')
+    dm_bev_dom_prod.add(0.0, dummy=True, col_label='pulse', dim='Categories1', unit='kcal')
+    dm_bev_dom_prod.add(0.0, dummy=True, col_label='veg', dim='Categories1', unit='kcal')
+    dm_bev_dom_prod.add(0.0, dummy=True, col_label='starch', dim='Categories1', unit='kcal')
+    dm_bev_dom_prod.add(0.0, dummy=True, col_label='sugarcrop', dim='Categories1', unit='kcal')
+    dm_bev_dom_prod.add(0.0, dummy=True, col_label='rice', dim='Categories1', unit='kcal')
+    dm_bev_dom_prod.add(0.0, dummy=True, col_label='algae', dim='Categories1', unit='kcal')
+    dm_bev_dom_prod.add(0.0, dummy=True, col_label='insect', dim='Categories1', unit='kcal')
+    dm_bev_dom_prod.add(0.0, dummy=True, col_label='lgn-energycrop', dim='Categories1', unit='kcal')
+    dm_bev_dom_prod.sort(dim='Categories1')
 
     # PROCESSED BIOENERGY ----------------------------------------------------------------------------------------------
 
@@ -1915,19 +1946,21 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
     dm_aps.add(0.0, dummy=True, col_label='lgn-energycrop', dim='Categories1', unit='kcal')
     dm_aps.sort(dim='Categories1')
 
-    # FOOD + FEED + NON-FOOD ---------------------------------------------------------------------------------------------------
+    # FOOD + FEED + BEV + NON-FOOD ---------------------------------------------------------------------------------------------------
 
-    # Appending the dms FIXME add alc bev non food
+    # Appending the dms
     dm_voil.add(dm_lgn_energycrop.array, col_label='lgn-energycrop', dim='Categories1')
     dm_crop_feed_demand.rename_col_regex(str1="crop-", str2="", dim="Categories1") # Renaming categories
     dm_crop_demand.append(dm_crop_feed_demand, dim='Variables')
     dm_crop_demand.append(dm_voil, dim='Variables')
     dm_crop_demand.append(dm_aps, dim='Variables')
+    dm_crop_demand.append(dm_bev_dom_prod, dim='Variables')
 
-    # Total crop demand by type [kcal] = Sum crop demand (feed + food + non-food) FIXME beverages missing
+    # Total crop demand by type [kcal] = Sum crop demand (feed + food + non-food)
     dm_crop_demand.operation('agr_demand_feed_temp', '+', 'agr_domestic-production_food', out_col='agr_domestic-production_feed_food', unit='kcal')
     dm_crop_demand.operation('agr_domestic-production_feed_food', '+', 'agr_domestic-production_bioe', out_col='agr_domestic-production_feed_food_bioe', unit='kcal')
-    dm_crop_demand.operation('agr_domestic-production_feed_food_bioe', '+', 'agr_aps', out_col='agr_domestic-production', unit='kcal')
+    dm_crop_demand.operation('agr_domestic-production_feed_food_bioe', '+', 'agr_aps', out_col='agr_domestic-production_feed_food_bioe_aps', unit='kcal')
+    dm_crop_demand.operation('agr_domestic-production_feed_food_bioe_aps', '+', 'agr_domestic-production_bev', out_col='agr_domestic-production', unit='kcal')
     dm_crop_demand = dm_crop_demand.filter({'Variables': ['agr_domestic-production']})
 
     # Pre processing to remove lgn, algae & insect
@@ -2050,6 +2083,22 @@ def land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, DM_ind, years_s
     DM_land['yield'].drop(dim='Variables', col_label=['agr_climate-smart-crop_yield', 'agr_domestic-production_afw'])
     DM_land['yield'].append(DM_land['fibers'], dim='Categories1')
 
+    # Calibration cropland per type (without algae, insect and lgn-energycrop)
+    dm_cal_cropland = DM_land['cal_cropland']
+    dm_cropland = DM_land['yield'].copy()
+    dm_cropland.drop(dim='Categories1', col_label=['algae', 'insect', 'lgn-energycrop'])
+    dm_cal_rates_cropland = calibration_rates(dm_cropland, dm_cal_cropland, calibration_start_year=1990,
+                                          calibration_end_year=2023, years_setting=years_setting)
+    dm_cropland.append(dm_cal_rates_cropland, dim='Variables')
+    dm_cropland.operation('agr_land_cropland_raw', '*', 'cal_rate', dim='Variables',
+                      out_col='agr_land_cropland', unit='ha')
+
+    # Append with cropland for lgn-energycrop, algae & insect
+    dm_cropland_others = DM_land['yield'].filter({'Categories1': ['algae', 'insect', 'lgn-energycrop']})
+    dm_cropland_others.rename_col('agr_land_cropland_raw', 'agr_land_cropland', dim='Variables')
+    dm_cropland = dm_cropland.filter({'Variables': ['agr_land_cropland']})
+    dm_cropland.append(dm_cropland_others, dim='Categories1')
+
     # Overall cropland [ha] = sum of cropland by type [ha]
     dm_land = DM_land['yield'].copy()
     dm_land.groupby({'cropland': '.*'}, dim='Categories1', regex=True, inplace=True)
@@ -2081,7 +2130,7 @@ def land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, DM_ind, years_s
 
     # Rice CH4 emissions [tCH4] = cropland for rice [ha] * emissions crop rice [tCH4/ha]
     DM_land['rice'].operation('fxa_emission_crop_rice', '*',
-                              'agr_land_cropland_rice',
+                              'agr_land_cropland_raw_rice',
                               out_col='agr_rice_crop_CH4-emission', unit='t')
 
     return DM_land, dm_land, dm_land_use, dm_fiber, df_cal_rates_land
@@ -2752,12 +2801,12 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     dm_lfs, df_cal_rates_diet = lifestyle_workflow(DM_lifestyle, DM_lfs, CDM_const, years_setting)
     dm_lfs, dm_lfs_pro = food_demand_workflow(DM_food_demand, dm_lfs)
     DM_livestock, dm_liv_ibp, dm_liv_ibp, dm_liv_prod, dm_liv_pop, df_cal_rates_liv_prod, df_cal_rates_liv_pop= livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro, years_setting)
-    DM_alc_bev, dm_bev_ibp_cereal_feed = alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro)
+    DM_alc_bev, dm_bev_ibp_cereal_feed, dm_bev_dom_prod = alcoholic_beverages_workflow(DM_alc_bev, CDM_const, dm_lfs_pro)
     DM_bioenergy, dm_oil, dm_lgn, dm_eth, dm_biofuel_fdk = bioenergy_workflow(DM_bioenergy, CDM_const, DM_ind, dm_bld, dm_tra)
     dm_liv_N2O, dm_CH4, df_cal_rates_liv_N2O, df_cal_rates_liv_CH4 = livestock_manure_workflow(DM_manure, DM_livestock, dm_liv_pop, CDM_const, years_setting)
     DM_feed, dm_aps_ibp, dm_feed_req, dm_aps, dm_feed_demand, df_cal_rates_feed = feed_workflow(DM_feed, dm_liv_prod, dm_bev_ibp_cereal_feed, CDM_const, years_setting)
     dm_voil, dm_aps_ibp_oil, dm_voil_tpe = biomass_allocation_workflow(dm_aps_ibp, dm_oil)
-    DM_crop, dm_crop, dm_crop_other, dm_feed_processed, dm_food_processed, df_cal_rates_crop = crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const, dm_oil, years_setting)
+    DM_crop, dm_crop, dm_crop_other, dm_feed_processed, dm_food_processed, df_cal_rates_crop = crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, dm_lgn, dm_aps_ibp, CDM_const, dm_oil, dm_bev_dom_prod, years_setting)
     DM_land, dm_land, dm_land_use, dm_fiber, df_cal_rates_land = land_workflow(DM_land, DM_crop, DM_livestock, dm_crop_other, DM_ind, years_setting)
     dm_n, dm_fertilizer_co, dm_mineral_fertilizer, df_cal_rates_n = nitrogen_workflow(DM_nitrogen, dm_land, CDM_const, years_setting)
     DM_energy_ghg, dm_CO2, dm_input_use_CO2, dm_crop_residues, dm_CH4_liv_tpe, dm_N2O_liv_tpe, dm_CH4_rice, dm_fertilizer_N2O, df_cal_rates_ghg = energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, DM_manure, dm_land, dm_fertilizer_co, dm_liv_N2O, dm_CH4, CDM_const, dm_n, years_setting)
@@ -2793,7 +2842,7 @@ def agriculture(lever_setting, years_setting, interface = Interface()):
     interface.add_link(from_sector='agriculture', to_sector='minerals', dm=dm_minerals)
 
     # TPE OUTPUT -------------------------------------------------------------------------------------------------------
-    results_run = agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_aps, dm_input_use_CO2, dm_crop_residues, dm_CH4, dm_liv_N2O, dm_CH4_rice, dm_fertilizer_N2O, DM_energy_ghg, DM_bioenergy, dm_lgn, dm_eth, dm_oil, dm_aps_ibp, DM_food_demand, dm_lfs_pro, dm_lfs, DM_land, dm_fiber, dm_aps_ibp_oil, dm_voil_tpe, DM_alc_bev, dm_biofuel_fdk, dm_liv_slau_egg_dairy)
+    results_run = agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_aps, dm_input_use_CO2, dm_crop_residues, dm_CH4, dm_liv_N2O, dm_CH4_rice, dm_fertilizer_N2O, DM_energy_ghg, DM_bioenergy, dm_lgn, dm_eth, dm_oil, dm_aps_ibp, DM_food_demand, dm_lfs_pro, dm_lfs, DM_land, dm_fiber, dm_aps_ibp_oil, dm_voil_tpe, DM_alc_bev, dm_biofuel_fdk, dm_liv_pop)
 
     return results_run
 
@@ -2810,7 +2859,7 @@ def agriculture_local_run():
 
 # # Run the code in local
 #start = time.time()
-results_run = agriculture_local_run()
+#results_run = agriculture_local_run()
 #end = time.time()
 #print(end-start)
 
