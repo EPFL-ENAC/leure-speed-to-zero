@@ -201,7 +201,7 @@ class DataMatrix:
         # it returns a datamatrix
         if df.empty:
             ValueError(f'You cannot create a datamatrix from an empty dataframe.')
-        dm = cls()
+        dm = cls(empty=True)
         dm.extract_structure(df, num_cat)
         dm.read_data(df, num_cat)
         return dm
