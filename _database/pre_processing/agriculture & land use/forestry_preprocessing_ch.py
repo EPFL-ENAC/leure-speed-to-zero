@@ -741,7 +741,41 @@ linear_fitting(dm_wood_wastes, years_fts)
 #dm_wood_wastes_incineration.datamatrix_plot(stacked=True)
 
 ################################################################
-# Create fts example
+# FXA - Optimal harvest rate
+################################################################
+
+# Coniferous
+#values_dict ={1990: 4.7,2007:4.6,2017:5.7, 2027:4.4,2047:4.6,2056:4.6}
+values_dict ={1990: 4.7,2006:4.7, 2007:4.6,2016:4.6,2017:5.7, 2026:5.7, 2027:4.4,2046:4.4, 2047:4.6,2056:4.6}
+years_all = create_years_list(1990, 2056, 1)
+dm_harvest_coniferous = DataMatrix( col_labels ={'Country': ['Switzerland'], 'Years': years_all,
+                                   'Variables' : ['sustainable-harvest-rate_coniferous']}, units = {'sustainable-harvest-rate_coniferous': 'm3/ha'})
+for yr, val in values_dict.items():
+    dm_harvest_coniferous['Switzerland', yr, 'sustainable-harvest-rate_coniferous'] = val
+
+linear_fitting(dm_harvest_coniferous, years_all)
+dm_sustainable_harvest_rate = dm_harvest_coniferous
+dm_sustainable_harvest_rate.deepen()
+
+# Non-Coniferous
+#values_dict ={1990: 2.7,2007:2.4,2017: 2.9, 2027:2.6,2047:3.3,2056:3.3}
+values_dict ={1990: 2.7,2006:2.7,2007:2.4,2016:2.4,2017: 2.9, 2026:2.9,2027:2.6,2046:2.6,2047:3.3,2056:3.3}
+years_all = create_years_list(1990, 2056, 1)
+dm_harvest_non_coniferous = DataMatrix( col_labels ={'Country': ['Switzerland'], 'Years': years_all,
+                                   'Variables' : ['sustainable-harvest-rate_non-coniferous']}, units = {'sustainable-harvest-rate_non-coniferous': 'm3/ha'})
+for yr, val in values_dict.items():
+    dm_harvest_non_coniferous['Switzerland', yr, 'sustainable-harvest-rate_non-coniferous'] = val
+
+linear_fitting(dm_harvest_non_coniferous, years_all)
+dm_harvest_non_coniferous.deepen()
+dm_sustainable_harvest_rate.append(dm_harvest_non_coniferous, dim='Categories1')
+
+# Total
+dm_sustainable_harvest_rate.operation('coniferous', '+', 'non-coniferous', out_col='total', unit='m3/ha', dim='Categories1')
+dm_sustainable_harvest_rate.filter({'Years': years_ots+years_fts}, inplace=True)
+
+################################################################
+# Harvest rate
 ################################################################
 
 # Extract harvest-rate
@@ -760,7 +794,94 @@ dm_harvest_clean.filter({'Years': years_fts}, inplace=True)
 # Append to original data
 dm_harvest.append(dm_harvest_clean, dim='Years')
 
+dm_fts_1 = dm_harvest.copy()
+dm_fts_1.filter({'Years': years_fts}, inplace=True)
 
+################################################################
+# FTS - Harvest rate
+################################################################
+
+# Level 2 (growth)
+## Coniferous
+values_dict ={1990: 4.7,2006:4.7, 2007:4.6,2016:7.0,2017:6.2, 2026:6.2, 2027:4.6,2046:4.6, 2047:4.2,2056:4.2}
+years_all = create_years_list(1990, 2056, 1)
+dm_fts = DataMatrix( col_labels ={'Country': ['Switzerland'], 'Years': years_all,
+                                   'Variables' : ['harvest-rate_coniferous']}, units = {'harvest-rate_coniferous': 'm3/ha'})
+for yr, val in values_dict.items():
+    dm_fts['Switzerland', yr, 'harvest-rate_coniferous'] = val
+
+linear_fitting(dm_fts, years_all)
+dm_fts_2 = dm_fts
+dm_fts_2.filter({'Years': years_fts}, inplace=True)
+dm_fts_2.deepen()
+
+## Non-Coniferous
+values_dict ={1990: 2.7,2006:2.7, 2007:3.6,2016:3.6,2017:3.4, 2026:3.4, 2027:2.7,2046:2.7, 2047:3.1,2056:3.1}
+years_all = create_years_list(1990, 2056, 1)
+dm_fts = DataMatrix( col_labels ={'Country': ['Switzerland'], 'Years': years_all,
+                                   'Variables' : ['harvest-rate_non-coniferous']}, units = {'harvest-rate_non-coniferous': 'm3/ha'})
+for yr, val in values_dict.items():
+    dm_fts['Switzerland', yr, 'harvest-rate_non-coniferous'] = val
+
+linear_fitting(dm_fts, years_all)
+dm_fts.filter({'Years': years_fts}, inplace=True)
+dm_fts.deepen()
+dm_fts_2.append(dm_fts, dim='Categories1')
+dm_fts_2.operation('coniferous', '+', 'non-coniferous', out_col='total', unit='m3/ha', dim='Categories1')
+
+# Level 3 (Kyoto)
+values_dict ={1990: 4.7,2006:4.7, 2007:4.1,2016:4.1,2017:4.6, 2026:4.6, 2027:4.1,2046:4.1, 2047:4.5,2056:4.5}
+years_all = create_years_list(1990, 2056, 1)
+dm_fts = DataMatrix( col_labels ={'Country': ['Switzerland'], 'Years': years_all,
+                                   'Variables' : ['harvest-rate_coniferous']}, units = {'harvest-rate_coniferous': 'm3/ha'})
+for yr, val in values_dict.items():
+    dm_fts['Switzerland', yr, 'harvest-rate_coniferous'] = val
+
+linear_fitting(dm_fts, years_all)
+dm_fts_3 = dm_fts
+dm_fts_3.filter({'Years': years_fts}, inplace=True)
+dm_fts_3.deepen()
+
+## Non-Coniferous
+values_dict ={1990: 2.7,2006:2.7, 2007:2.2,2016:2.2,2017:2.3, 2026:2.3, 2027:2.4,2046:2.4, 2047:3.2,2056:3.2}
+years_all = create_years_list(1990, 2056, 1)
+dm_fts = DataMatrix( col_labels ={'Country': ['Switzerland'], 'Years': years_all,
+                                   'Variables' : ['harvest-rate_non-coniferous']}, units = {'harvest-rate_non-coniferous': 'm3/ha'})
+for yr, val in values_dict.items():
+    dm_fts['Switzerland', yr, 'harvest-rate_non-coniferous'] = val
+
+linear_fitting(dm_fts, years_all)
+dm_fts.filter({'Years': years_fts}, inplace=True)
+dm_fts.deepen()
+dm_fts_3.append(dm_fts, dim='Categories1')
+dm_fts_3.operation('coniferous', '+', 'non-coniferous', out_col='total', unit='m3/ha', dim='Categories1')
+
+# Level 4 (Strong demand)
+values_dict ={1990: 4.7,2006:4.7, 2007:7.3,2016:7.3,2017:7.3, 2026:7.3, 2027:4.0,2046:4.0, 2047:3.3,2056:3.3}
+years_all = create_years_list(1990, 2056, 1)
+dm_fts = DataMatrix( col_labels ={'Country': ['Switzerland'], 'Years': years_all,
+                                   'Variables' : ['harvest-rate_coniferous']}, units = {'harvest-rate_coniferous': 'm3/ha'})
+for yr, val in values_dict.items():
+    dm_fts['Switzerland', yr, 'harvest-rate_coniferous'] = val
+
+linear_fitting(dm_fts, years_all)
+dm_fts_4 = dm_fts
+dm_fts_4.filter({'Years': years_fts}, inplace=True)
+dm_fts_4.deepen()
+
+## Non-Coniferous
+values_dict ={1990: 2.7,2006:2.7, 2007:4.4,2016:4.4,2017:4.4, 2026:4.4, 2027:2.5,2046:2.5, 2047:2.6,2056:2.6}
+years_all = create_years_list(1990, 2056, 1)
+dm_fts = DataMatrix( col_labels ={'Country': ['Switzerland'], 'Years': years_all,
+                                   'Variables' : ['harvest-rate_non-coniferous']}, units = {'harvest-rate_non-coniferous': 'm3/ha'})
+for yr, val in values_dict.items():
+    dm_fts['Switzerland', yr, 'harvest-rate_non-coniferous'] = val
+
+linear_fitting(dm_fts, years_all)
+dm_fts.filter({'Years': years_fts}, inplace=True)
+dm_fts.deepen()
+dm_fts_4.append(dm_fts, dim='Categories1')
+dm_fts_4.operation('coniferous', '+', 'non-coniferous', out_col='total', unit='m3/ha', dim='Categories1')
 
 ################################################################
 # Pickle for Forestry
@@ -784,7 +905,11 @@ DM_forestry['fts']['harvest-rate'] = dict()
 for lev in range(4):
     DM_forestry['fts']['harvest-rate'][lev+1] = dm_harvest.filter({'Years': years_fts})
 
-# Fake Industry to Forestry interface
+DM_forestry['fts']['harvest-rate'][1] = dm_fts_1
+DM_forestry['fts']['harvest-rate'][2] = dm_fts_2
+DM_forestry['fts']['harvest-rate'][3] = dm_fts_3
+DM_forestry['fts']['harvest-rate'][4] = dm_fts_4
+DM_forestry
 
 # save
 
