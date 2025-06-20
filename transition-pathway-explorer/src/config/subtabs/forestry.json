@@ -7,8 +7,8 @@
       "route": "forest-area"
     },
    {
-      "title": "Wood Supply",
-      "charts": ["Graph1", "Graph2"],
+      "title": "Wood harvest",
+      "charts": ["HarvestRate","HarvestedWoodSpecies"],
       "route": "wood-supply"
     },
     {
@@ -37,8 +37,8 @@
 		{"id":"unexploited-forest[ha]", "color": "#98bb0a"}
       ]
     },
-   "Graph1": {
-      "title": "Title of plot",
+   "ExploitedForest": {
+      "title": "Forest exploited area [ha]",
       "type": "StackedArea",
       "unit": "ha",
       "outputs": [
@@ -46,7 +46,7 @@
 		{"id":"unexploited-forest[ha]", "color": "#3e3324"}
       ]
     },
-   "Graph2": {
+   "HarvestedWoodSpecies": {
       "title": "Harvested wood per species [m3]",
       "type": "StackedArea",
       "unit": "m3",
@@ -96,6 +96,16 @@
         "wood-supply_harvested-wood[m3]",
 		"wood-supply_industrial-byproducts[m3]",
         "wood-supply_waste-wood[m3]"
+      ]
+    },
+    "HarvestRate": {
+      "title": "Wood harvest rate per species [m3/ha]",
+      "type": "Line",
+      "unit": "m3/ha",
+      "outputs": [
+        "harvest-rate_coniferous[m3/ha]",
+		"harvest-rate_non-coniferous[m3/ha]",
+        "harvest-rate_total[m3/ha]"
       ]
     }
   }

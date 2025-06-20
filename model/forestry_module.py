@@ -221,7 +221,7 @@ def wood_supply (dm_forest_area, DM_forestry, DM_ots_fts):
 
     return DM_supply
 
-def forestry_to_tpe(DM_supply, DM_power, DM_industry):
+def forestry_to_tpe(DM_supply, DM_power, DM_industry, DM_ots_fts):
     #############################################################
     # DM to plot
     #############################################################
@@ -269,6 +269,11 @@ def forestry_to_tpe(DM_supply, DM_power, DM_industry):
         ['wood-supply_industrial-byproducts'],
         dim='Variables')
 
+    # Harvest rate
+    tpe_harvest_rate = DM_ots_fts['harvest-rate'].filter(({'Variables': ['harvest-rate']}))
+    #tpe_harvest_rate.flatten().datamatrix_plot({'Country': ['Switzerland']}, stacked=True)
+    #tpe_harvest_rate = tpe_harvest_rate.filter(({'Categories1': [ 'coniferous', 'non-coniferous']}))
+
     #############################################################
     # DM to df for tpe
     #############################################################
@@ -285,6 +290,8 @@ def forestry_to_tpe(DM_supply, DM_power, DM_industry):
     df = pd.concat([df, df6.drop(columns=['Country', 'Years'])], axis=1)
     df7 = tpe_supply_species.write_df()
     df = pd.concat([df, df7.drop(columns=['Country', 'Years'])], axis=1)
+    df8 = tpe_harvest_rate.write_df()
+    df = pd.concat([df, df8.drop(columns=['Country', 'Years'])], axis=1)
     return df
 
 def forestry(lever_setting, years_setting, interface=Interface()):
@@ -389,7 +396,7 @@ def forestry(lever_setting, years_setting, interface=Interface()):
     ####################################################################################################################
 
 
-    results_run = forestry_to_tpe(DM_supply, DM_power, DM_industry)
+    results_run = forestry_to_tpe(DM_supply, DM_power, DM_industry, DM_ots_fts)
 
 
     return results_run
