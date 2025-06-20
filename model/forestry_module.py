@@ -249,6 +249,10 @@ def forestry_to_tpe(DM_supply, DM_power, DM_industry, DM_ots_fts):
 
     # Harvested wood
     dm_harvested_wood = DM_supply['harvested'].filter(({'Categories1':['coniferous','non-coniferous']}))
+    dm_harvested_wood.rename_col(
+        ['wood-supply'],
+        ['harvested-wood'],
+        dim='Variables')
     #dm_harvested_wood.datamatrix_plot({'Country': ['Switzerland']}, stacked=True)
 
     # Exploited forest area
@@ -259,14 +263,14 @@ def forestry_to_tpe(DM_supply, DM_power, DM_industry, DM_ots_fts):
     tpe_wood_supply = DM_industry['woodfuel-supply'].flatten()
     dm_waste_supply = DM_supply['wood-supply-per type'].flatten()
 
-    dm_harvest_supply = dm_harvested_wood
+    dm_harvest_supply = dm_harvested_wood.copy()
     dm_harvest_supply.groupby({'harvested-wood': '.*'}, regex=True, inplace=True, dim='Categories1')
     dm_harvest_supply=dm_harvest_supply.flatten()
     tpe_wood_supply.append(dm_harvest_supply, dim='Variables')
     tpe_wood_supply.append(dm_waste_supply, dim='Variables')
     tpe_wood_supply.rename_col(
-        ['woodfuel-byproducts_total-industry'],
-        ['wood-supply_industrial-byproducts'],
+        ['woodfuel-byproducts_total-industry','harvested-wood_harvested-wood'],
+        ['wood-supply_industrial-byproducts','wood-supply_harvested-wood'],
         dim='Variables')
 
     # Harvest rate
