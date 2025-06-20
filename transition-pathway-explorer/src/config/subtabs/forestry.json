@@ -51,8 +51,8 @@
       "type": "StackedArea",
       "unit": "m3",
       "outputs": [
-		"wood-supply_coniferous[m3]",
-		"wood-supply_non-coniferous[m3]"
+		"harvested-wood_coniferous[m3]",
+		"harvested-wood_non-coniferous[m3]"
       ]
     },
    "WoodDemandUse": {
