@@ -2456,7 +2456,7 @@ def agriculture_local_run():
 
 # # Run the code in local
 # start = time.time()
-results_run = agriculture_local_run()
+#results_run = agriculture_local_run()
 # end = time.time()
 # print(end-start)
 
