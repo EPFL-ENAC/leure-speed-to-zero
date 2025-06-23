@@ -238,7 +238,7 @@ def read_data(data_file, lever_setting):
     return DM_ots_fts, DM_land_use, CDM_const
 
 # CalculationLeaf WOOD
-def wood_workflow(dm_wood, dm_lgn, DM_ind, dm_cal_wood):
+def wood_workflow(dm_wood, dm_lgn, DM_ind, dm_cal_wood, years_setting):
     # WOOD FUEL DEMAND  ------------------------------------------------------------------------------------------------
     # Unit conversion : bioenergy biomass demand [kcal] => [TWh]
     dm_lgn.add(0.00000000000116222, dummy=True, col_label='kcal_to_TWh', dim='Variables', unit='TWh')
@@ -309,7 +309,7 @@ def wood_workflow(dm_wood, dm_lgn, DM_ind, dm_cal_wood):
 
     # Calibration Wood demand
     dm_cal_rates_wood = calibration_rates(dm_wood, dm_cal_wood, calibration_start_year=1990,
-                                         calibration_end_year=2015, years_setting=[1990, 2015, 2050, 5])
+                                         calibration_end_year=2015, years_setting=years_setting)
     dm_wood.append(dm_cal_rates_wood, dim='Variables')
     dm_wood.operation('lus_fst_demand_rwe_raw', '*', 'cal_rate', dim='Variables',
                      out_col='lus_fst_demand_rwe', unit='m3')
@@ -937,7 +937,7 @@ def land_use(lever_setting, years_setting, interface = Interface(), calibration 
             DM_agr[key].filter({'Country': cntr_list}, inplace=True)
 
     # CalculationTree LAND USE
-    dm_wood, dm_wood_TPE, df_cal_rates_wood = wood_workflow(DM_agr["wood"], DM_agr["lgn"], DM_ind, DM_land_use["cal_wood"])
+    dm_wood, dm_wood_TPE, df_cal_rates_wood = wood_workflow(DM_agr["wood"], DM_agr["lgn"], DM_ind, DM_land_use["cal_wood"], years_setting)
     DM_land_use = land_allocation_workflow(DM_land_use, DM_agr["landuse"])
     DM_land_use = land_matrix_workflow(DM_land_use, years_setting)
     DM_land_use = land_carbon_dynamics_workflow(DM_land_use)
