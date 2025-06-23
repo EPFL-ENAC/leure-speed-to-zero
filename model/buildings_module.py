@@ -1313,7 +1313,7 @@ def buildings(lever_setting, years_setting, interface=Interface()):
 
     interface.add_link(from_sector='buildings', to_sector='minerals', dm=DM_floor_out['industry'])
 
-    interface.add_link(from_sector='buildings', to_sector='agriculture', dm=DM_energy_out['agriculture'])
+    #interface.add_link(from_sector='buildings', to_sector='agriculture', dm=DM_energy_out['agriculture'])
 
     interface.add_link(from_sector='buildings', to_sector='oil-refinery', dm=DM_energy_out['refinery'])
 

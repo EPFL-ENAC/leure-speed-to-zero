@@ -50,6 +50,10 @@ def runner(lever_setting, global_vars, output_nodes, logger):
     start_time = time.time()
     TPE['forestry'] = forestry(lever_setting, years_setting, interface)
     logger.info('Execution time Industry: {0:.3g} s'.format(time.time() - start_time))
+    start_time = time.time()
+    TPE['agriculture'] = agriculture(lever_setting, years_setting, interface)
+    logger.info('Execution time Agriculture: {0:.3g} s'.format(time.time() - start_time))
+
     #start_time = time.time()
     #TPE['agriculture'] = agriculture(lever_setting, years_setting, interface)
     #logger.info('Execution time Agriculture: {0:.3g} s'.format(time.time() - start_time))
