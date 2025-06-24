@@ -21,10 +21,10 @@ current_file_directory = os.path.dirname(os.path.abspath(__file__))
 
 # get data
 filepath = os.path.join(current_file_directory, '../data/EUCalc/eucalc_technology_share.xlsx')
-df = pd.read_excel(filepath)
+df_exc = pd.read_excel(filepath)
 
 # get current values
-df = df.iloc[list(range(2,len(df))),[0,2]]
+df = df_exc.iloc[list(range(2,len(df_exc))),[0,2]]
 df.columns = ["material-tech","value"]
 
 # rename
@@ -89,15 +89,85 @@ for i in variabs:
     dm.rename_col(i, "technology-share_" + i, "Variables")
 dm.deepen()
 
-# drop ammonia-tech
-dm.drop("Categories1","ammonia-tech")
+# # drop ammonia-tech
+# dm.drop("Categories1","ammonia-tech")
 
-# save
+# set years
 years_ots = list(range(1990,2023+1))
 years_fts = list(range(2025,2055,5))
+
+###############
+##### OTS #####
+###############
+
 dm_ots = dm.filter({"Years" : years_ots})
-dm_fts = dm.filter({"Years" : years_fts})
-DM_fts = {1: dm_fts.copy(), 2: dm_fts.copy(), 3: dm_fts.copy(), 4: dm_fts.copy()} # for now we set all levels to be the same
+
+#######################
+##### FTS LEVEL 1 #####
+#######################
+
+# level 1: continuing as is
+dm_fts_level1 = dm.filter({"Years" : years_fts})
+
+#######################
+##### FTS LEVEL 2 #####
+#######################
+
+# TODO: level 2 to do, for the moment we set it continuing as is
+dm_fts_level2 = dm.filter({"Years" : years_fts})
+
+#######################
+##### FTS LEVEL 3 #####
+#######################
+
+# TODO: level 3 to do, for the moment we set it continuing as is
+dm_fts_level3 = dm.filter({"Years" : years_fts})
+
+#######################
+##### FTS LEVEL 4 #####
+#######################
+
+# get current values
+df = df_exc.iloc[list(range(2,len(df_exc))),[0,6]]
+df.columns = ["material-tech","value"]
+
+# rename
+name_new = ['steel-BF-BOF', 'steel-scrap-EAF', 'steel-hisarna', 'steel-hydrog-DRI',
+            'cement-dry-kiln', 'cement-wet-kiln', 'cement-geopolym',
+            'chem-chem-tech', 'ammonia-tech',
+            'pulp-tech', 'paper-tech',
+            'aluminium-prim', 'aluminium-sec',
+            'glass-glass','lime-lime','copper-tech']
+df["material-tech"] = name_new
+
+# add missing
+df_temp = pd.DataFrame({"material-tech" : ['fbt-tech', 'mae-tech', 'ois-tech', 'textiles-tech', 'tra-equip-tech', 'wwp-tech'],
+                        "value" : [100, 100, 100, 100, 100, 100]})
+df = pd.concat([df, df_temp])
+
+# divide by 100 and order
+df["value"] = df["value"]/100
+df.sort_values(["material-tech"], inplace=True)
+
+# create a dm level4
+dm_level4 = dm.copy()
+years_fts = list(range(2025,2055,5))
+idx = dm_level4.idx
+for y in years_fts:
+    dm_level4.array[idx["EU27"],idx[y],:,:] = np.nan
+for tech in dm_level4.col_labels["Categories1"]:
+    dm_level4.array[idx["EU27"],idx[2050],:,idx[tech]] = df.loc[df["material-tech"] == tech,"value"]
+dm_level4 = linear_fitting(dm_level4, years_fts)
+# dm_level4.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
+dm_fts_level4 = dm_level4.filter({"Years" : years_fts})
+# dm_fts_level4.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot()
+
+
+################
+##### SAVE #####
+################
+
+DM_fts = {1: dm_fts_level1.copy(), 2: dm_fts_level2.copy(), 3: dm_fts_level3.copy(), 4: dm_fts_level4.copy()}
 DM = {"ots" : dm_ots,
       "fts" : DM_fts}
 f = os.path.join(current_file_directory, '../data/datamatrix/lever_technology-share.pickle')

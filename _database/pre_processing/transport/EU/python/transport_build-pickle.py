@@ -163,6 +163,37 @@ for key in DM_transport["fxa"].keys():
 f = os.path.join(current_file_directory, '../../../../data/datamatrix/transport.pickle')
 my_pickle_dump(DM_transport, f)
 
+# # check
+
+# list(DM_transport["fxa"])
+# DM_transport["fxa"]["passenger_tech"].filter({"Variables" : ['tra_passenger_technology-share_fleet']}).flatten().flatten().datamatrix_plot()
+# DM_transport["fxa"]["passenger_tech"].filter({"Variables" : ['tra_passenger_new-vehicles']}).flatten().flatten().datamatrix_plot()
+# DM_transport["fxa"]["passenger_tech"].filter({"Variables" : ['tra_passenger_vehicle-waste']}).flatten().flatten().datamatrix_plot()
+
+# list(DM_transport["ots"])
+
+# level = 1
+
+# dm_temp = DM_transport["ots"]["passenger_modal-share"].copy()
+# dm_temp.append(DM_transport["fts"]["passenger_modal-share"][level],"Years")
+# dm_temp.flatten().datamatrix_plot(stacked=True)
+
+# dm_temp = DM_transport["ots"]["passenger_occupancy"].copy()
+# dm_temp.append(DM_transport["fts"]["passenger_occupancy"][level],"Years")
+# dm_temp.flatten().datamatrix_plot()
+
+# dm_temp = DM_transport["ots"]['passenger_technology-share_new'].copy()
+# dm_temp.append(DM_transport["fts"]['passenger_technology-share_new'][level], "Years")
+# dm_temp.filter({"Categories1" : ["LDV"]}).flatten().datamatrix_plot(stacked=True)
+
+# dm_temp = DM_transport["ots"]["passenger_utilization-rate"].copy()
+# dm_temp.append(DM_transport["fts"]["passenger_utilization-rate"][level],"Years")
+# dm_temp.flatten().datamatrix_plot()
+
+# dm_temp = DM_transport["ots"]["pkm"].copy()
+# dm_temp.append(DM_transport["fts"]["pkm"][level],"Years")
+# dm_temp.datamatrix_plot()
+
 
 
 

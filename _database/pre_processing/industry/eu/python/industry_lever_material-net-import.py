@@ -49,7 +49,7 @@ df_map_sub = df_map.filter(items=['prccode', 'calc_industry_material'])
 df_map_sub = df_map_sub.dropna()
 df_map_sub["calc_industry_material"].unique()
 materials = ['aluminium', 'ammonia', 'cement', 'chem', 'copper', 'glass', 'lime', 'paper', 'steel', 'timber',
-             'fbt', 'mae', 'ois', 'textiles', 'tra-equip', 'wwp']
+             'fbt', 'mae', 'ois', 'other', 'textiles', 'tra-equip', 'wwp']
 # note: 
 # for (food, beverages and tobacco), machinery equipment (mae)
 # transport equipment (tra-equip), textiles and leather (textiles), wood and wood products (wwp),
@@ -144,7 +144,7 @@ df_check = df_sub.loc[df_sub["calc_industry_material"] == "paper",:]
 df_check["unit"].unique()
 units_dict = {'aluminium' : ['kg'], 'ammonia' : ["kg N"], 'cement' : ["kg"], 
               'copper' : ['kg'], 'glass' : ['kg'], 
-              'lime' : ['kg'], 'mae' : ['kg'], 'ois' : ['kg'],
+              'lime' : ['kg'], 'mae' : ['kg'], 'ois' : ['kg'], 'other' :['kg'],
               'steel' : ['kg'], "textiles" : ['kg'],
               'tra-equip' : ['kg']}
 # NOTE: for large groups of materials, we consider only kg, but 
@@ -270,6 +270,9 @@ dm_mat = DataMatrix.create_from_df(df_temp, 1)
 # fix names
 dm_mat.rename_col_regex("product", "material", "Variables")
 
+# check
+# dm_mat.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot()
+
 ###################
 ##### FIX OTS #####
 ###################
@@ -320,6 +323,11 @@ for y in range(1995,2009):
 idx = dm_mat.idx
 for y in range(1995,2010):
     dm_mat.array[idx["EU27"],idx[y],:,idx["ois"]] = np.nan
+    
+# for other, put 2022-2023 as missing
+idx = dm_mat.idx
+for y in range(2022,2023+1):
+    dm_mat.array[idx["EU27"],idx[y],:,idx["other"]] = np.nan
 
 # check
 # dm_mat.flatten().filter({"Country" : ["EU27"]}).datamatrix_plot()
@@ -330,18 +338,18 @@ dm_mat = fix_jumps_in_dm(dm_mat)
 # check
 # dm_mat.flatten().filter({"Country" : ["EU27"]}).datamatrix_plot()
 
-# put nas for 2008 crisis when needed
-idx = dm_mat.idx
-for y in range(2007,2011+1):
-    dm_mat.array[idx["EU27"],idx[y],:,idx["copper"]] = np.nan
-    dm_mat.array[idx["EU27"],idx[y],:,idx["cement"]] = np.nan
-    dm_mat.array[idx["EU27"],idx[y],:,idx["lime"]] = np.nan
-for y in range(2007,2009+1):
-    dm_mat.array[idx["EU27"],idx[y],:,idx["steel"]] = np.nan
-dm_mat.array[idx["EU27"],idx[2018],:,idx["paper"]] = np.nan
-dm_mat.array[idx["EU27"],idx[2008],:,idx["paper"]] = np.nan
-dm_mat.array[idx["EU27"],idx[2022],:,idx["lime"]] = np.nan
-dm_mat.array[idx["EU27"],idx[2023],:,idx["lime"]] = np.nan
+# # put nas for 2008 crisis when needed
+# idx = dm_mat.idx
+# for y in range(2007,2011+1):
+#     dm_mat.array[idx["EU27"],idx[y],:,idx["copper"]] = np.nan
+#     dm_mat.array[idx["EU27"],idx[y],:,idx["cement"]] = np.nan
+#     dm_mat.array[idx["EU27"],idx[y],:,idx["lime"]] = np.nan
+# for y in range(2007,2009+1):
+#     dm_mat.array[idx["EU27"],idx[y],:,idx["steel"]] = np.nan
+# dm_mat.array[idx["EU27"],idx[2018],:,idx["paper"]] = np.nan
+# dm_mat.array[idx["EU27"],idx[2008],:,idx["paper"]] = np.nan
+# dm_mat.array[idx["EU27"],idx[2022],:,idx["lime"]] = np.nan
+# dm_mat.array[idx["EU27"],idx[2023],:,idx["lime"]] = np.nan
 
 # flatten
 dm_mat = dm_mat.flatten()
@@ -368,6 +376,7 @@ dict_call = {"material-demand_aluminium" : None,
              "material-demand_lime" : None,
              "material-demand_mae" : None,
              "material-demand_ois" : None,
+             "material-demand_other" : range(2010,2018+1),
              "material-demand_paper" : range(2007,2017+1),
              "material-demand_steel" : range(2010,2018+1),
              "material-demand_textiles" : None,
@@ -383,6 +392,7 @@ dict_call = {"material-demand_aluminium" : None,
              "material-export_lime" : range(2012,2018+1),
              "material-export_mae" : range(2007,2017+1),
              "material-export_ois" : range(2010,2018+1),
+             "material-export_other" : None,
              "material-export_paper" : None,
              "material-export_steel" : None,
              "material-export_textiles" :None,
@@ -398,6 +408,7 @@ dict_call = {"material-demand_aluminium" : None,
              "material-import_lime" : range(2014,2023+1),
              "material-import_mae" : None,
              "material-import_ois" : None,
+             "material-import_other" : None,
              "material-import_paper" : None,
              "material-import_steel" : None,
              "material-import_textiles" : None,
@@ -473,7 +484,8 @@ dm_mat = make_fts(dm_mat, "fbt", baseyear_start, baseyear_end)
 dm_mat = make_fts(dm_mat, "glass", 2020, 2023)
 dm_mat = make_fts(dm_mat, "lime", baseyear_start, baseyear_end)
 dm_mat = make_fts(dm_mat, "mae", baseyear_start, baseyear_end)
-dm_mat = make_fts(dm_mat, "ois", baseyear_start, baseyear_end) 
+dm_mat = make_fts(dm_mat, "ois", baseyear_start, baseyear_end)
+dm_mat = make_fts(dm_mat, "other", baseyear_start, baseyear_end)
 dm_mat = make_fts(dm_mat, "paper", baseyear_start, baseyear_end)
 dm_mat = make_fts(dm_mat, "steel", baseyear_start, baseyear_end)
 dm_mat = make_fts(dm_mat, "textiles", baseyear_start, baseyear_end)
@@ -491,7 +503,7 @@ dm_mat = make_fts(dm_mat, "wwp", baseyear_start, baseyear_end)
 # material-net-import[%] = (material-import - material-export)/material-demand
 
 # subset for main materials
-materials = ['aluminium', 'ammonia', 'cement', 'chem', 'copper', 'glass', 'lime', 'paper', 'steel', 'timber']
+materials = ['aluminium', 'ammonia', 'cement', 'chem', 'copper', 'glass', 'lime', 'other', 'paper', 'steel', 'timber']
 dm_temp = dm_mat.filter({"Categories1" : materials})
 
 # make material-net-import[%] = (material-import - material-export)/material-demand

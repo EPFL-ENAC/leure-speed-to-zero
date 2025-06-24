@@ -264,6 +264,45 @@ def filter_geoscale(geo_pattern):
     return
 
 
+def check_ots_fts_match(DM, lever_setting):
+    DM_ots_fts = {}
+    for lever in DM['ots'].keys():
+        level_value = lever_setting['lever_' + lever]
+        # If there are groups
+        if isinstance(DM['ots'][lever], dict):
+            DM_ots_fts[lever] = {}
+            for group in DM['ots'][lever].keys():
+                dm = DM['ots'][lever][group]
+                dm_fts = DM['fts'][lever][group][level_value]
+                if 'Categories1' in dm.dim_labels:
+                    missing_cat_ots = list(set(dm_fts.col_labels['Categories1']) - set(dm.col_labels['Categories1']))
+                    if len(missing_cat_ots) > 0:
+                        dm_fts.drop(dim='Categories1', col_label=missing_cat_ots)
+                        print(f'dm_ots in {lever},{group} missing {missing_cat_ots}')
+                    missing_cat_fts = list(set(dm.col_labels['Categories1']) - set(dm_fts.col_labels['Categories1']))
+                    if len(missing_cat_fts) > 0:
+                        dm.drop(dim='Categories1', col_label=missing_cat_fts)
+                        print(f'dm_fts in {lever},{group} missing {missing_cat_fts}')
+                dm.append(dm_fts, dim='Years')
+                DM_ots_fts[lever][group] = dm
+        else:
+            dm = DM['ots'][lever]
+            dm_fts = DM['fts'][lever][level_value]
+            missing_cat_ots = list(set(dm_fts.col_labels['Categories1']) - set(dm.col_labels['Categories1']))
+            if 'Categories1' in dm.dim_labels:
+                if len(missing_cat_ots) > 0:
+                    dm_fts.drop(dim='Categories1', col_label=missing_cat_ots)
+                    print(f'dm_ots in {lever} missing {missing_cat_ots}')
+                missing_cat_fts = list(set(dm.col_labels['Categories1']) - set(dm_fts.col_labels['Categories1']))
+                if len(missing_cat_fts) > 0:
+                    dm.drop(dim='Categories1', col_label=missing_cat_fts)
+                    print(f'dm_fts in {lever} missing {missing_cat_fts}')
+            dm.append(dm_fts, dim='Years')
+            DM_ots_fts[lever] = dm
+
+    return DM_ots_fts
+
+
 def read_level_data(DM, lever_setting):
     # Reads the pickle database for ots and fts for the right lever_setting and returns a dictionary of datamatrix
     DM_ots_fts = {}
@@ -995,23 +1034,24 @@ def my_pickle_dump(DM_new, local_pickle_file):
     return
 
 
-def countries_in_pickles(country_list, file = None):
+def check_country_in_dm(DM, country_list, file=None):
+    for key in DM:
+        if key != 'constant':
+            if isinstance(DM[key], dict):
+                check_country_in_dm(DM[key], country_list, file)
+            else:
+                for country in country_list:
+                    if country not in DM[key].col_labels['Country']:
+                        raise ValueError(f'Country {country} not in module {file}, label {key}')
+    return
 
-    def check_country_in_dm(DM):
-        for key in DM:
-            if key != 'constant':
-                if isinstance(DM[key], dict):
-                    check_country_in_dm(DM[key])
-                else:
-                    for country in country_list:
-                        if country not in DM[key].col_labels['Country']:
-                            raise ValueError(f'Country {country} not in module {file}, label {key}')
 
+def countries_in_pickles(country_list, file=None):
     def check_country_in_pickle(file):
         if '.pickle' in file:
             with open(join(mypath, file), 'rb') as handle:
                 DM_module = pickle.load(handle)
-            check_country_in_dm(DM_module)
+            check_country_in_dm(DM_module, country_list, file)
 
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     mypath = os.path.join(current_file_directory, '../../_database/data/datamatrix')
@@ -1048,12 +1088,36 @@ def sort_pickle(file_path):
 
     return
 
-def filter_years_DM(DM, selected_years):
+
+def filter_DM(DM, dict_selection):
+    # dict_selection can be for example : {'Years': years_ots} or {'Country': ['Switzerland']}
     for key in DM.keys():
         if isinstance(DM[key], dict):
-            filter_years_DM(DM[key], selected_years)
+            filter_DM(DM[key], dict_selection)
         else:
             dm = DM[key]
-            dm.filter({'Years': selected_years}, inplace=True)
-            DM[key] = dm
+            for dim in dict_selection.keys():
+                if dim in dm.dim_labels:
+                    dm.filter(dict_selection, inplace=True)
+                    DM[key] = dm
     return
+
+
+def add_dummy_country_to_DM(DM, new_country, ref_country):
+    # Make sure the reference country is in the DM
+    check_country_in_dm(DM, [ref_country])
+
+    for key in DM.keys():
+        if key != 'constant':
+            if isinstance(DM[key], dict):
+                add_dummy_country_to_DM(DM[key], new_country, ref_country)
+            else:
+                dm = DM[key]
+                if new_country not in dm.col_labels['Country']:
+                    dm_ref_country = dm.filter({'Country': [ref_country]})
+                    dm_ref_country.rename_col(ref_country, new_country, 'Country')
+                    dm.append(dm_ref_country, dim='Country')
+                    dm.sort('Country')
+
+    return
+

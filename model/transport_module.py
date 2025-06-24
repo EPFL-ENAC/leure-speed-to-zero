@@ -903,15 +903,9 @@ def passenger_fleet_energy(DM_passenger, dm_lfs, DM_other, cdm_const, years_sett
 
     # SECTION Passenger - Demand-vkm by mode
     # demand [vkm] = demand [pkm] / occupancy [pkm/vkm]
-    dm_mode.operation(
-        "tra_passenger_transport-demand",
-        "/",
-        "tra_passenger_occupancy",
-        dim="Variables",
-        out_col="tra_passenger_transport-demand-vkm",
-        unit="vkm",
-        div0="error",
-    )
+    dm_mode.operation('tra_passenger_transport-demand', '/', 'tra_passenger_occupancy',
+                      dim="Variables", out_col='tra_passenger_transport-demand-vkm', unit='vkm', div0="error")
+
     # SECTION Passenger - Vehicle-fleet by mode
     # vehicle-fleet [number] = demand [vkm] / utilisation-rate [vkm/veh/year]
     dm_mode.operation(
@@ -1395,59 +1389,39 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
         "power": {"electricity": dm_electricity.flatten()},
     }
     ## end
+    all_modes = dm_energy.col_labels['Categories1'].copy()
+    dm_energy_aviation = dm_energy.filter({'Categories1': ['aviation']})
+    dm_energy_marine = dm_energy.filter({'Categories1': ['marine', 'IWW']})
+    dm_energy.drop(dim='Categories1', col_label=['marine', 'IWW', 'aviation'])
 
-    dict1 = {
-        "FCEV": "FCV-hydrogen",
-        "BEV": "BEV-elec",
-        "CEV": "CEV-elec",
-        "aviation_ICEefuel": "aviation_ejetfuel",
-        "aviation_ICEbio": "aviation_biojetfuel",
-        "aviation_ICE": "aviation_kerosene",
-    }
+    # Rename and group fuel types
+    dm_energy.groupby({'biodiesel': '.*dieselbio', 'biogas': '.*gasbio',
+                       'biogasoline': '.*gasolinebio', 'efuel': '.*efuel'},
+                      dim='Categories2', regex=True, inplace=True)
+    dm_energy.groupby({'diesel': '.*-diesel', 'gasoline': '.*-gasoline', 'hydrogen': 'FCEV',
+                       'gas': '.*-gas', 'electricity': 'BEV|CEV|PHEV-elec|mt'},
+                      dim='Categories2', regex=True, inplace=True)
 
-    dm_energy_new_cat = dm_energy.flatten()
-    # Rename the columns based on the substring mapping
-    for substring, replacement in dict1.items():
-        dm_energy_new_cat.rename_col_regex(substring, replacement, dim="Categories1")
+    dm_energy_aviation = dm_energy_aviation.groupby({'ejetfuel': ['ICEefuel'], 'biojetfuel': ['ICEbio'],
+                                                     'kerosene': ['ICE']}, inplace=False, dim='Categories2')
 
-    grouping = [
-        "dieselbio",
-        "gasolinebio",
-        "gasbio",
-        "gasoline",
-        "diesel",
-        "gas",
-        "dieselefuel",
-        "gasolineefuel",
-        "gasefuel",
-        "hydrogen",
-        "elec",
-        "ICEbio",
-        "ICEefuel",
-        "ICE",
-        "biojetfuel",
-        "kerosene",
-        "ejetfuel",
-    ]
+    dm_energy_marine.rename_col(['ICEbio', 'ICEefuel', 'ICE'], ['biomarinefueloil', 'emarinefueloil', 'marinefueloil'], dim='Categories2')
+    dm_energy_marine.filter({'Categories2': ['biomarinefueloil', 'emarinefueloil', 'marinefueloil']}, inplace=True)
 
-    dict2 = {
-        "dieselbio": "biodiesel",
-        "gasolinebio": "bioethanol",
-        "gasbio": "biogas",
-        "dieselefuel": "ediesel",
-        "gasolineefuel": "egasoline",
-        "gasefuel": "egas",
-        "elec": "electricity",
-        "ICEbio": "biomarinefueloil",
-        "ICEefuel": "emarinefueloil",
-        "IWW_ICE": "IWW_marinefueloil",
-        "marine_ICE": "marine_marinefueloil",
-    }
+    # Merge
+    missing_cat_aviation = list(set(all_modes)-set(dm_energy_aviation.col_labels['Categories1']))
+    dm_energy_aviation.add(np.nan, dummy=True, dim='Categories1', col_label=missing_cat_aviation)
+    missing_cat_marine = list(set(all_modes) - set(dm_energy_marine.col_labels['Categories1']))
+    dm_energy_marine.add(np.nan, dummy=True, dim='Categories1', col_label=missing_cat_marine)
+    missing_cat_road = list(set(all_modes) - set(dm_energy.col_labels['Categories1']))
+    dm_energy.add(np.nan, dummy=True, dim='Categories1', col_label=missing_cat_road)
 
-    dm_total_energy = rename_and_group(
-        dm_energy_new_cat, grouping, dict2, grouped_var="tra_freight_total-energy"
-    )
-    dm_total_energy.rename_col("ICE", "marinefueloil", dim="Categories1")
+    dm_energy.append(dm_energy_marine, dim='Categories2')
+    dm_energy.append(dm_energy_aviation, dim='Categories2')
+
+    # Group together by fuel type, drop mode
+    dm_total_energy = dm_energy.group_all('Categories1', inplace=False)
+    dm_total_energy.rename_col('tra_freight_energy-demand', 'tra_freight_total-energy', dim='Variables')
 
     # Output to power:
     dm_pow_hydrogen = dm_total_energy.filter({"Categories1": ["hydrogen"]})
@@ -1499,33 +1473,21 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
     del dm_energy_em, tmp, col_labels, unit
 
     # Compute emissions by mode
-    dm_energy_em = dm_energy_new_cat.filter(
-        {"Categories3": cdm_const.col_labels["Categories2"]}
-    )
-    dm_energy_em.sort(dim="Categories3")
-    cdm_const.sort(dim="Categories2")
+    dm_energy_em = dm_energy.filter({'Categories2': cdm_const.col_labels['Categories2']})
+    dm_energy_em.sort(dim='Categories2')
+    cdm_const.sort(dim='Categories2')
     idx_e = dm_energy_em.idx
     idx_c = cdm_const.idx
-    tmp_en = np.nansum(dm_energy_em.array, axis=-2)  # remove technology split
-    tmp = (
-        tmp_en[:, :, idx_e["tra_freight_energy-demand"], :, np.newaxis, :]
-        * cdm_const.array[
-            np.newaxis, np.newaxis, idx_c["cp_tra_emission-factor"], np.newaxis, :, :
-        ]
-    )
+    tmp = dm_energy_em.array[:, :, idx_e['tra_freight_energy-demand'], :, np.newaxis, :] \
+          * cdm_const.array[np.newaxis, np.newaxis, idx_c['cp_tra_emission-factor'], np.newaxis, :, :]
     tmp = np.nansum(tmp, axis=-1)  # Remove split by fuel
     tmp = tmp[:, :, np.newaxis, :, :]
-    dm_emissions_by_mode = DataMatrix.based_on(
-        tmp,
-        format=dm_energy_em,
-        change={
-            "Variables": ["tra_freight_emissions"],
-            "Categories2": cdm_const.col_labels["Categories1"],
-            "Categories3": None,
-        },
-        units={"tra_freight_emissions": "Mt"},
-    )
-    del tmp, idx_e, idx_c, tmp_en, dm_energy_em
+    dm_emissions_by_mode = DataMatrix.based_on(tmp, format=dm_energy_em,
+                                               change={'Variables': ['tra_freight_emissions'],
+                                                       'Categories2': cdm_const.col_labels['Categories1']},
+                                               units={'tra_freight_emissions': 'Mt'})
+
+    del tmp, idx_e, idx_c, dm_energy_em
 
     tmp = np.nansum(dm_emissions_by_mode.array, axis=-2)
     col_labels = dm_emissions_by_mode.col_labels.copy()
@@ -1536,24 +1498,13 @@ def freight_fleet_energy(DM_freight, DM_other, cdm_const, years_setting):
     dm_emissions_by_GHG.array = tmp[:, :, np.newaxis, :]
     del tmp, unit, col_labels
 
-    tmp = np.nansum(dm_energy.array, axis=(-1, -2))
-    col_labels = dm_energy.col_labels.copy()
-    col_labels.pop("Categories1")
-    col_labels.pop("Categories2")
-    dm_no_cat = DataMatrix(col_labels=col_labels, units=dm_energy.units.copy())
-    dm_no_cat.array = tmp[:, :, np.newaxis]
+    dm_tech.rename_col('tra_freight_technology-share_fleet', 'tra_freight_techology-share-fleet', dim='Variables')
 
-    dm_tech.rename_col(
-        "tra_freight_technology-share_fleet",
-        "tra_freight_techology-share-fleet",
-        dim="Variables",
-    )
-
-    DM_freight_out["mode"] = dm_mode
-    DM_freight_out["tech"] = dm_tech
-    DM_freight_out["energy"] = dm_total_energy
-    DM_freight_out["agriculture"] = dm_biogas
-    DM_freight_out["emissions"] = dm_emissions_by_mode
+    DM_freight_out['mode'] = dm_mode
+    DM_freight_out['tech'] = dm_tech
+    DM_freight_out['energy'] = dm_total_energy
+    DM_freight_out['agriculture'] = dm_biogas
+    DM_freight_out['emissions'] = dm_emissions_by_mode
 
     return DM_freight_out
 
@@ -1774,13 +1725,10 @@ def prepare_TPE_output(DM_passenger_out, DM_freight_out):
         {"HDV": "HDV.*"}, dim="Categories1", inplace=True, regex=True
     )
 
-    dm_freight_energy_by_fuel = DM_freight_out["energy"].copy()
-    dm_freight_energy_by_fuel.drop(
-        dim="Categories1", col_label=["egasoline", "ediesel", "egas", "ejetfuel"]
-    )
-    dm_freight_energy_by_fuel.rename_col(
-        "tra_freight_total-energy", "tra_freight_energy-demand-by-fuel", dim="Variables"
-    )
+    dm_freight_energy_by_fuel = DM_freight_out['energy'].copy()
+    dm_freight_energy_by_fuel.drop(dim='Categories1', col_label=['efuel', 'ejetfuel'])
+    dm_freight_energy_by_fuel.rename_col('tra_freight_total-energy', 'tra_freight_energy-demand-by-fuel', dim='Variables')
+
 
     # Total energy demand
     dm_energy_tot = DM_passenger_out["energy"].copy()
@@ -2068,6 +2016,7 @@ def local_transport_run():
     lever_setting = json.load(f)[0]
 
     global_vars = {"geoscale": "Switzerland|Vaud"}
+
     filter_geoscale(global_vars)
 
     results_run = transport(lever_setting, years_setting)

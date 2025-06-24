@@ -675,6 +675,16 @@ DM_trade["pipe"] = make_fts(DM_trade["pipe"], "new-dhg-pipe", baseyear_start, ba
 ##### MAKE PRODUCT NET IMPORT #####
 ###################################
 
+# dm_temp = DM_trade["tra-veh"].filter_w_regex({"Categories1": "LDV"})
+# dm_temp.group_all("Categories1")
+# dm_temp.operation("product-export","/","product-demand",'Variables',
+#                   'product-export-share',unit="%")
+# dm_temp.operation("product-import","/","product-demand",'Variables',
+#                   'product-import-share',unit="%")
+# idx = dm_temp.idx
+# dm_temp.array[idx["EU27"],idx[2021],idx["product-import-share"]] # 0.14
+# dm_temp.array[idx["EU27"],idx[2021],idx["product-export-share"]] # 0.19
+
 # product-net-import[%] = (product-import - product-export)/product-demand
 DM_trade_net_share = {}
 keys = ['domapp', 'tra-veh', 'pack', 'pack-alu', 'pipe', 'tra-infra', 'bld-floor']
@@ -705,7 +715,7 @@ dm_trade_netshare.sort("Categories1")
 
 # fill in missing values for product-net-import (coming from dividing by zero)
 idx = dm_trade_netshare.idx
-dm_trade_netshare.array[dm_trade_netshare.array == np.inf] = np.nan
+dm_trade_netshare.array[np.isinf(dm_trade_netshare.array)] = np.nan
 years_fitting = dm_trade_netshare.col_labels["Years"]
 dm_trade_netshare = linear_fitting(dm_trade_netshare, years_fitting)
 
@@ -735,23 +745,18 @@ for v in variabs:
 # Let's cap everything to max 1
 dm_trade_netshare.array[dm_trade_netshare.array>1]=1
 
+# add HDV_PHEV-gasoline and LDV_PHEV-diesel
+idx = dm_trade_netshare.idx
+arr_temp = dm_trade_netshare.array[:,:,:,idx["HDV_PHEV-diesel"]]
+dm_trade_netshare.add(arr_temp, "Categories1", "HDV_PHEV-gasoline", unit="%")
+arr_temp = dm_trade_netshare.array[:,:,:,idx["LDV_PHEV-gasoline"]]
+dm_trade_netshare.add(arr_temp, "Categories1", "LDV_PHEV-diesel", unit="%")
+dm_trade_netshare.sort("Categories1")
+
 # check
 # dm_trade_netshare.filter({"Country" : ["EU27"]}).datamatrix_plot()
 # DM_trade["tra-veh"].filter({"Country" : ["EU27"]}).datamatrix_plot()
-
-# fix the ones that still have issues
-# "HDV_BEV", "HDV_ICE-diesel", "HDV_ICE-gasoline", "LDV_BEV", 
-# "LDV_PHEV-gasoline", "computer", "phone", "planes_ICE": issue of 0 in 1990, can assign the level of 1991
-# "LDV_BEV", "LDV_PHEV-gasoline": constant until 2017, then problems between 2018-2023. Ckecked, this is fine, it's just the data.
-# "paper-print": the fts are not in trend, check again the ots. Ckecked, this is fine, it's just the data.
-
-idx = dm_trade_netshare.idx
-for v in ["HDV_BEV", "HDV_ICE-diesel", "HDV_ICE-gasoline", "LDV_BEV", 
-          "LDV_PHEV-gasoline", "computer", "phone", "planes_ICE"]:
-    dm_trade_netshare.array[idx["EU27"],idx[1990],:,idx[v]] = dm_trade_netshare.array[idx["EU27"],idx[1991],:,idx[v]]
-
-# check
-# dm_trade_netshare.filter({"Country" : ["EU27"]}).datamatrix_plot()
+# df_check = dm_trade_netshare.filter({"Country" : ["EU27"]}).write_df()
 
 
 ################################
