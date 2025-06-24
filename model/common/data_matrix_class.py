@@ -30,8 +30,8 @@ import copy
 
 class DataMatrix:
 
-    def __init__(self, col_labels={}, units={}, idx={}):
-        self.array = None
+    def __init__(self, col_labels=dict(), units=dict(), idx=dict(), empty=False):
+        # Empty = True does not crate the arrray
         self.dim_labels = ["Country", "Years", "Variables"]  # list
         self.col_labels = {}
         self.units = {}
@@ -53,7 +53,13 @@ class DataMatrix:
             self.idx = {}
             for k, v in idx.items():
                 self.idx[k] = v
+        if not empty:
+            arr_shape = []
+            for dim in self.dim_labels:
+                arr_shape.append(len(self.col_labels[dim]))
+            self.array = np.nan*np.ones(tuple(arr_shape))
         return
+
 
     def __repr__(self):
 
@@ -208,8 +214,8 @@ class DataMatrix:
         # Note that df needs to have columns 'Country' and 'Years'
         # it returns a datamatrix
         if df.empty:
-            ValueError(f"You cannot create a datamatrix from an empty dataframe.")
-        dm = cls()
+            ValueError(f'You cannot create a datamatrix from an empty dataframe.')
+        dm = cls(empty=True)
         dm.extract_structure(df, num_cat)
         dm.read_data(df, num_cat)
         return dm
@@ -330,11 +336,9 @@ class DataMatrix:
             if col not in list(self.idx.keys()):
                 self.idx[col] = i_v[col]
             else:
-                raise ValueError(
-                    f"You are trying to append data under the label {col_label} which already exists"
-                )
-        if dim == "Variables":
-            if None not in unit:
+                raise ValueError(f"You are trying to append data under the label {col_label} which already exists")
+        if dim == 'Variables':
+            if unit is not None:
                 for i, col in enumerate(col_label):
                     self.units[col] = unit[i]
             else:
@@ -1163,4 +1167,18 @@ class DataMatrix:
                     units=units_new,
                 )
                 return dm_out
+        return
+
+    def __getitem__(self, key):
+        if not isinstance(key, tuple):  # Ensure key is a tuple
+            key = (key,)
+        key = tuple(self.idx.get(k, k) if not isinstance(k, slice) else k for k in key)
+        arr = self.array[key]
+        return arr
+
+    def __setitem__(self, key, value):
+        if not isinstance(key, tuple):  # Ensure key is a tuple
+            key = (key,)
+        key = tuple(self.idx.get(k, k) if not isinstance(k, slice) else k for k in key)
+        self.array[key] = value
         return

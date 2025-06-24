@@ -627,3 +627,17 @@ class ConstantDataMatrix:
         if not inplace:
             return dm
         return
+
+    def __getitem__(self, key):
+        if not isinstance(key, tuple):  # Ensure key is a tuple
+            key = (key,)
+        key = tuple(self.idx.get(k, k) if not isinstance(k, slice) else k for k in key)
+        arr = self.array[key]
+        return arr
+
+    def __setitem__(self, key, value):
+        if not isinstance(key, tuple):  # Ensure key is a tuple
+            key = (key,)
+        key = tuple(self.idx.get(k, k) if not isinstance(k, slice) else k for k in key)
+        self.array[key] = value
+        return

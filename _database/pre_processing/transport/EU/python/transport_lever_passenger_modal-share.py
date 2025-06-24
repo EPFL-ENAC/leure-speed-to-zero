@@ -203,16 +203,110 @@ dm_pkm_pc.rename_col('tra_passenger_modal-share_share','tra_passenger_modal-shar
 dm_pkm_pc.add(0, col_label=["bike","walk"], dummy=True, dim='Categories1')
 dm_pkm_pc.sort("Categories1")
 
+# drop 1989
+dm_pkm_pc.drop("Years",1989)
+dm_pkm.drop("Years",1989)
+years_ots = list(range(1990,2023+1))
+years_fts = list(range(2025,2055,5))
+# dm_pkm_pc.filter({"Country" : ["EU27"]}).datamatrix_plot(stacked=True)
+
+###############
+##### OTS #####
+###############
+
+dm_pkm_pc_ots = dm_pkm_pc.filter({"Years" : years_ots})
+
+#######################
+##### FTS LEVEL 1 #####
+#######################
+
+# level 1: continuing as is
+dm_pkm_pc_fts_level1 = dm_pkm_pc.filter({"Years" : years_fts})
+# dm_pkm_pc_fts_level1.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
+
+#######################
+##### FTS LEVEL 4 #####
+#######################
+
+# source: page 95 https://www.itf-oecd.org/sites/default/files/docs/itf-transport-outlook-2023-launch.pdf
+
+dm_pkm_pc_level4 = dm_pkm_pc.copy()
+idx = dm_pkm_pc_level4.idx
+for y in range(2030,2055,5):
+    dm_pkm_pc_level4.array[idx["EU27"],idx[y],:,:] = np.nan
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["LDV"]] = 0.70
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["bus"]] = 0.08 # i put 8% for buses and 2% for metro tram
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["metrotram"]] = 0.02 
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["rail"]] = 0.19 # i put 19% so I can put 1% for 2W
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["2W"]] = 0.01 
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["bike"]] = 0
+dm_pkm_pc_level4.array[idx["EU27"],idx[2050],:,idx["walk"]] = 0
+dm_pkm_pc_level4 = linear_fitting(dm_pkm_pc_level4, years_fts)
+# dm_pkm_pc_level4.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
+dm_pkm_pc_fts_level4 = dm_pkm_pc_level4.filter({"Years" : years_fts})
+# dm_pkm_pc_fts_level4.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
+
+# get levels for 2 and 3
+variabs = dm_pkm_pc_fts_level1.col_labels["Categories1"]
+df_temp = pd.DataFrame({"level" : np.tile(range(1,4+1),len(variabs)), 
+                        "variable": np.repeat(variabs, 4)})
+df_temp["value"] = np.nan
+df_temp = df_temp.pivot(index=['level'], 
+                        columns=['variable'], values="value").reset_index()
+for v in variabs:
+    idx = dm_pkm_pc_fts_level1.idx
+    level1 = dm_pkm_pc_fts_level1.array[idx["EU27"],idx[2050],:,idx[v]][0]
+    idx = dm_pkm_pc_fts_level4.idx
+    level4 = dm_pkm_pc_fts_level4.array[idx["EU27"],idx[2050],:,idx[v]][0]
+    arr = np.array([level1,np.nan,np.nan,level4])
+    df_temp[v] = pd.Series(arr).interpolate().to_numpy()
+# no need to normalise
+# df_temp = pd.melt(df_temp,["level"]).pivot(index=['variable'], columns=['level'], values="value").reset_index()
+# df_temp[2] = df_temp[2] / df_temp[2].sum()
+# df_temp[3] = df_temp[3] / df_temp[3].sum()
+
+
+#######################
+##### FTS LEVEL 2 #####
+#######################
+
+dm_pkm_pc_level2 = dm_pkm_pc.copy()
+idx = dm_pkm_pc_level2.idx
+for y in range(2030,2055,5):
+    dm_pkm_pc_level2.array[idx["EU27"],idx[y],:,:] = np.nan
+for v in variabs:
+    dm_pkm_pc_level2.array[idx["EU27"],idx[2050],:,idx[v]] = df_temp.loc[df_temp["level"] == 2,v]
+dm_pkm_pc_level2 = linear_fitting(dm_pkm_pc_level2, years_fts)
+# dm_pkm_pc_level2.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
+dm_pkm_pc_fts_level2 = dm_pkm_pc_level2.filter({"Years" : years_fts})
+# dm_pkm_pc_fts_level2.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
+
+#######################
+##### FTS LEVEL 3 #####
+#######################
+
+dm_pkm_pc_level3 = dm_pkm_pc.copy()
+idx = dm_pkm_pc_level3.idx
+for y in range(2030,2055,5):
+    dm_pkm_pc_level3.array[idx["EU27"],idx[y],:,:] = np.nan
+for v in variabs:
+    dm_pkm_pc_level3.array[idx["EU27"],idx[2050],:,idx[v]] = df_temp.loc[df_temp["level"] == 3,v]
+dm_pkm_pc_level3 = linear_fitting(dm_pkm_pc_level3, years_fts)
+# dm_pkm_pc_level3.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
+dm_pkm_pc_fts_level3 = dm_pkm_pc_level3.filter({"Years" : years_fts})
+# dm_pkm_pc_fts_level3.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
+
 ################
 ##### SAVE #####
 ################
 
 # split between ots and fts
 DM_mod = {"ots": {"passenger_modal-share" : []}, "fts": {"passenger_modal-share" : dict()}}
-DM_mod["ots"]["passenger_modal-share"] = dm_pkm_pc.filter({"Years" : years_ots})
-DM_mod["ots"]["passenger_modal-share"].drop("Years",startyear)
-for i in range(1,4+1):
-    DM_mod["fts"]["passenger_modal-share"][i] = dm_pkm_pc.filter({"Years" : years_fts})
+DM_mod["ots"]["passenger_modal-share"] = dm_pkm_pc_ots.copy()
+DM_mod["fts"]["passenger_modal-share"][1] = dm_pkm_pc_fts_level1.copy()
+DM_mod["fts"]["passenger_modal-share"][2] = dm_pkm_pc_fts_level2.copy()
+DM_mod["fts"]["passenger_modal-share"][3] = dm_pkm_pc_fts_level3.copy()
+DM_mod["fts"]["passenger_modal-share"][4] = dm_pkm_pc_fts_level4.copy()
 
 # save
 f = os.path.join(current_file_directory, '../data/datamatrix/lever_passenger_modal-share.pickle')
@@ -223,7 +317,6 @@ with open(f, 'wb') as handle:
 dm_pkm.rename_col("tra_passenger_modal-share","tra_passenger_pkm","Variables")
 DM_pkm = {"ots": {"passenger_pkm" : []}, "fts": {"passenger_pkm" : dict()}}
 DM_pkm["ots"]["passenger_pkm"] = dm_pkm.filter({"Years" : years_ots})
-DM_pkm["ots"]["passenger_pkm"].drop("Years",startyear)
 for i in range(1,4+1):
     DM_pkm["fts"]["passenger_pkm"][i] = dm_pkm.filter({"Years" : years_fts})
     

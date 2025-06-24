@@ -64,7 +64,7 @@ list(A["combo"].unique())
 df_temp = df.copy()
 df_temp = df_temp.loc[df_temp["geoscale"] == "AT",:]
 df_temp = df_temp.loc[:,['freq', 'wst_oper', 'waste', 'unit', 'geoscale',"2022"]]
-df_temp = df_temp.loc[df_temp["wst_oper"] == "RCY",:]
+df_temp = df_temp.loc[df_temp["wst_oper"] == "REU",:]
 df_temp_tot = df_total.copy()
 df_temp_tot = df_temp_tot.loc[df_temp_tot["geoscale"] == "AT",:]
 df_temp_tot = df_temp_tot.loc[:,['freq', 'wst_oper', 'unit', 'geoscale',"2022"]]
@@ -122,20 +122,10 @@ df_temp = df_temp.loc[df_temp["wst_oper"] == "RCV_E",:]
 # incineration: 0
 
 # mapping
-dict_mapping = {"recycling": ["RCY - ELV"],
-                "energy-recovery": ['RCV_E - DMDP','RCV_E - LIQ',
-                                    'RCV_E - W160103','RCV_E - W160107',
-                                    'RCV_E - W160119','RCV_E - W160120',
-                                    'RCV_E - W1601A', 'RCV_E - W1601B',
-                                    'RCV_E - W1601C', 'RCV_E - W1606',
-                                    'RCV_E - W1608', 'RCV_E - W1910'], # before for energy recovery we were considering only 'RCV_E - DMDP' and 'RCV_E - W1910', not sure why
-                "reuse": ["REU - ELV"],
-                "landfill": ['DSP - DMDP','DSP - LIQ',
-                             'DSP - W160103','DSP - W160107',
-                             'DSP - W160119', 'DSP - W160120',
-                             'DSP - W1601A', 'DSP - W1601B', 
-                             'DSP - W1601C', 'DSP - W1606', 
-                             'DSP - W1608', 'DSP - W1910'], # we assume that DSP (all operations that are not recovery) are landfill. Note that before for DSP we were considering only 'RCV_E - DMDP' and 'RCV_E - W1910', not sure why
+dict_mapping = {"recycling": ["RCY - DMDP", "RCY - W1910"],
+                "energy-recovery": ['RCV_E - DMDP', 'RCV_E - W1910'],
+                "reuse": ["REU - DMDP", "REU - W1910"],
+                "landfill": ['DSP - DMDP', 'DSP - W1910'],
                 "export" : ["GEN - EXP"]
                 }
 
@@ -392,10 +382,11 @@ for v in dm_elv_col.col_labels["Variables"]:
 # make dm for total waste
 dm_elv_tot.append(dm_elv.filter({"Variables" : ["export"]}), "Variables")
 dm_elv_tot.rename_col("collected","waste-collected","Variables")
-idx = dm_elv_tot.idx
-arr_temp = dm_elv_tot.array[:,:,idx["waste-collected"], np.newaxis] / 0.8 * 0.2
-dm_elv_tot.add(arr_temp, dim = "Variables", col_label = "waste-uncollected", unit="t")
+dm_temp = dm_elv_tot.groupby({"waste-uncollected" : ["waste-collected","export"]}, "Variables", inplace=False)
+dm_temp.array = dm_temp.array * 0.36/0.64
+dm_elv_tot.append(dm_temp,"Variables")
 dm_elv_tot.add(0, col_label="littered", dummy=True, dim='Variables', unit="t")
+dm_elv_tot.sort("Variables")
 idx = dm_elv_tot.idx
 countries = dm_elv_tot.col_labels["Country"]
 countries = list(np.array(countries)[[i != "EU27" for i in countries]])
@@ -478,7 +469,7 @@ dm_elv_col = dm_elv_col_new.copy()
 del arr_temp, baseyear, baseyear_end, baseyear_start, c, countries, dm_elv,\
     dm_temp, idx, lastyear, startyear, step_fts, v, years_all, \
     years_fts, years_ots, years_setting, y, dm_elv_col_new, dm_elv_tot_new, \
-    products, i
+    products
 
 ################
 ##### SAVE #####
@@ -1473,10 +1464,9 @@ for k in keys:
 #     name = k + "_temp.xlsx"
 #     df_temp.to_excel("~/Desktop/" + name)
 
-
-################################################
-################### SAVE ALL ###################
-################################################
+########################################################
+##################### PUT TOGETHER #####################
+########################################################
 
 # put together
 dm = DM_wst_mgt["elv-total"].copy()
@@ -1488,11 +1478,123 @@ keys = ['domapp-col','electronics-col','pack-col']
 for key in keys:
     dm_col.append(DM_wst_mgt[key], dim="Variables")
 dm.append(dm_col,"Categories1")
+
+# set years
 years_ots = list(range(1990,2023+1))
 years_fts = list(range(2025,2055,5))
+
+###############
+##### OTS #####
+###############
+
 dm_ots = dm.filter({"Years" : years_ots})
-dm_fts = dm.filter({"Years" : years_fts})
-DM_fts = {1: dm_fts.copy(), 2: dm_fts.copy(), 3: dm_fts.copy(), 4: dm_fts.copy()} # for now we set all levels to be the same
+
+#######################
+##### FTS LEVEL 1 #####
+#######################
+
+# level 1: continuing as is
+dm_fts_level1 = dm.filter({"Years" : years_fts})
+# dm_fts_level1.filter({"Country" : ["EU27"], "Variables" : ["vehicles"]}).flatten().datamatrix_plot(stacked=True)
+
+#######################
+##### FTS LEVEL 4 #####
+#######################
+
+# TODO: for now we do it only for vehicles, to be done for others
+
+# for layer 1 we put waste collected to zero
+dm_level4_veh = dm.filter({"Variables" : ["vehicles"]})
+dm_level4_tot = dm_level4_veh.filter({"Categories1" : ["export","littered","waste-collected","waste-uncollected"]})
+idx = dm_level4_tot.idx
+for y in range(2030,2055,5):
+    dm_level4_tot.array[idx["EU27"],idx[y],:,:] = np.nan
+export = dm_level4_tot.array[idx["EU27"],idx[2023],:,idx["export"]]
+collected = dm_level4_tot.array[idx["EU27"],idx[2023],:,idx["waste-collected"]]
+tot = export + collected
+dm_level4_tot.array[idx["EU27"],idx[2050],:,idx["export"]] = np.round(export/tot,2)
+dm_level4_tot.array[idx["EU27"],idx[2050],:,idx["waste-collected"]] = np.round(collected/tot,2)
+dm_level4_tot.array[idx["EU27"],idx[2050],:,idx["littered"]] = 0
+dm_level4_tot.array[idx["EU27"],idx[2050],:,idx["waste-uncollected"]] = 0
+dm_level4_tot = linear_fitting(dm_level4_tot, years_fts)
+# dm_level4_tot.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
+
+# for layer 2
+dm_level4_col = dm_level4_veh.filter({"Categories1" : ["energy-recovery","landfill","incineration","reuse","recycling"]})
+idx = dm_level4_col.idx
+for y in years_fts:
+    dm_level4_col.array[idx["EU27"],idx[y],:,:] = np.nan
+dm_level4_col.array[idx["EU27"],idx[2050],:,idx["recycling"]] = 1
+dm_level4_col.array[idx["EU27"],idx[2050],:,idx["energy-recovery"]] = 0
+dm_level4_col.array[idx["EU27"],idx[2050],:,idx["landfill"]] = 0
+dm_level4_col.array[idx["EU27"],idx[2050],:,idx["incineration"]] = 0
+dm_level4_col.array[idx["EU27"],idx[2050],:,idx["reuse"]] = 0
+dm_level4_col = linear_fitting(dm_level4_col, years_fts)
+# dm_level4_col.filter({"Country" : ["EU27"]}).flatten().datamatrix_plot(stacked=True)
+
+# substitute back in
+dm_level4 = dm.copy()
+dm_level4_veh = dm_level4_tot.copy()
+dm_level4_veh.append(dm_level4_col,"Categories1")
+dm_level4_veh.sort("Categories1")
+dm_level4.drop("Variables","vehicles")
+dm_level4.append(dm_level4_veh,"Variables")
+dm_level4.sort("Variables")
+# dm_level4.filter({"Country" : ["EU27"], "Variables" : ["vehicles"]}).flatten().datamatrix_plot(stacked=True)
+dm_fts_level4 = dm_level4.filter({"Years" : years_fts})
+# dm_fts_level4.filter({"Country" : ["EU27"], "Variables" : ["vehicles"]}).flatten().datamatrix_plot(stacked=True)
+
+# get levels for 2 and 3
+variabs = dm_fts_level1.col_labels["Categories1"]
+df_temp = pd.DataFrame({"level" : np.tile(range(1,4+1),len(variabs)), 
+                        "variable": np.repeat(variabs, 4)})
+df_temp["value"] = np.nan
+df_temp = df_temp.pivot(index=['level'], 
+                        columns=['variable'], values="value").reset_index()
+for v in variabs:
+    idx = dm_fts_level1.idx
+    level1 = dm_fts_level1.array[idx["EU27"],idx[2050],idx["vehicles"],idx[v]]
+    idx = dm_fts_level4.idx
+    level4 = dm_fts_level4.array[idx["EU27"],idx[2050],idx["vehicles"],idx[v]]
+    arr = np.array([level1,np.nan,np.nan,level4])
+    df_temp[v] = pd.Series(arr).interpolate().to_numpy()
+
+#######################
+##### FTS LEVEL 2 #####
+#######################
+
+dm_level2 = dm.copy()
+idx = dm_level2.idx
+for y in range(2030,2055,5):
+    dm_level2.array[idx["EU27"],idx[y],idx["vehicles"],:] = np.nan
+for v in variabs:
+    dm_level2.array[idx["EU27"],idx[2050],idx["vehicles"],idx[v]] = df_temp.loc[df_temp["level"] == 2,v]
+dm_level2 = linear_fitting(dm_level2, years_fts)
+# dm_level2.filter({"Country" : ["EU27"], "Categories1":["vehicles"]}).flatten().datamatrix_plot()
+dm_fts_level2 = dm_level2.filter({"Years" : years_fts})
+# dm_fts_level2.filter({"Country" : ["EU27"], "Variables" : ["vehicles"]}).flatten().datamatrix_plot(stacked=True)
+
+#######################
+##### FTS LEVEL 3 #####
+#######################
+
+dm_level3 = dm.copy()
+idx = dm_level3.idx
+for y in range(2030,2055,5):
+    dm_level3.array[idx["EU27"],idx[y],idx["vehicles"],:] = np.nan
+for v in variabs:
+    dm_level3.array[idx["EU27"],idx[2050],idx["vehicles"],idx[v]] = df_temp.loc[df_temp["level"] == 3,v]
+dm_level3 = linear_fitting(dm_level3, years_fts)
+# dm_level3.filter({"Country" : ["EU27"], "Categories1":["LDV"]}).flatten().datamatrix_plot()
+dm_fts_level3 = dm_level3.filter({"Years" : years_fts})
+# dm_fts_level3.filter({"Country" : ["EU27"], "Variables" : ["vehicles"]}).flatten().datamatrix_plot(stacked=True)
+
+
+################
+##### SAVE #####
+################
+
+DM_fts = {1: dm_fts_level1.copy(), 2: dm_fts_level2.copy(), 3: dm_fts_level3.copy(), 4: dm_fts_level4.copy()}
 DM = {"ots" : dm_ots,
       "fts" : DM_fts}
 f = os.path.join(current_file_directory, '../data/datamatrix/lever_waste-management.pickle')
