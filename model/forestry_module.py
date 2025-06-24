@@ -229,7 +229,7 @@ def forestry_to_tpe(DM_supply, DM_power, DM_industry, DM_ots_fts):
     # Wood demand per use
     tpe_wood_demand = DM_industry['wood-demand'].filter(({'Variables': ['wood-use']})).flatten().flatten()
     tpe_supply_species = tpe_wood_demand.copy()
-    tpe_supply_species.groupby({'wood-supply_coniferous': '.*_coniferous','wood-supply_non-coniferous': '.*_non-coniferous'}, regex=True, inplace=True, dim='Variables')
+    tpe_supply_species.groupby({'wood-supply_coniferous': '.*_coniferous',' wood-supply_non-coniferous': '.*_non-coniferous'}, regex=True, inplace=True, dim='Variables')
     tpe_wood_demand.groupby({'any-other-wood': '.*any-other-wood.*', 'industrial-wood': '.*industrial-wood.*', 'sawlogs': '.*sawlogs.*'},
                                  dim='Variables', regex=True, inplace=True)
 
@@ -265,7 +265,7 @@ def forestry_to_tpe(DM_supply, DM_power, DM_industry, DM_ots_fts):
 
     dm_harvest_supply = dm_harvested_wood.copy()
     dm_harvest_supply.groupby({'harvested-wood': '.*'}, regex=True, inplace=True, dim='Categories1')
-    dm_harvest_supply=dm_harvest_supply.flatten()
+    dm_harvest_supply = dm_harvest_supply.flatten()
     tpe_wood_supply.append(dm_harvest_supply, dim='Variables')
     tpe_wood_supply.append(dm_waste_supply, dim='Variables')
     tpe_wood_supply.rename_col(
@@ -281,22 +281,17 @@ def forestry_to_tpe(DM_supply, DM_power, DM_industry, DM_ots_fts):
     #############################################################
     # DM to df for tpe
     #############################################################
-    df = dm_harvested_wood.write_df()
-    df2 = dm_forest_area.write_df()
-    df = pd.concat([df, df2.drop(columns=['Country', 'Years'])], axis=1)
-    df3 = tpe_wood_demand.write_df()
-    df = pd.concat([df, df3.drop(columns=['Country', 'Years'])], axis=1)
-    df4 = tpe_industry_wood_species.write_df()
-    df = pd.concat([df, df4.drop(columns=['Country', 'Years'])], axis=1)
-    df5 = tpe_energy_wood_species.write_df()
-    df = pd.concat([df, df5.drop(columns=['Country', 'Years'])], axis=1)
-    df6 = tpe_wood_supply.write_df()
-    df = pd.concat([df, df6.drop(columns=['Country', 'Years'])], axis=1)
-    df7 = tpe_supply_species.write_df()
-    df = pd.concat([df, df7.drop(columns=['Country', 'Years'])], axis=1)
-    df8 = tpe_harvest_rate.write_df()
-    df = pd.concat([df, df8.drop(columns=['Country', 'Years'])], axis=1)
-    return df
+    dm_tpe = dm_harvested_wood.flattest()
+    dm_tpe.append(dm_forest_area.flattest(), dim='Variables')
+    dm_tpe.append(tpe_wood_demand.flattest(), dim='Variables')
+    dm_tpe.append(tpe_industry_wood_species.flattest(), dim='Variables')
+    dm_tpe.append(tpe_energy_wood_species.flattest(), dim='Variables')
+    dm_tpe.append(tpe_wood_supply.flattest(), dim='Variables')
+    dm_tpe.append(tpe_supply_species.flattest(), dim='Variables')
+    dm_tpe.append(tpe_harvest_rate.flattest(), dim='Variables')
+
+    return dm_tpe
+
 
 def forestry(lever_setting, years_setting, interface=Interface()):
 
@@ -308,8 +303,8 @@ def forestry(lever_setting, years_setting, interface=Interface()):
     forestry_data_file = os.path.join(current_file_directory, '../_database/data/datamatrix/geoscale/forestry.pickle')
     # Read forestry pickle data based on lever setting and return data in a structured DM
     DM_forestry, DM_wood_conversion, DM_ots_fts = read_data(forestry_data_file, lever_setting)
-    #cntr_list = DM['key'].col_labels['Country']
-    cntr_list = ['Switzerland']
+    cntr_list = DM_ots_fts['harvest-rate'].col_labels['Country']
+    #cntr_list = ['Switzerland']
 
     ###################################################################
     # Interface - Energy to Forestry: If the input from Power/Energy are available in the interface, read them, else read from pickle
@@ -345,7 +340,7 @@ def forestry(lever_setting, years_setting, interface=Interface()):
     ####################################################################################################################
 
     if interface.has_link(from_sector='land', to_sector='forestry'):
-        dm_wood_demand = interface.get_link(from_sector='land', to_sector='forestry')
+        dm_forest_area = interface.get_link(from_sector='land', to_sector='forestry')
     else:
         if len(interface.list_link()) != 0:
             print("You are missing " + 'land' + " to " + 'forestry' + " interface")
@@ -413,12 +408,12 @@ def local_forestry_run():
     f = open(os.path.join(current_file_directory, '../config/lever_position.json'))
     lever_setting = json.load(f)[0]
 
-    global_vars = {'geoscale': 'Switzerland'}
-    filter_geoscale(global_vars)
+    global_vars = {'geoscale': 'Vaud'}
+    filter_geoscale(global_vars['geoscale'])
 
     results_run = forestry(lever_setting, years_setting)
 
     return results_run
 
 
-#local_forestry_run()
+local_forestry_run()

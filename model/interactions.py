@@ -16,7 +16,6 @@ from model.power_module import power
 from model.landuse_module import land_use
 from model.oilrefinery_module import refinery
 
-
 import math
 import time
 import os
@@ -48,10 +47,10 @@ def runner(lever_setting, years_setting, logger):
     logger.info('Execution time Industry: {0:.3g} s'.format(time.time() - start_time))
     start_time = time.time()
     TPE['forestry'] = forestry(lever_setting, years_setting, interface)
-    logger.info('Execution time Industry: {0:.3g} s'.format(time.time() - start_time))
-    start_time = time.time()
-    TPE['agriculture'] = agriculture(lever_setting, years_setting, interface)
-    logger.info('Execution time Agriculture: {0:.3g} s'.format(time.time() - start_time))
+    logger.info('Execution time Forestry: {0:.3g} s'.format(time.time() - start_time))
+    #start_time = time.time()
+    #TPE['agriculture'] = agriculture(lever_setting, years_setting, interface)
+    #logger.info('Execution time Agriculture: {0:.3g} s'.format(time.time() - start_time))
     #start_time = time.time()
     #TPE['agriculture'] = agriculture(lever_setting, years_setting, interface)
     #logger.info('Execution time Agriculture: {0:.3g} s'.format(time.time() - start_time))
@@ -81,3 +80,4 @@ def runner(lever_setting, years_setting, logger):
     logger.info("Total runtime: {0:.3g} s".format(time.time() - init_time))
 
     return TPE
+

@@ -1035,10 +1035,9 @@ def variables_for_tpe(dm_cost_material_production_capex, dm_cost_CO2_capt_w_cc_c
     dm_tpe.append(dm_cost_material_production_capex.flatten(), "Variables")
     dm_tpe.append(dm_mat_prod.flatten(), "Variables")
     dm_tpe.append(dm_prod_tech.flatten(), "Variables")
-    df = dm_tpe.write_df()
 
     # return
-    return df
+    return dm_tpe
 
 def industry_agriculture_interface(DM_material_production, DM_energy_demand, write_pickle = False):
     
@@ -1551,7 +1550,7 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
                             DM_material_production["bytech"], DM_emissions["capt_w_cc_bytech"])
     
     # get variables for tpe (also writes in DM_cost, dm_bld_matswitch_savings_bymat, DM_emissions and DM_material_production for renaming)
-    df = variables_for_tpe(DM_cost["material-production_capex"], DM_cost["CO2-capt-w-cc_capex"], 
+    results_run = variables_for_tpe(DM_cost["material-production_capex"], DM_cost["CO2-capt-w-cc_capex"],
                            DM_emissions["bygas"], DM_material_production["bytech"], 
                            DM_material_production["bymat"], DM_energy_demand["bymat"],
                            DM_energy_demand["bymatcarr"], DM_energy_demand["bioener"])
@@ -1609,7 +1608,7 @@ def industry(lever_setting, years_setting, interface = Interface(), calibration 
     # interface.add_link(from_sector='industry', to_sector='air-pollution', dm=dm_airpoll)
     
     # return
-    return df
+    return results_run
     
 def local_industry_run():
     
@@ -1625,7 +1624,7 @@ def local_industry_run():
     
     # get geoscale
     global_vars = {'geoscale': 'EU27|Switzerland|Vaud'}
-    filter_geoscale(global_vars)
+    filter_geoscale(global_vars['geoscale'])
 
     # run
     results_run = industry(lever_setting, years_setting)

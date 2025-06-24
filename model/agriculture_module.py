@@ -2140,45 +2140,40 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
     # Livestock population
     # Note : check if it includes the poultry for eggs
     dm_liv_meat = dm_liv_pop.filter_w_regex({'Variables': 'agr_liv_population', 'Categories1': 'meat.*'}, inplace=False)
-    df = dm_liv_meat.write_df()
+    dm_tpe = dm_liv_meat.flattest()
 
     # Meat
     dm_meat = DM_livestock['losses'].filter({'Variables': ['agr_domestic_production']})
-    df_meat = dm_meat.write_df()
+    dm_tpe.append(dm_meat.flattest(), dim='Variables')
 
     # Crop production
     dm_crop_prod_food = DM_crop['crop'].filter({'Variables': ['agr_domestic-production_afw']})
-    df_crop_prod = dm_crop_prod_food.write_df()
-    df_crop_prod_temp = dm_crop_other.write_df()
-    df_crop_prod = pd.concat([df_crop_prod, df_crop_prod_temp.drop(columns=['Country', 'Years'])], axis=1)
+    dm_tpe.append(dm_crop_prod_food.flattest(), dim='Variables')
+    dm_tpe.append(dm_crop_other.flattest(), dim='Variables')
 
     # Livestock feed
     dm_feed = DM_feed['ration'].filter({'Variables': ['agr_demand_feed']})
-    df_feed = dm_feed.write_df()
     dm_aps.rename_col('agr_feed_aps', 'agr_demand_feed_aps', dim='Variables')
-    df_feed_temp = dm_aps.write_df()
-    df_feed = pd.concat([df_feed, df_feed_temp.drop(columns=['Country', 'Years'])], axis=1)
+    dm_tpe.append(dm_feed.flattest(), dim='Variables')
+    dm_tpe.append(dm_aps.flattest(), dim='Variables')
 
     # CO2 emissions
-    df_CO2 = dm_input_use_CO2.write_df()
+    dm_tpe.append(dm_input_use_CO2.flattest(), dim='Variables')
 
     # CH4 emissions
-    df_CH4 = dm_CH4.write_df()
-    df_residues = dm_crop_residues.write_df()
-    df_CH4_rice = dm_CH4_rice.write_df()
-    df_CH4 = pd.concat([df_CH4, df_residues.drop(columns=['Country', 'Years'])], axis=1)
-    df_CH4 = pd.concat([df_CH4, df_CH4_rice.drop(columns=['Country', 'Years'])], axis=1)
+    dm_tpe.append(dm_CH4.flattest(), dim='Variables')
+    dm_tpe.append(dm_crop_residues.flattest(), dim='Variables')
+    dm_tpe.append(dm_CH4_rice.flatteest(), dim='Variables')
 
     # N2O emissions Note : residues already accounted for in df_residues in CH4 emissions
-    df_NO2 = dm_liv_N2O.write_df()
-    df_NO2_fertilizer = dm_fertilizer_N2O.write_df()
-    df_NO2 = pd.concat([df_NO2, df_NO2_fertilizer.drop(columns=['Country', 'Years'])], axis=1)
+    dm_tpe.append(dm_liv_N2O.flattest(), dim='Variables')
+    dm_tpe.append(dm_fertilizer_N2O.flattest(), dim='Variables')
 
     # Energy use per type
     dm_energy_demand = DM_energy_ghg['energy_demand'].filter({'Variables': ['agr_energy-demand']})
     # Unit conversion [ktoe] => [TWh]
     dm_energy_demand.change_unit('agr_energy-demand', factor=0.0116222, old_unit='ktoe', new_unit='TWh')
-    df_energy_demand = dm_energy_demand.write_df()
+    dm_tpe.append(dm_energy_demand.flattest(), dim='Variables')
 
     # Bioenergy capacity
     dm_bio_cap_biogas = DM_bioenergy['bgs-mix'].filter({'Variables': ['agr_bioenergy-capacity_bgs-tec']})
@@ -2188,13 +2183,10 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
         {'Variables': ['agr_bioenergy-capacity_liq-bio-prod_biogasoline']})
     dm_bio_cap_biojetkerosene = DM_bioenergy['liquid-biojetkerosene'].filter(
         {'Variables': ['agr_bioenergy-capacity_liq-bio-prod_biojetkerosene']})
-    df_bio_cap = dm_bio_cap_biogas.write_df()
-    df_diesel = dm_bio_cap_biodiesel.write_df()
-    df_gasoline = dm_bio_cap_biogasoline.write_df()
-    df_kerosene = dm_bio_cap_biojetkerosene.write_df()
-    df_bio_cap = pd.concat([df_bio_cap, df_diesel.drop(columns=['Country', 'Years'])], axis=1)
-    df_bio_cap = pd.concat([df_bio_cap, df_gasoline.drop(columns=['Country', 'Years'])], axis=1)
-    df_bio_cap = pd.concat([df_bio_cap, df_kerosene.drop(columns=['Country', 'Years'])], axis=1)
+    dm_tpe.append(dm_bio_cap_biogas.flattest(), dim='Variables')
+    dm_tpe.append(dm_bio_cap_biodiesel.flattest(), dim='Variables')
+    dm_tpe.append(dm_bio_cap_biojetkerosene.flattest(), dim='Variables')
+    dm_tpe.append(dm_bio_cap_biogasoline.flattest(), dim='Variables')
 
     # Bioenergy feedstock mix (reunion of others fdk)
 
@@ -2212,7 +2204,7 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
     dm_fdk_oil.append(dm_fdk_eth, dim='Categories1')
     dm_fdk_oil.append(dm_fdk_lgn, dim='Categories1')
     dm_fdk_oil.change_unit('agr_bioenergy_biomass-demand_liquid', kcal_to_TWh, old_unit='kcal', new_unit='TWh')
-    dm_fdk_liquid = dm_fdk_oil  # Rename
+    dm_fdk_liquid = dm_fdk_oil.copy()  # Rename
 
     # oil aps
     dm_oil_aps = dm_aps_ibp.filter({'Variables': ['agr_aps'], 'Categories2': ['fdk-voil']})
@@ -2233,7 +2225,7 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
     dm_liquid_lgn.deepen()
     dm_fdk_liquid.append(dm_liquid_lgn, dim='Categories1')
 
-    df_fdk_liquid = dm_fdk_liquid.write_df()
+    dm_tpe.append(dm_fdk_liquid.flattest(), dim='Variables')
 
     # oil industry byproducts
     dm_aps_ibp_oil.change_unit('agr_bioenergy_fdk-aby', factor=kcal_to_TWh, old_unit='kcal', new_unit='TWh')
@@ -2247,7 +2239,7 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
     dm_eth_ind_bp = dm_eth_ind_bp.flatten()
     dm_aps_ibp_oil.append(dm_eth_ind_bp, dim='Variables')
     dm_ind_bp = dm_aps_ibp_oil
-    df_ind_bp = dm_ind_bp.write_df()
+    dm_tpe.append(dm_ind_bp.flattest(), dim='Variables')
 
     # Total bioenergy consumption (sum of liquid, biogas feedstock kcal) (solid not included in KNIME) FIXME check with Gino if solid should be considered
     # Sum liquid & solid
@@ -2255,27 +2247,27 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
     dm_bioenergy.append(dm_ind_bp, dim='Variables')
     dm_bioenergy.groupby({'agr_crop-cons_bioenergy': '.*'}, dim='Variables', inplace=True, regex=True)
     dm_bioenergy.change_unit('agr_crop-cons_bioenergy', 1 / kcal_to_TWh, old_unit='TWh', new_unit='kcal')
-    df_bioenergy_kcal = dm_bioenergy.write_df()
+    dm_tpe.append(dm_bioenergy.flattest(), dim='Variables')
 
     # Notes : some oil categories seem to differ with KNIME (unit = kcal, tpe wants TWh)
 
     # Solid bioenergy - feedstock mix
     dm_fdk_solid = DM_bioenergy['solid-mix'].filter({'Variables': ['agr_bioenergy_biomass-demand_solid']})
-    df_fdk_solid = dm_fdk_solid.write_df()
+    dm_tpe.append(dm_fdk_solid.flattest(), dim='Variables')
 
     # Biogas feedstock mix
     dm_fdk_biogas = DM_bioenergy['digestor-mix'].filter({'Variables': ['agr_bioenergy_biomass-demand_biogas']})
-    df_fdk_biogas = dm_fdk_biogas.write_df()
+    dm_tpe.append(dm_fdk_biogas.flattest(), dim='Variables')
 
     # Crop use
     # Total food from crop (does not include processed food)
     dm_crop_food = dm_lfs.filter_w_regex({'Variables': 'agr_demand', 'Categories1': 'crop.*'})
     dm_crop_food.groupby({'food_crop': '.*'}, dim='Categories1', regex=True, inplace=True)
-    df_crop_use = dm_crop_food.write_df()
+    dm_tpe.append(dm_crop_food.flattest(), dim='Variables')
     # Total feed from crop
     dm_crop_feed = DM_feed['ration'].filter_w_regex({'Variables': 'agr_demand_feed', 'Categories1': 'crop.*'})
     dm_crop_feed.groupby({'crop': '.*'}, dim='Categories1', regex=True, inplace=True)
-    df_crop_feed = dm_crop_feed.write_df()
+    dm_tpe.append(dm_crop_feed.flattest(), dim='Variables')
 
     # Solid (same as bioenergy feedstock mix) Note : not included in KNIME
 
@@ -2292,28 +2284,9 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
     dm_crop_bev.append(dm_crop_fiber, dim='Variables')
     dm_crop_bev.operation('agr_domestic-production_fibres-plant-eq', '+', 'agr_domestic_production_crop-bev',
                           out_col='agr_crop-cons_non-food', unit='kcal')
-    df_crop_non_food = dm_crop_bev.write_df()
+    dm_tpe.append(dm_crop_bev.flattest(), dim='Variables')
 
-    # Concatenating dfs
-    df = pd.concat([df, df_meat.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df_crop_prod.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df_feed.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df_CO2.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df_CH4.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df_NO2.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df_energy_demand.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df_fdk_liquid.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df_ind_bp.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df_bio_cap.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df_fdk_solid.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df_fdk_biogas.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df_bio_cap.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df_crop_use.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df_crop_feed.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df_crop_non_food.drop(columns=['Country', 'Years'])], axis=1)
-    df = pd.concat([df, df_bioenergy_kcal.drop(columns=['Country', 'Years'])], axis=1)
-
-    return df
+    return dm_tpe
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -2446,99 +2419,11 @@ def agriculture(lever_setting, years_setting, interface=Interface()):
 
 def agriculture_local_run():
     global_vars = {'geoscale': 'Switzerland'}
-    filter_geoscale(global_vars)
+    filter_geoscale(global_vars['geoscale'])
     years_setting, lever_setting = init_years_lever()
     agriculture(lever_setting, years_setting)
     return
 
 # Creates the pickle, to do only once
 # database_from_csv_to_datamatrix()
-
-# # Run the code in local
-# start = time.time()
-#results_run = agriculture_local_run()
-# end = time.time()
-# print(end-start)
-
-
-# KNIME CHECK WITH AUSTRIA -----------------------------------------------------------------------------------------
-# FOOD DEMAND
-# dm_lfs_pro.datamatrix_plot({'Country': 'Austria', 'Variables': ['agr_domestic_production']})
-
-# LIVESTOCK
-# DM_livestock['caf_liv_population'].datamatrix_plot({'Country': 'Austria', 'Variables': ['agr_liv_population']})
-
-# ALCOHOLIC BEVERAGES
-# dm_bev_ibp_cereal_feed.datamatrix_plot({'Country': 'Austria', 'Variables': ['agr_use_bev_ibp_cereal_feed']})
-
-# BIOENERGY
-# DM_bioenergy['digestor-mix'].datamatrix_plot({'Country': 'Austria', 'Variables': ['agr_bioenergy_biomass-demand_biogas']})
-# DM_bioenergy['solid-mix'].datamatrix_plot(
-#    {'Country': 'Austria', 'Variables': ['agr_bioenergy_biomass-demand_solid']})
-# DM_bioenergy['electricity_production'].datamatrix_plot(
-#    {'Country': 'Austria', 'Variables': ['agr_bioenergy-capacity_fdk-req']})
-# Pre processing
-# dm_liquid = dm_oil.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_oil']})
-# dm_liquid.rename_col('agr_bioenergy_biomass-demand_liquid_oil', 'agr_bioenergy_biomass-demand_liquid', dim='Variables')
-# dm_lgn = dm_lgn.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_lgn']})
-# dm_lgn.rename_col('agr_bioenergy_biomass-demand_liquid_lgn', 'agr_bioenergy_biomass-demand_liquid', dim='Variables')
-# dm_eth = dm_eth.filter({'Variables': ['agr_bioenergy_biomass-demand_liquid_eth']})
-# dm_eth.rename_col('agr_bioenergy_biomass-demand_liquid_eth', 'agr_bioenergy_biomass-demand_liquid', dim='Variables')
-# dm_liquid.append(dm_lgn, dim='Categories1')
-# dm_liquid.datamatrix_plot(
-#    {'Country': 'Austria', 'Variables': ['agr_bioenergy_biomass-demand_liquid']})
-
-# dm_biofuel_fdk.datamatrix_plot(
-#    {'Country': 'Austria', 'Variables': ['agr_bioenergy_biomass-demand_liquid']})
-# dm_oil.datamatrix_plot(
-#    {'Country': 'Austria', 'Variables': ['agr_biomass-hierarchy_biomass-mix_liquid']})
-
-# MANURE
-# DM_manure['caf_liv_CH4'] = DM_manure['caf_liv_CH4'].flatten()
-# DM_manure['caf_liv_CH4'].datamatrix_plot(
-#    {'Country': 'Austria', 'Variables': ['agr_liv_CH4-emission']})
-# DM_manure['caf_liv_N2O'] = DM_manure['caf_liv_N2O'].flatten()
-# DM_manure['caf_liv_N2O'].datamatrix_plot(
-#    {'Country': 'Austria', 'Variables': ['agr_liv_N2O-emission']})
-
-# FEED
-# DM_feed['caf_agr_demand_feed'].datamatrix_plot(
-#    {'Country': 'Austria', 'Variables': ['agr_demand_feed']})
-# dm_feed_req.datamatrix_plot(
-#    {'Country': 'Austria', 'Variables': ['agr_feed-requierement']})
-
-# BIOMASS ALLOCATION
-
-# CROP
-# DM_crop['crop'].datamatrix_plot(
-#    {'Country': 'Austria', 'Variables': ['agr_domestic-production_afw']})
-# dm_feed_processed.datamatrix_plot(
-#    {'Country': 'Austria', 'Variables': ['agr_demand_feed_processed']})
-# dm_food_processed.datamatrix_plot(
-#    {'Country': 'Austria', 'Variables': ['agr_demand_food_processed']})
-# dm_crop_emissions = DM_crop['ef_residues'].flatten()
-# dm_crop_emissions.datamatrix_plot(
-#    {'Country': 'Austria', 'Variables': ['agr_crop_emission']})
-
-# LAND
-# DM_land['yield'].datamatrix_plot(
-#    {'Country': 'Austria', 'Variables': ['agr_land_cropland']})
-
-# DM_land['land'].datamatrix_plot(
-#    {'Country': 'Austria', 'Variables': ['agr_lus_land']})
-
-# NITROGEN
-# DM_nitrogen['emissions'].datamatrix_plot(
-#    {'Country': 'Austria', 'Variables': ['agr_crop_emission_N2O-emission_fertilizer']})
-# dm_fertilizer_co.datamatrix_plot(
-#    {'Country': 'Austria', 'Variables': ['agr_input-use_emissions-CO2']})
-
-
-# ENERGY GHG
-# DM_energy_ghg['GHG'].datamatrix_plot(
-#    {'Country': 'Austria', 'Variables': ['agr_emissions']})
-# dm_CO2.datamatrix_plot(
-#    {'Country': 'Austria', 'Variables': ['agr_input-use_emissions-CO2_temp_fuel']})
-
-# dm_energy_demand.datamatrix_plot({'Variables': 'agr_energy-demand'})
 

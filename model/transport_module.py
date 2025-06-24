@@ -21,327 +21,6 @@ import numpy as np
 import time
 
 
-def database_from_csv_to_datamatrix():
-
-    # Read database
-    # Set years range
-    years_setting = [1990, 2015, 2050, 5]
-    startyear = years_setting[0]
-    baseyear = years_setting[1]
-    firstyear = years_setting[2]
-    lastyear = years_setting[3]
-    step_fts = years_setting[4]
-    years_ots = list(
-        np.linspace(
-            start=startyear, stop=baseyear, num=(baseyear - startyear) + 1
-        ).astype(int)
-    )
-    years_fts = list(
-        np.linspace(
-            start=baseyear + step_fts,
-            stop=lastyear,
-            num=int((lastyear - baseyear) / step_fts),
-        ).astype(int)
-    )
-    years_all = years_ots + years_fts
-
-    # Read fixed assumptions to datamatrix
-    df = read_database_fxa("transport_fixed-assumptions")
-    dm = DataMatrix.create_from_df(df, num_cat=0)
-
-    # Keep only ots and fts years
-    dm = dm.filter(selected_cols={"Years": years_all})
-
-    dm_freight_tech = dm.filter_w_regex(
-        {"Variables": "tra_freight_technology-share.*|tra_freight_vehicle-efficiency.*"}
-    )
-    dm_passenger_tech = dm.filter_w_regex(
-        {
-            "Variables": "tra_passenger_technology-share.*|tra_passenger_veh-efficiency_fleet.*"
-        }
-    )
-    dm_passenger_mode_road = dm.filter_w_regex(
-        {"Variables": "tra_passenger_vehicle-lifetime.*"}
-    )
-    # !FIXME: Vaud and Switzerland have renewal-rate at 0 in for some ots
-    dm_passenger_mode_other = dm.filter_w_regex(
-        {"Variables": "tra_passenger_avg-pkm-by-veh.*|tra_passenger_renewal-rate.*"}
-    )
-    dm_freight_mode_other = dm.filter_w_regex(
-        {"Variables": "tra_freight_tkm-by-veh.*|tra_freight_renewal-rate.*"}
-    )
-    dm_freight_mode_road = dm.filter_w_regex({"Variables": "tra_freight_lifetime.*"})
-
-    # Add metrotram to passenger_tech
-    metrotram_tech = np.ones(
-        (dm_passenger_tech.array.shape[0], dm_passenger_tech.array.shape[1])
-    )
-    dm_passenger_tech.add(
-        metrotram_tech,
-        dim="Variables",
-        col_label="tra_passenger_technology-share_fleet_metrotram_mt",
-        unit="%",
-    )
-    dm_passenger_tech.rename_col(
-        col_in="tra_passenger_veh-efficiency_fleet_metrotram",
-        col_out="tra_passenger_veh-efficiency_fleet_metrotram_mt",
-        dim="Variables",
-    )
-    # Add dimensions
-    dm_freight_tech.deepen_twice()
-    dm_passenger_tech.deepen_twice()
-    dm_passenger_mode_road.deepen()
-    dm_passenger_mode_other.deepen()
-    dm_freight_mode_other.deepen()
-    dm_freight_mode_road.deepen()
-
-    dict_fxa = {
-        "freight_tech": dm_freight_tech,
-        "passenger_tech": dm_passenger_tech,
-        "passenger_mode_road": dm_passenger_mode_road,
-        "passenger_mode_other": dm_passenger_mode_other,
-        "freight_mode_other": dm_freight_mode_other,
-        "freight_mode_road": dm_freight_mode_road,
-    }
-
-    dict_ots = {}
-    dict_fts = {}
-    # !FIXME the same data are used for all levers
-    # Read passenger levers
-    file = "transport_passenger-aviation-pkm"
-    lever = "passenger-aviation-pkm"
-    # dm_passenger_aviation
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(
-        file,
-        lever,
-        num_cat=1,
-        baseyear=baseyear,
-        years=years_all,
-        dict_ots=dict_ots,
-        dict_fts=dict_fts,
-    )
-
-    # Read passenger efficiency
-    file = "transport_passenger-efficiency"
-    lever = "passenger_veh-efficiency_new"
-    df_ots, df_fts = read_database(file, lever, level="all")
-    df_ots.columns = df_ots.columns.str.replace("MJ/pkm", "MJ/km")
-    df_fts.columns = df_fts.columns.str.replace("MJ/pkm", "MJ/km")
-    df_ots.columns = df_ots.columns.str.replace("metrotram", "metrotram_mt")
-    df_fts.columns = df_fts.columns.str.replace("metrotram", "metrotram_mt")
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(
-        file,
-        lever,
-        num_cat=2,
-        baseyear=baseyear,
-        years=years_all,
-        dict_ots=dict_ots,
-        dict_fts=dict_fts,
-        df_ots=df_ots,
-        df_fts=df_fts,
-    )
-
-    # Read passenger modal split urban rural
-    file = "transport_passenger-modal-split"
-    lever = "passenger_modal-share"
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(
-        file,
-        lever,
-        num_cat=2,
-        baseyear=baseyear,
-        years=years_all,
-        dict_ots=dict_ots,
-        dict_fts=dict_fts,
-    )
-
-    # Read passenger occupancy
-    file = "transport_passenger-occupancy"
-    lever = "passenger_occupancy"
-    # dm_passenger_occupancy
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(
-        file,
-        lever,
-        num_cat=1,
-        baseyear=baseyear,
-        years=years_all,
-        dict_ots=dict_ots,
-        dict_fts=dict_fts,
-    )
-
-    # Read passenger technology split
-    file = "transport_passenger-technology-split"
-    lever = "passenger_technology-share_new"
-    df_ots, df_fts = read_database(file, lever, level="all")
-    df_ots["tra_passenger_technology-share_new_metrotram_mt[%]"] = 1
-    df_fts["tra_passenger_technology-share_new_metrotram_mt[%]"] = 1
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(
-        file,
-        lever,
-        num_cat=2,
-        baseyear=baseyear,
-        years=years_all,
-        dict_ots=dict_ots,
-        dict_fts=dict_fts,
-        df_ots=df_ots,
-        df_fts=df_fts,
-    )
-
-    # Read passenger use rate
-    file = "transport_passenger-use-rate"
-    lever = "passenger_utilization-rate"
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(
-        file,
-        lever,
-        num_cat=1,
-        baseyear=baseyear,
-        years=years_all,
-        dict_ots=dict_ots,
-        dict_fts=dict_fts,
-    )
-
-    # Read freight levers
-    # Efficiency
-    file = "transport_freight-efficiency"
-    lever = "freight_vehicle-efficiency_new"
-    df_ots, df_fts = read_database(file, lever, level="all")
-    df_ots.columns = df_ots.columns.str.replace("tkm", "km")
-    df_fts.columns = df_fts.columns.str.replace("tkm", "km")
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(
-        file,
-        lever,
-        num_cat=2,
-        baseyear=baseyear,
-        years=years_all,
-        dict_ots=dict_ots,
-        dict_fts=dict_fts,
-        df_ots=df_ots,
-        df_fts=df_fts,
-    )
-
-    # Load factors & utilisation rate
-    file = "transport_freight-load-factor"
-    lever_1 = "freight_load-factor"
-    lever = "freight_utilization-rate"
-    # there is a problem with the lever name in the original file
-    # !FIXME this should be merged with freight use-rate
-    df_ots, df_fts = read_database(file, lever_1, level="all")
-    df_ots.rename(columns={lever_1: lever}, inplace=True)
-    df_fts.rename(columns={lever_1: lever}, inplace=True)
-    df_ots_2, df_fts_2 = read_database("transport_freight-use-rate", lever, level="all")
-    df_ots = df_ots.merge(df_ots_2, on=["Country", "Years", lever])
-    df_fts = df_fts.merge(df_fts_2, on=["Country", "Years", lever])
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(
-        file,
-        lever,
-        num_cat=1,
-        baseyear=baseyear,
-        years=years_all,
-        dict_ots=dict_ots,
-        dict_fts=dict_fts,
-        df_ots=df_ots,
-        df_fts=df_fts,
-    )
-
-    # Modal split
-    file = "transport_freight-modal-split"
-    lever = "freight_modal-share"
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(
-        file,
-        lever,
-        num_cat=1,
-        baseyear=baseyear,
-        years=years_all,
-        dict_ots=dict_ots,
-        dict_fts=dict_fts,
-    )
-
-    # Technology split
-    file = "transport_freight-technology-split"
-    lever = "freight_technology-share_new"
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(
-        file,
-        lever,
-        num_cat=2,
-        baseyear=baseyear,
-        years=years_all,
-        dict_ots=dict_ots,
-        dict_fts=dict_fts,
-    )
-
-    # Volume
-    file = "transport_freight-volume"
-    lever = "freight_tkm"
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(
-        file,
-        lever,
-        num_cat=0,
-        baseyear=baseyear,
-        years=years_all,
-        dict_ots=dict_ots,
-        dict_fts=dict_fts,
-    )
-
-    # Read fuel mix for efuel and biofuels
-    fuels = ["biofuels", "efuel"]
-    mode = ["marine", "road", "aviation"]
-    lever = "fuel-mix"
-    i = 0
-    for f in fuels:
-        for m in mode:
-            file = "transport_fuel-mix-" + m + "-" + f
-            if f == "biofuels":
-                f = "biofuel"
-            lever_i = "fuel-mix_" + f + "-" + m
-            df_ots_i, df_fts_i = read_database(file, lever_i, level="all")
-            df_ots_i.rename(columns={lever_i: lever}, inplace=True)
-            df_fts_i.rename(columns={lever_i: lever}, inplace=True)
-            df_ots_i.columns = df_ots_i.columns.str.replace("biofuel-", "biofuel_")
-            df_ots_i.columns = df_ots_i.columns.str.replace("efuel-", "efuel_")
-            df_fts_i.columns = df_fts_i.columns.str.replace("biofuel-", "biofuel_")
-            df_fts_i.columns = df_fts_i.columns.str.replace("efuel-", "efuel_")
-            if i == 0:
-                df_ots = df_ots_i
-                df_fts = df_fts_i
-            else:
-                df_ots = df_ots.merge(df_ots_i, on=["Country", "Years", lever])
-                df_fts = df_fts.merge(df_fts_i, on=["Country", "Years", lever])
-            if f == "biofuel":
-                f = "biofuels"
-            i = i + 1
-    dict_ots, dict_fts = read_database_to_ots_fts_dict(
-        file,
-        lever,
-        num_cat=2,
-        baseyear=baseyear,
-        years=years_all,
-        dict_ots=dict_ots,
-        dict_fts=dict_fts,
-        df_ots=df_ots,
-        df_fts=df_fts,
-    )
-
-    # Load constants
-    cdm_const = ConstantDataMatrix.extract_constant(
-        "interactions_constants", pattern="cp_tra_emission-factor.*", num_cat=2
-    )
-
-    DM_transport = {
-        "fxa": dict_fxa,
-        "fts": dict_fts,
-        "ots": dict_ots,
-        "constant": cdm_const,
-    }
-
-    current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    f = os.path.join(
-        current_file_directory, "../_database/data/datamatrix/transport.pickle"
-    )
-    with open(f, "wb") as handle:
-        pickle.dump(DM_transport, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    return
-
-
 def read_data(data_file, lever_setting):
 
     with open(data_file, "rb") as handle:
@@ -648,9 +327,9 @@ def rename_and_group(dm_new_cat, groups, dict_end, grouped_var="tra_total-energy
         tmp_cat1 = np.nansum(tmp.array, axis=-1, keepdims=True)
         if i == 0:
             i = i + 1
-            array = tmp_cat1
+            arr = tmp_cat1
         else:
-            array = np.concatenate([array, tmp_cat1], axis=-1)
+            arr = np.concatenate([arr, tmp_cat1], axis=-1)
     dm_total_energy = DataMatrix(
         col_labels={
             "Country": dm_new_cat.col_labels["Country"],
@@ -661,7 +340,7 @@ def rename_and_group(dm_new_cat, groups, dict_end, grouped_var="tra_total-energy
         units={grouped_var: list(dm_new_cat.units.values())[0]},
     )
 
-    dm_total_energy.array = array
+    dm_total_energy.array = arr
 
     for substring, replacement in dict_end.items():
         dm_new_cat.rename_col_regex(substring, replacement, dim="Categories1")
@@ -2017,15 +1696,14 @@ def local_transport_run():
 
     global_vars = {"geoscale": "Switzerland|Vaud"}
 
-    filter_geoscale(global_vars)
+    filter_geoscale(global_vars['geoscale'])
 
     results_run = transport(lever_setting, years_setting)
 
     return results_run
 
 
-# database_from_csv_to_datamatrix()
 # print('In transport, the share of waste by fuel/tech type does not seem right. Fix it.')
 # print('Apply technology shares before computing the stock')
-# print('For the efficiency, use the new methodology developped for Building (see overleaf on U-value)')
-# results_run = local_transport_run()
+# print('For the efficiency, use the new methodology developed for Building (see overleaf on U-value)')
+#results_run = local_transport_run()
