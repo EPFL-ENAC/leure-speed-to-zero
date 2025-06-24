@@ -1319,11 +1319,11 @@ def buildings_local_run():
     # Function to run only transport module without converter and tpe
 
     global_vars = {'geoscale': 'EU27|Switzerland|Vaud'}
-    filter_geoscale(global_vars)
+    filter_geoscale(global_vars['geoscale'])
 
     buildings(lever_setting, years_setting)
     return
 
 
 # database_from_csv_to_datamatrix()
-# buildings_local_run()
+#buildings_local_run()

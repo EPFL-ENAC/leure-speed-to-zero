@@ -154,7 +154,7 @@ def local_climate_run():
 
     # get geoscale
     global_vars = {'geoscale': 'EU27|Switzerland|Vaud'}
-    filter_geoscale(global_vars)
+    filter_geoscale(global_vars['geoscale'])
 
     # run
     results_run = climate(lever_setting, years_setting)
@@ -163,7 +163,7 @@ def local_climate_run():
 
 # # local
 # __file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/model/climate_module.py"
-# results_run = local_climate_run()
+#results_run = local_climate_run()
 
 
 

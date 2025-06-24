@@ -197,6 +197,7 @@ def compute_stock(dm, rr_regex, tot_regex, waste_col, new_col, out_type=int):
     dm.drop(dim='Variables', col_label='.*_tmn')
     return
 
+
 def filter_geoscale(geo_pattern):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     mypath = os.path.join(current_file_directory, '../../_database/data/datamatrix')
@@ -206,9 +207,7 @@ def filter_geoscale(geo_pattern):
         if '.pickle' in file:
             with open(join(mypath, file), 'rb') as handle:
                 DM_module = pickle.load(handle)
-
             DM_module_geo = {'fts': {}, 'ots': {}}
-
             for key in DM_module.keys():
                 if key in ['fxa', 'calibration']:
                     DM_module_geo[key] = {}

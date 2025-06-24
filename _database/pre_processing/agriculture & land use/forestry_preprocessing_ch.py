@@ -9,7 +9,7 @@ import faostat
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
 from model.common.auxiliary_functions import create_years_list, linear_fitting, my_pickle_dump
-from model.common.interface_class import Interface
+from model.common.auxiliary_functions import sort_pickle, add_dummy_country_to_DM
 
 # Initialize the Deepl Translator
 deepl_api_key = '9ecffb3f-5386-4254-a099-8bfc47167661:fx'
@@ -362,11 +362,11 @@ def get_wood_trade_balance(file):
 ################################################################
 # Simulate Industry Interface as a Pickle
 ################################################################
-def simulate_industry_input(write_pickle= False):
+def simulate_industry_input(write_pickle= True):
     if write_pickle is True:
         # Path for the input from industry
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
-        f = os.path.join(current_file_directory, "../../data/xls/fake_ind-to-fst.xlsx")
+        f = os.path.join(current_file_directory, "data/fake_ind-to-fst.xlsx")
         # Read the file:
         df = pd.read_excel(f, sheet_name="ind-to-fst")
         # Build DataMatrix
@@ -378,12 +378,12 @@ def simulate_industry_input(write_pickle= False):
 
     return
 
-simulate_industry_input()
+
 
 ################################################################
 # Simulate Industry Interface as a Pickle
 ################################################################
-def simulate_land_input(dm_forest_area, write_pickle= False):
+def simulate_land_input(dm_forest_area, write_pickle= True):
     if write_pickle is True:
         # Build DataMatrix
         dm = dm_forest_area.filter({'Variables': ['total-forest-area']})
@@ -400,7 +400,8 @@ def simulate_land_input(dm_forest_area, write_pickle= False):
 
     return
 
-def simulate_industry_other_wood(refresh = True,interface=Interface()):
+
+def simulate_industry_other_wood(refresh = True ):
     if refresh is True:
         # Path for the input from industry
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -410,16 +411,12 @@ def simulate_industry_other_wood(refresh = True,interface=Interface()):
         dm_industry_calibration = DataMatrix.create_from_df(df_industry_calibration, num_cat=1)
 
         cntr_list = ['Switzerland','Vaud']
-        if interface.has_link(from_sector='industry', to_sector='forestry'):
-            dm_wood_demand = interface.get_link(from_sector='industry', to_sector='forestry')
-        else:
-            if len(interface.list_link()) != 0:
-                print("You are missing " + 'industry' + " to " + 'forestry' + " interface")
-            lfs_interface_data_file = os.path.join(current_file_directory,
-                                                   '../../data/interface/industry_to_forestry.pickle')
-            with open(lfs_interface_data_file, 'rb') as handle:
-                dm_industry_wood_demand = pickle.load(handle)
-            dm_industry_wood_demand.filter({'Country': cntr_list}, inplace=True)
+
+        lfs_interface_data_file = os.path.join(current_file_directory,
+                                               '../../data/interface/industry_to_forestry.pickle')
+        with open(lfs_interface_data_file, 'rb') as handle:
+            dm_industry_wood_demand = pickle.load(handle)
+        dm_industry_wood_demand.filter({'Country': cntr_list}, inplace=True)
 
         # Compute the FXA/Calibration for "any-other-wood"
         # that is any wood that is not covered by EUCalc and that is used a biomaterial (not energy)
@@ -436,6 +433,29 @@ def simulate_industry_other_wood(refresh = True,interface=Interface()):
 
     return dm_fxa_wood_demand
 
+
+def create_dummy_Vaud_waste(dm_forest_area, dm_wood_wastes, years_ots):
+    dm_tmp = dm_forest_area.copy()
+    dm_tmp.operation('Vaud', '/', 'Switzerland', out_col='Vaud-share', dim='Country')
+    dm_tmp.filter({'Country': ['Vaud-share'], 'Variables': ['productive-forest-area'], 'Years': years_ots},
+                  inplace=True)
+    dm_tmp.rename_col('Vaud-share', 'Vaud', dim='Country')
+    dm_wood_wastes_VD = dm_wood_wastes.copy()
+    dm_wood_wastes_VD.rename_col('Switzerland', 'Vaud', 'Country')
+    dm_wood_wastes_VD.append(dm_tmp, dim='Variables')
+    dm_wood_wastes_VD.operation('fst_waste-wood', '*', 'productive-forest-area', out_col='fst_waste-wood_VD', unit='m3',
+                                dim='Variables')
+    dm_wood_wastes_VD.filter({'Variables': ['fst_waste-wood_VD']}, inplace=True)
+    dm_wood_wastes_VD.rename_col('fst_waste-wood_VD', 'fst_waste-wood', dim='Variables')
+
+    return dm_wood_wastes_VD
+
+#####################################################################
+# SIMULATE INTERFACE
+#####################################################################
+# Find excel on google drive:
+
+simulate_industry_input()
 dm_fxa_wood_demand = simulate_industry_other_wood()
 
 ######################################################################
@@ -734,10 +754,17 @@ dm_wood_wastes =dm_wood_wastes.filter({'Variables': ['fst_wood-energy-use-m3_was
 dm_wood_wastes.groupby({'fst_waste-wood': '.*'}, regex=True, inplace=True, dim='Variables')
 dm_wood_wastes.add(np.nan, col_label=[2023], dim='Years', dummy=True)
 dm_wood_wastes.filter({'Years': years_ots}, inplace=True)
-dm_wood_wastes.add(np.nan, col_label=years_fts, dim='Years', dummy=True)
+
+# Add Vaud based on productive-forest-area
+# Map wood-waste from Switzerland to Vaud using productive forest area as a proxy
+dm_wood_wastes_VD = create_dummy_Vaud_waste(dm_forest_area, dm_wood_wastes, years_ots)
+dm_wood_wastes.append(dm_wood_wastes_VD, dim='Country')
 
 # Linear extrapolation on future years
+dm_wood_wastes.add(np.nan, col_label=years_fts, dim='Years', dummy=True)
 linear_fitting(dm_wood_wastes, years_fts)
+
+
 #dm_wood_wastes_incineration.datamatrix_plot(stacked=True)
 
 ################################################################
@@ -909,10 +936,12 @@ DM_forestry['fts']['harvest-rate'][1] = dm_fts_1
 DM_forestry['fts']['harvest-rate'][2] = dm_fts_2
 DM_forestry['fts']['harvest-rate'][3] = dm_fts_3
 DM_forestry['fts']['harvest-rate'][4] = dm_fts_4
-DM_forestry
+
+add_dummy_country_to_DM(DM_forestry, ref_country='Switzerland', new_country='Vaud')
 
 # save
-
 f = '../../data/datamatrix/forestry.pickle'
 with open(f, 'wb') as handle:
     pickle.dump(DM_forestry, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+sort_pickle(f)
