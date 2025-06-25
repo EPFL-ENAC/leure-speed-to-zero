@@ -1,23 +1,41 @@
-.PHONY: install clean uninstall help run up
+.PHONY: install install-backend install-frontend clean uninstall help run up
 
 # Default target
 help:
 	@echo "Available commands:"
-	@echo "  install    - Install dependencies and set up git hooks"
-	@echo "  clean      - Clean node_modules and package-lock.json"
-	@echo "  uninstall  - Remove git hooks and clean dependencies"
-	@echo "  run        - Run backend and frontend locally"
-	@echo "  up         - Run docker compose with rebuild and no cache"
-	@echo "  help       - Show this help message"
+	@echo "  install           - Install all dependencies (backend + frontend) and set up git hooks"
+	@echo "  install-backend   - Install backend dependencies only"
+	@echo "  install-frontend  - Install frontend dependencies only"
+	@echo "  clean             - Clean node_modules and package-lock.json"
+	@echo "  uninstall         - Remove git hooks and clean dependencies"
+	@echo "  run               - Run backend and frontend locally"
+	@echo "  up                - Run docker compose with rebuild and no cache"
+	@echo "  help              - Show this help message"
 
 
 # Install dependencies and set up git hooks
-install:
-	@echo "Installing npm dependencies..."
-	npm install
+install: install-backend install-frontend
 	@echo "Installing git hooks with lefthook..."
 	npx lefthook install
 	@echo "Setup complete!"
+
+# Install backend dependencies
+install-backend:
+	@echo "Installing backend dependencies..."
+	@if command -v uv >/dev/null 2>&1; then \
+		echo "Using uv for backend dependencies..."; \
+		cd backend && uv sync; \
+	else \
+		echo "uv not found, using pip with requirements.txt..."; \
+		cd backend && pip install -r requirements.txt; \
+	fi
+	@echo "Backend dependencies installed!"
+
+# Install frontend dependencies
+install-frontend:
+	@echo "Installing frontend dependencies..."
+	cd frontend && npm install
+	@echo "Frontend dependencies installed!"
 
 # Clean dependencies
 clean:
