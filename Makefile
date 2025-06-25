@@ -50,7 +50,7 @@ run:
 	@echo "Frontend will be available at http://localhost:9000 (Quasar default)"
 	@echo "Press Ctrl+C to stop both servers"
 	@trap 'kill $$(jobs -p) 2>/dev/null || true' EXIT; \
-	$(MAKE) -C backend/backend run & \
+	$(MAKE) -C backend run & \
 	cd frontend && npm run dev & \
 	wait
 

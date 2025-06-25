@@ -10,11 +10,11 @@ import numpy as np
 import time
 import re
 from pathlib import Path
-from backend.src.api.lever_keys import LEVER_KEYS
+from src.api.lever_keys import LEVER_KEYS
 import pickle
 
-from backend.src.utils.serialize_model import serialize_model_output
-from backend.src.utils.transform_model import (
+from src.utils.serialize_model import serialize_model_output
+from src.utils.transform_model import (
     transform_datamatrix_to_clean_structure,
 )
 

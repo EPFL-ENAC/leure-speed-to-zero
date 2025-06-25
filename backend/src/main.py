@@ -1,5 +1,5 @@
-from backend.src.api.routes import router
-from backend.src.config.settings import settings
+from src.api.routes import router
+from src.config.settings import settings
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError

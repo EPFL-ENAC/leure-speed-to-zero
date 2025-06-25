@@ -35,8 +35,6 @@ COPY --from=builder /app/uv.lock /app/uv.lock
 # Create the app directory
 WORKDIR /app
 
-COPY backend ./backend
-
 # Copy the rest of the application code
 COPY . .
 
@@ -46,4 +44,4 @@ ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 8081
 
 # Run the application using uv run
-CMD ["uv", "run", "uvicorn", "backend.src.main:app", "--host", "0.0.0.0", "--port", "8081", "--proxy-headers", "--log-level", "debug", "--access-log"]
+CMD ["uv", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8081", "--proxy-headers", "--log-level", "debug", "--access-log"]
