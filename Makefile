@@ -28,8 +28,8 @@ install-backend:
 	else \
 		echo "uv not found, creating virtual environment and using pip..."; \
 		cd backend && python -m venv .venv; \
-		cd backend && .venv/bin/pip install --upgrade pip; \
-		cd backend && .venv/bin/pip install -r requirements.txt; \
+		&& .venv/bin/pip install --upgrade pip; \
+		&& .venv/bin/pip install -r requirements.txt; \
 		echo "Virtual environment created at backend/.venv"; \
 	fi
 	@echo "Backend dependencies installed!"
