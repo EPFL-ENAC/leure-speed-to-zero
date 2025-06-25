@@ -1,4 +1,4 @@
-.PHONY: install install-backend install-frontend clean uninstall help run up
+.PHONY: install install-backend install-frontend clean uninstall help run run-backend run-frontend up
 
 # Default target
 help:
@@ -9,6 +9,8 @@ help:
 	@echo "  clean             - Clean node_modules and package-lock.json"
 	@echo "  uninstall         - Remove git hooks and clean dependencies"
 	@echo "  run               - Run backend and frontend locally"
+	@echo "  run-backend       - Run backend only"
+	@echo "  run-frontend      - Run frontend only"
 	@echo "  up                - Run docker compose with rebuild and no cache"
 	@echo "  help              - Show this help message"
 
@@ -22,15 +24,18 @@ install: install-backend install-frontend
 # Install backend dependencies
 install-backend:
 	@echo "Installing backend dependencies..."
-	@if command -v uv >/dev/null 2>&1; then \
+	@cd backend && \
+	if uv --version >/dev/null 2>&1; then \
 		echo "Using uv for backend dependencies..."; \
-		cd backend && uv sync; \
+		uv sync; \
 	else \
-		echo "uv not found, creating virtual environment and using pip..."; \
-		cd backend && python -m venv .venv; \
-		&& .venv/bin/pip install --upgrade pip; \
-		&& .venv/bin/pip install -r requirements.txt; \
-		echo "Virtual environment created at backend/.venv"; \
+		echo "uv not available in current environment, using virtual environment and pip..."; \
+		if [ ! -d ".venv" ]; then \
+			python -m venv .venv && \
+			.venv/bin/pip install --upgrade pip; \
+		fi && \
+		.venv/bin/pip install -r requirements.txt; \
+		echo "Virtual environment ready at backend/.venv"; \
 	fi
 	@echo "Backend dependencies installed!"
 
@@ -74,6 +79,19 @@ run:
 	$(MAKE) -C backend run & \
 	cd frontend && npm run dev & \
 	wait
+
+# Run backend only
+run-backend:
+	@echo "Starting backend development server..."
+	@echo "Backend will be available at http://localhost:8000"
+	@echo "API docs available at http://localhost:8000/docs"
+	$(MAKE) -C backend run
+
+# Run frontend only
+run-frontend:
+	@echo "Starting frontend development server..."
+	@echo "Frontend will be available at http://localhost:9000 (Quasar default)"
+	cd frontend && npm run dev
 
 # Run docker compose with rebuild and no cache
 up:

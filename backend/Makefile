@@ -7,19 +7,19 @@ NAME = backend-web-rest-api
 # Sync dependencies
 sync:
 	@echo "Syncing dependencies"
-	uv sync
-	uv export > requirements.txt
+	@if uv --version >/dev/null 2>&1; then \
+		uv sync; \
+		uv export > requirements.txt; \
+	else \
+		echo "uv not available, using pip to update requirements.txt"; \
+		.venv/bin/pip freeze > requirements.txt; \
+	fi
 
 run:
 	@echo "Starting FastAPI development server..."
 	@echo "Open your browser at http://localhost:8000/docs"
-	@if command -v uv >/dev/null 2>&1; then \
-		echo "Using uv..."; \
-		uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000; \
-	else \
-		echo "uv not found, using virtual environment..."; \
-		.venv/bin/uvicorn src.main:app --reload --host 0.0.0.0 --port 8000; \
-	fi
+	.venv/bin/uvicorn src.main:app --reload --host 0.0.0.0 --port 8000; \
+
 
 up:
 	docker compose build --pull
@@ -27,14 +27,14 @@ up:
 	@echo "Open your browser at http://localhost:8081"
 
 format:
-	@if command -v uv >/dev/null 2>&1; then \
+	@if uv --version >/dev/null 2>&1; then \
 		uv run black src; \
 	else \
 		.venv/bin/black src; \
 	fi
 
 lint:
-	@if command -v uv >/dev/null 2>&1; then \
+	@if uv --version >/dev/null 2>&1; then \
 		uv run flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics; \
 		uv run flake8 src --count --exit-zero --max-complexity=15 --max-line-length=127 --statistics; \
 	else \
@@ -43,7 +43,7 @@ lint:
 	fi
 
 test:
-	@if command -v uv >/dev/null 2>&1; then \
+	@if uv --version >/dev/null 2>&1; then \
 		uv run pytest; \
 	else \
 		.venv/bin/pytest; \
