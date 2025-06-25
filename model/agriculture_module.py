@@ -321,63 +321,29 @@ def simulate_lifestyles_to_agriculture_input():
 
 
 def simulate_buildings_to_agriculture_input():
+
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    f = os.path.join(current_file_directory,
-                     "../_database/data/xls/All-Countries-interface_from-buildings-to-agriculture_renamed.xlsx")
-    # the renamed version has - instead of _
-    df = pd.read_excel(f, sheet_name="default")
-    dm_bld = DataMatrix.create_from_df(df, num_cat=1)
-    dm_bld.operation('solid-woodlogs', '+', 'solid-pellets', dim='Categories1', out_col='solid-bio', nansum=True)
-    dm_bld.filter({'Categories1': ['gas', 'solid-bio']}, inplace=True)
-    dm_bld.rename_col('gas', 'gas-bio', 'Categories1')
-    # Extrapolated to new years considered (until 2023)
-    years_ots = create_years_list(1990, 2023, 1)
-    dm_bld = linear_fitting(dm_bld, years_ots)
+    f = os.path.join(current_file_directory, "../_database/data/interface/buildings_to_agriculture.pickle")
+    with open(f, 'rb') as handle:
+        dm_bld = pickle.load(handle)
 
     return dm_bld
 
 
 def simulate_industry_to_agriculture_input():
-    dm_ind = simulate_input(from_sector='industry', to_sector='agriculture')
-
-    DM_ind = {}
-
-    # natfiber
-    dm_temp = dm_ind.filter({"Variables": ["ind_dem_natfibers"]})
-    # Extrapolated to new years considered (until 2023)
-    years_ots = create_years_list(1990, 2023, 1)
-    dm_temp = linear_fitting(dm_temp, years_ots)
-    DM_ind["natfibers"] = dm_temp
-
-    # bioenergy
-    dm_temp = dm_ind.filter({"Variables": ['ind_bioenergy_gas-bio', 'ind_bioenergy_solid-bio']})
-    dm_temp.deepen()
-    # Extrapolated to new years considered (until 2023)
-    years_ots = create_years_list(1990, 2023, 1)
-    dm_temp = linear_fitting(dm_temp, years_ots)
-    DM_ind["bioenergy"] = dm_temp
-
-    # biomaterial
-    dm_temp = dm_ind.filter({"Variables": ['ind_biomaterial_gas-bio']})
-    dm_temp.deepen()
-    # Extrapolated to new years considered (until 2023)
-    years_ots = create_years_list(1990, 2023, 1)
-    dm_temp = linear_fitting(dm_temp, years_ots)
-    DM_ind["biomaterial"] = dm_temp
-
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(current_file_directory, "../_database/data/interface/industry_to_agriculture.pickle")
+    with open(f, 'rb') as handle:
+        DM_ind = pickle.load(handle)
     return DM_ind
 
 
 def simulate_transport_to_agriculture_input():
     # Read input from lifestyle : food waste & diet
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    f = os.path.join(current_file_directory,
-                     "../_database/data/xls/All-Countries-interface_from-transport-to-agriculture_renamed.xlsx")
-    df = pd.read_excel(f, sheet_name="default")
-    dm_tra = DataMatrix.create_from_df(df, num_cat=1)
-    # Extrapolated to new years considered (until 2023)
-    years_ots = create_years_list(1990, 2023, 1)
-    dm_tra = linear_fitting(dm_tra, years_ots)
+    f = os.path.join(current_file_directory, "../_database/data/interface/transport_to_agriculture.pickle")
+    with open(f, 'rb') as handle:
+        dm_tra = pickle.load(handle)
     return dm_tra
 
 
@@ -507,15 +473,6 @@ def food_demand_workflow(DM_food_demand, dm_lfs):
 
     # Adding agr_domestic_production to dm_lfs_pro
     dm_lfs_pro.add(agr_domestic_production, dim='Variables', col_label='agr_domestic_production', unit='kcal')
-
-    # Checking that the results are similar to KNIME
-    dm_temp = dm_lfs_pro.copy()
-    df_temp = dm_temp.write_df()
-    filtered_df_pro = df_temp[df_temp['Country'].str.contains('France')]
-
-    dm_temp = dm_lfs.copy()
-    df_temp = dm_temp.write_df()
-    filtered_df = df_temp[df_temp['Country'].str.contains('France')]
 
     return dm_lfs, dm_lfs_pro
 
@@ -1093,7 +1050,6 @@ def livestock_manure_workflow(DM_manure, DM_livestock, dm_liv_pop, cdm_const, ye
                                       out_col='agr_liv_N2O-emission_raw', unit='t')
 
     dm_temp = DM_manure['ef_liv_N2O'].copy()
-    df_temp = dm_temp.write_df()
 
     # Calibration N2O
     dm_liv_N2O = DM_manure['ef_liv_N2O'].filter({'Variables': ['agr_liv_N2O-emission_raw']})
@@ -1968,11 +1924,11 @@ def agriculture_landuse_interface(DM_bioenergy, dm_lgn, dm_land_use, write_xls=F
                                      "Categories1": ['lgn-btl-fuelwood-and-res']}).flatten(), "Variables")
         dm_lus.append(dm_land_use.filter({"Variables": ["agr_lus_land"]}).flatten(), "Variables")
 
-        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        """current_file_directory = os.path.dirname(os.path.abspath(__file__))
         df_lus = dm_lus.write_df()
         df_lus.to_excel(
             current_file_directory + "/../_database/data/xls/" + 'All-Countries_interface_from-agriculture-to-landuse.xlsx',
-            index=False)
+            index=False)"""
 
     return DM_lus
 
@@ -1993,12 +1949,12 @@ def agriculture_emissions_interface(DM_nitrogen, dm_CO2, DM_crop, DM_manure, DM_
     # pprint.pprint(dm_ems.col_labels["Variables"])
 
     # write
-    if write_xls is True:
+    """if write_xls is True:
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
         dm_ems = dm_ems.write_df()
         dm_ems.to_excel(
             current_file_directory + "/../_database/data/xls/" + 'All-Countries_interface_from-agriculture-to-climate.xlsx',
-            index=False)
+            index=False)"""
 
     return dm_ems
 
@@ -2010,12 +1966,12 @@ def agriculture_ammonia_interface(dm_mineral_fertilizer, write_xls=False):
     dm_ammonia.rename_col('mineral', 'fertilizer', dim='Categories1')
 
     # write
-    if write_xls is True:
+    """if write_xls is True:
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
         dm_ammonia = dm_ammonia.write_df()
         dm_ammonia.to_excel(
             current_file_directory + "/../_database/data/xls/" + 'All-Countries_interface_from-agriculture-to-ammonia.xlsx',
-            index=False)
+            index=False)"""
 
     return dm_ammonia
 
@@ -2036,12 +1992,12 @@ def agriculture_storage_interface(DM_energy_ghg, write_xls=False):
     dm_storage = dm_storage.flatten()
 
     # write
-    if write_xls is True:
+    """if write_xls is True:
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
         dm_storage = dm_storage.write_df()
         dm_storage.to_excel(
             current_file_directory + "/../_database/data/xls/" + 'All-Countries_interface_from-agriculture-to-storage.xlsx',
-            index=False)
+            index=False)"""
 
     return dm_storage
 
@@ -2061,12 +2017,12 @@ def agriculture_power_interface(DM_energy_ghg, DM_bioenergy, write_xls=False):
               "pow": dm_pow}
 
     # write
-    if write_xls is True:
+    """if write_xls is True:
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
         dm_pow = dm_pow.write_df()
         dm_pow.to_excel(
             current_file_directory + "/../_database/data/xls/" + 'All-Countries_interface_from-agriculture-to-power.xlsx',
-            index=False)
+            index=False)"""
 
     return DM_pow
 
@@ -2102,12 +2058,12 @@ def agriculture_minerals_interface(DM_nitrogen, DM_bioenergy, dm_lgn, write_xls=
     dm_minerals.append(dm_liquid, dim='Variables')
 
     # writing dm minerals
-    if write_xls is True:
+    """if write_xls is True:
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
         dm_minerals = dm_minerals.write_df()
         dm_minerals.to_excel(
             current_file_directory + "/../_database/data/xls/" + 'All-Countries_interface_from-agriculture-to-minerals.xlsx',
-            index=False)
+            index=False)"""
 
     return dm_minerals
 
@@ -2163,9 +2119,11 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
     # CH4 emissions
     dm_tpe.append(dm_CH4.flattest(), dim='Variables')
     dm_tpe.append(dm_crop_residues.flattest(), dim='Variables')
-    dm_tpe.append(dm_CH4_rice.flatteest(), dim='Variables')
+    dm_tpe.append(dm_CH4_rice.flattest(), dim='Variables')
 
     # N2O emissions Note : residues already accounted for in df_residues in CH4 emissions
+    dm_tpe.drop(col_label='cal_rate', dim='Variables')
+    dm_liv_N2O.drop(dim='Variables', col_label='cal_rate')
     dm_tpe.append(dm_liv_N2O.flattest(), dim='Variables')
     dm_tpe.append(dm_fertilizer_N2O.flattest(), dim='Variables')
 
@@ -2424,6 +2382,5 @@ def agriculture_local_run():
     agriculture(lever_setting, years_setting)
     return
 
-# Creates the pickle, to do only once
-# database_from_csv_to_datamatrix()
 
+#agriculture_local_run()
