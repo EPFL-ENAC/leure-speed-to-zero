@@ -1136,4 +1136,18 @@ export const levers: Lever[] = [
       { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
     ],
   },
+  {
+    code: 'lever_harvest-rate',
+    title: 'Harvest rate',
+    group: 'Manufacturing',
+    headline: 'Technology and fuels',
+    range: [1, 2, 3, 4],
+    type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#4CAF50', label: 'Easy' },
+      { min: 2, max: 2, color: '#FFC107', label: 'Moderate' },
+      { min: 3, max: 3, color: '#FF9800', label: 'Hard' },
+      { min: 4, max: 4, color: '#F44336', label: 'Very Hard' },
+    ],
+  },
 ];

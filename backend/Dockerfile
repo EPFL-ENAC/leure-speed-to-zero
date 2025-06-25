@@ -35,7 +35,7 @@ COPY --from=builder /app/uv.lock /app/uv.lock
 # Create the app directory
 WORKDIR /app
 
-# Copy the rest of the application code
+# Copy the application code (excluding files in .dockerignore)
 COPY . .
 
 # Set the path to include the virtual environment's binaries

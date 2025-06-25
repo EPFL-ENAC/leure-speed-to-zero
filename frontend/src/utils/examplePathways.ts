@@ -83,6 +83,7 @@ export const ExamplePathways: PathWay[] = [
       'lever_nuclear-capacity': 1,
       'lever_carbon-storage-capacity': 1,
       'lever_ev-charging-profile': 1,
+      'lever_harvest-rate': 1,
     },
   },
   {
@@ -150,6 +151,7 @@ export const ExamplePathways: PathWay[] = [
       lever_temp: 1,
       'lever_passenger_aviation-pkm': 1,
       'lever_pv-capacity': 1,
+      'lever_harvest-rate': 1,
     },
   },
   {
@@ -217,6 +219,7 @@ export const ExamplePathways: PathWay[] = [
       lever_temp: 1,
       'lever_passenger_aviation-pkm': 1,
       'lever_pv-capacity': 1,
+      'lever_harvest-rate': 1,
     },
   },
   {
@@ -284,6 +287,7 @@ export const ExamplePathways: PathWay[] = [
       lever_temp: 1,
       'lever_passenger_aviation-pkm': 1,
       'lever_pv-capacity': 1,
+      'lever_harvest-rate': 1,
     },
   },
   {
@@ -351,6 +355,7 @@ export const ExamplePathways: PathWay[] = [
       lever_temp: 1,
       'lever_passenger_aviation-pkm': 1,
       'lever_pv-capacity': 1,
+      'lever_harvest-rate': 1,
     },
   },
   {
@@ -416,6 +421,7 @@ export const ExamplePathways: PathWay[] = [
       'lever_product-net-import': 2,
       'lever_material-net-import': 2,
       lever_temp: 1,
+      'lever_harvest-rate': 1,
     },
   },
   {
@@ -481,6 +487,7 @@ export const ExamplePathways: PathWay[] = [
       'lever_product-net-import': 2,
       'lever_material-net-import': 2,
       lever_temp: 1,
+      'lever_harvest-rate': 1,
     },
   },
   {
@@ -546,6 +553,7 @@ export const ExamplePathways: PathWay[] = [
       'lever_product-net-import': 2,
       'lever_material-net-import': 2,
       lever_temp: 1,
+      'lever_harvest-rate': 1,
     },
   },
   {
@@ -611,6 +619,7 @@ export const ExamplePathways: PathWay[] = [
       'lever_product-net-import': 2,
       'lever_material-net-import': 2,
       lever_temp: 1,
+      'lever_harvest-rate': 1,
     },
   },
   {
@@ -676,6 +685,7 @@ export const ExamplePathways: PathWay[] = [
       'lever_product-net-import': 2,
       'lever_material-net-import': 2,
       lever_temp: 1,
+      'lever_harvest-rate': 1,
     },
   },
   {
@@ -741,6 +751,7 @@ export const ExamplePathways: PathWay[] = [
       'lever_product-net-import': 2,
       'lever_material-net-import': 2,
       lever_temp: 1,
+      'lever_harvest-rate': 1,
     },
   },
   {
@@ -806,6 +817,7 @@ export const ExamplePathways: PathWay[] = [
       'lever_product-net-import': 2,
       'lever_material-net-import': 2,
       lever_temp: 1,
+      'lever_harvest-rate': 1,
     },
   },
 ];

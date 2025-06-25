@@ -9,6 +9,7 @@ npm-shrinkwrap.json
 # Python files and environments
 backend/.venv/*
 backend/**/*.py
+backend/.dockerignore
 **/__pycache__/
 *.pyc
 
