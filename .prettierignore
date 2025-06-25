@@ -6,7 +6,22 @@ node_modules/
 package-lock.json
 npm-shrinkwrap.json
 
+# Python files and environments
 backend/.venv/*
+backend/**/*.py
+**/__pycache__/
+*.pyc
+
+# Docker files
+Dockerfile
+docker-compose.yml
+*.dockerfile
+
+# Environment and config files
+.env
+.env.*
+requirements.txt
+
 frontend/.quasar/*
 # Makefiles
 Makefile
