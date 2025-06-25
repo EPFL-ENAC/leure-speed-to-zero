@@ -40,7 +40,7 @@ _Note: Update this section with your actual tech stack_
 
 - Node.js (v22+)
 - npm
-- Python 3
+- Python 3.12 (uv is better)
 - Docker
 
 ### Setup & Usage
