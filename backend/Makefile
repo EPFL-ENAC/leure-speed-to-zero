@@ -1,8 +1,15 @@
-.PHONY: run up sync format lint test docker-build docker-run
+.PHONY: run up sync format lint test docker-build docker-run cleanup
 
 # Define Python version and name
 PYTHON_VERSION = 3.12
 NAME = backend-web-rest-api
+
+# Cleanup any lingering processes
+cleanup:
+	@echo "Cleaning up any lingering FastAPI processes..."
+	@pkill -f "uvicorn src.main:app" 2>/dev/null || true
+	@pkill -f "WatchFiles" 2>/dev/null || true
+	@echo "Cleanup complete!"
 
 # Sync dependencies
 sync:
