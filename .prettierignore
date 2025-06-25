@@ -6,6 +6,8 @@ node_modules/
 package-lock.json
 npm-shrinkwrap.json
 
+backend/.venv/*
+frontend/.quasar/*
 # Makefiles
 Makefile
 *.mk
@@ -29,6 +31,8 @@ Makefile
 # Other config files that don't need formatting
 .editorconfig
 lefthook.yml
+**/**.yml
+**/**.yaml
 commitlint.config.js
 
 # CITATION files

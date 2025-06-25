@@ -9,7 +9,7 @@ The tool will integrate PyCalc models for real-time computations, provide intera
 
 ## Contributors
 
-- EPFL - (Research & Data): Dr. Gino Baudry (EPFL,  gino.baudry[at]epfl.ch),  Dr. Paola Paruta (EPFL,  paola.paruta[at]epfl.ch),  Dr. Edoardo Chiarotti (E4S,  edoardo.chiarotti[at]epfl.ch),  Agathe Crosnier (EPFL,  agathe.crosnier[at]epfl.ch).
+- EPFL - (Research & Data): Dr. Gino Baudry (EPFL, gino.baudry[at]epfl.ch), Dr. Paola Paruta (EPFL, paola.paruta[at]epfl.ch), Dr. Edoardo Chiarotti (E4S, edoardo.chiarotti[at]epfl.ch), Agathe Crosnier (EPFL, agathe.crosnier[at]epfl.ch).
 - EPFL - ENAC-IT4R (Implementation): Pierre Ripoll, Pierre Guilbert
 - EPFL - ENAC-IT4R (Project Management): Pierre Ripoll
 - EPFL - ENAC-IT4R (Contributors): --

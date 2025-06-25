@@ -1,9 +1,8 @@
-.PHONY: setup install clean uninstall help
+.PHONY: install clean uninstall help
 
 # Default target
 help:
 	@echo "Available commands:"
-	@echo "  setup      - Set up repository from template (first-time setup)"
 	@echo "  install    - Install dependencies and set up git hooks"
 	@echo "  clean      - Clean node_modules and package-lock.json"
 	@echo "  uninstall  - Remove git hooks and clean dependencies"
