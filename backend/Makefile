@@ -18,7 +18,9 @@ sync:
 run:
 	@echo "Starting FastAPI development server..."
 	@echo "Open your browser at http://localhost:8000/docs"
-	.venv/bin/uvicorn src.main:app --reload --host 0.0.0.0 --port 8000; \
+	@echo "Press Ctrl+C to stop the server"
+	@trap 'echo "Stopping FastAPI server..."; pkill -f "uvicorn src.main:app" 2>/dev/null || true; pkill -f "WatchFiles" 2>/dev/null || true' INT TERM EXIT; \
+	.venv/bin/uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 
 
 up:
