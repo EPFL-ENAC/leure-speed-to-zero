@@ -221,9 +221,7 @@
       "title": "Transport energy cost",
       "unit": "MEUR",
       "type": "StackedArea",
-      "outputs": [
-        "tra_energy-cost[MEUR]"
-      ]
+      "outputs": ["tra_energy-cost[MEUR]"]
     }
   }
 }

@@ -4,7 +4,17 @@ on:
   pull_request:
     branches: [main, dev]
   push:
-    branches: [main, dev, feat/*, fix/*, hotfix/*, feature/*, bugfix/*, new-app-pierre-guilbert]
+    branches:
+      [
+        main,
+        dev,
+        feat/*,
+        fix/*,
+        hotfix/*,
+        feature/*,
+        bugfix/*,
+        new-app-pierre-guilbert,
+      ]
 
 jobs:
   quality:
@@ -33,4 +43,3 @@ jobs:
 
       - name: Format with Black
         run: black backend/src --check
-
