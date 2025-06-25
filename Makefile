@@ -26,8 +26,11 @@ install-backend:
 		echo "Using uv for backend dependencies..."; \
 		cd backend && uv sync; \
 	else \
-		echo "uv not found, using pip with requirements.txt..."; \
-		cd backend && pip install -r requirements.txt; \
+		echo "uv not found, creating virtual environment and using pip..."; \
+		cd backend && python -m venv .venv; \
+		cd backend && .venv/bin/pip install --upgrade pip; \
+		cd backend && .venv/bin/pip install -r requirements.txt; \
+		echo "Virtual environment created at backend/.venv"; \
 	fi
 	@echo "Backend dependencies installed!"
 
