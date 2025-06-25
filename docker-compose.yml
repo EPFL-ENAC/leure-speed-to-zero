@@ -17,6 +17,7 @@ services:
 
   frontend:
     build:
+      context: ./frontend
       dockerfile: Dockerfile
     labels:
       - 'traefik.enable=true'
@@ -27,3 +28,34 @@ services:
       - 'traefik.http.routers.frontend.middlewares=compress'
       - 'traefik.http.middlewares.compress.compress=true'
       - 'traefik.http.services.frontend.loadbalancer.server.port=80'
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.backend.rule=Host(`lgb-trsc.localhost`) && PathPrefix(`/api`)'
+      - 'traefik.http.routers.backend.priority=200'
+      - 'traefik.http.routers.backend.tls=true'
+      - 'traefik.http.services.backend.loadbalancer.server.port=8081'
+    environment:
+      - PYTHONPATH=/app
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    expose:
+      - "8081"
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    expose:
+      - "6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:
