@@ -4,8 +4,9 @@ name: deploy
 'on':
   push:
     branches:
-      - main
       - dev
+      - test
+      - stage
     tags: ['v*.*.*']
 
 jobs:
@@ -19,3 +20,5 @@ jobs:
     with:
       org: epfl-leure # your org
       repo: speed-to-zero
+      build_context: '["./backend", "./frontend"]'
+
