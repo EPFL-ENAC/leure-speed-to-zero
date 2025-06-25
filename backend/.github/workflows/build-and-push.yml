@@ -1,0 +1,24 @@
+# https://github.com/EPFL-ENAC/epfl-enac-build-push-deploy-action#readme
+name: deploy
+description: Build, push and deploy a Docker image to the EPFL ENAC Docker registry
+
+permissions:
+  contents: read
+  packages: write
+
+'on':
+  push:
+    branches:
+      - new-app-pierre-guilbert
+      - main
+      - dev
+    tags: ['v*.*.*']
+
+jobs:
+  deploy:
+    uses: EPFL-ENAC/epfl-enac-build-push-deploy-action/.github/workflows/deploy.yml@v2.3.0
+    secrets:
+      token: ${{ secrets.CD_TOKEN }}
+    with:
+      org: epfl-leure # your org
+      repo: speed-to-zero # your app name, usual convention is name of your repository
