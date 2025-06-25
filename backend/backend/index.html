@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastAPI Application</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        header {
+            background-color: #0f766e;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        footer {
+            background-color: #f4f4f4;
+            padding: 1rem;
+            text-align: center;
+            margin-top: 2rem;
+        }
+        .endpoint-list {
+            margin: 2rem 0;
+        }
+        .endpoint {
+            background-color: #f9f9f9;
+            border-left: 4px solid #0f766e;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin-right: 0.5rem;
+            font-size: 0.8rem;
+        }
+        .get {
+            background-color: #22c55e;
+            color: white;
+        }
+        .post {
+            background-color: #3b82f6;
+            color: white;
+        }
+    </style>
+    <script>
+        var isLocalhost = window.location.host === 'localhost:8000' || window.location.host === '0.0.0.0:8000';
+
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Speed to Zero: FastAPI Application</h1>
+    </header>
+
+    <div class="container">
+        <main>
+            <section>
+                <h2>API Overview</h2>
+                <p>The API is built with FastAPI, a modern, fast web framework for building APIs with Python.
+                    It provides functionality for speed-to-zero.
+                </p>
+                <p>For complete API documentation, visit <a id="docs-link" href="/api/docs">docs</a>.</p>
+
+                <p>View the source code on <a href="https://github.com/2050Calculators/PathwayCalc" target="_blank">GitHub</a>.</p>
+                <p><strong>Contact support:</strong> <a href="mailto:enacti4research@epfl.ch">enacti4research@epfl.ch</a></p>
+                <p><strong>API Version:</strong> <span id="api-version">Loading...</span></p>
+            </section>
+        </main>
+    </div>
+
+    <footer>
+        <p>2050Calculators &copy; 2025</p>
+    </footer>
+
+    <script>
+        // Fetch and display API version from /api/version if available
+        const apiVersion = document.getElementById('api-version');
+        fetch('/api/v1/version')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                apiVersion.textContent = data.version || 'Unknown';
+            })
+            .catch(() => {
+                apiVersion.textContent = 'Unavailable';
+            });
+        // You can add JavaScript here to fetch data from your API
+        // Example:
+        // fetch('/api/health')
+        //     .then(response => response.json())
+        //     .then(data => console.log('API Status:', data));
+    </script>
+</body>
+</html>
