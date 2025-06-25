@@ -27,7 +27,13 @@ run:
 	@echo "Open your browser at http://localhost:8000/docs"
 	@echo "Press Ctrl+C to stop the server"
 	@trap 'echo "Stopping FastAPI server..."; pkill -f "uvicorn src.main:app" 2>/dev/null || true; pkill -f "WatchFiles" 2>/dev/null || true' INT TERM EXIT; \
-	.venv/bin/uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+	if uv --version >/dev/null 2>&1; then \
+		echo "Using uv..."; \
+		uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000; \
+	else \
+		echo "uv not found, using virtual environment..."; \
+		.venv/bin/uvicorn src.main:app --reload --host 0.0.0.0 --port 8000; \
+	fi
 
 
 up:
