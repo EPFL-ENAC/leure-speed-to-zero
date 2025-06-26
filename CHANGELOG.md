@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.2.0...v0.2.1) (2025-06-26)
+
+
+### Bug Fixes
+
+* add CHANGELOG.md to Prettier ignore list ([cc34af0](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/cc34af019f16ad886f4a759df02d920400f33691))
+
 ## [0.2.0](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.1.0...v0.2.0) (2025-06-26)
 
 
