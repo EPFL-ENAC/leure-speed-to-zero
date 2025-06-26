@@ -1,8 +1,25 @@
-.PHONY: run up sync format lint test docker-build docker-run cleanup
+.PHONY: install run up format lint test docker-build docker-run cleanup
 
 # Define Python version and name
 PYTHON_VERSION = 3.12
 NAME = backend-web-rest-api
+
+# Install backend dependencies
+install:
+	@echo "Installing backend dependencies..."
+	@if uv --version >/dev/null 2>&1; then \
+		echo "Using uv for backend dependencies..."; \
+		uv sync; \
+	else \
+		echo "uv not available in current environment, using virtual environment and pip..."; \
+		if [ ! -d ".venv" ]; then \
+			python -m venv .venv && \
+			.venv/bin/pip install --upgrade pip; \
+		fi && \
+		.venv/bin/pip install -r requirements.txt; \
+		echo "Virtual environment ready at backend/.venv"; \
+	fi
+	@echo "Backend dependencies installed!"
 
 # Cleanup any lingering processes
 cleanup:
@@ -10,17 +27,6 @@ cleanup:
 	@pkill -f "uvicorn src.main:app" 2>/dev/null || true
 	@pkill -f "WatchFiles" 2>/dev/null || true
 	@echo "Cleanup complete!"
-
-# Sync dependencies
-sync:
-	@echo "Syncing dependencies"
-	@if uv --version >/dev/null 2>&1; then \
-		uv sync; \
-		uv export > requirements.txt; \
-	else \
-		echo "uv not available, using pip to update requirements.txt"; \
-		.venv/bin/pip freeze > requirements.txt; \
-	fi
 
 run:
 	@echo "Starting FastAPI development server..."

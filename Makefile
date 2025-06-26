@@ -25,20 +25,7 @@ install: install-backend install-frontend
 # Install backend dependencies
 install-backend:
 	@echo "Installing backend dependencies..."
-	@cd backend && \
-	if uv --version >/dev/null 2>&1; then \
-		echo "Using uv for backend dependencies..."; \
-		uv sync; \
-	else \
-		echo "uv not available in current environment, using virtual environment and pip..."; \
-		if [ ! -d ".venv" ]; then \
-			python -m venv .venv && \
-			.venv/bin/pip install --upgrade pip; \
-		fi && \
-		.venv/bin/pip install -r requirements.txt; \
-		echo "Virtual environment ready at backend/.venv"; \
-	fi
-	@echo "Backend dependencies installed!"
+	$(MAKE) -C backend install
 
 # Install frontend dependencies
 install-frontend:
