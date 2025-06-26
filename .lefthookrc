@@ -1,0 +1,28 @@
+#!/bin/bash
+# .lefthookrc
+# This file sets up the environment for lefthook to find npm/npx
+# Works with various Node.js installation methods (direct install, nvm, volta, etc.)
+
+# An nvm way
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# An fnm way
+export FNM_DIR="$HOME/.fnm"
+[ -s "$FNM_DIR/fnm.sh" ] && \. "$FNM_DIR/fnm.sh"
+
+# Volta support
+export VOLTA_HOME="$HOME/.volta"
+[ -s "$VOLTA_HOME/load.sh" ] && \. "$VOLTA_HOME/load.sh"
+
+# Fallback: Add common Node.js paths for direct installations and as backup
+# Check for nvm installations and add the latest version if available
+if [ -d "$HOME/.nvm/versions/node" ] && [ -z "$(which node 2>/dev/null)" ]; then
+    LATEST_NODE=$(ls "$HOME/.nvm/versions/node" | grep -E '^v[0-9]+' | sort -V | tail -1)
+    if [ -n "$LATEST_NODE" ]; then
+        PATH="$HOME/.nvm/versions/node/$LATEST_NODE/bin:$PATH"
+    fi
+fi
+
+# Add other common Node.js paths as fallback
+PATH=$PATH:$HOME/.volta/bin:/opt/homebrew/bin:/usr/local/bin
