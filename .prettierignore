@@ -22,6 +22,7 @@ docker-compose.yml
 .env
 .env.*
 requirements.txt
+.gitattributes
 
 frontend/.quasar/*
 # Makefiles
