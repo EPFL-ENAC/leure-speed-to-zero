@@ -4,8 +4,8 @@ The tool will integrate PyCalc models for real-time computations, provide intera
 
 **Access the platform here:**
 
-**dev url: [https://leure-speed-to-zero-dev.speed-to-zero.epfl.ch/](https://leure-speed-to-zero-dev.speed-to-zero.epfl.ch/)**  
-**prod url: [https://leure-speed-to-zero.speed-to-zero.epfl.ch/](https://leure-speed-to-zero.speed-to-zero.epfl.ch/)**
+**dev url: [https://speed-to-zero-dev.epfl.ch/](https://speed-to-zero-dev.epfl.ch/)**  
+**prod url: [https://speed-to-zero.epfl.ch/](https://speed-to-zero.epfl.ch/)**
 
 ## Contributors
 
@@ -13,6 +13,114 @@ The tool will integrate PyCalc models for real-time computations, provide intera
 - EPFL - ENAC-IT4R (Implementation): Pierre Ripoll, Pierre Guilbert
 - EPFL - ENAC-IT4R (Project Management): Pierre Ripoll
 - EPFL - ENAC-IT4R (Contributors): --
+
+## Development
+
+### Prerequisites
+
+- Node.js (v22+)
+- npm
+- Python 3.12 (uv is better)
+- Docker
+
+### Linux/Mac Setup (Recommended)
+
+For Linux and Mac users, you can use the provided Makefile for easy setup and development:
+
+#### Installation
+```bash
+# Clone the repository
+git clone https://github.com/EPFL-ENAC/leure-speed-to-zero.git
+cd leure-speed-to-zero
+
+# Install all dependencies (backend + frontend) and set up git hooks
+make install
+```
+
+#### Running the Development Environment
+```bash
+# Run both backend and frontend servers
+make run
+```
+
+This will start:
+- Backend at http://localhost:8000 (API docs at http://localhost:8000/docs)
+- Frontend at http://localhost:9000
+
+#### Other Useful Commands
+```bash
+make clean        # Clean node_modules and package-lock.json
+make uninstall    # Remove git hooks and clean dependencies
+make lint         # Run linter checks
+make format       # Format code with prettier
+make run-backend  # Run backend only
+make run-frontend # Run frontend only
+```
+
+### Windows Setup
+
+If you're on Windows without WSL2, you can set up the project manually:
+
+#### Prerequisites for Windows
+- Node.js (v22+) - [Download from nodejs.org](https://nodejs.org/)
+- Python 3.12 - [Download from python.org](https://www.python.org/)
+- Git for Windows - [Download from git-scm.com](https://git-scm.com/)
+- Docker Desktop - [Download from docker.com](https://www.docker.com/products/docker-desktop/)
+
+#### Manual Installation Steps
+
+1. **Install dependencies:**
+   ```powershell
+   # Install root dependencies (for git hooks)
+   npm install
+   
+   # Install frontend dependencies
+   cd frontend
+   npm install
+   cd ..
+   
+   # Install backend dependencies (using virtual environment)
+   cd backend
+   python -m venv .venv
+   # Activate virtual environment
+   .venv\Scripts\activate  # On Windows
+   # .venv/bin/activate    # On macOS/Linux if using this section
+   pip install --upgrade pip
+   pip install -r requirements.txt
+   cd ..
+   ```
+
+2. **Set up git hooks:**
+   ```powershell
+   npx lefthook install
+   ```
+
+3. **Run the development servers:**
+   ```powershell
+   # Terminal 1 - Backend
+   cd backend
+   # Activate virtual environment first
+   .venv\Scripts\activate
+   python -m uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+   
+   # Terminal 2 - Frontend (in a new terminal)
+   cd frontend
+   npm run dev
+   ```
+
+**Note:** Remember to activate the virtual environment (`.venv\Scripts\activate`) every time you work with the backend in a new terminal session.
+
+#### Alternative: Use WSL2 (Recommended)
+
+For the best development experience on Windows, we recommend using WSL2:
+
+1. Install WSL2 following [Microsoft's guide](https://docs.microsoft.com/en-us/windows/wsl/install)
+2. Install Ubuntu or your preferred Linux distribution
+3. Follow the standard Unix setup instructions above
+
+This provides a native Linux environment where all the Makefile commands work as expected.
+
+
 
 ## Tech Stack
 
@@ -33,37 +141,6 @@ The tool will integrate PyCalc models for real-time computations, provide intera
 - [Traefik](https://traefik.io/) - Edge Router
 
 _Note: Update this section with your actual tech stack_
-
-## Development
-
-### Prerequisites
-
-- Node.js (v22+)
-- npm
-- Python 3.12 (uv is better)
-- Docker
-
-### Setup & Usage
-
-You can use Make with the following commands:
-
-```bash
-make install
-make clean
-make uninstall
-make lint
-make format
-```
-
-_Note: Update these commands based on your project's actual build system_
-
-### Development Environment
-
-The development environment includes:
-
-- Frontend at http://localhost:9000
-- Backend API at https://localhost:8000
-- Traefik Dashboard at http://localhost:8080
 
 ## Contributing
 
