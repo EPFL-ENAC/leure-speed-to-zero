@@ -1,4 +1,4 @@
-.PHONY: install install-backend install-frontend clean uninstall help run run-backend run-frontend up
+.PHONY: install install-backend install-frontend clean uninstall help run run-backend run-frontend wait-for-backend up
 
 # Default target
 help:
@@ -8,9 +8,10 @@ help:
 	@echo "  install-frontend  - Install frontend dependencies only"
 	@echo "  clean             - Clean node_modules and package-lock.json"
 	@echo "  uninstall         - Remove git hooks and clean dependencies"
-	@echo "  run               - Run backend and frontend locally"
+	@echo "  run               - Run backend and frontend locally (waits for backend health check)"
 	@echo "  run-backend       - Run backend only"
 	@echo "  run-frontend      - Run frontend only"
+	@echo "  wait-for-backend  - Wait for backend health endpoint to respond"
 	@echo "  up                - Run docker compose with rebuild and no cache"
 	@echo "  help              - Show this help message"
 
@@ -69,6 +70,24 @@ format:
 	npx prettier --write .
 	@echo "Formatting complete!"
 
+# Wait for backend health check
+wait-for-backend:
+	@echo "Waiting for backend to be healthy..."
+	@timeout=60; \
+	while [ $$timeout -gt 0 ]; do \
+		if curl -f -s http://localhost:8000/health >/dev/null 2>&1; then \
+			echo "Backend is healthy!"; \
+			break; \
+		fi; \
+		echo "Backend not ready yet, waiting... ($$timeout seconds left)"; \
+		sleep 2; \
+		timeout=$$((timeout - 2)); \
+	done; \
+	if [ $$timeout -le 0 ]; then \
+		echo "Timeout waiting for backend to be healthy"; \
+		exit 1; \
+	fi
+
 # Run backend and frontend locally via recursive makefiles
 run:
 	@echo "Starting local development servers..."
@@ -77,6 +96,7 @@ run:
 	@echo "Press Ctrl+C to stop both servers"
 	@trap 'kill $$(jobs -p) 2>/dev/null || true' EXIT; \
 	$(MAKE) -C backend run & \
+	$(MAKE) wait-for-backend && \
 	cd frontend && npm run dev & \
 	wait
 
