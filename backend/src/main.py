@@ -29,19 +29,25 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     """Initialize cache with Redis fallback to in-memory cache."""
     logger = logging.getLogger(__name__)
     
+    logger.info("🚀 Initializing caching system...")
+    
     try:
         # Try to connect to Redis
+        logger.info(f"🔗 Attempting to connect to Redis at {settings.REDIS_HOST}:{settings.REDIS_PORT}")
         redis = aioredis.from_url(f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}")
         # Test the connection
         await redis.ping()
         FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
-        logger.info(f"✅ Redis cache initialized successfully at {settings.REDIS_HOST}:{settings.REDIS_PORT}")
+        logger.info(f"✅ CACHE BACKEND: Redis cache initialized successfully at {settings.REDIS_HOST}:{settings.REDIS_PORT}")
+        logger.info("📊 Cache features: Persistent, shared across instances, high performance")
     except Exception as e:
         # If Redis connection fails, fall back to in-memory cache
-        logger.warning(f"⚠️  Redis connection failed ({str(e)}). Falling back to in-memory cache.")
-        logger.warning("📝 Note: Cache will not persist between application restarts.")
+        logger.warning(f"⚠️  Redis connection failed: {str(e)}")
+        logger.warning("� Falling back to in-memory cache...")
         FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
-        logger.info("✅ In-memory cache initialized as fallback")
+        logger.info("✅ CACHE BACKEND: In-memory cache initialized as fallback")
+        logger.info("📊 Cache features: Non-persistent, single instance only, basic performance")
+        logger.info("💡 To enable Redis caching, ensure Redis server is running on configured host:port")
     
     yield
 
@@ -55,6 +61,44 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+
+
+def get_cache_backend_info():
+    """Get information about the current cache backend."""
+    try:
+        backend = FastAPICache.get_backend()
+        if isinstance(backend, RedisBackend):
+            return {
+                "type": "redis",
+                "name": "Redis Cache",
+                "persistent": True,
+                "distributed": True,
+                "performance": "high"
+            }
+        elif isinstance(backend, InMemoryBackend):
+            return {
+                "type": "inmemory",
+                "name": "In-Memory Cache",
+                "persistent": False,
+                "distributed": False,
+                "performance": "basic"
+            }
+        else:
+            return {
+                "type": "unknown",
+                "name": "Unknown Cache Backend",
+                "persistent": False,
+                "distributed": False,
+                "performance": "unknown"
+            }
+    except Exception:
+        return {
+            "type": "none",
+            "name": "No Cache",
+            "persistent": False,
+            "distributed": False,
+            "performance": "none"
+        }
 
 
 @app.exception_handler(ValidationError)
@@ -83,23 +127,35 @@ async def get_index():
 @app.get("/redis-health")
 async def check_redis():
     """Check Redis connection status."""
+    logger = logging.getLogger(__name__)
+    cache_info = get_cache_backend_info()
+    
+    logger.info(f"❤️  Redis health check - Current cache backend: {cache_info['name']}")
+    
     try:
         import redis
 
         r = redis.from_url(f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}")
         ping = r.ping()
+        
+        logger.info("✅ Redis health check: Connection successful")
+        
         return {
             "status": "ok", 
             "redis_connection": "successful", 
             "ping": ping,
-            "cache_backend": "redis"
+            "cache_backend": "redis",
+            "backend_info": cache_info
         }
     except Exception as e:
+        logger.warning(f"⚠️  Redis health check failed: {str(e)}")
+        
         return {
             "status": "warning", 
             "redis_connection": "failed",
             "message": str(e),
-            "cache_backend": "in-memory fallback"
+            "cache_backend": "in-memory fallback",
+            "backend_info": cache_info
         }
 
 
@@ -110,6 +166,11 @@ import time
 @cache(expire=10)
 async def test_cache():
     """Test endpoint to verify caching is working."""
+    logger = logging.getLogger(__name__)
+    cache_info = get_cache_backend_info()
+    
+    logger.info(f"🧪 Cache test request - Using {cache_info['name']} backend")
+    
     # Add a timestamp to see if response changes
     timestamp = time.time()
 
@@ -119,13 +180,19 @@ async def test_cache():
     return {
         "cached": True,
         "timestamp": timestamp,
-        "message": "If caching works, this timestamp should remain the same for 5 seconds",
+        "message": "If caching works, this timestamp should remain the same for 10 seconds",
+        "cache_backend": cache_info
     }
 
 
 @app.get("/debug-cache")
 async def debug_cache():
     """Debug endpoint to check cache status."""
+    logger = logging.getLogger(__name__)
+    cache_info = get_cache_backend_info()
+    
+    logger.info(f"🔍 Cache debug request - Current backend: {cache_info['name']}")
+    
     try:
         import redis
 
@@ -134,15 +201,21 @@ async def debug_cache():
         # List keys
         all_keys = r.keys("fastapi-cache:*")
         
+        logger.info(f"📊 Redis cache status: {len(all_keys)} keys found")
+        
         return {
             "cache_backend": "redis",
+            "backend_info": cache_info,
             "all_keys": [key.decode() if isinstance(key, bytes) else key for key in all_keys],
             "total_keys": len(all_keys),
             "redis_connection": "successful"
         }
     except Exception as e:
+        logger.warning(f"⚠️  Redis debug failed: {str(e)} - Using fallback info")
+        
         return {
             "cache_backend": "in-memory fallback",
+            "backend_info": cache_info,
             "message": f"Redis not available: {str(e)}",
             "note": "Using in-memory cache (keys not retrievable via Redis client)"
         }
