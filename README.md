@@ -77,7 +77,7 @@ To enable Redis for caching in the backend, follow these steps:
    ```bash
    # Check if Redis container is running
    docker ps | grep redis
-   
+
    # Test Redis connection (optional)
    docker exec -it $(docker ps -q -f name=redis) redis-cli ping
    ```
@@ -91,7 +91,7 @@ To enable Redis for caching in the backend, follow these steps:
    ```bash
    # Stop Redis service
    docker compose down redis
-   
+
    # Or stop all services
    docker compose down
    ```
