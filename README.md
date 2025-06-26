@@ -28,6 +28,7 @@ The tool will integrate PyCalc models for real-time computations, provide intera
 For Linux and Mac users, you can use the provided Makefile for easy setup and development:
 
 #### Installation
+
 ```bash
 # Clone the repository
 git clone https://github.com/EPFL-ENAC/leure-speed-to-zero.git
@@ -38,16 +39,19 @@ make install
 ```
 
 #### Running the Development Environment
+
 ```bash
 # Run both backend and frontend servers
 make run
 ```
 
 This will start:
+
 - Backend at http://localhost:8000 (API docs at http://localhost:8000/docs)
 - Frontend at http://localhost:9000
 
 #### Other Useful Commands
+
 ```bash
 make clean        # Clean node_modules and package-lock.json
 make uninstall    # Remove git hooks and clean dependencies
@@ -62,6 +66,7 @@ make run-frontend # Run frontend only
 If you're on Windows without WSL2, you can set up the project manually:
 
 #### Prerequisites for Windows
+
 - Node.js (v22+) - [Download from nodejs.org](https://nodejs.org/)
 - Python 3.12 - [Download from python.org](https://www.python.org/)
 - Git for Windows - [Download from git-scm.com](https://git-scm.com/)
@@ -70,15 +75,16 @@ If you're on Windows without WSL2, you can set up the project manually:
 #### Manual Installation Steps
 
 1. **Install dependencies:**
+
    ```powershell
    # Install root dependencies (for git hooks)
    npm install
-   
+
    # Install frontend dependencies
    cd frontend
    npm install
    cd ..
-   
+
    # Install backend dependencies (using virtual environment)
    cd backend
    python -m venv .venv
@@ -91,18 +97,20 @@ If you're on Windows without WSL2, you can set up the project manually:
    ```
 
 2. **Set up git hooks:**
+
    ```powershell
    npx lefthook install
    ```
 
 3. **Run the development servers:**
+
    ```powershell
    # Terminal 1 - Backend
    cd backend
    # Activate virtual environment first
    .venv\Scripts\activate
    python -m uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
-   
+
    # Terminal 2 - Frontend (in a new terminal)
    cd frontend
    npm run dev
@@ -119,8 +127,6 @@ For the best development experience on Windows, we recommend using WSL2:
 3. Follow the standard Unix setup instructions above
 
 This provides a native Linux environment where all the Makefile commands work as expected.
-
-
 
 ## Tech Stack
 
