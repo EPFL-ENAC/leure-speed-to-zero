@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
+from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.decorator import cache
 
 from redis import asyncio as aioredis
@@ -25,8 +26,23 @@ from fastapi.middleware.gzip import GZipMiddleware
 # Initialize cache on startup
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    redis = aioredis.from_url(f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}")
-    FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
+    """Initialize cache with Redis fallback to in-memory cache."""
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Try to connect to Redis
+        redis = aioredis.from_url(f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}")
+        # Test the connection
+        await redis.ping()
+        FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
+        logger.info(f"✅ Redis cache initialized successfully at {settings.REDIS_HOST}:{settings.REDIS_PORT}")
+    except Exception as e:
+        # If Redis connection fails, fall back to in-memory cache
+        logger.warning(f"⚠️  Redis connection failed ({str(e)}). Falling back to in-memory cache.")
+        logger.warning("📝 Note: Cache will not persist between application restarts.")
+        FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
+        logger.info("✅ In-memory cache initialized as fallback")
+    
     yield
 
 
@@ -66,14 +82,25 @@ async def get_index():
 
 @app.get("/redis-health")
 async def check_redis():
+    """Check Redis connection status."""
     try:
         import redis
 
         r = redis.from_url(f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}")
         ping = r.ping()
-        return {"status": "ok", "redis_connection": "successful", "ping": ping}
+        return {
+            "status": "ok", 
+            "redis_connection": "successful", 
+            "ping": ping,
+            "cache_backend": "redis"
+        }
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {
+            "status": "warning", 
+            "redis_connection": "failed",
+            "message": str(e),
+            "cache_backend": "in-memory fallback"
+        }
 
 
 import time
@@ -98,16 +125,24 @@ async def test_cache():
 
 @app.get("/debug-cache")
 async def debug_cache():
-    """Debug endpoint to check Redis cache."""
-    import redis
+    """Debug endpoint to check cache status."""
+    try:
+        import redis
 
-    r = redis.from_url(f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}")
-
-    # List keys
-    all_keys = r.keys("fastapi-cache:*")
-
-    return {
-        "all_keys": all_keys,
-        "cache_hit": cache_value is not None,
-        "specific_key": specific_key,
-    }
+        r = redis.from_url(f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}")
+        
+        # List keys
+        all_keys = r.keys("fastapi-cache:*")
+        
+        return {
+            "cache_backend": "redis",
+            "all_keys": [key.decode() if isinstance(key, bytes) else key for key in all_keys],
+            "total_keys": len(all_keys),
+            "redis_connection": "successful"
+        }
+    except Exception as e:
+        return {
+            "cache_backend": "in-memory fallback",
+            "message": f"Redis not available: {str(e)}",
+            "note": "Using in-memory cache (keys not retrievable via Redis client)"
+        }
