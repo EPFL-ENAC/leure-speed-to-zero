@@ -61,6 +61,43 @@ make run-backend  # Run backend only
 make run-frontend # Run frontend only
 ```
 
+#### Enabling Redis for Backend Caching
+
+To enable Redis for caching in the backend, follow these steps:
+
+1. **Start Redis using Docker Compose:**
+
+   ```bash
+   # Start Redis service in the background
+   docker compose up -d redis
+   ```
+
+2. **Verify Redis is running:**
+
+   ```bash
+   # Check if Redis container is running
+   docker ps | grep redis
+   
+   # Test Redis connection (optional)
+   docker exec -it $(docker ps -q -f name=redis) redis-cli ping
+   ```
+
+3. **Configure the backend to use Redis:**
+
+   The backend application should automatically detect and connect to Redis when it's available. If you need to configure Redis settings, check the backend configuration files in `backend/config/`.
+
+4. **Stop Redis when done:**
+
+   ```bash
+   # Stop Redis service
+   docker compose down redis
+   
+   # Or stop all services
+   docker compose down
+   ```
+
+**Note:** Redis caching will improve the performance of the backend by storing frequently accessed data in memory. The backend will work without Redis, but with caching disabled.
+
 ### Windows Setup
 
 If you're on Windows without WSL2, you can set up the project manually:
