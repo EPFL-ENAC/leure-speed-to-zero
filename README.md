@@ -23,6 +23,55 @@ The tool will integrate PyCalc models for real-time computations, provide intera
 - Python 3.12 (uv is better)
 - Docker
 
+### Installing Development Tools (Optional but Recommended)
+
+For better version management and faster package installation, you can install these tools:
+
+#### Install Node Version Manager (nvm)
+
+```bash
+# Install nvm for Node.js version management
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+
+# Restart your terminal or run:
+source ~/.bashrc  # or ~/.zshrc
+
+# Install and use Node.js v22
+nvm install 22
+nvm use 22
+```
+
+#### Install uv (Fast Python Package Manager)
+
+```bash
+# Install uv for faster Python package management
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Restart your terminal or add to PATH
+source ~/.bashrc  # or ~/.zshrc
+```
+
+#### Install pyenv (Python Version Manager)
+
+```bash
+# Install pyenv for Python version management
+curl -fsSL https://pyenv.run | bash
+
+# Add to your shell profile (~/.bashrc, ~/.zshrc, etc.)
+echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+echo 'eval "$(pyenv init -)"' >> ~/.bashrc
+
+# Restart your terminal or run:
+source ~/.bashrc  # or ~/.zshrc
+
+# Install Python 3.12
+pyenv install 3.12
+pyenv global 3.12
+```
+
+**Note:** After installing these tools, restart your terminal or source your shell profile to use them.
+
 ### Linux/Mac Setup (Recommended)
 
 For Linux and Mac users, you can use the provided Makefile for easy setup and development:
@@ -164,6 +213,56 @@ For the best development experience on Windows, we recommend using WSL2:
 3. Follow the standard Unix setup instructions above
 
 This provides a native Linux environment where all the Makefile commands work as expected.
+
+#### WSL2 Troubleshooting
+
+If you encounter line ending issues when using WSL2 (like `/usr/bin/env: 'bash\r': No such file or directory`), this is due to Windows line endings (CRLF) being used instead of Unix line endings (LF). Here are the solutions:
+
+**Option 1: Configure Git to handle line endings automatically (Recommended)**
+
+```bash
+# Configure Git to automatically convert line endings
+git config --global core.autocrlf input
+
+# Re-clone the repository or reset line endings
+git rm --cached -r .
+git reset --hard
+```
+
+**Option 2: Convert line endings manually**
+
+```bash
+# Install dos2unix if not available
+sudo apt update && sudo apt install dos2unix
+
+# Convert line endings for the Makefile
+dos2unix Makefile
+
+# Convert line endings for all shell scripts (if any)
+find . -name "*.sh" -exec dos2unix {} \;
+```
+
+**Option 3: Use .gitattributes file**
+
+The repository should include a `.gitattributes` file to enforce consistent line endings. If it doesn't exist, create one:
+
+```bash
+# Create .gitattributes file
+cat > .gitattributes << 'EOF'
+* text=auto
+*.sh text eol=lf
+Makefile text eol=lf
+*.py text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+*.vue text eol=lf
+EOF
+
+# Apply the changes
+git add .gitattributes
+git rm --cached -r .
+git reset --hard
+```
 
 ## Tech Stack
 
