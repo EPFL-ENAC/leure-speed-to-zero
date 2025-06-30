@@ -1,3 +1,18 @@
 {
-  "python.interpreter.path": "./backend/.venv/bin/python"
+  "python.defaultInterpreterPath": "./backend/.venv/bin/python",
+  "python.terminal.activateEnvironment": true,
+  "python.analysis.extraPaths": [
+    "./backend",
+    "./backend/src"
+  ],
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": false,
+  "python.linting.flake8Enabled": true,
+  "python.formatting.provider": "black",
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.typeCheckingMode": "basic",
+  "files.associations": {
+    "*.py": "python"
+  },
+  "python.terminal.activateEnvInCurrentTerminal": true
 }
