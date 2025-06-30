@@ -1,10 +1,7 @@
 {
   "python.defaultInterpreterPath": "./backend/.venv/bin/python",
   "python.terminal.activateEnvironment": true,
-  "python.analysis.extraPaths": [
-    "./backend",
-    "./backend/src"
-  ],
+  "python.analysis.extraPaths": ["./backend", "./backend/src"],
   "python.linting.enabled": true,
   "python.linting.pylintEnabled": false,
   "python.linting.flake8Enabled": true,
