@@ -11,5 +11,18 @@
   "files.associations": {
     "*.py": "python"
   },
-  "python.terminal.activateEnvInCurrentTerminal": true
+  "python.terminal.activateEnvInCurrentTerminal": true,
+  "terminal.integrated.env.osx": {
+    "PYTHONPATH": "${workspaceFolder}/backend"
+  },
+  "terminal.integrated.env.linux": {
+    "PYTHONPATH": "${workspaceFolder}/backend"
+  },
+  "terminal.integrated.env.windows": {
+    "PYTHONPATH": "${workspaceFolder}\\backend"
+  },
+  "python.envFile": "${workspaceFolder}/.env",
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.python"
+  }
 }
