@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.2.1...v0.3.0) (2025-06-30)
+
+
+### Features
+
+* add .env file for cross-platform PYTHONPATH configuration ([98a7d1e](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/98a7d1e9a757d3ed7cc4e0fb98de1f65ea57ce19))
+
+
+### Bug Fixes
+
+* streamline extraPaths configuration in VSCode settings ([8697568](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/8697568c195a023c2a1ddea020e4dd295168d7ed))
+* update Python settings in VSCode configuration ([24280df](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/24280df363955e20bc12bb612fb17af76fbc08e1))
+
 ## [0.2.1](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.2.0...v0.2.1) (2025-06-26)
 
 
