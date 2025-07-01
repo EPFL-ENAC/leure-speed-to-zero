@@ -15,6 +15,86 @@ export interface Lever {
   difficultyColors: DifficultyArea[];
 }
 
+export const sectors = [
+  {
+    code: 'Buildings',
+    levers: [
+      'lever_floor-intensity',
+      'lever_heatcool-behaviour',
+      'lever_appliance-own',
+      'lever_appliance-use',
+      'lever_building-renovation-rate',
+      'lever_heating-technology-fuel',
+      'lever_heating-efficiency',
+      'lever_appliance-efficiency'
+    ],
+  },
+  { code: 'Transport',
+    levers: [
+      'lever_freight_modal-share',
+      'lever_freight_technology-share_new',
+      'lever_freight_tkm',
+      'lever_freight_utilization-rate',
+      'lever_freight_vehicle-efficiency_new',
+      'lever_passenger_aviation-pkm',
+      'lever_passenger_modal-share',
+      'lever_passenger_occupancy',
+      'lever_passenger_utilization-rate',
+      'lever_pkm',
+      'lever_fuel-mix',
+      'lever_passenger_technology-share_new',
+      'lever_passenger_veh-efficiency_new'
+    ] },
+  { code: 'Behaviours',
+    levers: [
+      'lever_kcal-req',
+      'lever_diet',
+      'lever_fwaste',
+      'lever_floor-intensity',
+      'lever_heatcool-behaviour',
+      'lever_appliance-own',
+      'lever_appliance-use',
+      'lever_paperpack',
+      'lever_product-substitution-rate',
+      'lever_passenger_aviation-pkm',
+      'lever_passenger_modal-share',
+      'lever_passenger_occupancy',
+      'lever_passenger_utilization-rate',
+      'lever_pkm'
+    ] },
+    { code: 'Forestry',
+    levers: [
+      'lever_harvest-rate'
+    ] },
+  { code: 'Industry',
+    levers: [
+      'lever_paperpack',
+      'lever_product-substitution-rate',
+      'lever_material-efficiency',
+      'lever_material-switch',
+      'lever_technology-share',
+      'lever_technology-development',
+      'lever_energy-carrier-mix',
+      'lever_lca-material-decomp'
+    ] },
+  { code: 'Agriculture',
+    levers: [
+      'lever_kcal-req',
+      'lever_diet',
+      'lever_fwaste',
+      'lever_climate-smart-crop',
+      'lever_climate-smart-livestock',
+      'lever_bioenergy-capacity',
+      'lever_alt-protein',
+      'lever_biomass-hierarchy'
+    ] },
+  { code: 'Boundary conditions',
+    levers: [
+      'lever_pop',
+      'lever_temp'
+    ] },
+];
+
 export const levers: Lever[] = [
   {
     code: 'lever_pkm',
