@@ -5,7 +5,7 @@ import logging
 
 import orjson
 from model.interactions import runner
-from model.common.auxiliary_functions import filter_geoscale
+from model.common.auxiliary_functions import filter_country_and_load_data_from_pickles
 import numpy as np
 import time
 import re
@@ -49,8 +49,12 @@ years_setting = [
     2050,
     5,
 ]  # [start_year, current_year, future_year, end_year, step]
-geo_pattern = "Switzerland|Vaud|EU27"
-filter_geoscale(geo_pattern)
+country_list = ['Vaud']
+sectors = ['climate', 'lifestyles', 'buildings', 'transport', 'agriculture', 'industry', 'forestry']
+
+# Filter country
+# from database/data/datamatrix/.* reads the pickles, filters the countries, and loads them
+DM_input = filter_country_and_load_data_from_pickles(country_list= country_list, modules_list = sectors)
 
 
 @router.get("/v1/run-model")
@@ -73,7 +77,7 @@ async def run_model(levers: str = None):
         logger.info(f"Levers input: {str(lever_setting)}")
 
         start = time.perf_counter()
-        output = runner(lever_setting, years_setting, logger)
+        output = runner(lever_setting, years_setting, DM_input, sectors, logger, )
         duration = (time.perf_counter() - start) * 1000  # ms
 
         serializable_output = {k: serialize_model_output(v) for k, v in output.items()}
@@ -123,7 +127,7 @@ async def run_model_clean_structure(levers: str = None):
 
         start = time.perf_counter()
         logger.info("Starting model run...")
-        output = runner(lever_setting, years_setting, logger)
+        output = runner(lever_setting, years_setting, DM_input, sectors, logger, )
         logger.info(
             f"Model run completed in {(time.perf_counter() - start) * 1000:.2f}ms"
         )
