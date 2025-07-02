@@ -24,7 +24,10 @@ interface Kpi {
   value: number;
   unit: string;
   thresholds: { warn: number; danger: number };
+  sector: string;
+  route: string;
   maximize?: boolean;
+  info?: string;
 }
 
 const leverStore = useLeverStore();
@@ -34,30 +37,44 @@ const kpis = ref<Kpi[]>([]);
 // Generate some random KPI data for now
 function generateKpiData() {
   kpis.value = [
-    {
-      title: 'CO2 Emissions',
-      value: Math.random() * 150,
+     {
+      title: 'CO2 emissions',
+      value: Math.random() * 2000,
       unit: 'Mt',
-      thresholds: { warn: 80, danger: 120 },
+      sector: 'Buildings',
+      maximize: false,
+      route: 'building-types-emissions',
+      thresholds: { warn: 1500, danger: 1800 },
     },
     {
-      title: 'Renewable Energy Share',
-      value: Math.random() * 100,
-      unit: '%',
-      thresholds: { warn: 60, danger: 80 },
-      maximize: true,
-    },
-    {
-      title: 'Energy Demand',
+      title: 'Energy Demand for Space Heating',
       value: Math.random() * 500,
       unit: 'TWh',
       thresholds: { warn: 400, danger: 450 },
+      sector: 'Buildings',
+      route: 'energy-carriers',
+      maximize: false,
+      info: 'This indicator measures the total annual energy delivered for space heating in residential buildings (in TWh). It accounts for all heating sources—including gas, heating oil, biomass, and electricity for heat pumps—but excludes the ambient heat extracted by heat pumps, reflecting only the actual energy input required for heating.',
     },
     {
-      title: 'Investment Cost',
-      value: Math.random() * 2000,
-      unit: 'B€',
-      thresholds: { warn: 1500, danger: 1800 },
+      title: 'A-C Class',
+      value: Math.random() * 150,
+      unit: '%',
+      thresholds: { warn: 90, danger: 70 },
+      sector: 'Buildings',
+      route: 'building-types-area',
+      maximize: true,
+      info: 'Share of residential floor area with high-quality thermal envelopes (categories A, B, C) in 2050. The rating reflects the building envelope’s thermal resistance—including insulation of walls, roof, floor, windows, as well as thermal bridges and building form—based on the CECB classification (A = best, G = worst). A higher share indicates better energy efficiency potential, improved occupant comfort, and reduced heating demand in the residential stock.',
+    },
+    {
+      title: 'Unrenovated Envelope Share',
+      value: Math.random() * 100,
+      unit: '%',
+      thresholds: { warn: 5, danger: 15 },
+      sector: 'Buildings',
+      route: 'renovation-construction',
+      maximize: false,
+      info: 'Share of residential floor area that has not undergone an envelope renovation. This includes buildings whose envelope efficiency class has not improved since construction, typically indicating poor or outdated thermal performance. A high value suggests large remaining potential for energy savings and carbon reduction in the existing residential stock.',
     },
   ];
 }
