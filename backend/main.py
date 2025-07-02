@@ -19,7 +19,7 @@ sectors = ['climate', 'lifestyles', 'buildings', 'transport', 'agriculture', 'in
 DM_input = filter_country_and_load_data_from_pickles(country_list= country_list, modules_list = sectors)
 
 # Main model run
-output = runner(lever_setting, years_setting, DM_input, sectors, logger, )
+output, KPI = runner(lever_setting, years_setting, DM_input, sectors, logger, )
 logger.info('Run over')
 
 # data = pickle.load('database/datamatrix/transport.pickle')

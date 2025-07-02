@@ -77,7 +77,7 @@ async def run_model(levers: str = None):
         logger.info(f"Levers input: {str(lever_setting)}")
 
         start = time.perf_counter()
-        output = runner(lever_setting, years_setting, DM_input, sectors, logger, )
+        output, KPI = runner(lever_setting, years_setting, DM_input, sectors, logger, )
         duration = (time.perf_counter() - start) * 1000  # ms
 
         serializable_output = {k: serialize_model_output(v) for k, v in output.items()}
@@ -127,7 +127,7 @@ async def run_model_clean_structure(levers: str = None):
 
         start = time.perf_counter()
         logger.info("Starting model run...")
-        output = runner(lever_setting, years_setting, DM_input, sectors, logger, )
+        output, KPI = runner(lever_setting, years_setting, DM_input, sectors, logger, )
         logger.info(
             f"Model run completed in {(time.perf_counter() - start) * 1000:.2f}ms"
         )
