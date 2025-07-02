@@ -1,0 +1,112 @@
+{
+
+  "subtabs": [
+   {
+      "title": "Forest area",
+      "charts": ["ForestArea"],
+      "route": "forest-area"
+    },
+   {
+      "title": "Wood harvest",
+      "charts": ["HarvestRate","HarvestedWoodSpecies"],
+      "route": "wood-supply"
+    },
+    {
+      "title": "Wood demand per use",
+      "charts": ["WoodDemandUse"],
+      "route": "wood-demand"
+    },
+    {
+      "title": "Wood demand per species",
+      "charts": ["WoodDemandIndustry","WoodDemandEnergy"],
+      "route": "wood-demand-species"
+    },
+    {
+      "title": "Wood supply per source",
+      "charts": ["WoodSupplySources"],
+      "route": "wood-supply-sources"
+    }
+  ],
+  "charts": {
+    "ForestArea": {
+      "title": "Title of plot",
+      "type": "StackedArea",
+      "unit": "ha",
+      "outputs": [
+        {"id":"exploited-forest[ha]", "color": "#abd506"},
+        {"id":"unexploited-forest[ha]", "color": "#98bb0a"}
+      ]
+    },
+   "ExploitedForest": {
+      "title": "Forest exploited area [ha]",
+      "type": "StackedArea",
+      "unit": "ha",
+      "outputs": [
+        {"id":"exploited-forest[ha]", "color": "#785a33"},
+        {"id":"unexploited-forest[ha]", "color": "#3e3324"}
+      ]
+    },
+   "HarvestedWoodSpecies": {
+      "title": "Harvested wood per species [m3]",
+      "type": "StackedArea",
+      "unit": "m3",
+      "outputs": [
+        "harvested-wood_coniferous[m3]",
+        "harvested-wood_non-coniferous[m3]"
+      ]
+    },
+   "WoodDemandUse": {
+      "title": "Wood demand per use [m3]",
+      "type": "StackedArea",
+      "unit": "m3",
+      "outputs": [
+        "woodfuel[m3]",
+        "sawlogs[m3]",
+        "industrial-wood[m3]",
+        "any-other-wood[m3]"
+      ]
+    },
+    "WoodDemandIndustry": {
+      "title": "Industry wood demand per species [m3]",
+      "type": "StackedArea",
+      "unit": "m3",
+      "outputs": [
+        "wood-use_sawlogs_coniferous[m3]",
+        "wood-use_sawlogs_non-coniferous[m3]",
+        "wood-use_industrial-wood_coniferous[m3]",
+        "wood-use_industrial-wood_non-coniferous[m3]",
+        "wood-use_any-other-wood_coniferous[m3]",
+        "wood-use_any-other-wood_non-coniferous[m3]"
+      ]
+    },
+    "WoodDemandEnergy": {
+      "title": "Wood fuel demand per species [m3]",
+      "type": "StackedArea",
+      "unit": "m3",
+      "outputs": [
+        "wood-demand-per-species_woodfuel_coniferous[m3]",
+		    "wood-demand-per-species_woodfuel_non-coniferous[m3]"
+      ]
+    },
+    "WoodSupplySources": {
+      "title": "Wood supply per source [m3]",
+      "type": "StackedArea",
+      "unit": "m3",
+      "outputs": [
+        "wood-supply_harvested-wood[m3]",
+		    "wood-supply_industrial-byproducts[m3]",
+        "wood-supply_waste-wood[m3]"
+      ]
+    },
+    "HarvestRate": {
+      "title": "Wood harvest rate per species [m3/ha]",
+      "type": "Line",
+      "unit": "m3/ha",
+      "outputs": [
+        "harvest-rate_coniferous[m3/ha]",
+		    "harvest-rate_non-coniferous[m3/ha]",
+        "harvest-rate_total[m3/ha]"
+      ]
+    }
+  }
+}
