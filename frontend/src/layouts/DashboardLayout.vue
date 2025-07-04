@@ -13,6 +13,7 @@
                 :options="[
                   { label: 'Buildings', value: 'buildings' },
                   { label: 'Transport', value: 'transport' },
+                  { label: 'Agriculture', value: 'agriculture' },
                   { label: 'Forestry', value: 'forestry'}
                 ]"
                 toggle-color="primary"

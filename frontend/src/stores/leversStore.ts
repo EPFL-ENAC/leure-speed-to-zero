@@ -32,6 +32,7 @@ export interface ModelResults {
     transport: SectorData;
     buildings: SectorData;
     forestry: SectorData;
+    agriculture: SectorData;
   };
 }
 
@@ -115,6 +116,11 @@ export const useLeverStore = defineStore('lever', () => {
   const forestry = computed(() => {
     if (!modelResults.value) return null;
     return modelResults.value.data.forestry;
+  });
+
+    const agriculture = computed(() => {
+    if (!modelResults.value) return null;
+    return modelResults.value.data.agriculture;
   });
 
   // Model operations
@@ -299,6 +305,7 @@ export const useLeverStore = defineStore('lever', () => {
     buildings,
     transport,
     forestry,
+    agriculture,
 
     // Actions
     batchUpdateLevers,

@@ -1,0 +1,254 @@
+{
+
+  "subtabs": [
+    {
+      "title": "Population diet",
+      "charts": ["FoodConsumption","FoodWaste"],
+      "route": "population-diet"
+    },
+   {
+      "title": "Livestock population",
+      "charts": ["LivestockGrossPopulation","LivestockNetPopulation"],
+      "route": "livestock-population"
+    },
+   {
+      "title": "Production",
+      "charts": ["MeatProduction","CropProduction"],
+      "route": "meat-production"
+    },
+   {
+      "title": "Feed inputs",
+      "charts": ["Feed"],
+      "route": "feed"
+    },
+   {
+      "title": "Emissions",
+      "charts": ["CO2","CH4","N2O"],
+      "route": "emissions"
+    }
+  ],
+  "charts": {
+    "LivestockGrossPopulation": {
+      "title": "Livestock population (gross)",
+      "type": "StackedArea",
+      "unit": "lsu",
+      "outputs": [
+        "agr_liv_population_raw_meat-bovine[lsu]",
+        "agr_liv_population_raw_meat-pig[lsu]",
+        "agr_liv_population_raw_meat-poultry[lsu]",
+        "agr_liv_population_raw_meat-sheep[lsu]",
+        "agr_liv_population_raw_meat-oth-animals[lsu]"
+      ]
+    },
+    "LivestockNetPopulation": {
+      "title": "Livestock population (net)",
+      "type": "StackedArea",
+      "unit": "lsu",
+      "outputs": [
+        "agr_liv_population_meat-bovine[lsu]",
+        "agr_liv_population_meat-pig[lsu]",
+        "agr_liv_population_meat-poultry[lsu]",
+        "agr_liv_population_meat-sheep[lsu]",
+        "agr_liv_population_meat-oth-animals[lsu]"
+      ]
+    },
+    "MeatProduction": {
+      "title": "Meat production",
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_domestic_production_meat-bovine[kcal]",
+        "agr_domestic_production_meat-pig[kcal]",
+        "agr_domestic_production_meat-poultry[kcal]",
+        "agr_domestic_production_meat-sheep[kcal]",
+        "agr_domestic_production_meat-oth-animals[kcal]",
+        "agr_domestic_production_abp-dairy-milk[kcal]",
+        "agr_domestic_production_abp-hens-egg[kcal]"
+      ]
+    },
+    "CropProduction": {
+      "title": "Crop production",
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_domestic-production_afw_cereal[kcal]",
+        "agr_domestic-production_afw_fruit[kcal]",
+        "agr_domestic-production_afw_oilcrop[kcal]",
+        "agr_domestic-production_afw_pulse[kcal]",
+        "agr_domestic-production_afw_rice[kcal]",
+        "agr_domestic-production_afw_starch[kcal]",
+        "agr_domestic-production_afw_sugarcrop[kcal]",
+        "agr_domestic-production_afw_veg[kcal]",
+        "agr_domestic-production_afw_lgn-energycrop[kcal]"
+      ]
+    },
+    "Feed": {
+      "title": "Livestock feed input",
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_demand_feed_crop-cereal[kcal]",
+        "agr_demand_feed_crop-oilcrop[kcal]",
+        "agr_demand_feed_crop-processed-cake[kcal]",
+        "agr_demand_feed_crop-processed-molasse[kcal]",
+        "agr_demand_feed_crop-pulse[kcal]",
+        "agr_demand_feed_crop-rice[kcal]",
+        "agr_demand_feed_crop-starch[kcal]",
+        "agr_demand_feed_crop-sugarcrop[kcal]",
+        "agr_demand_feed_crop-veg[kcal]",
+        "agr_demand_feed_fish[kcal]",
+        "agr_demand_feed_liv-meat-meal[kcal]",
+        "agr_demand_feed_aps_algae[kcal]",
+        "agr_demand_feed_aps_insect[kcal]"
+      ]
+    },
+    "CO2": {
+      "title": "CO2 emissions",
+      "type": "StackedArea",
+      "unit": "Mt",
+      "outputs": [
+        "agr_input-use_emissions-CO2_fuel[Mt]",
+        "agr_input-use_emissions-CO2_liming[Mt]",
+        "agr_input-use_emissions-CO2_urea[Mt]"
+      ]
+    },
+    "CH4": {
+      "title": "CH4 emissions",
+      "type": "StackedArea",
+      "unit": "t",
+      "outputs": [
+        "agr_liv_CH4-emission_raw_abp-dairy-milk_enteric[t]",
+        "agr_liv_CH4-emission_raw_abp-dairy-milk_treated[t]",
+        "agr_liv_CH4-emission_raw_abp-hens-egg_treated[t]",
+        "agr_liv_CH4-emission_raw_meat-bovine_enteric[t]",
+        "agr_liv_CH4-emission_raw_meat-bovine_treated[t]",
+        "agr_liv_CH4-emission_raw_meat-oth-animals_enteric[t]",
+        "agr_liv_CH4-emission_raw_meat-oth-animals_treated[t]",
+        "agr_liv_CH4-emission_raw_meat-pig_enteric[t]",
+        "agr_liv_CH4-emission_raw_meat-pig_treated[t]",
+        "agr_liv_CH4-emission_raw_meat-poultry_enteric[t]",
+        "agr_liv_CH4-emission_raw_meat-poultry_treated[t]",
+        "agr_liv_CH4-emission_raw_meat-sheep_enteric[t]",
+        "agr_liv_CH4-emission_raw_meat-sheep_treated[t]",
+        "agr_liv_CH4-emission_abp-dairy-milk_enteric[t]",
+        "agr_liv_CH4-emission_abp-dairy-milk_treated[t]",
+        "agr_liv_CH4-emission_abp-hens-egg_treated[t]",
+        "agr_liv_CH4-emission_meat-bovine_enteric[t]",
+        "agr_liv_CH4-emission_meat-bovine_treated[t]",
+        "agr_liv_CH4-emission_meat-oth-animals_enteric[t]",
+        "agr_liv_CH4-emission_meat-oth-animals_treated[t]",
+        "agr_liv_CH4-emission_meat-pig_enteric[t]",
+        "agr_liv_CH4-emission_meat-pig_treated[t]",
+        "agr_liv_CH4-emission_meat-poultry_treated[t]",
+        "agr_liv_CH4-emission_meat-sheep_enteric[t]",
+        "agr_liv_CH4-emission_meat-sheep_treated[t]"
+      ]
+    },
+    "N2O": {
+      "title": "N2O emissions",
+      "type": "StackedArea",
+      "unit": "t",
+      "outputs": [
+        "agr_liv_N2O-emission_raw_abp-dairy-milk_applied[t]",
+        "agr_liv_N2O-emission_raw_abp-dairy-milk_pasture[t]",
+        "agr_liv_N2O-emission_raw_abp-dairy-milk_treated[t]",
+        "agr_liv_N2O-emission_raw_abp-hens-egg_applied[t]",
+        "agr_liv_N2O-emission_raw_abp-hens-egg_pasture[t]",
+        "agr_liv_N2O-emission_raw_abp-hens-egg_treated[t]",
+        "agr_liv_N2O-emission_raw_meat-bovine_applied[t]",
+        "agr_liv_N2O-emission_raw_meat-bovine_pasture[t]",
+        "agr_liv_N2O-emission_raw_meat-bovine_treated[t]",
+        "agr_liv_N2O-emission_raw_meat-oth-animals_applied[t]",
+        "agr_liv_N2O-emission_raw_meat-oth-animals_pasture[t]",
+        "agr_liv_N2O-emission_raw_meat-oth-animals_treated[t]",
+        "agr_liv_N2O-emission_raw_meat-pig_applied[t]",
+        "agr_liv_N2O-emission_raw_meat-pig_pasture[t]",
+        "agr_liv_N2O-emission_raw_meat-pig_treated[t]",
+        "agr_liv_N2O-emission_raw_meat-poultry_applied[t]",
+        "agr_liv_N2O-emission_raw_meat-poultry_pasture[t]",
+        "agr_liv_N2O-emission_raw_meat-poultry_treated[t]",
+        "agr_liv_N2O-emission_raw_meat-sheep_applied[t]",
+        "agr_liv_N2O-emission_raw_meat-sheep_pasture[t]",
+        "agr_liv_N2O-emission_raw_meat-sheep_treated[t]",
+        "agr_liv_N2O-emission_abp-dairy-milk_applied[t]",
+        "agr_liv_N2O-emission_abp-dairy-milk_pasture[t]",
+        "agr_liv_N2O-emission_abp-dairy-milk_treated[t]",
+        "agr_liv_N2O-emission_abp-hens-egg_applied[t]"
+      ]
+    },
+    "FoodConsumption": {
+      "title": "Total food supply",
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_demand_coffee[kcal]",
+        "agr_demand_crop-cereal[kcal]",
+        "agr_demand_crop-fruit[kcal]",
+        "agr_demand_crop-oilcrop[kcal]",
+        "agr_demand_crop-pulse[kcal]",
+        "agr_demand_crop-starch[kcal]",
+        "agr_demand_crop-veg[kcal]",
+        "agr_demand_dfish[kcal]",
+        "agr_demand_ffish[kcal]",
+        "agr_demand_oth-aq-animals[kcal]",
+        "agr_demand_pfish[kcal]",
+        "agr_demand_pro-bev-beer[kcal]",
+        "agr_demand_pro-bev-bev-alc[kcal]",
+        "agr_demand_pro-bev-bev-fer[kcal]",
+        "agr_demand_pro-bev-wine[kcal]",
+        "agr_demand_pro-crop-processed-sugar[kcal]",
+        "agr_demand_pro-crop-processed-sweet[kcal]",
+        "agr_demand_pro-crop-processed-voil[kcal]",
+        "agr_demand_pro-liv-abp-dairy-milk[kcal]",
+        "agr_demand_pro-liv-abp-hens-egg[kcal]",
+        "agr_demand_pro-liv-abp-processed-afat[kcal]",
+        "agr_demand_pro-liv-abp-processed-offal[kcal]",
+        "agr_demand_pro-liv-meat-bovine[kcal]",
+        "agr_demand_pro-liv-meat-oth-animals[kcal]",
+        "agr_demand_pro-liv-meat-pig[kcal]",
+        "agr_demand_pro-liv-meat-poultry[kcal]",
+        "agr_demand_pro-liv-meat-sheep[kcal]",
+        "agr_demand_rice[kcal]",
+        "agr_demand_seafood[kcal]",
+        "agr_demand_stm[kcal]"
+      ]
+    },
+    "FoodWaste": {
+      "title": "Total food waste",
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "lfs_food-wastes_coffee[kcal]",
+        "lfs_food-wastes_crop-cereal[kcal]",
+        "lfs_food-wastes_crop-fruit[kcal]",
+        "lfs_food-wastes_crop-oilcrop[kcal]",
+        "lfs_food-wastes_crop-pulse[kcal]",
+        "lfs_food-wastes_crop-starch[kcal]",
+        "lfs_food-wastes_crop-veg[kcal]",
+        "lfs_food-wastes_dfish[kcal]",
+        "lfs_food-wastes_ffish[kcal]",
+        "lfs_food-wastes_oth-aq-animals[kcal]",
+        "lfs_food-wastes_pfish[kcal]",
+        "lfs_food-wastes_pro-bev-beer[kcal]",
+        "lfs_food-wastes_pro-bev-bev-alc[kcal]",
+        "lfs_food-wastes_pro-bev-bev-fer[kcal]",
+        "lfs_food-wastes_pro-bev-wine[kcal]",
+        "lfs_food-wastes_pro-crop-processed-sugar[kcal]",
+        "lfs_food-wastes_pro-crop-processed-sweet[kcal]",
+        "lfs_food-wastes_pro-crop-processed-voil[kcal]",
+        "lfs_food-wastes_pro-liv-abp-dairy-milk[kcal]",
+        "lfs_food-wastes_pro-liv-abp-hens-egg[kcal]",
+        "lfs_food-wastes_pro-liv-abp-processed-afat[kcal]",
+        "lfs_food-wastes_pro-liv-abp-processed-offal[kcal]",
+        "lfs_food-wastes_pro-liv-meat-bovine[kcal]",
+        "lfs_food-wastes_pro-liv-meat-oth-animals[kcal]",
+        "lfs_food-wastes_pro-liv-meat-pig[kcal]",
+        "lfs_food-wastes_pro-liv-meat-poultry[kcal]",
+        "lfs_food-wastes_pro-liv-meat-sheep[kcal]",
+        "lfs_food-wastes_rice[kcal]",
+        "lfs_food-wastes_seafood[kcal]",
+        "lfs_food-wastes_stm[kcal]"
+      ]
+    }
+  }
+}
