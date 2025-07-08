@@ -1,14 +1,18 @@
 {
-
   "subtabs": [
     {
       "title": "Population diet",
       "charts": ["FoodConsumption","FoodWaste"],
       "route": "population-diet"
     },
+    {
+      "title": "Self-sufficiency",
+      "charts": ["CropSSR","MeatSSR","AlcoholSSR"],
+      "route": "self-sufficiency"
+    },
    {
       "title": "Livestock population",
-      "charts": ["LivestockGrossPopulation","LivestockNetPopulation"],
+      "charts": ["LivestockGrossPopulation","LivestockNetPopulation","Feed"],
       "route": "livestock-population"
     },
    {
@@ -16,10 +20,10 @@
       "charts": ["MeatProduction","CropProduction"],
       "route": "meat-production"
     },
-   {
-      "title": "Feed inputs",
-      "charts": ["Feed"],
-      "route": "feed"
+    {
+      "title": "Input use",
+      "charts": ["Energy","Chemical"],
+      "route": "input-use"
     },
    {
       "title": "Emissions",
@@ -248,6 +252,75 @@
         "lfs_food-wastes_rice[kcal]",
         "lfs_food-wastes_seafood[kcal]",
         "lfs_food-wastes_stm[kcal]"
+      ]
+    },
+    "CropSSR": {
+      "title": "Crop",
+      "type": "Line",
+      "unit": "%",
+      "outputs": [
+        "agr_food-net-import_cereal[%]",
+        "agr_food-net-import_fruit[%]",
+        "agr_food-net-import_oilcrop[%]",
+        "agr_food-net-import_pulse[%]",
+        "agr_food-net-import_rice[%]",
+        "agr_food-net-import_starch[%]",
+        "agr_food-net-import_veg[%]",
+        "agr_food-net-import_oil-voil[%]"
+      ]
+    },
+    "MeatSSR": {
+      "title": "Meat",
+      "type": "Line",
+      "unit": "%",
+      "outputs": [
+        "agr_food-net-import_pro-liv-abp-dairy-milk[%]",
+        "agr_food-net-import_pro-liv-abp-hens-egg[%]",
+        "agr_food-net-import_pro-liv-abp-processed-afat[%]",
+        "agr_food-net-import_pro-liv-abp-processed-offal[%]",
+        "agr_food-net-import_pro-liv-meat-bovine[%]",
+        "agr_food-net-import_pro-liv-meat-oth-animals[%]",
+        "agr_food-net-import_pro-liv-meat-pig[%]",
+        "agr_food-net-import_pro-liv-meat-poultry[%]",
+        "agr_food-net-import_pro-liv-meat-sheep[%]"
+      ]
+    },
+    "AlcoholSSR": {
+      "title": "Alcohol",
+      "type": "Line",
+      "unit": "%",
+      "outputs": [
+        "agr_food-net-import_pro-bev-beer[%]",
+        "agr_food-net-import_pro-bev-bev-alc[%]",
+        "agr_food-net-import_pro-bev-bev-fer[%]",
+        "agr_food-net-import_pro-bev-wine[%]"
+      ]
+    },
+    "Energy": {
+      "title": "Energy use",
+      "type": "StackedArea",
+      "unit": "TWh",
+      "outputs": [
+        "agr_energy-demand_bioenergy-gas-biogas[TWh]",
+        "agr_energy-demand_bioenergy-liquid-biodiesel[TWh]",
+        "agr_energy-demand_bioenergy-liquid-ethanol[TWh]",
+        "agr_energy-demand_bioenergy-solid-wood[TWh]",
+        "agr_energy-demand_electricity[TWh]",
+        "agr_energy-demand_gas-ff-natural[TWh]",
+        "agr_energy-demand_liquid-ff-diesel[TWh]",
+        "agr_energy-demand_liquid-ff-fuel-oil[TWh]",
+        "agr_energy-demand_liquid-ff-gasoline[TWh]",
+        "agr_energy-demand_oth[TWh]",
+        "agr_energy-demand_solid-ff-coal[TWh]"
+      ]
+    },
+    "Chemical": {
+      "title": "Input use",
+      "type": "StackedArea",
+      "unit": "t",
+      "outputs": [
+        "agr_input-use_liming[t]",
+        "agr_input-use_urea[t]"
       ]
     }
   }
