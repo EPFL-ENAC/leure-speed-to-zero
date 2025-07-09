@@ -1,9 +1,19 @@
 {
   "subtabs": [
+        {
+      "title": "Commodity Supply",
+      "charts": ["CropSupply","MeatSupply","FishSupply","StimulantSupply","OtherFoodSupply","CroplandUse"],
+      "route": "food-supply"
+    },
     {
-      "title": "Population diet",
-      "charts": ["FoodConsumption","FoodWaste"],
+      "title": "Population Diet",
+      "charts": ["CropSupply","MeatSupply","FishSupply","StimulantSupply","OtherFoodSupply"],
       "route": "population-diet"
+    },
+    {
+      "title": "Food Wastes & Losses",
+      "charts": ["FoodWaste"],
+      "route": "food-waste"
     },
     {
       "title": "Self-sufficiency",
@@ -11,19 +21,29 @@
       "route": "self-sufficiency"
     },
    {
-      "title": "Livestock population",
-      "charts": ["LivestockGrossPopulation","LivestockNetPopulation","Feed"],
+      "title": "Livestock raising",
+      "charts": ["LivestockGrossPopulation","LivestockNetPopulation","Feed","ManureVolume","RuminantDensity","Grassland"],
       "route": "livestock-population"
     },
    {
-      "title": "Production",
+      "title": "Domestic Production",
       "charts": ["MeatProduction","CropProduction"],
       "route": "meat-production"
     },
+   {
+      "title": "Bioenergy",
+      "charts": ["Solid","Liquid","Gas"],
+      "route": "bioenergy"
+    },
     {
       "title": "Input use",
-      "charts": ["Energy","Chemical"],
+      "charts": ["Energy","Chemical","AgricultureLandUse"],
       "route": "input-use"
+    },
+    {
+      "title": "Land-use",
+      "charts": ["AgricultureLandUse","CroplandUse"],
+      "route": "cropland"
     },
    {
       "title": "Emissions",
@@ -33,19 +53,21 @@
   ],
   "charts": {
     "LivestockGrossPopulation": {
-      "title": "Livestock population (gross)",
+      "title": "Livestock population (slaughtered)",
       "type": "StackedArea",
       "unit": "lsu",
       "outputs": [
-        "agr_liv_population_raw_meat-bovine[lsu]",
-        "agr_liv_population_raw_meat-pig[lsu]",
-        "agr_liv_population_raw_meat-poultry[lsu]",
-        "agr_liv_population_raw_meat-sheep[lsu]",
-        "agr_liv_population_raw_meat-oth-animals[lsu]"
+        "agr_liv_population_slau_abp-dairy-milk[lsu]",
+        "agr_liv_population_slau_abp-hens-egg[lsu]",
+        "agr_liv_population_slau_meat-bovine[lsu]",
+        "agr_liv_population_slau_meat-oth-animals[lsu]",
+        "agr_liv_population_slau_meat-pig[lsu]",
+        "agr_liv_population_slau_meat-poultry[lsu]",
+        "agr_liv_population_slau_meat-sheep[lsu]"
       ]
     },
     "LivestockNetPopulation": {
-      "title": "Livestock population (net)",
+      "title": "Livestock population (living)",
       "type": "StackedArea",
       "unit": "lsu",
       "outputs": [
@@ -255,7 +277,7 @@
       ]
     },
     "CropSSR": {
-      "title": "Crop",
+      "title": "Crop-based groups",
       "type": "Line",
       "unit": "%",
       "outputs": [
@@ -270,7 +292,7 @@
       ]
     },
     "MeatSSR": {
-      "title": "Meat",
+      "title": "Meat-based groups",
       "type": "Line",
       "unit": "%",
       "outputs": [
@@ -286,14 +308,16 @@
       ]
     },
     "AlcoholSSR": {
-      "title": "Alcohol",
+      "title": "Other food groups",
       "type": "Line",
       "unit": "%",
       "outputs": [
         "agr_food-net-import_pro-bev-beer[%]",
         "agr_food-net-import_pro-bev-bev-alc[%]",
         "agr_food-net-import_pro-bev-bev-fer[%]",
-        "agr_food-net-import_pro-bev-wine[%]"
+        "agr_food-net-import_pro-bev-wine[%]",
+        "agr_food-net-import_pro-crop-processed-sweet[%]",
+        "agr_food-net-import_pro-crop-processed-sugar[%]"
       ]
     },
     "Energy": {
@@ -321,6 +345,193 @@
       "outputs": [
         "agr_input-use_liming[t]",
         "agr_input-use_urea[t]"
+      ]
+    },
+    "Gas": {
+      "title": "Gaseous bioenergy",
+      "type": "StackedArea",
+      "unit": "TWh",
+      "outputs": [
+        "agr_bioenergy-capacity_bgs-tec_digestor[TWh]",
+        "agr_bioenergy-capacity_bgs-tec_landfill[TWh]",
+        "agr_bioenergy-capacity_bgs-tec_other-biogases[TWh]",
+        "agr_bioenergy-capacity_bgs-tec_ren-mun-wastes[TWh]",
+        "agr_bioenergy-capacity_bgs-tec_sewage[TWh]",
+        "agr_bioenergy-capacity_bgs-tec_thermal-biogases[TWh]"
+      ]
+    },
+    "Liquid": {
+      "title": "Liquid bioenergy",
+      "type": "StackedArea",
+      "unit": "TWh",
+      "outputs": [
+        "agr_bioenergy-capacity_liq-bio-prod_biodiesel_btl[TWh]",
+        "agr_bioenergy-capacity_liq-bio-prod_biodiesel_est[TWh]",
+        "agr_bioenergy-capacity_liq-bio-prod_biodiesel_hvo[TWh]",
+        "agr_bioenergy-capacity_liq-bio-prod_biojetkerosene_btl[TWh]",
+        "agr_bioenergy-capacity_liq-bio-prod_biojetkerosene_hvo[TWh]",
+        "agr_bioenergy-capacity_liq-bio-prod_biogasoline_ezm[TWh]",
+        "agr_bioenergy-capacity_liq-bio-prod_biogasoline_fer[TWh]"
+      ]
+    },
+    "Solid": {
+      "title": "Solid bioenergy",
+      "type": "StackedArea",
+      "unit": "m3",
+      "outputs": [
+        "wood-demand-per-species_woodfuel_coniferous[m3]",
+		    "wood-demand-per-species_woodfuel_non-coniferous[m3]"
+      ]
+    },
+    "CroplandCover": {
+      "title": "Cropland per commodity",
+      "type": "StackedArea",
+      "unit": "ha",
+      "outputs": [
+        "agr_land_cropland_raw_algae[ha]",
+        "agr_land_cropland_raw_cereal[ha]",
+        "agr_land_cropland_raw_fruit[ha]",
+        "agr_land_cropland_raw_insect[ha]",
+        "agr_land_cropland_raw_lgn-energycrop[ha]",
+        "agr_land_cropland_raw_oilcrop[ha]",
+        "agr_land_cropland_raw_pulse[ha]",
+        "agr_land_cropland_raw_rice[ha]",
+        "agr_land_cropland_raw_starch[ha]",
+        "agr_land_cropland_raw_sugarcrop[ha]",
+        "agr_land_cropland_raw_veg[ha]",
+        "agr_land_cropland_raw_fibres-plant-eq[ha]"
+      ]
+    },
+    "CroplandUse": {
+      "title": "Cropland per use",
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_crop-cons_bioenergy[kcal]",
+        "agr_crop-cons_non-food[kcal]"
+      ]
+    },
+    "CropSupply": {
+      "title": "Crop-based supply",
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_demand_crop-cereal[kcal]",
+        "agr_demand_crop-fruit[kcal]",
+        "agr_demand_crop-oilcrop[kcal]",
+        "agr_demand_crop-pulse[kcal]",
+        "agr_demand_crop-starch[kcal]",
+        "agr_demand_crop-veg[kcal]",
+        "agr_demand_pro-crop-processed-voil[kcal]",
+        "agr_demand_rice[kcal]"
+      ]
+    },
+    "MeatSupply": {
+      "title": "Meat-based supply",
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_demand_pro-liv-abp-dairy-milk[kcal]",
+        "agr_demand_pro-liv-abp-hens-egg[kcal]",
+        "agr_demand_pro-liv-abp-processed-afat[kcal]",
+        "agr_demand_pro-liv-abp-processed-offal[kcal]",
+        "agr_demand_pro-liv-meat-bovine[kcal]",
+        "agr_demand_pro-liv-meat-oth-animals[kcal]",
+        "agr_demand_pro-liv-meat-pig[kcal]",
+        "agr_demand_pro-liv-meat-poultry[kcal]",
+        "agr_demand_pro-liv-meat-sheep[kcal]"
+      ]
+    },
+    "FishSupply": {
+      "title": "Fish-based supply",
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_demand_dfish[kcal]",
+        "agr_demand_ffish[kcal]",
+        "agr_demand_oth-aq-animals[kcal]",
+        "agr_demand_pfish[kcal]",
+        "agr_demand_seafood[kcal]"
+      ]
+    },
+    "StimulantSupply": {
+      "title": "Stimulant supply",
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_demand_coffee[kcal]",
+        "agr_demand_stm[kcal]"
+      ]
+    },
+    "OtherFoodSupply": {
+      "title": "Other food supply",
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_demand_pro-bev-beer[kcal]",
+        "agr_demand_pro-bev-bev-alc[kcal]",
+        "agr_demand_pro-bev-bev-fer[kcal]",
+        "agr_demand_pro-bev-wine[kcal]",
+        "agr_demand_pro-crop-processed-sugar[kcal]",
+        "agr_demand_pro-crop-processed-sweet[kcal]"
+      ]
+    },
+    "ManureVolume": {
+      "title": "Manure",
+      "type": "StackedArea",
+      "unit": "tn",
+      "outputs": [
+        "agr_liv_n-stock_abp-dairy-milk[t]",
+        "agr_liv_n-stock_abp-hens-egg[t]",
+        "agr_liv_n-stock_meat-bovine[t]",
+        "agr_liv_n-stock_meat-oth-animals[t]",
+        "agr_liv_n-stock_meat-pig[t]",
+        "agr_liv_n-stock_meat-poultry[t]",
+        "agr_liv_n-stock_meat-sheep[t]"
+      ]
+    },
+    "Grassland": {
+      "title": "Pastureland",
+      "type": "StackedArea",
+      "unit": "ha",
+      "outputs": [
+        "agr_lus_land_raw_grassland[ha]"
+      ]
+    },
+    "RuminantDensity": {
+      "title": "Livestock density (ruminants)",
+      "type": "Line",
+      "unit": "lsu/ha",
+      "outputs": [
+        "agr_climate-smart-livestock_density[lsu/ha]"
+      ]
+    },
+    "Grassland": {
+      "title": "Pastureland",
+      "type": "StackedArea",
+      "unit": "ha",
+      "outputs": [
+        "agr_lus_land_raw_grassland[ha]"
+      ]
+    },
+    "AgricultureLandUse": {
+      "title": "Agriculture land",
+      "type": "StackedArea",
+      "unit": "ha",
+      "outputs": [
+        "agr_lus_land_raw_grassland[ha]",
+        "agr_land_cropland_raw_algae[ha]",
+        "agr_land_cropland_raw_cereal[ha]",
+        "agr_land_cropland_raw_fruit[ha]",
+        "agr_land_cropland_raw_insect[ha]",
+        "agr_land_cropland_raw_lgn-energycrop[ha]",
+        "agr_land_cropland_raw_oilcrop[ha]",
+        "agr_land_cropland_raw_pulse[ha]",
+        "agr_land_cropland_raw_rice[ha]",
+        "agr_land_cropland_raw_starch[ha]",
+        "agr_land_cropland_raw_sugarcrop[ha]",
+        "agr_land_cropland_raw_veg[ha]",
+        "agr_land_cropland_raw_fibres-plant-eq[ha]"
       ]
     }
   }
