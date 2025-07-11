@@ -84,8 +84,9 @@
         { "id": "bld_CO2-emissions_heating_heating-oil[Mt]", "color": "#2b908f" },
         { "id": "bld_CO2-emissions_heating_gas[Mt]", "color": "#e4d354" },
         { "id": "bld_CO2-emissions_heating_wood[Mt]", "color": "#5d4037" },
-        { "id": "bld_CO2-emissions_heating_district-heat[Mt]", "color": "#f45b5b" },
+        { "id": "bld_CO2-emissions_heating_district-heating[Mt]", "color": "#f45b5b" },
         { "id": "bld_CO2-emissions_heating_heat-pump[Mt]", "color": "#aee791" },
+        { "id": "bld_CO2-emissions_heating_ambient-heat[Mt]", "color": "#7FAEC0" },
         { "id": "bld_CO2-emissions_heating_other[Mt]", "color": "#f7a35c" },
         { "id": "bld_CO2-emissions_heating_solar[Mt]", "color": "#e4d354" }
       ]
@@ -100,8 +101,9 @@
         { "id": "bld_energy-demand_heating_heating-oil[TWh]", "color": "#2b908f" },
         { "id": "bld_energy-demand_heating_gas[TWh]", "color": "#e4d354" },
         { "id": "bld_energy-demand_heating_wood[TWh]", "color": "#5d4037" },
-        { "id": "bld_energy-demand_heating_district-heatTWh]", "color": "#f45b5b" },
+        { "id": "bld_energy-demand_heating_district-heating[TWh]", "color": "#f45b5b" },
         { "id": "bld_energy-demand_heating_heat-pump[TWh]", "color": "#aee791" },
+        { "id": "bld_energy-demand_heating_ambient-heat[TWh]", "color": "#7FAEC0" },
         { "id": "bld_energy-demand_heating_other[TWh]", "color": "#f7a35c" },
         { "id": "bld_energy-demand_heating_solar[TWh]", "color": "#e4d354" }
       ]
