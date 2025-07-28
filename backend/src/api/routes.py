@@ -53,7 +53,7 @@ years_setting = [
     5,
 ]  # [start_year, current_year, future_year, end_year, step]
 country_list = [RegionConfig.get_current_region()]
-sectors = ['climate', 'lifestyles', 'buildings', 'transport', 'agriculture', 'industry', 'forestry']
+sectors = ['climate', 'lifestyles', 'buildings', 'transport', 'agriculture', 'forestry']
 
 # Filter country
 # from database/data/datamatrix/.* reads the pickles, filters the countries, and loads them
