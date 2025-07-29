@@ -24,5 +24,3 @@ DM_input = filter_country_and_load_data_from_pickles(country_list= country_list,
 output, KPI = runner(lever_setting, years_setting, DM_input, sectors, logger, )
 logger.info('Run over')
 
-# data = pickle.load('database/datamatrix/transport.pickle')
-# output["buildings"].datamatrix_plot(stacked=True, title="Buildings")
