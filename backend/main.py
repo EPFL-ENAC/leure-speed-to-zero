@@ -14,7 +14,7 @@ lever_setting = json.load(f)[0]
 years_setting = [1990, 2023, 2025, 2050, 5]
 
 country_list = [RegionConfig.get_current_region()]
-sectors = ['climate', 'lifestyles', 'buildings', 'transport', 'agriculture', 'forestry']
+sectors = ['climate', 'lifestyles', 'buildings', 'transport', 'industry', 'agriculture', 'forestry']
 
 # Filter geoscale
 # from database/data/datamatrix/.* reads the pickles, filters the geoscale, and loads them
