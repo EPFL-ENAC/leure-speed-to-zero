@@ -23,6 +23,24 @@ The tool will integrate PyCalc models for real-time computations, provide intera
 - Python 3.12 (uv is better)
 - Docker
 
+### Configuration
+
+The application uses a centralized configuration file `model_config.json` at the project root to manage region settings:
+
+```json
+{
+    "MODEL_PRIMARY_REGION": "Vaud",
+    "AVAILABLE_REGIONS": ["Vaud", "Switzerland", "EU27"]
+}
+```
+
+To change the region used by both frontend and backend:
+
+1. Edit `model_config.json` and change `MODEL_PRIMARY_REGION` to your desired region (e.g., "Switzerland")
+2. Restart both servers to apply the changes
+3. The cache will automatically use region-specific namespaces to prevent data mixing
+
+
 ### Installing Development Tools (Optional but Recommended)
 
 For better version management and faster package installation, you can install these tools:
@@ -145,7 +163,7 @@ To enable Redis for caching in the backend, follow these steps:
    docker compose down
    ```
 
-**Note:** Redis caching will improve the performance of the backend by storing frequently accessed data in memory. The backend will work without Redis, but with caching disabled.
+**Note:** Redis caching will improve the performance of the backend by storing frequently accessed data in memory. The backend will work without Redis, but with caching disabled. The cache automatically uses region-specific namespaces based on your `model_config.json` settings.
 
 ### Windows Setup
 

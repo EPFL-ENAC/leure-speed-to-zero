@@ -43,36 +43,97 @@ Close the preferences window, then go to Tools and open Sync python requirements
 
 Once the download is complete, you can go back to settings and click Project: <Your Project Name> -> Python Interpreter. The name of the interpreter should be something like "Python 3.9 (name of your project)" and below you should see the full list of pacakges just downloaded. You can check that they correspond to the ones mentioned in .../PathwayCalc/requirements.txt. If they do not, repeat the steps above.
 
-### Step 3: Configuration file:
+### Step 3: Configuration
 
 Go to _knime2python/config/_ if you don't see a _config_eu.yml_, copy & paste _config_example.yml_
 and rename it as config_eu.yml. Then, in the file you will find 3 paths that you need to change manually to match your local workspace.
 
-### Step 4: Local server
+#### Regional Configuration
 
-Open a terminal, navigate to PathwayCalc/transition-pathway-explorer and run
+The application uses a centralized configuration file `model_config.json` in the project root to manage regional data settings:
 
-```
-npm run serve
-```
-
-(One needs to install it when used for the very first time, i.e. Node JS and NPM.
-Download node js version v16.17.0 https://nodejs.org/download/release/v16.17.0/. Download the .msi file.
-Go to PathwayCalc/transition-pathway-explorer and run
-
-```
-npm install
+```json
+{
+    "MODEL_PRIMARY_REGION": "Vaud",
+    "AVAILABLE_REGIONS": ["Vaud", "Switzerland", "EU27"]
+}
 ```
 
-)
 
-### Step 5: Converter knime to python
+### Step 4: Modern Development Setup (Recommended)
 
-In PyCHarm, run _knime2python/scripts/eucalc-app.py_
+The modern development setup uses the Makefile and supports both `uv` (fast) and traditional Python virtual environments:
 
-### Step 6: TPE (transition pathway explorer)
+#### Quick Start
 
-Open your browser (do not use safari) at the address:
+```bash
+# Install dependencies (automatically detects uv or creates .venv)
+make install
+
+# Run the development server
+make run
+
+# The API will be available at:
+# - Backend: http://localhost:8000
+# - API Documentation: http://localhost:8000/docs
+```
+
+#### Available Commands
+
+```bash
+make install    # Install dependencies using uv or pip
+make run        # Start development server with auto-reload
+make format     # Format code with black
+make lint       # Run linting checks
+make test       # Run tests
+make cleanup    # Clean up lingering processes
+```
+
+#### Manual Setup (Alternative)
+
+If you prefer manual setup or are using an IDE like PyCharm:
+
+1. **Create virtual environment:**
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Run the server:**
+   ```bash
+   uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+   ```
+
+### Step 5: Legacy Instructions (PyCharm - Optional)
+
+For users who prefer PyCharm IDE setup, you can follow the traditional virtual environment setup:
+
+1. **Open the project in PyCharm**
+2. **Configure Python interpreter** (File > Settings > Project > Python Interpreter)
+3. **Create virtual environment** and install requirements.txt
+4. **Run the FastAPI application** using uvicorn
+
+**Note:** The modern Makefile approach (Step 4) is recommended as it's simpler and more reliable.
+
+## API Documentation
+
+Once the server is running, you can access:
+
+- **API Documentation**: http://localhost:8000/docs (Swagger UI)
+- **Alternative API Docs**: http://localhost:8000/redoc (ReDoc)
+- **Health Check**: http://localhost:8000/health
+
+## Region-Specific Data
+
+The application automatically loads data for the region specified in `model_config.json`. Ensure your data directory contains the required pickle files for the selected region:
+
+- `_database/data/datamatrix/` should contain region-specific data files
+- Cache will automatically namespace data by region to prevent conflicts
 
 ```
 http://127.0.0.1:8080/app
