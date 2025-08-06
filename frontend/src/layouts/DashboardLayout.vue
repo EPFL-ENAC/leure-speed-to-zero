@@ -6,9 +6,9 @@
         <SectorSelector ref="sectorSelector" />
         <!-- Left Column -->
         <div class="col-auto" style="width: 400px; border-right: 1px solid #e0e0e0">
-          <div class="q-pa-md column full-height">
+          <div class="column full-height">
             <!-- Sector & Levers Header -->
-            <div class="non-scrollable-part">
+            <div class="non-scrollable-part q-pa-md">
               <div class="text-h5 q-mb-md">Levers</div>
               <q-select
                 v-model="selectedPathway"
@@ -29,8 +29,11 @@
               />
             </div>
 
+            <!-- Separator Line -->
+            <q-separator class="q-my-md" />
+
             <!-- Scrollable Levers -->
-            <q-scroll-area class="col">
+            <q-scroll-area visible class="col q-pa-md">
               <LeverGroups :sector="currentSector" />
             </q-scroll-area>
           </div>
@@ -38,9 +41,11 @@
 
         <!-- Right Column -->
         <div class="col">
-          <q-page>
-            <kpi-list class="q-pa-md" />
-            <router-view />
+          <q-page class="column full-height">
+            <q-scroll-area visible class="col q-pa-md">
+              <kpi-list />
+              <router-view />
+            </q-scroll-area>
           </q-page>
         </div>
       </div>
@@ -86,5 +91,9 @@ function resetToDefaults() {
 </script>
 
 <style lang="scss" scoped>
+.overflow-scroll {
+  // height: 100vh;
+  overflow-y: scroll;
+}
 /* No custom styles needed for this basic layout */
 </style>
