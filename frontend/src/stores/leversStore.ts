@@ -5,6 +5,7 @@ import { levers as leversData } from 'utils/leversData';
 import { ExamplePathways } from 'utils/examplePathways';
 import { modelService } from 'services/modelService';
 import { AxiosError } from 'axios';
+import type { Region } from 'src/utils/region';
 
 // Types
 export interface YearData {
@@ -12,15 +13,15 @@ export interface YearData {
   [key: string]: number;
 }
 
-type CountryName = 'Switzerland' | 'EU27' | 'Vaud';
 export interface SectorData {
   countries: {
-    [key in CountryName]: YearData[];
+    [key in Region]: YearData[];
   };
   units: {
     [key: string]: string;
   };
 }
+
 export interface ModelResults {
   fingerprint_result: string;
   fingerprint_input: string;
@@ -118,7 +119,7 @@ export const useLeverStore = defineStore('lever', () => {
     return modelResults.value.data.forestry;
   });
 
-    const agriculture = computed(() => {
+  const agriculture = computed(() => {
     if (!modelResults.value) return null;
     return modelResults.value.data.agriculture;
   });

@@ -13,6 +13,7 @@
 </template>
 
 <script setup lang="ts">
+import { getCurrentRegion } from 'src/utils/region';
 import { computed, ref } from 'vue';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
@@ -87,9 +88,9 @@ const chartData = computed<ChartSeries[]>(() => {
   if (!props.modelData) return [];
 
   const outputs = props.chartConfig.outputs;
-  const countryData = props.modelData.countries?.Vaud;
+  const region = getCurrentRegion();
+  const countryData = props.modelData.countries?.[region];
   if (!countryData || !outputs) return [];
-
   return extractChartData(outputs, countryData);
 });
 
