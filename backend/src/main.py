@@ -14,6 +14,8 @@ from fastapi_cache.backends.redis import RedisBackend
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.decorator import cache
 
+from src.utils.region_config import RegionConfig
+
 from redis import asyncio as aioredis
 
 
@@ -31,26 +33,31 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     
     logger.info("🚀 Initializing caching system...")
     
+    # Get current region for cache namespacing
+    current_region = RegionConfig.get_current_region()
+    cache_prefix = f"fastapi-cache-{current_region.lower()}"
+    
+    logger.info(f"🌍 Using region-specific cache namespace: {cache_prefix}")
+    
     try:
         # Try to connect to Redis
         logger.info(f"🔗 Attempting to connect to Redis at {settings.REDIS_HOST}:{settings.REDIS_PORT}")
         redis = aioredis.from_url(f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}")
         # Test the connection
         await redis.ping()
-        FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
+        FastAPICache.init(RedisBackend(redis), prefix=cache_prefix)
         logger.info(f"✅ CACHE BACKEND: Redis cache initialized successfully at {settings.REDIS_HOST}:{settings.REDIS_PORT}")
-        logger.info("📊 Cache features: Persistent, shared across instances, high performance")
+        logger.info(f"📊 Cache features: Persistent, shared across instances, high performance, region: {current_region}")
     except Exception as e:
         # If Redis connection fails, fall back to in-memory cache
         logger.warning(f"⚠️  Redis connection failed: {str(e)}")
-        logger.warning("� Falling back to in-memory cache...")
-        FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
+        logger.warning("🔄 Falling back to in-memory cache...")
+        FastAPICache.init(InMemoryBackend(), prefix=cache_prefix)
         logger.info("✅ CACHE BACKEND: In-memory cache initialized as fallback")
-        logger.info("📊 Cache features: Non-persistent, single instance only, basic performance")
+        logger.info(f"📊 Cache features: Non-persistent, single instance only, basic performance, region: {current_region}")
         logger.info("💡 To enable Redis caching, ensure Redis server is running on configured host:port")
     
     yield
-
 
 app = FastAPI(lifespan=lifespan, root_path=settings.PATH_PREFIX)
 app.include_router(router)
@@ -199,7 +206,7 @@ async def debug_cache():
         r = redis.from_url(f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}")
         
         # List keys
-        all_keys = r.keys("fastapi-cache:*")
+        all_keys = r.keys("fastapi-cache*")
         
         logger.info(f"📊 Redis cache status: {len(all_keys)} keys found")
         
