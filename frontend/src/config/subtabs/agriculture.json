@@ -1,13 +1,21 @@
 {
+  "kpis": [],
   "subtabs": [
-        {
+    {
       "title": "Commodity Supply",
-      "charts": ["CropSupply","MeatSupply","FishSupply","StimulantSupply","OtherFoodSupply","CroplandUse"],
+      "charts": [
+        "CropSupply",
+        "MeatSupply",
+        "FishSupply",
+        "StimulantSupply",
+        "OtherFoodSupply",
+        "CroplandUse"
+      ],
       "route": "food-supply"
     },
     {
       "title": "Population Diet",
-      "charts": ["CropSupply","MeatSupply","FishSupply","StimulantSupply","OtherFoodSupply"],
+      "charts": ["CropSupply", "MeatSupply", "FishSupply", "StimulantSupply", "OtherFoodSupply"],
       "route": "population-diet"
     },
     {
@@ -17,37 +25,44 @@
     },
     {
       "title": "Self-sufficiency",
-      "charts": ["CropSSR","MeatSSR","AlcoholSSR"],
+      "charts": ["CropSSR", "MeatSSR", "AlcoholSSR"],
       "route": "self-sufficiency"
     },
-   {
+    {
       "title": "Livestock raising",
-      "charts": ["LivestockGrossPopulation","LivestockNetPopulation","Feed","ManureVolume","RuminantDensity","Grassland"],
+      "charts": [
+        "LivestockGrossPopulation",
+        "LivestockNetPopulation",
+        "Feed",
+        "ManureVolume",
+        "RuminantDensity",
+        "Grassland"
+      ],
       "route": "livestock-population"
     },
-   {
+    {
       "title": "Domestic Production",
-      "charts": ["MeatProduction","CropProduction"],
+      "charts": ["MeatProduction", "CropProduction"],
       "route": "meat-production"
     },
-   {
+    {
       "title": "Bioenergy",
-      "charts": ["Solid","Liquid","Gas"],
+      "charts": ["Solid", "Liquid", "Gas"],
       "route": "bioenergy"
     },
     {
       "title": "Input use",
-      "charts": ["Energy","Chemical","AgricultureLandUse"],
+      "charts": ["Energy", "Chemical", "AgricultureLandUse"],
       "route": "input-use"
     },
     {
       "title": "Land-use",
-      "charts": ["AgricultureLandUse","CroplandUse"],
+      "charts": ["AgricultureLandUse", "CroplandUse"],
       "route": "cropland"
     },
-   {
+    {
       "title": "Emissions",
-      "charts": ["CO2","CH4","N2O"],
+      "charts": ["CO2", "CH4", "N2O"],
       "route": "emissions"
     }
   ],
@@ -342,10 +357,7 @@
       "title": "Input use",
       "type": "StackedArea",
       "unit": "t",
-      "outputs": [
-        "agr_input-use_liming[t]",
-        "agr_input-use_urea[t]"
-      ]
+      "outputs": ["agr_input-use_liming[t]", "agr_input-use_urea[t]"]
     },
     "Gas": {
       "title": "Gaseous bioenergy",
@@ -380,7 +392,7 @@
       "unit": "m3",
       "outputs": [
         "wood-demand-per-species_woodfuel_coniferous[m3]",
-		    "wood-demand-per-species_woodfuel_non-coniferous[m3]"
+        "wood-demand-per-species_woodfuel_non-coniferous[m3]"
       ]
     },
     "CroplandCover": {
@@ -406,10 +418,7 @@
       "title": "Cropland per use",
       "type": "StackedArea",
       "unit": "kcal",
-      "outputs": [
-        "agr_crop-cons_bioenergy[kcal]",
-        "agr_crop-cons_non-food[kcal]"
-      ]
+      "outputs": ["agr_crop-cons_bioenergy[kcal]", "agr_crop-cons_non-food[kcal]"]
     },
     "CropSupply": {
       "title": "Crop-based supply",
@@ -458,10 +467,7 @@
       "title": "Stimulant supply",
       "type": "StackedArea",
       "unit": "kcal",
-      "outputs": [
-        "agr_demand_coffee[kcal]",
-        "agr_demand_stm[kcal]"
-      ]
+      "outputs": ["agr_demand_coffee[kcal]", "agr_demand_stm[kcal]"]
     },
     "OtherFoodSupply": {
       "title": "Other food supply",
@@ -494,25 +500,13 @@
       "title": "Pastureland",
       "type": "StackedArea",
       "unit": "ha",
-      "outputs": [
-        "agr_lus_land_raw_grassland[ha]"
-      ]
+      "outputs": ["agr_lus_land_raw_grassland[ha]"]
     },
     "RuminantDensity": {
       "title": "Livestock density (ruminants)",
       "type": "Line",
       "unit": "lsu/ha",
-      "outputs": [
-        "agr_climate-smart-livestock_density[lsu/ha]"
-      ]
-    },
-    "Grassland": {
-      "title": "Pastureland",
-      "type": "StackedArea",
-      "unit": "ha",
-      "outputs": [
-        "agr_lus_land_raw_grassland[ha]"
-      ]
+      "outputs": ["agr_climate-smart-livestock_density[lsu/ha]"]
     },
     "AgricultureLandUse": {
       "title": "Agriculture land",

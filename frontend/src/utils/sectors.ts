@@ -38,3 +38,18 @@ export const sectors: Sector[] = [
   //   { label: 'Entertainment', value: 'entertainment', icon: 'theaters' },
   //   { label: 'Sports', value: 'sports', icon: 'sports_soccer' },
 ];
+
+export interface Threshold {
+  value: number;
+  label: string;
+  icon?: string;
+  color: string;
+}
+export interface KPI {
+  name: string;
+  value: number;
+  route?: string;
+  maximize: boolean;
+  unit: string;
+  thresholds: Array<Threshold>;
+}

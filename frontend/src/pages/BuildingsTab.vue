@@ -1,5 +1,7 @@
 <template>
   <div>
+    <kpi-list :kpis="kpis" />
+
     <q-tabs v-model="currentTab" no-caps align="justify">
       <q-tab v-for="tab in subtabs" :key="tab.route" :name="tab.route" :label="tab.title" />
     </q-tabs>
@@ -35,6 +37,7 @@ import { ref, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useLeverStore } from 'stores/leversStore';
 import buildingsConfig from 'config/subtabs/buildings.json';
+import KpiList from 'src/components/kpi/KpiList.vue';
 import ChartCard from 'components/graphs/ChartCard.vue';
 
 const router = useRouter();
@@ -75,8 +78,18 @@ watch(currentTab, async (newTab) => {
 // Properly typed computed property
 const modelResults = computed(() => {
   const newData = leverStore.buildings;
-
   return newData;
+});
+
+const kpis = computed(() => {
+  const newData = leverStore.buildings?.kpis;
+  const confKpis = buildingsConfig.kpis;
+  const returnData = newData?.map((kpi) => {
+    const confKpi = confKpis.find((conf) => conf.name === kpi.title);
+    return Object.assign({}, confKpi, kpi);
+  });
+  console.log('KPI data:', returnData);
+  return returnData || [];
 });
 
 const isLoading = computed(() => leverStore.isLoading);

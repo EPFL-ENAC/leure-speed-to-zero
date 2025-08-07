@@ -43,7 +43,6 @@
         <div class="col">
           <q-page class="column full-height">
             <q-scroll-area visible class="col q-pa-md">
-              <kpi-list />
               <router-view />
             </q-scroll-area>
           </q-page>
@@ -58,7 +57,6 @@ import { computed, ref } from 'vue';
 import { useLeverStore } from 'stores/leversStore';
 import { ExamplePathways } from 'utils/examplePathways';
 import LeverGroups from 'components/LeverGroups.vue';
-import KpiList from 'components/kpi/KpiList.vue';
 import SectorSelector from 'components/SectorSelector.vue';
 
 const leverStore = useLeverStore();
