@@ -42,9 +42,9 @@
         <!-- Right Column -->
         <div class="col">
           <q-page class="column full-height">
-            <q-scroll-area visible class="col q-pa-md">
+            <div class="col q-pa-md full-width overflow-scroll">
               <router-view />
-            </q-scroll-area>
+            </div>
           </q-page>
         </div>
       </div>

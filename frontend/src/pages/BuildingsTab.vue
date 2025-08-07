@@ -2,7 +2,7 @@
   <div>
     <kpi-list :kpis="kpis" />
 
-    <q-tabs v-model="currentTab" no-caps align="justify">
+    <q-tabs v-model="currentTab" outside-arrows active-color="primary" no-caps align="justify">
       <q-tab v-for="tab in subtabs" :key="tab.route" :name="tab.route" :label="tab.title" />
     </q-tabs>
 
