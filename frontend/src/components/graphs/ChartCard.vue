@@ -1,5 +1,5 @@
 <template>
-  <q-card class="chart-card" flat>
+  <q-card class="chart-card col" flat>
     <q-card-section class="chart-section">
       <div v-if="!chartData.length" class="chart-placeholder">
         <q-icon name="mdi-chart-line-variant" size="2rem" color="grey-5" />
@@ -143,6 +143,10 @@ const chartOption = computed(() => {
   return {
     title: {
       text: props.chartConfig.title,
+      textStyle: {
+        fontSize: 13,
+        fontWeight: 'bold',
+      },
     },
     tooltip: {
       trigger: 'axis',
@@ -196,6 +200,7 @@ const chartOption = computed(() => {
 
 <style lang="scss" scoped>
 .chart-card {
+  min-width: 400px;
   height: 450px;
   display: flex;
   flex-direction: column;
