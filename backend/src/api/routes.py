@@ -18,6 +18,9 @@ from src.utils.transform_model import (
     transform_datamatrix_to_clean_structure,
 )
 
+from src.utils.region_config import RegionConfig
+
+
 from fastapi_cache.decorator import cache
 
 
@@ -49,7 +52,7 @@ years_setting = [
     2050,
     5,
 ]  # [start_year, current_year, future_year, end_year, step]
-country_list = ['Vaud']
+country_list = [RegionConfig.get_current_region()]
 sectors = ['climate', 'lifestyles', 'buildings', 'transport', 'agriculture', 'forestry']
 
 # Filter country
@@ -89,6 +92,7 @@ async def run_model(levers: str = None):
                 "fingerprint_result": fingerprint_result,
                 "fingerprint_input": fingerprint_input,
                 "status": "success",
+                "kpis": KPI,
                 "sectors": list(serializable_output.keys()),
                 "data": serializable_output,
             }
@@ -131,8 +135,10 @@ async def run_model_clean_structure(levers: str = None):
         logger.info(
             f"Model run completed in {(time.perf_counter() - start) * 1000:.2f}ms"
         )
+        logger.info(f"KPI: {KPI}")
 
         duration = (time.perf_counter() - start) * 1000  # ms
+
         # Use the transformer utility
         logger.info("Starting data transformation...")
         transform_start = time.perf_counter()
@@ -155,6 +161,7 @@ async def run_model_clean_structure(levers: str = None):
                 "fingerprint_input": fingerprint_input,
                 "status": "success",
                 "sectors": list(cleaned_output.keys()),
+                "kpis": KPI,
                 "data": cleaned_output,
             }
         )
@@ -226,3 +233,15 @@ async def get_datamatrix(name: str):
         return ORJSONResponse(
             content={"status": "error", "message": str(e)}, status_code=500
         )
+
+
+@router.get("/debug-region")
+async def debug_region():
+    """Debug endpoint to check current region configuration."""
+    from src.utils.region_config import RegionConfig
+
+    return {
+        "status": "success",
+        "current_region": RegionConfig.get_current_region(),
+        "available_regions": RegionConfig.AVAILABLE_REGIONS,
+    }

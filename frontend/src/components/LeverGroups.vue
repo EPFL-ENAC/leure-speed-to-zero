@@ -2,7 +2,7 @@
   <div class="lever-groups">
     <div v-for="(levers, headline) in leversByHeadline" :key="headline" class="q-mb-xl">
       <q-list>
-        <div class="text-subtitle1 q-ml-md q-mb-sm">
+        <div class="text-subtitle1 q-ml-xs q-mb-sm">
           {{ headline }}
         </div>
         <q-expansion-item

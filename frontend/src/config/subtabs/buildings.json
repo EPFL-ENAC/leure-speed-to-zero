@@ -1,4 +1,92 @@
 {
+  "kpis": [
+    {
+      "name": "CO2 emissions",
+      "unit": "Mt",
+      "route": "building-types-emissions",
+      "maximize": false,
+      "thresholds": [
+        { "value": 0, "label": "All good", "icon": "check_circle", "color": "green" },
+        {
+          "value": 1.5,
+          "label": "Warning threshold",
+          "icon": "warning",
+          "color": "orange"
+        },
+        {
+          "value": 2.0,
+          "icon": "dangerous",
+          "label": "Danger threshold",
+          "color": "red"
+        }
+      ],
+      "info": "Total CO2 emissions from buildings including space heating across all energy carriers. Lower values indicate better environmental performance and progress toward climate goals."
+    },
+    {
+      "name": "Energy Demand for Space Heating",
+      "unit": "TWh",
+      "route": "energy-carriers",
+      "maximize": false,
+      "thresholds": [
+        { "value": 2.6, "label": "All good", "icon": "check_circle", "color": "green" },
+        {
+          "value": 4.0,
+          "icon": "warning",
+          "label": "Warning threshold",
+          "color": "orange"
+        },
+        {
+          "value": 5.0,
+          "icon": "dangerous",
+          "label": "Danger threshold",
+          "color": "red"
+        }
+      ],
+      "info": "Total energy delivered for space heating in residential buildings. This includes all heating sources but excludes ambient heat extracted by heat pumps, reflecting only the actual energy input required for heating."
+    },
+    {
+      "name": "A-C class",
+      "unit": "%",
+      "route": "building-types-area",
+      "maximize": true,
+      "thresholds": [
+        {
+          "value": 50,
+          "icon": "dangerous",
+          "label": "Critical threshold",
+          "color": "red"
+        },
+        {
+          "value": 70,
+          "label": "Warning threshold",
+          "icon": "warning",
+          "color": "orange"
+        }
+      ],
+      "info": "Share of residential floor area with high-quality thermal envelopes (categories A, B, C). The rating reflects the building envelope's thermal resistance including insulation, windows, and thermal bridges based on CECB classification."
+    },
+    {
+      "name": "Unrenovated Envelope Share",
+      "unit": "%",
+      "route": "renovation-construction",
+      "maximize": false,
+      "thresholds": [
+        {
+          "value": 0.5,
+          "icon": "warning",
+          "label": "Warning threshold",
+          "color": "orange"
+        },
+        {
+          "value": 1.0,
+          "icon": "dangerous",
+          "label": "Danger threshold",
+          "color": "red"
+        }
+      ],
+      "info": "Share of residential floor area that has not undergone envelope renovation. This includes buildings whose envelope efficiency class has not improved since construction, indicating poor thermal performance."
+    }
+  ],
   "subtabs": [
     {
       "title": "Heating emissions",
