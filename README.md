@@ -29,8 +29,8 @@ The application uses a centralized configuration file `model_config.json` at the
 
 ```json
 {
-    "MODEL_PRIMARY_REGION": "Vaud",
-    "AVAILABLE_REGIONS": ["Vaud", "Switzerland", "EU27"]
+  "MODEL_PRIMARY_REGION": "Vaud",
+  "AVAILABLE_REGIONS": ["Vaud", "Switzerland", "EU27"]
 }
 ```
 
@@ -39,7 +39,6 @@ To change the region used by both frontend and backend:
 1. Edit `model_config.json` and change `MODEL_PRIMARY_REGION` to your desired region (e.g., "Switzerland")
 2. Restart both servers to apply the changes
 3. The cache will automatically use region-specific namespaces to prevent data mixing
-
 
 ### Installing Development Tools (Optional but Recommended)
 

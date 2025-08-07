@@ -54,11 +54,10 @@ The application uses a centralized configuration file `model_config.json` in the
 
 ```json
 {
-    "MODEL_PRIMARY_REGION": "Vaud",
-    "AVAILABLE_REGIONS": ["Vaud", "Switzerland", "EU27"]
+  "MODEL_PRIMARY_REGION": "Vaud",
+  "AVAILABLE_REGIONS": ["Vaud", "Switzerland", "EU27"]
 }
 ```
-
 
 ### Step 4: Modern Development Setup (Recommended)
 
@@ -94,12 +93,14 @@ make cleanup    # Clean up lingering processes
 If you prefer manual setup or are using an IDE like PyCharm:
 
 1. **Create virtual environment:**
+
    ```bash
    python -m venv .venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
 
 2. **Install dependencies:**
+
    ```bash
    pip install -r requirements.txt
    ```
