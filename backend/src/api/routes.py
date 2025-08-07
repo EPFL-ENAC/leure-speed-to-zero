@@ -92,6 +92,7 @@ async def run_model(levers: str = None):
                 "fingerprint_result": fingerprint_result,
                 "fingerprint_input": fingerprint_input,
                 "status": "success",
+                "kpis": KPI,
                 "sectors": list(serializable_output.keys()),
                 "data": serializable_output,
             }
@@ -134,8 +135,10 @@ async def run_model_clean_structure(levers: str = None):
         logger.info(
             f"Model run completed in {(time.perf_counter() - start) * 1000:.2f}ms"
         )
+        logger.info(f"KPI: {KPI}")
 
         duration = (time.perf_counter() - start) * 1000  # ms
+        
         # Use the transformer utility
         logger.info("Starting data transformation...")
         transform_start = time.perf_counter()
@@ -158,6 +161,7 @@ async def run_model_clean_structure(levers: str = None):
                 "fingerprint_input": fingerprint_input,
                 "status": "success",
                 "sectors": list(cleaned_output.keys()),
+                "kpis": KPI,
                 "data": cleaned_output,
             }
         )
