@@ -54,17 +54,24 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { useLeverStore } from 'stores/leversStore';
 import LeverSelector from 'components/LeverSelector.vue';
 import type { Lever } from 'utils/leversData';
 
 const leverStore = useLeverStore();
+const route = useRoute();
 
 const minValue = 1,
   maxValue = 4;
 
-// Get all levers organized by headline
-const leversByHeadline = computed(() => leverStore.leversByHeadline);
+// Get current sector from route
+const currentSector = computed(() => route.path.split('/')[1] || 'buildings');
+
+// Get levers organized by headline, filtered by current sector
+const leversByHeadline = computed(() =>
+  leverStore.getLeversByHeadlineForSector(currentSector.value),
+);
 
 function getGroupValue(levers: Lever[]): number {
   return (

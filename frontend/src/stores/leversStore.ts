@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
 import type { Lever } from 'utils/leversData';
-import { levers as leversData } from 'utils/leversData';
+import { levers as leversData, sectors } from 'utils/leversData';
 import { ExamplePathways } from 'utils/examplePathways';
 import { modelService } from 'services/modelService';
 import { AxiosError } from 'axios';
@@ -127,6 +127,24 @@ export const useLeverStore = defineStore('lever', () => {
     });
     return result;
   });
+
+  // Function to get levers filtered by sector
+  const getLeversByHeadlineForSector = (sectorCode: string) => {
+    // Find the sector configuration
+    const sector = sectors.find((s) => s.code.toLowerCase() === sectorCode.toLowerCase());
+    if (!sector) return {};
+
+    // Filter levers that belong to this sector
+    const sectorLevers = leversData.filter((lever) => sector.levers.includes(lever.code));
+
+    // Group by headline
+    const result: Record<string, typeof leversData> = {};
+    sectorLevers.forEach((lever) => {
+      if (!result[lever.headline]) result[lever.headline] = [];
+      result[lever.headline]?.push(lever);
+    });
+    return result;
+  };
 
   const leversByGroup = computed(() => {
     const result: Record<string, typeof leversData> = {};
@@ -339,6 +357,7 @@ export const useLeverStore = defineStore('lever', () => {
     getAllLeverValues,
     leversByHeadline,
     leversByGroup,
+    getLeversByHeadlineForSector,
     isCustomPathway,
 
     buildings,
