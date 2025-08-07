@@ -129,21 +129,15 @@ export const useLeverStore = defineStore('lever', () => {
   });
 
   // Function to get levers filtered by sector
-  const getLeversByHeadlineForSector = (sectorCode: string) => {
+  const getLeversForSector = (sectorCode: string) => {
     // Find the sector configuration
     const sector = sectors.find((s) => s.code.toLowerCase() === sectorCode.toLowerCase());
-    if (!sector) return {};
+    if (!sector) return [];
 
     // Filter levers that belong to this sector
     const sectorLevers = leversData.filter((lever) => sector.levers.includes(lever.code));
 
-    // Group by headline
-    const result: Record<string, typeof leversData> = {};
-    sectorLevers.forEach((lever) => {
-      if (!result[lever.headline]) result[lever.headline] = [];
-      result[lever.headline]?.push(lever);
-    });
-    return result;
+    return sectorLevers;
   };
 
   const leversByGroup = computed(() => {
@@ -357,7 +351,7 @@ export const useLeverStore = defineStore('lever', () => {
     getAllLeverValues,
     leversByHeadline,
     leversByGroup,
-    getLeversByHeadlineForSector,
+    getLeversForSector,
     isCustomPathway,
 
     buildings,
