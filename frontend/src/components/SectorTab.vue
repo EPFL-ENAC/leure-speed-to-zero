@@ -1,11 +1,22 @@
 <template>
   <div>
     <!-- KPI List - only show if KPIs exist -->
-    <kpi-list v-if="config.kpis && config.kpis.length > 0" :kpis="kpis" />
+    <kpi-list v-if="config.kpis && config.kpis.length > 0" :kpis="kpis" class="q-mb-lg" />
 
-    <q-tabs v-model="currentTab" outside-arrows active-color="primary" no-caps align="justify">
+    <q-separator v-if="config.kpis && config.kpis.length > 0"></q-separator>
+    <q-tabs
+      v-model="currentTab"
+      :ripple="true"
+      outside-arrows
+      active-color="primary"
+      no-caps
+      align="justify"
+      content-class="text-grey-8"
+      active-bg-color="white"
+    >
       <q-tab v-for="tab in config.subtabs" :key="tab.route" :name="tab.route" :label="tab.title" />
     </q-tabs>
+    <q-separator></q-separator>
 
     <div v-if="!modelResults" class="graph-placeholder q-pa-xl">
       <q-icon name="show_chart" size="4rem" />
@@ -138,5 +149,11 @@ async function runModel() {
   background-color: #f5f5f5;
   border-radius: 8px;
   color: #9e9e9e;
+}
+
+:deep(.q-tabs) {
+  .q-tab {
+    padding: 1em;
+  }
 }
 </style>
