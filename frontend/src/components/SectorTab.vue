@@ -22,14 +22,13 @@
     <template v-else>
       <q-tab-panels v-model="currentTab" animated>
         <q-tab-panel v-for="tab in config.subtabs" :key="tab.route" :name="tab.route">
-          <div class="row q-col-gutter-md">
-            <div v-for="chartId in tab.charts" :key="chartId" class="col-12">
-              <chart-card
-                v-if="config.charts[chartId]"
-                :chart-config="config.charts[chartId]"
-                :model-data="modelResults"
-              />
-            </div>
+          <div class="row q-col-gutter-md flex-wrap">
+            <chart-card
+              v-for="chartId in tab.charts"
+              :chart-config="config.charts[chartId] as ChartConfig"
+              :key="chartId"
+              :model-data="modelResults"
+            />
           </div>
         </q-tab-panel>
       </q-tab-panels>
