@@ -1,6 +1,6 @@
 <template>
-  <div class="lever-groups">
-    <div v-for="(levers, headline) in leversByHeadline" :key="headline" class="q-mb-xl">
+  <div v-if="currentSector == 'overall'" class="lever-groups">
+    <div v-for="(levers, headline) in leverStore.leversByHeadline" :key="headline" class="q-mb-xl">
       <q-list>
         <div class="text-subtitle1 q-ml-xs q-mb-sm">
           {{ headline }}
@@ -50,6 +50,17 @@
       </q-list>
     </div>
   </div>
+  <div v-else class="lever-groups">
+    <q-list>
+      <div v-for="lever in filteredLevers" :key="lever.code" class="q-mx-md q-my-xs lever-item">
+        <LeverSelector
+          :lever="lever"
+          :value="leverStore.getLeverValue(lever.code)"
+          @change="(value) => leverStore.setLeverValue(lever.code, value)"
+        />
+      </div>
+    </q-list>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -66,12 +77,9 @@ const minValue = 1,
   maxValue = 4;
 
 // Get current sector from route
-const currentSector = computed(() => route.path.split('/')[1] || 'buildings');
+const currentSector = computed(() => route.path.split('/')[1] || '');
 
-// Get levers organized by headline, filtered by current sector
-const leversByHeadline = computed(() =>
-  leverStore.getLeversByHeadlineForSector(currentSector.value),
-);
+const filteredLevers = computed(() => leverStore.getLeversForSector(currentSector.value));
 
 function getGroupValue(levers: Lever[]): number {
   return (
