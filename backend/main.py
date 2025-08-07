@@ -2,6 +2,7 @@ import logging
 import json
 from model.interactions import runner
 from model.common.auxiliary_functions import filter_country_and_load_data_from_pickles
+from src.utils.region_config import RegionConfig
 
 # Configure logger
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -11,8 +12,8 @@ logger = logging.getLogger(__name__)
 f = open('config/lever_position.json')
 lever_setting = json.load(f)[0]
 years_setting = [1990, 2023, 2025, 2050, 5]
-country_list = ['Vaud']
-#sectors = ['climate', 'lifestyles', 'buildings', 'transport', 'agriculture', 'industry', 'forestry']
+
+country_list = [RegionConfig.get_current_region()]
 
 sectors = ['climate', 'lifestyles', 'buildings', 'transport', 'industry', 'agriculture', 'forestry', 'ammonia']
 # Filter geoscale

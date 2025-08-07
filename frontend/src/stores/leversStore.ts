@@ -5,6 +5,7 @@ import { levers as leversData } from 'utils/leversData';
 import { ExamplePathways } from 'utils/examplePathways';
 import { modelService } from 'services/modelService';
 import { AxiosError } from 'axios';
+import type { Region } from 'src/utils/region';
 
 // Types
 export interface YearData {
@@ -12,15 +13,21 @@ export interface YearData {
   [key: string]: number;
 }
 
-type CountryName = 'Switzerland' | 'EU27' | 'Vaud';
 export interface SectorData {
   countries: {
-    [key in CountryName]: YearData[];
+    [key in Region]: YearData[];
   };
   units: {
     [key: string]: string;
   };
 }
+
+export interface KpiData {
+  title: string;
+  value: number;
+  unit: string;
+}
+
 export interface ModelResults {
   fingerprint_result: string;
   fingerprint_input: string;
@@ -33,6 +40,14 @@ export interface ModelResults {
     buildings: SectorData;
     forestry: SectorData;
     agriculture: SectorData;
+  };
+  kpis: {
+    climate: KpiData[];
+    lifestyles: KpiData[];
+    transport: KpiData[];
+    buildings: KpiData[];
+    forestry: KpiData[];
+    agriculture: KpiData[];
   };
 }
 
@@ -105,22 +120,30 @@ export const useLeverStore = defineStore('lever', () => {
   // Sectors computed values
   const buildings = computed(() => {
     if (!modelResults.value) return null;
-    return modelResults.value.data.buildings;
+    return Object.assign(modelResults.value.data.buildings, {
+      kpis: modelResults.value.kpis.buildings,
+    });
   });
 
   const transport = computed(() => {
     if (!modelResults.value) return null;
-    return modelResults.value.data.transport;
+    return Object.assign(modelResults.value.data.transport, {
+      kpis: modelResults.value.kpis.transport,
+    });
   });
 
   const forestry = computed(() => {
     if (!modelResults.value) return null;
-    return modelResults.value.data.forestry;
+    return Object.assign(modelResults.value.data.forestry, {
+      kpis: modelResults.value.kpis.forestry,
+    });
   });
 
-    const agriculture = computed(() => {
+  const agriculture = computed(() => {
     if (!modelResults.value) return null;
-    return modelResults.value.data.agriculture;
+    return Object.assign(modelResults.value.data.agriculture, {
+      kpis: modelResults.value.kpis.agriculture,
+    });
   });
 
   // Model operations
