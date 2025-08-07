@@ -18,7 +18,7 @@ import { computed, ref } from 'vue';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { LineChart, BarChart } from 'echarts/charts';
-import type { SectorData } from 'stores/leversStore';
+import type { SectorData, ChartConfig } from 'stores/leversStore';
 import {
   TitleComponent,
   TooltipComponent,
@@ -28,7 +28,7 @@ import {
   DataZoomComponent,
 } from 'echarts/components';
 import VChart from 'vue-echarts';
-import { getPlotLabel } from 'utils/labelsPlot'; // Add this import
+import { getPlotLabel } from 'utils/labelsPlot';
 
 // Register ECharts components
 use([
@@ -44,11 +44,6 @@ use([
 ]);
 
 // Types
-interface OutputConfig {
-  id: string;
-  color?: string;
-}
-
 interface ChartSeries {
   name: string;
   color: string | null;
@@ -66,13 +61,6 @@ interface EChartsTooltipParam {
   seriesName: string;
   value: number;
   marker: string;
-}
-
-interface ChartConfig {
-  title: string;
-  type: string;
-  unit: string;
-  outputs: Array<string | OutputConfig>;
 }
 
 // Props
@@ -95,13 +83,13 @@ const chartData = computed<ChartSeries[]>(() => {
 });
 
 function extractChartData(
-  outputs: Array<string | OutputConfig>,
+  outputs: Array<string | { id: string; color?: string }>,
   countryData: YearData[],
 ): ChartSeries[] {
   const series: ChartSeries[] = [];
 
   // Normalize outputs to OutputConfig objects
-  const outputConfigs: OutputConfig[] = outputs.map((output) => {
+  const outputConfigs: Array<{ id: string; color?: string }> = outputs.map((output) => {
     return typeof output === 'string' ? { id: output } : output;
   });
 

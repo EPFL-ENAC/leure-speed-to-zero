@@ -28,6 +28,38 @@ export interface KpiData {
   unit: string;
 }
 
+export interface KpiThreshold {
+  value: number;
+  label: string;
+  icon: string;
+  color: string;
+}
+
+export interface KpiConfig {
+  name: string;
+  unit: string;
+  route: string;
+  maximize: boolean;
+  thresholds: KpiThreshold[];
+  info: string;
+}
+
+export interface OutputConfig {
+  id: string;
+  color?: string;
+}
+
+export interface ChartConfig {
+  title: string;
+  type: string;
+  unit: string;
+  outputs: Array<string | OutputConfig>;
+}
+
+export interface SectorWithKpis extends SectorData {
+  kpis: KpiData[];
+}
+
 export interface ModelResults {
   fingerprint_result: string;
   fingerprint_input: string;
@@ -118,33 +150,17 @@ export const useLeverStore = defineStore('lever', () => {
   });
 
   // Sectors computed values
-  const buildings = computed(() => {
+  const getSectorDataWithKpis = (sectorName: keyof ModelResults['data']): SectorWithKpis | null => {
     if (!modelResults.value) return null;
-    return Object.assign(modelResults.value.data.buildings, {
-      kpis: modelResults.value.kpis.buildings,
+    return Object.assign(modelResults.value.data[sectorName], {
+      kpis: modelResults.value.kpis[sectorName],
     });
-  });
+  };
 
-  const transport = computed(() => {
-    if (!modelResults.value) return null;
-    return Object.assign(modelResults.value.data.transport, {
-      kpis: modelResults.value.kpis.transport,
-    });
-  });
-
-  const forestry = computed(() => {
-    if (!modelResults.value) return null;
-    return Object.assign(modelResults.value.data.forestry, {
-      kpis: modelResults.value.kpis.forestry,
-    });
-  });
-
-  const agriculture = computed(() => {
-    if (!modelResults.value) return null;
-    return Object.assign(modelResults.value.data.agriculture, {
-      kpis: modelResults.value.kpis.agriculture,
-    });
-  });
+  const buildings = computed(() => getSectorDataWithKpis('buildings'));
+  const transport = computed(() => getSectorDataWithKpis('transport'));
+  const forestry = computed(() => getSectorDataWithKpis('forestry'));
+  const agriculture = computed(() => getSectorDataWithKpis('agriculture'));
 
   // Model operations
   let lastRunTime = 0;
@@ -329,6 +345,7 @@ export const useLeverStore = defineStore('lever', () => {
     transport,
     forestry,
     agriculture,
+    getSectorDataWithKpis,
 
     // Actions
     batchUpdateLevers,
