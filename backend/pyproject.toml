@@ -16,5 +16,7 @@ dependencies = [
     "orjson",
     "pydantic-settings>=2.9.1",
     "fastapi-cache2[redis]>=0.2.2",
+    "requests",
+    "deepl",
 ]
 
