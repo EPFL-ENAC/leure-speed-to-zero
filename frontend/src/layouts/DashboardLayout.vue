@@ -42,9 +42,9 @@
         <!-- Right Column -->
         <div class="col">
           <q-page class="column full-height">
-            <q-scroll-area visible class="col q-pa-md">
+            <div class="col full-width overflow-scroll">
               <router-view />
-            </q-scroll-area>
+            </div>
           </q-page>
         </div>
       </div>
@@ -91,7 +91,7 @@ function resetToDefaults() {
 <style lang="scss" scoped>
 .overflow-scroll {
   // height: 100vh;
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 /* No custom styles needed for this basic layout */
 </style>

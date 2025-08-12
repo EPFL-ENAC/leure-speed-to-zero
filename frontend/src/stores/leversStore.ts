@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
 import type { Lever } from 'utils/leversData';
-import { levers as leversData } from 'utils/leversData';
+import { levers as leversData, sectors } from 'utils/leversData';
 import { ExamplePathways } from 'utils/examplePathways';
 import { modelService } from 'services/modelService';
 import { AxiosError } from 'axios';
@@ -26,6 +26,38 @@ export interface KpiData {
   title: string;
   value: number;
   unit: string;
+}
+
+export interface KpiThreshold {
+  value: number;
+  label: string;
+  icon: string;
+  color: string;
+}
+
+export interface KpiConfig {
+  name: string;
+  unit: string;
+  route: string;
+  maximize: boolean;
+  thresholds: KpiThreshold[];
+  info: string;
+}
+
+export interface OutputConfig {
+  id: string;
+  color?: string;
+}
+
+export interface ChartConfig {
+  title: string;
+  type: string;
+  unit: string;
+  outputs: Array<string | OutputConfig>;
+}
+
+export interface SectorWithKpis extends SectorData {
+  kpis: KpiData[];
 }
 
 export interface ModelResults {
@@ -96,6 +128,18 @@ export const useLeverStore = defineStore('lever', () => {
     return result;
   });
 
+  // Function to get levers filtered by sector
+  const getLeversForSector = (sectorCode: string) => {
+    // Find the sector configuration
+    const sector = sectors.find((s) => s.code.toLowerCase() === sectorCode.toLowerCase());
+    if (!sector) return [];
+
+    // Filter levers that belong to this sector
+    const sectorLevers = leversData.filter((lever) => sector.levers.includes(lever.code));
+
+    return sectorLevers;
+  };
+
   const leversByGroup = computed(() => {
     const result: Record<string, typeof leversData> = {};
     leversData.forEach((lever) => {
@@ -118,33 +162,17 @@ export const useLeverStore = defineStore('lever', () => {
   });
 
   // Sectors computed values
-  const buildings = computed(() => {
+  const getSectorDataWithKpis = (sectorName: keyof ModelResults['data']): SectorWithKpis | null => {
     if (!modelResults.value) return null;
-    return Object.assign(modelResults.value.data.buildings, {
-      kpis: modelResults.value.kpis.buildings,
+    return Object.assign(modelResults.value.data[sectorName], {
+      kpis: modelResults.value.kpis[sectorName],
     });
-  });
+  };
 
-  const transport = computed(() => {
-    if (!modelResults.value) return null;
-    return Object.assign(modelResults.value.data.transport, {
-      kpis: modelResults.value.kpis.transport,
-    });
-  });
-
-  const forestry = computed(() => {
-    if (!modelResults.value) return null;
-    return Object.assign(modelResults.value.data.forestry, {
-      kpis: modelResults.value.kpis.forestry,
-    });
-  });
-
-  const agriculture = computed(() => {
-    if (!modelResults.value) return null;
-    return Object.assign(modelResults.value.data.agriculture, {
-      kpis: modelResults.value.kpis.agriculture,
-    });
-  });
+  const buildings = computed(() => getSectorDataWithKpis('buildings'));
+  const transport = computed(() => getSectorDataWithKpis('transport'));
+  const forestry = computed(() => getSectorDataWithKpis('forestry'));
+  const agriculture = computed(() => getSectorDataWithKpis('agriculture'));
 
   // Model operations
   let lastRunTime = 0;
@@ -323,12 +351,14 @@ export const useLeverStore = defineStore('lever', () => {
     getAllLeverValues,
     leversByHeadline,
     leversByGroup,
+    getLeversForSector,
     isCustomPathway,
 
     buildings,
     transport,
     forestry,
     agriculture,
+    getSectorDataWithKpis,
 
     // Actions
     batchUpdateLevers,

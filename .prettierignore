@@ -50,6 +50,8 @@ Makefile
 lefthook.yml
 **/**.yml
 **/**.yaml
+**/**.toml
+*.toml
 commitlint.config.js
 
 # CITATION files
