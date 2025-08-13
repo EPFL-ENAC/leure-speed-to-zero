@@ -1,4 +1,4 @@
-import sharedConfig from '../../../model_config.json';
+import sharedConfig from '../../model_config.json';
 
 export const REGION_CONFIG = {
   // Use environment variable with fallback

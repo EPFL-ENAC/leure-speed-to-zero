@@ -38,6 +38,7 @@ To change the region used by both frontend and backend:
 
 1. Edit `model_config.json` and change `MODEL_PRIMARY_REGION` to your desired region (e.g., "Switzerland")
 2. Restart both servers to apply the changes
+   2a. run `make install-config` or `make install` to copy the the desired region
 3. The cache will automatically use region-specific namespaces to prevent data mixing
 
 ### Installing Development Tools (Optional but Recommended)
