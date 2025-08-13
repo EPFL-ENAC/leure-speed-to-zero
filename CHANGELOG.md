@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.4.1...v0.5.0) (2025-08-13)
+
+
+### Features
+
+* **front:** add responsive design for mobile/tablet ([65ae6ab](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/65ae6ab29ee18f2dded072cf596335437cd42b60))
+* **front:** enhance SectorTab for responsive design - mobile list ([430d269](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/430d26900b594d72cb2453d7bfb5b7847dcc2d3a))
+
 ## [0.4.0](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.3.0...v0.4.0) (2025-08-13)
 
 
