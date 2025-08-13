@@ -1,4 +1,5 @@
 {
+  "kpis": [],
   "subtabs": [
     {
       "title": "Passenger distance per mode",
@@ -14,6 +15,16 @@
       "title": "Passenger energy demand per mode",
       "charts": ["PassengerEnergyDemandPerMode"],
       "route": "passenger-energy-demand"
+    },
+    {
+      "title": "Passenger aviation energy demand",
+      "charts": ["PassengerAviationEnergyDemandPerTech"],
+      "route": "passenger-energy-aviation"
+    },
+    {
+      "title": "Passenger aviation emissions",
+      "charts": ["PassengerAviationEmissionsTech", "PassengerAviationEmissionsLocal"],
+      "route": "passenger-emissions-aviation"
     },
     {
       "title": "Passenger energy per fuel",
@@ -69,7 +80,8 @@
         "tra_passenger_transport-demand-by-mode_metrotram[pkm]",
         "tra_passenger_transport-demand-by-mode_bus[pkm]",
         "tra_passenger_transport-demand-by-mode_2W[pkm]",
-        "tra_passenger_transport-demand-by-mode_LDV[pkm]"
+        "tra_passenger_transport-demand-by-mode_LDV[pkm]",
+        "tra_passenger_transport-demand-by-mode_aviation[pkm]"
       ]
     },
     "PassengerDistanceVkmPerMode": {
@@ -116,6 +128,37 @@
         "tra_passenger_energy-demand-by-fuel_kerosene[TWh]"
       ]
     },
+    "PassengerAviationEnergyDemandPerTech": {
+      "title": "Passenger aviation energy demand per technology",
+      "unit": "TWh",
+      "type": "StackedArea",
+      "outputs": [
+        "tra_passenger_energy-demand_aviation_electricity[TWh]",
+        "tra_passenger_energy-demand_aviation_hydrogen[TWh]",
+        "tra_passenger_energy-demand_aviation_SAF[TWh]",
+        "tra_passenger_energy-demand_aviation_kerosene[TWh]"
+      ]
+    },
+    "PassengerAviationEmissionsTech": {
+      "title": "Passenger aviation emissions per technology",
+      "unit": "Mt",
+      "type": "StackedArea",
+      "outputs": [
+        "tra_passenger_emissions_aviation_BEV_CO2[Mt]",
+        "tra_passenger_emissions_aviation_H2_CO2[Mt]",
+        "tra_passenger_emissions_aviation_SAF_CO2[Mt]",
+        "tra_passenger_emissions_aviation_kerosene_CO2[Mt]"
+      ]
+    },
+    "PassengerAviationEmissionsLocal": {
+      "title": "Passenger aviation emissions scope",
+      "unit": "Mt",
+      "type": "Line",
+      "outputs": [
+        "tra_passenger-emissions-local_aviation[Mt]",
+        "tra_passenger-emissions-total_aviation[Mt]"
+      ]
+    },
     "PassengerVehiclesFleet": {
       "title": "Passenger vehicle fleet",
       "unit": "Vehicles",
@@ -129,8 +172,7 @@
         "tra_passenger_vehicle-fleet_LDV_PHEV-gasoline[number]",
         "tra_passenger_vehicle-fleet_LDV_ICE-gas[number]",
         "tra_passenger_vehicle-fleet_LDV_ICE-diesel[number]",
-        "tra_passenger_vehicle-fleet_LDV_ICE-gasoline[number]",
-        "tra_passenger_vehicle-fleet_aviation[number]"
+        "tra_passenger_vehicle-fleet_LDV_ICE-gasoline[number]"
       ]
     },
     "FreightEnergyDemandPerMode": {

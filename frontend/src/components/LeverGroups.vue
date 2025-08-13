@@ -1,8 +1,8 @@
 <template>
-  <div class="lever-groups">
-    <div v-for="(levers, headline) in leversByHeadline" :key="headline" class="q-mb-xl">
+  <div v-if="currentSector == 'overall'" class="lever-groups">
+    <div v-for="(levers, headline) in leverStore.leversByHeadline" :key="headline" class="q-mb-xl">
       <q-list>
-        <div class="text-subtitle1 q-ml-md q-mb-sm">
+        <div class="text-subtitle1 q-ml-xs q-mb-sm">
           {{ headline }}
         </div>
         <q-expansion-item
@@ -50,21 +50,36 @@
       </q-list>
     </div>
   </div>
+  <div v-else class="lever-groups">
+    <q-list>
+      <div v-for="lever in filteredLevers" :key="lever.code" class="q-mx-md q-my-xs lever-item">
+        <LeverSelector
+          :lever="lever"
+          :value="leverStore.getLeverValue(lever.code)"
+          @change="(value) => leverStore.setLeverValue(lever.code, value)"
+        />
+      </div>
+    </q-list>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { useLeverStore } from 'stores/leversStore';
 import LeverSelector from 'components/LeverSelector.vue';
 import type { Lever } from 'utils/leversData';
 
 const leverStore = useLeverStore();
+const route = useRoute();
 
 const minValue = 1,
   maxValue = 4;
 
-// Get all levers organized by headline
-const leversByHeadline = computed(() => leverStore.leversByHeadline);
+// Get current sector from route
+const currentSector = computed(() => route.path.split('/')[1] || '');
+
+const filteredLevers = computed(() => leverStore.getLeversForSector(currentSector.value));
 
 function getGroupValue(levers: Lever[]): number {
   return (

@@ -2,13 +2,10 @@ import pandas as pd
 
 from model.common.data_matrix_class import DataMatrix
 from model.common.constant_data_matrix_class import ConstantDataMatrix
-from model.common.io_database import read_database, read_database_fxa, edit_database, database_to_df, dm_to_database
-from model.common.io_database import read_database_to_ots_fts_dict, read_database_to_ots_fts_dict_w_groups
+from model.common.io_database import dm_to_database
 from model.common.interface_class import Interface
-from model.common.auxiliary_functions import compute_stock, filter_geoscale, calibration_rates, check_ots_fts_match, \
-    create_years_list, linear_fitting
-from model.common.auxiliary_functions import read_level_data, simulate_input
-from scipy.optimize import linprog
+from model.common.auxiliary_functions import  calibration_rates, create_years_list
+from model.common.auxiliary_functions import read_level_data, filter_country_and_load_data_from_pickles
 import pickle
 import json
 import os
@@ -32,9 +29,7 @@ def init_years_lever():
 #######################################################################################################
 
 # CalculationLeaf READ PICKLE
-def read_data(data_file, lever_setting):
-    with open(data_file, 'rb') as handle:
-        DM_agriculture = pickle.load(handle)
+def read_data(DM_agriculture, lever_setting):
 
     # Read fts based on lever_setting
     # FIXME error it adds ots and fts
@@ -52,6 +47,7 @@ def read_data(data_file, lever_setting):
     dm_fxa_ef_liv_N2O = DM_agriculture['fxa']['ef_liv_N2O-emission']
     dm_fxa_ef_liv_CH4_treated = DM_agriculture['fxa']['ef_liv_CH4-emission_treated']
     dm_fxa_liv_nstock = DM_agriculture['fxa']['liv_manure_n-stock']
+    dm_fxa_feed = DM_agriculture['fxa']['feed']
 
     # Extract sub-data-matrices according to the flow
     # Sub-matrix for LIFESTYLE
@@ -128,8 +124,9 @@ def read_data(data_file, lever_setting):
     # Sub-matrix for ENERGY & GHG EMISSIONS
     dm_cal_energy_demand = DM_agriculture['fxa']['cal_agr_energy-demand']
     dm_energy_demand = DM_ots_fts['climate-smart-crop']['climate-smart-crop_energy-demand']
-    dm_cal_GHG = DM_agriculture['fxa']['cal_agr_emission_CH4']
-    dm_cal_input = DM_agriculture['fxa']['cal_input']
+    dm_cal_GHG = DM_agriculture['fxa']['cal_agr_emissions']
+    dm_cal_GHG.deepen()
+    dm_cal_input = DM_agriculture['fxa']['cal_agr_input-use_emissions-CO2']
 
     # Aggregated Data Matrix - ENERGY & GHG EMISSIONS
     DM_energy_ghg = {
@@ -198,7 +195,8 @@ def read_data(data_file, lever_setting):
     DM_feed = {
         'ration': dm_ration,
         'alt-protein': dm_alt_protein,
-        'cal_agr_demand_feed': dm_fxa_cal_demand_feed
+        'cal_agr_demand_feed': dm_fxa_cal_demand_feed,
+        'feed': dm_fxa_feed
     }
 
     # Aggregated Data Matrix - CROP
@@ -552,9 +550,9 @@ def livestock_workflow(DM_livestock, CDM_const, dm_lfs_pro, years_setting):
     # GRAZING LIVESTOCK
     # Filtering ruminants (bovine & sheep)
     dm_liv_ruminants = dm_liv_pop.filter(
-        {'Variables': ['agr_liv_population'], 'Categories1': ['meat-bovine', 'meat-sheep']})
-    # Ruminant livestock [lsu] = population bovine + population sheep
-    dm_liv_ruminants.operation('meat-bovine', '+', 'meat-sheep', dim="Categories1", out_col='ruminant')
+        {'Variables': ['agr_liv_population'], 'Categories1': ['meat-bovine', 'meat-sheep', 'abp-dairy-milk']})
+    # Ruminant livestock [lsu] = population bovine + population sheep + population dairy
+    dm_liv_ruminants.groupby({'ruminant': '.*'}, dim='Categories1', regex=True, inplace=True)
     # Append to relevant dm
     dm_liv_ruminants = dm_liv_ruminants.filter({'Variables': ['agr_liv_population'], 'Categories1': ['ruminant']})
     dm_liv_ruminants = dm_liv_ruminants.flatten()  # change from category to variable
@@ -1099,7 +1097,7 @@ def livestock_manure_workflow(DM_manure, DM_livestock, dm_liv_pop, cdm_const, ye
                      unit='t')
     df_cal_rates_liv_CH4 = dm_to_database(dm_cal_rates_liv_CH4, 'none', 'agriculture', level=0)
 
-    return dm_liv_N2O, dm_CH4, df_cal_rates_liv_N2O, df_cal_rates_liv_CH4
+    return dm_liv_N2O, dm_CH4, df_cal_rates_liv_N2O, df_cal_rates_liv_CH4, DM_manure
 
 
 # CalculationLeaf FEED -------------------------------------------------------------------------------------------------
@@ -1512,7 +1510,7 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
 
     # Total crop residues = sum(Crop residues per crop type) (In KNIME but not used)
 
-    # Residues per use (only for cereal residues) [Mt] = residues [kcal] * biomass hierarchy use [Mt/kcal] FIXME check with Gino if KNIME error assumption is correct (to use residues instead of dom prod afw)
+    # Residues per use (only for cereal residues) [Mt] = residues [kcal] * biomass hierarchy use [Mt/kcal] FIXME check with DM_SSR if KNIME error assumption is correct (to use residues instead of dom prod afw)
     dm_residues_cereal = DM_crop['residues_yield'].filter({'Variables': ['agr_residues'], 'Categories1': ['cereal']})
     dm_residues_cereal = dm_residues_cereal.flatten()
     idx_residues = dm_residues_cereal.idx
@@ -1529,7 +1527,13 @@ def crop_workflow(DM_crop, DM_feed, DM_bioenergy, dm_voil, dm_lfs, dm_lfs_pro, d
                  * DM_crop['ef_residues'].array[:, :, idx_ef['ef'], :, :]
     DM_crop['ef_residues'].add(array_temp, dim='Variables', col_label='agr_crop_emission', unit='Mt')
 
-    return DM_crop, dm_crop, dm_crop_other, dm_feed_processed, dm_food_processed, df_cal_rates_crop
+    # Gino: Adding SSR DM to send to the TPE
+    DM_ssr  = {'food': dm_ssr_food,
+               'feed': dm_ssr_feed_pro,
+               'bioenergy': dm_ssr_bioe_pro,
+               'processed': dm_ssr_food_pro}
+
+    return DM_crop, dm_crop, dm_crop_other, dm_feed_processed, dm_food_processed, df_cal_rates_crop, DM_ssr
 
 
 # CalculationLeaf AGRICULTURAL LAND DEMAND -----------------------------------------------------------------------------
@@ -1722,6 +1726,10 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, DM_manure, dm_land, dm_
     dm_energy_demand = DM_energy_ghg['energy_demand'].filter({'Variables': ['agr_energy-demand_raw']})
     dm_cal_rates_energy_demand = calibration_rates(dm_energy_demand, dm_cal_energy_demand, calibration_start_year=1990,
                                                    calibration_end_year=2023, years_setting=years_setting)
+    # Fill NaN with 1.0 (when 0 & 0, issue with calibration)
+    array_temp = dm_cal_rates_energy_demand.array[:, :, :, :]
+    array_temp = np.nan_to_num(array_temp, nan=1.0)
+    dm_cal_rates_energy_demand.array[:, :, :, :] = array_temp
     DM_energy_ghg['energy_demand'].append(dm_cal_rates_energy_demand, dim='Variables')
     DM_energy_ghg['energy_demand'].operation('agr_energy-demand_raw', '*', 'cal_rate', dim='Variables',
                                              out_col='agr_energy-demand', unit='ktoe')
@@ -1731,7 +1739,7 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, DM_manure, dm_land, dm_
     # Pre processing : filtering and deepening constants
     cdm_CO2 = CDM_const['cdm_CO2']
 
-    # Energy direct emission [MtCO2] = energy demand [ktoe] * fertilizer use [MtCO2/ktoe]
+    # Energy direct emission [MtCO2] = energy demand [ktoe] * emission factor [MtCO2/ktoe]
     dm_energy = DM_energy_ghg['energy_demand']
     idx_energy = dm_energy.idx
     idx_cdm = cdm_CO2.idx
@@ -1746,11 +1754,8 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, DM_manure, dm_land, dm_
     dm_CO2 = dm_CO2.flatten()
 
     # Unit conversion : Overall CO2 emission from fuel [Mt] => [t]
-    idx = dm_CO2.idx
-    var = 'agr_input-use_emissions-CO2_fuel'
-    dm_CO2.array[:, :, idx[var]] = dm_CO2.array[:, :, idx[var]] * 1e6
-    dm_CO2.units[var] = 't'
-
+    dm_CO2.change_unit('agr_input-use_emissions-CO2_fuel', 10 ** 6, old_unit='Mt',
+                 new_unit='t')  # Unit conversion [kt] => [t]
     dm_CO2 = dm_CO2.filter({'Variables': ['agr_input-use_emissions-CO2_fuel']})
     dm_CO2.deepen()
 
@@ -1760,11 +1765,10 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, DM_manure, dm_land, dm_
     # Rename to _raw for calibration
     dm_CO2.rename_col('agr_input-use_emissions-CO2', 'agr_input-use_emissions-CO2_raw', dim='Variables')
 
-    # Calibration CO2 from fuel, liming, urea emissions FIXME check with gino if it makes sense to change the calibration order from KNIME to put it before summing
+    # Calibration CO2 from fuel, liming, urea emissions FIXME check with crop_work if it makes sense to change the calibration order from KNIME to put it before summing
     dm_cal_CO2_input = DM_energy_ghg['cal_input']
     dm_cal_CO2_input.change_unit('cal_agr_input-use_emissions-CO2', 10 ** 3, old_unit='kt',
                                  new_unit='t')  # Unit conversion [kt] => [t]
-
     dm_cal_rates_CO2_input = calibration_rates(dm_CO2, dm_cal_CO2_input, calibration_start_year=1990,
                                                calibration_end_year=2023, years_setting=years_setting)
     dm_CO2.append(dm_cal_rates_CO2_input, dim='Variables')
@@ -1811,6 +1815,16 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, DM_manure, dm_land, dm_
     dm_CH4_liv.add(0.0, dummy=True, col_label='CO2-emission', dim='Categories1', unit='t')
     dm_CH4_liv.add(0.0, dummy=True, col_label='N2O-emission', dim='Categories1', unit='t')
 
+    # NO2 EMISSIONS FROM FERTILIZERS -----------------------------------------------------------------------------------
+    # Filter and format
+    dm_N2O_fert = dm_n.filter({'Variables': ['agr_crop_emission_N2O-emission_fertilizer']})
+    dm_N2O_fert.rename_col('agr_crop_emission_N2O-emission_fertilizer',
+                'agr_fertilizer_N2O-emission', 'Variables')
+    dm_N2O_fert.deepen()
+    # Adding dummy columns
+    dm_N2O_fert.add(0.0, dummy=True, col_label='CO2-emission', dim='Categories1', unit='t')
+    dm_N2O_fert.add(0.0, dummy=True, col_label='CH4-emission', dim='Categories1', unit='t')
+
     # RICE EMISSIONS ---------------------------------------------------------------------------------------------------
     # Adding rice emissions
     dm_CH4_rice = DM_land['rice'].filter({'Variables': ['agr_rice_crop_CH4-emission']})
@@ -1826,8 +1840,9 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, DM_manure, dm_land, dm_
     dm_ghg.append(dm_CH4_liv, dim='Variables')  # CH4 from livestock
     dm_ghg.append(dm_CH4_rice, dim='Variables')  # CH4 from rice
     dm_ghg.append(dm_fuel_input, dim='Variables')  # CO2 from fuel, liming, urea
+    dm_ghg.append(dm_N2O_fert, dim='Variables')  # N2O from fertilizer
 
-    # Agriculture GHG emissions per GHG [t] =  crop + fuel + livestock + rice emissions per GHG
+    # Agriculture GHG emissions per GHG [t] =  crop + fuel + livestock + rice + fertilizer emissions per GHG
     dm_ghg.operation('agr_emission_residues', '+', 'agr_liv_N2O-emission',
                      out_col='residues_and_N2O_liv', unit='t')
     dm_ghg.operation('residues_and_N2O_liv', '+', 'agr_liv_CH4-emission',
@@ -1835,20 +1850,15 @@ def energy_ghg_workflow(DM_energy_ghg, DM_crop, DM_land, DM_manure, dm_land, dm_
     dm_ghg.operation('residues_and_N2O_liv_and_CH4_liv', '+', 'agr_rice_crop',
                      out_col='residues_and_N2O_liv_and_CH4_liv_and_rice', unit='t')
     dm_ghg.operation('residues_and_N2O_liv_and_CH4_liv_and_rice', '+', 'agr_input-use_emissions-CO2',
+                     out_col='residues_and_N2O_liv_and_CH4_liv_and_rice_and_CO2', unit='t')
+    dm_ghg.operation('residues_and_N2O_liv_and_CH4_liv_and_rice_and_CO2', '+',
+                     'agr_fertilizer',
                      out_col='agr_emissions_raw', unit='t')
     # Dropping the intermediate values
     dm_ghg = dm_ghg.filter({'Variables': ['agr_emissions_raw']})
 
-    # Renaming for name matching
-    DM_energy_ghg['cal_GHG'].rename_col('CH4', 'CH4-emission', dim='Categories1')
-    DM_energy_ghg['cal_GHG'].rename_col('CO2', 'CO2-emission', dim='Categories1')
-    DM_energy_ghg['cal_GHG'].rename_col('N2O', 'N2O-emission', dim='Categories1')
-
     # Calibration GHG emissions: overall CO2, CH4, NO2
     dm_cal_ghg = DM_energy_ghg['cal_GHG']
-    # dm_cal_ghg.change_unit('cal_agr_input-use_emissions-CO2', 10 ** 3, old_unit='kt',
-    #                             new_unit='t')  # Unit conversion [kt] => [t]
-
     dm_cal_rates_ghg = calibration_rates(dm_ghg, dm_cal_ghg, calibration_start_year=1990,
                                          calibration_end_year=2023, years_setting=years_setting)
     dm_ghg.append(dm_cal_rates_ghg, dim='Variables')
@@ -2090,7 +2100,7 @@ def agriculture_refinery_interface(DM_energy_ghg):
 def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_aps, dm_input_use_CO2, dm_crop_residues,
                               dm_CH4, dm_liv_N2O, dm_CH4_rice, dm_fertilizer_N2O, DM_energy_ghg, DM_bioenergy, dm_lgn,
                               dm_eth, dm_oil, dm_aps_ibp, DM_food_demand, dm_lfs_pro, dm_lfs, DM_land, dm_fiber,
-                              dm_aps_ibp_oil, dm_voil_tpe, DM_alc_bev, dm_biofuel_fdk, dm_liv_pop):
+                              dm_aps_ibp_oil, dm_voil_tpe, DM_alc_bev, dm_biofuel_fdk, dm_liv_pop, DM_ssr, dm_fertilizer_co, DM_manure):
     kcal_to_TWh = 1.163e-12
 
     # Livestock population
@@ -2199,7 +2209,7 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
     dm_ind_bp = dm_aps_ibp_oil
     dm_tpe.append(dm_ind_bp.flattest(), dim='Variables')
 
-    # Total bioenergy consumption (sum of liquid, biogas feedstock kcal) (solid not included in KNIME) FIXME check with Gino if solid should be considered
+    # Total bioenergy consumption (sum of liquid, biogas feedstock kcal) (solid not included in KNIME) FIXME check with crop_work if solid should be considered
     # Sum liquid & solid
     dm_bioenergy = dm_fdk_liquid.group_all('Categories1', inplace=False)
     dm_bioenergy.append(dm_ind_bp, dim='Variables')
@@ -2229,7 +2239,7 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
 
     # Solid (same as bioenergy feedstock mix) Note : not included in KNIME
 
-    # Total non-food consumption (beverages and fiber crops) FIXME check with Gino if okay to consider fiber crops
+    # Total non-food consumption (beverages and fiber crops) FIXME check with crop_work if okay to consider fiber crops
     # Beverages
     dm_crop_bev = dm_lfs_pro.filter_w_regex({'Variables': 'agr_domestic_production', 'Categories1': 'pro-bev.*'})
     dm_crop_bev.groupby({'crop-bev': '.*'}, dim='Categories1', regex=True, inplace=True)
@@ -2243,6 +2253,38 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
     dm_crop_bev.operation('agr_domestic-production_fibres-plant-eq', '+', 'agr_domestic_production_crop-bev',
                           out_col='agr_crop-cons_non-food', unit='kcal')
     dm_tpe.append(dm_crop_bev.flattest(), dim='Variables')
+    dm_tpe.append(dm_lfs.flattest(), dim='Variables')
+
+    # Self-sufficiency ratio
+    dm_ssr_food = DM_ssr['food']
+    dm_ssr_feed = DM_ssr['feed']
+    dm_ssr_bioenergy = DM_ssr['bioenergy']
+    dm_ssr_processed = DM_food_demand['food-net-import-pro']
+    dm_ssr = dm_ssr_food.copy()
+    dm_ssr.append(dm_ssr_feed, dim='Categories1')
+    dm_ssr.append(dm_ssr_processed, dim='Categories1')
+    dm_ssr.append(dm_ssr_bioenergy, dim='Categories1')
+    dm_tpe.append(dm_ssr.flattest(), dim='Variables')
+
+    #Input-use
+    dm_input = dm_fertilizer_co.filter({'Variables': ['agr_input-use']})
+    dm_tpe.append(dm_input.flattest(), dim='Variables')
+
+    # Land use
+    dm_cropland = DM_land['yield']
+    dm_tpe.append(dm_cropland.flattest(), dim='Variables')
+
+    # Livestock slaughtered
+    dm_slaughtered = DM_livestock['liv_slaughtered_rate'].filter({'Variables': ['agr_liv_population_slau']})
+    dm_tpe.append(dm_slaughtered.flattest(), dim='Variables')
+
+    # Manure
+    dm_manure = DM_manure['liv_n-stock'].filter({'Variables': ['agr_liv_n-stock']})
+    dm_tpe.append(dm_manure.flattest(), dim='Variables')
+
+    # Grassland
+    dm_grassland = DM_livestock['ruminant_density'].filter({'Variables': ['agr_lus_land_raw_grassland','agr_climate-smart-livestock_density']})
+    dm_tpe.append(dm_grassland, dim='Variables')
 
     return dm_tpe
 
@@ -2250,12 +2292,10 @@ def agriculture_TPE_interface(DM_livestock, DM_crop, dm_crop_other, DM_feed, dm_
 # ----------------------------------------------------------------------------------------------------------------------
 # AGRICULTURE ----------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
-def agriculture(lever_setting, years_setting, interface=Interface()):
+def agriculture(lever_setting, years_setting, DM_input, interface=Interface()):
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    agriculture_data_file = os.path.join(current_file_directory,
-                                         '../_database/data/datamatrix/geoscale/agriculture.pickle')
     DM_ots_fts, DM_lifestyle, DM_food_demand, DM_livestock, DM_alc_bev, DM_bioenergy, DM_manure, DM_feed, DM_crop, DM_land, DM_nitrogen, DM_energy_ghg, CDM_const = read_data(
-        agriculture_data_file, lever_setting)
+        DM_input, lever_setting)
 
     cntr_list = DM_food_demand['food-net-import-pro'].col_labels['Country']
 
@@ -2305,7 +2345,7 @@ def agriculture(lever_setting, years_setting, interface=Interface()):
                                                                                        dm_lfs_pro)
     DM_bioenergy, dm_oil, dm_lgn, dm_eth, dm_biofuel_fdk = bioenergy_workflow(DM_bioenergy, CDM_const, DM_ind, dm_bld,
                                                                               dm_tra)
-    dm_liv_N2O, dm_CH4, df_cal_rates_liv_N2O, df_cal_rates_liv_CH4 = livestock_manure_workflow(DM_manure, DM_livestock,
+    dm_liv_N2O, dm_CH4, df_cal_rates_liv_N2O, df_cal_rates_liv_CH4, DM_manure = livestock_manure_workflow(DM_manure, DM_livestock,
                                                                                                dm_liv_pop, CDM_const,
                                                                                                years_setting)
     DM_feed, dm_aps_ibp, dm_feed_req, dm_aps, dm_feed_demand, df_cal_rates_feed = feed_workflow(DM_feed, dm_liv_prod,
@@ -2313,7 +2353,7 @@ def agriculture(lever_setting, years_setting, interface=Interface()):
                                                                                                 CDM_const,
                                                                                                 years_setting)
     dm_voil, dm_aps_ibp_oil, dm_voil_tpe = biomass_allocation_workflow(dm_aps_ibp, dm_oil)
-    DM_crop, dm_crop, dm_crop_other, dm_feed_processed, dm_food_processed, df_cal_rates_crop = crop_workflow(DM_crop,
+    DM_crop, dm_crop, dm_crop_other, dm_feed_processed, dm_food_processed, df_cal_rates_crop, DM_ssr = crop_workflow(DM_crop,
                                                                                                              DM_feed,
                                                                                                              DM_bioenergy,
                                                                                                              dm_voil,
@@ -2370,16 +2410,16 @@ def agriculture(lever_setting, years_setting, interface=Interface()):
                                             dm_crop_residues, dm_CH4, dm_liv_N2O, dm_CH4_rice, dm_fertilizer_N2O,
                                             DM_energy_ghg, DM_bioenergy, dm_lgn, dm_eth, dm_oil, dm_aps_ibp,
                                             DM_food_demand, dm_lfs_pro, dm_lfs, DM_land, dm_fiber, dm_aps_ibp_oil,
-                                            dm_voil_tpe, DM_alc_bev, dm_biofuel_fdk, dm_liv_pop)
+                                            dm_voil_tpe, DM_alc_bev, dm_biofuel_fdk, dm_liv_pop, DM_ssr, dm_fertilizer_co,DM_manure)
 
     return results_run
 
 
 def agriculture_local_run():
-    global_vars = {'geoscale': 'Switzerland'}
-    filter_geoscale(global_vars['geoscale'])
+    country_list = ['Switzerland', 'Vaud']
+    DM_input = filter_country_and_load_data_from_pickles(country_list= country_list, modules_list = 'agriculture')
     years_setting, lever_setting = init_years_lever()
-    agriculture(lever_setting, years_setting)
+    agriculture(lever_setting, years_setting, DM_input['agriculture'])
     return
 
 

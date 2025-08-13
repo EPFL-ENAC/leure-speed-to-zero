@@ -2,27 +2,17 @@
 # packages
 from model.common.data_matrix_class import DataMatrix
 
-import pandas as pd
 import pickle
 import os
 import numpy as np
 import warnings
-
-import re
-# from _database.pre_processing.api_routine_Eurostat import get_data_api_eurostat
 warnings.simplefilter("ignore")
-import plotly.express as px
-import plotly.io as pio
-pio.renderers.default='browser'
 
-# NOTE: for the business as usual, we will put no changes om energy switches.
+# NOTE: for the business as usual, we will put no changes on energy switches.
 # TODO: use documentation EUCalc to do level 1 etc.
 
-# file
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/_database/pre_processing/industry/eu/python/industry_lever_energy-switch.py"
-
 # directories
-current_file_directory = os.path.dirname(os.path.abspath(__file__))
+current_file_directory = os.getcwd()
 
 # create dm
 countries = ['Austria','Belgium','Bulgaria','Croatia','Cyprus','Czech Republic','Denmark',
@@ -31,15 +21,14 @@ countries = ['Austria','Belgium','Bulgaria','Croatia','Cyprus','Czech Republic',
              'Romania','Slovakia','Slovenia','Spain','Sweden','United Kingdom']
 years = list(range(1990,2023+1,1))
 years = years + list(range(2025, 2050+1, 5))
-variabs = ['aluminium-prim', 'aluminium-sec', 'aluminium-sec-post-consumer', 
-           'cement-dry-kiln', 'cement-geopolym', 'cement-sec-post-consumer', 
-           'cement-wet-kiln', 'chem-chem-tech', 'chem-sec-post-consumer', 
-           'copper-sec-post-consumer', 'copper-tech', 'fbt-tech', 'glass-glass', 
-           'glass-sec-post-consumer', 'lime-lime',
-           'mae-tech', 'ois-tech', 'paper-sec-post-consumer', 'paper-tech', 
-           'pulp-tech', 'steel-BF-BOF', 'steel-hisarna', 'steel-hydrog-DRI', 
-           'steel-scrap-EAF', 'steel-sec-post-consumer', 'textiles-tech', 
-           'tra-equip-tech', 'wwp-tech']
+variabs = ['aluminium-prim', 'aluminium-sec',"ammonia-tech",
+           'cement-dry-kiln', 'cement-geopolym', 'cement-sec-post-consumer', 'cement-wet-kiln', 
+           'chem-chem-tech', 'chem-sec', 
+           'copper-sec', 'copper-tech', 'fbt-tech', 'glass-glass', 
+           'glass-sec', 'lime-lime',
+           'mae-tech', 'ois-sec', 'ois-tech', 'paper-tech', 'pulp-tech', 
+           'steel-BF-BOF', 'steel-hisarna', 'steel-hydrog-DRI', 'steel-scrap-EAF',
+           'textiles-tech', 'tra-equip-tech', 'wwp-sec', 'wwp-tech']
 variabs = ["energy-switch_" + i for i in variabs]
 switches = ['liquid-to-gas', 'solid-to-gas', 'to-biomass', 'to-electricity', 'to-hydrogen', 'to-synfuels']
 variabs_new = []
@@ -58,7 +47,7 @@ for i in range(0, len(years)):
     index_dict[years[i]] = i
 for i in range(0, len(variabs)):
     index_dict[variabs[i]] = i
-dm = DataMatrix()
+dm = DataMatrix(empty=True)
 dm.col_labels = {"Country" : countries, "Years" : years, "Variables" : variabs}
 dm.units = units_dict
 dm.idx = index_dict

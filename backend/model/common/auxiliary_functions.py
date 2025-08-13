@@ -11,7 +11,8 @@ from os import listdir
 from os.path import isfile, join
 import pickle
 from scipy.stats import linregress
-
+import requests
+import deepl
 
 def add_missing_ots_years(dm, startyear, baseyear):
     
@@ -1006,8 +1007,8 @@ def my_pickle_dump(DM_new, local_pickle_file):
                 dm_old.append(dm_new, dim='Country')
                 dm_old.sort('Country')
             else:
-                dm_old = dm_new
-            return dm_old
+                dm_old = dm_new.copy()
+            return dm_old.copy()
 
         def update_DM(DM_old, DM_new):
             for key in DM_new.keys():
@@ -1025,7 +1026,10 @@ def my_pickle_dump(DM_new, local_pickle_file):
         with open(local_pickle_file, 'rb') as handle:
             DM = pickle.load(handle)
 
-        update_DM(DM, DM_new)
+        if isinstance(DM_new, dict):
+          update_DM(DM, DM_new)
+        else: # if it is actually a dm
+          DM = update_data(DM, DM_new)
 
         with open(local_pickle_file, 'wb') as handle:
             pickle.dump(DM, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -1120,3 +1124,182 @@ def add_dummy_country_to_DM(DM, new_country, ref_country):
 
     return
 
+
+def load_module_input_from_pickle(module):
+  current_file_directory = os.path.dirname(os.path.abspath(__file__))
+  pickle_path = "/../../_database/data/datamatrix/"
+  DM_module = dict()
+  f = os.path.join(current_file_directory + pickle_path, module + ".pickle")
+  with open(f, 'rb') as handle:
+    DM_module = pickle.load(handle)
+
+  return DM_module
+
+
+def filter_country_and_load_data_from_pickles(country_list, modules_list):
+  # Loads DM from pickles that correspond to the modules in modules_list
+  # It keeps only the required countries from country_list
+  if isinstance(modules_list, str):
+    modules_list = [modules_list]
+
+  DM_input = dict()
+  for module in modules_list:
+    DM_input[module] = load_module_input_from_pickle(module)
+    filter_DM(DM_input[module], {'Country': country_list})
+
+  return DM_input
+
+
+def return_lever_data(lever_name, DM_input, DM_out = None):
+  lever_name = lever_name.replace('lever_', '')
+  if DM_out is None:
+    DM_out = dict()
+
+  if 'ots' in DM_out and 'fts' in DM_out:
+    return DM_out
+
+  for key in DM_input.keys():
+    if key == lever_name:
+      if isinstance(DM_input[key], dict) and 1 in DM_input[key].keys():
+        DM_out['fts'] = DM_input[key]
+      elif 'ots' not in DM_out:
+        DM_out['ots'] = DM_input[key]
+      else:
+        DM_out['fts'] = DM_input[key]
+    # If you still have a dictionary to explore and it is not an fts
+    elif isinstance(DM_input[key], dict)  and key != 'fxa':
+      DM_out = return_lever_data(lever_name, DM_input[key], DM_out)
+    if 'ots' in DM_out and 'fts' in DM_out:
+      break
+
+  return DM_out
+
+
+def get_lever_data_to_plot(lever_name, DM_input):
+  # Given the lever_name and a DM_input containing the input used in the run,
+  # returns a DM with keys 1,2,3,4 and for each, a flat dm covering the whole time series.
+  # lever_name should be in chosen lever_position.json
+  # DM_input can be obtained by running:
+  # DM_input = filter_country_and_load_data_from_pickles(country_list, modules_list)
+
+  DM_lever = return_lever_data(lever_name, DM_input)
+  DM_clean = dict()
+  if DM_lever is None:
+    print(f'lever_name {lever_name} not found in input DM')
+  else:
+    dm_ots = DM_lever['ots'].flattest()
+    if not isinstance(dm_ots, dict):
+      for lev in range(4):
+        dm_fts = DM_lever['fts'][lev+1].flattest()
+        DM_clean[lev+1] = dm_ots.copy()
+        DM_clean[lev + 1].append(dm_fts, dim='Years')
+    else:
+      print(f'The lever {lever_name} controls more than one variable and cannot be plotted')
+
+  return DM_clean
+
+
+def load_pop(country_list, years_list):
+
+  this_dir = os.path.dirname(os.path.abspath(__file__))
+  filepath = os.path.join(this_dir, '../../_database/data/datamatrix/lifestyles.pickle')
+  # population
+  with open(filepath, 'rb') as handle:
+    DM_lfs = pickle.load(handle)
+  dm_pop = DM_lfs["ots"]["pop"]["lfs_population_"].copy()
+  dm_pop.append(DM_lfs["fts"]["pop"]["lfs_population_"][1], "Years")
+  dm_pop = dm_pop.filter({"Country": country_list})
+  dm_pop.sort("Years")
+  dm_pop.filter({"Years": years_list}, inplace=True)
+
+  return dm_pop
+
+
+def dm_add_missing_variables(dm, dict_all, fill_nans=False):
+  # dict_all is like {'Years': all_years, 'Country': all_countries}
+  for dim, full_list in dict_all.items():
+    missing_list = list(set(full_list) - set(dm.col_labels[dim]))
+    dm.add(np.nan, dim=dim, col_label=missing_list, dummy=True)
+    dm.sort(dim)
+    if fill_nans:
+      dm.fill_nans(dim)
+
+  return
+
+def save_url_to_file(file_url, local_filename):
+  # Loop for URL
+  if not os.path.exists(local_filename):
+    response = requests.get(file_url, stream=True)
+    # Check if the request was successful
+    if response.status_code == 200:
+      with open(local_filename, 'wb') as f:
+        for chunk in response.iter_content(chunk_size=8192):
+          if chunk:
+            f.write(chunk)
+      print(f"File downloaded successfully as {local_filename}")
+    else:
+      print(f"Error: {response.status_code}, {response.text}")
+  else:
+    print(
+      f'File {local_filename} already exists. If you want to download again delete the file')
+
+  return
+
+def translate_text(text):
+  # Initialize the Deepl Translator
+  deepl_api_key = '9ecffb3f-5386-4254-a099-8bfc47167661:fx'
+  translator = deepl.Translator(deepl_api_key)
+  if isinstance(text, str):
+    translation = translator.translate_text(text, target_lang='EN-GB')
+    out = translation.text
+  else:
+    out = text
+  return out
+
+
+def df_excel_to_dm(df, names_dict, var_name, unit, num_cat, keep_first=False,
+                   country='Switzerland'):
+  # df from excel to dm
+  # Remove nans and empty columns/rows
+  if np.nan in df.columns:
+    df.drop(columns=np.nan, inplace=True)
+  # Change headers
+  df.rename(columns={df.columns[0]: 'Variables'}, inplace=True)
+  df.set_index('Variables', inplace=True)
+  df.dropna(axis=0, how='all', inplace=True)
+  df.dropna(axis=1, how='all', inplace=True)
+  # Filter rows that contain at least one number (integer or float)
+  df = df[
+    df.apply(lambda row: row.map(pd.api.types.is_number), axis=1).any(axis=1)]
+  df_clean = df.loc[:,
+             df.apply(lambda col: col.map(pd.api.types.is_number)).any(
+               axis=0)].copy()
+  # Extract only the data we are interested in:
+  df_filter = df_clean.loc[names_dict.keys()].copy()
+  df_filter = df_filter.apply(lambda col: pd.to_numeric(col, errors='coerce'))
+  # df_filter = df_filter.applymap(lambda x: pd.to_numeric(x, errors='coerce'))
+  df_filter.reset_index(inplace=True)
+  # Keep only first 10 caracters
+  df_filter['Variables'] = df_filter['Variables'].replace(names_dict)
+  if keep_first:
+    df_filter = df_filter.drop_duplicates(subset=['Variables'], keep='first')
+  df_filter = df_filter.groupby(['Variables']).sum()
+  df_filter.reset_index(inplace=True)
+
+  # Pivot the dataframe
+  df_filter['Country'] = country
+  df_T = pd.melt(df_filter, id_vars=['Variables', 'Country'],
+                 var_name='Years', value_name='values')
+  df_pivot = df_T.pivot_table(index=['Country', 'Years'],
+                              columns=['Variables'], values='values',
+                              aggfunc='sum')
+  df_pivot = df_pivot.add_suffix('[' + unit + ']')
+  df_pivot = df_pivot.add_prefix(var_name + '_')
+  df_pivot.reset_index(inplace=True)
+
+  # Drop non numeric values in Years col
+  df_pivot['Years'] = pd.to_numeric(df_pivot['Years'], errors='coerce')
+  df_pivot = df_pivot.dropna(subset=['Years'])
+
+  dm = DataMatrix.create_from_df(df_pivot, num_cat=num_cat)
+  return dm
