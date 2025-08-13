@@ -4,19 +4,28 @@
     <kpi-list v-if="config.kpis && config.kpis.length > 0" :kpis="kpis" class="q-mb-lg" />
 
     <q-separator v-if="config.kpis && config.kpis.length > 0"></q-separator>
-    <q-tabs
-      v-model="currentTab"
-      :ripple="true"
-      outside-arrows
-      active-color="primary"
-      no-caps
-      align="justify"
-      content-class="text-grey-8"
-      active-bg-color="white"
-    >
-      <q-tab v-for="tab in config.subtabs" :key="tab.route" :name="tab.route" :label="tab.title" />
-    </q-tabs>
-    <q-separator></q-separator>
+
+    <!-- Tabs for desktop/tablet -->
+    <template v-if="$q.screen.gt.sm">
+      <q-tabs
+        v-model="currentTab"
+        :ripple="true"
+        outside-arrows
+        active-color="primary"
+        no-caps
+        align="justify"
+        content-class="text-grey-8"
+        active-bg-color="white"
+      >
+        <q-tab
+          v-for="tab in config.subtabs"
+          :key="tab.route"
+          :name="tab.route"
+          :label="tab.title"
+        />
+      </q-tabs>
+      <q-separator></q-separator>
+    </template>
 
     <div v-if="!modelResults" class="graph-placeholder q-pa-xl">
       <q-icon name="show_chart" size="4rem" />
@@ -31,7 +40,8 @@
     </div>
 
     <template v-else>
-      <q-tab-panels v-model="currentTab" animated>
+      <!-- Tab panels for desktop/tablet -->
+      <q-tab-panels v-if="$q.screen.gt.sm" v-model="currentTab" animated>
         <q-tab-panel v-for="tab in config.subtabs" :key="tab.route" :name="tab.route">
           <div class="row q-col-gutter-md flex-wrap">
             <chart-card
@@ -43,6 +53,21 @@
           </div>
         </q-tab-panel>
       </q-tab-panels>
+
+      <!-- Chart list for mobile -->
+      <div v-else>
+        <div v-for="tab in config.subtabs" :key="tab.route" class="q-mb-lg">
+          <div class="text-h6 q-mb-md title">{{ tab.title }}</div>
+          <div class="row q-col-gutter-md flex-wrap">
+            <chart-card
+              v-for="chartId in tab.charts"
+              :chart-config="config.charts[chartId] as ChartConfig"
+              :key="chartId"
+              :model-data="modelResults"
+            />
+          </div>
+        </div>
+      </div>
     </template>
   </div>
 </template>
@@ -58,7 +83,9 @@ import {
 } from 'stores/leversStore';
 import KpiList from 'src/components/kpi/KpiList.vue';
 import ChartCard from 'components/graphs/ChartCard.vue';
+import { useQuasar } from 'quasar';
 
+const $q = useQuasar();
 // Props
 interface SectorConfig {
   kpis?: KpiConfig[];
@@ -140,6 +167,9 @@ async function runModel() {
 </script>
 
 <style lang="scss" scoped>
+.title {
+  padding: 2em 0 0 1em;
+}
 .graph-placeholder {
   display: flex;
   flex-direction: column;
@@ -149,11 +179,18 @@ async function runModel() {
   background-color: #f5f5f5;
   border-radius: 8px;
   color: #9e9e9e;
+  text-align: center;
+  padding: 2rem;
 }
 
 :deep(.q-tabs) {
   .q-tab {
     padding: 1em;
+
+    @media (max-width: 600px) {
+      padding: 0.8em 0.5em;
+      font-size: 0.85rem;
+    }
   }
 }
 </style>
