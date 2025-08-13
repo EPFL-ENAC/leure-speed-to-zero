@@ -25,6 +25,8 @@ requirements.txt
 .gitattributes
 
 frontend/.quasar/*
+frontend/dist/*
+frontend/.dockerignore
 # Makefiles
 Makefile
 *.mk
