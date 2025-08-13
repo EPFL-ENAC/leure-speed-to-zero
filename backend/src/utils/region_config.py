@@ -5,7 +5,7 @@ from pathlib import Path
 
 def load_shared_config():
     """Load shared configuration from JSON file."""
-    config_file = Path(__file__).parent.parent.parent.parent /  "model_config.json"
+    config_file = Path(__file__).parent.parent.parent /  "model_config.json"
     if config_file.exists():
         with open(config_file, 'r') as f:
             return json.load(f)

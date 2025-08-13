@@ -1,26 +1,33 @@
-.PHONY: install install-backend install-frontend clean uninstall help run run-backend run-frontend wait-for-backend up
+.PHONY: install install-config install-backend install-frontend clean uninstall help run run-backend run-frontend wait-for-backend up
 
 # Default target
 help:
 	@echo "Available commands:"
 	@echo "  install		   - Install all dependencies (backend + frontend) and set up git hooks"
+	@echo "  install-config    - Install configuration files"
 	@echo "  install-backend   - Install backend dependencies only"
 	@echo "  install-frontend  - Install frontend dependencies only"
-	@echo "  clean			 - Clean node_modules and package-lock.json"
-	@echo "  uninstall		 - Remove git hooks and clean dependencies"
+	@echo "  clean			   - Clean node_modules and package-lock.json"
+	@echo "  uninstall		   - Remove git hooks and clean dependencies"
 	@echo "  run			   - Run backend and frontend locally (waits for backend health check)"
 	@echo "  run-backend	   - Run backend only"
-	@echo "  run-frontend	  - Run frontend only"
+	@echo "  run-frontend	   - Run frontend only"
 	@echo "  wait-for-backend  - Wait for backend health endpoint to respond"
-	@echo "  up				- Run docker compose with rebuild and no cache"
-	@echo "  help			  - Show this help message"
+	@echo "  up				   - Run docker compose with rebuild and no cache"
+	@echo "  help			   - Show this help message"
 
 
 # Install dependencies and set up git hooks
-install: install-backend install-frontend
+install: install-backend install-frontend install-config
 	@echo "Installing git hooks with lefthook..."
 	npx lefthook install
 	@echo "Setup complete!"
+
+install-config:
+	@echo "Installing config: copy model_config.json to frontend and backend..."
+	@cp -r model_config.json backend/ || true
+	@cp -r model_config.json frontend/ || true
+	@echo "Configuration files installed!"
 
 # Install backend dependencies
 install-backend:
