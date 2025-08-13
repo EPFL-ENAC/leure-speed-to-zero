@@ -14,6 +14,7 @@ WORKDIR /app
 
 # Copy project files needed for dependency installation
 COPY pyproject.toml uv.lock ./
+COPY model_config.json ./
 
 # Install dependencies using uv sync
 RUN uv sync --frozen --no-cache

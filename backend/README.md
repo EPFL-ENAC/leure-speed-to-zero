@@ -51,6 +51,7 @@ and rename it as config_eu.yml. Then, in the file you will find 3 paths that you
 #### Regional Configuration
 
 The application uses a centralized configuration file `model_config.json` in the project root to manage regional data settings:
+This file is copied to frontend and backend via the root Makefile rule `make install-config`
 
 ```json
 {

@@ -1,6 +1,7 @@
 FROM node:22-alpine AS build-stage
 WORKDIR /app
-COPY package*.json ./
+COPY package.json ./
+COPY model_config.json ./
 COPY .npmrc ./
 COPY nginx.conf ./
 COPY *.quasar ./
@@ -14,7 +15,8 @@ COPY *.conf ./
 COPY *.json ./
 COPY index.html ./index.html
 
-RUN npm ci
+# cannot use npm ci because of cross-platform and cross-architecture issues
+RUN npm install
 
 # COPY .env ./
 RUN npm run build
