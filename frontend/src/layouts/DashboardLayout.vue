@@ -5,7 +5,7 @@
         <!-- Sector Column -->
         <SectorSelector ref="sectorSelector" />
         <!-- Left Column -->
-        <div class="col-auto" style="width: 400px; border-right: 1px solid #e0e0e0">
+        <div class="col-auto levers-col" style="border-right: 1px solid #e0e0e0">
           <div class="column full-height">
             <!-- Sector & Levers Header -->
             <div class="non-scrollable-part q-pa-md">
@@ -30,7 +30,7 @@
             </div>
 
             <!-- Separator Line -->
-            <q-separator class="q-my-md" />
+            <q-separator />
 
             <!-- Scrollable Levers -->
             <q-scroll-area visible class="col q-pa-md">
@@ -40,7 +40,7 @@
         </div>
 
         <!-- Right Column -->
-        <div class="col">
+        <div class="col right-column">
           <q-page class="column full-height">
             <div class="col full-width overflow-scroll">
               <router-view />
@@ -92,6 +92,14 @@ function resetToDefaults() {
 .overflow-scroll {
   // height: 100vh;
   overflow-y: auto;
+}
+
+.levers-col {
+  flex: 1 2 200px;
+}
+
+.right-column {
+  flex: 6 1;
 }
 /* No custom styles needed for this basic layout */
 </style>
