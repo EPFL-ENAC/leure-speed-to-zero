@@ -1,7 +1,7 @@
 <template>
   <div v-if="kpis.length > 0" class="kpi-list q-pa-md">
     <div class="row q-col-gutter-md">
-      <div v-for="kpi in kpis" :key="kpi.name" class="col-12 col-sm-6 col-md-4 col-lg-3">
+      <div v-for="kpi in kpis" :key="kpi.name" class="col-12 col-sm-6 col-md-3">
         <KpiBox
           :name="kpi.name"
           :value="kpi.value"
