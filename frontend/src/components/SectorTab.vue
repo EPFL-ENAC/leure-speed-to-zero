@@ -149,11 +149,18 @@ async function runModel() {
   background-color: #f5f5f5;
   border-radius: 8px;
   color: #9e9e9e;
+  text-align: center;
+  padding: 2rem;
 }
 
 :deep(.q-tabs) {
   .q-tab {
     padding: 1em;
+
+    @media (max-width: 600px) {
+      padding: 0.8em 0.5em;
+      font-size: 0.85rem;
+    }
   }
 }
 </style>
