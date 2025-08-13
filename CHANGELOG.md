@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.3.0...v0.4.0) (2025-08-13)
+
+
+### Features
+
+* **front:** enhance layout of LeverSelector and DashboardLayout ([99243e1](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/99243e1e39e1ed1937b739b7f4d3af293dcbef8c))
+
+
+### Bug Fixes
+
+* **buildings.json:** correct formatting of color property in KPI data ([e8df96a](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/e8df96a9c14f74f322116cac2b3c74e2d969d63b))
+
 ## [0.3.0](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.2.1...v0.3.0) (2025-06-30)
 
 
