@@ -10,47 +10,61 @@ from model.agriculture_module import agriculture
 from model.emissions_module import emissions
 from model.climate_module import climate
 
-# from model.ammonia_module import ammonia
+from model.ammonia_module import ammonia
 from model.industry_module import industry
 from model.power_module import power
 from model.landuse_module import land_use
 from model.oilrefinery_module import refinery
 
 import math
+import copy
 import time
 import os
 import json
 
 
-def runner(lever_setting, years_setting, logger):
+def runner(lever_setting, years_setting, DM_in, sectors, logger):
     # lever setting dictionary convert float to integer
     lever_setting = {key: math.floor(value) for key, value in lever_setting.items()}
     # Transport module
 
     init_time = time.time()
     TPE = {}
+    KPI = {}
     interface = Interface()
-    start_time = time.time()
-    TPE["climate"] = climate(lever_setting, years_setting, interface)
-    logger.info("Execution time Climate: {0:.3g} s".format(time.time() - start_time))
-    start_time = time.time()
-    TPE["lifestyles"] = lifestyles(lever_setting, years_setting, interface)
-    logger.info("Execution time Lifestyles: {0:.3g} s".format(time.time() - start_time))
-    start_time = time.time()
-    TPE["transport"] = transport(lever_setting, years_setting, interface)
-    logger.info("Execution time Transport: {0:.3g} s".format(time.time() - start_time))
-    start_time = time.time()
-    TPE['buildings'] = buildings(lever_setting, years_setting, interface)
-    logger.info('Execution time Buildings: {0:.3g} s'.format(time.time() - start_time))
-    start_time = time.time()
-    TPE['industry'] = industry(lever_setting, years_setting, interface)
-    logger.info('Execution time Industry: {0:.3g} s'.format(time.time() - start_time))
-    start_time = time.time()
-    TPE['forestry'] = forestry(lever_setting, years_setting, interface)
-    logger.info('Execution time Forestry: {0:.3g} s'.format(time.time() - start_time))
-    start_time = time.time()
-    TPE['agriculture'] = agriculture(lever_setting, years_setting, interface)
-    logger.info('Execution time Agriculture: {0:.3g} s'.format(time.time() - start_time))
+    DM_input = copy.deepcopy(DM_in)
+    if 'climate' in sectors:
+      start_time = time.time()
+      TPE["climate"] = climate(lever_setting, years_setting, DM_input['climate'], interface)
+      logger.info("Execution time Climate: {0:.3g} s".format(time.time() - start_time))
+    if 'lifestyles' in sectors:
+      start_time = time.time()
+      TPE["lifestyles"] = lifestyles(lever_setting, years_setting, DM_input['lifestyles'], interface)
+      logger.info("Execution time Lifestyles: {0:.3g} s".format(time.time() - start_time))
+    if 'transport' in sectors:
+      start_time = time.time()
+      TPE["transport"] = transport(lever_setting, years_setting,DM_input['transport'], interface)
+      logger.info("Execution time Transport: {0:.3g} s".format(time.time() - start_time))
+    if 'buildings' in sectors:
+      start_time = time.time()
+      TPE['buildings'], KPI['buildings'] = buildings(lever_setting, years_setting, DM_input['buildings'], interface)
+      logger.info('Execution time Buildings: {0:.3g} s'.format(time.time() - start_time))
+    if 'industry' in sectors:
+      start_time = time.time()
+      TPE['industry'] = industry(lever_setting, years_setting, DM_input['industry'], interface)
+      logger.info('Execution time Industry: {0:.3g} s'.format(time.time() - start_time))
+    if 'forestry' in sectors:
+      start_time = time.time()
+      TPE['forestry'] = forestry(lever_setting, years_setting, DM_input['forestry'], interface)
+      logger.info('Execution time Forestry: {0:.3g} s'.format(time.time() - start_time))
+    if 'agriculture' in sectors:
+      start_time = time.time()
+      TPE['agriculture'] = agriculture(lever_setting, years_setting, DM_input['agriculture'], interface)
+      logger.info('Execution time Agriculture: {0:.3g} s'.format(time.time() - start_time))
+    if 'ammonia' in sectors:
+        start_time = time.time()
+        TPE['ammonia'] = ammonia(lever_setting, years_setting, DM_input['ammonia'], interface)
+        logger.info('Execution time Ammonia: {0:.3g} s'.format(time.time() - start_time))
     #start_time = time.time()
     #TPE['agriculture'] = agriculture(lever_setting, years_setting, interface)
     #logger.info('Execution time Agriculture: {0:.3g} s'.format(time.time() - start_time))
@@ -79,5 +93,5 @@ def runner(lever_setting, years_setting, logger):
 
     logger.info("Total runtime: {0:.3g} s".format(time.time() - init_time))
 
-    return TPE
+    return TPE, KPI
 

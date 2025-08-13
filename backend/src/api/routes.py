@@ -5,7 +5,7 @@ import logging
 
 import orjson
 from model.interactions import runner
-from model.common.auxiliary_functions import filter_geoscale
+from model.common.auxiliary_functions import filter_country_and_load_data_from_pickles
 import numpy as np
 import time
 import re
@@ -17,6 +17,9 @@ from src.utils.serialize_model import serialize_model_output
 from src.utils.transform_model import (
     transform_datamatrix_to_clean_structure,
 )
+
+from src.utils.region_config import RegionConfig
+
 
 from fastapi_cache.decorator import cache
 
@@ -49,8 +52,12 @@ years_setting = [
     2050,
     5,
 ]  # [start_year, current_year, future_year, end_year, step]
-geo_pattern = "Switzerland|Vaud|EU27"
-filter_geoscale(geo_pattern)
+country_list = [RegionConfig.get_current_region()]
+sectors = ['climate', 'lifestyles', 'buildings', 'transport', 'agriculture', 'forestry']
+
+# Filter country
+# from database/data/datamatrix/.* reads the pickles, filters the countries, and loads them
+DM_input = filter_country_and_load_data_from_pickles(country_list= country_list, modules_list = sectors)
 
 
 @router.get("/v1/run-model")
@@ -73,7 +80,7 @@ async def run_model(levers: str = None):
         logger.info(f"Levers input: {str(lever_setting)}")
 
         start = time.perf_counter()
-        output = runner(lever_setting, years_setting, logger)
+        output, KPI = runner(lever_setting, years_setting, DM_input, sectors, logger, )
         duration = (time.perf_counter() - start) * 1000  # ms
 
         serializable_output = {k: serialize_model_output(v) for k, v in output.items()}
@@ -85,6 +92,7 @@ async def run_model(levers: str = None):
                 "fingerprint_result": fingerprint_result,
                 "fingerprint_input": fingerprint_input,
                 "status": "success",
+                "kpis": KPI,
                 "sectors": list(serializable_output.keys()),
                 "data": serializable_output,
             }
@@ -123,12 +131,14 @@ async def run_model_clean_structure(levers: str = None):
 
         start = time.perf_counter()
         logger.info("Starting model run...")
-        output = runner(lever_setting, years_setting, logger)
+        output, KPI = runner(lever_setting, years_setting, DM_input, sectors, logger, )
         logger.info(
             f"Model run completed in {(time.perf_counter() - start) * 1000:.2f}ms"
         )
+        logger.info(f"KPI: {KPI}")
 
         duration = (time.perf_counter() - start) * 1000  # ms
+
         # Use the transformer utility
         logger.info("Starting data transformation...")
         transform_start = time.perf_counter()
@@ -151,6 +161,7 @@ async def run_model_clean_structure(levers: str = None):
                 "fingerprint_input": fingerprint_input,
                 "status": "success",
                 "sectors": list(cleaned_output.keys()),
+                "kpis": KPI,
                 "data": cleaned_output,
             }
         )
@@ -222,3 +233,15 @@ async def get_datamatrix(name: str):
         return ORJSONResponse(
             content={"status": "error", "message": str(e)}, status_code=500
         )
+
+
+@router.get("/debug-region")
+async def debug_region():
+    """Debug endpoint to check current region configuration."""
+    from src.utils.region_config import RegionConfig
+
+    return {
+        "status": "success",
+        "current_region": RegionConfig.get_current_region(),
+        "available_regions": RegionConfig.AVAILABLE_REGIONS,
+    }

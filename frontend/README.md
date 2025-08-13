@@ -1,6 +1,17 @@
 # SpeedToZero (leure-speed-to-zero)
 
-A Quasar Project
+A Quasar Project for interactive climate pathway visualization
+
+## Configuration
+
+The application uses a centralized configuration file `../model_config.json` to manage regional data settings:
+
+```json
+{
+  "MODEL_PRIMARY_REGION": "Vaud",
+  "AVAILABLE_REGIONS": ["Vaud", "Switzerland", "EU27"]
+}
+```
 
 ## Install the dependencies
 

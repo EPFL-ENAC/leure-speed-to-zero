@@ -1,7 +1,8 @@
 import logging
 import json
 from model.interactions import runner
-from model.common.auxiliary_functions import filter_geoscale
+from model.common.auxiliary_functions import filter_country_and_load_data_from_pickles
+from src.utils.region_config import RegionConfig
 
 # Configure logger
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -11,14 +12,15 @@ logger = logging.getLogger(__name__)
 f = open('config/lever_position.json')
 lever_setting = json.load(f)[0]
 years_setting = [1990, 2023, 2025, 2050, 5]
-geo_pattern = 'Vaud'
 
+country_list = [RegionConfig.get_current_region()]
+
+sectors = ['climate', 'lifestyles', 'buildings', 'transport', 'industry', 'agriculture', 'forestry', 'ammonia']
 # Filter geoscale
-# from database/data/datamatrix/.* reads the pickles, filters the geoscale, and saves new filtered pickles to geoscale/
-filter_geoscale(geo_pattern)
+# from database/data/datamatrix/.* reads the pickles, filters the geoscale, and loads them
+DM_input = filter_country_and_load_data_from_pickles(country_list= country_list, modules_list = sectors)
+
 # Main model run
-output = runner(lever_setting, years_setting, logger, )
+output, KPI = runner(lever_setting, years_setting, DM_input, sectors, logger, )
 logger.info('Run over')
 
-# data = pickle.load('database/datamatrix/transport.pickle')
-# output["buildings"].datamatrix_plot(stacked=True, title="Buildings")

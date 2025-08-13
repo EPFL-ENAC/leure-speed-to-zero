@@ -1,9 +1,9 @@
 <template>
-  <div class="kpi-list q-pa-md">
+  <div v-if="kpis.length > 0" class="kpi-list q-pa-md">
     <div class="row q-col-gutter-md">
-      <div v-for="kpi in kpis" :key="kpi.title" class="col-12 col-sm-6 col-md-4 col-lg-3">
+      <div v-for="kpi in kpis" :key="kpi.name" class="col-12 col-sm-6 col-md-3">
         <KpiBox
-          :title="kpi.title"
+          :name="kpi.name"
           :value="kpi.value"
           :unit="kpi.unit"
           :thresholds="kpi.thresholds"
@@ -15,58 +15,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
 import KpiBox from './KpiBox.vue';
-import { useLeverStore } from 'stores/leversStore';
+import { type KPI } from 'src/utils/sectors';
 
-interface Kpi {
-  title: string;
-  value: number;
-  unit: string;
-  thresholds: { warn: number; danger: number };
-  maximize?: boolean;
-}
-
-const leverStore = useLeverStore();
-
-const kpis = ref<Kpi[]>([]);
-
-// Generate some random KPI data for now
-function generateKpiData() {
-  kpis.value = [
-    {
-      title: 'CO2 Emissions',
-      value: Math.random() * 150,
-      unit: 'Mt',
-      thresholds: { warn: 80, danger: 120 },
-    },
-    {
-      title: 'Renewable Energy Share',
-      value: Math.random() * 100,
-      unit: '%',
-      thresholds: { warn: 60, danger: 80 },
-      maximize: true,
-    },
-    {
-      title: 'Energy Demand',
-      value: Math.random() * 500,
-      unit: 'TWh',
-      thresholds: { warn: 400, danger: 450 },
-    },
-    {
-      title: 'Investment Cost',
-      value: Math.random() * 2000,
-      unit: 'B€',
-      thresholds: { warn: 1500, danger: 1800 },
-    },
-  ];
-}
-
-watch(() => leverStore.levers, generateKpiData, { immediate: true });
-
-onMounted(() => {
-  generateKpiData();
-});
+const { kpis } = defineProps<{
+  kpis: KPI[];
+}>();
 </script>
 
 <style lang="scss" scoped>

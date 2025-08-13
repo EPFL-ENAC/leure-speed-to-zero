@@ -1,7 +1,7 @@
 <template>
   <div class="lever-selector q-py-sm">
     <div class="col-12 col-md-7 q-pr-sm justify-between row items-center">
-      <span class="text-body2 text-weight-light">{{ lever.title }}</span>
+      <span class="text-body2 text-weight-light leverTitle">{{ lever.title }}</span>
       <q-chip outline circle size="sm">{{ displayValue }}</q-chip>
     </div>
     <div class="row items-center q-col-gutter-xs">
@@ -143,5 +143,11 @@ function onChange(newValue: number | null) {
   justify-content: space-between;
   width: 100%;
   padding: 0 2px;
+}
+
+.leverTitle {
+  text-wrap-mode: nowrap;
+  text-overflow: ellipsis;
+  overflow: clip;
 }
 </style>

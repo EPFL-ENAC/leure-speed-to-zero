@@ -15,12 +15,11 @@ import plotly.io as pio
 import re
 pio.renderers.default='browser'
 import subprocess
-
-# file
-__file__ = "/Users/echiarot/Documents/GitHub/2050-Calculators/PathwayCalc/_database/pre_processing/industry/eu/python/industry_buildpickle.py"
+import warnings
+warnings.simplefilter("ignore")
 
 # directories
-current_file_directory = os.path.dirname(os.path.abspath(__file__))
+current_file_directory = os.getcwd()
 
 ###############################################################################
 ############################### EXECUTE SCRIPTS ###############################
@@ -64,6 +63,14 @@ DM_cal = {}
 CDM_const = {}
 DM_industry = {}
 
+# create DM_ammonia
+DM_ots_amm = {}
+DM_fts_amm = {}
+DM_fxa_amm = {}
+DM_cal_amm = {}
+CDM_const_amm = {}
+DM_ammonia = {}
+
 ##################
 ##### LEVERS #####
 ##################
@@ -89,33 +96,55 @@ for i in range(0, len(lever_files)):
         DM = pickle.load(handle)
     DM_ots[lever_names[i]] = DM["ots"]
     DM_fts[lever_names[i]] = DM["fts"]
+    
+# drop fertilizer
+n = 'product-net-import'
+DM_ots_amm[n] = DM_ots[n].filter({"Categories1" : ["fertilizer"]})
+DM_ots[n].drop("Categories1","fertilizer")
+for i in range(1,4+1):
+    if n not in DM_fts_amm: DM_fts_amm[n] = {}
+    DM_fts_amm[n][i] = DM_fts[n][i].filter({"Categories1" : ["fertilizer"]})
+    DM_fts[n][i].drop("Categories1","fertilizer")
 
 # drop ammonia
-lever_names = ['material-efficiency','material-net-import',
-               'eol-material-recovery']
+lever_names = ['material-efficiency','material-net-import']
 for n in lever_names:
+    DM_ots_amm[n] = DM_ots[n].filter({"Categories1" : ["ammonia"]})
     DM_ots[n].drop("Categories1","ammonia")
     for i in range(1,4+1):
+        if n not in DM_fts_amm: DM_fts_amm[n] = {}
+        DM_fts_amm[n][i] = DM_fts[n][i].filter({"Categories1" : ["ammonia"]})
         DM_fts[n][i].drop("Categories1","ammonia")
 
+n = 'eol-material-recovery'
+DM_ots_amm[n] = DM_ots[n].filter({"Categories2" : ["ammonia"]})
+DM_ots[n].drop("Categories2","ammonia")
+for i in range(1,4+1):
+    if n not in DM_fts_amm: DM_fts_amm[n] = {}
+    DM_fts_amm[n][i] = DM_fts[n][i].filter({"Categories2" : ["ammonia"]})
+    DM_fts[n][i].drop("Categories2","ammonia")
+
 lever_names = ['technology-development','cc',
-               'technology-share','energy-carrier-mix']
+               'energy-carrier-mix']
 for n in lever_names:
+    DM_ots_amm[n] = DM_ots[n].filter({"Categories1" : ["ammonia-tech"]})
     DM_ots[n].drop("Categories1","ammonia-tech")
     for i in range(1,4+1):
+        if n not in DM_fts_amm: DM_fts_amm[n] = {}
+        DM_fts_amm[n][i] = DM_fts[n][i].filter({"Categories1" : ["ammonia-tech"]})
         DM_fts[n][i].drop("Categories1","ammonia-tech")
 
-# drop products that have not being re-inserted in the calc yet
-drops = ['floor-area-new-non-residential','floor-area-reno-non-residential',
-         'computer', 'dishwasher', 'dryer', 'freezer', 'fridge', 'new-dhg-pipe',
-         'phone', 'tv', 'wmachine']
-DM_ots["product-net-import"].drop("Categories1",drops)
-for i in range(1,4+1):
-    DM_fts["product-net-import"][i].drop("Categories1",drops)
-drops = ['domapp','electronics']
-DM_ots["eol-waste-management"].drop("Variables",drops)
-for i in range(1,4+1):
-    DM_fts["eol-waste-management"][i].drop("Variables",drops)
+# # drop products that have not being re-inserted in the calc yet
+# drops = ['floor-area-new-non-residential','floor-area-reno-non-residential',
+#          'computer', 'dishwasher', 'dryer', 'freezer', 'fridge', 'new-dhg-pipe',
+#          'phone', 'tv', 'wmachine']
+# DM_ots["product-net-import"].drop("Categories1",drops)
+# for i in range(1,4+1):
+#     DM_fts["product-net-import"][i].drop("Categories1",drops)
+# drops = ['domapp','electronics']
+# DM_ots["eol-waste-management"].drop("Variables",drops)
+# for i in range(1,4+1):
+#     DM_fts["eol-waste-management"][i].drop("Variables",drops)
 
 # # save
 # DM_industry["ots"] = DM_ots.copy()
@@ -142,8 +171,16 @@ with open(filepath, 'rb') as handle:
     DM = pickle.load(handle)
 DM_fxa["prod"] = DM
 
+# material demand
+filepath = os.path.join(current_file_directory, '../data/datamatrix/' + 'fxa_material-demand.pickle')
+with open(filepath, 'rb') as handle:
+    DM = pickle.load(handle)
+DM_fxa["demand"] = DM
+
 # drop ammonia-tech
+DM_fxa_amm["cost-matprod"] = DM_fxa["cost-matprod"].filter({"Categories1" : ["ammonia-tech"]})
 DM_fxa["cost-matprod"].drop("Categories1","ammonia-tech")
+DM_fxa_amm["cost-CC"] = DM_fxa["cost-CC"].filter({"Categories1" : ["ammonia-tech"]})
 DM_fxa["cost-CC"].drop("Categories1","ammonia-tech")
 
 #######################
@@ -158,8 +195,9 @@ for i in range(0, len(files_temp)):
     with open(filepath, 'rb') as handle:
         dm = pickle.load(handle)
     DM_cal[names_temp[i]] = dm
-    
+
 # drop ammonia
+DM_cal_amm["material-production"] = DM_cal["material-production"].filter({"Categories1" : ["ammonia"]})
 DM_cal["material-production"].drop("Categories1","ammonia")
 
 #####################
@@ -181,38 +219,49 @@ with open(filepath, 'rb') as handle:
     CDM = pickle.load(handle)
 # CDM_const["material-decomposition_pipe"] = CDM["bld_pipe"] # do not load pipes for dh for now as this needs to be implemented in buildings
 CDM_const["material-decomposition_floor"] = CDM["bld_floor"].filter({"Categories1" : ['floor-area-new-residential', 'floor-area-reno-residential']}) # keep only residential for now as non residential need to be implemented in buildings
-# CDM_const["material-decomposition_domapp"] = CDM["bld_domapp"] # do not load domestic appliances for now as this needs to be implemented in buildings
+CDM_const["material-decomposition_domapp"] = CDM["bld_domapp"].filter({"Categories1":['dishwasher', 'dryer', 'freezer', 'fridge','wmachine']})
+CDM_const["material-decomposition_electronics"] = CDM["bld_domapp"].filter({"Categories1":['computer', 'phone', 'tv']})
 CDM_const["material-decomposition_infra"] = CDM["tra_infra"]
 CDM_const["material-decomposition_veh"] = CDM["tra_veh"]
 CDM_const["material-decomposition_bat"] = CDM["tra_bat"]
 CDM_const["material-decomposition_pack"] = CDM["pack"]
+CDM_const_amm["material-decomposition_fertilizer"] = CDM["fertilizer"]
 
 # energy demand
 filepath = os.path.join(current_file_directory, '../data/datamatrix/' + 'const_energy-demand.pickle')
 with open(filepath, 'rb') as handle:
     CDM = pickle.load(handle)
-CDM_const["energy_excl-feedstock"] = CDM["energy-demand-excl-feedstock"]
-CDM_const["energy_feedstock"] = CDM["energy-demand-feedstock"]
+CDM_const["energy_excl-feedstock"] = CDM["energy-demand-excl-feedstock"].copy()
+CDM_const["energy_feedstock"] = CDM["energy-demand-feedstock"].copy()
+CDM_const["energy_excl-feedstock_eleclight-split"] = CDM["energy-demand-excl-feedstock-eleclight-split"].copy()
+CDM_const["energy_efficiency"] = CDM["energy-efficiency"].copy()
+CDM_const_amm['energy_excl-feedstock_eleclight-split'] = CDM["energy-demand-excl-feedstock-eleclight-split"].copy()
+CDM_const_amm['energy_efficiency'] = CDM["energy-efficiency"].copy()
 
 # emission factors
 filepath = os.path.join(current_file_directory, '../data/datamatrix/' + 'const_emissions-factors.pickle')
 with open(filepath, 'rb') as handle:
     CDM = pickle.load(handle)
-CDM_const["emission-factor"] = CDM["combustion-emissions"]
-CDM_const["emission-factor-process"] = CDM["process-emissions"]
+CDM_const["emission-factor"] = CDM["combustion-emissions"].copy()
+CDM_const["emission-factor-process"] = CDM["process-emissions"].copy()
 
 # drop ammonia
 lever_names = ['material-decomposition_floor', 'material-decomposition_infra',
-               'material-decomposition_pack']
+               'material-decomposition_pack','material-decomposition_domapp',
+               'material-decomposition_electronics']
 for n in lever_names:
+    CDM_const_amm[n] = CDM_const[n].filter({"Categories2" : ["ammonia"]})
     CDM_const[n].drop("Categories2","ammonia")
+CDM_const_amm['material-decomposition_veh'] = CDM_const['material-decomposition_veh'].filter({"Categories3" : ["ammonia"]})
 CDM_const['material-decomposition_veh'].drop("Categories3","ammonia")
+CDM_const_amm['material-decomposition_bat'] = CDM_const['material-decomposition_bat'].filter({"Categories3" : ["ammonia"]})
 CDM_const['material-decomposition_bat'].drop("Categories3","ammonia")
 lever_names = ['energy_excl-feedstock', 'energy_feedstock', 
                'emission-factor-process']
 for n in lever_names:
+    CDM_const_amm[n] = CDM_const[n].filter({"Categories1" : ["ammonia-tech"]})
     CDM_const[n].drop("Categories1","ammonia-tech")
-
+CDM_const_amm['emission-factor'] = CDM["combustion-emissions"].copy()
 
 ########################
 ##### PUT TOGETHER #####
@@ -226,6 +275,15 @@ DM_industry = {
     "constant" : CDM_const
 }
 
+DM_ammonia = {
+    'fxa': DM_fxa_amm,
+    'fts': DM_fts_amm,
+    'ots': DM_ots_amm,
+    'calibration': DM_cal_amm,
+    "constant" : CDM_const_amm
+}
+
+
 ##########################
 ##### KEEP ONLY EU27 #####
 ##########################
@@ -237,57 +295,51 @@ for key in DM_industry["fts"].keys():
         DM_industry["fts"][key][level].filter({"Country" : ["EU27"]},inplace=True)
 for key in DM_industry["fxa"].keys():
     DM_industry["fxa"][key].filter({"Country" : ["EU27"]},inplace=True)
+    
+for key in DM_ammonia["ots"].keys():
+    DM_ammonia["ots"][key].filter({"Country" : ["EU27"]},inplace=True)
+for key in DM_ammonia["fts"].keys():
+    for level in list(range(1,4+1)):
+        DM_ammonia["fts"][key][level].filter({"Country" : ["EU27"]},inplace=True)
+for key in DM_ammonia["fxa"].keys():
+    DM_ammonia["fxa"][key].filter({"Country" : ["EU27"]},inplace=True)
 
 
 #######################################
 ###### GENERATE FAKE SWITZERLAND ######
 #######################################
 
-for key in ['fxa', 'ots', 'calibration']:
-    dm_names = list(DM_industry[key])
+def make_fake_country(DM, country):
+
+    for key in ['fxa', 'ots', 'calibration']:
+        dm_names = list(DM[key])
+        for name in dm_names:
+            dm_temp = DM[key][name]
+            if country not in dm_temp.col_labels["Country"]:
+                idx = dm_temp.idx
+                arr_temp = dm_temp.array[idx["EU27"],...]
+                dm_temp.add(arr_temp[np.newaxis,...], "Country", country)
+                dm_temp.sort("Country")
+                
+    dm_names = list(DM["fts"])
     for name in dm_names:
-        dm_temp = DM_industry[key][name]
-        if "Switzerland" not in dm_temp.col_labels["Country"]:
-            idx = dm_temp.idx
-            arr_temp = dm_temp.array[idx["EU27"],...]
-            dm_temp.add(arr_temp[np.newaxis,...], "Country", "Switzerland")
-            dm_temp.sort("Country")
+        for i in range(1,4+1):
+            dm_temp = DM["fts"][name][i]
+            if country not in dm_temp.col_labels["Country"]:
+                idx = dm_temp.idx
+                arr_temp = dm_temp.array[idx["EU27"],...]
+                dm_temp.add(arr_temp[np.newaxis,...], "Country", country)
+                dm_temp.sort("Country")
 
-
-dm_names = list(DM_industry["fts"])
-for name in dm_names:
-    for i in range(1,4+1):
-        dm_temp = DM_industry["fts"][name][i]
-        if "Switzerland" not in dm_temp.col_labels["Country"]:
-            idx = dm_temp.idx
-            arr_temp = dm_temp.array[idx["EU27"],...]
-            dm_temp.add(arr_temp[np.newaxis,...], "Country", "Switzerland")
-            dm_temp.sort("Country")
+make_fake_country(DM_industry, "Switzerland")
+make_fake_country(DM_ammonia, "Switzerland")
             
 ################################
 ###### GENERATE FAKE VAUD ######
 ################################
 
-for key in ['fxa', 'ots', 'calibration']:
-    dm_names = list(DM_industry[key])
-    for name in dm_names:
-        dm_temp = DM_industry[key][name]
-        if "Vaud" not in dm_temp.col_labels["Country"]:
-            idx = dm_temp.idx
-            arr_temp = dm_temp.array[idx["EU27"],...]
-            dm_temp.add(arr_temp[np.newaxis,...], "Country", "Vaud")
-            dm_temp.sort("Country")
-
-
-dm_names = list(DM_industry["fts"])
-for name in dm_names:
-    for i in range(1,4+1):
-        dm_temp = DM_industry["fts"][name][i]
-        if "Vaud" not in dm_temp.col_labels["Country"]:
-            idx = dm_temp.idx
-            arr_temp = dm_temp.array[idx["EU27"],...]
-            dm_temp.add(arr_temp[np.newaxis,...], "Country", "Vaud")
-            dm_temp.sort("Country")
+make_fake_country(DM_industry, "Vaud")
+make_fake_country(DM_ammonia, "Vaud")
 
 ################
 ##### SAVE #####
@@ -297,11 +349,23 @@ for name in dm_names:
 f = os.path.join(current_file_directory, '../../../../data/datamatrix/industry.pickle')
 my_pickle_dump(DM_industry, f)
 
+f = os.path.join(current_file_directory, '../../../../data/datamatrix/ammonia.pickle')
+my_pickle_dump(DM_ammonia, f)
+
 # # save
 # f = os.path.join(current_file_directory, '../../../../data/datamatrix/industry.pickle')
 # with open(f, 'wb') as handle:
 #     pickle.dump(DM_industry, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+# filepath = os.path.join(current_file_directory, '../../../../data/interface/industry_to_energy.pickle')
+# with open(filepath, 'rb') as handle:
+#     DM = pickle.load(handle)
+    
+# DM
+# DM["ind-serv-energy-demand"].units
+# df = DM["ind-serv-energy-demand"].write_df()
 
-
-
+# filepath = os.path.join(current_file_directory, '../../../../data/interface/industry_to_forestry.pickle')
+# with open(filepath, 'rb') as handle:
+#     dm = pickle.load(handle)
+# dm.units
