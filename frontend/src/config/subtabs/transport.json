@@ -2,59 +2,19 @@
   "kpis": [],
   "subtabs": [
     {
-      "title": "Passenger distance per mode",
-      "charts": ["PassengerDistancePerMode"],
-      "route": "passenger-distance"
+      "title": "Passenger GHG emissions per mode",
+      "charts": ["PassengerGHGEmissionsPerMode", "PassengerAviationEmissionsTech", "PassengerAviationEmissionsLocal"],
+      "route": "passenger-emissions-mode"
     },
     {
-      "title": "Passenger distance vkm per mode",
-      "charts": ["PassengerDistanceVkmPerMode"],
-      "route": "passenger-distance-vkm"
-    },
-    {
-      "title": "Passenger energy demand per mode",
-      "charts": ["PassengerEnergyDemandPerMode"],
+      "title": "Passenger energy demand",
+      "charts": ["PassengerEnergyDemandPerMode", "PassengerEnergyDemandPerFuel", "PassengerAviationEnergyDemandPerTech"],
       "route": "passenger-energy-demand"
     },
     {
-      "title": "Passenger aviation energy demand",
-      "charts": ["PassengerAviationEnergyDemandPerTech"],
-      "route": "passenger-energy-aviation"
-    },
-    {
-      "title": "Passenger aviation emissions",
-      "charts": ["PassengerAviationEmissionsTech", "PassengerAviationEmissionsLocal"],
-      "route": "passenger-emissions-aviation"
-    },
-    {
-      "title": "Passenger energy per fuel",
-      "charts": ["PassengerEnergyDemandPerFuel"],
-      "route": "passenger-fuel"
-    },
-    {
-      "title": "Passenger vehicles fleet",
-      "charts": ["PassengerVehiclesFleet"],
-      "route": "passenger-vehicle-fleet"
-    },
-    {
-      "title": "Freight energy demand per mode",
-      "charts": ["FreightEnergyDemandPerMode"],
-      "route": "freight-energy-demand"
-    },
-    {
-      "title": "Freight energy per fuel",
-      "charts": ["FreightEnergyDemandPerFuel"],
-      "route": "freight-fuel"
-    },
-    {
-      "title": "Trucks technology share",
-      "charts": ["TrucksTechnologyShare"],
-      "route": "trucks-technology-share"
-    },
-    {
-      "title": "Passenger GHG emissions per mode",
-      "charts": ["PassengerGHGEmissionsPerMode"],
-      "route": "passenger-emissions-mode"
+      "title": "Passenger transport demand and fleet",
+      "charts": ["PassengerDistancePerMode", "PassengerDistanceVkmPerMode", "PassengerVehiclesFleet"],
+      "route": "passenger-distance"
     },
     {
       "title": "Freight GHG emissions per mode",
@@ -62,9 +22,14 @@
       "route": "freight-emissions-mode"
     },
     {
-      "title": "Cost",
-      "charts": ["TransportExpenditures", "TransportEnergyCost"],
-      "route": "cost"
+      "title": "Freight energy demand per mode",
+      "charts": ["FreightEnergyDemandPerMode", "FreightEnergyDemandPerFuel"],
+      "route": "freight-energy-demand"
+    },
+    {
+      "title": "Trucks technology share",
+      "charts": ["TrucksTechnologyShare"],
+      "route": "trucks-technology-share"
     }
   ],
 
