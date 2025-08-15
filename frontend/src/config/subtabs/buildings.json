@@ -120,13 +120,13 @@
     "FloorAreaPerBuildingType": {
       "title": "Floor area per envelope class",
       "type": "StackedArea",
-      "unit": "m²",
+      "unit": "Mm²",
       "outputs": [
-        { "id": "bld_floor-area_stock_F[m2]", "color": "#D32F2F" },
-        { "id": "bld_floor-area_stock_E[m2]", "color": "#F57C00" },
-        { "id": "bld_floor-area_stock_D[m2]", "color": "#FBC02D" },
-        { "id": "bld_floor-area_stock_C[m2]", "color": "#8BC34A" },
-        { "id": "bld_floor-area_stock_B[m2]", "color": "#388E3C" }
+        { "id": "bld_floor-area_stock_F[Mm2]", "color": "#D32F2F" },
+        { "id": "bld_floor-area_stock_E[Mm2]", "color": "#F57C00" },
+        { "id": "bld_floor-area_stock_D[Mm2]", "color": "#FBC02D" },
+        { "id": "bld_floor-area_stock_C[Mm2]", "color": "#8BC34A" },
+        { "id": "bld_floor-area_stock_B[Mm2]", "color": "#388E3C" }
       ]
     },
     "SHEnergyDemandPerBuildingType": {
@@ -261,50 +261,10 @@
     "FloorAreaBldType": {
       "title": "Building stock by type",
       "type": "StackedArea",
-      "unit": "m²",
+      "unit": "Mm²",
       "outputs": [
-        "bld_floor-area_stock_single-family-households[m2]",
-        "bld_floor-area_stock_multi-family-households[m2]"
-      ]
-    },
-    "FloorAreaDemolitionConstruction": {
-      "title": "Constructed and demolished floor area by energy performance category",
-      "type": "StackedArea",
-      "unit": "million m²",
-      "outputs": [
-        { "id": "bld_floor-area-constructed_shl[Mm2]", "color": "#bfdbf6" },
-        { "id": "bld_floor-area-constructed_med[Mm2]", "color": "#7cb5ec" },
-        { "id": "bld_floor-area-constructed_dep[Mm2]", "color": "#398fe2" },
-        { "id": "bld_floor-area-demolished_exi[Mm2]", "color": "#bf8cde" }
-      ]
-    },
-    "EnergyNeedRenovationConstruction": {
-      "title": "Energy need split by energy performance category of renovation and construction",
-      "type": "StackedArea",
-      "unit": "GWh",
-      "outputs": [
-        { "id": "bld_energy-demand-space-heating-constructed_shl[GWh]", "color": "#bfdbf6" },
-        { "id": "bld_energy-demand-space-heating-constructed_med[GWh]", "color": "#7cb5ec" },
-        { "id": "bld_energy-demand-space-heating-constructed_dep[GWh]", "color": "#398fe2" },
-        { "id": "bld_energy-demand-space-heating-renovated_shl[GWh]", "color": "#fbcca5" },
-        { "id": "bld_energy-demand-space-heating-renovated_med[GWh]", "color": "#f7a35c" },
-        { "id": "bld_energy-demand-space-heating-renovated_dep[GWh]", "color": "#f37a13" },
-        { "id": "bld_energy-demand-space-heating-unrenovated_exi[GWh]", "color": "#5b739f" }
-      ]
-    },
-    "EnergyDemandRenovationConstruction": {
-      "title": "Energy demand split by energy performance category of renovation and construction",
-      "type": "StackedArea",
-      "unit": "TWh",
-      "outputs": [
-        { "id": "bld_energy-demand-space-heating-constructed_shl[GWh]", "color": "#bfdbf6" },
-        { "id": "bld_energy-demand-space-heating-constructed_med[GWh]", "color": "#7cb5ec" },
-        { "id": "bld_energy-demand-space-heating-constructed_dep[GWh]", "color": "#398fe2" },
-        { "id": "bld_energy-demand-space-heating-renovated_shl[GWh]", "color": "#fbcca5" },
-        { "id": "bld_energy-demand-space-heating-renovated_med[GWh]", "color": "#f7a35c" },
-        { "id": "bld_energy-demand-space-heating-renovated_dep[GWh]", "color": "#f37a13" },
-        { "id": "bld_energy-demand-space-heating-unrenovated_exi[GWh]", "color": "#5b739f" },
-        { "id": "dhg_energy-demand_heat-district[TWh]", "color": "#90ed7d" }
+        "bld_floor-area_stock_single-family-households[Mm2]",
+        "bld_floor-area_stock_multi-family-households[Mm2]"
       ]
     },
     "RenovationInvestmentBuildingType": {
