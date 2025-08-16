@@ -96,7 +96,7 @@ const sectorSelector = ref<InstanceType<typeof SectorSelector>>();
 // Mobile UI state
 const leversOpenState = ref(false);
 const sectorSelectorOpen = ref($q.screen.gt.sm); // Start open on desktop, closed on mobile
-const miniState = ref($q.screen.lt.sm);
+const miniState = ref(false);
 
 // Get current sector from the SectorSelector component
 const currentSector = computed(() => sectorSelector.value?.currentSector || 'buildings');
