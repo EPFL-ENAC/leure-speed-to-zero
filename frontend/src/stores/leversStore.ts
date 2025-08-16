@@ -31,8 +31,6 @@ export interface KpiData {
 export interface KpiThreshold {
   value: number;
   label: string;
-  icon: string;
-  color: string;
 }
 
 export interface KpiConfig {
@@ -40,7 +38,10 @@ export interface KpiConfig {
   unit: string;
   route: string;
   maximize: boolean;
-  thresholds: KpiThreshold[];
+  thresholds: {
+    warning: KpiThreshold;
+    danger: KpiThreshold;
+  };
   info: string;
 }
 
