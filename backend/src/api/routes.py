@@ -245,3 +245,68 @@ async def debug_region():
         "current_region": RegionConfig.get_current_region(),
         "available_regions": RegionConfig.AVAILABLE_REGIONS,
     }
+
+
+@router.get("/v1/test-lever-data/{lever_name}")
+async def test_lever_data(lever_name: str, modules: str = "transport,buildings", country: str | None = None):
+    """Test endpoint for lever data extraction functionality."""
+    try:
+        from model.common.auxiliary_functions import filter_country_and_load_data_from_pickles, get_lever_data_to_plot
+        
+        # Use provided country or default to current region
+        if country is None:
+            country = RegionConfig.get_current_region()
+        
+        # Parse modules list
+        modules_list = [m.strip() for m in modules.split(',')]
+        
+        # Validate modules
+        valid_modules = ['transport', 'buildings', 'climate', 'lifestyles', 'agriculture', 'forestry']
+        invalid_modules = [m for m in modules_list if m not in valid_modules]
+        if invalid_modules:
+            return ORJSONResponse(
+                content={
+                    "status": "error", 
+                    "message": f"Invalid modules: {invalid_modules}. Valid modules: {valid_modules}"
+                },
+                status_code=400,
+            )
+        
+        logger.info(f"Testing lever data for lever: {lever_name}, country: {country}, modules: {modules_list}")
+        
+        # Load data
+        start = time.perf_counter()
+        DM_input = filter_country_and_load_data_from_pickles(country_list=[country], modules_list=modules_list)
+        load_duration = (time.perf_counter() - start) * 1000
+        
+        # Get lever data
+        start = time.perf_counter()
+        DM_lever = get_lever_data_to_plot(lever_name=lever_name, DM_input=DM_input)
+        lever_duration = (time.perf_counter() - start) * 1000
+        # Log detailed information about the lever data
+        logger.info(f"DM_lever structure: {type(DM_lever)}")
+        logger.info(f"DM_lever keys: {list(DM_lever.keys()) if hasattr(DM_lever, 'keys') else 'Not a dict'}")
+        print(DM_lever)
+        # Serialize the result
+        serializable_lever_data = serialize_model_output(DM_lever)
+        
+        response = ORJSONResponse(
+            content={
+                "status": "success",
+                "lever_name": lever_name,
+                "country": country,
+                "modules": modules_list,
+                "data": serializable_lever_data,
+                
+            }
+        )
+        
+        response.headers["Server-Timing"] = f"load;dur={load_duration:.2f}, lever;dur={lever_duration:.2f}"
+        return response
+        
+    except Exception as e:
+        logger.error(f"Test lever data failed: {str(e)}", exc_info=True)
+        return ORJSONResponse(
+            content={"status": "error", "message": f"Failed to test lever data: {str(e)}"},
+            status_code=500,
+        )
