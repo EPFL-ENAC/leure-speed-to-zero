@@ -23,52 +23,67 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { type Threshold, type KPI } from 'src/utils/sectors';
+import { type KPI } from 'src/utils/sectors';
 
 const props = withDefaults(defineProps<KPI>(), {
   maximize: false,
 });
 
-const currentThreshold = computed(() => {
-  // Sort thresholds by value to find the appropriate threshold
-  const sortedThresholds = [...props.thresholds].sort((a, b) => a.value - b.value);
-  console.log(props.name, sortedThresholds);
+const currentStatus = computed(() => {
+  const { warning, danger } = props.thresholds;
+
   if (props.maximize) {
     // For maximize: higher values are better
-    for (let i = sortedThresholds.length - 1; i >= 0; i--) {
-      const threshold = sortedThresholds[i];
-
-      if (threshold && props.value >= threshold.value) {
-        return threshold;
-      }
-    }
-    // If below all thresholds, use the lowest threshold color
-    return sortedThresholds[0] as Threshold;
+    // Green if >= warning, Yellow if > danger and < warning, Red if <= danger
+    if (props.value >= warning.value) return 'good';
+    if (props.value > danger.value) return 'warning';
+    return 'danger';
   } else {
     // For minimize: lower values are better
-    for (let i = 0; i < sortedThresholds.length; i++) {
-      const threshold = sortedThresholds[i];
-      console.log(threshold?.value, props.value);
-      if (threshold && props.value <= threshold.value) {
-        return threshold;
-      }
-    }
-
-    // If above all thresholds, use the highest threshold color
-    return sortedThresholds[sortedThresholds.length - 1] as Threshold;
+    // Green if <= warning, Yellow if > warning and < danger, Red if >= danger
+    if (props.value <= warning.value) return 'good';
+    if (props.value < danger.value) return 'warning';
+    return 'danger';
   }
 });
 
 const colorName = computed(() => {
-  return currentThreshold.value.color || 'green';
+  switch (currentStatus.value) {
+    case 'good':
+      return '#4CAF50';
+    case 'warning':
+      return '#FF9800';
+    case 'danger':
+      return '#F44336';
+    default:
+      return '#4CAF50';
+  }
 });
 
 const statusText = computed(() => {
-  return currentThreshold.value.label || '';
+  switch (currentStatus.value) {
+    case 'good':
+      return 'All good';
+    case 'warning':
+      return props.thresholds.warning.label;
+    case 'danger':
+      return props.thresholds.danger.label;
+    default:
+      return 'All good';
+  }
 });
 
 const statusIcon = computed(() => {
-  return currentThreshold.value.icon || 'check_circle';
+  switch (currentStatus.value) {
+    case 'good':
+      return 'check_circle';
+    case 'warning':
+      return 'warning';
+    case 'danger':
+      return 'dangerous';
+    default:
+      return 'check_circle';
+  }
 });
 </script>
 

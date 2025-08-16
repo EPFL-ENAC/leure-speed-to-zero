@@ -5,21 +5,16 @@
       "unit": "Mt",
       "route": "building-types-emissions",
       "maximize": false,
-      "thresholds": [
-        { "value": 0, "label": "All good", "icon": "check_circle", "color": "green" },
-        {
-          "value": 1.5,
-          "label": "Warning threshold",
-          "icon": "warning",
-          "color": "orange"
+      "thresholds": {
+        "warning": {
+          "value": 0.42,
+          "label": "Warning threshold"
         },
-        {
-          "value": 2.0,
-          "icon": "dangerous",
-          "label": "Danger threshold",
-          "color": "red"
+        "danger": {
+          "value": 0.44,
+          "label": "Danger threshold"
         }
-      ],
+      },
       "info": "Total CO2 emissions from buildings including space heating across all energy carriers. Lower values indicate better environmental performance and progress toward climate goals."
     },
     {
@@ -27,21 +22,16 @@
       "unit": "TWh",
       "route": "energy-carriers",
       "maximize": false,
-      "thresholds": [
-        { "value": 2.6, "label": "All good", "icon": "check_circle", "color": "green" },
-        {
+      "thresholds": {
+        "warning": {
           "value": 4.0,
-          "icon": "warning",
-          "label": "Warning threshold",
-          "color": "orange"
+          "label": "Warning threshold"
         },
-        {
+        "danger": {
           "value": 5.0,
-          "icon": "dangerous",
-          "label": "Danger threshold",
-          "color": "red"
+          "label": "Danger threshold"
         }
-      ],
+      },
       "info": "Total energy delivered for space heating in residential buildings. This includes all heating sources but excludes ambient heat extracted by heat pumps, reflecting only the actual energy input required for heating."
     },
     {
@@ -49,26 +39,16 @@
       "unit": "%",
       "route": "building-types-area",
       "maximize": true,
-      "thresholds": [
-        {
-          "value": 40,
-          "icon": "dangerous",
-          "label": "Critical threshold",
-          "color": "red"
-        },
-        {
+      "thresholds": {
+        "warning": {
           "value": 60,
-          "label": "Warning threshold",
-          "icon": "warning",
-          "color": "orange"
+          "label": "Warning threshold"
         },
-        {
-          "value": 80,
-          "label": "All good",
-          "icon": "check_circle",
-          "color": "green"
+        "danger": {
+          "value": 40,
+          "label": "Critical threshold"
         }
-      ],
+      },
       "info": "Share of residential floor area with high-quality thermal envelopes (categories A, B, C). The rating reflects the building envelope's thermal resistance including insulation, windows, and thermal bridges based on CECB classification."
     },
     {
@@ -76,21 +56,16 @@
       "unit": "%",
       "route": "renovation-construction",
       "maximize": false,
-      "thresholds": [
-        { "value": 10, "label": "All good", "icon": "check_circle", "color": "green" },
-        {
+      "thresholds": {
+        "warning": {
           "value": 30,
-          "icon": "warning",
-          "label": "Warning threshold",
-          "color": "orange"
+          "label": "Warning threshold"
         },
-        {
+        "danger": {
           "value": 50,
-          "icon": "dangerous",
-          "label": "Danger threshold",
-          "color": "red"
+          "label": "Danger threshold"
         }
-      ],
+      },
       "info": "Share of residential floor area that has not undergone envelope renovation. This includes buildings whose envelope efficiency class has not improved since construction, indicating poor thermal performance."
     }
   ],
