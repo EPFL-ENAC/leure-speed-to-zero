@@ -304,7 +304,7 @@ def bld_floor_area_workflow(DM_floor_area, dm_lfs, cdm_const, years_ots,
 
   DM_floor_out = \
     {'TPE': {'floor-area-cumulated': dm_cumulated,
-             'floor-area-cat': dm_stock.group_all('Categories1', inplace=False),
+             'floor-area-cat': dm_stock.filter({'Categories1': ['multi-family-households']}).group_all('Categories1', inplace=False),
              'floor-area-bld-type': dm_stock.group_all('Categories2',
                                                        inplace=False)},
      'wf-energy': dm_bld_tot,
@@ -473,6 +473,7 @@ def bld_energy_workflow(DM_energy, dm_clm, dm_floor_area, cdm_const):
   #########################
   # Energy demand by type of fuel
   dm_fuel = dm_energy.group_all('Categories2', inplace=False)
+  dm_fuel.filter({'Categories1': ['multi-family-households']}, inplace=True)
   dm_fuel.group_all('Categories1', inplace=True)
   dm_fuel.filter({'Variables': ['bld_energy-demand_heating', 'bld_heating']})
   dm_fuel.add(np.nan, dummy=True, dim='Categories1', col_label='ambient-heat')
@@ -496,6 +497,11 @@ def bld_energy_workflow(DM_energy, dm_clm, dm_floor_area, cdm_const):
   dm_power.filter(
     {'Variables': ['bld_energy-demand_heating', 'bld_energy-demand_cooling'],
      'Categories1': ['electricity', 'heat-pump']}, inplace=True)
+
+  dm_tech = dm_fuel.filter({'Variables': ['bld_heating']})
+  dm_tech.normalise('Categories1', inplace=True)
+  dm_fuel.drop('Variables', 'bld_heating')
+  dm_fuel.append(dm_tech, dim='Variables')
 
   DM_energy_out = {'TPE': {'energy-emissions-by-class': dm_class,
                            'energy-demand-heating': dm_fuel.filter({'Variables': ['bld_energy-demand_heating', 'bld_heating']}),

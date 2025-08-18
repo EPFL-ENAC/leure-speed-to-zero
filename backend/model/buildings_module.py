@@ -52,6 +52,11 @@ def read_data(DM_buildings, lever_setting):
                  "u-value" :  DM_buildings['fxa']["u-value"],
                  "surface-to-floorarea" : DM_buildings['fxa']["surface-to-floorarea"]}
 
+    # ! FIXME : Extract and plot the heat pump electricity demand in the two scenarios
+    idx = DM_energy['heating-efficiency'].idx
+    idx_0 = idx[2025]
+    for cat in DM_energy['heating-efficiency'].col_labels['Categories1']:
+        DM_energy['heating-efficiency'][:, idx_0:, 'bld_heating-efficiency', cat, 'heat-pump']   = DM_energy['heating-efficiency'][:, idx_0:, 'bld_heating-efficiency', 'B', 'heat-pump']
 
     cdm_const = DM_buildings['constant']
 

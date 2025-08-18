@@ -144,17 +144,17 @@
     "SHEnergyDemandPerCarrier": {
       "title": "Demand for space heating per heating technology",
       "type": "StackedArea",
-      "unit": "TWh",
+      "unit": "%",
       "outputs": [
-        { "id": "bld_heating_coal[TWh]", "color": "#434348" },
-        { "id": "bld_heating_electricity[TWh]", "color": "#f15c80" },
-        { "id": "bld_heating_heating-oil[TWh]", "color": "#2b908f" },
-        { "id": "bld_heating_gas[TWh]", "color": "#e4d354" },
-        { "id": "bld_heating_wood[TWh]", "color": "#5d4037" },
-        { "id": "bld_heating_district-heating[TWh]", "color": "#f45b5b" },
-        { "id": "bld_heating_heat-pump[TWh]", "color": "#aee791" },
-        { "id": "bld_heating_solar[TWh]", "color": "#e4d354" },
-        { "id": "bld_heating_other[TWh]", "color": "#f7a35c" }
+        { "id": "bld_heating_coal[%]", "color": "#434348" },
+        { "id": "bld_heating_electricity[%]", "color": "#f15c80" },
+        { "id": "bld_heating_heating-oil[%]", "color": "#2b908f" },
+        { "id": "bld_heating_gas[%]", "color": "#e4d354" },
+        { "id": "bld_heating_wood[%]", "color": "#5d4037" },
+        { "id": "bld_heating_district-heating[%]", "color": "#f45b5b" },
+        { "id": "bld_heating_heat-pump[%]", "color": "#aee791" },
+        { "id": "bld_heating_solar[%]", "color": "#e4d354" },
+        { "id": "bld_heating_other[%]", "color": "#f7a35c" }
       ]
     },
     "SHGHGEmissionsPerBuildingType": {
