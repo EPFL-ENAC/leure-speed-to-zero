@@ -1488,6 +1488,13 @@ export const PLOT_LABELS: Record<string, string> = {
   'tra_passenger_vehicle-fleet_LDV_PHEV-gasoline[number]': 'Plug-in Hybrid Gasoline Cars',
   'tra_passenger_vehicle-fleet_aviation[number]': 'Planes',
   'tra_passenger_vehicle-fleet_bus[number]': 'Buses',
+  "pow_production_Dam[TWh]": "Hydro-Dam",
+  "pow_production_Gas[TWh]": "Gas",
+  "pow_production_GasCC-CCS[TWh]": "Gas-CCS",
+  "pow_production_Nuclear[TWh]": "Nuclear",
+  "pow_production_PV-roof[TWh]": "PV-Roof",
+  "pow_production_RoR[TWh]": "Hydro-River",
+  "pow_production_WindOn[TWh]": "Wind"
 };
 
 export function getPlotLabel(key: string) {

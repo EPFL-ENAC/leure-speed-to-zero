@@ -17,6 +17,13 @@ export interface Lever {
 
 export const sectors = [
   {
+    code: 'Energy',
+    levers: [
+      'lever_heating-technology-fuel',
+      'lever_passenger_technology-share_new'
+    ],
+  },
+  {
     code: 'Buildings',
     levers: [
       'lever_floor-intensity',
