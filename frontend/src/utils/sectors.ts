@@ -8,6 +8,7 @@ export const sectors: Sector[] = [
   { label: 'Buildings', value: 'buildings', icon: 'apartment' },
   { label: 'Transport', value: 'transport', icon: 'bike_scooter' },
   { label: 'Agriculture', value: 'agriculture', icon: 'agriculture' },
+  { label: 'Energy', value: 'energy', icon: 'solar_power' },
   { label: 'Forestry', value: 'forestry', icon: 'forest' },
   { label: 'Overall', value: 'overall', icon: 'dashboard' },
   // Theses ones are examples of sectors that can be added later
