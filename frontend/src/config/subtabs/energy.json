@@ -10,7 +10,7 @@
 
   "charts": {
     "PowerProductionByTech": {
-      "title": "Power production by technology, at country level",
+      "title": "Power production by technology at country level",
       "unit": "TWh",
       "type": "StackedArea",
       "outputs": [
@@ -24,7 +24,7 @@
       ]
     },
     "PowerCapacityByTech": {
-      "title": "Capacity installed by technology, at country level",
+      "title": "Capacity installed by technology at country level",
       "unit": "GW",
       "type": "StackedArea",
       "outputs": [

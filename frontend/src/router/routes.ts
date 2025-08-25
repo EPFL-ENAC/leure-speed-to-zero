@@ -17,6 +17,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('pages/TransportTab.vue'),
       },
       {
+        path: 'energy/:subtab?',
+        name: 'energy',
+        component: () => import('pages/EnergyTab.vue'),
+      },
+      {
         path: 'forestry/:subtab?',
         name: 'forestry',
         component: () => import('pages/ForestryTab.vue'),
