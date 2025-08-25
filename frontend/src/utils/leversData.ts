@@ -20,7 +20,8 @@ export const sectors = [
     code: 'Energy',
     levers: [
       'lever_pkm',
-      'lever_passenger_technology-share_new'
+      'lever_passenger_technology-share_new',
+      'lever_heating-technology-fuel'
     ],
   },
   {
