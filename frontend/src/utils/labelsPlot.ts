@@ -1494,7 +1494,18 @@ export const PLOT_LABELS: Record<string, string> = {
   "pow_production_Nuclear[TWh]": "Nuclear",
   "pow_production_PV-roof[TWh]": "PV-Roof",
   "pow_production_RoR[TWh]": "Hydro-River",
-  "pow_production_WindOn[TWh]": "Wind"
+  "pow_production_WindOn[TWh]": "Wind",
+  "pow_capacity_Dam[GW]": 'Hydro-Dam',
+  "pow_capacity_Gas[GW]": 'Gas',
+  "pow_capacity_GasCC-CCS[GW]": 'Gas-CCS',
+  "pow_capacity_Nuclear[GW]": 'Nuclear',
+  "pow_capacity_PV-roof[GW]": 'PV-Roof',
+  "pow_capacity_RoR[GW]": "Hydro-River",
+  "pow_capacity_WindOn[GW]": "Wind",
+  "tra_passenger_emissions_aviation_BEV_CO2[Mt]": "electric",
+  "tra_passenger_emissions_aviation_H2_CO2[Mt]": "hydrogen",
+  "tra_passenger_emissions_aviation_SAF_CO2[Mt]": "SAF",
+  "tra_passenger_emissions_aviation_kerosene_CO2[Mt]": "kerosene"
 };
 
 export function getPlotLabel(key: string) {
