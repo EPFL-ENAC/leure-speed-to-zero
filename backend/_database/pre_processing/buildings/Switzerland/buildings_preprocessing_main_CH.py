@@ -11,6 +11,7 @@ from processors.lighting_pipeline_CH import run as lighting_run
 from processors.services_pipeline_CH import run as services_run
 from scenarios.build_fts_BAU_pickle import run as fts_bau_pickle_run
 from scenarios.build_fts_LoiEnergie_Vaud_pickle import run as fts_loi_energie_vaud_run
+from scenarios.buildings_fts_EP2050_pickle import run as fts_Vaud_EP2050_run
 from get_data_functions.construction_period_param import load_construction_period_param
 
 
@@ -27,7 +28,7 @@ dm_pop = DM_pop['pop']
 dm_pop_ots = DM_pop['pop'].filter({'Years': years_ots})
 
 print("Running floor area pipeline")
-DM_floor = floor_area_run( dm_pop_ots, global_var, country_list, years_ots)
+DM_floor = floor_area_run(global_var, country_list, years_ots)
 # Extract floor area output
 dm_stock_tot = DM_floor['stock tot']
 dm_stock_cat = DM_floor['stock cat']
@@ -40,7 +41,7 @@ DM_renov = renovation_run(dm_stock_tot, dm_stock_cat, dm_new_cat, dm_waste_cat, 
 dm_all = DM_renov['floor-area-cat']
 
 print("Running heating technology pipeline")
-DM_heating = heating_tech_run(global_var, dm_all, years_ots)
+DM_heating = heating_tech_run(global_var, dm_all, country_list, years_ots)
 
 print("Running other pipeline")
 DM_other = other_run(country_list, years_ots, years_fts)
@@ -73,5 +74,10 @@ DM_buildings = ots_pickle_run(dm_pop_ots, DM_all, years_ots, years_fts)
 print('Compile pickle fts - all BAU')
 DM_buildings = fts_bau_pickle_run(DM_buildings, country_list, years_fts)
 
+print('Compile Scenario EP2050 - Vaud - level 3')
+DM_buildings = fts_Vaud_EP2050_run(DM_buildings, lev=3)
+
 print('Compile Scenario Loi Energie 2025 - Vaud - level 4')
 DM_buildings = fts_loi_energie_vaud_run(DM_buildings, dm_pop_ots, global_var, country_list, lev=4)
+
+
