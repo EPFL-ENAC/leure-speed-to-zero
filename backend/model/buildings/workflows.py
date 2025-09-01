@@ -471,6 +471,11 @@ def bld_energy_workflow(DM_energy, dm_clm, dm_floor_area, cdm_const):
   #########################
   ###   PREPARE OUTPUT  ###
   #########################
+  # Sustaibable finance multi-family-households
+  dm_sust = dm_energy.filter({'Variables': ['bld_energy-demand_heating'], 'Categories1': ['multi-family-households']})
+  dm_sust.group_all('Categories2')
+  dm_sust.filter({'Categories2': ['heat-pump']}, inplace=True)
+
   # Energy demand by type of fuel
   dm_fuel = dm_energy.group_all('Categories2', inplace=False)
   dm_fuel.filter({'Categories1': ['multi-family-households']}, inplace=True)
@@ -514,7 +519,8 @@ def bld_energy_workflow(DM_energy, dm_clm, dm_floor_area, cdm_const):
                    'agriculture': dm_fuel.filter(
                      {'Variables': ['bld_energy-demand_heating'],
                       'Categories1': ['wood']}),
-                   'refinery': dm_refinery}
+                   'refinery': dm_refinery,
+                   'sustainable-finance': dm_sust}
 
   return DM_energy_out
 

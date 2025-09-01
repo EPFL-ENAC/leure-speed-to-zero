@@ -110,6 +110,13 @@ def buildings(lever_setting, years_setting, DM_input, interface=Interface()):
     # Total Energy demand, Renovation and Construction per depth, GHG emissions (for Space Heating)
     DM_energy_out = wkf.bld_energy_workflow(DM_energy, dm_clm, DM_floor_out['wf-energy'], cdm_const)
 
+    #dm_hp = DM_energy_out['sustainable-finance']
+    #rr = lever_setting['lever_building-renovation-rate']
+    #df = dm_hp.write_df()
+    #file_path = 'heat_pump_energy_demand_by_renov.xlsx'
+    #with pd.ExcelWriter(file_path, mode="a", engine="openpyxl", if_sheet_exists="new") as writer:
+    #  df.to_excel(writer, sheet_name=str(rr), index=False)
+
     DM_hotwater_out = wkf.bld_hotwater_workflow(DM_hotwater, DM_energy_out['TPE']['energy-demand-heating'].copy(), dm_lfs, years_ots, years_fts)
 
     DM_services_out = wkf.bld_services_workflow(DM_services, DM_energy_out['TPE']['energy-demand-heating'].copy(), years_ots, years_fts)
@@ -152,7 +159,8 @@ def buildings_local_run():
     # Function to run only transport module without converter and tpe
 
     # get geoscale
-    country_list = ['EU27', 'Switzerland', 'Vaud']
+    #country_list = ['EU27', 'Switzerland', 'Vaud']
+    country_list = ['Vaud']
     DM_input = filter_country_and_load_data_from_pickles(country_list= country_list, modules_list = 'buildings')
 
     buildings(lever_setting, years_setting, DM_input['buildings'])
