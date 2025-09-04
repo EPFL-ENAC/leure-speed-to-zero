@@ -380,6 +380,11 @@ def bld_energy_workflow(DM_energy, dm_clm, dm_floor_area, cdm_const):
   dm_energy.add(arr, dim='Variables', col_label='bld_energy-demand_heating',
                 unit='TWh')
 
+  dm_tmp = dm_energy.copy()
+  dm_tmp.operation('bld_heating', '/', 'bld_energy-demand_heating', out_col='COP', unit='%')
+  dm_tmp.filter({'Categories1': ['multi-family-households']}, inplace=True)
+  dm_tmp.filter({'Categories3': ['heat-pump']}, inplace=True)
+
   # SECTION Calibrate heating energy demand
   #dm_calib = DM_energy['heating-calibration']
   #dm_calib.sort('Categories1')

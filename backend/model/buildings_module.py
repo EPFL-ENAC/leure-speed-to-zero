@@ -52,12 +52,6 @@ def read_data(DM_buildings, lever_setting):
                  "u-value" :  DM_buildings['fxa']["u-value"],
                  "surface-to-floorarea" : DM_buildings['fxa']["surface-to-floorarea"]}
 
-    # ! FIXME : Extract and plot the heat pump electricity demand in the two scenarios
-    idx = DM_energy['heating-efficiency'].idx
-    idx_0 = idx[2025]
-    for cat in DM_energy['heating-efficiency'].col_labels['Categories1']:
-        DM_energy['heating-efficiency'][:, idx_0:, 'bld_heating-efficiency', cat, 'heat-pump']   = DM_energy['heating-efficiency'][:, idx_0:, 'bld_heating-efficiency', 'B', 'heat-pump']
-
     cdm_const = DM_buildings['constant']
 
     return DM_floor_area, DM_appliances, DM_energy, DM_hotwater, DM_services, dm_light, cdm_const
@@ -110,12 +104,12 @@ def buildings(lever_setting, years_setting, DM_input, interface=Interface()):
     # Total Energy demand, Renovation and Construction per depth, GHG emissions (for Space Heating)
     DM_energy_out = wkf.bld_energy_workflow(DM_energy, dm_clm, DM_floor_out['wf-energy'], cdm_const)
 
-    #dm_hp = DM_energy_out['sustainable-finance']
-    #rr = lever_setting['lever_building-renovation-rate']
-    #df = dm_hp.write_df()
-    #file_path = 'heat_pump_energy_demand_by_renov.xlsx'
+    dm_hp = DM_energy_out['sustainable-finance']
+    rr = lever_setting['lever_building-renovation-rate']
+    df = dm_hp.write_df()
+    file_path = 'heat_pump_energy_demand_by_renov.xlsx'
     #with pd.ExcelWriter(file_path, mode="a", engine="openpyxl", if_sheet_exists="new") as writer:
-    #  df.to_excel(writer, sheet_name=str(rr), index=False)
+    #   df.to_excel(writer, sheet_name=str(rr), index=False)
 
     DM_hotwater_out = wkf.bld_hotwater_workflow(DM_hotwater, DM_energy_out['TPE']['energy-demand-heating'].copy(), dm_lfs, years_ots, years_fts)
 
@@ -137,8 +131,8 @@ def buildings(lever_setting, years_setting, DM_input, interface=Interface()):
     interface.add_link(from_sector='buildings', to_sector='energy', dm=DM_inter_energy)
     this_dir = os.path.dirname(os.path.abspath(__file__))
     file = os.path.join(this_dir, '../_database/data/interface/buildings_to_energy.pickle')
-    with open(file, "wb") as handle:
-      pickle.dump(DM_inter_energy, handle, protocol=pickle.HIGHEST_PROTOCOL )
+    #with open(file, "wb") as handle:
+    #  pickle.dump(DM_inter_energy, handle, protocol=pickle.HIGHEST_PROTOCOL )
 
     interface.add_link(from_sector='buildings', to_sector='emissions', dm=DM_energy_out['TPE']['emissions'])
 
