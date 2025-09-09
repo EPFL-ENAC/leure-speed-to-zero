@@ -6,7 +6,12 @@
         <p>No data available</p>
       </div>
       <div v-else class="chart-visualization">
-        <v-chart ref="chartRef" class="chart" :option="chartOption" autoresize />
+        <v-chart
+          ref="chartRef"
+          class="chart"
+          :option="chartOption"
+          @legendselectchanged="handleLegendSelectChanged"
+        />
       </div>
     </q-card-section>
   </q-card>
@@ -14,7 +19,7 @@
 
 <script setup lang="ts">
 import { getCurrentRegion } from 'src/utils/region';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { LineChart, BarChart } from 'echarts/charts';
@@ -71,6 +76,14 @@ const props = defineProps<{
 
 const chartRef = ref(null);
 
+// Track legend selection state
+const legendSelected = ref<Record<string, boolean>>({});
+
+// Handle legend selection changes
+const handleLegendSelectChanged = (params: { selected: Record<string, boolean> }) => {
+  legendSelected.value = { ...params.selected };
+};
+
 // Extract chart data from model results
 const chartData = computed<ChartSeries[]>(() => {
   if (!props.modelData) return [];
@@ -80,6 +93,12 @@ const chartData = computed<ChartSeries[]>(() => {
   const countryData = props.modelData.countries?.[region];
   if (!countryData || !outputs) return [];
   return extractChartData(outputs, countryData);
+});
+
+// Watch for chart data changes and restore legend selection
+watch(chartData, () => {
+  console.log('Chart data changed, updating legend selection');
+  console.log(legendSelected.value);
 });
 
 function extractChartData(
@@ -131,14 +150,15 @@ const chartOption = computed(() => {
   const isStacked = props.chartConfig.type.toLowerCase() === 'stackedarea';
   const series = chartData.value.map((series) => ({
     name: series.name,
-    type: isStacked ? 'line' : 'bar',
+    type: 'line',
     stack: isStacked ? 'total' : undefined,
     symbol: 'none',
     areaStyle: isStacked ? {} : undefined,
-    emphasis: { focus: 'series' },
     itemStyle: { color: series.color },
     data: series.data,
   }));
+
+  console.log('Selected', { ...legendSelected.value });
 
   return {
     title: {
@@ -165,6 +185,7 @@ const chartOption = computed(() => {
       orient: 'horizontal',
       type: 'scroll',
       bottom: '0%',
+      selected: legendSelected.value,
     },
     grid: {
       top: '20%',
