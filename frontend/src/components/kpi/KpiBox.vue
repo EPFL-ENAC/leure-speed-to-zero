@@ -116,7 +116,6 @@ const statusIcon = computed(() => {
   position: relative;
   width: 140px;
   height: 140px;
-  margin: 0 auto 8px;
   gap: 8px;
   display: flex;
   flex-direction: column;

@@ -9,6 +9,7 @@
         <v-chart
           ref="chartRef"
           class="chart"
+          autoresize
           :option="chartOption"
           @legendselectchanged="handleLegendSelectChanged"
         />
@@ -19,7 +20,7 @@
 
 <script setup lang="ts">
 import { getCurrentRegion } from 'src/utils/region';
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref } from 'vue';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { LineChart, BarChart } from 'echarts/charts';
@@ -84,25 +85,6 @@ const legendSelected = ref<Record<string, boolean>>({});
 const handleLegendSelectChanged = (params: { selected: Record<string, boolean> }) => {
   legendSelected.value = { ...params.selected };
 };
-
-// Handle window resize to trigger chart resize
-const handleWindowResize = () => {
-  if (chartRef.value) {
-    const chartInstance = chartRef.value;
-    if (chartInstance) {
-      chartInstance.resize();
-    }
-  }
-};
-
-// Add and remove window resize event listener
-onMounted(() => {
-  window.addEventListener('resize', handleWindowResize);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('resize', handleWindowResize);
-});
 
 // Extract chart data from model results
 const chartData = computed<ChartSeries[]>(() => {

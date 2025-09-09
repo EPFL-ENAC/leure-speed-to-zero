@@ -48,7 +48,7 @@
               :key="tab.route"
               :name="tab.route"
             >
-              <div class="row q-col-gutter-md flex-wrap">
+              <div class="row flex-wrap">
                 <chart-card
                   v-for="chartId in tab.charts"
                   :chart-config="config.charts[chartId] as ChartConfig"
@@ -63,7 +63,7 @@
           <div v-else class="q-pa-md">
             <div v-for="tab in config.subtabs" :key="tab.route" class="q-mb-lg">
               <div class="text-h6 q-mb-md title">{{ tab.title }}</div>
-              <div class="row q-col-gutter-md flex-wrap">
+              <div class="row flex-wrap">
                 <chart-card
                   v-for="chartId in tab.charts"
                   :chart-config="config.charts[chartId] as ChartConfig"
@@ -182,8 +182,8 @@ async function runModel() {
 .sector-tab-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
   overflow: hidden;
+  height: 100%;
 }
 
 .tab-selector-bar {
@@ -221,12 +221,14 @@ async function runModel() {
   margin: 1rem;
 }
 
-.kpis-section {
-  flex-shrink: 0;
-  position: absolute;
-  width: 100%;
-  bottom: 0;
-  z-index: 5;
+@media screen and (min-width: 600px) {
+  .kpis-section {
+    flex-shrink: 0;
+    position: absolute;
+    width: 100%;
+    bottom: 0;
+    z-index: 5;
+  }
 }
 
 .kpis-content {
