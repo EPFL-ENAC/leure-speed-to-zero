@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 import { getCurrentRegion } from 'src/utils/region';
-import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { LineChart, BarChart } from 'echarts/charts';
@@ -87,7 +87,6 @@ const handleLegendSelectChanged = (params: { selected: Record<string, boolean> }
 
 // Handle window resize to trigger chart resize
 const handleWindowResize = () => {
-  console.log(chartRef.value);
   if (chartRef.value) {
     const chartInstance = chartRef.value;
     if (chartInstance) {
@@ -114,12 +113,6 @@ const chartData = computed<ChartSeries[]>(() => {
   const countryData = props.modelData.countries?.[region];
   if (!countryData || !outputs) return [];
   return extractChartData(outputs, countryData);
-});
-
-// Watch for chart data changes and restore legend selection
-watch(chartData, () => {
-  console.log('Chart data changed, updating legend selection');
-  console.log(legendSelected.value);
 });
 
 function extractChartData(
@@ -178,8 +171,6 @@ const chartOption = computed(() => {
     itemStyle: { color: series.color },
     data: series.data,
   }));
-
-  console.log('Selected', { ...legendSelected.value });
 
   return {
     title: {

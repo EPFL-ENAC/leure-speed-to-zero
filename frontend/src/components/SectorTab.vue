@@ -163,7 +163,6 @@ const kpis = computed((): KPI[] => {
     })
     .filter((kpi): kpi is KPI => kpi !== null); // Remove null entries and assert type
 
-  console.log('KPI data:', returnData);
   return returnData;
 });
 
