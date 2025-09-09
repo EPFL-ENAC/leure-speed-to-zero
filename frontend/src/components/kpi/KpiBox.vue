@@ -23,10 +23,7 @@
         </div>
       </div>
       <div class="kpi-name">{{ name }}</div>
-      <div
-        class="kpi-status-ring"
-        :style="`border-color: ${colorName}; box-shadow: inset 0 0 0 3px ${colorName}20`"
-      ></div>
+      <div class="kpi-status-ring" :style="`border-color: ${colorName}`"></div>
       <q-icon
         :name="statusIcon"
         :style="`color: ${colorName}`"
@@ -126,10 +123,9 @@ const statusIcon = computed(() => {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: all 0.1s ease-in-out;
+  border: 3px solid #e0e0e0;
   text-decoration: none;
   color: inherit;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
   &:hover {
     background: rgba(0, 0, 0, 0.05);
   }
