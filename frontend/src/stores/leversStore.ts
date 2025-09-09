@@ -6,7 +6,7 @@ import { ExamplePathways } from 'utils/examplePathways';
 import { modelService } from 'services/modelService';
 import { AxiosError } from 'axios';
 import type { Region } from 'src/utils/region';
-
+import type { KpiData } from 'src/utils/sectors';
 // Types
 export interface YearData {
   year: number;
@@ -20,29 +20,6 @@ export interface SectorData {
   units: {
     [key: string]: string;
   };
-}
-
-export interface KpiData {
-  title: string;
-  value: number;
-  unit: string;
-}
-
-export interface KpiThreshold {
-  value: number;
-  label: string;
-}
-
-export interface KpiConfig {
-  name: string;
-  unit: string;
-  route: string;
-  maximize: boolean;
-  thresholds: {
-    warning: KpiThreshold;
-    danger: KpiThreshold;
-  };
-  info: string;
 }
 
 export interface OutputConfig {

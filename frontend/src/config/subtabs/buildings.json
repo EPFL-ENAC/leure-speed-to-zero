@@ -6,14 +6,8 @@
       "route": "building-types-emissions",
       "maximize": false,
       "thresholds": {
-        "warning": {
-          "value": 0.42,
-          "label": "Warning threshold"
-        },
-        "danger": {
-          "value": 0.44,
-          "label": "Danger threshold"
-        }
+        "warning": 0.42,
+        "danger": 0.44
       },
       "info": "Total CO2 emissions from buildings including space heating across all energy carriers. Lower values indicate better environmental performance and progress toward climate goals."
     },
@@ -23,14 +17,8 @@
       "route": "energy-carriers",
       "maximize": false,
       "thresholds": {
-        "warning": {
-          "value": 4.0,
-          "label": "Warning threshold"
-        },
-        "danger": {
-          "value": 5.0,
-          "label": "Danger threshold"
-        }
+        "warning": 4.0,
+        "danger": 5.0
       },
       "info": "Total energy delivered for space heating in residential buildings. This includes all heating sources but excludes ambient heat extracted by heat pumps, reflecting only the actual energy input required for heating."
     },
@@ -40,14 +28,8 @@
       "route": "building-types-area",
       "maximize": true,
       "thresholds": {
-        "warning": {
-          "value": 60,
-          "label": "Warning threshold"
-        },
-        "danger": {
-          "value": 40,
-          "label": "Critical threshold"
-        }
+        "warning": 60,
+        "danger": 40
       },
       "info": "Share of residential floor area with high-quality thermal envelopes (categories A, B, C). The rating reflects the building envelope's thermal resistance including insulation, windows, and thermal bridges based on CECB classification."
     },
@@ -57,14 +39,8 @@
       "route": "renovation-construction",
       "maximize": false,
       "thresholds": {
-        "warning": {
-          "value": 30,
-          "label": "Warning threshold"
-        },
-        "danger": {
-          "value": 50,
-          "label": "Danger threshold"
-        }
+        "warning": 30,
+        "danger": 50
       },
       "info": "Share of residential floor area that has not undergone envelope renovation. This includes buildings whose envelope efficiency class has not improved since construction, indicating poor thermal performance."
     }
