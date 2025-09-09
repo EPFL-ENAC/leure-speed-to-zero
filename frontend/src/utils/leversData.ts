@@ -19,8 +19,8 @@ export const sectors = [
   {
     code: 'Buildings',
     levers: [
-      'lever_floor-intensity',
       'lever_heatcool-behaviour',
+      'lever_floor-intensity',
       'lever_appliance-own',
       'lever_appliance-use',
       'lever_building-renovation-rate',
