@@ -10,6 +10,7 @@ export interface Lever {
   title: string;
   group: string;
   headline: string;
+  disabled?: boolean;
   range: (string | number)[];
   type: string;
   difficultyColors: DifficultyArea[];
@@ -212,6 +213,7 @@ export const levers: Lever[] = [
   {
     code: 'lever_appliance-use',
     title: 'Appliance use',
+    disabled: true,
     group: 'Homes',
     headline: 'Key behaviours',
     range: [1, 2, 3, 4],
