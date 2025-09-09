@@ -19,11 +19,12 @@
 
 <script setup lang="ts">
 import { getCurrentRegion } from 'src/utils/region';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { LineChart, BarChart } from 'echarts/charts';
 import type { SectorData, ChartConfig } from 'stores/leversStore';
+import type { ECharts } from 'echarts/core';
 import {
   TitleComponent,
   TooltipComponent,
@@ -74,7 +75,7 @@ const props = defineProps<{
   modelData: SectorData;
 }>();
 
-const chartRef = ref(null);
+const chartRef = ref<ECharts>();
 
 // Track legend selection state
 const legendSelected = ref<Record<string, boolean>>({});
@@ -83,6 +84,26 @@ const legendSelected = ref<Record<string, boolean>>({});
 const handleLegendSelectChanged = (params: { selected: Record<string, boolean> }) => {
   legendSelected.value = { ...params.selected };
 };
+
+// Handle window resize to trigger chart resize
+const handleWindowResize = () => {
+  console.log(chartRef.value);
+  if (chartRef.value) {
+    const chartInstance = chartRef.value;
+    if (chartInstance) {
+      chartInstance.resize();
+    }
+  }
+};
+
+// Add and remove window resize event listener
+onMounted(() => {
+  window.addEventListener('resize', handleWindowResize);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleWindowResize);
+});
 
 // Extract chart data from model results
 const chartData = computed<ChartSeries[]>(() => {

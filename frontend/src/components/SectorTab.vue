@@ -192,8 +192,6 @@ async function runModel() {
   position: sticky;
   top: 0;
   z-index: 10;
-  background-color: white;
-  border-bottom: 1px solid #e0e0e0;
 }
 
 .content-area {
@@ -207,6 +205,7 @@ async function runModel() {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  padding-bottom: 200px;
 }
 
 .graph-placeholder {
@@ -225,7 +224,6 @@ async function runModel() {
 
 .kpis-section {
   flex-shrink: 0;
-  background-color: white;
   position: absolute;
   width: 100%;
   bottom: 0;
