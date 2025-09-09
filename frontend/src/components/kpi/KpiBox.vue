@@ -126,8 +126,10 @@ const statusIcon = computed(() => {
   border: 3px solid #e0e0e0;
   text-decoration: none;
   color: inherit;
+  background: white;
+  box-shadow: 0 1px 6px rgba(255, 255, 255, 0.5);
   &:hover {
-    background: rgba(0, 0, 0, 0.05);
+    background: rgb(245, 245, 245);
   }
 
   &.cursor-pointer {
