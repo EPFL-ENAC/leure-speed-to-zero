@@ -1,5 +1,5 @@
 <template>
-  <div class="lever-selector q-py-sm">
+  <div class="lever-selector q-py-sm" :class="{ 'lever-disabled': disabled }">
     <div class="col-12 col-md-7 q-pr-sm justify-between row items-center">
       <span class="text-body2 text-weight-light leverTitle">{{ lever.title }}</span>
       <q-chip outline circle size="sm">{{ displayValue }}</q-chip>
@@ -20,6 +20,7 @@
             :min="1"
             :max="maxValue"
             :step="1"
+            :disable="disabled"
             dense
             class="transparent-slider"
             @update:model-value="onChange"
@@ -40,24 +41,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-
-// Define interfaces locally to ensure correctness
-interface DifficultyArea {
-  min: number;
-  max: number;
-  color: string;
-  label: string;
-}
-
-interface Lever {
-  code: string;
-  title: string;
-  type: string;
-  range: (string | number)[];
-  group: string;
-  headline: string;
-  difficultyColors?: DifficultyArea[];
-}
+import type { Lever } from 'src/utils/leversData';
 
 const props = defineProps<{
   lever: Lever;
@@ -67,6 +51,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   change: [value: number];
 }>();
+
+const disabled = computed(() => props.lever.disabled || false);
 
 const displayValue = computed(() => {
   if (props.lever.type === 'num') {
@@ -86,13 +72,23 @@ const maxValue = computed(() => {
 
 // Handle value changes
 function onChange(newValue: number | null) {
-  if (newValue !== null) emit('change', newValue);
+  if (newValue !== null && !disabled.value) {
+    emit('change', newValue);
+  }
 }
 </script>
 
 <style lang="scss" scoped>
 .lever-selector {
   padding-bottom: 2rem;
+
+  &.lever-disabled {
+    opacity: 0.8;
+    cursor: pointer;
+    .custom-slider-track {
+      filter: grayscale(100%);
+    }
+  }
 }
 
 .custom-slider-container {
