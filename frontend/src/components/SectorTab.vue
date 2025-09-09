@@ -73,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import {
   useLeverStore,
@@ -107,12 +107,22 @@ const router = useRouter();
 const route = useRoute();
 const leverStore = useLeverStore();
 
-// Tab state
-const currentTab = ref(
-  typeof route.params.subtab === 'string' && route.params.subtab
-    ? route.params.subtab
-    : props.config.subtabs[0]?.route,
-);
+// Tab state - reactive to route changes
+const currentTab = computed({
+  get: () => {
+    return typeof route.params.subtab === 'string' && route.params.subtab
+      ? route.params.subtab
+      : props.config.subtabs[0]?.route;
+  },
+  set: (newTab: string) => {
+    if (newTab && newTab !== route.params.subtab) {
+      void router.push({
+        name: props.sectorName,
+        params: { subtab: newTab },
+      });
+    }
+  },
+});
 
 // If no subtab is present in the URL, redirect to the default one.
 if (!route.params.subtab && props.config.subtabs[0]?.route) {
@@ -121,20 +131,6 @@ if (!route.params.subtab && props.config.subtabs[0]?.route) {
     params: { subtab: props.config.subtabs[0]?.route },
   });
 }
-
-// Watch for tab changes to update URL
-watch(currentTab, async (newTab) => {
-  if (newTab && newTab !== route.params.subtab) {
-    try {
-      await router.push({
-        name: props.sectorName,
-        params: { subtab: newTab },
-      });
-    } catch (error) {
-      console.error('Navigation error:', error);
-    }
-  }
-});
 
 // Get model results for this sector
 const modelResults = computed(() => {

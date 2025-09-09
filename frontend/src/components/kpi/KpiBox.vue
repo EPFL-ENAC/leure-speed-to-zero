@@ -1,24 +1,40 @@
 <template>
-  <q-card class="kpi-box" flat bordered>
-    <q-card-section>
-      <div class="row items-start no-wrap">
-        <div class="col">
-          <div class="text-caption text-grey-8">{{ name }}</div>
-          <div class="text-h6 text-weight-bold">
-            {{ value.toFixed(2) }}
-            <span class="text-body2 text-weight-light">{{ unit }}</span>
+  <component
+    :is="route ? 'router-link' : 'div'"
+    :to="
+      route
+        ? {
+            name: $route.name,
+            params: {
+              ...$route.params,
+              subtab: route,
+            },
+          }
+        : undefined
+    "
+    class="kpi-box-wrapper"
+  >
+    <q-card class="kpi-box" flat bordered :class="{ 'cursor-pointer': route }">
+      <q-card-section>
+        <div class="row items-start no-wrap">
+          <div class="col">
+            <div class="text-caption text-grey-8">{{ name }}</div>
+            <div class="text-h6 text-weight-bold">
+              {{ value.toFixed(2) }}
+              <span class="text-body2 text-weight-light">{{ unit }}</span>
+            </div>
+          </div>
+          <div class="col-auto q-pl-xs">
+            <q-icon :name="statusIcon" :style="`color: ${colorName}`" size="2rem" />
           </div>
         </div>
-        <div class="col-auto q-pl-xs">
-          <q-icon :name="statusIcon" :style="`color: ${colorName}`" size="2rem" />
-        </div>
-      </div>
-    </q-card-section>
-    <q-card-section class="q-pt-none">
-      <div class="text-caption" :style="`color: ${colorName}`">{{ statusText }}</div>
-    </q-card-section>
-    <div class="kpi-bar" :style="`background: ${colorName} `"></div>
-  </q-card>
+      </q-card-section>
+      <q-card-section class="q-pt-none">
+        <div class="text-caption" :style="`color: ${colorName}`">{{ statusText }}</div>
+      </q-card-section>
+      <div class="kpi-bar" :style="`background: ${colorName} `"></div>
+    </q-card>
+  </component>
 </template>
 
 <script setup lang="ts">
@@ -88,12 +104,29 @@ const statusIcon = computed(() => {
 </script>
 
 <style lang="scss" scoped>
+.kpi-box-wrapper {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  height: 100%;
+}
+
 .kpi-box {
   min-width: 180px;
   position: relative;
   overflow: hidden;
   height: 100%;
+  transition: box-shadow 0.2s ease-in-out;
+
+  &.cursor-pointer {
+    cursor: pointer;
+
+    &:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+  }
 }
+
 .kpi-bar {
   position: absolute;
   bottom: 0;
