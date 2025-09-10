@@ -16,6 +16,7 @@ import pickle
 from src.utils.serialize_model import serialize_model_output
 from src.utils.transform_model import (
     transform_datamatrix_to_clean_structure,
+    transform_lever_data_for_echarts,
 )
 
 from src.utils.region_config import RegionConfig
@@ -53,11 +54,13 @@ years_setting = [
     5,
 ]  # [start_year, current_year, future_year, end_year, step]
 country_list = [RegionConfig.get_current_region()]
-sectors = ['climate', 'lifestyles', 'buildings', 'transport', 'agriculture', 'forestry']
+sectors = ["climate", "lifestyles", "buildings", "transport", "agriculture", "forestry"]
 
 # Filter country
 # from database/data/datamatrix/.* reads the pickles, filters the countries, and loads them
-DM_input = filter_country_and_load_data_from_pickles(country_list= country_list, modules_list = sectors)
+DM_input = filter_country_and_load_data_from_pickles(
+    country_list=country_list, modules_list=sectors
+)
 
 
 @router.get("/v1/run-model")
@@ -80,7 +83,13 @@ async def run_model(levers: str = None):
         logger.info(f"Levers input: {str(lever_setting)}")
 
         start = time.perf_counter()
-        output, KPI = runner(lever_setting, years_setting, DM_input, sectors, logger, )
+        output, KPI = runner(
+            lever_setting,
+            years_setting,
+            DM_input,
+            sectors,
+            logger,
+        )
         duration = (time.perf_counter() - start) * 1000  # ms
 
         serializable_output = {k: serialize_model_output(v) for k, v in output.items()}
@@ -131,7 +140,13 @@ async def run_model_clean_structure(levers: str = None):
 
         start = time.perf_counter()
         logger.info("Starting model run...")
-        output, KPI = runner(lever_setting, years_setting, DM_input, sectors, logger, )
+        output, KPI = runner(
+            lever_setting,
+            years_setting,
+            DM_input,
+            sectors,
+            logger,
+        )
         logger.info(
             f"Model run completed in {(time.perf_counter() - start) * 1000:.2f}ms"
         )
@@ -247,49 +262,70 @@ async def debug_region():
     }
 
 
-@router.get("/v1/test-lever-data/{lever_name}")
-async def test_lever_data(lever_name: str, modules: str = "transport,buildings", country: str | None = None):
+@router.get("/v1/lever-data/{lever_name}")
+async def test_lever_data(
+    lever_name: str,
+    modules: str = "transport,buildings",
+    country: str | None = None,
+):
     """Test endpoint for lever data extraction functionality."""
     try:
-        from model.common.auxiliary_functions import filter_country_and_load_data_from_pickles, get_lever_data_to_plot
-        
+        from model.common.auxiliary_functions import (
+            filter_country_and_load_data_from_pickles,
+            get_lever_data_to_plot,
+        )
+
         # Use provided country or default to current region
         if country is None:
             country = RegionConfig.get_current_region()
-        
+
         # Parse modules list
-        modules_list = [m.strip() for m in modules.split(',')]
-        
+        modules_list = [m.strip() for m in modules.split(",")]
+
         # Validate modules
-        valid_modules = ['transport', 'buildings', 'climate', 'lifestyles', 'agriculture', 'forestry']
+        valid_modules = [
+            "transport",
+            "buildings",
+            "climate",
+            "lifestyles",
+            "agriculture",
+            "forestry",
+        ]
         invalid_modules = [m for m in modules_list if m not in valid_modules]
         if invalid_modules:
             return ORJSONResponse(
                 content={
-                    "status": "error", 
-                    "message": f"Invalid modules: {invalid_modules}. Valid modules: {valid_modules}"
+                    "status": "error",
+                    "message": f"Invalid modules: {invalid_modules}. Valid modules: {valid_modules}",
                 },
                 status_code=400,
             )
-        
-        logger.info(f"Testing lever data for lever: {lever_name}, country: {country}, modules: {modules_list}")
-        
+
+        logger.info(
+            f"Testing lever data for lever: {lever_name}, country: {country}, modules: {modules_list}"
+        )
+
         # Load data
         start = time.perf_counter()
-        DM_input = filter_country_and_load_data_from_pickles(country_list=[country], modules_list=modules_list)
+        DM_input = filter_country_and_load_data_from_pickles(
+            country_list=[country], modules_list=modules_list
+        )
         load_duration = (time.perf_counter() - start) * 1000
-        
+
         # Get lever data
         start = time.perf_counter()
         DM_lever = get_lever_data_to_plot(lever_name=lever_name, DM_input=DM_input)
         lever_duration = (time.perf_counter() - start) * 1000
         # Log detailed information about the lever data
         logger.info(f"DM_lever structure: {type(DM_lever)}")
-        logger.info(f"DM_lever keys: {list(DM_lever.keys()) if hasattr(DM_lever, 'keys') else 'Not a dict'}")
-        print(DM_lever)
-        # Serialize the result
-        serializable_lever_data = serialize_model_output(DM_lever)
-        
+        logger.info(
+            f"DM_lever keys: {list(DM_lever.keys()) if hasattr(DM_lever, 'keys') else 'Not a dict'}"
+        )
+
+        serializable_lever_data = serialize_model_output(
+            transform_lever_data_for_echarts(DM_lever)
+        )
+
         response = ORJSONResponse(
             content={
                 "status": "success",
@@ -297,16 +333,20 @@ async def test_lever_data(lever_name: str, modules: str = "transport,buildings",
                 "country": country,
                 "modules": modules_list,
                 "data": serializable_lever_data,
-                
             }
         )
-        
-        response.headers["Server-Timing"] = f"load;dur={load_duration:.2f}, lever;dur={lever_duration:.2f}"
+
+        response.headers["Server-Timing"] = (
+            f"load;dur={load_duration:.2f}, lever;dur={lever_duration:.2f}"
+        )
         return response
-        
+
     except Exception as e:
         logger.error(f"Test lever data failed: {str(e)}", exc_info=True)
         return ORJSONResponse(
-            content={"status": "error", "message": f"Failed to test lever data: {str(e)}"},
+            content={
+                "status": "error",
+                "message": f"Failed to test lever data: {str(e)}",
+            },
             status_code=500,
         )

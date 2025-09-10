@@ -119,6 +119,9 @@ function updateGroupLevers(levers: Lever[], value: number): void {
 .group-slider {
   width: 100px;
 }
+.lever-item {
+  margin-bottom: 10px;
+}
 .lever-group:deep(.q-item__section--side) {
   padding-right: 4px;
   min-width: auto;

@@ -10,6 +10,7 @@ export interface Lever {
   title: string;
   group: string;
   headline: string;
+  popupText?: string;
   disabled?: boolean;
   range: (string | number)[];
   type: string;
@@ -297,6 +298,8 @@ export const levers: Lever[] = [
   },
   {
     code: 'lever_freight_tkm',
+    popupText:
+      'Freight tonne-kilometers (tkm) represent the total transport work done to move freight. It is calculated by multiplying the weight of the freight (in tonnes) by the distance it is transported (in kilometers). Reducing freight tkm can be achieved through strategies such as optimizing logistics, improving supply chain efficiency, and promoting local sourcing to minimize transportation distances.',
     title: 'Freight distance',
     group: 'Consumption',
     headline: 'Key behaviours',
@@ -339,6 +342,8 @@ export const levers: Lever[] = [
   },
   {
     code: 'lever_freight_vehicle-efficiency_new',
+    popupText:
+      'Freight vehicle efficiency refers to the effectiveness of freight vehicles in utilizing energy to transport goods. It is typically measured in terms of fuel consumption per ton-mile or ton-kilometer. Improving freight vehicle efficiency can involve adopting advanced technologies, optimizing vehicle design, and implementing better maintenance practices to reduce fuel consumption and emissions.',
     title: 'Freight efficiency',
     group: 'Transport',
     headline: 'Technology and fuels',
@@ -353,6 +358,8 @@ export const levers: Lever[] = [
   },
   {
     code: 'lever_freight_technology-share_new',
+    popupText:
+      'Freight technology share refers to the proportion of freight transport that utilizes advanced or alternative technologies, such as electric or hydrogen-powered vehicles, compared to traditional fossil fuel-powered vehicles. Increasing the share of advanced technologies in freight transport can help reduce greenhouse gas emissions and improve overall energy efficiency in the logistics sector.',
     title: 'Freight technology',
     group: 'Transport',
     headline: 'Technology and fuels',
