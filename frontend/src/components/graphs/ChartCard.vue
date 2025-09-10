@@ -153,7 +153,6 @@ const chartOption = computed(() => {
     itemStyle: { color: series.color },
     data: series.data,
   }));
-
   return {
     title: {
       text: props.chartConfig.title,

@@ -2,6 +2,7 @@ import logging
 import numpy as np
 import json
 import time
+import pandas as pd 
 
 logger = logging.getLogger("uvicorn")
 
@@ -212,3 +213,69 @@ def transform_datamatrix_to_clean_structure(output):
     cleaned_output = _convert_numpy_types(cleaned_output)
 
     return cleaned_output
+
+def transform_lever_data_for_echarts(lever_data_dict):
+    """
+    Transform lever data from get_lever_data_to_plot() into ECharts-friendly format.
+    
+    Args:
+        lever_data_dict (dict): Dictionary with keys 1,2,3,4 and DataMatrix values
+        
+    Returns:
+        dict: ECharts-ready data structure with series for each lever position
+    """
+    logger.info(f"Starting lever data transformation for {len(lever_data_dict)} lever positions")
+    
+    result = {
+        'lever_positions': {},
+        'metadata': {
+            'countries': [],
+            'years': [],
+            'variables': [],
+            'units': {}
+        }
+    }
+    
+    for lever_position, datamatrix in lever_data_dict.items():
+        if not hasattr(datamatrix, "fast_write_df"):
+            logger.warning(f"DataMatrix for lever position {lever_position} missing fast_write_df method, skipping")
+            continue
+            
+        try:
+            # Convert DataMatrix to DataFrame
+            df = datamatrix.fast_write_df()
+            
+            # Convert to records format
+            records = df.to_dict(orient="records")
+            
+            # Store the records for this lever position
+            result['lever_positions'][lever_position] = records
+            
+            # Extract metadata (from first lever position)
+            if lever_position == list(lever_data_dict.keys())[0]:
+                if 'Country' in df.columns:
+                    result['metadata']['countries'] = sorted(df['Country'].unique().tolist())
+                if 'Years' in df.columns:
+                    result['metadata']['years'] = sorted(df['Years'].unique().tolist())
+                
+                # Extract variables and units from column names
+                for col in df.columns:
+                    if col not in ['Country', 'Years']:
+                        # Parse variable[unit] format
+                        if '[' in col and ']' in col:
+                            var_name = col.split('[')[0]
+                            unit = col.split('[')[1].split(']')[0]
+                            result['metadata']['variables'].append(var_name)
+                            result['metadata']['units'][var_name] = unit
+                        else:
+                            result['metadata']['variables'].append(col)
+                            result['metadata']['units'][col] = ""
+                            
+        except Exception as e:
+            logger.error(f"Error processing lever position {lever_position}: {str(e)}")
+    
+    # Convert to JSON-serializable format
+    result = _convert_numpy_types(result)
+    
+    logger.info(f"Lever data transformation completed for {len(result['lever_positions'])} positions")
+    return result

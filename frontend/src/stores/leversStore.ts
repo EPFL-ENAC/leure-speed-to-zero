@@ -37,6 +37,33 @@ export interface ChartConfig {
 export interface SectorWithKpis extends SectorData {
   kpis: KpiData[];
 }
+export interface LeverYearData {
+  Country: string;
+  Years: number;
+  [key: string]: string | number;
+}
+
+export interface LeverMetadata {
+  countries: string[];
+  years: number[];
+  variables: string[];
+  units: {
+    [key: string]: string;
+  };
+}
+
+export interface LeverResults {
+  status: string;
+  lever_name: string;
+  country: string;
+  modules: string[];
+  data: {
+    lever_positions: {
+      [key: number]: LeverYearData[];
+    };
+    metadata: LeverMetadata;
+  };
+}
 
 export interface ModelResults {
   fingerprint_result: string;
@@ -84,6 +111,9 @@ export const useLeverStore = defineStore('lever', () => {
   const isLoading = ref(false);
   const error = ref<string | null>(null);
   const autoRun = ref(true);
+  const leverData = ref<LeverResults | null>(null);
+  const isLoadingLeverData = ref(false);
+  const leverDataError = ref<string | null>(null);
 
   // Private variables (not exposed in the return)
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -156,6 +186,50 @@ export const useLeverStore = defineStore('lever', () => {
 
   // Model operations
   let lastRunTime = 0;
+
+  // Lever data operations
+  async function fetchLeverData(leverName: string, modules?: string, country?: string) {
+    try {
+      isLoadingLeverData.value = true;
+      leverDataError.value = null;
+
+      const response = await modelService.getLeverData(leverName, modules, country);
+
+      // Handle error status from API
+      if (response.data?.status === 'error') {
+        leverDataError.value = response.data.message || 'An error occurred fetching lever data';
+        return null;
+      }
+
+      leverData.value = response.data as LeverResults;
+      return response.data;
+    } catch (err) {
+      handleLeverDataError(err);
+      throw err;
+    } finally {
+      isLoadingLeverData.value = false;
+    }
+  }
+
+  // Error handling for lever data
+  function handleLeverDataError(err: unknown) {
+    console.error('Error fetching lever data:', err);
+
+    if (err instanceof AxiosError) {
+      if (err.response?.data?.message) {
+        leverDataError.value = err.response.data.message;
+      } else if (err.response) {
+        leverDataError.value = `Server error (${err.response.status}): ${err.response.statusText}`;
+      } else if (err.request) {
+        leverDataError.value =
+          'No response from server. Please check if the API server is running.';
+      }
+    } else if (err instanceof Error) {
+      leverDataError.value = err.message || 'Unknown error occurred';
+    } else {
+      leverDataError.value = 'An unknown error occurred while fetching lever data';
+    }
+  }
 
   function debouncedRunModel() {
     if (!autoRun.value) return;
@@ -325,6 +399,9 @@ export const useLeverStore = defineStore('lever', () => {
     modelResults,
     isLoading,
     error,
+    leverData,
+    isLoadingLeverData,
+    leverDataError,
 
     // Getters
     getLeverValue,
@@ -346,6 +423,7 @@ export const useLeverStore = defineStore('lever', () => {
     setLeverValue,
     applyPathway,
     resetToDefaults,
+    fetchLeverData,
     setCustomPathwayName: (name: string) => {
       customPathwayName.value = name;
     },
