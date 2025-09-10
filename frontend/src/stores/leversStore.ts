@@ -144,7 +144,7 @@ export const useLeverStore = defineStore('lever', () => {
 
     // Filter levers that belong to this sector
     const sectorLevers = sector.levers
-      .map((leverId) => leversData.find((lever) => lever.code == leverId))
+      .map((leverId) => leversData.find((lever) => lever.code === leverId))
       .filter((lever): lever is Lever => lever !== undefined);
 
     return sectorLevers;
