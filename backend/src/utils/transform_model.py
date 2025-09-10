@@ -2,7 +2,7 @@ import logging
 import numpy as np
 import json
 import time
-import pandas as pd 
+import pandas as pd
 
 logger = logging.getLogger("uvicorn")
 
