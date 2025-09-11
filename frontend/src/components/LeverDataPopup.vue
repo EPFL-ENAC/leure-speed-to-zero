@@ -19,14 +19,7 @@
           </div>
 
           <div class="chart-section" style="height: 40vh; width: 100%">
-            <LeverChart
-              :lever-code="props.leverName"
-              :lever-level="leverStore.getLeverValue(leverConfig.code)"
-              :modules="props.modules || undefined"
-              :country="props.country || undefined"
-              height="40vh"
-              width="100%"
-            />
+            <LeverChart :lever-code="props.leverName" height="40vh" width="100%" />
           </div>
 
           <!-- Popup text info -->
