@@ -57,7 +57,6 @@
               :showDoubleQuotes="false"
               :showLineNumber="false"
               path="root"
-              @click="handleClick"
             />
           </div>
 
@@ -130,10 +129,6 @@ async function runModel() {
 
 function dismissError() {
   leverStore.error = null;
-}
-
-function handleClick(path: string, data: unknown) {
-  console.log('Node clicked:', path, data);
 }
 
 function copyToClipboard() {
