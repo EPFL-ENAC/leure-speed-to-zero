@@ -6,7 +6,7 @@ import { ExamplePathways } from 'utils/examplePathways';
 import { modelService } from 'services/modelService';
 import { AxiosError } from 'axios';
 import type { Region } from 'src/utils/region';
-
+import type { KpiData } from 'src/utils/sectors';
 // Types
 export interface YearData {
   year: number;
@@ -20,28 +20,6 @@ export interface SectorData {
   units: {
     [key: string]: string;
   };
-}
-
-export interface KpiData {
-  title: string;
-  value: number;
-  unit: string;
-}
-
-export interface KpiThreshold {
-  value: number;
-  label: string;
-  icon: string;
-  color: string;
-}
-
-export interface KpiConfig {
-  name: string;
-  unit: string;
-  route: string;
-  maximize: boolean;
-  thresholds: KpiThreshold[];
-  info: string;
 }
 
 export interface OutputConfig {
@@ -58,6 +36,33 @@ export interface ChartConfig {
 
 export interface SectorWithKpis extends SectorData {
   kpis: KpiData[];
+}
+export interface LeverYearData {
+  Country: string;
+  Years: number;
+  [key: string]: string | number;
+}
+
+export interface LeverMetadata {
+  countries: string[];
+  years: number[];
+  variables: string[];
+  units: {
+    [key: string]: string;
+  };
+}
+
+export interface LeverResults {
+  status: string;
+  lever_name: string;
+  country: string;
+  modules: string[];
+  data: {
+    lever_positions: {
+      [key: number]: LeverYearData[];
+    };
+    metadata: LeverMetadata;
+  };
 }
 
 export interface ModelResults {
@@ -106,6 +111,7 @@ export const useLeverStore = defineStore('lever', () => {
   const isLoading = ref(false);
   const error = ref<string | null>(null);
   const autoRun = ref(true);
+  const leverData = ref<LeverResults | null>(null);
 
   // Private variables (not exposed in the return)
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -135,7 +141,9 @@ export const useLeverStore = defineStore('lever', () => {
     if (!sector) return [];
 
     // Filter levers that belong to this sector
-    const sectorLevers = leversData.filter((lever) => sector.levers.includes(lever.code));
+    const sectorLevers = sector.levers
+      .map((leverId) => leversData.find((lever) => lever.code === leverId))
+      .filter((lever): lever is Lever => lever !== undefined);
 
     return sectorLevers;
   };
@@ -176,6 +184,39 @@ export const useLeverStore = defineStore('lever', () => {
 
   // Model operations
   let lastRunTime = 0;
+
+  // Lever data operations
+  async function fetchLeverData(leverName: string, modules?: string, country?: string) {
+    try {
+      const response = await modelService.getLeverData(leverName, modules, country);
+
+      // Handle error status from API
+      if (response.data?.status === 'error') {
+        const errorMessage = response.data.message || 'An error occurred fetching lever data';
+        throw new Error(errorMessage);
+      }
+
+      return response.data;
+    } catch (err) {
+      // Don't set global error state, just throw the error for individual components to handle
+      if (err instanceof Error) {
+        throw err;
+      }
+
+      // Convert other error types to Error objects
+      if (err instanceof AxiosError) {
+        if (err.response?.data?.message) {
+          throw new Error(err.response.data.message);
+        } else if (err.response) {
+          throw new Error(`Server error (${err.response.status}): ${err.response.statusText}`);
+        } else if (err.request) {
+          throw new Error('No response from server. Please check if the API server is running.');
+        }
+      }
+
+      throw new Error('An unknown error occurred while fetching lever data');
+    }
+  }
 
   function debouncedRunModel() {
     if (!autoRun.value) return;
@@ -345,6 +386,7 @@ export const useLeverStore = defineStore('lever', () => {
     modelResults,
     isLoading,
     error,
+    leverData,
 
     // Getters
     getLeverValue,
@@ -366,6 +408,7 @@ export const useLeverStore = defineStore('lever', () => {
     setLeverValue,
     applyPathway,
     resetToDefaults,
+    fetchLeverData,
     setCustomPathwayName: (name: string) => {
       customPathwayName.value = name;
     },

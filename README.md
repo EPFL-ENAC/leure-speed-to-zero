@@ -1,31 +1,140 @@
-# leure-speed-to-zero
+# SpeedToZero - Interactive Climate Pathway Visualization Platform
 
-The tool will integrate PyCalc models for real-time computations, provide interactive data visualizations, and support multilingual accessibility. It will be designed for scalability and maintainability with version control, CI/CD, and thorough documentation. Stakeholder engagement will guide its development through workshops and iterative improvements.
+Interactive web-based platform for climate pathway modeling and visualization using PyCalc computational models. Enables real-time exploration of policy impacts on emissions, energy consumption, and environmental indicators across multiple sectors.
 
-**Access the platform here:**
+## 🌍 Live Platforms
 
-**dev url: [https://speed-to-zero-dev.epfl.ch/](https://speed-to-zero-dev.epfl.ch/)**  
-**prod url: [https://speed-to-zero.epfl.ch/](https://speed-to-zero.epfl.ch/)**
+- **Production**: [https://speed-to-zero.epfl.ch/](https://speed-to-zero.epfl.ch/)
+- **Development**: [https://speed-to-zero-dev.epfl.ch/](https://speed-to-zero-dev.epfl.ch/)
 
-## Contributors
+## 🏗️ Architecture
 
-- EPFL - (Research & Data): Dr. Gino Baudry (EPFL, gino.baudry[at]epfl.ch), Dr. Paola Paruta (EPFL, paola.paruta[at]epfl.ch), Dr. Edoardo Chiarotti (E4S, edoardo.chiarotti[at]epfl.ch), Agathe Crosnier (EPFL, agathe.crosnier[at]epfl.ch).
-- EPFL - ENAC-IT4R (Implementation): Pierre Ripoll, Pierre Guilbert
-- EPFL - ENAC-IT4R (Project Management): Pierre Ripoll
-- EPFL - ENAC-IT4R (Contributors): --
+### Tech Stack
 
-## Development
+**Frontend**
+
+- [Vue.js 3](https://vuejs.org/) with Composition API + TypeScript
+- [Quasar Framework](https://quasar.dev/) for UI components
+- [ECharts](https://echarts.apache.org/) for data visualization
+- [Pinia](https://pinia.vuejs.org/) for state management
+- [Vite](https://vitejs.dev/) for build tooling
+
+**Backend**
+
+- [FastAPI](https://fastapi.tiangolo.com/) with Python 3.12
+- [Pandas](https://pandas.pydata.org/) & [NumPy](https://numpy.org/) for data processing
+- [Redis](https://redis.io/) for caching (optional)
+- [Pydantic](https://docs.pydantic.dev/) for data validation
+
+**Infrastructure**
+
+- [Docker](https://www.docker.com/) with multi-stage builds
+- [Traefik](https://traefik.io/) reverse proxy
+- [nginx](https://nginx.org/) for static assets
+
+### Project Structure
+
+```
+speed-to-zero/
+├── frontend/                 # Vue.js 3 application
+│   ├── src/
+│   │   ├── components/       # UI components
+│   │   │   ├── graphs/       # Chart components
+│   │   │   ├── kpi/          # KPI widgets
+│   │   │   └── levers/       # Policy controls
+│   │   ├── pages/            # Route components
+│   │   ├── stores/           # Pinia stores
+│   │   └── utils/            # Utility functions
+│   └── public/               # Static assets
+├── backend/                  # FastAPI application
+│   ├── src/
+│   │   ├── api/              # API endpoints
+│   │   ├── config/           # Configuration
+│   │   └── utils/            # Backend utilities
+│   ├── model/                # Climate calculation modules
+│   │   ├── agriculture_module.py
+│   │   ├── buildings_module.py
+│   │   ├── transport_module.py
+│   │   ├── industry_module.py
+│   │   ├── power_module.py
+│   │   ├── emissions_module.py
+│   │   └── interactions.py
+│   └── _database/            # Data processing
+│       ├── data/             # Datasets
+│       └── pre_processing/   # Data preparation
+├── model_config.json         # Regional configuration
+├── docker-compose.yml        # Development setup
+└── Makefile                  # Build automation
+```
+
+## 🚀 Development Setup
 
 ### Prerequisites
 
-- Node.js (v22+)
-- npm
-- Python 3.12 (uv is better)
-- Docker
+- Node.js 22+
+- Python 3.12+
+- Docker (optional, for Redis)
 
-### Configuration
+### Quick Setup (Linux/macOS)
 
-The application uses a centralized configuration file `model_config.json` at the project root to manage region settings:
+```bash
+git clone https://github.com/EPFL-ENAC/leure-speed-to-zero.git
+cd leure-speed-to-zero
+
+# Install dependencies and setup git hooks
+make install
+
+# Start both services
+make run
+```
+
+Services will be available at:
+
+- **Frontend**: http://localhost:9000
+- **Backend API**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/docs
+
+### Manual Setup
+
+**Install Dependencies:**
+
+```bash
+# Root dependencies (git hooks)
+npm install
+
+# Frontend dependencies
+cd frontend && npm install && cd ..
+
+# Backend dependencies
+cd backend
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+cd ..
+```
+
+**Configure Git Hooks:**
+
+```bash
+npx lefthook install
+```
+
+**Start Services:**
+
+```bash
+# Terminal 1 - Backend
+cd backend && source .venv/bin/activate
+python -m uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+
+# Terminal 2 - Frontend
+cd frontend && npm run dev
+```
+
+## ⚙️ Configuration
+
+### Regional Configuration
+
+Edit `model_config.json` to change target region:
 
 ```json
 {
@@ -34,311 +143,243 @@ The application uses a centralized configuration file `model_config.json` at the
 }
 ```
 
-To change the region used by both frontend and backend:
-
-1. Edit `model_config.json` and change `MODEL_PRIMARY_REGION` to your desired region (e.g., "Switzerland")
-2. Restart both servers to apply the changes
-   2a. run `make install-config` or `make install` to copy the the desired region
-3. The cache will automatically use region-specific namespaces to prevent data mixing
-
-### Installing Development Tools (Optional but Recommended)
-
-For better version management and faster package installation, you can install these tools:
-
-#### Install Node Version Manager (nvm)
+Apply configuration changes:
 
 ```bash
-# Install nvm for Node.js version management
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
-
-# Restart your terminal or run:
-source ~/.bashrc  # or ~/.zshrc
-
-# Install and use Node.js v22
-nvm install 22
-nvm use 22
+make install-config
+# Restart services
 ```
 
-#### Install uv (Fast Python Package Manager)
+### Redis Caching (Optional)
+
+Enable Redis for improved performance:
 
 ```bash
-# Install uv for faster Python package management
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Restart your terminal or add to PATH
-source ~/.bashrc  # or ~/.zshrc
+docker compose up -d redis
 ```
 
-#### Install pyenv (Python Version Manager)
+Benefits:
+
+- Faster response times for repeated calculations
+- Shared cache across development team
+- Region-specific namespacing
+- Automatic fallback to in-memory cache
+
+## 🛠️ Development Tools
+
+### Available Commands
 
 ```bash
-# Install pyenv for Python version management
-curl -fsSL https://pyenv.run | bash
-
-# Add to your shell profile (~/.bashrc, ~/.zshrc, etc.)
-echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
-echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
-echo 'eval "$(pyenv init -)"' >> ~/.bashrc
-
-# Restart your terminal or run:
-source ~/.bashrc  # or ~/.zshrc
-
-# Install Python 3.12
-pyenv install 3.12
-pyenv global 3.12
+make clean        # Clean dependencies
+make lint         # Run code quality checks
+make format       # Format code
+make run-backend  # Backend only
+make run-frontend # Frontend only
 ```
 
-**Note:** After installing these tools, restart your terminal or source your shell profile to use them.
+### Code Quality
 
-### Linux/Mac Setup (Recommended)
+- **Git Hooks**: [Lefthook](https://github.com/evilmartians/lefthook) for automated checks
+- **Commits**: [Conventional Commits](https://www.conventionalcommits.org/) with [Commitlint](https://commitlint.js.org/)
+- **Frontend**: [ESLint](https://eslint.org/) + [Prettier](https://prettier.io/)
+- **Backend**: Python linting and formatting
 
-For Linux and Mac users, you can use the provided Makefile for easy setup and development:
+## 🔧 API Overview
 
-#### Installation
+### Core Endpoints
 
-```bash
-# Clone the repository
-git clone https://github.com/EPFL-ENAC/leure-speed-to-zero.git
-cd leure-speed-to-zero
+**Model Calculation:**
 
-# Install all dependencies (backend + frontend) and set up git hooks
-make install
+```http
+POST /api/calculate
+Content-Type: application/json
+
+{
+  "levers": {
+    "buildings_efficiency": 0.8,
+    "transport_electrification": 0.6,
+    "industry_carbon_capture": 0.4
+  },
+  "region": "Vaud"
+}
 ```
 
-#### Running the Development Environment
+**Regional Data:**
 
-```bash
-# Run both backend and frontend servers
-make run
+```http
+GET /api/regions/{region}/data
+GET /api/regions/{region}/baseline
 ```
 
-This will start:
+**Configuration:**
 
-- Backend at http://localhost:8000 (API docs at http://localhost:8000/docs)
-- Frontend at http://localhost:9000
-
-#### Other Useful Commands
-
-```bash
-make clean        # Clean node_modules and package-lock.json
-make uninstall    # Remove git hooks and clean dependencies
-make lint         # Run linter checks
-make format       # Format code with prettier
-make run-backend  # Run backend only
-make run-frontend # Run frontend only
+```http
+GET /api/config
+GET /api/levers/definitions
 ```
 
-#### Enabling Redis for Backend Caching
+### Model Modules
 
-To enable Redis for caching in the backend, follow these steps:
+**Agriculture** (`agriculture_module.py`):
 
-1. **Start Redis using Docker Compose:**
+- Crop emissions and land use changes
+- Livestock methane calculations
+- Fertilizer impact modeling
 
-   ```bash
-   # Start Redis service in the background
-   docker compose up -d redis
-   ```
+**Buildings** (`buildings_module.py`):
 
-2. **Verify Redis is running:**
+- Residential/commercial energy consumption
+- Heating system transitions
+- Appliance efficiency modeling
 
-   ```bash
-   # Check if Redis container is running
-   docker ps | grep redis
+**Transport** (`transport_module.py`):
 
-   # Test Redis connection (optional)
-   docker exec -it $(docker ps -q -f name=redis) redis-cli ping
-   ```
+- Vehicle emissions by type
+- Modal shift analysis
+- Fuel transition scenarios
 
-3. **Configure the backend to use Redis:**
+**Industry** (`industry_module.py`):
 
-   The backend application should automatically detect and connect to Redis when it's available. If you need to configure Redis settings, check the backend configuration files in `backend/config/`.
+- Manufacturing process emissions
+- Material flow analysis
+- Carbon capture technology integration
 
-4. **Stop Redis when done:**
+**Power** (`power_module.py`):
 
-   ```bash
-   # Stop Redis service
-   docker compose down redis
+- Electricity generation mix
+- Renewable energy integration
+- Grid emissions factors
 
-   # Or stop all services
-   docker compose down
-   ```
+**Emissions** (`emissions_module.py`):
 
-**Note:** Redis caching will improve the performance of the backend by storing frequently accessed data in memory. The backend will work without Redis, but with caching disabled. The cache automatically uses region-specific namespaces based on your `model_config.json` settings.
+- Cross-sector aggregation
+- CO2, CH4, N2O calculations
+- Climate impact assessment
 
-### Windows Setup
+## 📊 Data Processing
 
-If you're on Windows without WSL2, you can set up the project manually:
+### Regional Data Pipeline
 
-#### Prerequisites for Windows
+Data sources: Eurostat, World Bank, JRC, national statistics
 
-- Node.js (v22+) - [Download from nodejs.org](https://nodejs.org/)
-- Python 3.12 - [Download from python.org](https://www.python.org/)
-- Git for Windows - [Download from git-scm.com](https://git-scm.com/)
-- Docker Desktop - [Download from docker.com](https://www.docker.com/products/docker-desktop/)
+Processing workflow:
 
-#### Manual Installation Steps
+1. **Raw Data Ingestion** (`_database/data/`)
+2. **Regional Filtering** (automatic scaling)
+3. **Data Validation** (consistency checks)
+4. **Model Integration** (format conversion)
 
-1. **Install dependencies:**
+### Cache Management
 
-   ```powershell
-   # Install root dependencies (for git hooks)
-   npm install
+Redis namespacing by region:
 
-   # Install frontend dependencies
-   cd frontend
-   npm install
-   cd ..
+```python
+cache_key = f"{region}:{calculation_hash}"
+```
 
-   # Install backend dependencies (using virtual environment)
-   cd backend
-   python -m venv .venv
-   # Activate virtual environment
-   .venv\Scripts\activate  # On Windows
-   # .venv/bin/activate    # On macOS/Linux if using this section
-   pip install --upgrade pip
-   pip install -r requirements.txt
-   cd ..
-   ```
+Cache invalidation on:
 
-2. **Set up git hooks:**
+- Model parameter changes
+- Regional data updates
+- Configuration modifications
 
-   ```powershell
-   npx lefthook install
-   ```
+## 🧪 Testing & Quality
 
-3. **Run the development servers:**
-
-   ```powershell
-   # Terminal 1 - Backend
-   cd backend
-   # Activate virtual environment first
-   .venv\Scripts\activate
-   python -m uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
-
-   # Terminal 2 - Frontend (in a new terminal)
-   cd frontend
-   npm run dev
-   ```
-
-**Note:** Remember to activate the virtual environment (`.venv\Scripts\activate`) every time you work with the backend in a new terminal session.
-
-#### Alternative: Use WSL2 (Recommended)
-
-For the best development experience on Windows, we recommend using WSL2:
-
-1. Install WSL2 following [Microsoft's guide](https://docs.microsoft.com/en-us/windows/wsl/install)
-2. Install Ubuntu or your preferred Linux distribution
-3. Follow the standard Unix setup instructions above
-
-This provides a native Linux environment where all the Makefile commands work as expected.
-
-#### WSL2 Troubleshooting
-
-If you encounter line ending issues when using WSL2 (like `/usr/bin/env: 'bash\r': No such file or directory`), this is due to Windows line endings (CRLF) being used instead of Unix line endings (LF). Here are the solutions:
-
-**Option 1: Configure Git to handle line endings automatically (Recommended)**
+### Running Tests
 
 ```bash
-# Configure Git to automatically convert line endings
+# Frontend tests
+cd frontend && npm test
+
+# Backend tests
+cd backend && python -m pytest
+
+# Lint all code
+make lint
+```
+
+### Development Workflow
+
+1. **Feature Branch**: `git checkout -b feature/your-feature`
+2. **Code Changes**: Follow existing patterns
+3. **Commit**: Conventional commits enforced by hooks
+4. **Push**: `git push origin feature/your-feature`
+5. **PR**: Create with clear technical description
+
+## 🐳 Docker Deployment
+
+### Development Environment
+
+```bash
+docker compose up -d
+```
+
+Services:
+
+- `frontend`: Vue.js dev server with hot reload
+- `backend`: FastAPI with auto-reload
+- `redis`: Caching layer
+
+### Production Build
+
+```bash
+# Build images
+docker compose -f docker-compose.prod.yml build
+
+# Deploy
+docker compose -f docker-compose.prod.yml up -d
+```
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+**Port Conflicts:**
+
+- Frontend: 9000
+- Backend: 8000
+- Redis: 6379
+
+**WSL2 Line Endings:**
+
+```bash
 git config --global core.autocrlf input
-
-# Re-clone the repository or reset line endings
-git rm --cached -r .
-git reset --hard
-```
-
-**Option 2: Convert line endings manually**
-
-```bash
-# Install dos2unix if not available
-sudo apt update && sudo apt install dos2unix
-
-# Convert line endings for the Makefile
 dos2unix Makefile
-
-# Convert line endings for all shell scripts (if any)
 find . -name "*.sh" -exec dos2unix {} \;
 ```
 
-**Option 3: Use .gitattributes file**
+**Module Import Errors:**
 
-The repository should include a `.gitattributes` file to enforce consistent line endings. If it doesn't exist, create one:
+- Ensure virtual environment is activated
+- Verify `requirements.txt` installation
+- Check Python path configuration
 
-```bash
-# Create .gitattributes file
-cat > .gitattributes << 'EOF'
-* text=auto
-*.sh text eol=lf
-Makefile text eol=lf
-*.py text eol=lf
-*.js text eol=lf
-*.ts text eol=lf
-*.vue text eol=lf
-EOF
+**Frontend Build Issues:**
 
-# Apply the changes
-git add .gitattributes
-git rm --cached -r .
-git reset --hard
-```
+- Node.js version 22+ required
+- Clear `node_modules`: `rm -rf node_modules && npm install`
+- Check for TypeScript errors
 
-## Tech Stack
+## 📄 License
 
-### Frontend
+[GNU General Public License v3.0](LICENSE)
 
-- [Vue.js 3](https://vuejs.org/) - Progressive JavaScript Framework
-- [Quasar](https://quasar.dev/) - Vue.js Framework
-- [ECharts](https://echarts.apache.org/) - Data Visualization
-- [nginx](https://nginx.org/) - Web Server
+## 🤝 Contributing
 
-### Backend
+1. Fork the repository
+2. Create feature branch
+3. Follow code standards (enforced by git hooks)
+4. Write tests for new functionality
+5. Submit PR with technical description
 
-- [Python](https://www.python.org/) with FastAPI
+**Development Standards:**
 
-### Infrastructure
+- Conventional Commits for clear history
+- TypeScript for frontend type safety
+- Pydantic for backend data validation
+- Comprehensive error handling
+- Performance optimization for large datasets
 
-- [Docker](https://www.docker.com/) - Containerization
-- [Traefik](https://traefik.io/) - Edge Router
+---
 
-_Note: Update this section with your actual tech stack_
-
-## Contributing
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
-
-## Status
-
-Under active development. [Report bugs here](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues).
-
-## License
-
-This project is licensed under the [GNU General Public License v3.0](LICENSE) - see the LICENSE file for details.
-
-This is free software: you can redistribute it and/or modify it under the terms of the GPL-3.0 as published by the Free Software Foundation.
-
-# Setup Checklist Completed
-
-The following items from the original setup checklist have been automatically completed:
-
-- [x] Replace `{ YOUR-REPO-NAME }` in all files by the name of your repo
-- [x] Replace `{ YOUR-LAB-NAME }` in all files by the name of your lab
-- [x] Replace `{ DESCRIPTION }` with project description
-- [x] Replace assignees: githubusernameassignee by the github handle of your assignee
-- [x] Handle CITATION.cff file (kept/removed based on preference)
-- [x] Handle release-please workflow (kept/removed based on preference)
-- [x] Configure project-specific settings
-
-## Remaining Manual Tasks
-
-Please complete these tasks manually:
-
-- [x] Add token for the github action secrets called: MY_RELEASE_PLEASE_TOKEN (since you kept the release-please workflow)
-- [x] Check if you need all the labels: https://github.com/EPFL-ENAC/leure-speed-to-zero/labels
-- [x] Create your first milestone: https://github.com/EPFL-ENAC/leure-speed-to-zero/milestones
-- [ ] Protect your branch if you're a pro user: https://github.com/EPFL-ENAC/leure-speed-to-zero/settings/branches
-- [ ] [Activate discussion](https://github.com/EPFL-ENAC/leure-speed-to-zero/settings)
-
-## Helpful links
-
-- [How to format citations ?](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-citation-files)
-- [Learn how to use github template repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template)
+**Technical Support**: [GitHub Issues](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues)

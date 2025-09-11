@@ -56,8 +56,7 @@
     </style>
     <script>
       var isLocalhost =
-        window.location.host === "localhost:8000" ||
-        window.location.host === "0.0.0.0:8000";
+        window.location.host === 'localhost:8000' || window.location.host === '0.0.0.0:8000';
     </script>
   </head>
   <body>
@@ -70,9 +69,8 @@
         <section>
           <h2>API Overview</h2>
           <p>
-            The API is built with FastAPI, a modern, fast web framework for
-            building APIs with Python. It provides functionality for
-            speed-to-zero.
+            The API is built with FastAPI, a modern, fast web framework for building APIs with
+            Python. It provides functionality for speed-to-zero.
           </p>
           <p>
             For complete API documentation, visit
@@ -81,11 +79,7 @@
 
           <p>
             View the source code on
-            <a
-              href="https://github.com/2050Calculators/PathwayCalc"
-              target="_blank"
-              >GitHub</a
-            >.
+            <a href="https://github.com/2050Calculators/PathwayCalc" target="_blank">GitHub</a>.
           </p>
           <p>
             <strong>Contact support:</strong>
@@ -105,19 +99,19 @@
 
     <script>
       // Fetch and display API version from /api/version if available
-      const apiVersion = document.getElementById("api-version");
-      fetch("/api/v1/version")
+      const apiVersion = document.getElementById('api-version');
+      fetch('/api/v1/version')
         .then((response) => {
           if (!response.ok) {
-            throw new Error("Network response was not ok");
+            throw new Error('Network response was not ok');
           }
           return response.json();
         })
         .then((data) => {
-          apiVersion.textContent = data.version || "Unknown";
+          apiVersion.textContent = data.version || 'Unknown';
         })
         .catch(() => {
-          apiVersion.textContent = "Unavailable";
+          apiVersion.textContent = 'Unavailable';
         });
       // You can add JavaScript here to fetch data from your API
       // Example:
