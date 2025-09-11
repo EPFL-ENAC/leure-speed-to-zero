@@ -263,12 +263,12 @@ async def debug_region():
 
 
 @router.get("/v1/lever-data/{lever_name}")
-async def test_lever_data(
+async def get_lever_data(
     lever_name: str,
     modules: str = "transport,buildings",
     country: str | None = None,
 ):
-    """Test endpoint for lever data extraction functionality."""
+    """Get lever data for plotting and visualization."""
     try:
         from model.common.auxiliary_functions import (
             filter_country_and_load_data_from_pickles,
@@ -302,7 +302,7 @@ async def test_lever_data(
             )
 
         logger.info(
-            f"Testing lever data for lever: {lever_name}, country: {country}, modules: {modules_list}"
+            f"Getting lever data for lever: {lever_name}, country: {country}, modules: {modules_list}"
         )
 
         # Load data
@@ -342,11 +342,11 @@ async def test_lever_data(
         return response
 
     except Exception as e:
-        logger.error(f"Test lever data failed: {str(e)}", exc_info=True)
+        logger.error(f"Get lever data failed: {str(e)}", exc_info=True)
         return ORJSONResponse(
             content={
                 "status": "error",
-                "message": f"Failed to test lever data: {str(e)}",
+                "message": f"Failed to get lever data: {str(e)}",
             },
             status_code=500,
         )
