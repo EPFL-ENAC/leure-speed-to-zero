@@ -10,9 +10,11 @@
         :title="props.variant === 'default' ? `Click to view ${lever.title} data` : ''"
       >
         {{ lever.title }}
-        <q-icon v-if="props.variant === 'default'" name="bar_chart" size="sm" class="q-ml-xs" />
+        <q-icon v-if="props.variant === 'default'" name="info_outline" size="xs" class="q-ml-xs" />
       </span>
-      <q-chip outline circle size="sm">{{ displayValue }}</q-chip>
+      <div class="row items-center q-gutter-xs">
+        <q-chip outline circle size="sm">{{ displayValue }}</q-chip>
+      </div>
     </div>
     <div class="row items-center q-col-gutter-xs">
       <div class="content-center col-grow">
@@ -43,9 +45,28 @@
       <div class="col-12">
         <div class="difficulty-labels text-caption text-grey-7">
           <span>{{ lever.difficultyColors[0]?.label }}</span>
+          <q-btn
+            v-if="props.variant === 'default'"
+            :icon="showChart ? 'expand_less' : 'expand_more'"
+            flat
+            round
+            dense
+            size="sm"
+            @click.stop="toggleChart"
+            :title="showChart ? 'Hide chart' : 'Show chart'"
+            class="expand-btn"
+          />
           <span>{{ lever.difficultyColors[lever.difficultyColors.length - 1]?.label }}</span>
         </div>
       </div>
+    </div>
+
+    <!-- Inline Chart Section -->
+    <div v-if="showChart && props.variant === 'default'" class="chart-section q-mt-sm">
+      <div class="inline-chart-container" style="height: 200px; width: 100%">
+        <LeverChart :lever-code="lever.code" height="200px" width="100%" minimal />
+      </div>
+      <q-separator class="q-mb-md" />
     </div>
   </div>
 
@@ -57,6 +78,7 @@
 import { computed, ref } from 'vue';
 import type { Lever } from 'src/utils/leversData';
 import LeverDataPopup from './LeverDataPopup.vue';
+import LeverChart from './charts/LeverChart.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -75,6 +97,9 @@ const emit = defineEmits<{
 
 // Dialog state
 const showLeverDialog = ref(false);
+
+// Chart state
+const showChart = ref(false);
 
 const disabled = computed(() => props.lever.disabled || false);
 
@@ -119,6 +144,13 @@ function onChange(newValue: number | null) {
 function openLeverDataPopup() {
   if (!disabled.value) {
     showLeverDialog.value = true;
+  }
+}
+
+// Toggle inline chart
+function toggleChart() {
+  if (!disabled.value) {
+    showChart.value = !showChart.value;
   }
 }
 </script>
@@ -227,6 +259,15 @@ function openLeverDataPopup() {
   .variant-popup & {
     font-size: larger;
     cursor: default;
+  }
+}
+
+.expand-btn {
+  color: #666;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #1976d2;
   }
 }
 </style>

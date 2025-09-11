@@ -1,20 +1,20 @@
 <template>
   <div class="lever-chart-container" :style="{ height, width }">
-    <div v-if="leverStore.isLoadingLeverData" class="flex flex-center q-pa-lg">
+    <div v-if="isLoading" class="flex flex-center q-pa-lg">
       <q-spinner-dots size="2rem" />
       <span class="q-ml-sm">Loading chart data...</span>
     </div>
 
-    <div v-else-if="leverStore.leverDataError" class="text-negative q-pa-md text-center">
+    <div v-else-if="error" class="text-negative q-pa-md text-center">
       <q-icon name="error" size="2rem" class="q-mb-sm" />
-      <div>{{ leverStore.leverDataError }}</div>
+      <div>{{ error }}</div>
       <q-btn
         @click="fetchData"
         color="primary"
         outline
         size="sm"
         class="q-mt-md"
-        :loading="leverStore.isLoadingLeverData"
+        :loading="isLoading"
       >
         Retry
       </q-btn>
@@ -48,7 +48,7 @@ import {
 } from 'echarts/components';
 import VChart from 'vue-echarts';
 import { useLeverStore } from 'stores/leversStore';
-import type { LeverYearData } from 'stores/leversStore';
+import type { LeverResults, LeverYearData } from 'stores/leversStore';
 import { getPlotLabel } from 'utils/labelsPlot';
 import { type Lever, levers as leversConfigs } from 'src/utils/leversData';
 
@@ -83,8 +83,10 @@ const props = withDefaults(
     leverCode: string;
     height?: string;
     width?: string;
+    minimal?: boolean;
   }>(),
   {
+    minimal: false,
     height: '40vh',
     width: '100%',
   },
@@ -93,11 +95,15 @@ const props = withDefaults(
 // State
 const chartRef = ref(null);
 const leverStore = useLeverStore();
+const isLoading = ref(false);
+const error = ref<string | null>(null);
 
 const leverConfig = computed(() => {
   const conf = leversConfigs.find((l) => l.code === props.leverCode) as Lever;
   return conf;
 });
+
+const leverDataAll = ref<LeverResults | null>(null);
 
 const leverValue = computed(() => {
   return leverStore.getLeverValue(leverConfig.value.code);
@@ -105,9 +111,19 @@ const leverValue = computed(() => {
 
 const fetchData = async () => {
   try {
-    await leverStore.fetchLeverData(props.leverCode);
-  } catch (error) {
-    console.error('Failed to fetch lever data:', error);
+    isLoading.value = true;
+    error.value = null;
+    leverDataAll.value = await leverStore.fetchLeverData(props.leverCode);
+  } catch (err) {
+    console.error('Failed to fetch lever data:', err);
+    // Handle different types of errors
+    if (err instanceof Error) {
+      error.value = err.message || 'Failed to load chart data';
+    } else {
+      error.value = 'An unknown error occurred while loading chart data';
+    }
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -124,15 +140,14 @@ watch(
 
 // Extract chart data from lever results - simplified approach
 const chartData = computed(() => {
-  if (!leverStore.leverData?.data?.lever_positions) {
+  if (!leverDataAll.value?.data?.lever_positions) {
     return [];
   }
 
-  const leverPositions = leverStore.leverData.data.lever_positions;
-  const metadata = leverStore.leverData.data.metadata;
+  const leverPositions = leverDataAll.value.data.lever_positions;
+  const metadata = leverDataAll.value.data.metadata;
 
   const leverData = leverPositions[leverValue.value];
-  debugger;
   if (!Array.isArray(leverData) || leverData.length === 0) {
     return [];
   }
@@ -172,7 +187,7 @@ const chartData = computed(() => {
 
 // Get the unit for the chart
 const chartUnit = computed(() => {
-  const metadata = leverStore.leverData?.data?.metadata;
+  const metadata = leverDataAll.value?.data?.metadata;
   const firstVar = metadata?.variables?.[0];
   return (firstVar && metadata?.units?.[firstVar]) || '';
 });
@@ -193,26 +208,31 @@ const chartOption = computed(() => {
   return {
     tooltip: {
       trigger: 'axis',
+      appendToBody: true,
       formatter: (params: TooltipParam[]) => {
         const year = params[0]?.axisValueLabel;
         let tooltip = `${year}<br/>`;
         params.forEach((param: TooltipParam) => {
-          tooltip += `${param.marker} ${param.seriesName}: ${param.value[1]} ${chartUnit.value}<br/>`;
+          tooltip += `${param.marker} ${param.seriesName}: ${param.value[1].toFixed(3)} ${chartUnit.value}<br/>`;
         });
         return tooltip;
       },
     },
-    legend: {
-      orient: 'horizontal',
-      type: 'scroll',
-      bottom: '10%',
-      height: '30%',
-      width: '80%',
-    },
+    legend: props.minimal
+      ? undefined
+      : {
+          orient: 'horizontal',
+          type: 'scroll',
+          bottom: '10%',
+          height: '30%',
+          width: '80%',
+        },
     grid: {
-      top: '10%',
-      bottom: '20%',
+      top: '15%',
+      bottom: props.minimal ? '5%' : '20%',
       containLabel: true,
+      left: '0%',
+      right: '0%',
     },
     xAxis: {
       type: 'time',
@@ -226,26 +246,28 @@ const chartOption = computed(() => {
         formatter: function (value: number) {
           // Use scientific notation for values larger than 10,000 or smaller than 0.001
           if (Math.abs(value) >= 10000 || (Math.abs(value) > 0 && Math.abs(value) < 0.001)) {
-            return value.toExponential(2);
+            return value.toFixed(2);
           }
           return value;
         },
       },
     },
-    dataZoom: [
-      {
-        type: 'inside',
-        xAxisIndex: 0,
-        filterMode: 'none',
-      },
-      {
-        type: 'slider',
-        xAxisIndex: 0,
-        filterMode: 'none',
-        bottom: '1%',
-        height: 30,
-      },
-    ],
+    dataZoom: props.minimal
+      ? undefined
+      : [
+          {
+            type: 'inside',
+            xAxisIndex: 0,
+            filterMode: 'none',
+          },
+          {
+            type: 'slider',
+            xAxisIndex: 0,
+            filterMode: 'none',
+            bottom: '1%',
+            height: 30,
+          },
+        ],
     series,
   };
 });
