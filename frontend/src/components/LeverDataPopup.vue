@@ -1,11 +1,11 @@
 <template>
   <q-dialog v-model="isOpen" persistent>
     <q-card>
-      <q-card-section class="row items-center q-pb-none">
-        <div class="text-h6">Lever details</div>
+      <q-bar class="row items-center">
+        <div>Lever details</div>
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup />
-      </q-card-section>
+      </q-bar>
 
       <q-card-section>
         <div v-if="leverStore.isLoadingLeverData" class="flex flex-center q-pa-lg">
@@ -115,8 +115,10 @@ const props = defineProps<{
   country?: string;
 }>();
 
+// Model for dialog visibility
+const isOpen = defineModel<boolean>({ default: false });
+
 // State
-const isOpen = ref(false);
 const chartRef = ref(null);
 const leverStore = useLeverStore();
 
@@ -125,15 +127,12 @@ const leverConfig = computed(() => {
   return conf;
 });
 
-// Methods
-const open = () => {
-  isOpen.value = true;
-  void fetchData();
-};
-
-const close = () => {
-  isOpen.value = false;
-};
+// Fetch data when dialog opens
+watch(isOpen, (newValue) => {
+  if (newValue) {
+    void fetchData();
+  }
+});
 
 const fetchData = async () => {
   try {
@@ -267,20 +266,6 @@ const chartOption = computed(() => {
     series,
   };
 });
-
-// Watch for dialog open/close
-watch(isOpen, (newValue) => {
-  if (!newValue) {
-    // Note: We don't clear the store data here as it might be used elsewhere
-    // The store will handle its own data lifecycle
-  }
-});
-
-// Expose methods to parent
-defineExpose({
-  open,
-  close,
-});
 </script>
 
 <style lang="scss" scoped>
@@ -302,13 +287,16 @@ defineExpose({
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  padding: 2rem;
+  padding: 1rem;
 }
 
 .lever-selector-section {
-  max-width: 500px;
+  max-width: 400px;
   margin: auto;
   width: 100%;
+  border: 1px solid #c3c3c3;
+  padding: 1.5rem;
+  border-radius: 8px;
 }
 
 .popup-info-text {

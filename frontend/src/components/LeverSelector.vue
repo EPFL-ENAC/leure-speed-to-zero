@@ -50,7 +50,7 @@
   </div>
 
   <!-- Lever Data Popup -->
-  <LeverDataPopup ref="leverDataPopupRef" :lever-name="lever.code" />
+  <LeverDataPopup v-model="showLeverDialog" :lever-name="lever.code" />
 </template>
 
 <script setup lang="ts">
@@ -73,8 +73,8 @@ const emit = defineEmits<{
   change: [value: number];
 }>();
 
-// Refs
-const leverDataPopupRef = ref<InstanceType<typeof LeverDataPopup> | null>(null);
+// Dialog state
+const showLeverDialog = ref(false);
 
 const disabled = computed(() => props.lever.disabled || false);
 
@@ -115,17 +115,17 @@ function onChange(newValue: number | null) {
   }
 }
 
-// Open lever data popup
+// Open lever data popup using simple v-model approach
 function openLeverDataPopup() {
-  if (!disabled.value && leverDataPopupRef.value) {
-    leverDataPopupRef.value.open();
+  if (!disabled.value) {
+    showLeverDialog.value = true;
   }
 }
 </script>
 
 <style lang="scss" scoped>
 .lever-selector {
-  padding-bottom: 4px;
+  padding-bottom: 0.2rem;
 
   &.lever-disabled {
     opacity: 0.8;
@@ -155,7 +155,7 @@ function openLeverDataPopup() {
 
   // Popup variant - thicker track
   .variant-popup & {
-    height: 10px;
+    height: 8px;
   }
 }
 
@@ -185,8 +185,8 @@ function openLeverDataPopup() {
     border-radius: 50%;
     // Popup variant - thicker track
     .variant-popup & {
-      height: 26px !important;
-      width: 26px !important;
+      height: 20px !important;
+      width: 20px !important;
     }
   }
 }
@@ -225,10 +225,7 @@ function openLeverDataPopup() {
 
   // Popup variant styles
   .variant-popup & {
-    font-size: x-large;
-    line-height: 1.2em;
-    padding-bottom: 0.5em;
-    font-weight: 300;
+    font-size: larger;
     cursor: default;
   }
 }
