@@ -266,11 +266,19 @@ const chartOption = computed(() => {
     },
     tooltip: {
       trigger: 'axis',
+      appendToBody: true,
       formatter: (params: EChartsTooltipParam[]) => {
         const year = params[0]?.axisValueLabel;
         const unit = props.chartConfig.unit;
 
-        return params.reduce(
+        // Filter out mark area series from tooltip
+        const dataParams = params.filter(param => 
+          !param.seriesName.includes('__') && 
+          param.seriesName !== '__historicalMarkArea__' && 
+          param.seriesName !== '__forecastMarkArea__'
+        );
+
+        return dataParams.reduce(
           (text, param, i) =>
             `${text}${i === 0 ? `${year}<br/>` : ''}${param.marker} ${param.seriesName}: ${param.value} ${unit}<br/>`,
           '',
@@ -374,8 +382,14 @@ const chartOption = computed(() => {
 @media screen and (max-width: 600px) {
   .chart-card {
     min-width: 100%;
-    min-height: 400px;
-    height: 55vh;
+    height: 450px;
+    margin: 4px 0;
+  }
+}
+
+@media screen and (max-width: 400px) {
+  .chart-card {
+    height: 400px;
   }
 }
 </style>
