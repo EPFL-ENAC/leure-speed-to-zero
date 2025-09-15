@@ -204,6 +204,7 @@ const chartOption = computed(() => {
     symbol: 'none',
     data: series.data,
   }));
+  const legendData = series.map((serie) => serie.name);
 
   return {
     tooltip: {
@@ -221,18 +222,20 @@ const chartOption = computed(() => {
     legend: props.minimal
       ? undefined
       : {
-          orient: 'horizontal',
           type: 'scroll',
-          bottom: '10%',
-          height: '30%',
-          width: '80%',
+          orient: 'none',
+          bottom: 0,
+          height: '15%',
+          data: legendData,
+          width: '90%',
         },
     grid: {
-      top: '15%',
-      bottom: props.minimal ? '5%' : '20%',
+      top: props.minimal ? '15%' : '8%',
+      bottom: props.minimal ? '5%' : '18%',
       containLabel: true,
       left: '0%',
       right: '0%',
+      width: '100%',
     },
     xAxis: {
       type: 'time',
@@ -241,7 +244,7 @@ const chartOption = computed(() => {
       type: 'value',
       name: chartUnit.value,
       nameLocation: 'end',
-      nameTextStyle: { padding: [0, 0, 0, 5] },
+      nameTextStyle: { padding: [0, 25, 0, 0] },
       axisLabel: {
         formatter: function (value: number) {
           // Use scientific notation for values larger than 10,000 or smaller than 0.001
@@ -260,13 +263,15 @@ const chartOption = computed(() => {
             xAxisIndex: 0,
             filterMode: 'none',
           },
-          {
-            type: 'slider',
-            xAxisIndex: 0,
-            filterMode: 'none',
-            bottom: '1%',
-            height: 30,
-          },
+          // {
+          //   type: 'slider',
+          //   xAxisIndex: 0,
+          //   filterMode: 'none',
+          //   top: 0,
+          //   width: '90%',
+          //   left: '5%',
+          //   height: 30,
+          // },
         ],
     series,
   };
