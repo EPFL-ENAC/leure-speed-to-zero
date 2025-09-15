@@ -263,7 +263,7 @@ const chartOption = computed(() => {
 
 <style lang="scss" scoped>
 .chart-card {
-  min-width: 400px;
+  min-width: 500px;
   height: 450px;
   display: flex;
   flex-direction: column;
@@ -296,5 +296,13 @@ const chartOption = computed(() => {
 
 .chart {
   height: 100%;
+}
+
+@media screen and (max-width: 600px) {
+  .chart-card {
+    min-width: 100%;
+    min-height: 400px;
+    height: 55vh;
+  }
 }
 </style>
