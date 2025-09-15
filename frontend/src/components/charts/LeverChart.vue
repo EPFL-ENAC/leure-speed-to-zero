@@ -263,15 +263,6 @@ const chartOption = computed(() => {
             xAxisIndex: 0,
             filterMode: 'none',
           },
-          // {
-          //   type: 'slider',
-          //   xAxisIndex: 0,
-          //   filterMode: 'none',
-          //   top: 0,
-          //   width: '90%',
-          //   left: '5%',
-          //   height: 30,
-          // },
         ],
     series,
   };
