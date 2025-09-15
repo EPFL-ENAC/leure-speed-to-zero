@@ -146,19 +146,59 @@ const chartOption = computed(() => {
 
   // Get the max year from data to determine chart end
   const maxYear = Math.max(...chartData.value.flatMap((series) => series.years));
+  const minYear = Math.min(...chartData.value.flatMap((series) => series.years));
+
+  // Create mark area configuration for historical period
+  const historicalMarkArea = {
+    silent: true,
+    itemStyle: {
+      color: 'rgba(76, 175, 80, 0.05)',
+      borderColor: 'rgba(76, 175, 80, 0.2)',
+      borderWidth: 1,
+    },
+    label: {
+      show: true,
+      position: 'insideTopLeft',
+      formatter: 'Historical Data',
+      fontSize: 12,
+      color: '#388e3c',
+      fontWeight: 'bold',
+      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+      padding: [4, 8],
+      borderRadius: 4,
+    },
+    data: [
+      [
+        {
+          name: 'Historical Period',
+          xAxis: new Date(minYear, 0, 1).getTime(),
+        },
+        {
+          xAxis: new Date(2023, 11, 31).getTime(), // December 31st, 2023
+        },
+      ],
+    ],
+  };
 
   // Create mark area configuration for forecast period
   const forecastMarkArea = {
     silent: true,
     itemStyle: {
-      color: 'rgba(128, 128, 128, 0.15)',
+      color: 'rgba(74, 144, 226, 0.08)',
+      borderColor: 'rgba(74, 144, 226, 0.3)',
+      borderWidth: 1,
+      borderType: 'dashed',
     },
     label: {
       show: true,
-      position: 'top',
+      position: 'insideTopRight',
       formatter: 'Model Forecast',
-      fontSize: 11,
-      color: '#666',
+      fontSize: 12,
+      color: '#1976d2',
+      fontWeight: 'bold',
+      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+      padding: [4, 8],
+      borderRadius: 4,
     },
     data: [
       [
@@ -186,8 +226,20 @@ const chartOption = computed(() => {
   }));
 
   // Create the invisible markArea series
-  const markAreaSeries = {
-    name: '__markArea__', // Hidden series name
+  const historicalMarkAreaSeries = {
+    name: '__historicalMarkArea__', // Hidden series name
+    type: 'line',
+    data: [], // No data points
+    symbol: 'none',
+    lineStyle: { opacity: 0 }, // Invisible line
+    markArea: historicalMarkArea,
+    showSymbol: false,
+    legendHoverLink: false,
+  };
+
+  // Create the forecast markArea series
+  const forecastMarkAreaSeries = {
+    name: '__forecastMarkArea__', // Hidden series name
     type: 'line',
     data: [], // No data points
     symbol: 'none',
@@ -198,16 +250,19 @@ const chartOption = computed(() => {
   };
 
   // Combine all series
-  const allSeries = [...series, markAreaSeries];
+  const allSeries = [...series, historicalMarkAreaSeries, forecastMarkAreaSeries];
   const legendData = series.map((serie) => serie.name);
 
   return {
     title: {
       text: props.chartConfig.title,
       textStyle: {
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: 'bold',
+        color: '#333',
       },
+      left: 'center',
+      top: 10,
     },
     tooltip: {
       trigger: 'axis',
@@ -223,18 +278,24 @@ const chartOption = computed(() => {
       },
     },
     legend: {
-      type: 'scroll',
-      orient: 'none',
+      type: 'plain',
+      orient: 'horizontal',
       bottom: 0,
-      height: '10%',
+      left: 'center',
+      itemGap: 15,
+      itemWidth: 14,
+      itemHeight: 14,
+      textStyle: {
+        fontSize: 11,
+      },
       data: legendData,
       selected: legendSelected.value,
     },
     grid: {
-      top: '20%',
+      top: '15%',
       left: '5%',
       right: '5%',
-      bottom: '13%',
+      bottom: '15%',
       containLabel: true,
     },
     xAxis: {
@@ -263,10 +324,22 @@ const chartOption = computed(() => {
 
 <style lang="scss" scoped>
 .chart-card {
-  min-width: 500px;
-  height: 450px;
+  min-width: 600px;
+  height: 500px;
   display: flex;
   flex-direction: column;
+  margin: 8px;
+  
+  // Responsive sizing for optimal layout
+  @media screen and (min-width: 1800px) {
+    min-width: 650px;
+    height: 550px;
+  }
+  
+  @media screen and (max-width: 1400px) {
+    min-width: 550px;
+    height: 480px;
+  }
 }
 
 .chart-section {

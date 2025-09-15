@@ -222,12 +222,17 @@ const chartOption = computed(() => {
     legend: props.minimal
       ? undefined
       : {
-          type: 'scroll',
-          orient: 'none',
+          type: 'plain',
+          orient: 'horizontal',
           bottom: 0,
-          height: '15%',
+          left: 'center',
+          itemGap: 15,
+          itemWidth: 14,
+          itemHeight: 14,
+          textStyle: {
+            fontSize: 11,
+          },
           data: legendData,
-          width: '90%',
         },
     grid: {
       top: props.minimal ? '15%' : '8%',

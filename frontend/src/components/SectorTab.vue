@@ -48,7 +48,7 @@
               :key="tab.route"
               :name="tab.route"
             >
-              <div class="row flex-wrap">
+              <div class="charts-grid">
                 <chart-card
                   v-for="chartId in tab.charts"
                   :chart-config="config.charts[chartId] as ChartConfig"
@@ -65,7 +65,7 @@
               <div class="mobile-tab-header">
                 <div class="text-h6 mobile-tab-title">{{ tab.title }}</div>
               </div>
-              <div class="row flex-wrap">
+              <div class="charts-grid">
                 <chart-card
                   v-for="chartId in tab.charts"
                   :chart-config="config.charts[chartId] as ChartConfig"
@@ -193,7 +193,10 @@ async function runModel() {
   flex-shrink: 0;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 100;
+  background-color: white;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .content-area {
@@ -208,6 +211,24 @@ async function runModel() {
   overflow-y: auto;
   overflow-x: hidden;
   padding-bottom: 200px;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+  gap: 16px;
+  padding: 16px;
+  
+  @media screen and (max-width: 1400px) {
+    grid-template-columns: repeat(auto-fit, minmax(550px, 1fr));
+    gap: 12px;
+    padding: 12px;
+  }
+  
+  @media screen and (max-width: 1200px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 }
 
 .graph-placeholder {
@@ -243,27 +264,29 @@ async function runModel() {
 }
 
 .mobile-tab-section {
-  margin-bottom: 5rem;
+  margin-bottom: 3rem;
 
   &:not(:first-child) {
-    margin-top: 3rem;
+    margin-top: 2rem;
   }
 }
 
 .mobile-tab-header {
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  position: relative;
+  padding: 1rem 0.5rem;
+  margin-bottom: 1rem;
   text-align: center;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid var(--q-primary);
 }
 
 .mobile-tab-title {
   margin: 0;
   color: rgba(0, 0, 0, 0.87);
-  font-weight: 500;
-  font-size: 1.125rem;
-  line-height: 1.4;
-  letter-spacing: 0.0125em;
+  font-weight: 600;
+  font-size: 1.1rem;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
 }
 
 :deep(.q-tabs) {
