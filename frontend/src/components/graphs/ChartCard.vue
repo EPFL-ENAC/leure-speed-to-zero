@@ -153,6 +153,8 @@ const chartOption = computed(() => {
     itemStyle: { color: series.color },
     data: series.data,
   }));
+  const legendData = series.map((serie) => serie.name);
+
   return {
     title: {
       text: props.chartConfig.title,
@@ -175,16 +177,18 @@ const chartOption = computed(() => {
       },
     },
     legend: {
-      orient: 'horizontal',
       type: 'scroll',
-      bottom: '0%',
+      orient: 'none',
+      bottom: 0,
+      height: '10%',
+      data: legendData,
       selected: legendSelected.value,
     },
     grid: {
       top: '20%',
       left: '5%',
       right: '5%',
-      bottom: '10%',
+      bottom: '13%',
       containLabel: true,
     },
 
