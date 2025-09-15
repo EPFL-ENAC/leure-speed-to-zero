@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.6.0](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.5.0...v0.6.0) (2025-09-15)
+
+
+### Features
+
+* **backend:** add test endpoint for lever data extraction functionality ([a634139](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/a6341392802a814dcf9283c31500474bed953bc1))
+* clicks on kpi box navigate to route tab [#31](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/31) ([ea8cfc0](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/ea8cfc0bc2190b4844b62771b616738e4481c860))
+* **front:** use the order from sectors in leversData to display [#24](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/24) ([d1b85f6](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/d1b85f6f56018c7727cdef7088bed741879d6f56))
+* **kpi:** add hover tooltip + redesign kpi [#31](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/31) [#27](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/27) ([a12ea73](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/a12ea73819d9ac8f42c85d5e1db5d5ae6f0a24d1))
+* **lever:** add disabled option for levers [#30](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/30) ([c43b0cd](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/c43b0cd705bf75c7f9730f57da18857edb58ac88))
+* **lever:** add lever detail popup using data from model [#30](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/30) [#6](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/6) ([e86c486](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/e86c486b0cb2ace9d8dfc9303409706155ed04fb))
+* **lever:** add lever expand chart details ([94ac90a](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/94ac90a12cc76e79257030623396b1b6769f985b))
+
+
+### Bug Fixes
+
+* **chart:** fix category selection persistence when levers are modified & fix line chart instead of bar [#26](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/26) ([7d2137f](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/7d2137f8c362510ae8563e90cacda43629d33f72))
+* **front:** fix kpi logic [#9](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/9) ([57734e7](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/57734e7f59806cbdf08270c86b196b5455c0a7fa))
+* **front:** update miniState initialization for consistent mobile behavior ([552fed0](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/552fed0cbf1f807f8a78547d3bdedf9b6a38bbf9))
+* **kpi:** simplify kpi status ring styling by removing box shadow and adjusting border ([0d08fb3](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/0d08fb366bb1148cbacd4125cc2e5669381e5cb3))
+* minor visual fixes ([0693116](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/069311692e47cc8a64d62a3215779f947153d172))
+
 ## [0.5.0](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.4.1...v0.5.0) (2025-08-13)
 
 
