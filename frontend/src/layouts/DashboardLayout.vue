@@ -63,14 +63,11 @@
     </q-drawer>
 
     <q-page-container>
-      <div
-        class="row responsive-layout"
-        :style="{ height: $q.screen.lt.md ? 'calc(100vh - 50px)' : '100vh' }"
-      >
+      <div class="row" :style="{ height: $q.screen.lt.md ? 'calc(100vh - 50px)' : '100vh' }">
         <!-- Main Content Column -->
         <div class="col right-column">
           <q-page class="column full-height">
-            <div class="col full-width overflow-scroll">
+            <div class="col full-width">
               <router-view />
             </div>
           </q-page>

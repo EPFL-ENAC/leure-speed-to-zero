@@ -6,7 +6,13 @@
         <p>No data available</p>
       </div>
       <div v-else class="chart-visualization">
-        <v-chart ref="chartRef" class="chart" :option="chartOption" autoresize />
+        <v-chart
+          ref="chartRef"
+          class="chart"
+          autoresize
+          :option="chartOption"
+          @legendselectchanged="handleLegendSelectChanged"
+        />
       </div>
     </q-card-section>
   </q-card>
@@ -19,6 +25,7 @@ import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { LineChart, BarChart } from 'echarts/charts';
 import type { SectorData, ChartConfig } from 'stores/leversStore';
+import type { ECharts } from 'echarts/core';
 import {
   TitleComponent,
   TooltipComponent,
@@ -69,7 +76,15 @@ const props = defineProps<{
   modelData: SectorData;
 }>();
 
-const chartRef = ref(null);
+const chartRef = ref<ECharts>();
+
+// Track legend selection state
+const legendSelected = ref<Record<string, boolean>>({});
+
+// Handle legend selection changes
+const handleLegendSelectChanged = (params: { selected: Record<string, boolean> }) => {
+  legendSelected.value = { ...params.selected };
+};
 
 // Extract chart data from model results
 const chartData = computed<ChartSeries[]>(() => {
@@ -131,15 +146,13 @@ const chartOption = computed(() => {
   const isStacked = props.chartConfig.type.toLowerCase() === 'stackedarea';
   const series = chartData.value.map((series) => ({
     name: series.name,
-    type: isStacked ? 'line' : 'bar',
+    type: 'line',
     stack: isStacked ? 'total' : undefined,
     symbol: 'none',
     areaStyle: isStacked ? {} : undefined,
-    emphasis: { focus: 'series' },
     itemStyle: { color: series.color },
     data: series.data,
   }));
-
   return {
     title: {
       text: props.chartConfig.title,
@@ -165,6 +178,7 @@ const chartOption = computed(() => {
       orient: 'horizontal',
       type: 'scroll',
       bottom: '0%',
+      selected: legendSelected.value,
     },
     grid: {
       top: '20%',

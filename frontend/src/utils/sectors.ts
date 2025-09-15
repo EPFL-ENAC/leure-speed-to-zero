@@ -40,19 +40,20 @@ export const sectors: Sector[] = [
   //   { label: 'Sports', value: 'sports', icon: 'sports_soccer' },
 ];
 
-export interface Threshold {
-  value: number;
-  label: string;
-}
-
-export interface KPI {
+export interface KPIConfig {
   name: string;
-  value: number;
-  route?: string;
+  route: string;
+  info: string;
   maximize: boolean;
   unit: string;
   thresholds: {
-    warning: Threshold;
-    danger: Threshold;
+    warning: number;
+    danger: number;
   };
 }
+export interface KpiData {
+  title: string;
+  value: number;
+  unit: string;
+}
+export interface KPI extends KpiData, KPIConfig {}
