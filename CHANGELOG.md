@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.6.0...v0.6.1) (2025-09-15)
+
+
+### Bug Fixes
+
+* **package:** pin @quasar/app-vite version to 2.2.0 ([d222633](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/d222633de922fb2505ce86c984d3cc196056e65c))
+
 ## [0.6.0](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.5.0...v0.6.0) (2025-09-15)
 
 
