@@ -151,19 +151,31 @@ const chartOption = computed(() => {
   const forecastMarkArea = {
     silent: true,
     itemStyle: {
-      color: 'rgba(128, 128, 128, 0.15)',
+      color: 'transparent', // No background fill
+      borderColor: '#999',
+      borderWidth: 2,
+      borderType: [5, 10],
+      opacity: 0.8,
     },
     label: {
       show: true,
       position: 'top',
-      formatter: 'Model Forecast',
       fontSize: 11,
       color: '#666',
     },
     data: [
       [
         {
-          name: 'Forecast Period',
+          name: 'Historical',
+          xAxis: new Date(1990, 0, 1).getTime(), // January 1st, 1990
+        },
+        {
+          xAxis: new Date(2024, 0, 1).getTime(), // January 1st, 2024
+        },
+      ],
+      [
+        {
+          name: 'Model Forecast',
           xAxis: new Date(2024, 0, 1).getTime(), // January 1st, 2024
         },
         {
