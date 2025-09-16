@@ -36,7 +36,7 @@
 import { computed } from 'vue';
 import { useLeverStore } from 'stores/leversStore';
 import LeverSelector from 'components/LeverSelector.vue';
-import LeverChart from 'components/charts/LeverChart.vue';
+import LeverChart from 'components/graphs/LeverChart.vue';
 import { type Lever, levers as leversConfigs } from 'src/utils/leversData';
 
 // Props
