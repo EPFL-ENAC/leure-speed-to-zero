@@ -77,8 +77,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import type { Lever } from 'src/utils/leversData';
-import LeverDataPopup from './LeverDataPopup.vue';
-import LeverChart from './charts/LeverChart.vue';
+import LeverDataPopup from 'src/components/LeverDataPopup.vue';
+import LeverChart from 'src/components/graphs/LeverChart.vue';
 
 const props = withDefaults(
   defineProps<{
