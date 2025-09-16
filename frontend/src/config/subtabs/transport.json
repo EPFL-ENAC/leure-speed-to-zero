@@ -209,26 +209,6 @@
         "tra_emissions-CO2e_freight_marine[Mt]",
         "tra_emissions-CO2e_freight_rail[Mt]"
       ]
-    },
-    "TransportExpenditures": {
-      "title": "Transport capital expenditures per mode",
-      "unit": "MEUR",
-      "type": "StackedArea",
-      "outputs": [
-        "tra_investment_households[MEUR]",
-        "tra_investment_trains[MEUR]",
-        "tra_investment_bus[MEUR]",
-        "tra_investment_trucks[MEUR]",
-        "tra_investment_ships[MEUR]",
-        "tra_investment_planes[MEUR]",
-        "tra_investment_infrastructure[MEUR]"
-      ]
-    },
-    "TransportEnergyCost": {
-      "title": "Transport energy cost",
-      "unit": "MEUR",
-      "type": "StackedArea",
-      "outputs": ["tra_energy-cost[MEUR]"]
     }
   }
 }
