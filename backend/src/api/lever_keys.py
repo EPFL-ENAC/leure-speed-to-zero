@@ -54,7 +54,7 @@ LEVER_KEYS = [
     "lever_biodiversity",
     "lever_land-prioritisation",
     "lever_pop",
-    "lever_urbpop",
+    "lever_ruminant-feed",
     "lever_ems-after-2050",
     "lever_food-net-import",
     "lever_product-net-import",
