@@ -1,5 +1,72 @@
 {
-  "kpis": [],
+  "kpis": [
+    {
+      "name": "Passenger land transport CO2",
+      "unit": "Mt",
+      "route": "passenger-emissions-mode",
+      "maximize": false,
+      "thresholds": {
+        "warning": 0.1,
+        "danger": 0.5
+      },
+      "info": "CO₂ emissions from how residents travel on land. Lower emissions mean better environmental outcomes and alignment with climate goals."
+    },
+    {
+      "name": "Passenger aviation CO2",
+      "unit": "Mt",
+      "route": "passenger-emissions-mode",
+      "maximize": false,
+      "thresholds": {
+        "warning": 1,
+        "danger": 3
+      },
+      "info": "The aviation emissions shown here represent the climate impact of flights taken by the resident population, including international trips.\nThey are expressed as CO₂-equivalent emissions to account not only for CO₂ but also for other warming effects from aviation, such as water vapour, nitrogen oxides (NOₓ), contrails, and short-lived ozone.\nFollowing best-practice estimates, we assume the total climate impact of aviation is approximately three times the impact of CO₂ emissions alone."
+    },
+    {
+      "name": "Passenger energy demand",
+      "unit": "TWh",
+      "route": "passenger-energy-demand",
+      "maximize": false,
+      "thresholds": {
+        "warning": 1,
+        "danger": 2
+      },
+      "info": " "
+    },
+    {
+      "name": "Electric car share",
+      "unit": "TWh",
+      "route": "passenger-distance",
+      "maximize": true,
+      "thresholds": {
+        "warning": 90,
+        "danger": 50
+      },
+      "info": " "
+    },
+    {
+      "name": "Freight energy demand",
+      "unit": "TWh",
+      "route": "freight-energy-demand",
+      "maximize": false,
+      "thresholds": {
+        "warning": 0.2,
+        "danger": 0.5
+      },
+      "info": " "
+    },
+    {
+      "name": "Low emission truck share",
+      "unit": "%",
+      "route": "trucks-technology-share",
+      "maximize": true,
+      "thresholds": {
+        "warning": 70,
+        "danger": 30
+      },
+      "info": " "
+    }
+  ],
   "subtabs": [
     {
       "title": "Passenger GHG emissions per mode",
