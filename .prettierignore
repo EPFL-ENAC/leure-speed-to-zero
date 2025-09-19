@@ -13,6 +13,10 @@ backend/.dockerignore
 **/__pycache__/
 *.pyc
 
+# Don't ignore markdown files
+!*.md
+!README.md
+
 # Docker files
 Dockerfile
 docker-compose.yml
