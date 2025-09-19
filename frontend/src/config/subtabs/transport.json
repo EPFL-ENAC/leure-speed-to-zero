@@ -156,7 +156,7 @@
         "tra_passenger_energy-demand-by-fuel_biojetfuel[TWh]",
         "tra_passenger_energy-demand-by-fuel_gas[TWh]",
         "tra_passenger_energy-demand-by-fuel_diesel[TWh]",
-        "tra_passenger_energy-demand-by-fuel_gasoline[TWh]",
+        "tra_passenger_energy-demand-by-fuel_gasoline[TWh]"
       ]
     },
     "PassengerAviationEnergyDemandPerTech": {
