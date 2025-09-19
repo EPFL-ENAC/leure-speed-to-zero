@@ -39,4 +39,21 @@ export const modelService = {
   getDatamatrix(name: string) {
     return apiClient.get(`/v1/datamatrix/${name}`);
   },
+
+  /**
+   * Get lever data for plotting/visualization
+   * @param leverName - The name of the lever to get data for (default: "lever_heatcool-behaviour")
+   * @param modules - Comma-separated list of modules (default: "transport,buildings")
+   * @param country - Country to get data for (optional, uses default region if not provided)
+   * @returns Promise with lever data results
+   */
+  getLeverData(leverName: string, modules?: string, country?: string) {
+    const params: Record<string, string> = {};
+    if (modules) params.modules = modules;
+    if (country) params.country = country;
+
+    return apiClient.get(`/v1/lever-data/${leverName}`, {
+      params,
+    });
+  },
 };
