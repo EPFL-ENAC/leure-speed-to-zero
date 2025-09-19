@@ -174,16 +174,16 @@
     "TrucksTechnologyShare": {
       "title": "Freight technology share",
       "unit": "%",
-      "type": "StackedAreaPercent",
+      "type": "StackedArea",
       "outputs": [
-        "tra_freight_technology-share-fleet_HDVH_BEV[%]",
-        "tra_freight_technology-share-fleet_HDVH_CEV[%]",
-        "tra_freight_technology-share-fleet_HDVH_FCEV[%]",
+        "tra_freight_technology-share-fleet_HDVH_ICE-gasoline[%]",
         "tra_freight_technology-share-fleet_HDVH_ICE-diesel[%]",
         "tra_freight_technology-share-fleet_HDVH_ICE-gas[%]",
-        "tra_freight_technology-share-fleet_HDVH_ICE-gasoline[%]",
+        "tra_freight_technology-share-fleet_HDVH_PHEV-gasoline[%]",
         "tra_freight_technology-share-fleet_HDVH_PHEV-diesel[%]",
-        "tra_freight_technology-share-fleet_HDVH_PHEV-gasoline[%]"
+        "tra_freight_technology-share-fleet_HDVH_FCEV[%]",
+        "tra_freight_technology-share-fleet_HDVH_BEV[%]",
+        "tra_freight_technology-share-fleet_HDVH_CEV[%]"
       ]
     },
     "PassengerGHGEmissionsPerMode": {
@@ -203,11 +203,11 @@
       "unit": "Mt",
       "type": "StackedArea",
       "outputs": [
-        "tra_emissions-CO2e_freight_aviation[Mt]",
-        "tra_emissions-CO2e_freight_HDV[Mt]",
-        "tra_emissions-CO2e_freight_IWW[Mt]",
-        "tra_emissions-CO2e_freight_marine[Mt]",
-        "tra_emissions-CO2e_freight_rail[Mt]"
+        "tra_emissions_freight_aviation_CO2[Mt]",
+        "tra_emissions_freight_HDV_CO2[Mt]",
+        "tra_emissions_freight_IWW_CO2[Mt]",
+        "tra_emissions_freight_marine_CO2[Mt]",
+        "tra_emissions_freight_rail_CO2[Mt]"
       ]
     }
   }
