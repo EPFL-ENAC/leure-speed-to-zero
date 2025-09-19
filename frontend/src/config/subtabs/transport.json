@@ -144,7 +144,7 @@
       ]
     },
     "PassengerEnergyDemandPerFuel": {
-      "title": "Passenger energy demand per fuel",
+      "title": "Passenger land transport energy demand per fuel",
       "unit": "TWh",
       "type": "StackedArea",
       "outputs": [
@@ -157,7 +157,6 @@
         "tra_passenger_energy-demand-by-fuel_gas[TWh]",
         "tra_passenger_energy-demand-by-fuel_diesel[TWh]",
         "tra_passenger_energy-demand-by-fuel_gasoline[TWh]",
-        "tra_passenger_energy-demand-by-fuel_kerosene[TWh]"
       ]
     },
     "PassengerAviationEnergyDemandPerTech": {
