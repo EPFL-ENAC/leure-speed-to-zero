@@ -431,7 +431,7 @@ export const levers: Lever[] = [
       { min: 1, max: 1, color: '#CFE3F7', label: 'Easy' },
       { min: 2, max: 2, color: '#92BFEB', label: 'Moderate' },
       { min: 3, max: 3, color: '#559ADE', label: 'Hard' },
-      { min: 4, max: 4, color: '#1876D2', label: 'Ambitious' },
+      { min: 4, max: 4, color: '#559ADE', label: 'Hard' },
     ],
   },
   {
