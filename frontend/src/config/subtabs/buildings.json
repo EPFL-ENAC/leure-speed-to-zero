@@ -6,8 +6,8 @@
       "route": "building-types-emissions",
       "maximize": false,
       "thresholds": {
-        "warning": 0.42,
-        "danger": 0.44
+        "warning": 0.15,
+        "danger": 0.3
       },
       "info": "Total CO2 emissions from buildings including space heating across all energy carriers. Lower values indicate better environmental performance and progress toward climate goals."
     },
@@ -17,8 +17,8 @@
       "route": "energy-carriers",
       "maximize": false,
       "thresholds": {
-        "warning": 4.0,
-        "danger": 5.0
+        "warning": 1.5,
+        "danger": 2.5
       },
       "info": "Total energy delivered for space heating in residential buildings. This includes all heating sources but excludes ambient heat extracted by heat pumps, reflecting only the actual energy input required for heating."
     },
