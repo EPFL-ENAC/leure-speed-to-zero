@@ -1188,6 +1188,28 @@ export const PLOT_LABELS: Record<string, string> = {
   'tra_passenger_veh-efficiency_new_LDV_ICE-gasoline': 'Gasoline Cars',
   'tra_passenger_veh-efficiency_new_LDV_PHEV-diesel': 'Plug-in Hybrid Diesel Cars',
   'tra_passenger_veh-efficiency_new_LDV_PHEV-gasoline': 'Plug-in Hybrid Gasoline Cars',
+  'harvest-rate_coniferous[m3/ha]': 'Coniferous',
+  'harvest-rate_non-coniferous[m3/ha]': 'Non-Coniferous',
+  'harvest-rate_total[m3/ha]': 'Total',
+  'harvested-wood_coniferous[m3]': 'Coniferous',
+  'harvested-wood_non-coniferous[m3]': 'Non-Coniferous',
+  'woodfuel[m3]': 'Woodfuel',
+  'sawlogs[m3]': 'Sawlogs',
+  'industrial-wood[m3]': 'Industrial-wood',
+  'any-other-wood[m3]': 'Other',
+  'wood-demand-per-species_woodfuel_coniferous[m3]': 'Coniferous',
+  'wood-demand-per-species_woodfuel_non-coniferous[m3]': 'Non-Coniferous',
+  'wood-supply_industrial-byproducts[m3]': 'Industrial byproduct',
+  'wood-supply_harvested-wood[m3]': 'Harvested wood',
+  'wood-supply_waste-wood[m3]': 'Waste wood',
+  'exploited-forest[ha]': 'Exploited',
+  'unexploited-forest[ha]': 'Unexploited',
+  'wood-use_sawlogs_coniferous[m3]': 'Sawlogs, Coniferous',
+  'wood-use_sawlogs_non-coniferous[m3]': 'Sawlogs, Non-Coniferous',
+  'wood-use_industrial-wood_coniferous[m3]': 'Industrial wood, Coniferous',
+  'wood-use_industrial-wood_non-coniferous[m3]': 'Industrial wood, Non-coniferous',
+  'wood-use_any-other-wood_coniferous[m3]': 'Other, Coniferous',
+  'wood-use_any-other-wood_non-coniferous[m3]': 'Other, Non-Coniferous'
 };
 
 export function getPlotLabel(key: string) {
