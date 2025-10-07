@@ -61,8 +61,10 @@
 
           <!-- Mobile view -->
           <div v-else class="q-pa-md">
-            <div v-for="tab in config.subtabs" :key="tab.route" class="q-mb-lg">
-              <div class="text-h6 q-mb-md title">{{ tab.title }}</div>
+            <div v-for="tab in config.subtabs" :key="tab.route" class="mobile-tab-section">
+              <div class="mobile-tab-header">
+                <div class="text-h6 mobile-tab-title">{{ tab.title }}</div>
+              </div>
               <div class="row flex-wrap">
                 <chart-card
                   v-for="chartId in tab.charts"
@@ -71,6 +73,7 @@
                   :model-data="modelResults"
                 />
               </div>
+              <q-separator class="q-mt-xl"></q-separator>
             </div>
           </div>
           <div class="kpis-section">
@@ -237,6 +240,30 @@ async function runModel() {
 
 .title {
   padding: 1em 0 0 0;
+}
+
+.mobile-tab-section {
+  margin-bottom: 5rem;
+
+  &:not(:first-child) {
+    margin-top: 3rem;
+  }
+}
+
+.mobile-tab-header {
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  text-align: center;
+}
+
+.mobile-tab-title {
+  margin: 0;
+  color: rgba(0, 0, 0, 0.87);
+  font-weight: 500;
+  font-size: 1.125rem;
+  line-height: 1.4;
+  letter-spacing: 0.0125em;
 }
 
 :deep(.q-tabs) {
