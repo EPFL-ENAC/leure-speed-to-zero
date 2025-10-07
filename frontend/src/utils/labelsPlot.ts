@@ -1174,8 +1174,8 @@ export const PLOT_LABELS: Record<string, string> = {
   'tra_passenger_energy-demand_aviation_SAF[TWh]': 'SAF-fueled',
   'tra_passenger_energy-demand_aviation_kerosene[TWh]': 'Kerosene-fueled',
   'tra_passenger_emissions_aviation_BEV_CO2[Mt]': 'Electric',
-  'tra_passenger_emissions_aviation_H2_CO2[Mt]':'Hydrogen',
-  'tra_passenger_emissions_aviation_SAF_CO2[Mt]':'SAF-fueled',
+  'tra_passenger_emissions_aviation_H2_CO2[Mt]': 'Hydrogen',
+  'tra_passenger_emissions_aviation_SAF_CO2[Mt]': 'SAF-fueled',
   'tra_passenger_emissions_aviation_kerosene_CO2[Mt]': 'Kerosene-fueled',
   'tra_passenger-emissions-local_aviation[Mt]': 'Domestic',
   'tra_passenger-emissions-total_aviation[Mt]': 'Domestic + International',
@@ -1188,12 +1188,12 @@ export const PLOT_LABELS: Record<string, string> = {
   'tra_passenger_modal-share_rail': 'Rail',
   'tra_passenger_modal-share_bike': 'Bike',
   'tra_passenger_modal-share_walk': 'Walk',
-  'tra_passenger_occupancy_LDV': 'Car',
-  'tra_passenger_occupancy_2W': 'Two-wheelers',
-  'tra_passenger_occupancy_bus': 'Bus',
-  'tra_passenger_occupancy_metrotram': 'Metro-Tram',
-  'tra_passenger_occupancy_aviation': 'Aviation',
-  'tra_passenger_occupancy_rail': 'Rail',
+  tra_passenger_occupancy_LDV: 'Car',
+  tra_passenger_occupancy_2W: 'Two-wheelers',
+  tra_passenger_occupancy_bus: 'Bus',
+  tra_passenger_occupancy_metrotram: 'Metro-Tram',
+  tra_passenger_occupancy_aviation: 'Aviation',
+  tra_passenger_occupancy_rail: 'Rail',
   'tra_fuel-mix_biofuel_aviation': 'Biofuel share in aviation',
   'tra_fuel-mix_biofuel_road': 'Biofuel share in cars',
   'tra_passenger_utilisation-rate_LDV': 'Car',
@@ -1230,7 +1230,7 @@ export const PLOT_LABELS: Record<string, string> = {
   'wood-use_industrial-wood_coniferous[m3]': 'Industrial wood, Coniferous',
   'wood-use_industrial-wood_non-coniferous[m3]': 'Industrial wood, Non-coniferous',
   'wood-use_any-other-wood_coniferous[m3]': 'Other, Coniferous',
-  'wood-use_any-other-wood_non-coniferous[m3]': 'Other, Non-Coniferous'
+  'wood-use_any-other-wood_non-coniferous[m3]': 'Other, Non-Coniferous',
 };
 
 export function getPlotLabel(key: string) {

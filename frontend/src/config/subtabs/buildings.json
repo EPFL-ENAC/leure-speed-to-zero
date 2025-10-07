@@ -195,16 +195,13 @@
         "bld_hot-water_energy-demand_wood[TWh]",
         "bld_hot-water_energy-demand_solar[TWh]",
         "bld_hot-water_energy-demand_heat-pump[TWh]"
-        ]
+      ]
     },
     "AppliancesLightRes": {
       "title": "Appliances and Lighting - residential electricity consumption",
       "type": "StackedArea",
       "unit": "TWh",
-      "outputs": [
-        "bld_residential-lighting[TWh]",
-        "bld_appliances_tot-elec-demand[TWh]"
-        ]
+      "outputs": ["bld_residential-lighting[TWh]", "bld_appliances_tot-elec-demand[TWh]"]
     },
     "NonResByType": {
       "title": "Non-residential energy consumption by end-use",
@@ -215,7 +212,7 @@
         "bld_services_energy-consumption_lighting[TWh]",
         "bld_services_energy-consumption_hot-water[TWh]",
         "bld_services_energy-consumption_space-heating[TWh]"
-        ]
+      ]
     },
     "NonResByFuel": {
       "title": "Non-residential energy consumption by fuel",

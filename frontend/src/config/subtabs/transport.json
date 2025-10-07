@@ -70,17 +70,29 @@
   "subtabs": [
     {
       "title": "Passenger GHG emissions per mode",
-      "charts": ["PassengerGHGEmissionsPerMode", "PassengerAviationEmissionsTech", "PassengerAviationEmissionsLocal"],
+      "charts": [
+        "PassengerGHGEmissionsPerMode",
+        "PassengerAviationEmissionsTech",
+        "PassengerAviationEmissionsLocal"
+      ],
       "route": "passenger-emissions-mode"
     },
     {
       "title": "Passenger energy demand",
-      "charts": ["PassengerEnergyDemandPerMode", "PassengerEnergyDemandPerFuel", "PassengerAviationEnergyDemandPerTech"],
+      "charts": [
+        "PassengerEnergyDemandPerMode",
+        "PassengerEnergyDemandPerFuel",
+        "PassengerAviationEnergyDemandPerTech"
+      ],
       "route": "passenger-energy-demand"
     },
     {
       "title": "Passenger transport demand and fleet",
-      "charts": ["PassengerDistancePerMode", "PassengerDistanceVkmPerMode", "PassengerVehiclesFleet"],
+      "charts": [
+        "PassengerDistancePerMode",
+        "PassengerDistanceVkmPerMode",
+        "PassengerVehiclesFleet"
+      ],
       "route": "passenger-distance"
     },
     {
