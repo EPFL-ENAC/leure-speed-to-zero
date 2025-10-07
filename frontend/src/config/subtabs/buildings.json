@@ -79,7 +79,7 @@
   ],
   "charts": {
     "SHGHGEmissionsPerBuildingType": {
-      "title": "CO2 emissions for space heating per building type",
+      "title": "CO2 emissions for residential space heating per building type",
       "type": "StackedArea",
       "unit": "Mt",
       "outputs": [
@@ -91,7 +91,7 @@
       ]
     },
     "GHGEmissionsPerCarrier": {
-      "title": "CO2 emissions for heating per carrier",
+      "title": "CO2 emissions for residential heating per carrier",
       "type": "StackedArea",
       "unit": "Mt",
       "outputs": [
@@ -108,7 +108,7 @@
       ]
     },
     "SHEnergyDemandPerCarrier": {
-      "title": "Demand for space heating per heating technology",
+      "title": "Demand for residential space heating per heating technology",
       "type": "StackedArea",
       "unit": "TWh",
       "outputs": [
@@ -124,7 +124,7 @@
       ]
     },
     "EnergyDemandPerCarrier": {
-      "title": "Final energy demand for heating per carrier",
+      "title": "Final energy demand for residential heating per carrier",
       "type": "StackedArea",
       "unit": "TWh",
       "outputs": [
@@ -141,7 +141,7 @@
       ]
     },
     "FloorAreaPerBuildingType": {
-      "title": "Floor area per envelope class",
+      "title": "Residential energy reference area per envelope class",
       "type": "StackedArea",
       "unit": "Mm²",
       "outputs": [
@@ -153,7 +153,7 @@
       ]
     },
     "SHEnergyDemandPerBuildingType": {
-      "title": "Demand for space heating per envelope class",
+      "title": "Demand for residential space heating per envelope class",
       "type": "StackedArea",
       "unit": "TWh",
       "outputs": [
@@ -165,7 +165,7 @@
       ]
     },
     "FloorAreaBldType": {
-      "title": "Building stock by type",
+      "title": "Residential building stock by type",
       "type": "StackedArea",
       "unit": "Mm²",
       "outputs": [
@@ -174,7 +174,7 @@
       ]
     },
     "FloorAreaRenovationConstruction": {
-      "title": "Renovated and constructed floor area",
+      "title": "Renovated and constructed residential floor area",
       "type": "StackedArea",
       "unit": "Mm²",
       "outputs": [
