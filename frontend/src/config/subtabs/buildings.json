@@ -9,7 +9,7 @@
         "warning": 0.15,
         "danger": 0.3
       },
-      "info": "Total CO2 emissions from buildings including space heating across all energy carriers. Lower values indicate better environmental performance and progress toward climate goals."
+      "info": "Total CO2 emissions in 2050 from residential buildings including space heating across all energy carriers. Lower values indicate better environmental performance and progress toward climate goals."
     },
     {
       "name": "Energy Demand for Space Heating",
@@ -20,7 +20,7 @@
         "warning": 1.5,
         "danger": 2.5
       },
-      "info": "Total energy delivered for space heating in residential buildings. This includes all heating sources but excludes ambient heat extracted by heat pumps, reflecting only the actual energy input required for heating."
+      "info": "Total energy delivered for space heating in residential buildings, in 2050. This includes all heating sources but excludes ambient heat extracted by heat pumps, reflecting only the actual energy input required for heating."
     },
     {
       "name": "A-C class",
@@ -31,7 +31,7 @@
         "warning": 60,
         "danger": 40
       },
-      "info": "Share of residential floor area with high-quality thermal envelopes (categories A, B, C). The rating reflects the building envelope's thermal resistance including insulation, windows, and thermal bridges based on CECB classification."
+      "info": "Share of residential floor area with high-quality thermal envelopes (categories A, B, C), in 2050. The rating reflects the building envelope's thermal resistance including insulation, windows, and thermal bridges based on CECB classification."
     },
     {
       "name": "Unrenovated Envelope Share",
@@ -42,7 +42,7 @@
         "warning": 30,
         "danger": 50
       },
-      "info": "Share of residential floor area that has not undergone envelope renovation. This includes buildings whose envelope efficiency class has not improved since construction, indicating poor thermal performance."
+      "info": "Share of residential floor area that has not undergone envelope renovation in 2050. This includes buildings whose envelope efficiency class has not improved since construction, indicating poor thermal performance."
     }
   ],
   "subtabs": [
