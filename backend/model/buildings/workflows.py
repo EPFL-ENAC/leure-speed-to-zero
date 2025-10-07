@@ -250,6 +250,9 @@ def bld_floor_area_workflow(DM_floor_area, dm_lfs, cdm_const, years_ots,
                                      'bld_floor-area_renovated-cumulated'],
                        'Years': years_ots + years_fts},
                       inplace=True)
+  dm_cumulated.deepen(based_on='Variables')
+  dm_cumulated.change_unit('bld_floor-area', old_unit='m2', new_unit='Mm2', factor=1e-6)
+  dm_cumulated = dm_cumulated.flatten()
 
   dm_bld_tot.filter({'Years': years_ots + years_fts}, inplace=True)
 
@@ -297,6 +300,10 @@ def bld_floor_area_workflow(DM_floor_area, dm_lfs, cdm_const, years_ots,
 
   dm_stock = dm_bld_tot.filter({'Variables': ['bld_floor-area_stock']})
   dm_stock.array = np.maximum(dm_stock.array, 0)
+
+  dm_stock = dm_bld_tot.filter({'Variables': ['bld_floor-area_stock']})
+  dm_stock.change_unit('bld_floor-area_stock', old_unit='m2', new_unit='Mm2',
+                       factor=1e-6)
 
   DM_floor_out = \
     {'TPE': {'floor-area-cumulated': dm_cumulated,
@@ -377,10 +384,10 @@ def bld_energy_workflow(DM_energy, dm_clm, dm_floor_area, cdm_const):
                 unit='TWh')
 
   # SECTION Calibrate heating energy demand
-  dm_calib = DM_energy['heating-calibration']
-  dm_calib.sort('Categories1')
-  dm_energy.array[...] = dm_energy.array[...] * dm_calib.array[:, :, :,
-                                                np.newaxis, np.newaxis, :]
+  #dm_calib = DM_energy['heating-calibration']
+  #dm_calib.sort('Categories1')
+  #dm_energy.array[...] = dm_energy.array[...] * dm_calib.array[:, :, :,
+  #                                              np.newaxis, np.newaxis, :]
 
   # write datamatrix to pickle
   # current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -499,7 +506,7 @@ def bld_energy_workflow(DM_energy, dm_clm, dm_floor_area, cdm_const):
                              {'Variables': ['bld_energy-demand_cooling'],
                               'Categories1': ['heat-pump']}),
                            'emissions': dm_emissions},
-                   'power': dm_power,
+                   'power': dm_fuel.copy(),
                    'district-heating': dm_district_heating,
                    'agriculture': dm_fuel.filter(
                      {'Variables': ['bld_energy-demand_heating'],
@@ -552,6 +559,7 @@ def bld_appliances_workflow(DM_appliances, dm_pop):
                                                               :])
 
   dm_appliance.filter({'Years': dm_pop.col_labels['Years']}, inplace=True)
+  dm_appliance.change_unit('bld_appliances_tot-elec-demand', old_unit='kWh', new_unit='TWh', factor=1e-9 )
 
   DM_appliance_out = {
     'power': dm_appliance.filter(
@@ -1079,6 +1087,8 @@ def compute_eff_fts_based_on_heat_eff(dm_heating, dm_hw_eff,  years_ots, years_f
 
   dm_heat_eff.sort('Categories1')
 
+  dm_heat_eff.fill_nans('Years')
+
   return dm_heat_eff
 
 def bld_hotwater_workflow(DM_hotwater, dm_heating, dm_lfs, years_ots, years_fts):
@@ -1143,15 +1153,17 @@ def bld_services_workflow(DM_services, dm_heating, years_ots, years_fts):
   dm_demand = DM_services['services_demand']
   dm_demand.sort('Categories1')
 
-  arr_energy_consumption = (dm_demand[:, :, 'bld_services_useful-energy', :, np.newaxis]
-                            * dm_tech_mix[:, :, 'bld_services_tech-mix', :, :]
+  arr_useful_energy = (dm_demand[:, :, 'bld_services_useful-energy', :, np.newaxis]
+                       * dm_tech_mix[:, :, 'bld_services_tech-mix', :, :])
+  arr_energy_consumption = (arr_useful_energy
                             / dm_eff[:, :, 'bld_services_efficiency', np.newaxis, :])
 
+  dm_tech_mix.add(arr_useful_energy, dim='Variables', col_label='bld_services_useful-energy', unit='TWh')
   dm_tech_mix.add(arr_energy_consumption, dim='Variables', col_label='bld_services_energy-consumption', unit='TWh')
+
 
   DM_services_out = {
     'TPE' : dm_tech_mix.filter({'Variables': ['bld_services_energy-consumption']}),
-    'energy': dm_demand.filter({'Categories1': ['elec', 'lighting'], 'Categories2': ['electricity']})
-                     }
+    'energy': dm_tech_mix}
 
   return DM_services_out

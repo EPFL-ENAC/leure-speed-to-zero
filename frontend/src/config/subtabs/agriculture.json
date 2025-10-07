@@ -96,31 +96,30 @@
     "MeatProduction": {
       "title": "Meat production",
       "type": "StackedArea",
-      "unit": "kcal",
+      "unit": "t",
       "outputs": [
-        "agr_domestic_production_meat-bovine[kcal]",
-        "agr_domestic_production_meat-pig[kcal]",
-        "agr_domestic_production_meat-poultry[kcal]",
-        "agr_domestic_production_meat-sheep[kcal]",
-        "agr_domestic_production_meat-oth-animals[kcal]",
-        "agr_domestic_production_abp-dairy-milk[kcal]",
-        "agr_domestic_production_abp-hens-egg[kcal]"
+        "agr_domestic-production_afw_tpe_meat-bovine[t]",
+        "agr_domestic-production_afw_tpe_meat-pig[t]",
+        "agr_domestic-production_afw_tpe_meat-poultry[t]",
+        "agr_domestic-production_afw_tpe_meat-sheep[t]",
+        "agr_domestic-production_afw_tpe_meat-oth-animals[t]",
+        "agr_domestic-production_afw_tpe_abp-dairy-milk[t]",
+        "agr_domestic-production_afw_tpe_abp-hens-egg[t]"
       ]
     },
     "CropProduction": {
       "title": "Crop production",
       "type": "StackedArea",
-      "unit": "kcal",
+      "unit": "t",
       "outputs": [
-        "agr_domestic-production_afw_cereal[kcal]",
-        "agr_domestic-production_afw_fruit[kcal]",
-        "agr_domestic-production_afw_oilcrop[kcal]",
-        "agr_domestic-production_afw_pulse[kcal]",
-        "agr_domestic-production_afw_rice[kcal]",
-        "agr_domestic-production_afw_starch[kcal]",
-        "agr_domestic-production_afw_sugarcrop[kcal]",
-        "agr_domestic-production_afw_veg[kcal]",
-        "agr_domestic-production_afw_lgn-energycrop[kcal]"
+        "agr_domestic-production_afw_tpe_cereal[t]",
+        "agr_domestic-production_afw_tpe_fruit[t]",
+        "agr_domestic-production_afw_tpe_oilcrop[t]",
+        "agr_domestic-production_afw_tpe_pulse[t]",
+        "agr_domestic-production_afw_tpe_rice[t]",
+        "agr_domestic-production_afw_tpe_starch[t]",
+        "agr_domestic-production_afw_tpe_sugarcrop[t]",
+        "agr_domestic-production_afw_tpe_veg[t]"
       ]
     },
     "Feed": {
@@ -251,44 +250,48 @@
         "agr_demand_pro-liv-meat-sheep[kcal]",
         "agr_demand_rice[kcal]",
         "agr_demand_seafood[kcal]",
-        "agr_demand_stm[kcal]"
+        "agr_demand_coffee[kcal]",
+        "agr_demand_cocoa[kcal]",
+        "agr_demand_tea[kcal]"
       ]
     },
     "FoodWaste": {
       "title": "Total food waste",
       "type": "StackedArea",
-      "unit": "kcal",
+      "unit": "t",
       "outputs": [
-        "lfs_food-wastes_coffee[kcal]",
-        "lfs_food-wastes_crop-cereal[kcal]",
-        "lfs_food-wastes_crop-fruit[kcal]",
-        "lfs_food-wastes_crop-oilcrop[kcal]",
-        "lfs_food-wastes_crop-pulse[kcal]",
-        "lfs_food-wastes_crop-starch[kcal]",
-        "lfs_food-wastes_crop-veg[kcal]",
-        "lfs_food-wastes_dfish[kcal]",
-        "lfs_food-wastes_ffish[kcal]",
-        "lfs_food-wastes_oth-aq-animals[kcal]",
-        "lfs_food-wastes_pfish[kcal]",
-        "lfs_food-wastes_pro-bev-beer[kcal]",
-        "lfs_food-wastes_pro-bev-bev-alc[kcal]",
-        "lfs_food-wastes_pro-bev-bev-fer[kcal]",
-        "lfs_food-wastes_pro-bev-wine[kcal]",
-        "lfs_food-wastes_pro-crop-processed-sugar[kcal]",
-        "lfs_food-wastes_pro-crop-processed-sweet[kcal]",
-        "lfs_food-wastes_pro-crop-processed-voil[kcal]",
-        "lfs_food-wastes_pro-liv-abp-dairy-milk[kcal]",
-        "lfs_food-wastes_pro-liv-abp-hens-egg[kcal]",
-        "lfs_food-wastes_pro-liv-abp-processed-afat[kcal]",
-        "lfs_food-wastes_pro-liv-abp-processed-offal[kcal]",
-        "lfs_food-wastes_pro-liv-meat-bovine[kcal]",
-        "lfs_food-wastes_pro-liv-meat-oth-animals[kcal]",
-        "lfs_food-wastes_pro-liv-meat-pig[kcal]",
-        "lfs_food-wastes_pro-liv-meat-poultry[kcal]",
-        "lfs_food-wastes_pro-liv-meat-sheep[kcal]",
-        "lfs_food-wastes_rice[kcal]",
-        "lfs_food-wastes_seafood[kcal]",
-        "lfs_food-wastes_stm[kcal]"
+        "lfs_food-wastes_tpe_coffee[t]",
+        "lfs_food-wastes_tpe_crop-cereal[t]",
+        "lfs_food-wastes_tpe_crop-fruit[t]",
+        "lfs_food-wastes_tpe_crop-oilcrop[t]",
+        "lfs_food-wastes_tpe_crop-pulse[t]",
+        "lfs_food-wastes_tpe_crop-starch[t]",
+        "lfs_food-wastes_tpe_crop-veg[t]",
+        "lfs_food-wastes_tpe_dfish[t]",
+        "lfs_food-wastes_tpe_ffish[t]",
+        "lfs_food-wastes_tpe_oth-aq-animals[t]",
+        "lfs_food-wastes_tpe_pfish[t]",
+        "lfs_food-wastes_tpe_pro-bev-beer[t]",
+        "lfs_food-wastes_tpe_pro-bev-bev-alc[t]",
+        "lfs_food-wastes_tpe_pro-bev-bev-fer[t]",
+        "lfs_food-wastes_tpe_pro-bev-wine[t]",
+        "lfs_food-wastes_tpe_pro-crop-processed-sugar[t]",
+        "lfs_food-wastes_tpe_pro-crop-processed-sweet[t]",
+        "lfs_food-wastes_tpe_pro-crop-processed-voil[t]",
+        "lfs_food-wastes_tpe_pro-liv-abp-dairy-milk[t]",
+        "lfs_food-wastes_tpe_pro-liv-abp-hens-egg[t]",
+        "lfs_food-wastes_tpe_pro-liv-abp-processed-afat[t]",
+        "lfs_food-wastes_tpe_pro-liv-abp-processed-offal[t]",
+        "lfs_food-wastes_tpe_pro-liv-meat-bovine[t]",
+        "lfs_food-wastes_tpe_pro-liv-meat-oth-animals[t]",
+        "lfs_food-wastes_tpe_pro-liv-meat-pig[t]",
+        "lfs_food-wastes_tpe_pro-liv-meat-poultry[t]",
+        "lfs_food-wastes_tpe_pro-liv-meat-sheep[t]",
+        "lfs_food-wastes_tpe_rice[t]",
+        "lfs_food-wastes_tpe_seafood[t]",
+        "lfs_food-wastes_tpe_coffee[t]",
+        "lfs_food-wastes_tpe_cocoa[t]",
+        "lfs_food-wastes_tpe_tea[t]"
       ]
     },
     "CropSSR": {
@@ -400,18 +403,18 @@
       "type": "StackedArea",
       "unit": "ha",
       "outputs": [
-        "agr_land_cropland_raw_algae[ha]",
-        "agr_land_cropland_raw_cereal[ha]",
-        "agr_land_cropland_raw_fruit[ha]",
-        "agr_land_cropland_raw_insect[ha]",
-        "agr_land_cropland_raw_lgn-energycrop[ha]",
-        "agr_land_cropland_raw_oilcrop[ha]",
-        "agr_land_cropland_raw_pulse[ha]",
-        "agr_land_cropland_raw_rice[ha]",
-        "agr_land_cropland_raw_starch[ha]",
-        "agr_land_cropland_raw_sugarcrop[ha]",
-        "agr_land_cropland_raw_veg[ha]",
-        "agr_land_cropland_raw_fibres-plant-eq[ha]"
+        "agr_land_cropland_algae[ha]",
+        "agr_land_cropland_cereal[ha]",
+        "agr_land_cropland_fruit[ha]",
+        "agr_land_cropland_insect[ha]",
+        "agr_land_cropland_lgn-energycrop[ha]",
+        "agr_land_cropland_oilcrop[ha]",
+        "agr_land_cropland_pulse[ha]",
+        "agr_land_cropland_rice[ha]",
+        "agr_land_cropland_starch[ha]",
+        "agr_land_cropland_sugarcrop[ha]",
+        "agr_land_cropland_veg[ha]",
+        "agr_land_cropland_fibres-plant-eq[ha]"
       ]
     },
     "CroplandUse": {
@@ -423,63 +426,63 @@
     "CropSupply": {
       "title": "Crop-based supply",
       "type": "StackedArea",
-      "unit": "kcal",
+      "unit": "t",
       "outputs": [
-        "agr_demand_crop-cereal[kcal]",
-        "agr_demand_crop-fruit[kcal]",
-        "agr_demand_crop-oilcrop[kcal]",
-        "agr_demand_crop-pulse[kcal]",
-        "agr_demand_crop-starch[kcal]",
-        "agr_demand_crop-veg[kcal]",
-        "agr_demand_pro-crop-processed-voil[kcal]",
-        "agr_demand_rice[kcal]"
+        "agr_demand_tpe_crop-cereal[t]",
+        "agr_demand_tpe_crop-fruit[t]",
+        "agr_demand_tpe_crop-oilcrop[t]",
+        "agr_demand_tpe_crop-pulse[t]",
+        "agr_demand_tpe_crop-starch[t]",
+        "agr_demand_tpe_crop-veg[t]",
+        "agr_demand_tpe_pro-crop-processed-voil[t]",
+        "agr_demand_tpe_rice[t]"
       ]
     },
     "MeatSupply": {
       "title": "Meat-based supply",
       "type": "StackedArea",
-      "unit": "kcal",
+      "unit": "t",
       "outputs": [
-        "agr_demand_pro-liv-abp-dairy-milk[kcal]",
-        "agr_demand_pro-liv-abp-hens-egg[kcal]",
-        "agr_demand_pro-liv-abp-processed-afat[kcal]",
-        "agr_demand_pro-liv-abp-processed-offal[kcal]",
-        "agr_demand_pro-liv-meat-bovine[kcal]",
-        "agr_demand_pro-liv-meat-oth-animals[kcal]",
-        "agr_demand_pro-liv-meat-pig[kcal]",
-        "agr_demand_pro-liv-meat-poultry[kcal]",
-        "agr_demand_pro-liv-meat-sheep[kcal]"
+        "agr_demand_tpe_pro-liv-abp-dairy-milk[t]",
+        "agr_demand_tpe_pro-liv-abp-hens-egg[t]",
+        "agr_demand_tpe_pro-liv-abp-processed-afat[t]",
+        "agr_demand_tpe_pro-liv-abp-processed-offal[t]",
+        "agr_demand_tpe_pro-liv-meat-bovine[t]",
+        "agr_demand_tpe_pro-liv-meat-oth-animals[t]",
+        "agr_demand_tpe_pro-liv-meat-pig[t]",
+        "agr_demand_tpe_pro-liv-meat-poultry[t]",
+        "agr_demand_tpe_pro-liv-meat-sheep[t]"
       ]
     },
     "FishSupply": {
       "title": "Fish-based supply",
       "type": "StackedArea",
-      "unit": "kcal",
+      "unit": "t",
       "outputs": [
-        "agr_demand_dfish[kcal]",
-        "agr_demand_ffish[kcal]",
-        "agr_demand_oth-aq-animals[kcal]",
-        "agr_demand_pfish[kcal]",
-        "agr_demand_seafood[kcal]"
+        "agr_demand_tpe_dfish[t]",
+        "agr_demand_tpe_ffish[t]",
+        "agr_demand_tpe_oth-aq-animals[t]",
+        "agr_demand_tpe_pfish[t]",
+        "agr_demand_tpe_seafood[t]"
       ]
     },
     "StimulantSupply": {
       "title": "Stimulant supply",
       "type": "StackedArea",
-      "unit": "kcal",
-      "outputs": ["agr_demand_coffee[kcal]", "agr_demand_stm[kcal]"]
+      "unit": "t",
+      "outputs": ["agr_demand_tpe_coffee[t]", "agr_demand_tpe_cocoa[t]", "agr_demand_tpe_tea[t]"]
     },
     "OtherFoodSupply": {
       "title": "Other food supply",
       "type": "StackedArea",
-      "unit": "kcal",
+      "unit": "t",
       "outputs": [
-        "agr_demand_pro-bev-beer[kcal]",
-        "agr_demand_pro-bev-bev-alc[kcal]",
-        "agr_demand_pro-bev-bev-fer[kcal]",
-        "agr_demand_pro-bev-wine[kcal]",
-        "agr_demand_pro-crop-processed-sugar[kcal]",
-        "agr_demand_pro-crop-processed-sweet[kcal]"
+        "agr_demand_tpe_pro-bev-beer[t]",
+        "agr_demand_tpe_pro-bev-bev-alc[t]",
+        "agr_demand_tpe_pro-bev-bev-fer[t]",
+        "agr_demand_tpe_pro-bev-wine[t]",
+        "agr_demand_tpe_pro-crop-processed-sugar[t]",
+        "agr_demand_tpe_pro-crop-processed-sweet[t]"
       ]
     },
     "ManureVolume": {
@@ -513,19 +516,19 @@
       "type": "StackedArea",
       "unit": "ha",
       "outputs": [
-        "agr_lus_land_raw_grassland[ha]",
-        "agr_land_cropland_raw_algae[ha]",
-        "agr_land_cropland_raw_cereal[ha]",
-        "agr_land_cropland_raw_fruit[ha]",
-        "agr_land_cropland_raw_insect[ha]",
-        "agr_land_cropland_raw_lgn-energycrop[ha]",
-        "agr_land_cropland_raw_oilcrop[ha]",
-        "agr_land_cropland_raw_pulse[ha]",
-        "agr_land_cropland_raw_rice[ha]",
-        "agr_land_cropland_raw_starch[ha]",
-        "agr_land_cropland_raw_sugarcrop[ha]",
-        "agr_land_cropland_raw_veg[ha]",
-        "agr_land_cropland_raw_fibres-plant-eq[ha]"
+        "agr_lus_land_grassland[ha]",
+        "agr_land_cropland_algae[ha]",
+        "agr_land_cropland_cereal[ha]",
+        "agr_land_cropland_fruit[ha]",
+        "agr_land_cropland_insect[ha]",
+        "agr_land_cropland_lgn-energycrop[ha]",
+        "agr_land_cropland_oilcrop[ha]",
+        "agr_land_cropland_pulse[ha]",
+        "agr_land_cropland_rice[ha]",
+        "agr_land_cropland_starch[ha]",
+        "agr_land_cropland_sugarcrop[ha]",
+        "agr_land_cropland_veg[ha]",
+        "agr_land_cropland_fibres-plant-eq[ha]"
       ]
     }
   }
