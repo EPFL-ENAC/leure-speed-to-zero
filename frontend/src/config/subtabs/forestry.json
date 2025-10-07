@@ -30,7 +30,7 @@
   ],
   "charts": {
     "ForestArea": {
-      "title": "Title of plot",
+      "title": "Forest exploitation",
       "type": "StackedArea",
       "unit": "ha",
       "outputs": [
@@ -39,7 +39,7 @@
       ]
     },
     "ExploitedForest": {
-      "title": "Forest exploited area [ha]",
+      "title": "Forest exploited area",
       "type": "StackedArea",
       "unit": "ha",
       "outputs": [
