@@ -39,8 +39,8 @@
       "route": "renovation-construction",
       "maximize": false,
       "thresholds": {
-        "warning": 30,
-        "danger": 50
+        "warning": 15,
+        "danger": 30
       },
       "info": "Share of residential floor area that has not undergone envelope renovation in 2050. This includes buildings whose envelope efficiency class has not improved since construction, indicating poor thermal performance."
     }
@@ -62,9 +62,19 @@
       "route": "building-types-area"
     },
     {
-      "title": "Building stock, renovation and construction",
+      "title": "Building stock and Renovation",
       "charts": ["FloorAreaBldType", "FloorAreaRenovationConstruction"],
       "route": "renovation-construction"
+    },
+    {
+      "title": "Residential, other",
+      "charts": ["HotWaterRes", "AppliancesLightRes"],
+      "route": "residential-other"
+    },
+    {
+      "title": "Non-residential",
+      "charts": ["NonResByType", "NonResByFuel"],
+      "route": "non-residential"
     }
   ],
   "charts": {
@@ -171,6 +181,55 @@
         { "id": "bld_floor-area_new-cumulated[Mm2]", "color": "#bfdbf6" },
         { "id": "bld_floor-area_renovated-cumulated[Mm2]", "color": "#7cb5ec" },
         { "id": "bld_floor-area_unrenovated-cumulated[Mm2]", "color": "#398fe2" }
+      ]
+    },
+    "HotWaterRes": {
+      "title": "Hot water - residential energy consumption",
+      "type": "StackedArea",
+      "unit": "TWh",
+      "outputs": [
+        "bld_hot-water_energy-demand_electricity[TWh]",
+        "bld_hot-water_energy-demand_heating-oil[TWh]",
+        "bld_hot-water_energy-demand_gas[TWh]",
+        "bld_hot-water_energy-demand_district-heating[TWh]",
+        "bld_hot-water_energy-demand_wood[TWh]",
+        "bld_hot-water_energy-demand_solar[TWh]",
+        "bld_hot-water_energy-demand_heat-pump[TWh]"
+        ]
+    },
+    "AppliancesLightRes": {
+      "title": "Appliances and Lighting - residential electricity consumption",
+      "type": "StackedArea",
+      "unit": "TWh",
+      "outputs": [
+        "bld_residential-lighting[TWh]",
+        "bld_appliances_tot-elec-demand[TWh]"
+        ]
+    },
+    "NonResByType": {
+      "title": "Non-residential energy consumption by end-use",
+      "type": "StackedArea",
+      "unit": "TWh",
+      "outputs": [
+        "bld_services_energy-consumption_elec[TWh]",
+        "bld_services_energy-consumption_lighting[TWh]",
+        "bld_services_energy-consumption_hot-water[TWh]",
+        "bld_services_energy-consumption_space-heating[TWh]"
+        ]
+    },
+    "NonResByFuel": {
+      "title": "Non-residential energy consumption by fuel",
+      "type": "StackedArea",
+      "unit": "TWh",
+      "outputs": [
+        "bld_services_energy-consumption_coal[TWh]",
+        "bld_services_energy-consumption_heating-oil[TWh]",
+        "bld_services_energy-consumption_gas[TWh]",
+        "bld_services_energy-consumption_wood[TWh]",
+        "bld_services_energy-consumption_district-heating[TWh]",
+        "bld_services_energy-consumption_electricity[TWh]",
+        "bld_services_energy-consumption_solar[TWh]",
+        "bld_services_energy-consumption_heat-pump[TWh]"
       ]
     }
   }
