@@ -215,7 +215,6 @@ const chartOption = computed(() => {
     stack: isStacked ? 'total' : undefined,
     symbol: 'none',
     z: 0,
-    zlevel: 0,
     areaStyle: isStacked ? {} : undefined,
     itemStyle: { color: series.color },
     data: series.data,
@@ -228,10 +227,10 @@ const chartOption = computed(() => {
     data: [], // No data points
     symbol: 'none',
     z: 100,
-    zlevel: 1,
+    zlevel: 10,
     markArea: {
       ...forecastMarkArea,
-      z: 100,
+      z: 10,
     },
     legendHoverLink: false,
   };
@@ -242,10 +241,10 @@ const chartOption = computed(() => {
     data: [], // No data points
     symbol: 'none',
     z: 100,
-    zlevel: 1,
+    zlevel: 10,
     markArea: {
       ...transitionMarkArea,
-      z: 100,
+      z: 10,
     },
     legendHoverLink: false,
   };
@@ -292,12 +291,14 @@ const chartOption = computed(() => {
     },
     xAxis: {
       type: 'time',
+      z: -1,
       // boundaryGap: false,
     },
     yAxis: {
       type: 'value',
       name: props.chartConfig.unit,
       nameLocation: 'end',
+      z: -1,
       nameTextStyle: { padding: [0, 0, 0, 5] },
       axisLabel: {
         formatter: function (value: number) {
