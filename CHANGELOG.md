@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.7.0](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.6.1...v0.7.0) (2025-10-08)
+
+
+### Features
+
+* **chart:** add forecast mark area to chart visualization [#27](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/27) ([b0ce888](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/b0ce888d783197d2063bee14610b615aa2fd6052))
+* **chart:** add white bar mark area for forecast and transition periods ([05628ce](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/05628ce148e49b61c47722bd4368b09be07d906d))
+* **chart:** update forecast mark area styling to dashed border box ([5496260](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/549626046abefa0d51fca98f9c7a97fed73f70d6))
+* **chart:** update forecast mark area styling to dashed border box ([9b25dde](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/9b25dde2b7fdad6246dc16451ba77e03fa8fe437))
+* **front:** enhance  tab layout and styling [#27](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/27) ([aea9502](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/aea95026fee9bb30243c785d790dfe00369ecead))
+* **front:** fit the legend on multiple lines [#27](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/27) ([0911f30](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/0911f307ae9d9a912a18256fb75bc1af09e5e551))
+* **front:** fit the legend on multiple lines [#27](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/27) ([cdc5524](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/cdc55248592f98b9fe6aaa686c7cf774aa5868be))
+* **sectors:** add disabled state to sectors and update UI components accordingly ([6c0809f](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/6c0809f46caa842fe9a04b2c3c41203592624a0b))
+
+
+### Bug Fixes
+
+* **imports:** update LeverChart import path in LeverDataPopup and LeverSelector components ([33d2be8](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/33d2be86099f7075b19c0c4a7b8b7b14766031fe))
+* **imports:** update LeverChart import path in LeverDataPopup and LeverSelector components ([3a72a06](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/3a72a06b2a06045e709538aff3e1083df5e05e80))
+* **package:** pin @quasar/app-vite version to 2.2.0 ([76a3960](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/76a396058b275a3a6bc6229404f4515c93c11803))
+
 ## [0.6.1](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.6.0...v0.6.1) (2025-09-15)
 
 
