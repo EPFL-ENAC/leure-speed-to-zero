@@ -2,14 +2,15 @@ export interface Sector {
   label: string;
   value: string;
   icon: string;
+  disabled?: boolean;
 }
 
 export const sectors: Sector[] = [
   { label: 'Buildings', value: 'buildings', icon: 'apartment' },
   { label: 'Transport', value: 'transport', icon: 'bike_scooter' },
   { label: 'Agriculture', value: 'agriculture', icon: 'agriculture' },
-  { label: 'Forestry', value: 'forestry', icon: 'forest' },
-  { label: 'Overall', value: 'overall', icon: 'dashboard' },
+  { label: 'Forestry', value: 'forestry', icon: 'forest', disabled: true },
+  { label: 'Overall', value: 'overall', icon: 'dashboard', disabled: true },
   // Theses ones are examples of sectors that can be added later
   // Icons can be found in Material Icons or similar icon libraries like :
   //   https://fonts.google.com/icons?icon.set=Material+Icons

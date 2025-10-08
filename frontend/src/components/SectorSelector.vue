@@ -8,13 +8,16 @@
       class="tabs"
     >
       <q-tab
-        v-for="{ label, value, icon } in sectors"
+        v-for="{ label, value, icon, disabled } in sectors"
         :key="value"
         :name="value"
         :icon="icon"
         :label="label"
-        :class="'tab' + (mini ? ' mini' : '')"
-      />
+        :class="'tab' + (mini ? ' mini' : '') + (disabled ? ' disabled' : '')"
+        :disable="disabled"
+      >
+        <q-tooltip v-if="disabled" class="bg-grey-8"> Feature not ready </q-tooltip>
+      </q-tab>
     </q-tabs>
   </div>
 </template>
@@ -91,5 +94,25 @@ defineExpose({
 
 .tab.mini :deep(.q-tab__label) {
   color: transparent;
+}
+
+// Disabled tab styling
+.tab.disabled :deep(.q-tab) {
+  color: #a0a0a0 !important;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.tab.disabled :deep(.q-tab__icon) {
+  color: #a0a0a0 !important;
+}
+
+.tab.disabled :deep(.q-tab__label) {
+  color: #a0a0a0 !important;
+}
+
+// Disabled tab in mini mode should also hide label
+.tab.disabled.mini :deep(.q-tab__label) {
+  color: transparent !important;
 }
 </style>

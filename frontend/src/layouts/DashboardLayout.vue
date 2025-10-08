@@ -45,15 +45,19 @@
             dense
             emit-value
             map-options
-            class="q-mb-md"
-          />
+            class="q-mb-md app-disabled"
+            :disable="true"
+          >
+            <q-tooltip class="bg-grey-8"> Feature not ready </q-tooltip>
+          </q-select>
           <q-btn
             label="Reset to Defaults"
             color="grey"
             outline
             class="full-width q-mb-md"
             @click="resetToDefaults"
-          />
+          >
+          </q-btn>
         </div>
         <q-separator />
         <q-scroll-area visible class="col q-pa-md">
