@@ -34,6 +34,7 @@ import {
   DatasetComponent,
   DataZoomComponent,
   MarkAreaComponent,
+  MarkLineComponent,
 } from 'echarts/components';
 import VChart from 'vue-echarts';
 import { getPlotLabel } from 'utils/labelsPlot';
@@ -50,6 +51,7 @@ use([
   DatasetComponent,
   DataZoomComponent,
   MarkAreaComponent,
+  MarkLineComponent,
 ]);
 
 // Types
@@ -152,10 +154,6 @@ const chartOption = computed(() => {
     silent: true,
     itemStyle: {
       color: 'transparent', // No background fill
-      borderColor: '#999',
-      borderWidth: 2,
-      borderType: [5, 10],
-      opacity: 0.8,
     },
     label: {
       show: true,
@@ -163,6 +161,7 @@ const chartOption = computed(() => {
       fontSize: 11,
       color: '#666',
     },
+
     data: [
       [
         {
@@ -185,6 +184,29 @@ const chartOption = computed(() => {
     ],
   };
 
+  // Create mark area configuration for the transition period (2023-2025)
+  const transitionMarkArea = {
+    silent: true,
+    itemStyle: {
+      color: 'white',
+      opacity: 0.8,
+    },
+    label: {
+      show: false,
+    },
+    data: [
+      [
+        {
+          name: 'Historical',
+          xAxis: new Date(2023, 0, 1).getTime(),
+        },
+        {
+          xAxis: new Date(2025, 0, 1).getTime(), // January 1st, 2024
+        },
+      ],
+    ],
+  };
+
   // Create series array for ECharts
   const isStacked = props.chartConfig.type.toLowerCase() === 'stackedarea';
   const series = chartData.value.map((series) => ({
@@ -192,25 +214,44 @@ const chartOption = computed(() => {
     type: 'line',
     stack: isStacked ? 'total' : undefined,
     symbol: 'none',
+    z: 0,
+    zlevel: 0,
     areaStyle: isStacked ? {} : undefined,
     itemStyle: { color: series.color },
     data: series.data,
   }));
 
-  // Create the invisible markArea series
-  const markAreaSeries = {
-    name: '__markArea__', // Hidden series name
+  // Create the invisible series with mark areas - put them first so they're rendered last (on top)
+  const markAreaSeriesForecast = {
+    name: '__mark_forecast__', // Hidden series name
     type: 'line',
     data: [], // No data points
     symbol: 'none',
-    lineStyle: { opacity: 0 }, // Invisible line
-    markArea: forecastMarkArea,
-    showSymbol: false,
+    z: 100,
+    zlevel: 1,
+    markArea: {
+      ...forecastMarkArea,
+      z: 100,
+    },
     legendHoverLink: false,
   };
 
-  // Combine all series
-  const allSeries = [...series, markAreaSeries];
+  const markAreaSeriesTransition = {
+    name: '__mark_transition__', // Hidden series name
+    type: 'line',
+    data: [], // No data points
+    symbol: 'none',
+    z: 100,
+    zlevel: 1,
+    markArea: {
+      ...transitionMarkArea,
+      z: 100,
+    },
+    legendHoverLink: false,
+  };
+
+  // Put mark area series at the end so they render on top
+  const allSeries = [...series, markAreaSeriesForecast, markAreaSeriesTransition];
   const legendData = series.map((serie) => serie.name);
 
   return {
