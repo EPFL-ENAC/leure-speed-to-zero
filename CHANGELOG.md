@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.7.0...v0.7.1) (2025-10-09)
+
+
+### Bug Fixes
+
+* quick fix chart tooltip + correct sector disabled ([248c61b](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/248c61b2733251fda9b05d88da50f00072446f7a))
+
 ## [0.7.0](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.6.1...v0.7.0) (2025-10-08)
 
 
