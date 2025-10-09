@@ -70,7 +70,7 @@ interface YearData {
 interface EChartsTooltipParam {
   axisValueLabel: string;
   seriesName: string;
-  value: number;
+  value: number | [number, number];
   marker: string;
 }
 
@@ -266,12 +266,12 @@ const chartOption = computed(() => {
       formatter: (params: EChartsTooltipParam[]) => {
         const year = params[0]?.axisValueLabel;
         const unit = props.chartConfig.unit;
-
-        return params.reduce(
-          (text, param, i) =>
-            `${text}${i === 0 ? `${year}<br/>` : ''}${param.marker} ${param.seriesName}: ${param.value} ${unit}<br/>`,
-          '',
-        );
+        return params.reduce((text, param, i) => {
+          // Extract the value from the [timestamp, value] array
+          const value = Array.isArray(param.value) ? param.value[1] : param.value;
+          const val = `${text}${i === 0 ? `${year}<br/>` : ''}${param.marker} ${param.seriesName}: ${value} ${unit}<br/>`;
+          return val;
+        }, '');
       },
     },
     legend: {
