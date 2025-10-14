@@ -188,20 +188,19 @@ const chartOption = computed(() => {
   const transitionMarkArea = {
     silent: true,
     itemStyle: {
-      color: 'white',
-      opacity: 0.8,
+      color: 'rgba(0, 0, 0, 0.1)',
+      borderColor: 'rgba(0, 0, 0, 0.15)',
+      borderWidth: 2,
+      borderType: 'dashed',
     },
-    label: {
-      show: false,
-    },
+
     data: [
       [
         {
-          name: 'Historical',
           xAxis: new Date(2023, 0, 1).getTime(),
         },
         {
-          xAxis: new Date(2025, 0, 1).getTime(), // January 1st, 2024
+          xAxis: new Date(2025, 0, 1).getTime(),
         },
       ],
     ],
