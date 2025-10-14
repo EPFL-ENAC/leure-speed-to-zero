@@ -268,7 +268,7 @@ const chartOption = computed(() => {
         const unit = props.chartConfig.unit;
         return params.reduce((text, param, i) => {
           // Extract the value from the [timestamp, value] array
-          const value = Array.isArray(param.value) ? param.value[1] : param.value;
+          const value = (Array.isArray(param.value) ? param.value[1] : param.value).toFixed(2);
           const val = `${text}${i === 0 ? `${year}<br/>` : ''}${param.marker} ${param.seriesName}: ${value} ${unit}<br/>`;
           return val;
         }, '');
