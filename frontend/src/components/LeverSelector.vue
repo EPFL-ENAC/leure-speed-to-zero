@@ -28,15 +28,19 @@
             ></div>
           </div>
           <q-slider
-            :model-value="value"
-            :min="1"
-            :max="maxValue"
+            :model-value="value - 1"
+            :min="0"
+            :max="maxValue - 1"
             :step="1"
             :disable="disabled"
             dense
             class="transparent-slider"
-            :style="{ '--thumb-color': currentThumbColor }"
-            @update:model-value="onChange"
+            :style="{
+              '--thumb-color': currentThumbColor,
+              width: widthTransparentSlider,
+              left: leftTransparentSlider,
+            }"
+            @update:model-value="onSliderChange"
           />
         </div>
       </div>
@@ -119,6 +123,17 @@ const maxValue = computed(() => {
   return props.lever.range.length;
 });
 
+const numberSegments = props.lever.difficultyColors ? props.lever.difficultyColors.length : 0;
+const widthSegment = computed(() => {
+  return numberSegments > 0 ? Math.round(100 / numberSegments) : 100;
+});
+const widthTransparentSlider = computed(() => {
+  return numberSegments > 0 ? `${100 - widthSegment.value}%` : '100%';
+});
+const leftTransparentSlider = computed(() => {
+  return numberSegments > 0 ? `${Math.round(widthSegment.value / 2)}%` : '0%';
+});
+
 // Calculate the current thumb color based on the value position
 const currentThumbColor = computed(() => {
   if (!props.lever.difficultyColors || props.lever.difficultyColors.length === 0) {
@@ -133,10 +148,10 @@ const currentThumbColor = computed(() => {
   return currentSegment ? currentSegment.color : 'rgba(255, 255, 255, 0.664)';
 });
 
-// Handle value changes
-function onChange(newValue: number | null) {
+// Handle value changes from slider (converts 0-based to 1-based)
+function onSliderChange(newValue: number | null) {
   if (newValue !== null && !disabled.value) {
-    emit('change', newValue);
+    emit('change', newValue + 1);
   }
 }
 
