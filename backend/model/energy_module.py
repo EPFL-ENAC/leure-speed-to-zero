@@ -113,7 +113,6 @@ def define_sets(ampl):
 
 def read_2050_data(ampl, DM, country, endyr):
 
-    define_sets(ampl)
     for key in DM.keys():
         dm = DM[key].filter({'Country': [country], 'Years': [endyr]})
         idx = dm.idx
@@ -434,9 +433,6 @@ def energyscope(data_path, DM_tra, DM_bld, DM_ind, years_ots, years_fts, country
 
     add_to_path(r'/Applications/AMPL')
 
-    with open(data_path, 'rb') as handle:
-        DM_energy = pickle.load(handle)
-
     #DM_energy['index3'][:, :, 'c_inv', 'PV'] = 400
     # Create an AMPL object
     ampl = AMPL()
@@ -451,8 +447,13 @@ def energyscope(data_path, DM_tra, DM_bld, DM_ind, years_ots, years_fts, country
     f = os.path.join(current_file_directory, "energy/energyscope-MILP/ses_main.mod")
     # Read the model
     ampl.read(f)
+    # Define parameters
+    define_sets(ampl)
+
     #.readData("energyscope-MILP/ses_main.dat")
     # Extract existing capacity data + Nexus-e forecast
+    with open(data_path, 'rb') as handle:
+        DM_energy = pickle.load(handle)
     dm_capacity = DM_energy.pop('capacity')
     dm_production = DM_energy.pop('production')
     dm_fuels_supply = DM_energy.pop('fuels')
