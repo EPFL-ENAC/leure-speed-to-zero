@@ -2,7 +2,7 @@
   <q-dialog v-model="isOpen">
     <q-card class="fixed-height-card">
       <q-bar class="row items-center q-py-lg">
-        <div>Lever details</div>
+        <div>{{ $t('leverDetails') }}</div>
         <q-space />
         <q-btn icon="close" flat round v-close-popup />
       </q-bar>

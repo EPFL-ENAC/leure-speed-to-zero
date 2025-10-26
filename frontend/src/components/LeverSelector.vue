@@ -7,7 +7,7 @@
       <span
         class="text-body2 text-weight-light leverTitle"
         @click="props.variant === 'default' ? openLeverDataPopup() : undefined"
-        :title="props.variant === 'default' ? `Click to view ${lever.title} data` : ''"
+        :title="props.variant === 'default' ? $t('clickToView', { title: lever.title }) : ''"
       >
         {{ lever.title }}
         <q-icon v-if="props.variant === 'default'" name="info_outline" size="xs" class="q-ml-xs" />

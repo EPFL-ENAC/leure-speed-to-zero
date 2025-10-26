@@ -16,7 +16,7 @@
         :class="'tab' + (mini ? ' mini' : '') + (disabled ? ' disabled' : '')"
         :disable="disabled"
       >
-        <q-tooltip v-if="disabled" class="bg-grey-8"> Feature not ready </q-tooltip>
+        <q-tooltip v-if="disabled" class="bg-grey-8"> {{ $t('featureNotReady') }} </q-tooltip>
       </q-tab>
     </q-tabs>
   </div>
