@@ -28,9 +28,9 @@
     <div class="content-area">
       <div v-if="!modelResults" class="graph-placeholder">
         <q-icon name="show_chart" size="4rem" />
-        <p>Run the model to see {{ sectorDisplayName }} data</p>
+        <p>{{ $t('runModelToSeeData', { sector: sectorDisplayName }) }}</p>
         <q-btn
-          label="Run Model"
+          :label="$t('runModel')"
           color="primary"
           :loading="isLoading"
           @click="runModel"

@@ -36,11 +36,13 @@
     >
       <div class="column full-height">
         <div class="non-scrollable-part q-pa-md">
-          <div class="text-h5 q-mb-md">Levers</div>
+          <div class="text-h5 q-mb-md row justify-between">
+            {{ $t('levers') }} <language-switcher></language-switcher>
+          </div>
           <q-select
             v-model="selectedPathway"
             :options="pathwayOptions"
-            label="Select Pathway"
+            :label="$t('selectPathway')"
             outlined
             dense
             emit-value
@@ -48,10 +50,10 @@
             class="q-mb-md app-disabled"
             :disable="true"
           >
-            <q-tooltip class="bg-grey-8"> Feature not ready </q-tooltip>
+            <q-tooltip class="bg-grey-8"> {{ $t('featureNotReady') }} </q-tooltip>
           </q-select>
           <q-btn
-            label="Reset to Defaults"
+            :label="$t('resetDefault')"
             color="grey"
             outline
             class="full-width q-mb-md"
@@ -88,6 +90,7 @@ import { ExamplePathways } from 'utils/examplePathways';
 import { sectors } from 'utils/sectors';
 import LeverGroups from 'components/LeverGroups.vue';
 import SectorSelector from 'components/SectorSelector.vue';
+import LanguageSwitcher from 'components/LanguageSwitcher.vue';
 import { useQuasar } from 'quasar';
 const $q = useQuasar();
 
