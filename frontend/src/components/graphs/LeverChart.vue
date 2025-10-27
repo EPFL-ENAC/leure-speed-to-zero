@@ -2,7 +2,7 @@
   <div class="lever-chart-container" :style="{ height, width }">
     <div v-if="isLoading" class="flex flex-center q-pa-lg">
       <q-spinner-dots size="2rem" />
-      <span class="q-ml-sm">Loading chart data...</span>
+      <span class="q-ml-sm">{{ $t('loadingChartData') }}</span>
     </div>
 
     <div v-else-if="error" class="text-negative q-pa-md text-center">
@@ -16,12 +16,12 @@
         class="q-mt-md"
         :loading="isLoading"
       >
-        Retry
+        {{ $t('retry') }}
       </q-btn>
     </div>
 
     <div v-else-if="!chartData.length" class="text-center q-pa-md text-grey-7">
-      No chart data available
+      {{ $t('noChartDataAvailable') }}
     </div>
 
     <v-chart

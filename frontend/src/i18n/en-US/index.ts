@@ -19,4 +19,12 @@ export default {
   runModel: 'Run Model',
   runModelToSeeData: 'Run the model to see {sector} data',
   clickToView: 'Click to view {title} data',
+  // Chart components
+  loadingChartData: 'Loading chart data...',
+  retry: 'Retry',
+  noChartDataAvailable: 'No chart data available',
+  noDataAvailable: 'No data available',
+  // Time periods
+  historical: 'Historical',
+  forecast: 'Forecast',
 };
