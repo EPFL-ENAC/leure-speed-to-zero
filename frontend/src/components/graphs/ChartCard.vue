@@ -3,7 +3,7 @@
     <q-card-section class="chart-section">
       <div v-if="!chartData.length" class="chart-placeholder">
         <q-icon name="mdi-chart-line-variant" size="2rem" color="grey-5" />
-        <p>No data available</p>
+        <p>{{ $t('noDataAvailable') }}</p>
       </div>
       <div v-else class="chart-visualization">
         <v-chart
@@ -38,6 +38,9 @@ import {
 } from 'echarts/components';
 import VChart from 'vue-echarts';
 import { getPlotLabel } from 'utils/labelsPlot';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 // Register ECharts components
 use([
@@ -165,7 +168,7 @@ const chartOption = computed(() => {
     data: [
       [
         {
-          name: 'Historical',
+          name: t('historical'),
           xAxis: new Date(1990, 0, 1).getTime(), // January 1st, 1990
         },
         {
@@ -174,7 +177,7 @@ const chartOption = computed(() => {
       ],
       [
         {
-          name: 'Model Forecast',
+          name: t('forecast'),
           xAxis: new Date(2024, 0, 1).getTime(), // January 1st, 2024
         },
         {
