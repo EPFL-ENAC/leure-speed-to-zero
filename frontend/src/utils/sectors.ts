@@ -1,16 +1,29 @@
 export interface Sector {
   label: string;
+  labelKey: string; // i18n translation key
   value: string;
   icon: string;
   disabled?: boolean;
 }
 
 export const sectors: Sector[] = [
-  { label: 'Buildings', value: 'buildings', icon: 'apartment' },
-  { label: 'Transport', value: 'transport', icon: 'bike_scooter' },
-  { label: 'Forestry', value: 'forestry', icon: 'forest' },
-  { label: 'Agriculture', value: 'agriculture', icon: 'agriculture', disabled: true },
-  { label: 'Overall', value: 'overall', icon: 'dashboard', disabled: true },
+  { label: 'Buildings', labelKey: 'sectors.buildings', value: 'buildings', icon: 'apartment' },
+  { label: 'Transport', labelKey: 'sectors.transport', value: 'transport', icon: 'bike_scooter' },
+  { label: 'Forestry', labelKey: 'sectors.forestry', value: 'forestry', icon: 'forest' },
+  {
+    label: 'Agriculture',
+    labelKey: 'sectors.agriculture',
+    value: 'agriculture',
+    icon: 'agriculture',
+    disabled: true,
+  },
+  {
+    label: 'Overall',
+    labelKey: 'sectors.overall',
+    value: 'overall',
+    icon: 'dashboard',
+    disabled: true,
+  },
   // Theses ones are examples of sectors that can be added later
   // Icons can be found in Material Icons or similar icon libraries like :
   //   https://fonts.google.com/icons?icon.set=Material+Icons

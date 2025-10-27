@@ -1,7 +1,13 @@
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { Lever } from 'utils/leversData';
-import { levers as leversData, sectors } from 'utils/leversData';
+import {
+  levers as leversData,
+  sectors,
+  getTranslatedLeverData,
+  getAllTranslatedLevers,
+} from 'utils/leversData';
 import { ExamplePathways } from 'utils/examplePathways';
 import { modelService } from 'services/modelService';
 import { AxiosError } from 'axios';
@@ -103,6 +109,9 @@ function getDefaultLeverValue(leverCode: string): number {
 }
 
 export const useLeverStore = defineStore('lever', () => {
+  // Get i18n translation function
+  const { t } = useI18n();
+
   // State
   const levers = ref<Record<string, number>>({});
   const selectedPathway = ref<string | null>(null);
@@ -118,6 +127,14 @@ export const useLeverStore = defineStore('lever', () => {
   const debounceDelay = 500;
 
   // Computed values
+  // Get all levers with translations
+  const translatedLevers = computed(() => getAllTranslatedLevers(t));
+
+  // Get lever by code with translation
+  const getTranslatedLever = (leverCode: string): Lever | undefined => {
+    return getTranslatedLeverData(leverCode, t);
+  };
+
   const getLeverValue = (leverCode: string): number =>
     levers.value[leverCode] ?? getDefaultLeverValue(leverCode);
 
@@ -126,31 +143,31 @@ export const useLeverStore = defineStore('lever', () => {
   );
 
   const leversByHeadline = computed(() => {
-    const result: Record<string, typeof leversData> = {};
-    leversData.forEach((lever) => {
+    const result: Record<string, Lever[]> = {};
+    translatedLevers.value.forEach((lever) => {
       if (!result[lever.headline]) result[lever.headline] = [];
       result[lever.headline]?.push(lever);
     });
     return result;
   });
 
-  // Function to get levers filtered by sector
-  const getLeversForSector = (sectorCode: string) => {
+  // Function to get levers filtered by sector (with translations)
+  const getLeversForSector = (sectorCode: string): Lever[] => {
     // Find the sector configuration
     const sector = sectors.find((s) => s.code.toLowerCase() === sectorCode.toLowerCase());
     if (!sector) return [];
 
-    // Filter levers that belong to this sector
+    // Filter levers that belong to this sector and translate them
     const sectorLevers = sector.levers
-      .map((leverId) => leversData.find((lever) => lever.code === leverId))
+      .map((leverId) => getTranslatedLeverData(leverId, t))
       .filter((lever): lever is Lever => lever !== undefined);
 
     return sectorLevers;
   };
 
   const leversByGroup = computed(() => {
-    const result: Record<string, typeof leversData> = {};
-    leversData.forEach((lever) => {
+    const result: Record<string, Lever[]> = {};
+    translatedLevers.value.forEach((lever) => {
       if (!result[lever.group]) result[lever.group] = [];
       result[lever.group]?.push(lever);
     });
@@ -316,7 +333,10 @@ export const useLeverStore = defineStore('lever', () => {
     levers.value = newLevers;
   }
 
-  function isValidLeverValue(lever: Lever, value: number): boolean {
+  function isValidLeverValue(
+    lever: Lever | { code: string; range: (string | number)[]; type: string },
+    value: number,
+  ): boolean {
     if (lever.type === 'num') {
       const range = lever.range.filter((v) => typeof v === 'number');
       if (value < Math.min(...range) || value > Math.max(...range)) {
@@ -388,7 +408,9 @@ export const useLeverStore = defineStore('lever', () => {
     error,
     leverData,
 
-    // Getters
+    // Getters with translations
+    translatedLevers,
+    getTranslatedLever,
     getLeverValue,
     getAllLeverValues,
     leversByHeadline,

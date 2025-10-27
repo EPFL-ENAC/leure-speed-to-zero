@@ -1233,6 +1233,43 @@ export const PLOT_LABELS: Record<string, string> = {
   'wood-use_any-other-wood_non-coniferous[m3]': 'Other, Non-Coniferous',
 };
 
-export function getPlotLabel(key: string) {
-  return PLOT_LABELS[key] || key;
+// Lazy-loaded i18n instance to avoid circular dependencies
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let i18nInstance: any = null;
+
+function getI18n() {
+  if (!i18nInstance) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { i18n } = require('src/boot/i18n');
+      i18nInstance = i18n;
+    } catch {
+      // i18n not available yet
+      return null;
+    }
+  }
+  return i18nInstance;
+}
+
+export function getPlotLabel(key: string): string {
+  // First, try to get the English label from PLOT_LABELS
+  const englishLabel = PLOT_LABELS[key];
+
+  // If no English label exists, return the key itself
+  if (!englishLabel) {
+    return key;
+  }
+
+  // Try to get a translation from i18n if available
+  const i18n = getI18n();
+  if (i18n) {
+    // Check if there's a translation override for this label
+    const translationKey = `plotLabels.${englishLabel}`;
+    if (i18n.global.te(translationKey)) {
+      return i18n.global.t(translationKey) as string;
+    }
+  }
+
+  // Fall back to English label
+  return englishLabel;
 }
