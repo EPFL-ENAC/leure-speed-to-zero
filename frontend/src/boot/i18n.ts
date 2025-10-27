@@ -24,14 +24,15 @@ declare module 'vue-i18n' {
 }
 /* eslint-enable @typescript-eslint/no-empty-object-type */
 
-export default boot(({ app }) => {
-  const i18n = createI18n({
-    locale: localStorage.getItem('userLocale') || 'en-US',
-    legacy: false, // Use Composition API mode
-    globalInjection: true,
-    messages,
-  });
+// Create i18n instance
+export const i18n = createI18n({
+  locale: localStorage.getItem('userLocale') || 'en-US',
+  legacy: false, // Use Composition API mode
+  globalInjection: true,
+  messages,
+});
 
+export default boot(({ app }) => {
   // Set i18n instance on app
   app.use(i18n);
 });

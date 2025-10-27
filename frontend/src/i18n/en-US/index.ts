@@ -1,3 +1,6 @@
+import sectors from './sectors';
+import levers from './levers';
+
 export default {
   failed: 'Action failed',
   success: 'Action was successful',
@@ -27,4 +30,7 @@ export default {
   // Time periods
   historical: 'Historical',
   forecast: 'Forecast',
+  // Nested translations
+  sectors,
+  lever: levers,
 };

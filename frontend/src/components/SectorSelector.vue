@@ -8,11 +8,11 @@
       class="tabs"
     >
       <q-tab
-        v-for="{ label, value, icon, disabled } in sectors"
+        v-for="{ labelKey, value, icon, disabled } in sectors"
         :key="value"
         :name="value"
         :icon="icon"
-        :label="label"
+        :label="$t(labelKey)"
         :class="'tab' + (mini ? ' mini' : '') + (disabled ? ' disabled' : '')"
         :disable="disabled"
       >

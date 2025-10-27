@@ -1,3 +1,7 @@
+import sectors from './sectors';
+import levers from './levers';
+import plotLabels from './plotLabels';
+
 export default {
   failed: 'Action a échoué',
   success: 'Action réussie',
@@ -27,4 +31,8 @@ export default {
   // Time periods
   historical: 'Historique',
   forecast: 'Prévision',
+  // Nested translations
+  sectors,
+  lever: levers,
+  plotLabels,
 };
