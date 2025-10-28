@@ -23,7 +23,6 @@ declare module 'vue-i18n' {
   }
 }
 /* eslint-enable @typescript-eslint/no-empty-object-type */
-
 // Create i18n instance
 export const i18n = createI18n({
   locale: localStorage.getItem('userLocale') || 'en-US',

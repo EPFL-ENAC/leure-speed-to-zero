@@ -40,7 +40,8 @@ import VChart from 'vue-echarts';
 import { getPlotLabel } from 'utils/labelsPlot';
 import { useI18n } from 'vue-i18n';
 
-const { t } = useI18n();
+const i18n = useI18n();
+const { t } = i18n;
 
 // Register ECharts components
 use([
@@ -134,7 +135,7 @@ function extractChartData(
 
     if (years.length > 0) {
       series.push({
-        name: getPlotLabel(outputId),
+        name: getPlotLabel(outputId, i18n),
         color: outputConfig.color || null,
         years,
         data: values,
