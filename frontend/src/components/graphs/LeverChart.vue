@@ -51,6 +51,9 @@ import { useLeverStore } from 'stores/leversStore';
 import type { LeverResults, LeverYearData } from 'stores/leversStore';
 import { getPlotLabel } from 'utils/labelsPlot';
 import { type Lever, levers as leversConfigs } from 'src/utils/leversData';
+import { useI18n } from 'vue-i18n';
+
+const i18n = useI18n();
 
 // Types for ECharts
 interface ChartSeries {
@@ -173,7 +176,7 @@ const chartData = computed(() => {
 
     if (data.length > 0) {
       // Clean up the display name
-      const displayName = getPlotLabel(varName);
+      const displayName = getPlotLabel(varName, i18n);
       series.push({
         name: displayName,
         years,
