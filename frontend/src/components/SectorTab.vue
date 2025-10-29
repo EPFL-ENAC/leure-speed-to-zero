@@ -92,6 +92,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useLeverStore, type SectorWithKpis, type ChartConfig } from 'stores/leversStore';
 import type { KPI, KPIConfig } from 'src/utils/sectors';
 import KpiList from 'src/components/kpi/KpiList.vue';
@@ -101,6 +102,7 @@ import { getTranslatedText } from 'src/utils/translationHelpers';
 import type { TranslationObject } from 'src/utils/translationHelpers';
 
 const $q = useQuasar();
+const { locale } = useI18n();
 
 interface SectorConfig {
   kpis?: KPIConfig[];
@@ -124,7 +126,7 @@ const leverStore = useLeverStore();
 
 // Helper function to get translated subtab title
 const getSubtabTitle = (subtab: { title: string | TranslationObject; route: string }): string => {
-  return getTranslatedText(subtab.title);
+  return getTranslatedText(subtab.title, locale.value);
 }; // Tab state - reactive to route changes
 const currentTab = computed({
   get: () => {

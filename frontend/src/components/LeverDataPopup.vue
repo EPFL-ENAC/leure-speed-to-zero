@@ -23,8 +23,8 @@
           </div>
 
           <!-- Popup text info -->
-          <div v-if="leverConfig.popupText" class="popup-info-text">
-            <div class="text-body2">{{ leverConfig.popupText }}</div>
+          <div v-if="popupText" class="popup-info-text">
+            <div class="text-body2">{{ popupText }}</div>
           </div>
         </div>
       </q-card-section>
@@ -34,10 +34,14 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useLeverStore } from 'stores/leversStore';
 import LeverSelector from 'components/LeverSelector.vue';
 import LeverChart from 'components/graphs/LeverChart.vue';
 import { type Lever, levers as leversConfigs } from 'src/utils/leversData';
+import { getTranslatedText } from 'src/utils/translationHelpers';
+
+const { locale } = useI18n();
 
 // Props
 const props = defineProps<{
@@ -55,6 +59,12 @@ const leverStore = useLeverStore();
 const leverConfig = computed(() => {
   const conf = leversConfigs.find((l) => l.code === props.leverName) as Lever;
   return conf;
+});
+
+// Get translated popupText
+const popupText = computed(() => {
+  if (!leverConfig.value?.popupText) return '';
+  return getTranslatedText(leverConfig.value.popupText, locale.value);
 });
 </script>
 

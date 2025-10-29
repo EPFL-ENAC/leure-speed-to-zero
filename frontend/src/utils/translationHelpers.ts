@@ -1,5 +1,3 @@
-import { useI18n } from 'vue-i18n';
-
 /**
  * Type for translation objects in JSON configs
  */
@@ -25,10 +23,15 @@ export function isTranslationObject(value: unknown): value is TranslationObject 
 /**
  * Get translated text from either a string or a TranslationObject
  * @param value - Either a string or a TranslationObject
+ * @param locale - Current locale string (e.g., 'en-US')
  * @param fallback - Optional fallback text if translation not found
  * @returns Translated text
  */
-export function getTranslatedText(value: string | TranslationObject, fallback = ''): string {
+export function getTranslatedText(
+  value: string | TranslationObject,
+  locale: string,
+  fallback = '',
+): string {
   // If it's already a string, return it
   if (typeof value === 'string') {
     return value;
@@ -36,11 +39,8 @@ export function getTranslatedText(value: string | TranslationObject, fallback = 
 
   // If it's a translation object, get the correct locale
   if (isTranslationObject(value)) {
-    const { locale } = useI18n();
-    const currentLocale = locale.value;
-
     // Map locale format (e.g., 'en-US' to 'enUS')
-    const localeKey = currentLocale.replace('-', '') as keyof TranslationObject;
+    const localeKey = locale.replace('-', '') as keyof TranslationObject;
 
     // Return the translation for the current locale, fallback to enUS, then to fallback
     return value[localeKey] || value.enUS || fallback;

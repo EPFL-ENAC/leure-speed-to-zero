@@ -1,3 +1,5 @@
+import type { TranslationObject } from './translationHelpers';
+
 export interface DifficultyArea {
   min: number;
   max: number;
@@ -5,20 +7,12 @@ export interface DifficultyArea {
   label: string;
 }
 
-export interface UntranslatedLever {
-  code: string;
-  range: (string | number)[];
-  type: string;
-  disabled?: boolean;
-  difficultyColors: DifficultyArea[];
-}
-
 export interface Lever {
   code: string;
-  title: string;
-  group: string;
-  headline: string;
-  popupText?: string;
+  title: string | TranslationObject;
+  group: string | TranslationObject;
+  headline: string | TranslationObject;
+  popupText?: string | TranslationObject;
   disabled?: boolean;
   range: (string | number)[];
   type: string;
@@ -106,39 +100,24 @@ export const sectors = [
   { code: 'Boundary conditions', levers: ['lever_pop', 'lever_temp'] },
 ];
 
-export function getAllTranslatedLevers(t: (key: string) => string): Lever[] {
-  return levers.map((lever) => getTranslatedLeverData(lever.code, t));
-}
-
-// Helper function to get translated lever
-export function getTranslatedLeverData(leverCode: string, t: (key: string) => string): Lever {
-  const translationKey = `lever.${leverCode}`;
-
-  // Check if translation exists
-  const titleKey = `${translationKey}.title`;
-  const groupKey = `${translationKey}.group`;
-  const headlineKey = `${translationKey}.headline`;
-  const popupTextKey = `${translationKey}.popupText`;
-  const untranslatedLever = levers.find((lever) => lever.code === leverCode) as UntranslatedLever;
-
-  const difficultyColors = untranslatedLever.difficultyColors.map((area) => ({
-    ...area,
-    label: t(area.label),
-  }));
-
-  return {
-    title: t(titleKey),
-    group: t(groupKey),
-    popupText: t(popupTextKey),
-    headline: t(headlineKey),
-    ...untranslatedLever,
-    difficultyColors: difficultyColors,
-  };
-}
-
-export const levers: UntranslatedLever[] = [
+export const levers: Lever[] = [
   {
     code: 'lever_pkm',
+    title: {
+      enUS: 'Passenger distance',
+      frFR: 'Distance de voyage',
+      deDE: 'Fahrtdistanz',
+    },
+    group: {
+      enUS: 'Travel',
+      frFR: 'Voyages',
+      deDE: 'Reisen',
+    },
+    headline: {
+      enUS: 'Key behaviours',
+      frFR: 'Comportements clés',
+      deDE: 'Schlüsselverhalten',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -150,6 +129,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_passenger_modal-share',
+    title: {
+      enUS: 'Mode of transport',
+      frFR: 'Mode de transport',
+      deDE: 'Verkehrsmittel',
+    },
+    group: {
+      enUS: 'Travel',
+      frFR: 'Voyages',
+      deDE: 'Reisen',
+    },
+    headline: {
+      enUS: 'Key behaviours',
+      frFR: 'Comportements clés',
+      deDE: 'Schlüsselverhalten',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -161,6 +155,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_passenger_occupancy',
+    title: {
+      enUS: 'Occupancy',
+      frFR: "Taux d'occupation",
+      deDE: 'Auslastung',
+    },
+    group: {
+      enUS: 'Travel',
+      frFR: 'Voyages',
+      deDE: 'Reisen',
+    },
+    headline: {
+      enUS: 'Key behaviours',
+      frFR: 'Comportements clés',
+      deDE: 'Schlüsselverhalten',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -172,6 +181,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_passenger_utilization-rate',
+    title: {
+      enUS: 'Utilisation rate',
+      frFR: "Taux d'utilisation",
+      deDE: 'Nutzungsrate',
+    },
+    group: {
+      enUS: 'Travel',
+      frFR: 'Voyages',
+      deDE: 'Reisen',
+    },
+    headline: {
+      enUS: 'Key behaviours',
+      frFR: 'Comportements clés',
+      deDE: 'Schlüsselverhalten',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -183,6 +207,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_floor-intensity',
+    title: {
+      enUS: 'Living space per person',
+      frFR: 'Surface habitable par personne',
+      deDE: 'Wohnfläche pro Person',
+    },
+    group: {
+      enUS: 'Homes',
+      frFR: 'Logements',
+      deDE: 'Wohnungen',
+    },
+    headline: {
+      enUS: 'Key behaviours',
+      frFR: 'Comportements clés',
+      deDE: 'Schlüsselverhalten',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -194,6 +233,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_floor-area-fraction',
+    title: {
+      enUS: 'Percentage of cooled living space',
+      frFR: 'Espace climatisé',
+      deDE: 'Klimatisierte Wohnfläche',
+    },
+    group: {
+      enUS: 'Homes',
+      frFR: 'Logements',
+      deDE: 'Wohnungen',
+    },
+    headline: {
+      enUS: 'Key behaviours',
+      frFR: 'Comportements clés',
+      deDE: 'Schlüsselverhalten',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -205,6 +259,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_heatcool-behaviour',
+    title: {
+      enUS: 'Heating temperature',
+      frFR: 'Température de chauffage',
+      deDE: 'Heiztemperatur',
+    },
+    group: {
+      enUS: 'Homes',
+      frFR: 'Logements',
+      deDE: 'Wohnungen',
+    },
+    headline: {
+      enUS: 'Key behaviours',
+      frFR: 'Comportements clés',
+      deDE: 'Schlüsselverhalten',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -216,6 +285,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_appliance-own',
+    title: {
+      enUS: 'Appliances owned',
+      frFR: 'Appareils possédés',
+      deDE: 'Gerätebesitz',
+    },
+    group: {
+      enUS: 'Homes',
+      frFR: 'Logements',
+      deDE: 'Wohnungen',
+    },
+    headline: {
+      enUS: 'Key behaviours',
+      frFR: 'Comportements clés',
+      deDE: 'Schlüsselverhalten',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     disabled: true,
@@ -228,6 +312,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_appliance-use',
+    title: {
+      enUS: 'Appliance use',
+      frFR: "Utilisation d'appareils",
+      deDE: 'Gerätenutzung',
+    },
+    group: {
+      enUS: 'Homes',
+      frFR: 'Logements',
+      deDE: 'Wohnungen',
+    },
+    headline: {
+      enUS: '',
+      frFR: '',
+      deDE: '',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -239,6 +338,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_kcal-req',
+    title: {
+      enUS: 'Calories consumed',
+      frFR: 'Calories consommées',
+      deDE: 'Kalorienverbrauch',
+    },
+    group: {
+      enUS: 'Diet',
+      frFR: 'Alimentation',
+      deDE: 'Ernährung',
+    },
+    headline: {
+      enUS: 'Key behaviours',
+      frFR: 'Comportements clés',
+      deDE: 'Schlüsselverhalten',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -250,6 +364,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_diet',
+    title: {
+      enUS: 'Type of diet',
+      frFR: "Type d'alimentation",
+      deDE: 'Ernährungstyp',
+    },
+    group: {
+      enUS: 'Diet',
+      frFR: 'Alimentation',
+      deDE: 'Ernährung',
+    },
+    headline: {
+      enUS: 'Key behaviours',
+      frFR: 'Comportements clés',
+      deDE: 'Schlüsselverhalten',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -261,6 +390,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_paperpack',
+    title: {
+      enUS: 'Use of paper and packaging',
+      frFR: 'Papier et emballage',
+      deDE: 'Papier und Verpackung',
+    },
+    group: {
+      enUS: 'Consumption',
+      frFR: 'Consommation',
+      deDE: 'Konsum',
+    },
+    headline: {
+      enUS: 'Key behaviours',
+      frFR: 'Comportements clés',
+      deDE: 'Schlüsselverhalten',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -272,6 +416,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_product-substitution-rate',
+    title: {
+      enUS: 'Appliance retirement timing',
+      frFR: 'Durée de remplacement',
+      deDE: 'Geräte-Austauschzeitpunkt',
+    },
+    group: {
+      enUS: 'Consumption',
+      frFR: 'Consommation',
+      deDE: 'Konsum',
+    },
+    headline: {
+      enUS: 'Key behaviours',
+      frFR: 'Comportements clés',
+      deDE: 'Schlüsselverhalten',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -283,6 +442,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_fwaste',
+    title: {
+      enUS: 'Food waste',
+      frFR: 'Gaspillage alimentaire',
+      deDE: 'Lebensmittelverschwendung',
+    },
+    group: {
+      enUS: 'Consumption',
+      frFR: 'Consommation',
+      deDE: 'Konsum',
+    },
+    headline: {
+      enUS: 'Key behaviours',
+      frFR: 'Comportements clés',
+      deDE: 'Schlüsselverhalten',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -294,6 +468,26 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_freight_tkm',
+    title: {
+      enUS: 'Freight distance',
+      frFR: 'Distance de fret',
+      deDE: 'Frachtstrecke',
+    },
+    group: {
+      enUS: '',
+      frFR: '',
+      deDE: '',
+    },
+    headline: {
+      enUS: '',
+      frFR: '',
+      deDE: '',
+    },
+    popupText: {
+      enUS: 'Freight tonne-kilometers (tkm) represent the total transport work done to move freight. It is calculated by multiplying the weight of the freight (in tonnes) by the distance it is transported (in kilometers). Reducing freight tkm can be achieved through strategies such as optimizing logistics, improving supply chain efficiency, and promoting local sourcing to minimize transportation distances.',
+      frFR: "Les tonnes-kilomètres de fret (tkm) représentent le travail de transport total effectué. Elles sont calculées en multipliant le poids du fret (en tonnes) par la distance de transport (en km). La réduction des tkm peut être atteinte par l'optimisation logistique, l'efficacité de la chaîne d'approvisionnement et l'approvisionnement local.",
+      deDE: 'Fracht-Tonnenkilometer (tkm) stellen die gesamte Transportleistung dar. Sie werden berechnet durch Multiplikation des Frachtengewichts (in Tonnen) mit der Transportentfernung (in km). Die Reduktion von Fracht-tkm kann durch Logistikoptimierung, Lieferketteneffizienz und lokale Beschaffung erreicht werden.',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     disabled: true,
@@ -306,6 +500,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_passenger_veh-efficiency_new',
+    title: {
+      enUS: 'Passenger efficiency',
+      frFR: 'Efficacité des véhicules',
+      deDE: 'Fahrzeugeffizienz',
+    },
+    group: {
+      enUS: 'Transport',
+      frFR: 'Transport',
+      deDE: 'Transport',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -317,6 +526,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_passenger_technology-share_new',
+    title: {
+      enUS: 'New passenger tech',
+      frFR: 'Nouvelle technologie',
+      deDE: 'Neue Fahrzeugtechnik',
+    },
+    group: {
+      enUS: 'Transport',
+      frFR: 'Transport',
+      deDE: 'Transport',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -328,6 +552,26 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_freight_vehicle-efficiency_new',
+    title: {
+      enUS: 'Freight efficiency',
+      frFR: 'Efficacité du fret',
+      deDE: 'Lastereffizienz',
+    },
+    group: {
+      enUS: '',
+      frFR: '',
+      deDE: '',
+    },
+    headline: {
+      enUS: '',
+      frFR: '',
+      deDE: '',
+    },
+    popupText: {
+      enUS: 'Freight vehicle efficiency refers to the effectiveness of freight vehicles in utilizing energy to transport goods. It is typically measured in terms of fuel consumption per ton-mile or ton-kilometer. Improving freight vehicle efficiency can involve adopting advanced technologies, optimizing vehicle design, and implementing better maintenance practices to reduce fuel consumption and emissions.',
+      frFR: "L'efficacité des véhicules de fret se rapporte à l'efficacité de la consommation de carburant par tonne-km. L'amélioration peut être obtenue par l'adoption de technologies avancées, l'optimisation de la conception des véhicules et de meilleures pratiques d'entretien.",
+      deDE: 'Die Effizienz von Lastwagen bezieht sich auf die Effektivität bei der Umwandlung von Energie in Transportleistung. Sie wird üblicherweise in Treibstoffverbrauch pro Tonne-Kilometer gemessen. Die Verbesserung kann durch fortschrittliche Technologien, Fahrzeugoptimierung und bessere Wartung erreicht werden.',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     disabled: true,
@@ -340,6 +584,26 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_freight_technology-share_new',
+    title: {
+      enUS: 'Freight technology',
+      frFR: 'Technologie du fret',
+      deDE: 'Lastertechnik',
+    },
+    group: {
+      enUS: '',
+      frFR: '',
+      deDE: '',
+    },
+    headline: {
+      enUS: '',
+      frFR: '',
+      deDE: '',
+    },
+    popupText: {
+      enUS: 'Freight technology share refers to the proportion of freight transport that utilizes advanced or alternative technologies, such as electric or hydrogen-powered vehicles, compared to traditional fossil fuel-powered vehicles. Increasing the share of advanced technologies in freight transport can help reduce greenhouse gas emissions and improve overall energy efficiency in the logistics sector.',
+      frFR: "La part technologique du fret se rapporte à la proportion de transport de fret utilisant des technologies avancées ou alternatives (véhicules électriques ou à hydrogène) par rapport aux véhicules traditionnels. L'augmentation peut aider à réduire les émissions de gaz à effet de serre.",
+      deDE: 'Der Technologieanteil bei Frachttransport bezieht sich auf den Anteil von Fahrzeugen mit fortschrittlichen oder alternativen Technologien (z.B. elektrisch oder wasserstoffbetrieben) im Vergleich zu konventionellen Fahrzeugen. Eine Steigerung kann zur Reduktion von Treibhausgasemissionen beitragen.',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     disabled: true,
@@ -352,6 +616,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_freight_modal-share',
+    title: {
+      enUS: 'Freight mode',
+      frFR: 'Mode de fret',
+      deDE: 'Frachtverkehrsmittel',
+    },
+    group: {
+      enUS: 'Transport',
+      frFR: 'Transport',
+      deDE: 'Transport',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     disabled: true,
@@ -364,6 +643,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_freight_utilization-rate',
+    title: {
+      enUS: 'Freight utilization rate',
+      frFR: "Taux d'utilisation du fret",
+      deDE: 'Frachtutzungsrate',
+    },
+    group: {
+      enUS: 'Transport',
+      frFR: 'Transport',
+      deDE: 'Transport',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     disabled: true,
@@ -376,6 +670,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_fuel-mix',
+    title: {
+      enUS: 'Fuel mix',
+      frFR: 'Mix de carburants',
+      deDE: 'Brennstoffmix',
+    },
+    group: {
+      enUS: 'Transport',
+      frFR: 'Transport',
+      deDE: 'Transport',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -387,17 +696,47 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_building-renovation-rate',
+    title: {
+      enUS: 'Building envelope',
+      frFR: 'Enveloppe bâtiment',
+      deDE: 'Gebäudehülle',
+    },
+    group: {
+      enUS: 'Buildings',
+      frFR: 'Bâtiments',
+      deDE: 'Gebäude',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
       { min: 2, max: 2, color: '#92BFEB', label: 'lever.difficulty.moderate' },
       { min: 3, max: 3, color: '#559ADE', label: 'lever.difficulty.hard' },
-      { min: 4, max: 4, color: '#559ADE', label: 'lever.difficulty.hard' },
+      { min: 4, max: 4, color: '#1876D2', label: 'lever.difficulty.ambitious' },
     ],
   },
   {
     code: 'lever_district-heating-share',
+    title: {
+      enUS: 'District heating share',
+      frFR: 'Part chauffage urbain',
+      deDE: 'Fernwärmeanteil',
+    },
+    group: {
+      enUS: 'Buildings',
+      frFR: 'Bâtiments',
+      deDE: 'Gebäude',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -409,6 +748,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_heating-technology-fuel',
+    title: {
+      enUS: 'Technology and fuel share',
+      frFR: 'Technologie chauffage',
+      deDE: 'Heiztech & Brennstoff',
+    },
+    group: {
+      enUS: 'Buildings',
+      frFR: 'Bâtiments',
+      deDE: 'Gebäude',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -420,6 +774,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_heating-efficiency',
+    title: {
+      enUS: 'Heating tech efficiency',
+      frFR: 'Efficacité chauffage',
+      deDE: 'Heizeffizienz',
+    },
+    group: {
+      enUS: 'Buildings',
+      frFR: 'Bâtiments',
+      deDE: 'Gebäude',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -431,9 +800,24 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_appliance-efficiency',
+    title: {
+      enUS: 'Appliances efficiency',
+      frFR: 'Efficacité appareils',
+      deDE: 'Geräteeffizienz',
+    },
+    group: {
+      enUS: 'Buildings',
+      frFR: 'Bâtiments',
+      deDE: 'Gebäude',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
-    disabled: true,
     type: 'num',
+    disabled: true,
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
       { min: 2, max: 2, color: '#92BFEB', label: 'lever.difficulty.moderate' },
@@ -443,6 +827,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_material-efficiency',
+    title: {
+      enUS: 'Material efficiency',
+      frFR: 'Efficacité matériaux',
+      deDE: 'Materialeffizienz',
+    },
+    group: {
+      enUS: 'Manufacturing',
+      frFR: 'Fabrication',
+      deDE: 'Fertigung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -454,6 +853,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_material-switch',
+    title: {
+      enUS: 'Material switch',
+      frFR: 'Changement matériau',
+      deDE: 'Materialwechsel',
+    },
+    group: {
+      enUS: 'Manufacturing',
+      frFR: 'Fabrication',
+      deDE: 'Fertigung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -465,6 +879,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_technology-share',
+    title: {
+      enUS: 'Technology efficiency',
+      frFR: 'Efficacité technologie',
+      deDE: 'Technologieeffizienz',
+    },
+    group: {
+      enUS: 'Manufacturing',
+      frFR: 'Fabrication',
+      deDE: 'Fertigung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -476,6 +905,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_technology-development',
+    title: {
+      enUS: 'Energy efficiency',
+      frFR: 'Efficacité énergétique',
+      deDE: 'Energieeffizienz',
+    },
+    group: {
+      enUS: 'Manufacturing',
+      frFR: 'Fabrication',
+      deDE: 'Fertigung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -487,6 +931,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_energy-carrier-mix',
+    title: {
+      enUS: 'Fuel mix',
+      frFR: 'Mix combustible',
+      deDE: 'Brennstoffmix',
+    },
+    group: {
+      enUS: 'Manufacturing',
+      frFR: 'Fabrication',
+      deDE: 'Fertigung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -498,6 +957,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_cc',
+    title: {
+      enUS: 'Carbon Capture in manufacturing',
+      frFR: 'Capture carbone',
+      deDE: 'Kohlenstoffabscheidung',
+    },
+    group: {
+      enUS: 'Manufacturing',
+      frFR: 'Fabrication',
+      deDE: 'Fertigung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -509,6 +983,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_ccus',
+    title: {
+      enUS: 'Carbon Capture to fuel',
+      frFR: 'Carbone en combustible',
+      deDE: 'Kohlenstoff in Brennstoff',
+    },
+    group: {
+      enUS: 'Manufacturing',
+      frFR: 'Fabrication',
+      deDE: 'Fertigung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -520,6 +1009,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_decom_fossil',
+    title: {
+      enUS: 'Decommissioning of fossil fuels',
+      frFR: 'Déclassement fossile',
+      deDE: 'Stilllegung Fossile',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -531,6 +1035,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_ccs',
+    title: {
+      enUS: 'Carbon Capture and Storage',
+      frFR: 'Capture & stockage carbone',
+      deDE: 'Kohlenstoffabscheidung & -speicherung',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -542,6 +1061,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_capacity_nuclear',
+    title: {
+      enUS: 'Nuclear capacity',
+      frFR: 'Capacité nucléaire',
+      deDE: 'Kernkraftkapazität',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -553,6 +1087,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_capacity_RES_wind',
+    title: {
+      enUS: 'Wind capacity',
+      frFR: 'Capacité éolienne',
+      deDE: 'Windkapazität',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -564,6 +1113,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_capacity_RES_solar',
+    title: {
+      enUS: 'Solar capacity',
+      frFR: 'Capacité solaire',
+      deDE: 'Solarkapazität',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -575,6 +1139,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_capacity_RES_other',
+    title: {
+      enUS: 'Other renewable capacity',
+      frFR: 'Autres renouvelables',
+      deDE: 'Sonstige erneuerbare',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -586,6 +1165,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_bal-strat',
+    title: {
+      enUS: 'Balancing strategies',
+      frFR: 'Stratégies équilibre',
+      deDE: 'Ausgleichsstrategien',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -597,7 +1191,22 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_str_charging',
-    range: ['A', 'B', 'C', 'D'],
+    title: {
+      enUS: 'Charging profiles',
+      frFR: 'Profil de charge',
+      deDE: 'Ladeverhalten',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
+    range: [],
     type: 'char',
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
@@ -608,7 +1217,22 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_climate-smart-crop',
-    range: ['A', 'B', 'C', 'D'],
+    title: {
+      enUS: 'Climate smart crop production',
+      frFR: 'Agriculture climat-intelligente',
+      deDE: 'Klimabewusste Landwirtschaft',
+    },
+    group: {
+      enUS: 'Land and food',
+      frFR: 'Terre et alimentation',
+      deDE: 'Land und Ernährung',
+    },
+    headline: {
+      enUS: 'Resources and land use',
+      frFR: 'Ressources et utilisation des terres',
+      deDE: 'Ressourcen und Landnutzung',
+    },
+    range: [],
     type: 'char',
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
@@ -619,7 +1243,22 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_climate-smart-livestock',
-    range: ['A', 'B', 'C', 'D'],
+    title: {
+      enUS: 'Climate smart livestock',
+      frFR: 'Élevage climat-intelligent',
+      deDE: 'Klimabewusste Viehzucht',
+    },
+    group: {
+      enUS: 'Land and food',
+      frFR: 'Terre et alimentation',
+      deDE: 'Land und Ernährung',
+    },
+    headline: {
+      enUS: 'Resources and land use',
+      frFR: 'Ressources et utilisation des terres',
+      deDE: 'Ressourcen und Landnutzung',
+    },
+    range: [],
     type: 'char',
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
@@ -630,6 +1269,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_bioenergy-capacity',
+    title: {
+      enUS: 'Bioenergy capacity',
+      frFR: 'Capacité bioénergie',
+      deDE: 'Bioenergie-Kapazität',
+    },
+    group: {
+      enUS: 'Land and food',
+      frFR: 'Terre et alimentation',
+      deDE: 'Land und Ernährung',
+    },
+    headline: {
+      enUS: 'Resources and land use',
+      frFR: 'Ressources et utilisation des terres',
+      deDE: 'Ressourcen und Landnutzung',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -641,6 +1295,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_alt-protein',
+    title: {
+      enUS: 'Alternative protein source',
+      frFR: 'Source protéine alternative',
+      deDE: 'Alternative Proteinquellen',
+    },
+    group: {
+      enUS: 'Land and food',
+      frFR: 'Terre et alimentation',
+      deDE: 'Land und Ernährung',
+    },
+    headline: {
+      enUS: 'Resources and land use',
+      frFR: 'Ressources et utilisation des terres',
+      deDE: 'Ressourcen und Landnutzung',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -652,6 +1321,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_climate-smart-forestry',
+    title: {
+      enUS: 'Forestry practices',
+      frFR: 'Pratiques forestières',
+      deDE: 'Forstwirtschaftliche Praktiken',
+    },
+    group: {
+      enUS: 'Land and food',
+      frFR: 'Terre et alimentation',
+      deDE: 'Land und Ernährung',
+    },
+    headline: {
+      enUS: 'Resources and land use',
+      frFR: 'Ressources et utilisation des terres',
+      deDE: 'Ressourcen und Landnutzung',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -663,6 +1347,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_land-man',
+    title: {
+      enUS: 'Land management',
+      frFR: 'Gestion des terres',
+      deDE: 'Landmanagement',
+    },
+    group: {
+      enUS: 'Land and food',
+      frFR: 'Terre et alimentation',
+      deDE: 'Land und Ernährung',
+    },
+    headline: {
+      enUS: 'Resources and land use',
+      frFR: 'Ressources et utilisation des terres',
+      deDE: 'Ressourcen und Landnutzung',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -674,7 +1373,22 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_biomass-hierarchy',
-    range: ['A', 'B', 'C', 'D'],
+    title: {
+      enUS: 'Hierarchy for biomass end-uses',
+      frFR: 'Hiérarchie biomasse',
+      deDE: 'Biomasse-Hierarchie',
+    },
+    group: {
+      enUS: 'Land and food',
+      frFR: 'Terre et alimentation',
+      deDE: 'Land und Ernährung',
+    },
+    headline: {
+      enUS: 'Resources and land use',
+      frFR: 'Ressources et utilisation des terres',
+      deDE: 'Ressourcen und Landnutzung',
+    },
+    range: [],
     type: 'char',
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
@@ -685,6 +1399,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_biodiversity',
+    title: {
+      enUS: 'Area set aside for nature...',
+      frFR: 'Zones pour la nature...',
+      deDE: 'Naturschutzflächen...',
+    },
+    group: {
+      enUS: 'Biodiversity',
+      frFR: 'Biodiversité',
+      deDE: 'Biodiversität',
+    },
+    headline: {
+      enUS: 'Resources and land use',
+      frFR: 'Ressources et utilisation des terres',
+      deDE: 'Ressourcen und Landnutzung',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -696,7 +1425,22 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_land-prioritisation',
-    range: ['A', 'B'],
+    title: {
+      enUS: '...from agriculture or forestry',
+      frFR: '...agriculture ou foresterie',
+      deDE: '...aus Landwirtschaft/Forstwirtschaft',
+    },
+    group: {
+      enUS: 'Biodiversity',
+      frFR: 'Biodiversité',
+      deDE: 'Biodiversität',
+    },
+    headline: {
+      enUS: 'Resources and land use',
+      frFR: 'Ressources et utilisation des terres',
+      deDE: 'Ressourcen und Landnutzung',
+    },
+    range: [],
     type: 'char',
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
@@ -707,7 +1451,22 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_pop',
-    range: ['A', 'B', 'C', 'D'],
+    title: {
+      enUS: 'Population',
+      frFR: 'Population',
+      deDE: 'Bevölkerung',
+    },
+    group: {
+      enUS: 'Demographics & long-term',
+      frFR: 'Démographie & long terme',
+      deDE: 'Demografie & Langfristig',
+    },
+    headline: {
+      enUS: 'Boundary conditions',
+      frFR: 'Conditions limites',
+      deDE: 'Randbedingungen',
+    },
+    range: [],
     type: 'char',
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
@@ -718,7 +1477,22 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_urbpop',
-    range: ['A', 'B', 'C', 'D'],
+    title: {
+      enUS: 'Urban population',
+      frFR: 'Population urbaine',
+      deDE: 'Stadtbevölkerung',
+    },
+    group: {
+      enUS: 'Demographics & long-term',
+      frFR: 'Démographie & long terme',
+      deDE: 'Demografie & Langfristig',
+    },
+    headline: {
+      enUS: 'Boundary conditions',
+      frFR: 'Conditions limites',
+      deDE: 'Randbedingungen',
+    },
+    range: [],
     type: 'char',
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
@@ -729,6 +1503,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_ems-after-2050',
+    title: {
+      enUS: 'EU emissions after 2050',
+      frFR: 'Émissions UE après 2050',
+      deDE: 'EU-Emissionen nach 2050',
+    },
+    group: {
+      enUS: 'Demographics & long-term',
+      frFR: 'Démographie & long terme',
+      deDE: 'Demografie & Langfristig',
+    },
+    headline: {
+      enUS: 'Boundary conditions',
+      frFR: 'Conditions limites',
+      deDE: 'Randbedingungen',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -740,7 +1529,22 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_food-net-import',
-    range: ['A', 'B', 'C', 'D'],
+    title: {
+      enUS: 'Food production',
+      frFR: 'Production alimentaire',
+      deDE: 'Lebensmittelproduktion',
+    },
+    group: {
+      enUS: 'Domestic supply',
+      frFR: 'Approvisionnement interne',
+      deDE: 'Inlandsversorgung',
+    },
+    headline: {
+      enUS: 'Boundary conditions',
+      frFR: 'Conditions limites',
+      deDE: 'Randbedingungen',
+    },
+    range: [],
     type: 'char',
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
@@ -751,7 +1555,22 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_product-net-import',
-    range: ['A', 'B', 'C', 'D'],
+    title: {
+      enUS: 'Product manufacturing',
+      frFR: 'Fabrication produits',
+      deDE: 'Produktherstellung',
+    },
+    group: {
+      enUS: 'Domestic supply',
+      frFR: 'Approvisionnement interne',
+      deDE: 'Inlandsversorgung',
+    },
+    headline: {
+      enUS: 'Boundary conditions',
+      frFR: 'Conditions limites',
+      deDE: 'Randbedingungen',
+    },
+    range: [],
     type: 'char',
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
@@ -762,7 +1581,22 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_material-net-import',
-    range: ['A', 'B', 'C', 'D'],
+    title: {
+      enUS: 'Material production',
+      frFR: 'Production matériaux',
+      deDE: 'Materialproduktion',
+    },
+    group: {
+      enUS: 'Domestic supply',
+      frFR: 'Approvisionnement interne',
+      deDE: 'Inlandsversorgung',
+    },
+    headline: {
+      enUS: 'Boundary conditions',
+      frFR: 'Conditions limites',
+      deDE: 'Randbedingungen',
+    },
+    range: [],
     type: 'char',
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
@@ -773,6 +1607,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_temp',
+    title: {
+      enUS: 'Global mitigation effort',
+      frFR: 'Effort mitigation mondial',
+      deDE: 'Globales Mitigationsziel',
+    },
+    group: {
+      enUS: 'Constraints',
+      frFR: 'Contraintes',
+      deDE: 'Einschränkungen',
+    },
+    headline: {
+      enUS: 'Boundary conditions',
+      frFR: 'Conditions limites',
+      deDE: 'Randbedingungen',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -784,6 +1633,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_passenger_aviation-pkm',
+    title: {
+      enUS: 'Aviation travel',
+      frFR: 'Distance aérienne',
+      deDE: 'Flugdistanz',
+    },
+    group: {
+      enUS: 'Travel',
+      frFR: 'Voyages',
+      deDE: 'Reisen',
+    },
+    headline: {
+      enUS: 'Key behaviours',
+      frFR: 'Comportements clés',
+      deDE: 'Schlüsselverhalten',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -795,6 +1659,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_pv-capacity',
+    title: {
+      enUS: 'Solar',
+      frFR: 'Solaire',
+      deDE: 'Solar',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -806,6 +1685,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_csp-capacity',
+    title: {
+      enUS: 'Concentrated Solar Power',
+      frFR: 'Énergie solaire concentrée',
+      deDE: 'Konzentrierte Solarenergie',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -817,6 +1711,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_onshore-wind-capacity',
+    title: {
+      enUS: 'Wind',
+      frFR: 'Éolien',
+      deDE: 'Wind',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -828,6 +1737,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_offshore-wind-capacity',
+    title: {
+      enUS: 'Offshore Wind Power',
+      frFR: 'Éolien offshore',
+      deDE: 'Offshore-Wind',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -839,6 +1763,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_biogas-capacity',
+    title: {
+      enUS: 'Biogas',
+      frFR: 'Biogaz',
+      deDE: 'Biogas',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -850,6 +1789,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_biomass-capacity',
+    title: {
+      enUS: 'Biomass',
+      frFR: 'Biomasse',
+      deDE: 'Biomasse',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -861,6 +1815,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_hydroelectric-capacity',
+    title: {
+      enUS: 'Hydro, geo & tidal',
+      frFR: 'Hydro, géo et marée',
+      deDE: 'Hydro, Geo & Gezeitenenergie',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -872,6 +1841,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_geothermal-capacity',
+    title: {
+      enUS: 'Geothermal',
+      frFR: 'Géothermie',
+      deDE: 'Geothermie',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -883,6 +1867,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_marine-capacity',
+    title: {
+      enUS: 'Marine',
+      frFR: 'Énergie marine',
+      deDE: 'Meeresenergie',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -894,6 +1893,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_gas-capacity',
+    title: {
+      enUS: 'Gas',
+      frFR: 'Gaz',
+      deDE: 'Gas',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -905,6 +1919,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_oil-capacity',
+    title: {
+      enUS: 'Oil',
+      frFR: 'Pétrole',
+      deDE: 'Öl',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -916,6 +1945,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_coal-capacity',
+    title: {
+      enUS: 'Coal',
+      frFR: 'Charbon',
+      deDE: 'Kohle',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -927,6 +1971,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_nuclear-capacity',
+    title: {
+      enUS: 'Nuclear',
+      frFR: 'Nucléaire',
+      deDE: 'Kernkraft',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -938,6 +1997,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_carbon-storage-capacity',
+    title: {
+      enUS: 'Carbon Capture ratio in power',
+      frFR: 'Ratio capture carbone',
+      deDE: 'Kohlenspeicherung',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -949,6 +2023,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_ev-charging-profile',
+    title: {
+      enUS: 'EV charging habits',
+      frFR: 'Habitudes charge VE',
+      deDE: 'E-Auto-Ladeverhalten',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -960,6 +2049,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_non-residential-heat-profile',
+    title: {
+      enUS: 'Non-residential heat profile',
+      frFR: 'Profil chaleur commerce',
+      deDE: 'Gewerbliche Wärmenutzung',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -971,6 +2075,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_residential-heat-profile',
+    title: {
+      enUS: 'Residential heat profile',
+      frFR: 'Profil chaleur résidentiel',
+      deDE: 'Wohnwärmenutzung',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -982,6 +2101,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_non-residential-cooling-profile',
+    title: {
+      enUS: 'Non-residential cooling profile',
+      frFR: 'Profil refroid commerce',
+      deDE: 'Gewerbliche Kühlung',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -993,6 +2127,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_residential-cooling-profile',
+    title: {
+      enUS: 'Residential cooling profile',
+      frFR: 'Profil refroid résidentiel',
+      deDE: 'Wohnkühlung',
+    },
+    group: {
+      enUS: 'Power',
+      frFR: 'Production énergie',
+      deDE: 'Stromerzeugung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -1004,6 +2153,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_eol-waste-management',
+    title: {
+      enUS: 'Waste management',
+      frFR: 'Gestion des déchets',
+      deDE: 'Abfallwirtschaft',
+    },
+    group: {
+      enUS: 'Manufacturing',
+      frFR: 'Fabrication',
+      deDE: 'Fertigung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -1015,6 +2179,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_eol-material-recovery',
+    title: {
+      enUS: 'Material recovery',
+      frFR: 'Récupération matériaux',
+      deDE: 'Materialrückgewinnung',
+    },
+    group: {
+      enUS: 'Manufacturing',
+      frFR: 'Fabrication',
+      deDE: 'Fertigung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
@@ -1026,6 +2205,21 @@ export const levers: UntranslatedLever[] = [
   },
   {
     code: 'lever_harvest-rate',
+    title: {
+      enUS: 'Harvest rate',
+      frFR: 'Taux de récolte',
+      deDE: 'Erntequote',
+    },
+    group: {
+      enUS: 'Manufacturing',
+      frFR: 'Fabrication',
+      deDE: 'Fertigung',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
     range: [1, 2, 3, 4],
     type: 'num',
     difficultyColors: [
