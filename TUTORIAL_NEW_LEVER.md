@@ -1,11 +1,13 @@
 # Adding a New Lever
 
 ## Quick Overview
+
 A lever = user control that adjusts model parameters, displayed in sector sidebar
 
 ## Steps
 
 ### 1. Add Lever Definition
+
 Add to `/frontend/src/config/levers.ts`:
 
 ```ts
@@ -43,6 +45,7 @@ Add to `/frontend/src/config/levers.ts`:
 ```
 
 ### 2. Associate with Sector
+
 Add lever code to sector in `/frontend/src/config/sectors.ts`:
 
 ```ts
@@ -66,4 +69,5 @@ Add lever code to sector in `/frontend/src/config/sectors.ts`:
 - **Difficulty colors**: Visual feedback for ambition levels
 
 ## Example
+
 See `lever_harvest-rate` in `/frontend/src/config/levers.ts` (line ~2107)

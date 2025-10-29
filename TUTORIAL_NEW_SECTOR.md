@@ -1,11 +1,13 @@
 # Adding a New Sector
 
 ## Quick Overview
+
 A sector = navigation item with charts/KPIs organized in subtabs + associated levers
 
 ## Steps
 
 ### 1. Create Subtabs Config
+
 Create `/frontend/src/config/subtabs/{sector-name}.json`:
 
 ```json
@@ -21,7 +23,7 @@ Create `/frontend/src/config/subtabs/{sector-name}.json`:
   "charts": {
     "ChartId1": {
       "title": { "enUS": "Chart Title", "frFR": "...", "deDE": "..." },
-      "type": "StackedArea",  // or "Line"
+      "type": "StackedArea", // or "Line"
       "unit": "kWh",
       "outputs": ["output-id-1", "output-id-2"]
     }
@@ -30,15 +32,12 @@ Create `/frontend/src/config/subtabs/{sector-name}.json`:
 ```
 
 ### 2. Create Vue Component
+
 Create `/frontend/src/pages/sectors/{SectorName}Tab.vue`:
 
 ```vue
 <template>
-  <SectorTab 
-    sector-name="{sector-name}" 
-    sector-display-name="{sector-name}" 
-    :config="{sectorName}Config" 
-  />
+  <SectorTab sector-name="{sector-name}" sector-display-name="{sector-name}" :config="{sectorName}Config" />
 </template>
 
 <script setup lang="ts">
@@ -48,6 +47,7 @@ import SectorTab from 'components/SectorTab.vue';
 ```
 
 ### 3. Register in Config
+
 Add to `/frontend/src/config/sectors.ts`:
 
 ```ts
@@ -60,6 +60,7 @@ Add to `/frontend/src/config/sectors.ts`:
 ```
 
 ### 4. Add Route
+
 Add to `/frontend/src/router/routes.ts`:
 
 ```ts
@@ -79,6 +80,7 @@ Add to `/frontend/src/router/routes.ts`:
 - **Plot labels**: Add output labels in `/frontend/src/config/plotLabels.ts`
 
 ## Example: See Forestry
+
 - Config: `/frontend/src/config/subtabs/forestry.json`
 - Component: `/frontend/src/pages/sectors/ForestryTab.vue`
 - Entry in `sectors.ts` and `routes.ts`
