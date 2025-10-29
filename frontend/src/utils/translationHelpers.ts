@@ -40,10 +40,15 @@ export function getTranslatedText(
   // If it's a translation object, get the correct locale
   if (isTranslationObject(value)) {
     // Map locale format (e.g., 'en-US' to 'enUS')
-    const localeKey = locale.replace('-', '') as keyof TranslationObject;
+    const localeKey = locale.replace(/-/g, '');
 
-    // Return the translation for the current locale, fallback to enUS, then to fallback
-    return value[localeKey] || value.enUS || fallback;
+    // Check if the localeKey is a valid key in the TranslationObject
+    if (localeKey in value && typeof value[localeKey as keyof TranslationObject] === 'string') {
+      return value[localeKey as keyof TranslationObject];
+    }
+
+    // Fallback to enUS, then to fallback parameter
+    return value.enUS || fallback;
   }
 
   return fallback;

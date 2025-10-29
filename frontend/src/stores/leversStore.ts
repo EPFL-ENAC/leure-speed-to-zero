@@ -8,7 +8,8 @@ import { modelService } from 'services/modelService';
 import { AxiosError } from 'axios';
 import type { Region } from 'src/utils/region';
 import type { KpiData } from 'src/utils/sectors';
-import type { TranslationObject } from 'src/utils/translationHelpers';
+import { getTranslatedText, type TranslationObject } from 'src/utils/translationHelpers';
+import { useI18n } from 'vue-i18n';
 
 // Types
 export interface YearData {
@@ -104,8 +105,10 @@ function getDefaultLeverValue(leverCode: string): number {
     return 1; // For character levers, return the index 1
   }
 }
-
 export const useLeverStore = defineStore('lever', () => {
+  // Composables
+  const { locale } = useI18n();
+
   // State
   const levers = ref<Record<string, number>>({});
   const selectedPathway = ref<string | null>(null);
@@ -130,7 +133,7 @@ export const useLeverStore = defineStore('lever', () => {
   const leversByHeadline = computed(() => {
     const result: Record<string, Lever[]> = {};
     leversData.forEach((lever) => {
-      const headlineKey = typeof lever.headline === 'string' ? lever.headline : lever.headline.enUS;
+      const headlineKey = getTranslatedText(lever.headline, locale.value);
       if (!result[headlineKey]) result[headlineKey] = [];
       result[headlineKey]?.push(lever);
     });
@@ -154,7 +157,7 @@ export const useLeverStore = defineStore('lever', () => {
   const leversByGroup = computed(() => {
     const result: Record<string, Lever[]> = {};
     leversData.forEach((lever) => {
-      const groupKey = typeof lever.group === 'string' ? lever.group : lever.group.enUS;
+      const groupKey = getTranslatedText(lever.group, locale.value);
       if (!result[groupKey]) result[groupKey] = [];
       result[groupKey]?.push(lever);
     });
