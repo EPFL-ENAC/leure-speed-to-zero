@@ -1,4 +1,3 @@
-import sectors from './sectors';
 import levers from './levers';
 import plotLabels from './plotLabels';
 export default {
@@ -32,6 +31,5 @@ export default {
   forecast: 'Forecast',
   // Nested translations
   plotLabels,
-  sectors,
   lever: levers,
 };

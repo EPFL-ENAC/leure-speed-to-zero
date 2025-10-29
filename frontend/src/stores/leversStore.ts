@@ -13,6 +13,8 @@ import { modelService } from 'services/modelService';
 import { AxiosError } from 'axios';
 import type { Region } from 'src/utils/region';
 import type { KpiData } from 'src/utils/sectors';
+import type { TranslationObject } from 'src/utils/translationHelpers';
+
 // Types
 export interface YearData {
   year: number;
@@ -34,7 +36,7 @@ export interface OutputConfig {
 }
 
 export interface ChartConfig {
-  title: string;
+  title: string | TranslationObject;
   type: string;
   unit: string;
   outputs: Array<string | OutputConfig>;

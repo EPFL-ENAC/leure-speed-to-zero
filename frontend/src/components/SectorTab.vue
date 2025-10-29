@@ -17,7 +17,7 @@
             v-for="tab in config.subtabs"
             :key="tab.route"
             :name="tab.route"
-            :label="tab.title"
+            :label="getSubtabTitle(tab)"
           />
         </q-tabs>
         <q-separator></q-separator>
@@ -52,6 +52,8 @@
                 <chart-card
                   v-for="chartId in tab.charts"
                   :chart-config="config.charts[chartId] as ChartConfig"
+                  :chart-id="chartId"
+                  :sector-name="sectorName"
                   :key="chartId"
                   :model-data="modelResults"
                 />
@@ -63,12 +65,14 @@
           <div v-else class="q-pa-md">
             <div v-for="tab in config.subtabs" :key="tab.route" class="mobile-tab-section">
               <div class="mobile-tab-header">
-                <div class="text-h6 mobile-tab-title">{{ tab.title }}</div>
+                <div class="text-h6 mobile-tab-title">{{ getSubtabTitle(tab) }}</div>
               </div>
               <div class="row flex-wrap">
                 <chart-card
                   v-for="chartId in tab.charts"
                   :chart-config="config.charts[chartId] as ChartConfig"
+                  :chart-id="chartId"
+                  :sector-name="sectorName"
                   :key="chartId"
                   :model-data="modelResults"
                 />
@@ -93,13 +97,15 @@ import type { KPI, KPIConfig } from 'src/utils/sectors';
 import KpiList from 'src/components/kpi/KpiList.vue';
 import ChartCard from 'components/graphs/ChartCard.vue';
 import { useQuasar } from 'quasar';
+import { getTranslatedText } from 'src/utils/translationHelpers';
+import type { TranslationObject } from 'src/utils/translationHelpers';
 
 const $q = useQuasar();
 
 interface SectorConfig {
   kpis?: KPIConfig[];
   subtabs: Array<{
-    title: string;
+    title: string | TranslationObject;
     route: string;
     charts: string[];
   }>;
@@ -116,7 +122,10 @@ const router = useRouter();
 const route = useRoute();
 const leverStore = useLeverStore();
 
-// Tab state - reactive to route changes
+// Helper function to get translated subtab title
+const getSubtabTitle = (subtab: { title: string | TranslationObject; route: string }): string => {
+  return getTranslatedText(subtab.title);
+}; // Tab state - reactive to route changes
 const currentTab = computed({
   get: () => {
     return typeof route.params.subtab === 'string' && route.params.subtab
