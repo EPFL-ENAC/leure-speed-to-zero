@@ -141,7 +141,7 @@ function extractChartData(
 
     if (years.length > 0) {
       series.push({
-        name: getTranslatedText(plotLabels[outputId] || '', i18n.locale.value),
+        name: getTranslatedText(plotLabels[outputId] || outputId, i18n.locale.value, outputId),
         color: outputConfig.color || null,
         years,
         data: values,

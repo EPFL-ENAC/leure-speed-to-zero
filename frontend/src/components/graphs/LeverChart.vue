@@ -177,7 +177,7 @@ const chartData = computed(() => {
 
     if (data.length > 0) {
       // Clean up the display name
-      const displayName = getTranslatedText(plotLabels[varName] || '', i18n.locale.value);
+      const displayName = getTranslatedText(plotLabels[varName] || varName, i18n.locale.value);
       series.push({
         name: displayName,
         years,
