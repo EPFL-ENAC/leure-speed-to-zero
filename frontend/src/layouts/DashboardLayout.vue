@@ -4,7 +4,9 @@
     <q-header v-if="$q.screen.lt.md" elevated class="bg-white text-dark">
       <q-toolbar>
         <q-btn flat round dense icon="menu" @click="toggleSectorSelector" />
-        <q-toolbar-title class="color-primary text-h6">{{ currentSectorDisplay }}</q-toolbar-title>
+        <q-toolbar-title class="color-primary text-h6">{{
+          getTranslatedText(currentSectorDisplay, $i18n.locale)
+        }}</q-toolbar-title>
         <q-btn flat round dense icon="tune" @click="toggleMobileLevers" />
       </q-toolbar>
     </q-header>
@@ -92,6 +94,7 @@ import LeverGroups from 'components/LeverGroups.vue';
 import SectorSelector from 'components/SectorSelector.vue';
 import LanguageSwitcher from 'components/LanguageSwitcher.vue';
 import { useQuasar } from 'quasar';
+import { getTranslatedText } from 'src/utils/translationHelpers';
 const $q = useQuasar();
 
 const leverStore = useLeverStore();

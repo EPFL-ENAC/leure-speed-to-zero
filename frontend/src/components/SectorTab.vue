@@ -165,8 +165,18 @@ const kpis = computed((): KPI[] => {
 
   const returnData = newData
     .map((kpi) => {
-      const confKpi = confKpis.find((conf) => conf.name === kpi.title);
-      if (!confKpi) return null;
+      // Find matching config by comparing backend title with translated name
+      const confKpi = confKpis.find((conf) => {
+        // Handle both string and TranslationObject types
+        const confName =
+          typeof conf.name === 'string' ? conf.name : getTranslatedText(conf.name, 'enUS'); // Use English as the canonical matching key
+        return confName === kpi.title;
+      });
+
+      if (!confKpi) {
+        console.warn(`No config found for KPI: ${kpi.title}`);
+        return null;
+      }
 
       // Merge config with runtime data, ensuring the KPI interface is satisfied
       return {
@@ -242,11 +252,16 @@ async function runModel() {
     width: 100%;
     bottom: 0;
     z-index: 5;
+    background: linear-gradient(to top, rgba(255, 255, 255, 0.98) 85%, rgba(255, 255, 255, 0) 100%);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(8px);
   }
 }
 
 .kpis-content {
   padding: 1rem;
+  background: white;
+  border-radius: 8px 8px 0 0;
 }
 
 .title {
