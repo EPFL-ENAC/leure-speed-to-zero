@@ -12,7 +12,7 @@
         :key="value"
         :name="value"
         :icon="icon"
-        :label="getTranslatedText(label)"
+        :label="getLabel(label)"
         :class="'tab' + (mini ? ' mini' : '') + (disabled ? ' disabled' : '')"
         :disable="disabled"
       >
@@ -25,15 +25,22 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { sectors } from 'utils/sectors';
-import { getTranslatedText } from 'src/utils/translationHelpers';
+import { getTranslatedText, type TranslationObject } from 'src/utils/translationHelpers';
 
 const route = useRoute();
 const router = useRouter();
+const { locale } = useI18n();
 
 const { mini } = defineProps<{
   mini: boolean;
 }>();
+
+// Helper function to get translated text (can be called in template)
+const getLabel = (label: string | TranslationObject) => {
+  return getTranslatedText(label, locale.value);
+};
 
 // Reactive sector selection
 const currentSector = ref(route.path.split('/')[1] || 'buildings');

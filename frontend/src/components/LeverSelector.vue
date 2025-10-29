@@ -51,7 +51,7 @@
     <div class="row q-mt-xs" v-if="lever.difficultyColors && lever.difficultyColors.length > 0">
       <div class="col-12">
         <div class="difficulty-labels text-caption text-grey-7">
-          <span>{{ lever.difficultyColors[0]?.label }}</span>
+          <span>{{ $t(lever.difficultyColors[0]?.label || '') }}</span>
           <q-btn
             v-if="props.variant === 'default'"
             :icon="showChart ? 'expand_less' : 'expand_more'"
@@ -63,7 +63,9 @@
             :title="showChart ? 'Hide chart' : 'Show chart'"
             class="expand-btn"
           />
-          <span>{{ lever.difficultyColors[lever.difficultyColors.length - 1]?.label }}</span>
+          <span>{{
+            $t(lever.difficultyColors[lever.difficultyColors.length - 1]?.label || '')
+          }}</span>
         </div>
       </div>
     </div>
@@ -85,11 +87,12 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { Lever } from 'src/utils/leversData';
+import { getTranslatedText } from 'src/utils/translationHelpers';
 import LeverDataPopup from 'src/components/LeverDataPopup.vue';
 import LeverChart from 'src/components/graphs/LeverChart.vue';
 
 // eslint-disable-next-line @typescript-eslint/unbound-method
-const { t, te } = useI18n();
+const { t, te, locale } = useI18n();
 
 const props = withDefaults(
   defineProps<{
@@ -116,8 +119,13 @@ const disabled = computed(() => props.lever.disabled || false);
 
 // Get translated lever title
 const leverTitle = computed(() => {
+  // First try the new TranslationObject format
+  const translated = getTranslatedText(props.lever.title, locale.value);
+  if (translated) {
+    return translated;
+  }
+  // Fallback to old i18n key format
   const titleKey = `lever.${props.lever.code}.title`;
-  // Check if translation exists, otherwise fall back to lever.title
   return te(titleKey) ? t(titleKey) : props.lever.title;
 });
 

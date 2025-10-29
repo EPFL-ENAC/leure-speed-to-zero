@@ -94,7 +94,7 @@ const legendSelected = ref<Record<string, boolean>>({});
 
 // Computed property for translated chart title
 const translatedTitle = computed<string>(() => {
-  return getTranslatedText(props.chartConfig.title);
+  return getTranslatedText(props.chartConfig.title, i18n.locale.value);
 }); // Handle legend selection changes
 const handleLegendSelectChanged = (params: { selected: Record<string, boolean> }) => {
   legendSelected.value = { ...params.selected };
