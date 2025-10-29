@@ -37,7 +37,7 @@ import {
   MarkLineComponent,
 } from 'echarts/components';
 import VChart from 'vue-echarts';
-import { plotLabels } from 'utils/labelsPlot';
+import { plotLabels } from 'config/plotLabels';
 import { useI18n } from 'vue-i18n';
 import { getTranslatedText } from 'src/utils/translationHelpers';
 

@@ -49,7 +49,7 @@ import {
 import VChart from 'vue-echarts';
 import { useLeverStore } from 'stores/leversStore';
 import type { LeverResults, LeverYearData } from 'stores/leversStore';
-import { plotLabels } from 'utils/labelsPlot';
+import { plotLabels } from 'config/plotLabels';
 import { type Lever, levers as leversConfigs } from 'src/utils/leversData';
 import { useI18n } from 'vue-i18n';
 import { getTranslatedText } from 'src/utils/translationHelpers';
