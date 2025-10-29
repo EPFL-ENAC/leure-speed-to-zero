@@ -22,7 +22,7 @@
           {{ value.toFixed(1) }}<span class="kpi-unit">{{ unit }}</span>
         </div>
       </div>
-      <div class="kpi-name">{{ name }}</div>
+      <div class="kpi-name">{{ translatedName }}</div>
       <div class="kpi-status-ring" :style="`border-color: ${colorName}`"></div>
       <q-icon
         :name="statusIcon"
@@ -31,8 +31,8 @@
         :class="{ rotating: isRotating }"
         size="1.2rem"
       />
-      <q-tooltip v-if="info" max-width="250px" anchor="top middle" self="bottom middle">
-        <div class="tooltip-text">{{ info }}</div>
+      <q-tooltip v-if="translatedInfo" max-width="250px" anchor="top middle" self="bottom middle">
+        <div class="tooltip-text">{{ translatedInfo }}</div>
       </q-tooltip>
     </component>
   </div>
@@ -40,10 +40,23 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { type KPI } from 'src/utils/sectors';
+import { getTranslatedText } from 'src/utils/translationHelpers';
+
+const { locale } = useI18n();
 
 const props = withDefaults(defineProps<KPI>(), {
   maximize: false,
+});
+
+const translatedName = computed(() => {
+  return typeof props.name === 'string' ? props.name : getTranslatedText(props.name, locale.value);
+});
+
+const translatedInfo = computed(() => {
+  if (!props.info) return '';
+  return typeof props.info === 'string' ? props.info : getTranslatedText(props.info, locale.value);
 });
 
 const isRotating = ref(false);
