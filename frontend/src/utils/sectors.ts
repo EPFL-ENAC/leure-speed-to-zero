@@ -1,25 +1,55 @@
+import type { TranslationObject } from './translationHelpers';
+
 export interface Sector {
-  label: string;
-  labelKey: string; // i18n translation key
+  label: string | TranslationObject;
   value: string;
   icon: string;
   disabled?: boolean;
 }
 
 export const sectors: Sector[] = [
-  { label: 'Buildings', labelKey: 'sectors.buildings', value: 'buildings', icon: 'apartment' },
-  { label: 'Transport', labelKey: 'sectors.transport', value: 'transport', icon: 'bike_scooter' },
-  { label: 'Forestry', labelKey: 'sectors.forestry', value: 'forestry', icon: 'forest' },
   {
-    label: 'Agriculture',
-    labelKey: 'sectors.agriculture',
-    value: 'agriculture',
-    icon: 'agriculture',
-    disabled: true,
+    label: {
+      enUS: 'Buildings',
+      frFR: 'Bâtiments',
+      deDE: 'Gebäude',
+    },
+    value: 'buildings',
+    icon: 'apartment',
   },
   {
-    label: 'Overall',
-    labelKey: 'sectors.overall',
+    label: {
+      enUS: 'Transport',
+      frFR: 'Transport',
+      deDE: 'Transport',
+    },
+    value: 'transport',
+    icon: 'bike_scooter',
+  },
+  {
+    label: {
+      enUS: 'Forestry',
+      frFR: 'Foresterie',
+      deDE: 'Forstwirtschaft',
+    },
+    value: 'forestry',
+    icon: 'forest',
+  },
+  {
+    label: {
+      enUS: 'Agriculture',
+      frFR: 'Agriculture',
+      deDE: 'Landwirtschaft',
+    },
+    value: 'agriculture',
+    icon: 'agriculture',
+  },
+  {
+    label: {
+      enUS: 'Overall',
+      frFR: "Vue d'ensemble",
+      deDE: 'Gesamt',
+    },
     value: 'overall',
     icon: 'dashboard',
     disabled: true,
@@ -55,9 +85,9 @@ export const sectors: Sector[] = [
 ];
 
 export interface KPIConfig {
-  name: string;
+  name: string | TranslationObject;
   route: string;
-  info: string;
+  info: string | TranslationObject;
   maximize: boolean;
   unit: string;
   thresholds: {

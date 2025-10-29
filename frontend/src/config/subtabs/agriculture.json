@@ -2,7 +2,11 @@
   "kpis": [],
   "subtabs": [
     {
-      "title": "Commodity Supply",
+      "title": {
+        "enUS": "Commodity Supply",
+        "frFR": "Approvisionnement en produits",
+        "deDE": "Warenversorgung"
+      },
       "charts": [
         "CropSupply",
         "MeatSupply",
@@ -14,22 +18,38 @@
       "route": "food-supply"
     },
     {
-      "title": "Population Diet",
+      "title": {
+        "enUS": "Population Diet",
+        "frFR": "Régime alimentaire",
+        "deDE": "Ernährung der Bevölkerung"
+      },
       "charts": ["CropSupply", "MeatSupply", "FishSupply", "StimulantSupply", "OtherFoodSupply"],
       "route": "population-diet"
     },
     {
-      "title": "Food Wastes & Losses",
+      "title": {
+        "enUS": "Food Wastes & Losses",
+        "frFR": "Gaspillage et pertes alimentaires",
+        "deDE": "Lebensmittelverschwendung und -verluste"
+      },
       "charts": ["FoodWaste"],
       "route": "food-waste"
     },
     {
-      "title": "Self-sufficiency",
+      "title": {
+        "enUS": "Self-sufficiency",
+        "frFR": "Autosuffisance",
+        "deDE": "Selbstversorgung"
+      },
       "charts": ["CropSSR", "MeatSSR", "AlcoholSSR"],
       "route": "self-sufficiency"
     },
     {
-      "title": "Livestock raising",
+      "title": {
+        "enUS": "Livestock raising",
+        "frFR": "Élevage",
+        "deDE": "Viehzucht"
+      },
       "charts": [
         "LivestockGrossPopulation",
         "LivestockNetPopulation",
@@ -41,34 +61,58 @@
       "route": "livestock-population"
     },
     {
-      "title": "Domestic Production",
+      "title": {
+        "enUS": "Domestic Production",
+        "frFR": "Production domestique",
+        "deDE": "Inländische Produktion"
+      },
       "charts": ["MeatProduction", "CropProduction"],
       "route": "meat-production"
     },
     {
-      "title": "Bioenergy",
+      "title": {
+        "enUS": "Bioenergy",
+        "frFR": "Bioénergie",
+        "deDE": "Bioenergie"
+      },
       "charts": ["Solid", "Liquid", "Gas"],
       "route": "bioenergy"
     },
     {
-      "title": "Input use",
+      "title": {
+        "enUS": "Input use",
+        "frFR": "Utilisation des intrants",
+        "deDE": "Inputnutzung"
+      },
       "charts": ["Energy", "Chemical", "AgricultureLandUse"],
       "route": "input-use"
     },
     {
-      "title": "Land-use",
+      "title": {
+        "enUS": "Land-use",
+        "frFR": "Utilisation des terres",
+        "deDE": "Landnutzung"
+      },
       "charts": ["AgricultureLandUse", "CroplandUse"],
       "route": "cropland"
     },
     {
-      "title": "Emissions",
+      "title": {
+        "enUS": "Emissions",
+        "frFR": "Émissions",
+        "deDE": "Emissionen"
+      },
       "charts": ["CO2", "CH4", "N2O"],
       "route": "emissions"
     }
   ],
   "charts": {
     "LivestockGrossPopulation": {
-      "title": "Livestock population (slaughtered)",
+      "title": {
+        "enUS": "Livestock population (slaughtered)",
+        "frFR": "Population de bétail (abattu)",
+        "deDE": "Viehbestand (geschlachtet)"
+      },
       "type": "StackedArea",
       "unit": "lsu",
       "outputs": [
@@ -82,7 +126,11 @@
       ]
     },
     "LivestockNetPopulation": {
-      "title": "Livestock population (living)",
+      "title": {
+        "enUS": "Livestock population (living)",
+        "frFR": "Population de bétail (vivant)",
+        "deDE": "Viehbestand (lebend)"
+      },
       "type": "StackedArea",
       "unit": "lsu",
       "outputs": [
@@ -94,7 +142,11 @@
       ]
     },
     "MeatProduction": {
-      "title": "Meat production",
+      "title": {
+        "enUS": "Meat production",
+        "frFR": "Production de viande",
+        "deDE": "Fleischproduktion"
+      },
       "type": "StackedArea",
       "unit": "t",
       "outputs": [
@@ -108,7 +160,11 @@
       ]
     },
     "CropProduction": {
-      "title": "Crop production",
+      "title": {
+        "enUS": "Crop production",
+        "frFR": "Production végétale",
+        "deDE": "Pflanzenproduktion"
+      },
       "type": "StackedArea",
       "unit": "t",
       "outputs": [
@@ -123,7 +179,11 @@
       ]
     },
     "Feed": {
-      "title": "Livestock feed input",
+      "title": {
+        "enUS": "Livestock feed input",
+        "frFR": "Alimentation du bétail",
+        "deDE": "Viehfutter"
+      },
       "type": "StackedArea",
       "unit": "kcal",
       "outputs": [
@@ -143,7 +203,11 @@
       ]
     },
     "CO2": {
-      "title": "CO2 emissions",
+      "title": {
+        "enUS": "CO2 emissions",
+        "frFR": "Émissions de CO2",
+        "deDE": "CO2-Emissionen"
+      },
       "type": "StackedArea",
       "unit": "Mt",
       "outputs": [
@@ -153,7 +217,11 @@
       ]
     },
     "CH4": {
-      "title": "CH4 emissions",
+      "title": {
+        "enUS": "CH4 emissions",
+        "frFR": "Émissions de CH4",
+        "deDE": "CH4-Emissionen"
+      },
       "type": "StackedArea",
       "unit": "t",
       "outputs": [
@@ -185,7 +253,11 @@
       ]
     },
     "N2O": {
-      "title": "N2O emissions",
+      "title": {
+        "enUS": "N2O emissions",
+        "frFR": "Émissions de N2O",
+        "deDE": "N2O-Emissionen"
+      },
       "type": "StackedArea",
       "unit": "t",
       "outputs": [
@@ -217,7 +289,11 @@
       ]
     },
     "FoodConsumption": {
-      "title": "Total food supply",
+      "title": {
+        "enUS": "Total food supply",
+        "frFR": "Approvisionnement alimentaire total",
+        "deDE": "Gesamte Lebensmittelversorgung"
+      },
       "type": "StackedArea",
       "unit": "kcal",
       "outputs": [
@@ -256,7 +332,11 @@
       ]
     },
     "FoodWaste": {
-      "title": "Total food waste",
+      "title": {
+        "enUS": "Total food waste",
+        "frFR": "Déchets alimentaires totaux",
+        "deDE": "Gesamte Lebensmittelverschwendung"
+      },
       "type": "StackedArea",
       "unit": "t",
       "outputs": [
@@ -295,7 +375,11 @@
       ]
     },
     "CropSSR": {
-      "title": "Crop-based groups",
+      "title": {
+        "enUS": "Crop-based groups",
+        "frFR": "Groupes végétaux",
+        "deDE": "Pflanzenbasierte Gruppen"
+      },
       "type": "Line",
       "unit": "%",
       "outputs": [
@@ -310,7 +394,11 @@
       ]
     },
     "MeatSSR": {
-      "title": "Meat-based groups",
+      "title": {
+        "enUS": "Meat-based groups",
+        "frFR": "Groupes carnés",
+        "deDE": "Fleischbasierte Gruppen"
+      },
       "type": "Line",
       "unit": "%",
       "outputs": [
@@ -326,7 +414,11 @@
       ]
     },
     "AlcoholSSR": {
-      "title": "Other food groups",
+      "title": {
+        "enUS": "Other food groups",
+        "frFR": "Autres groupes alimentaires",
+        "deDE": "Andere Lebensmittelgruppen"
+      },
       "type": "Line",
       "unit": "%",
       "outputs": [
@@ -339,7 +431,11 @@
       ]
     },
     "Energy": {
-      "title": "Energy use",
+      "title": {
+        "enUS": "Energy use",
+        "frFR": "Consommation d'énergie",
+        "deDE": "Energieverbrauch"
+      },
       "type": "StackedArea",
       "unit": "TWh",
       "outputs": [
@@ -357,13 +453,21 @@
       ]
     },
     "Chemical": {
-      "title": "Input use",
+      "title": {
+        "enUS": "Input use",
+        "frFR": "Utilisation des intrants",
+        "deDE": "Inputnutzung"
+      },
       "type": "StackedArea",
       "unit": "t",
       "outputs": ["agr_input-use_liming[t]", "agr_input-use_urea[t]"]
     },
     "Gas": {
-      "title": "Gaseous bioenergy",
+      "title": {
+        "enUS": "Gaseous bioenergy",
+        "frFR": "Bioénergie gazeuse",
+        "deDE": "Gasförmige Bioenergie"
+      },
       "type": "StackedArea",
       "unit": "TWh",
       "outputs": [
@@ -376,7 +480,11 @@
       ]
     },
     "Liquid": {
-      "title": "Liquid bioenergy",
+      "title": {
+        "enUS": "Liquid bioenergy",
+        "frFR": "Bioénergie liquide",
+        "deDE": "Flüssige Bioenergie"
+      },
       "type": "StackedArea",
       "unit": "TWh",
       "outputs": [
@@ -390,7 +498,11 @@
       ]
     },
     "Solid": {
-      "title": "Solid bioenergy",
+      "title": {
+        "enUS": "Solid bioenergy",
+        "frFR": "Bioénergie solide",
+        "deDE": "Feste Bioenergie"
+      },
       "type": "StackedArea",
       "unit": "m3",
       "outputs": [
@@ -399,7 +511,11 @@
       ]
     },
     "CroplandCover": {
-      "title": "Cropland per commodity",
+      "title": {
+        "enUS": "Cropland per commodity",
+        "frFR": "Terres cultivées par produit",
+        "deDE": "Ackerland nach Produkten"
+      },
       "type": "StackedArea",
       "unit": "ha",
       "outputs": [
@@ -418,13 +534,21 @@
       ]
     },
     "CroplandUse": {
-      "title": "Cropland per use",
+      "title": {
+        "enUS": "Cropland per use",
+        "frFR": "Terres cultivées par usage",
+        "deDE": "Ackerland nach Verwendung"
+      },
       "type": "StackedArea",
       "unit": "kcal",
       "outputs": ["agr_crop-cons_bioenergy[kcal]", "agr_crop-cons_non-food[kcal]"]
     },
     "CropSupply": {
-      "title": "Crop-based supply",
+      "title": {
+        "enUS": "Crop-based supply",
+        "frFR": "Approvisionnement végétal",
+        "deDE": "Pflanzenversorgung"
+      },
       "type": "StackedArea",
       "unit": "t",
       "outputs": [
@@ -439,7 +563,11 @@
       ]
     },
     "MeatSupply": {
-      "title": "Meat-based supply",
+      "title": {
+        "enUS": "Meat-based supply",
+        "frFR": "Approvisionnement carné",
+        "deDE": "Fleischversorgung"
+      },
       "type": "StackedArea",
       "unit": "t",
       "outputs": [
@@ -455,7 +583,11 @@
       ]
     },
     "FishSupply": {
-      "title": "Fish-based supply",
+      "title": {
+        "enUS": "Fish-based supply",
+        "frFR": "Approvisionnement en poisson",
+        "deDE": "Fischversorgung"
+      },
       "type": "StackedArea",
       "unit": "t",
       "outputs": [
@@ -467,13 +599,21 @@
       ]
     },
     "StimulantSupply": {
-      "title": "Stimulant supply",
+      "title": {
+        "enUS": "Stimulant supply",
+        "frFR": "Approvisionnement en stimulants",
+        "deDE": "Stimulanzienversorgung"
+      },
       "type": "StackedArea",
       "unit": "t",
       "outputs": ["agr_demand_tpe_coffee[t]", "agr_demand_tpe_cocoa[t]", "agr_demand_tpe_tea[t]"]
     },
     "OtherFoodSupply": {
-      "title": "Other food supply",
+      "title": {
+        "enUS": "Other food supply",
+        "frFR": "Autres approvisionnements alimentaires",
+        "deDE": "Sonstige Lebensmittelversorgung"
+      },
       "type": "StackedArea",
       "unit": "t",
       "outputs": [
@@ -486,7 +626,11 @@
       ]
     },
     "ManureVolume": {
-      "title": "Manure",
+      "title": {
+        "enUS": "Manure",
+        "frFR": "Fumier",
+        "deDE": "Gülle"
+      },
       "type": "StackedArea",
       "unit": "tn",
       "outputs": [
@@ -500,19 +644,31 @@
       ]
     },
     "Grassland": {
-      "title": "Pastureland",
+      "title": {
+        "enUS": "Pastureland",
+        "frFR": "Pâturages",
+        "deDE": "Weideland"
+      },
       "type": "StackedArea",
       "unit": "ha",
       "outputs": ["agr_lus_land_raw_grassland[ha]"]
     },
     "RuminantDensity": {
-      "title": "Livestock density (ruminants)",
+      "title": {
+        "enUS": "Livestock density (ruminants)",
+        "frFR": "Densité de bétail (ruminants)",
+        "deDE": "Viehdichte (Wiederkäuer)"
+      },
       "type": "Line",
       "unit": "lsu/ha",
       "outputs": ["agr_climate-smart-livestock_density[lsu/ha]"]
     },
     "AgricultureLandUse": {
-      "title": "Agriculture land",
+      "title": {
+        "enUS": "Agriculture land",
+        "frFR": "Terres agricoles",
+        "deDE": "Landwirtschaftliche Fläche"
+      },
       "type": "StackedArea",
       "unit": "ha",
       "outputs": [

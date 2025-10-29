@@ -39,6 +39,7 @@ import {
 import VChart from 'vue-echarts';
 import { getPlotLabel } from 'utils/labelsPlot';
 import { useI18n } from 'vue-i18n';
+import { getTranslatedText } from 'src/utils/translationHelpers';
 
 const i18n = useI18n();
 const { t } = i18n;
@@ -82,6 +83,8 @@ interface EChartsTooltipParam {
 const props = defineProps<{
   chartConfig: ChartConfig;
   modelData: SectorData;
+  chartId?: string;
+  sectorName?: string;
 }>();
 
 const chartRef = ref<ECharts>();
@@ -89,7 +92,10 @@ const chartRef = ref<ECharts>();
 // Track legend selection state
 const legendSelected = ref<Record<string, boolean>>({});
 
-// Handle legend selection changes
+// Computed property for translated chart title
+const translatedTitle = computed<string>(() => {
+  return getTranslatedText(props.chartConfig.title);
+}); // Handle legend selection changes
 const handleLegendSelectChanged = (params: { selected: Record<string, boolean> }) => {
   legendSelected.value = { ...params.selected };
 };
@@ -258,7 +264,7 @@ const chartOption = computed(() => {
 
   return {
     title: {
-      text: props.chartConfig.title,
+      text: translatedTitle.value,
       textStyle: {
         fontSize: 13,
         fontWeight: 'bold',

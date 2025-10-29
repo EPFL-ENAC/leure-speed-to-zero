@@ -8,11 +8,11 @@
       class="tabs"
     >
       <q-tab
-        v-for="{ labelKey, value, icon, disabled } in sectors"
+        v-for="{ label, value, icon, disabled } in sectors"
         :key="value"
         :name="value"
         :icon="icon"
-        :label="$t(labelKey)"
+        :label="getTranslatedText(label)"
         :class="'tab' + (mini ? ' mini' : '') + (disabled ? ' disabled' : '')"
         :disable="disabled"
       >
@@ -26,6 +26,7 @@
 import { ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { sectors } from 'utils/sectors';
+import { getTranslatedText } from 'src/utils/translationHelpers';
 
 const route = useRoute();
 const router = useRouter();

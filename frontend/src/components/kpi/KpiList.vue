@@ -1,7 +1,7 @@
 <template>
   <div v-if="kpis.length > 0" class="kpi-list q-pa-md">
     <div class="kpi-container">
-      <div v-for="kpi in kpis" :key="kpi.name" class="kpi-item">
+      <div v-for="kpi in kpis" :key="kpi.route" class="kpi-item">
         <KpiBox v-bind="kpi" />
       </div>
     </div>
