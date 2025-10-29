@@ -1,0 +1,86 @@
+import { type Sector } from 'src/utils/sectors';
+export const sectors: Sector[] = [
+  {
+    label: {
+      enUS: 'Buildings',
+      frFR: 'Bâtiments',
+      deDE: 'Gebäude',
+    },
+    value: 'buildings',
+    icon: 'apartment',
+    levers: [
+      'lever_heatcool-behaviour',
+      'lever_floor-intensity',
+      'lever_building-renovation-rate',
+      'lever_heating-technology-fuel',
+      'lever_heating-efficiency',
+      'lever_appliance-own',
+      'lever_appliance-use',
+      'lever_appliance-efficiency',
+    ],
+  },
+  {
+    label: {
+      enUS: 'Transport',
+      frFR: 'Transport',
+      deDE: 'Transport',
+    },
+    value: 'transport',
+    icon: 'bike_scooter',
+    levers: [
+      'lever_pkm',
+      'lever_passenger_aviation-pkm',
+      'lever_passenger_modal-share',
+      'lever_passenger_occupancy',
+      'lever_passenger_utilization-rate',
+      'lever_fuel-mix',
+      'lever_passenger_technology-share_new',
+      'lever_passenger_veh-efficiency_new',
+      'lever_freight_modal-share',
+      'lever_freight_technology-share_new',
+      'lever_freight_tkm',
+      'lever_freight_utilization-rate',
+      'lever_freight_vehicle-efficiency_new',
+    ],
+  },
+  {
+    label: {
+      enUS: 'Forestry',
+      frFR: 'Foresterie',
+      deDE: 'Forstwirtschaft',
+    },
+    value: 'forestry',
+    icon: 'forest',
+    levers: ['lever_harvest-rate'],
+  },
+  {
+    label: {
+      enUS: 'Agriculture',
+      frFR: 'Agriculture',
+      deDE: 'Landwirtschaft',
+    },
+    value: 'agriculture',
+    icon: 'agriculture',
+    levers: [
+      'lever_kcal-req',
+      'lever_diet',
+      'lever_fwaste',
+      'lever_climate-smart-crop',
+      'lever_climate-smart-livestock',
+      'lever_bioenergy-capacity',
+      'lever_alt-protein',
+      'lever_biomass-hierarchy',
+    ],
+  },
+  {
+    label: {
+      enUS: 'Overall',
+      frFR: "Vue d'ensemble",
+      deDE: 'Gesamt',
+    },
+    value: 'overall',
+    icon: 'dashboard',
+    disabled: true,
+    levers: [],
+  },
+];

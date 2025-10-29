@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
 import type { Lever } from 'utils/leversData';
-import { levers as leversData, sectors } from 'utils/leversData';
+import { levers as leversData } from 'utils/leversData';
+import { sectors } from 'utils/sectors';
 import { ExamplePathways } from 'utils/examplePathways';
 import { modelService } from 'services/modelService';
 import { AxiosError } from 'axios';
@@ -139,7 +140,7 @@ export const useLeverStore = defineStore('lever', () => {
   // Function to get levers filtered by sector (with translations)
   const getLeversForSector = (sectorCode: string): Lever[] => {
     // Find the sector configuration
-    const sector = sectors.find((s) => s.code.toLowerCase() === sectorCode.toLowerCase());
+    const sector = sectors.find((s) => s.value === sectorCode);
     if (!sector) return [];
 
     // Filter levers that belong to this sector and translate them
