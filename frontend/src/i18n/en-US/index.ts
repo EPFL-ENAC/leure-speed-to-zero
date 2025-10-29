@@ -1,5 +1,5 @@
 import levers from './levers';
-import plotLabels from './plotLabels';
+
 export default {
   failed: 'Action failed',
   success: 'Action was successful',
@@ -30,6 +30,5 @@ export default {
   historical: 'Historical',
   forecast: 'Forecast',
   // Nested translations
-  plotLabels,
   lever: levers,
 };
