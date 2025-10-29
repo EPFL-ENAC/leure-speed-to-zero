@@ -49,9 +49,10 @@ import {
 import VChart from 'vue-echarts';
 import { useLeverStore } from 'stores/leversStore';
 import type { LeverResults, LeverYearData } from 'stores/leversStore';
-import { getPlotLabel } from 'utils/labelsPlot';
+import { plotLabels } from 'utils/labelsPlot';
 import { type Lever, levers as leversConfigs } from 'src/utils/leversData';
 import { useI18n } from 'vue-i18n';
+import { getTranslatedText } from 'src/utils/translationHelpers';
 
 const i18n = useI18n();
 
@@ -176,7 +177,7 @@ const chartData = computed(() => {
 
     if (data.length > 0) {
       // Clean up the display name
-      const displayName = getPlotLabel(varName, i18n);
+      const displayName = getTranslatedText(plotLabels[varName] || '', i18n.locale.value);
       series.push({
         name: displayName,
         years,

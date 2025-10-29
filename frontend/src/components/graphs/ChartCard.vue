@@ -37,7 +37,7 @@ import {
   MarkLineComponent,
 } from 'echarts/components';
 import VChart from 'vue-echarts';
-import { getPlotLabel } from 'utils/labelsPlot';
+import { plotLabels } from 'utils/labelsPlot';
 import { useI18n } from 'vue-i18n';
 import { getTranslatedText } from 'src/utils/translationHelpers';
 
@@ -141,7 +141,7 @@ function extractChartData(
 
     if (years.length > 0) {
       series.push({
-        name: getPlotLabel(outputId, i18n),
+        name: getTranslatedText(plotLabels[outputId] || '', i18n.locale.value),
         color: outputConfig.color || null,
         years,
         data: values,

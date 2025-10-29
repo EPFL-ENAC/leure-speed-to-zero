@@ -1,5 +1,4 @@
 import levers from './levers';
-import plotLabels from './plotLabels';
 
 export default {
   failed: 'Action a échoué',
@@ -32,5 +31,4 @@ export default {
   forecast: 'Prévision',
   // Nested translations
   lever: levers,
-  plotLabels,
 };
