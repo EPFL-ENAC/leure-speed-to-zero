@@ -21,6 +21,9 @@ export default {
   runModel: 'Run Model',
   runModelToSeeData: 'Run the model to see {sector} data',
   clickToView: 'Click to view {title} data',
+  backToOverview: 'Back to Overview',
+  selectKpiToViewDetails: 'Select a KPI to view detailed charts and analysis',
+  showMoreInformation: 'Show more information',
   // Chart components
   loadingChartData: 'Loading chart data...',
   retry: 'Retry',
@@ -29,6 +32,17 @@ export default {
   // Time periods
   historical: 'Historical',
   forecast: 'Forecast',
+  // KPI translations
+  kpi: {
+    status: {
+      excellent: 'Excellent',
+      warning: 'Warning',
+      danger: 'Danger',
+    },
+    higherIsBetter: 'Higher is better',
+    lowerIsBetter: 'Lower is better',
+    clickToViewDetails: 'Click to view detailed charts',
+  },
   // Nested translations
   lever: levers,
 };

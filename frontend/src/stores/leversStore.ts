@@ -121,7 +121,7 @@ export const useLeverStore = defineStore('lever', () => {
 
   // Private variables (not exposed in the return)
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-  const debounceDelay = 500;
+  const debounceDelay = 10;
 
   const getLeverValue = (leverCode: string): number =>
     levers.value[leverCode] ?? getDefaultLeverValue(leverCode);
