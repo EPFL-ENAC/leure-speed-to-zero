@@ -21,6 +21,10 @@ export default {
   runModel: 'Modell ausführen',
   runModelToSeeData: 'Führen Sie das Modell aus, um {sector}-Daten anzuzeigen',
   clickToView: 'Klicken Sie hier, um {title}-Daten anzuzeigen',
+  backToOverview: 'Zurück zur Übersicht',
+  selectKpiToViewDetails:
+    'Wählen Sie einen KPI aus, um detaillierte Diagramme und Analysen anzuzeigen',
+  showMoreInformation: 'Weitere Informationen anzeigen',
   // Chart components
   loadingChartData: 'Diagrammdaten werden geladen...',
   retry: 'Erneut versuchen',
@@ -29,6 +33,17 @@ export default {
   // Time periods
   historical: 'Historisch',
   forecast: 'Prognose',
+  // KPI translations
+  kpi: {
+    status: {
+      excellent: 'Ausgezeichnet',
+      warning: 'Warnung',
+      danger: 'Gefahr',
+    },
+    higherIsBetter: 'Höher ist besser',
+    lowerIsBetter: 'Niedriger ist besser',
+    clickToViewDetails: 'Klicken Sie hier, um detaillierte Diagramme anzuzeigen',
+  },
   // Nested translations
   lever: levers,
 };

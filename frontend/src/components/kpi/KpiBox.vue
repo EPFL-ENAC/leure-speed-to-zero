@@ -13,24 +13,41 @@
             }
           : undefined
       "
-      class="kpi-circle"
-      :class="{ 'cursor-pointer': route }"
-      @click="handleClick"
+      class="kpi-box"
+      :class="[statusClass, { 'cursor-pointer': route, 'is-active': isActive }]"
     >
-      <div class="kpi-circle-content">
-        <div class="kpi-value">
-          {{ value.toFixed(1) }}<span class="kpi-unit">{{ unit }}</span>
+      <!-- Header -->
+      <div class="kpi-box-header">
+        <h4 class="kpi-box-title">{{ translatedName }}</h4>
+        <q-icon :name="statusIcon" :class="`status-icon ${currentStatus}`" size="1rem" />
+      </div>
+
+      <!-- Metric Display -->
+      <div class="kpi-box-metric">
+        <span class="metric-number">{{ formatValue(value) }}</span>
+        <span class="metric-unit">{{ unit }}</span>
+      </div>
+
+      <!-- Mini Scale Bar -->
+      <div class="kpi-box-scale">
+        <div class="mini-scale-bar">
+          <!-- Zone backgrounds -->
+          <div
+            v-for="zone in zoneStyles"
+            :key="zone.name"
+            class="mini-scale-zone"
+            :class="`zone-${zone.name}`"
+            :style="zone.style"
+          ></div>
+          <!-- Current value indicator -->
+          <div
+            class="mini-value-indicator"
+            :class="currentStatus"
+            :style="`left: ${valuePosition}%`"
+          ></div>
         </div>
       </div>
-      <div class="kpi-name">{{ translatedName }}</div>
-      <div class="kpi-status-ring" :style="`border-color: ${colorName}`"></div>
-      <q-icon
-        :name="statusIcon"
-        :style="`color: ${colorName}`"
-        class="kpi-status-icon"
-        :class="{ rotating: isRotating }"
-        size="1.2rem"
-      />
+
       <q-tooltip v-if="translatedInfo" max-width="250px" anchor="top middle" self="bottom middle">
         <div class="tooltip-text">{{ translatedInfo }}</div>
       </q-tooltip>
@@ -39,12 +56,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 import { type KPI } from 'src/utils/sectors';
 import { getTranslatedText } from 'src/utils/translationHelpers';
 
 const { locale } = useI18n();
+const $route = useRoute();
 
 const props = withDefaults(defineProps<KPI>(), {
   maximize: false,
@@ -59,119 +78,190 @@ const translatedInfo = computed(() => {
   return typeof props.info === 'string' ? props.info : getTranslatedText(props.info, locale.value);
 });
 
-const isRotating = ref(false);
+// Check if this KPI's route matches the current route
+const isActive = computed(() => {
+  if (!props.route) return false;
+  return $route.params.subtab === props.route;
+});
 
-function handleClick() {
-  if (props.route) {
-    // Trigger rotation animation
-    isRotating.value = true;
-
-    // Reset animation after it completes
-    setTimeout(() => {
-      isRotating.value = false;
-    }, 600); // Match the animation duration
+function formatValue(val: number): string {
+  if (val >= 1000) {
+    return val.toFixed(0);
+  } else if (val >= 10) {
+    return val.toFixed(1);
+  } else {
+    return val.toFixed(2);
   }
 }
 
+// Status calculation
 const currentStatus = computed(() => {
   const { warning, danger } = props.thresholds;
 
   if (props.maximize) {
-    // For maximize: higher values are better
-    // Green if >= warning, Yellow if > danger and < warning, Red if <= danger
-    if (props.value >= warning) return 'good';
-    if (props.value > danger) return 'warning';
+    // Higher values are better
+    if (props.value >= danger) return 'excellent';
+    if (props.value >= warning) return 'warning';
     return 'danger';
   } else {
-    // For minimize: lower values are better
-    // Green if <= warning, Yellow if > warning and < danger, Red if >= danger
-    if (props.value <= warning) return 'good';
-    if (props.value < danger) return 'warning';
+    // Lower values are better
+    if (props.value <= warning) return 'excellent';
+    if (props.value <= danger) return 'warning';
     return 'danger';
-  }
-});
-
-const colorName = computed(() => {
-  switch (currentStatus.value) {
-    case 'good':
-      return '#4CAF50';
-    case 'warning':
-      return '#FF9800';
-    case 'danger':
-      return '#F44336';
-    default:
-      return '#4CAF50';
   }
 });
 
 const statusIcon = computed(() => {
   switch (currentStatus.value) {
-    case 'good':
-      return 'check_circle';
+    case 'excellent':
+      return 'o_check_circle';
     case 'warning':
-      return 'warning';
+      return 'r_warning';
     case 'danger':
-      return 'dangerous';
+      return 'o_dangerous';
     default:
       return 'check_circle';
+  }
+});
+
+const statusClass = computed(() => `status-${currentStatus.value}`);
+
+// Scale calculations
+const scaleMax = computed(() => {
+  return Math.max(props.value, props.thresholds.danger, props.thresholds.warning) * 1.2;
+});
+
+const valuePosition = computed(() => {
+  return Math.min(100, (props.value / scaleMax.value) * 100);
+});
+
+const warningPosition = computed(() => {
+  return (props.thresholds.warning / scaleMax.value) * 100;
+});
+
+const dangerPosition = computed(() => {
+  return (props.thresholds.danger / scaleMax.value) * 100;
+});
+
+// Zone styles based on maximize flag
+const zoneStyles = computed(() => {
+  if (props.maximize) {
+    return [
+      {
+        name: 'danger',
+        style: {
+          left: '0%',
+          width: `${warningPosition.value}%`,
+        },
+      },
+      {
+        name: 'warning',
+        style: {
+          left: `${warningPosition.value}%`,
+          width: `${dangerPosition.value - warningPosition.value}%`,
+        },
+      },
+      {
+        name: 'excellent',
+        style: {
+          left: `${dangerPosition.value}%`,
+          width: `${100 - dangerPosition.value}%`,
+        },
+      },
+    ];
+  } else {
+    return [
+      {
+        name: 'excellent',
+        style: {
+          left: '0%',
+          width: `${warningPosition.value}%`,
+        },
+      },
+      {
+        name: 'warning',
+        style: {
+          left: `${warningPosition.value}%`,
+          width: `${dangerPosition.value - warningPosition.value}%`,
+        },
+      },
+      {
+        name: 'danger',
+        style: {
+          left: `${dangerPosition.value}%`,
+          width: `${100 - dangerPosition.value}%`,
+        },
+      },
+    ];
   }
 });
 </script>
 
 <style lang="scss" scoped>
 .kpi-box-wrapper {
-  display: block;
-  height: 100%;
-  min-height: 140px;
+  display: inline-block;
+  min-width: 160px;
 }
 
-.kpi-circle {
+.kpi-box {
   position: relative;
-  width: 140px;
-  height: 140px;
-  gap: 8px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  border: 3px solid #e0e0e0;
+  padding: 12px;
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 8px;
   text-decoration: none;
   color: inherit;
   background: white;
-  box-shadow: 0 1px 6px rgba(255, 255, 255, 0.5);
-  &:hover {
-    background: rgb(245, 245, 245);
-  }
+  transition: box-shadow 0.2s ease;
+  min-width: 160px;
 
   &.cursor-pointer {
     cursor: pointer;
+
+    &:hover {
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  // Default state - grey border, white background
+  border-color: #e0e0e0;
+  background: white;
+
+  // Active state - colored border and background based on status
+  &.status-excellent.is-active {
+    border-color: #10b981;
+    background: #f0fdf4;
+  }
+
+  &.status-warning.is-active {
+    border-color: #f59e0b;
+    background: #fffbeb;
+  }
+
+  &.status-danger.is-active {
+    border-color: #ef4444;
+    background: #fef2f2;
   }
 }
 
-.kpi-circle-content {
-  text-align: center;
-  z-index: 2;
+/* HEADER */
+.kpi-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
-.kpi-value {
-  font-size: x-large;
-  font-weight: bold;
-  line-height: 1;
-}
-
-.kpi-unit {
+.kpi-box-title {
   font-size: small;
   font-weight: normal;
-  margin-left: 4px;
-}
-
-.kpi-name {
-  font-size: small;
-  color: var(--q-dark);
-  text-align: center;
+  color: #111827;
+  margin: 0;
   line-height: 1.2;
-  max-width: 120px;
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -180,44 +270,112 @@ const statusIcon = computed(() => {
   -webkit-box-orient: vertical;
 }
 
-.kpi-status-ring {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 50%;
-  border: 4px solid;
-  pointer-events: none;
-  transition: all 0.2s ease-in-out;
-}
+.status-icon {
+  flex-shrink: 0;
 
-.kpi-status-icon {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: white;
-  border-radius: 50%;
-  padding: 4px;
-  border: 1px solid;
-  transition: transform 0.4s ease-in-out;
+  &.excellent {
+    color: #059669;
+  }
 
-  &.rotating {
-    animation: rotateAroundCircle 0.4s ease-in-out;
+  &.warning {
+    color: #d97706;
+  }
+
+  &.danger {
+    color: #dc2626;
   }
 }
 
-@keyframes rotateAroundCircle {
-  0% {
-    transform: rotate(0deg);
+/* METRIC DISPLAY */
+.kpi-box-metric {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.metric-number {
+  font-size: large;
+  font-weight: 500;
+  color: #111827;
+  line-height: 1;
+}
+
+.metric-unit {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #4b5563;
+}
+
+/* MINI SCALE */
+.kpi-box-scale {
+  margin-top: auto;
+}
+
+.mini-scale-bar {
+  position: relative;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 9999px;
+  overflow: visible;
+}
+
+.mini-scale-zone {
+  position: absolute;
+  height: 100%;
+  transition: all 0.3s ease;
+
+  &.zone-excellent {
+    background: #86efac;
   }
-  100% {
-    transform: rotate(360deg);
+
+  &.zone-warning {
+    background: #fcd34d;
+  }
+
+  &.zone-danger {
+    background: #fca5a5;
+  }
+}
+
+/* Mini value indicator */
+.mini-value-indicator {
+  position: absolute;
+  top: 50%;
+  width: 3px;
+  height: 12px;
+  transition: left 0.3s ease;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  border-radius: 1.5px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: inherit;
+  }
+
+  &.excellent {
+    background: #10b981;
+  }
+
+  &.warning {
+    background: #f59e0b;
+  }
+
+  &.danger {
+    background: #ef4444;
   }
 }
 
 .tooltip-text {
-  font-size: medium;
+  font-size: 0.875rem;
   padding: 4px;
 }
 </style>

@@ -1,26 +1,25 @@
 <template>
   <div class="sector-tab-container">
-    <!-- Tab selector bar - sticky at top -->
+    <!-- Toolbar row at top - always visible -->
     <template v-if="$q.screen.gt.sm">
-      <div class="tab-selector-bar">
-        <q-tabs
-          v-model="currentTab"
-          :ripple="true"
-          outside-arrows
-          active-color="primary"
-          no-caps
-          align="justify"
-          content-class="text-grey-8"
-          active-bg-color="white"
-        >
-          <q-tab
-            v-for="tab in config.subtabs"
-            :key="tab.route"
-            :name="tab.route"
-            :label="getSubtabTitle(tab)"
-          />
-        </q-tabs>
-        <q-separator></q-separator>
+      <div class="top-toolbar">
+        <q-btn
+          v-if="currentTab && currentTab !== 'overview'"
+          flat
+          dense
+          icon="arrow_back"
+          :label="$t('backToOverview')"
+          @click="goToOverview"
+          class="back-button"
+        />
+        <div class="sector-title">{{ sectorDisplayName }}</div>
+      </div>
+    </template>
+
+    <!-- KPI bar at top - only show when subtab is selected -->
+    <template v-if="$q.screen.gt.sm && currentTab && currentTab !== 'overview' && modelResults">
+      <div class="top-kpis-bar">
+        <kpi-list :kpis="kpis" :horizontal="true" class="top-kpis-content" />
       </div>
     </template>
 
@@ -39,8 +38,13 @@
       </div>
 
       <template v-else>
-        <!-- Charts content - scrollable -->
-        <div class="charts-content">
+        <!-- Show KPI Cards when no subtab is selected (overview) -->
+        <div v-if="!currentTab || currentTab === 'overview'" class="overview-content">
+          <kpi-card-list :kpis="kpis" />
+        </div>
+
+        <!-- Charts content - scrollable (when subtab is selected) -->
+        <div v-else class="charts-content">
           <q-tab-panels v-if="$q.screen.gt.sm" v-model="currentTab" animated>
             <q-tab-panel
               v-for="tab in config.subtabs"
@@ -80,12 +84,33 @@
               <q-separator class="q-mt-xl"></q-separator>
             </div>
           </div>
-          <div class="kpis-section">
-            <kpi-list :kpis="kpis" class="kpis-content" />
-          </div>
         </div>
       </template>
     </div>
+
+    <!-- Tab selector bar - sticky at bottom (only show when subtab is selected) -->
+    <template v-if="$q.screen.gt.sm && currentTab && currentTab !== 'overview'">
+      <div class="bottom-tab-selector">
+        <q-separator></q-separator>
+        <q-tabs
+          v-model="currentTab"
+          :ripple="true"
+          outside-arrows
+          active-color="primary"
+          no-caps
+          align="justify"
+          content-class="text-grey-8"
+          active-bg-color="white"
+        >
+          <q-tab
+            v-for="tab in config.subtabs"
+            :key="tab.route"
+            :name="tab.route"
+            :label="getSubtabTitle(tab)"
+          />
+        </q-tabs>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -96,6 +121,7 @@ import { useI18n } from 'vue-i18n';
 import { useLeverStore, type SectorWithKpis, type ChartConfig } from 'stores/leversStore';
 import type { KPI, KPIConfig } from 'src/utils/sectors';
 import KpiList from 'src/components/kpi/KpiList.vue';
+import KpiCardList from 'src/components/kpi/KpiCardList.vue';
 import ChartCard from 'components/graphs/ChartCard.vue';
 import { useQuasar } from 'quasar';
 import { getTranslatedText } from 'src/utils/translationHelpers';
@@ -127,12 +153,22 @@ const leverStore = useLeverStore();
 // Helper function to get translated subtab title
 const getSubtabTitle = (subtab: { title: string | TranslationObject; route: string }): string => {
   return getTranslatedText(subtab.title, locale.value);
-}; // Tab state - reactive to route changes
+};
+
+// Function to navigate back to overview
+function goToOverview() {
+  void router.push({
+    name: props.sectorName,
+    params: { subtab: 'overview' },
+  });
+}
+
+// Tab state - reactive to route changes
 const currentTab = computed({
   get: () => {
-    return typeof route.params.subtab === 'string' && route.params.subtab
-      ? route.params.subtab
-      : props.config.subtabs[0]?.route;
+    const subtab = typeof route.params.subtab === 'string' ? route.params.subtab : '';
+    // If no subtab or 'overview', return 'overview'
+    return subtab || 'overview';
   },
   set: (newTab: string) => {
     if (newTab && newTab !== route.params.subtab) {
@@ -144,11 +180,11 @@ const currentTab = computed({
   },
 });
 
-// If no subtab is present in the URL, redirect to the default one.
-if (!route.params.subtab && props.config.subtabs[0]?.route) {
+// If no subtab is present in the URL, redirect to overview
+if (!route.params.subtab) {
   void router.replace({
     name: props.sectorName,
-    params: { subtab: props.config.subtabs[0]?.route },
+    params: { subtab: 'overview' },
   });
 }
 
@@ -210,11 +246,69 @@ async function runModel() {
   height: 100%;
 }
 
+.top-toolbar {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  gap: 1rem;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+}
+
+.top-kpis-bar {
+  flex-shrink: 0;
+  position: sticky;
+  top: 47px; /* Height of top-toolbar */
+  z-index: 9;
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.top-kpis-content {
+  padding: 0.5rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.bottom-tab-selector {
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background: white;
+  border-top: 1px solid #e0e0e0;
+}
+
 .tab-selector-bar {
   flex-shrink: 0;
   position: sticky;
   top: 0;
   z-index: 10;
+  background: white;
+}
+
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  gap: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.sector-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.back-button {
+  flex-shrink: 0;
 }
 
 .content-area {
@@ -224,11 +318,26 @@ async function runModel() {
   overflow: hidden;
 }
 
+.overview-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.overview-header {
+  text-align: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 0 0 16px 16px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
 .charts-content {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-bottom: 200px;
+  padding-top: 2rem;
 }
 
 .graph-placeholder {
@@ -243,25 +352,6 @@ async function runModel() {
   text-align: center;
   padding: 2rem;
   margin: 1rem;
-}
-
-@media screen and (min-width: 600px) {
-  .kpis-section {
-    flex-shrink: 0;
-    position: absolute;
-    width: 100%;
-    bottom: 0;
-    z-index: 5;
-    background: linear-gradient(to top, rgba(255, 255, 255, 0.98) 85%, rgba(255, 255, 255, 0) 100%);
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
-    backdrop-filter: blur(8px);
-  }
-}
-
-.kpis-content {
-  padding: 1rem;
-  background: white;
-  border-radius: 8px 8px 0 0;
 }
 
 .title {
