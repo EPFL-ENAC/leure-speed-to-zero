@@ -49,8 +49,7 @@
             dense
             emit-value
             map-options
-            class="q-mb-md app-disabled"
-            :disable="true"
+            class="q-mb-md"
           >
             <q-tooltip class="bg-grey-8"> {{ $t('featureNotReady') }} </q-tooltip>
           </q-select>

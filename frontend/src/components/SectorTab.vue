@@ -1,23 +1,7 @@
 <template>
   <div class="sector-tab-container">
-    <!-- Toolbar row at top - always visible -->
-    <template v-if="$q.screen.gt.sm">
-      <div class="top-toolbar">
-        <q-btn
-          v-if="currentTab && currentTab !== 'overview'"
-          flat
-          dense
-          icon="arrow_back"
-          :label="$t('backToOverview')"
-          @click="goToOverview"
-          class="back-button"
-        />
-        <div class="sector-title">{{ sectorDisplayName }}</div>
-      </div>
-    </template>
-
     <!-- KPI bar at top - only show when subtab is selected -->
-    <template v-if="$q.screen.gt.sm && currentTab && currentTab !== 'overview' && modelResults">
+    <template v-if="$q.screen.gt.sm && currentTab && modelResults">
       <div class="top-kpis-bar">
         <kpi-list :kpis="kpis" :horizontal="true" class="top-kpis-content" />
       </div>
@@ -89,7 +73,7 @@
     </div>
 
     <!-- Tab selector bar - sticky at bottom (only show when subtab is selected) -->
-    <template v-if="$q.screen.gt.sm && currentTab && currentTab !== 'overview'">
+    <template v-if="$q.screen.gt.sm && currentTab">
       <div class="bottom-tab-selector">
         <q-separator></q-separator>
         <q-tabs
@@ -121,7 +105,6 @@ import { useI18n } from 'vue-i18n';
 import { useLeverStore, type SectorWithKpis, type ChartConfig } from 'stores/leversStore';
 import type { KPI, KPIConfig } from 'src/utils/sectors';
 import KpiList from 'src/components/kpi/KpiList.vue';
-import KpiCardList from 'src/components/kpi/KpiCardList.vue';
 import ChartCard from 'components/graphs/ChartCard.vue';
 import { useQuasar } from 'quasar';
 import { getTranslatedText } from 'src/utils/translationHelpers';
@@ -155,20 +138,12 @@ const getSubtabTitle = (subtab: { title: string | TranslationObject; route: stri
   return getTranslatedText(subtab.title, locale.value);
 };
 
-// Function to navigate back to overview
-function goToOverview() {
-  void router.push({
-    name: props.sectorName,
-    params: { subtab: 'overview' },
-  });
-}
-
 // Tab state - reactive to route changes
 const currentTab = computed({
   get: () => {
-    const subtab = typeof route.params.subtab === 'string' ? route.params.subtab : '';
-    // If no subtab or 'overview', return 'overview'
-    return subtab || 'overview';
+    return typeof route.params.subtab === 'string' && route.params.subtab
+      ? route.params.subtab
+      : props.config.subtabs[0]?.route;
   },
   set: (newTab: string) => {
     if (newTab && newTab !== route.params.subtab) {
@@ -180,11 +155,11 @@ const currentTab = computed({
   },
 });
 
-// If no subtab is present in the URL, redirect to overview
-if (!route.params.subtab) {
+// If no subtab is present in the URL, redirect to first subtab
+if (!route.params.subtab && props.config.subtabs[0]?.route) {
   void router.replace({
     name: props.sectorName,
-    params: { subtab: 'overview' },
+    params: { subtab: props.config.subtabs[0]?.route },
   });
 }
 
@@ -246,30 +221,15 @@ async function runModel() {
   height: 100%;
 }
 
-.top-toolbar {
-  display: flex;
-  align-items: center;
-  padding: 0.5rem;
-  gap: 1rem;
-  flex-shrink: 0;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: white;
-}
-
 .top-kpis-bar {
+  display: flex;
   flex-shrink: 0;
   position: sticky;
-  top: 47px; /* Height of top-toolbar */
-  z-index: 9;
+  top: 0; /* Height of top-toolbar */
   background: white;
   border-bottom: 1px solid #e0e0e0;
   overflow-x: auto;
   overflow-y: hidden;
-}
-
-.top-kpis-content {
   padding: 0.5rem 1rem;
   margin-bottom: 1rem;
 }
