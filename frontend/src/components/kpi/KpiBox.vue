@@ -28,7 +28,7 @@
         <span class="metric-unit">{{ unit }}</span>
       </div>
 
-      <!-- Mini Scale Bar -->
+      <!-- Mini Scale Bar with threshold labels -->
       <div class="kpi-box-scale">
         <div class="mini-scale-bar">
           <!-- Zone backgrounds -->
@@ -45,6 +45,17 @@
             :class="currentStatus"
             :style="`left: ${valuePosition}%`"
           ></div>
+        </div>
+        <!-- Threshold markers/labels -->
+        <div class="mini-threshold-markers">
+          <div class="mini-threshold-marker" :style="`left: ${warningPosition}%`">
+            <div class="mini-marker-line"></div>
+            <span class="mini-marker-label">{{ formatValue(thresholds.warning) }} </span>
+          </div>
+          <div class="mini-threshold-marker" :style="`left: ${dangerPosition}%`">
+            <div class="mini-marker-line"></div>
+            <span class="mini-marker-label">{{ formatValue(thresholds.danger) }} </span>
+          </div>
         </div>
       </div>
 
@@ -207,7 +218,7 @@ const zoneStyles = computed(() => {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 12px;
+  padding: 0.5rem;
   border-width: 2px;
   border-style: solid;
   border-radius: 8px;
@@ -215,7 +226,7 @@ const zoneStyles = computed(() => {
   color: inherit;
   background: white;
   transition: box-shadow 0.2s ease;
-  min-width: 160px;
+  min-width: 12rem;
 
   &.cursor-pointer {
     cursor: pointer;
@@ -253,6 +264,7 @@ const zoneStyles = computed(() => {
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 8px;
+  min-height: 2.2rem;
 }
 
 .kpi-box-title {
@@ -372,6 +384,34 @@ const zoneStyles = computed(() => {
   &.danger {
     background: #ef4444;
   }
+}
+
+/* Threshold markers for mini scale */
+.mini-threshold-markers {
+  position: relative;
+  height: 18px;
+  margin-top: 2px;
+}
+
+.mini-threshold-marker {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+}
+
+.mini-marker-line {
+  width: 1px;
+  height: 3px;
+  background: #9ca3af;
+}
+
+.mini-marker-label {
+  font-size: xx-small;
+  color: #6b7280;
+  margin-top: 0px;
+  white-space: nowrap;
 }
 
 .tooltip-text {
