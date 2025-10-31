@@ -15,12 +15,12 @@
       "type": "StackedArea",
       "outputs": [
         "pow_production_Dam[TWh]",
-        "pow_production_Gas[TWh]",
-        "pow_production_GasCC-CCS[TWh]",
-        "pow_production_Nuclear[TWh]",
-        "pow_production_PV-roof[TWh]",
         "pow_production_RoR[TWh]",
-        "pow_production_WindOn[TWh]"
+        "pow_production_PV-roof[TWh]",
+        "pow_production_WindOn[TWh]",
+        "pow_production_Nuclear[TWh]",
+        "pow_production_Gas[TWh]",
+        "pow_production_GasCC-CCS[TWh]"
       ]
     },
     "PowerCapacityByTech": {
@@ -29,12 +29,12 @@
       "type": "StackedArea",
       "outputs": [
         "pow_capacity_Dam[GW]",
-        "pow_capacity_Gas[GW]",
-        "pow_capacity_GasCC-CCS[GW]",
-        "pow_capacity_Nuclear[GW]",
-        "pow_capacity_PV-roof[GW]",
         "pow_capacity_RoR[GW]",
-        "pow_capacity_WindOn[GW]"
+        "pow_capacity_PV-roof[GW]",
+        "pow_capacity_WindOn[GW]",
+        "pow_capacity_Nuclear[GW]",
+        "pow_capacity_Gas[GW]",
+        "pow_capacity_GasCC-CCS[GW]"
       ]
     }
   }
