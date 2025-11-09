@@ -2,7 +2,7 @@
   <div class="sector-tab-container">
     <!-- KPI bar at top - only show when subtab is selected -->
     <template v-if="$q.screen.gt.sm && currentTab && modelResults">
-      <div class="top-kpis-bar">
+      <div horizontal class="top-kpis-bar">
         <kpi-list :kpis="kpis" :horizontal="true" class="top-kpis-content" />
       </div>
     </template>
@@ -226,12 +226,10 @@ async function runModel() {
   flex-shrink: 0;
   position: sticky;
   top: 0; /* Height of top-toolbar */
-  background: white;
   border-bottom: 1px solid #e0e0e0;
   overflow-x: auto;
   overflow-y: hidden;
   padding: 0.5rem 1rem;
-  margin-bottom: 1rem;
 }
 
 .bottom-tab-selector {

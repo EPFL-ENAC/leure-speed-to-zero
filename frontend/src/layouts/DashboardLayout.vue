@@ -63,7 +63,7 @@
           </q-btn>
         </div>
         <q-separator />
-        <q-scroll-area visible class="col q-pa-md">
+        <q-scroll-area visible class="col q-pa-xs">
           <LeverGroups :sector="currentSector" />
         </q-scroll-area>
       </div>
