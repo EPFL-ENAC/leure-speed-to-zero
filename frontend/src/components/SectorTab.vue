@@ -17,7 +17,7 @@
             v-for="tab in config.subtabs"
             :key="tab.route"
             :name="tab.route"
-            :label="tab.title"
+            :label="getSubtabTitle(tab)"
           />
         </q-tabs>
         <q-separator></q-separator>
@@ -28,9 +28,9 @@
     <div class="content-area">
       <div v-if="!modelResults" class="graph-placeholder">
         <q-icon name="show_chart" size="4rem" />
-        <p>Run the model to see {{ sectorDisplayName }} data</p>
+        <p>{{ $t('runModelToSeeData', { sector: sectorDisplayName }) }}</p>
         <q-btn
-          label="Run Model"
+          :label="$t('runModel')"
           color="primary"
           :loading="isLoading"
           @click="runModel"
@@ -52,6 +52,8 @@
                 <chart-card
                   v-for="chartId in tab.charts"
                   :chart-config="config.charts[chartId] as ChartConfig"
+                  :chart-id="chartId"
+                  :sector-name="sectorName"
                   :key="chartId"
                   :model-data="modelResults"
                 />
@@ -63,12 +65,14 @@
           <div v-else class="q-pa-md">
             <div v-for="tab in config.subtabs" :key="tab.route" class="mobile-tab-section">
               <div class="mobile-tab-header">
-                <div class="text-h6 mobile-tab-title">{{ tab.title }}</div>
+                <div class="text-h6 mobile-tab-title">{{ getSubtabTitle(tab) }}</div>
               </div>
               <div class="row flex-wrap">
                 <chart-card
                   v-for="chartId in tab.charts"
                   :chart-config="config.charts[chartId] as ChartConfig"
+                  :chart-id="chartId"
+                  :sector-name="sectorName"
                   :key="chartId"
                   :model-data="modelResults"
                 />
@@ -88,18 +92,22 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useLeverStore, type SectorWithKpis, type ChartConfig } from 'stores/leversStore';
 import type { KPI, KPIConfig } from 'src/utils/sectors';
 import KpiList from 'src/components/kpi/KpiList.vue';
 import ChartCard from 'components/graphs/ChartCard.vue';
 import { useQuasar } from 'quasar';
+import { getTranslatedText } from 'src/utils/translationHelpers';
+import type { TranslationObject } from 'src/utils/translationHelpers';
 
 const $q = useQuasar();
+const { locale } = useI18n();
 
 interface SectorConfig {
   kpis?: KPIConfig[];
   subtabs: Array<{
-    title: string;
+    title: string | TranslationObject;
     route: string;
     charts: string[];
   }>;
@@ -116,7 +124,10 @@ const router = useRouter();
 const route = useRoute();
 const leverStore = useLeverStore();
 
-// Tab state - reactive to route changes
+// Helper function to get translated subtab title
+const getSubtabTitle = (subtab: { title: string | TranslationObject; route: string }): string => {
+  return getTranslatedText(subtab.title, locale.value);
+}; // Tab state - reactive to route changes
 const currentTab = computed({
   get: () => {
     return typeof route.params.subtab === 'string' && route.params.subtab
@@ -154,8 +165,18 @@ const kpis = computed((): KPI[] => {
 
   const returnData = newData
     .map((kpi) => {
-      const confKpi = confKpis.find((conf) => conf.name === kpi.title);
-      if (!confKpi) return null;
+      // Find matching config by comparing backend title with translated name
+      const confKpi = confKpis.find((conf) => {
+        // Handle both string and TranslationObject types
+        const confName =
+          typeof conf.name === 'string' ? conf.name : getTranslatedText(conf.name, 'enUS'); // Use English as the canonical matching key
+        return confName === kpi.title;
+      });
+
+      if (!confKpi) {
+        console.warn(`No config found for KPI: ${kpi.title}`);
+        return null;
+      }
 
       // Merge config with runtime data, ensuring the KPI interface is satisfied
       return {
@@ -231,11 +252,16 @@ async function runModel() {
     width: 100%;
     bottom: 0;
     z-index: 5;
+    background: linear-gradient(to top, rgba(255, 255, 255, 0.98) 85%, rgba(255, 255, 255, 0) 100%);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(8px);
   }
 }
 
 .kpis-content {
   padding: 1rem;
+  background: white;
+  border-radius: 8px 8px 0 0;
 }
 
 .title {

@@ -3,7 +3,7 @@
     <q-card-section class="chart-section">
       <div v-if="!chartData.length" class="chart-placeholder">
         <q-icon name="mdi-chart-line-variant" size="2rem" color="grey-5" />
-        <p>No data available</p>
+        <p>{{ $t('noDataAvailable') }}</p>
       </div>
       <div v-else class="chart-visualization">
         <v-chart
@@ -37,7 +37,12 @@ import {
   MarkLineComponent,
 } from 'echarts/components';
 import VChart from 'vue-echarts';
-import { getPlotLabel } from 'utils/labelsPlot';
+import { plotLabels } from 'config/plotLabels';
+import { useI18n } from 'vue-i18n';
+import { getTranslatedText } from 'src/utils/translationHelpers';
+
+const i18n = useI18n();
+const { t } = i18n;
 
 // Register ECharts components
 use([
@@ -78,6 +83,8 @@ interface EChartsTooltipParam {
 const props = defineProps<{
   chartConfig: ChartConfig;
   modelData: SectorData;
+  chartId?: string;
+  sectorName?: string;
 }>();
 
 const chartRef = ref<ECharts>();
@@ -85,7 +92,10 @@ const chartRef = ref<ECharts>();
 // Track legend selection state
 const legendSelected = ref<Record<string, boolean>>({});
 
-// Handle legend selection changes
+// Computed property for translated chart title
+const translatedTitle = computed<string>(() => {
+  return getTranslatedText(props.chartConfig.title, i18n.locale.value);
+}); // Handle legend selection changes
 const handleLegendSelectChanged = (params: { selected: Record<string, boolean> }) => {
   legendSelected.value = { ...params.selected };
 };
@@ -131,7 +141,7 @@ function extractChartData(
 
     if (years.length > 0) {
       series.push({
-        name: getPlotLabel(outputId),
+        name: getTranslatedText(plotLabels[outputId] || outputId, i18n.locale.value, outputId),
         color: outputConfig.color || null,
         years,
         data: values,
@@ -165,7 +175,7 @@ const chartOption = computed(() => {
     data: [
       [
         {
-          name: 'Historical',
+          name: t('historical'),
           xAxis: new Date(1990, 0, 1).getTime(), // January 1st, 1990
         },
         {
@@ -174,7 +184,7 @@ const chartOption = computed(() => {
       ],
       [
         {
-          name: 'Model Forecast',
+          name: t('forecast'),
           xAxis: new Date(2024, 0, 1).getTime(), // January 1st, 2024
         },
         {
@@ -254,7 +264,7 @@ const chartOption = computed(() => {
 
   return {
     title: {
-      text: props.chartConfig.title,
+      text: translatedTitle.value,
       textStyle: {
         fontSize: 13,
         fontWeight: 'bold',

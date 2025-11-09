@@ -3,34 +3,58 @@
 
   "subtabs": [
     {
-      "title": "Forest area",
+      "title": {
+        "enUS": "Forest area",
+        "frFR": "Surface forestière",
+        "deDE": "Waldfläche"
+      },
       "charts": ["ForestArea"],
       "route": "forest-area"
     },
     {
-      "title": "Wood harvest",
+      "title": {
+        "enUS": "Wood harvest",
+        "frFR": "Récolte de bois",
+        "deDE": "Holzernte"
+      },
       "charts": ["HarvestRate", "HarvestedWoodSpecies"],
       "route": "wood-supply"
     },
     {
-      "title": "Wood demand per use",
+      "title": {
+        "enUS": "Wood demand per use",
+        "frFR": "Demande de bois par usage",
+        "deDE": "Holznachfrage nach Verwendung"
+      },
       "charts": ["WoodDemandUse"],
       "route": "wood-demand"
     },
     {
-      "title": "Wood demand per species",
+      "title": {
+        "enUS": "Wood demand per species",
+        "frFR": "Demande de bois par essence",
+        "deDE": "Holznachfrage nach Art"
+      },
       "charts": ["WoodDemandIndustry", "WoodDemandEnergy"],
       "route": "wood-demand-species"
     },
     {
-      "title": "Wood supply per source",
+      "title": {
+        "enUS": "Wood supply per source",
+        "frFR": "Approvisionnement en bois par source",
+        "deDE": "Holzversorgung nach Quelle"
+      },
       "charts": ["WoodSupplySources"],
       "route": "wood-supply-sources"
     }
   ],
   "charts": {
     "ForestArea": {
-      "title": "Forest exploitation",
+      "title": {
+        "enUS": "Forest exploitation",
+        "frFR": "Exploitation forestière",
+        "deDE": "Waldnutzung"
+      },
       "type": "StackedArea",
       "unit": "ha",
       "outputs": [
@@ -39,7 +63,11 @@
       ]
     },
     "ExploitedForest": {
-      "title": "Forest exploited area",
+      "title": {
+        "enUS": "Forest exploited area",
+        "frFR": "Surface forestière exploitée",
+        "deDE": "Bewirtschaftete Waldfläche"
+      },
       "type": "StackedArea",
       "unit": "ha",
       "outputs": [
@@ -48,19 +76,31 @@
       ]
     },
     "HarvestedWoodSpecies": {
-      "title": "Harvested wood per species [m3]",
+      "title": {
+        "enUS": "Harvested wood per species [m3]",
+        "frFR": "Bois récolté par essence",
+        "deDE": "Geerntetes Holz nach Art"
+      },
       "type": "StackedArea",
       "unit": "m3",
       "outputs": ["harvested-wood_coniferous[m3]", "harvested-wood_non-coniferous[m3]"]
     },
     "WoodDemandUse": {
-      "title": "Wood demand per use [m3]",
+      "title": {
+        "enUS": "Wood demand per use [m3]",
+        "frFR": "Demande de bois par usage",
+        "deDE": "Holznachfrage nach Verwendung"
+      },
       "type": "StackedArea",
       "unit": "m3",
       "outputs": ["woodfuel[m3]", "sawlogs[m3]", "industrial-wood[m3]", "any-other-wood[m3]"]
     },
     "WoodDemandIndustry": {
-      "title": "Industry wood demand per species [m3]",
+      "title": {
+        "enUS": "Industry wood demand per species [m3]",
+        "frFR": "Demande de bois industriel par essence",
+        "deDE": "Industrieholznachfrage nach Art"
+      },
       "type": "StackedArea",
       "unit": "m3",
       "outputs": [
@@ -73,7 +113,11 @@
       ]
     },
     "WoodDemandEnergy": {
-      "title": "Wood fuel demand per species [m3]",
+      "title": {
+        "enUS": "Wood fuel demand per species [m3]",
+        "frFR": "Demande de bois énergie par essence",
+        "deDE": "Energieholznachfrage nach Art"
+      },
       "type": "StackedArea",
       "unit": "m3",
       "outputs": [
@@ -82,7 +126,11 @@
       ]
     },
     "WoodSupplySources": {
-      "title": "Wood supply per source [m3]",
+      "title": {
+        "enUS": "Wood supply per source [m3]",
+        "frFR": "Approvisionnement en bois par source",
+        "deDE": "Holzversorgung nach Quelle"
+      },
       "type": "StackedArea",
       "unit": "m3",
       "outputs": [
@@ -92,7 +140,11 @@
       ]
     },
     "HarvestRate": {
-      "title": "Wood harvest rate per species [m3/ha]",
+      "title": {
+        "enUS": "Wood harvest rate per species [m3/ha]",
+        "frFR": "Taux de récolte de bois par essence",
+        "deDE": "Holzernterate nach Art"
+      },
       "type": "Line",
       "unit": "m3/ha",
       "outputs": [
