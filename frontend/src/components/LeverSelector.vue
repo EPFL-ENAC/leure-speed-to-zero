@@ -3,15 +3,18 @@
     class="lever-selector q-py-sm"
     :class="{ 'lever-disabled': disabled, 'variant-popup': props.variant === 'popup' }"
   >
-    <div class="col-12 col-md-7 q-pr-sm justify-between row items-center">
-      <span
-        class="text-body2 text-weight-light leverTitle"
-        @click="props.variant === 'default' ? openLeverDataPopup() : undefined"
-        :title="props.variant === 'default' ? `Click to view ${lever.title} data` : ''"
-      >
-        {{ lever.title }}
+    <div class="col-12 col-md-7 q-pr-sm justify-between row no-wrap items-center">
+      <div class="q-pr-sm">
+        <span
+          class="text-body2 text-weight-light leverTitle"
+          @click="props.variant === 'default' ? openLeverDataPopup() : undefined"
+          :title="props.variant === 'default' ? $t('clickToView', { title: leverTitle }) : ''"
+        >
+          {{ leverTitle }}
+        </span>
         <q-icon v-if="props.variant === 'default'" name="info_outline" size="xs" class="q-ml-xs" />
-      </span>
+      </div>
+
       <div class="row items-center q-gutter-xs">
         <q-chip outline circle size="sm">{{ displayValue }}</q-chip>
       </div>
@@ -48,7 +51,7 @@
     <div class="row q-mt-xs" v-if="lever.difficultyColors && lever.difficultyColors.length > 0">
       <div class="col-12">
         <div class="difficulty-labels text-caption text-grey-7">
-          <span>{{ lever.difficultyColors[0]?.label }}</span>
+          <span>{{ $t(lever.difficultyColors[0]?.label || '') }}</span>
           <q-btn
             v-if="props.variant === 'default'"
             :icon="showChart ? 'expand_less' : 'expand_more'"
@@ -60,7 +63,9 @@
             :title="showChart ? 'Hide chart' : 'Show chart'"
             class="expand-btn"
           />
-          <span>{{ lever.difficultyColors[lever.difficultyColors.length - 1]?.label }}</span>
+          <span>{{
+            $t(lever.difficultyColors[lever.difficultyColors.length - 1]?.label || '')
+          }}</span>
         </div>
       </div>
     </div>
@@ -80,9 +85,14 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { Lever } from 'src/utils/leversData';
+import { getTranslatedText } from 'src/utils/translationHelpers';
 import LeverDataPopup from 'src/components/LeverDataPopup.vue';
 import LeverChart from 'src/components/graphs/LeverChart.vue';
+
+// eslint-disable-next-line @typescript-eslint/unbound-method
+const { t, te, locale } = useI18n();
 
 const props = withDefaults(
   defineProps<{
@@ -106,6 +116,18 @@ const showLeverDialog = ref(false);
 const showChart = ref(false);
 
 const disabled = computed(() => props.lever.disabled || false);
+
+// Get translated lever title
+const leverTitle = computed(() => {
+  // First try the new TranslationObject format
+  const translated = getTranslatedText(props.lever.title, locale.value);
+  if (translated) {
+    return translated;
+  }
+  // Fallback to old i18n key format
+  const titleKey = `lever.${props.lever.code}.title`;
+  return te(titleKey) ? t(titleKey) : props.lever.title;
+});
 
 const displayValue = computed(() => {
   if (props.lever.type === 'num') {
@@ -246,9 +268,9 @@ function toggleChart() {
 }
 
 .leverTitle {
-  text-wrap-mode: nowrap;
-  text-overflow: ellipsis;
-  overflow: clip;
+  // text-wrap-mode: nowrap;
+  // text-overflow: ellipsis;
+  // overflow: clip;
 
   // Default variant styles
   .lever-selector:not(.variant-popup) & {

@@ -9,27 +9,27 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'buildings/:subtab?',
         name: 'buildings',
-        component: () => import('pages/BuildingsTab.vue'),
+        component: () => import('src/pages/sectors/BuildingsTab.vue'),
       },
       {
         path: 'transport/:subtab?',
         name: 'transport',
-        component: () => import('pages/TransportTab.vue'),
+        component: () => import('src/pages/sectors/TransportTab.vue'),
       },
       {
         path: 'forestry/:subtab?',
         name: 'forestry',
-        component: () => import('pages/ForestryTab.vue'),
+        component: () => import('src/pages/sectors/ForestryTab.vue'),
       },
       {
         path: 'agriculture/:subtab?',
         name: 'agriculture',
-        component: () => import('pages/AgricultureTab.vue'),
+        component: () => import('src/pages/sectors/AgricultureTab.vue'),
       },
       {
         path: 'overall/:subtab?',
         name: 'overall',
-        component: () => import('pages/OverallTab.vue'),
+        component: () => import('src/pages/sectors/OverallTab.vue'),
       },
     ],
   },

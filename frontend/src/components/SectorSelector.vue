@@ -12,11 +12,11 @@
         :key="value"
         :name="value"
         :icon="icon"
-        :label="label"
+        :label="getLabel(label)"
         :class="'tab' + (mini ? ' mini' : '') + (disabled ? ' disabled' : '')"
         :disable="disabled"
       >
-        <q-tooltip v-if="disabled" class="bg-grey-8"> Feature not ready </q-tooltip>
+        <q-tooltip v-if="disabled" class="bg-grey-8"> {{ $t('featureNotReady') }} </q-tooltip>
       </q-tab>
     </q-tabs>
   </div>
@@ -25,14 +25,22 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { sectors } from 'utils/sectors';
+import { getTranslatedText, type TranslationObject } from 'src/utils/translationHelpers';
 
 const route = useRoute();
 const router = useRouter();
+const { locale } = useI18n();
 
 const { mini } = defineProps<{
   mini: boolean;
 }>();
+
+// Helper function to get translated text (can be called in template)
+const getLabel = (label: string | TranslationObject) => {
+  return getTranslatedText(label, locale.value);
+};
 
 // Reactive sector selection
 const currentSector = ref(route.path.split('/')[1] || 'buildings');

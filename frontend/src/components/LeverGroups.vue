@@ -66,12 +66,15 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useLeverStore } from 'stores/leversStore';
 import LeverSelector from 'components/LeverSelector.vue';
 import type { Lever } from 'utils/leversData';
+import { getTranslatedText } from 'src/utils/translationHelpers';
 
 const leverStore = useLeverStore();
 const route = useRoute();
+const { locale } = useI18n();
 
 const minValue = 1,
   maxValue = 4;
@@ -92,10 +95,11 @@ function getGroupedLevers(levers: Lever[]): Record<string, Lever[]> {
   const result: Record<string, Lever[]> = {};
 
   levers.forEach((lever) => {
-    if (!result[lever.group]) {
-      result[lever.group] = [];
+    const groupKey = getTranslatedText(lever.group, locale.value);
+    if (!result[groupKey]) {
+      result[groupKey] = [];
     }
-    result[lever.group]?.push(lever);
+    result[groupKey]?.push(lever);
   });
 
   return result;
