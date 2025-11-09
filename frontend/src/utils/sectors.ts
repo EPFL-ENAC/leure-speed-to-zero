@@ -16,6 +16,8 @@ export interface KPIConfig {
   info: string | TranslationObject;
   maximize: boolean;
   unit: string;
+  min: number;
+  max: number;
   thresholds: {
     warning: number;
     danger: number;

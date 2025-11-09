@@ -1,69 +1,42 @@
 <template>
-  <div class="kpi-box-wrapper">
-    <component
-      :is="route ? 'router-link' : 'div'"
-      :to="
-        route
-          ? {
-              name: $route.name,
-              params: {
-                ...$route.params,
-                subtab: route,
-              },
-            }
-          : undefined
-      "
-      class="kpi-box"
-      :class="[statusClass, { 'cursor-pointer': route, 'is-active': isActive }]"
-    >
-      <!-- Header -->
-      <div class="kpi-box-header">
-        <h4 class="kpi-box-title">{{ translatedName }}</h4>
-        <q-icon :name="statusIcon" :class="`status-icon ${currentStatus}`" size="1rem" />
-      </div>
+  <component
+    :is="route ? 'router-link' : 'div'"
+    :to="route ? { name: $route.name, params: { ...$route.params, subtab: route } } : undefined"
+    class="kpi-box"
+    :class="{ active: isActive, clickable: route }"
+    :style="boxStyle"
+  >
+    <div class="header">
+      <h4 class="title">{{ translatedName }}</h4>
+      <q-icon :name="statusIcon" size="1rem" :color="statusColor" />
+    </div>
 
-      <!-- Metric Display -->
-      <div class="kpi-box-metric">
-        <span class="metric-number">{{ formatValue(value) }}</span>
-        <span class="metric-unit">{{ unit }}</span>
-      </div>
+    <div class="metric">
+      <span class="value">{{ formatValue(value) }}</span>
+      <span class="unit">{{ unit }}</span>
+    </div>
 
-      <!-- Mini Scale Bar with threshold labels -->
-      <div class="kpi-box-scale">
-        <div class="mini-scale-bar">
-          <!-- Zone backgrounds -->
-          <div
-            v-for="zone in zoneStyles"
-            :key="zone.name"
-            class="mini-scale-zone"
-            :class="`zone-${zone.name}`"
-            :style="zone.style"
-          ></div>
-          <!-- Current value indicator -->
-          <div
-            class="mini-value-indicator"
-            :class="currentStatus"
-            :style="`left: ${valuePosition}%`"
-          ></div>
+    <div class="scale">
+      <div class="bar">
+        <div v-for="zone in zoneStyles" :key="zone.name" class="zone" :style="zone.style" />
+        <div class="indicator" :style="indicatorStyle" />
+      </div>
+      <div class="markers">
+        <div class="marker" :style="`left: ${warningPosition}%`">
+          <div class="line" />
+          <span class="label">{{ formatValue(thresholds.warning) }}</span>
         </div>
-        <!-- Threshold markers/labels -->
-        <div class="mini-threshold-markers">
-          <div class="mini-threshold-marker" :style="`left: ${warningPosition}%`">
-            <div class="mini-marker-line"></div>
-            <span class="mini-marker-label">{{ formatValue(thresholds.warning) }} </span>
-          </div>
-          <div class="mini-threshold-marker" :style="`left: ${dangerPosition}%`">
-            <div class="mini-marker-line"></div>
-            <span class="mini-marker-label">{{ formatValue(thresholds.danger) }} </span>
-          </div>
+        <div class="marker" :style="`left: ${dangerPosition}%`">
+          <div class="line" />
+          <span class="label">{{ formatValue(thresholds.danger) }}</span>
         </div>
       </div>
+    </div>
 
-      <q-tooltip v-if="translatedInfo" max-width="250px" anchor="top middle" self="bottom middle">
-        <div class="tooltip-text">{{ translatedInfo }}</div>
-      </q-tooltip>
-    </component>
-  </div>
+    <q-tooltip v-if="translatedInfo" max-width="15rem">
+      {{ translatedInfo }}
+    </q-tooltip>
+  </component>
 </template>
 
 <script setup lang="ts">
@@ -75,202 +48,162 @@ import { getTranslatedText } from 'src/utils/translationHelpers';
 
 const { locale } = useI18n();
 const $route = useRoute();
+const props = withDefaults(defineProps<KPI>(), { maximize: false });
 
-const props = withDefaults(defineProps<KPI>(), {
-  maximize: false,
-});
+const translatedName = computed(() =>
+  typeof props.name === 'string' ? props.name : getTranslatedText(props.name, locale.value),
+);
 
-const translatedName = computed(() => {
-  return typeof props.name === 'string' ? props.name : getTranslatedText(props.name, locale.value);
-});
+const translatedInfo = computed(() =>
+  !props.info
+    ? ''
+    : typeof props.info === 'string'
+      ? props.info
+      : getTranslatedText(props.info, locale.value),
+);
 
-const translatedInfo = computed(() => {
-  if (!props.info) return '';
-  return typeof props.info === 'string' ? props.info : getTranslatedText(props.info, locale.value);
-});
+const isActive = computed(() => props.route && $route.params.subtab === props.route);
 
-// Check if this KPI's route matches the current route
-const isActive = computed(() => {
-  if (!props.route) return false;
-  return $route.params.subtab === props.route;
-});
+const formatValue = (val: number) =>
+  val >= 1000 ? val.toFixed(0) : val >= 10 ? val.toFixed(1) : val.toFixed(2);
 
-function formatValue(val: number): string {
-  if (val >= 1000) {
-    return val.toFixed(0);
-  } else if (val >= 10) {
-    return val.toFixed(1);
-  } else {
-    return val.toFixed(2);
-  }
-}
-
-// Status calculation
 const currentStatus = computed(() => {
   const { warning, danger } = props.thresholds;
-
-  if (props.maximize) {
-    // Higher values are better
-    if (props.value >= danger) return 'excellent';
-    if (props.value >= warning) return 'warning';
-    return 'danger';
-  } else {
-    // Lower values are better
-    if (props.value <= warning) return 'excellent';
-    if (props.value <= danger) return 'warning';
-    return 'danger';
-  }
+  return props.maximize
+    ? props.value >= danger
+      ? 'excellent'
+      : props.value >= warning
+        ? 'warning'
+        : 'danger'
+    : props.value <= warning
+      ? 'excellent'
+      : props.value <= danger
+        ? 'warning'
+        : 'danger';
 });
 
-const statusIcon = computed(() => {
-  switch (currentStatus.value) {
-    case 'excellent':
-      return 'o_check_circle';
-    case 'warning':
-      return 'r_warning';
-    case 'danger':
-      return 'o_dangerous';
-    default:
-      return 'check_circle';
-  }
+const statusIcon = computed(
+  () =>
+    ({
+      excellent: 'o_check_circle',
+      warning: 'r_warning',
+      danger: 'o_dangerous',
+    })[currentStatus.value] || 'check_circle',
+);
+
+const statusColor = computed(
+  () =>
+    ({
+      excellent: 'positive',
+      warning: 'warning',
+      danger: 'negative',
+    })[currentStatus.value],
+);
+
+const boxStyle = computed(() => {
+  if (!isActive.value) return { borderColor: '#e0e0e0', background: 'white' };
+  const colors = {
+    excellent: { border: '#10b981', bg: '#f0fdf4' },
+    warning: { border: '#f59e0b', bg: '#fffbeb' },
+    danger: { border: '#ef4444', bg: '#fef2f2' },
+  };
+  const c = colors[currentStatus.value];
+  return { borderColor: c.border, background: c.bg };
 });
 
-const statusClass = computed(() => `status-${currentStatus.value}`);
-
-// Scale calculations
-const scaleMax = computed(() => {
-  return Math.max(props.value, props.thresholds.danger, props.thresholds.warning) * 1.2;
+const indicatorStyle = computed(() => {
+  const colors = { excellent: '#10b981', warning: '#f59e0b', danger: '#ef4444' };
+  return {
+    left: `${valuePosition.value}%`,
+    background: colors[currentStatus.value],
+  };
 });
 
-const valuePosition = computed(() => {
-  return Math.min(100, (props.value / scaleMax.value) * 100);
-});
+const scaleMin = computed(() => props.min ?? 0);
+const scaleMax = computed(() =>
+  props.max !== undefined
+    ? props.max
+    : Math.max(props.value, props.thresholds.danger, props.thresholds.warning) * 1.2,
+);
+const scaleRange = computed(() => scaleMax.value - scaleMin.value);
 
-const warningPosition = computed(() => {
-  return (props.thresholds.warning / scaleMax.value) * 100;
-});
+const normalize = (val: number) => ((val - scaleMin.value) / scaleRange.value) * 100;
+const valuePosition = computed(() => Math.min(100, Math.max(0, normalize(props.value))));
+const warningPosition = computed(() => normalize(props.thresholds.warning));
+const dangerPosition = computed(() => normalize(props.thresholds.danger));
 
-const dangerPosition = computed(() => {
-  return (props.thresholds.danger / scaleMax.value) * 100;
-});
-
-// Zone styles based on maximize flag
 const zoneStyles = computed(() => {
-  if (props.maximize) {
-    return [
-      {
-        name: 'danger',
-        style: {
-          left: '0%',
-          width: `${warningPosition.value}%`,
+  const zones = props.maximize
+    ? [
+        { name: 'danger', bg: '#fca5a5', left: 0, width: warningPosition.value },
+        {
+          name: 'warning',
+          bg: '#fcd34d',
+          left: warningPosition.value,
+          width: dangerPosition.value - warningPosition.value,
         },
-      },
-      {
-        name: 'warning',
-        style: {
-          left: `${warningPosition.value}%`,
-          width: `${dangerPosition.value - warningPosition.value}%`,
+        {
+          name: 'excellent',
+          bg: '#86efac',
+          left: dangerPosition.value,
+          width: 100 - dangerPosition.value,
         },
-      },
-      {
-        name: 'excellent',
-        style: {
-          left: `${dangerPosition.value}%`,
-          width: `${100 - dangerPosition.value}%`,
+      ]
+    : [
+        { name: 'excellent', bg: '#86efac', left: 0, width: warningPosition.value },
+        {
+          name: 'warning',
+          bg: '#fcd34d',
+          left: warningPosition.value,
+          width: dangerPosition.value - warningPosition.value,
         },
-      },
-    ];
-  } else {
-    return [
-      {
-        name: 'excellent',
-        style: {
-          left: '0%',
-          width: `${warningPosition.value}%`,
+        {
+          name: 'danger',
+          bg: '#fca5a5',
+          left: dangerPosition.value,
+          width: 100 - dangerPosition.value,
         },
-      },
-      {
-        name: 'warning',
-        style: {
-          left: `${warningPosition.value}%`,
-          width: `${dangerPosition.value - warningPosition.value}%`,
-        },
-      },
-      {
-        name: 'danger',
-        style: {
-          left: `${dangerPosition.value}%`,
-          width: `${100 - dangerPosition.value}%`,
-        },
-      },
-    ];
-  }
+      ];
+
+  return zones.map((z) => ({
+    name: z.name,
+    style: { left: `${z.left}%`, width: `${z.width}%`, background: z.bg },
+  }));
 });
 </script>
 
 <style lang="scss" scoped>
-.kpi-box-wrapper {
-  display: inline-block;
-  min-width: 160px;
-}
-
 .kpi-box {
-  position: relative;
   display: flex;
   flex-direction: column;
   padding: 0.5rem;
-  border-width: 2px;
-  border-style: solid;
-  border-radius: 8px;
+  border: 0.125rem solid;
+  border-radius: 0.5rem;
   text-decoration: none;
   color: inherit;
-  background: white;
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.2s;
   min-width: 12rem;
 
-  &.cursor-pointer {
+  &.clickable {
     cursor: pointer;
-
     &:hover {
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
     }
-  }
-
-  // Default state - grey border, white background
-  border-color: #e0e0e0;
-  background: white;
-
-  // Active state - colored border and background based on status
-  &.status-excellent.is-active {
-    border-color: #10b981;
-    background: #f0fdf4;
-  }
-
-  &.status-warning.is-active {
-    border-color: #f59e0b;
-    background: #fffbeb;
-  }
-
-  &.status-danger.is-active {
-    border-color: #ef4444;
-    background: #fef2f2;
   }
 }
 
-/* HEADER */
-.kpi-box-header {
+.header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
   min-height: 2.2rem;
 }
 
-.kpi-box-title {
-  font-size: small;
+.title {
+  font-size: 0.875rem;
   font-weight: normal;
-  color: #111827;
   margin: 0;
   line-height: 1.2;
   flex: 1;
@@ -282,118 +215,72 @@ const zoneStyles = computed(() => {
   -webkit-box-orient: vertical;
 }
 
-.status-icon {
-  flex-shrink: 0;
-
-  &.excellent {
-    color: #059669;
-  }
-
-  &.warning {
-    color: #d97706;
-  }
-
-  &.danger {
-    color: #dc2626;
-  }
-}
-
-/* METRIC DISPLAY */
-.kpi-box-metric {
+.metric {
   display: flex;
   align-items: baseline;
-  gap: 4px;
-  margin-bottom: 8px;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
 }
 
-.metric-number {
-  font-size: large;
+.value {
+  font-size: 1.125rem;
   font-weight: 500;
-  color: #111827;
   line-height: 1;
 }
 
-.metric-unit {
+.unit {
   font-size: 0.875rem;
-  font-weight: 400;
-  color: #4b5563;
+  opacity: 0.7;
 }
 
-/* MINI SCALE */
-.kpi-box-scale {
+.scale {
   margin-top: auto;
 }
 
-.mini-scale-bar {
+.bar {
   position: relative;
-  height: 6px;
+  height: 0.375rem;
   background: #e5e7eb;
   border-radius: 9999px;
   overflow: visible;
 }
 
-.mini-scale-zone {
+.zone {
   position: absolute;
   height: 100%;
-  transition: all 0.3s ease;
-
-  &.zone-excellent {
-    background: #86efac;
-  }
-
-  &.zone-warning {
-    background: #fcd34d;
-  }
-
-  &.zone-danger {
-    background: #fca5a5;
-  }
+  transition: all 0.3s;
 }
 
-/* Mini value indicator */
-.mini-value-indicator {
+.indicator {
   position: absolute;
   top: 50%;
-  width: 3px;
-  height: 12px;
-  transition: left 0.3s ease;
+  width: 0.1875rem;
+  height: 0.75rem;
   transform: translate(-50%, -50%);
   z-index: 10;
-  border-radius: 1.5px;
+  border-radius: 0.09375rem;
+  transition: left 0.3s;
 
   &::before {
     content: '';
     position: absolute;
-    top: -2px;
+    top: -0.125rem;
     left: 50%;
     transform: translateX(-50%);
-    width: 8px;
-    height: 8px;
+    width: 0.5rem;
+    height: 0.5rem;
     border-radius: 50%;
     background: inherit;
   }
-
-  &.excellent {
-    background: #10b981;
-  }
-
-  &.warning {
-    background: #f59e0b;
-  }
-
-  &.danger {
-    background: #ef4444;
-  }
 }
 
-/* Threshold markers for mini scale */
-.mini-threshold-markers {
+.markers {
   position: relative;
-  height: 18px;
-  margin-top: 2px;
+  height: 1.125rem;
+  margin-top: 0.125rem;
 }
 
-.mini-threshold-marker {
+.marker {
   position: absolute;
   display: flex;
   flex-direction: column;
@@ -401,21 +288,15 @@ const zoneStyles = computed(() => {
   transform: translateX(-50%);
 }
 
-.mini-marker-line {
-  width: 1px;
-  height: 3px;
+.line {
+  width: 0.0625rem;
+  height: 0.1875rem;
   background: #9ca3af;
 }
 
-.mini-marker-label {
-  font-size: xx-small;
+.label {
+  font-size: 0.625rem;
   color: #6b7280;
-  margin-top: 0px;
   white-space: nowrap;
-}
-
-.tooltip-text {
-  font-size: 0.875rem;
-  padding: 4px;
 }
 </style>

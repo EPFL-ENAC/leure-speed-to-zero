@@ -9,6 +9,8 @@
       "unit": "Mt",
       "route": "passenger-emissions-mode",
       "maximize": false,
+      "min": 0,
+      "max": 1,
       "thresholds": {
         "warning": 0.1,
         "danger": 0.5
@@ -28,6 +30,8 @@
       "unit": "Mt",
       "route": "passenger-emissions-mode",
       "maximize": false,
+      "min": 0,
+      "max": 5,
       "thresholds": {
         "warning": 1,
         "danger": 3
@@ -47,6 +51,8 @@
       "unit": "TWh",
       "route": "passenger-energy-demand",
       "maximize": false,
+      "min": 0,
+      "max": 3,
       "thresholds": {
         "warning": 1,
         "danger": 2
@@ -63,9 +69,11 @@
         "frFR": "Part de voitures électriques",
         "deDE": "Elektroauto-Anteil"
       },
-      "unit": "TWh",
+      "unit": "%",
       "route": "passenger-distance",
       "maximize": true,
+      "min": 0,
+      "max": 100,
       "thresholds": {
         "warning": 90,
         "danger": 50
@@ -85,6 +93,8 @@
       "unit": "TWh",
       "route": "freight-energy-demand",
       "maximize": false,
+      "min": 0,
+      "max": 1,
       "thresholds": {
         "warning": 0.2,
         "danger": 0.5
@@ -104,6 +114,8 @@
       "unit": "%",
       "route": "trucks-technology-share",
       "maximize": true,
+      "min": 0,
+      "max": 100,
       "thresholds": {
         "warning": 70,
         "danger": 30
