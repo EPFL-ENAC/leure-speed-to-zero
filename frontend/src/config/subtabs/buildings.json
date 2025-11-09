@@ -9,6 +9,8 @@
       "unit": "Mt",
       "route": "building-types-emissions",
       "maximize": false,
+      "min": 0,
+      "max": 0.5,
       "thresholds": {
         "warning": 0.15,
         "danger": 0.3
@@ -28,6 +30,8 @@
       "unit": "TWh",
       "route": "energy-carriers",
       "maximize": false,
+      "min": 0,
+      "max": 4,
       "thresholds": {
         "warning": 1.5,
         "danger": 2.5
@@ -47,6 +51,8 @@
       "unit": "%",
       "route": "building-types-area",
       "maximize": true,
+      "min": 0,
+      "max": 100,
       "thresholds": {
         "warning": 60,
         "danger": 40
@@ -66,6 +72,8 @@
       "unit": "%",
       "route": "renovation-construction",
       "maximize": false,
+      "min": 0,
+      "max": 100,
       "thresholds": {
         "warning": 15,
         "danger": 30
