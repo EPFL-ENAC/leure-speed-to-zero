@@ -71,30 +71,6 @@
         </q-scroll-area>
       </template>
     </div>
-
-    <!-- Tab selector bar - sticky at bottom (only show when subtab is selected) -->
-    <template v-if="$q.screen.gt.sm && currentTab">
-      <div class="bottom-tab-selector">
-        <q-separator></q-separator>
-        <q-tabs
-          v-model="currentTab"
-          :ripple="true"
-          outside-arrows
-          active-color="primary"
-          no-caps
-          align="justify"
-          content-class="text-grey-8"
-          active-bg-color="white"
-        >
-          <q-tab
-            v-for="tab in config.subtabs"
-            :key="tab.route"
-            :name="tab.route"
-            :label="getSubtabTitle(tab)"
-          />
-        </q-tabs>
-      </div>
-    </template>
   </div>
 </template>
 

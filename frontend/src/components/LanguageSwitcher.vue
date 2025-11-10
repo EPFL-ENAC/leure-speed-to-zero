@@ -1,5 +1,11 @@
 <template>
-  <q-btn-dropdown outline :label="currentLocaleLabel">
+  <q-btn-dropdown
+    :outline="!compact"
+    :flat="compact"
+    :dense="compact"
+    :label="currentLocaleLabel"
+    :size="compact ? 'sm' : undefined"
+  >
     <q-list>
       <q-item
         v-for="locale in locales"
@@ -20,6 +26,14 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import { computed } from 'vue';
+
+interface Props {
+  compact?: boolean;
+}
+
+withDefaults(defineProps<Props>(), {
+  compact: false,
+});
 
 const { locale, availableLocales } = useI18n();
 

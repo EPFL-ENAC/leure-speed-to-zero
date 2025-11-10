@@ -1,11 +1,34 @@
 import type { RouteRecordRaw } from 'vue-router';
 
 const routes: RouteRecordRaw[] = [
+  // Main Layout Routes (Home, About, Legal)
+  {
+    path: '/',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      {
+        path: '',
+        name: 'home',
+        component: () => import('src/pages/HomePage.vue'),
+      },
+      {
+        path: 'about',
+        name: 'about',
+        component: () => import('src/pages/AboutPage.vue'),
+      },
+      {
+        path: 'legal',
+        name: 'legal',
+        component: () => import('src/pages/LegalPage.vue'),
+      },
+    ],
+  },
+
+  // Dashboard Layout Routes (Application)
   {
     path: '/',
     component: () => import('layouts/DashboardLayout.vue'),
     children: [
-      { path: '', redirect: '/buildings' }, // Redirect to default sector
       {
         path: 'buildings/:subtab?',
         name: 'buildings',
