@@ -6,13 +6,18 @@
     <div class="col-12 col-md-7 q-pr-sm justify-between row no-wrap items-center">
       <div class="q-pr-sm">
         <span
-          class="text-body2 text-weight-light leverTitle"
+          class="text-weight-light leverTitle"
           @click="props.variant === 'default' ? openLeverDataPopup() : undefined"
           :title="props.variant === 'default' ? $t('clickToView', { title: leverTitle }) : ''"
         >
           {{ leverTitle }}
+          <q-icon
+            v-if="props.variant === 'default'"
+            name="info_outline"
+            size="xs"
+            class="q-ml-xs"
+          />
         </span>
-        <q-icon v-if="props.variant === 'default'" name="info_outline" size="xs" class="q-ml-xs" />
       </div>
 
       <div class="row items-center q-gutter-xs">
@@ -203,6 +208,10 @@ function toggleChart() {
       filter: grayscale(100%);
     }
   }
+}
+
+.leverTitle {
+  font-size: small;
 }
 
 .custom-slider-container {

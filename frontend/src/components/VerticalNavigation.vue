@@ -311,7 +311,6 @@ watch(
   transition: all 150ms ease;
   font-size: small;
   font-weight: 400;
-  letter-spacing: -0.01em;
   user-select: none;
 
   &:hover {
