@@ -89,7 +89,7 @@
 
     <!-- Footer Section -->
     <div v-if="!mini" class="nav-footer">
-      <language-switcher compact />
+      <language-switcher />
     </div>
   </aside>
 </template>
