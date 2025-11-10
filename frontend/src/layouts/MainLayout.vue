@@ -1,22 +1,20 @@
 <template>
   <q-layout view="hHh Lpr lff">
-    <!-- Mobile Header with Menu Button -->
     <q-header v-if="$q.screen.lt.md" elevated class="bg-white text-dark">
       <q-toolbar>
         <q-btn flat round dense icon="menu" @click="drawer = !drawer" />
-        <q-toolbar-title class="text-h6 text-weight-bold color-primary">
-          Speed to Zero
-        </q-toolbar-title>
+        <q-toolbar-title class="text-h6 text-weight-bold color-primary"
+          >Speed to Zero</q-toolbar-title
+        >
       </q-toolbar>
     </q-header>
 
-    <!-- Vertical Navigation Sidebar -->
     <q-drawer
       v-model="drawer"
       side="left"
       bordered
       :breakpoint="$q.screen.sizes.md"
-      :width="280"
+      :width="240"
       :overlay="$q.screen.lt.md"
       class="vertical-nav-drawer"
     >
@@ -35,17 +33,17 @@ import { useQuasar } from 'quasar';
 import VerticalNavigation from 'components/VerticalNavigation.vue';
 
 const $q = useQuasar();
-const drawer = ref($q.screen.gt.md); // Start open on desktop, closed on mobile
+const drawer = ref($q.screen.gt.md);
 </script>
 
 <style lang="scss" scoped>
+// Responsive width for navigation drawer
 .vertical-nav-drawer {
+  width: clamp(180px, 18vw, 320px) !important;
+  min-width: 180px !important;
+  max-width: 320px !important;
   :deep(.q-drawer__content) {
     overflow: hidden;
   }
-}
-
-.q-toolbar {
-  min-height: 64px;
 }
 </style>

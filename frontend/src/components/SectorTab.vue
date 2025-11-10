@@ -1,11 +1,9 @@
 <template>
   <div class="sector-tab-container">
     <!-- KPI bar at top - only show when subtab is selected -->
-    <template v-if="$q.screen.gt.sm && currentTab && modelResults">
-      <q-scroll-area visible class="top-kpis-bar">
-        <kpi-list :kpis="kpis" :horizontal="true" class="top-kpis-content" />
-      </q-scroll-area>
-    </template>
+    <q-scroll-area visible class="left-kpis-bar">
+      <kpi-list :kpis="kpis" :horizontal="false" class="left-kpis-content" />
+    </q-scroll-area>
 
     <!-- Main content area - scrollable -->
     <div class="content-area">
@@ -192,20 +190,45 @@ async function runModel() {
 <style lang="scss" scoped>
 .sector-tab-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   overflow: hidden;
   height: 100%;
+  min-height: 0; /* allow children with min-height:0 to scroll */
 }
 
-.top-kpis-bar {
-  flex-shrink: 0;
-  height: 10.5rem; /* Fixed height required for q-scroll-area */
-  border-bottom: 1px solid #e0e0e0;
+.left-kpis-bar {
+  /* Use a responsive width instead of a hardcoded pixel value. */
+  flex: 0 0 clamp(180px, 18vw, 320px);
+  min-width: 160px;
+  max-width: 360px;
+
+  /* Make it a column container so q-scroll-area can flex-grow properly */
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  min-height: 0;
+
+  /* Visual separation from the main content */
+  border-right: 1px solid #e0e0e0;
+  background: white;
+
+  /* Hide KPI column on small screens to save space */
+  @media (max-width: 960px) {
+    display: none;
+  }
+
+  /* Let the q-scroll-area fill the available vertical space */
+  :deep(.q-scrollarea) {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
 
   :deep(.q-scrollarea__content) {
     display: flex;
-    align-items: center;
-    padding: 0.5rem 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: stretch;
+    padding: 1rem;
   }
 }
 

@@ -33,6 +33,7 @@ export default {
   backToOverview: 'Back to Overview',
   selectKpiToViewDetails: 'Select a KPI to view detailed charts and analysis',
   showMoreInformation: 'Show more information',
+  keyMetrics: 'Key Metrics',
   // Chart components
   loadingChartData: 'Loading chart data...',
   retry: 'Retry',

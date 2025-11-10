@@ -29,6 +29,10 @@ const { kpis, horizontal = false } = defineProps<{
   }
 }
 
+.kpi-item {
+  width: 100%;
+}
+
 .kpi-container {
   display: flex;
   flex-wrap: wrap;

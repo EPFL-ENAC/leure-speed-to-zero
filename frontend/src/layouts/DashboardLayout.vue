@@ -17,7 +17,7 @@
       side="left"
       bordered
       :breakpoint="$q.screen.sizes.md"
-      :width="280"
+      :width="240"
       :overlay="$q.screen.lt.md"
       class="vertical-nav-drawer"
     >
@@ -29,15 +29,15 @@
       side="right"
       v-model="leversOpen"
       :overlay="$q.screen.lt.sm"
-      :width="300"
+      :width="240"
       :breakpoint="$q.screen.sizes.sm"
-      class="col-auto levers-col"
+      class="levers-col"
       style="border-left: 1px solid #e0e0e0"
     >
       <div class="column full-height">
-        <div class="non-scrollable-part q-pa-md">
+        <div class="q-pa-md">
           <div class="text-h5 q-mb-md row justify-between">
-            {{ $t('levers') }} <language-switcher></language-switcher>
+            {{ $t('levers') }} <language-switcher />
           </div>
           <q-select
             v-model="selectedPathway"
@@ -49,7 +49,7 @@
             map-options
             class="q-mb-md"
           >
-            <q-tooltip class="bg-grey-8"> {{ $t('featureNotReady') }} </q-tooltip>
+            <q-tooltip class="bg-grey-8">{{ $t('featureNotReady') }}</q-tooltip>
           </q-select>
           <q-btn
             :label="$t('resetDefault')"
@@ -57,8 +57,7 @@
             outline
             class="full-width q-mb-md"
             @click="resetToDefaults"
-          >
-          </q-btn>
+          />
         </div>
         <q-separator />
         <q-scroll-area visible class="col q-pa-xs">
@@ -68,13 +67,10 @@
     </q-drawer>
 
     <q-page-container>
-      <div class="row" :style="{ height: $q.screen.lt.md ? 'calc(100vh - 50px)' : '100vh' }">
-        <!-- Main Content Column -->
+      <div class="row full-height">
         <div class="col right-column">
           <q-page class="column full-height">
-            <div class="col full-width">
-              <router-view />
-            </div>
+            <router-view />
           </q-page>
         </div>
       </div>
@@ -89,12 +85,16 @@ import { ExamplePathways } from 'utils/examplePathways';
 import { sectors } from 'utils/sectors';
 import LeverGroups from 'components/LeverGroups.vue';
 import VerticalNavigation from 'components/VerticalNavigation.vue';
+import LanguageSwitcher from 'components/LanguageSwitcher.vue';
 import { useQuasar } from 'quasar';
 import { useRoute } from 'vue-router';
 import { getTranslatedText } from 'src/utils/translationHelpers';
+import { useI18n } from 'vue-i18n';
+
 const $q = useQuasar();
 const route = useRoute();
-
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const { locale } = useI18n();
 const leverStore = useLeverStore();
 
 // Navigation tab state
@@ -167,32 +167,23 @@ function resetToDefaults() {
 }
 
 .vertical-nav-drawer {
+  width: clamp(180px, 18vw, 320px) !important;
+  min-width: 180px !important;
+  max-width: 320px !important;
   :deep(.q-drawer__content) {
     overflow: hidden;
   }
 }
 
+.levers-col {
+  width: clamp(180px, 18vw, 320px) !important;
+  min-width: 180px !important;
+  max-width: 320px !important;
+}
+
 .right-column {
-  flex: 6 1 400px;
+  flex: 1;
   max-height: 100%;
-}
-
-.responsive-layout {
-  transition: all 0.3s ease;
-  overflow-x: auto;
-}
-
-// Mobile-specific styles
-@media (max-width: 600px) {
-  .right-column {
-    flex: 1;
-  }
-}
-
-// Tablet-specific styles
-@media (min-width: 601px) and (max-width: 1024px) {
-  .right-column {
-    flex: 2 1 400px;
-  }
+  overflow: hidden;
 }
 </style>
