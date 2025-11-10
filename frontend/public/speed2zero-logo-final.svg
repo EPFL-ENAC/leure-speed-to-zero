@@ -1,0 +1,38 @@
+<svg width="1400" height="350" xmlns="http://www.w3.org/2000/svg">
+  <!-- Warming Stripes - Red (high emissions) to Blue (zero emissions) -->
+  <rect x="0" y="0" width="50" height="350" fill="#C93F3E"/>
+  <rect x="50" y="0" width="50" height="350" fill="#D85050"/>
+  <rect x="100" y="0" width="50" height="350" fill="#C93F3E"/>
+  <rect x="150" y="0" width="50" height="350" fill="#E16262"/>
+  <rect x="200" y="0" width="50" height="350" fill="#EA7676"/>
+  <rect x="250" y="0" width="50" height="350" fill="#D85050"/>
+  <rect x="300" y="0" width="50" height="350" fill="#F39090"/>
+  <rect x="350" y="0" width="50" height="350" fill="#FCAAAA"/>
+  <rect x="400" y="0" width="50" height="350" fill="#EA7676"/>
+  <rect x="450" y="0" width="50" height="350" fill="#FFC4B4"/>
+  <rect x="500" y="0" width="50" height="350" fill="#F5D07D"/>
+  <rect x="550" y="0" width="50" height="350" fill="#F5E84D"/>
+  <rect x="600" y="0" width="50" height="350" fill="#F5D07D"/>
+  <rect x="650" y="0" width="50" height="350" fill="#DAEB3E"/>
+  <rect x="700" y="0" width="50" height="350" fill="#CCE646"/>
+  <rect x="750" y="0" width="50" height="350" fill="#E8F03E"/>
+  <rect x="800" y="0" width="50" height="350" fill="#B5DD59"/>
+  <rect x="850" y="0" width="50" height="350" fill="#9ED46C"/>
+  <rect x="900" y="0" width="50" height="350" fill="#87CB7F"/>
+  <rect x="950" y="0" width="50" height="350" fill="#70C292"/>
+  <rect x="1000" y="0" width="50" height="350" fill="#9ED46C"/>
+  <rect x="1050" y="0" width="50" height="350" fill="#59B9A5"/>
+  <rect x="1100" y="0" width="50" height="350" fill="#70C292"/>
+  <rect x="1150" y="0" width="50" height="350" fill="#42A9BC"/>
+  <rect x="1200" y="0" width="50" height="350" fill="#5EA9C8"/>
+  <rect x="1250" y="0" width="50" height="350" fill="#7AB0D0"/>
+  <rect x="1300" y="0" width="50" height="350" fill="#96B7D8"/>
+  <rect x="1350" y="0" width="50" height="350" fill="#BAD1E8"/>
+  
+  <!-- SPEED2ZERO Text with bold font -->
+  <text x="700" y="210" font-family="Arial Black, Arial Bold, Helvetica, sans-serif" 
+        font-size="140" font-weight="900" text-anchor="middle" fill="#000000" 
+        letter-spacing="6">
+    SPEED2ZERO
+  </text>
+</svg>

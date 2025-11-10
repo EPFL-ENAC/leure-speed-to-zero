@@ -3,7 +3,7 @@
     <!-- Mobile Header with Menu Button -->
     <q-header v-if="$q.screen.lt.md" elevated class="bg-white text-dark">
       <q-toolbar>
-        <q-btn flat round dense icon="menu" @click="toggleSectorSelector" />
+        <q-btn flat round dense icon="menu" @click="toggleNavigation" />
         <q-toolbar-title class="color-primary text-h6">{{
           getTranslatedText(currentSectorDisplay, $i18n.locale)
         }}</q-toolbar-title>
@@ -11,19 +11,17 @@
       </q-toolbar>
     </q-header>
 
-    <!-- Sector Column - Desktop always shown, Mobile controlled by sectorSelectorOpen -->
+    <!-- Vertical Navigation Sidebar - Desktop always shown, Mobile controlled by navigationOpen -->
     <q-drawer
-      v-model="sectorSelectorOpen"
+      v-model="navigationOpen"
       side="left"
       bordered
-      :mini="miniState"
-      @mouseenter="$q.screen.gt.sm ? (miniState = false) : null"
-      @mouseleave="$q.screen.gt.sm ? (miniState = true) : null"
-      :breakpoint="$q.screen.sizes.sm"
-      :width="$q.screen.lt.sm ? 180 : 200"
+      :breakpoint="$q.screen.sizes.md"
+      :width="280"
       :overlay="$q.screen.lt.md"
+      class="vertical-nav-drawer"
     >
-      <SectorSelector :mini="miniState" ref="sectorSelector" />
+      <VerticalNavigation />
     </q-drawer>
 
     <!-- Levers Column - Desktop/Tablet always shown, Mobile controlled by leversOpen -->
@@ -85,27 +83,35 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useLeverStore } from 'stores/leversStore';
 import { ExamplePathways } from 'utils/examplePathways';
 import { sectors } from 'utils/sectors';
 import LeverGroups from 'components/LeverGroups.vue';
-import SectorSelector from 'components/SectorSelector.vue';
-import LanguageSwitcher from 'components/LanguageSwitcher.vue';
+import VerticalNavigation from 'components/VerticalNavigation.vue';
 import { useQuasar } from 'quasar';
+import { useRoute } from 'vue-router';
 import { getTranslatedText } from 'src/utils/translationHelpers';
 const $q = useQuasar();
+const route = useRoute();
 
 const leverStore = useLeverStore();
-const sectorSelector = ref<InstanceType<typeof SectorSelector>>();
+
+// Navigation tab state
+const currentTab = ref(route.name as string);
+watch(
+  () => route.name,
+  (newName) => {
+    if (newName) currentTab.value = newName as string;
+  },
+);
 
 // Mobile UI state
 const leversOpenState = ref(false);
-const sectorSelectorOpen = ref($q.screen.gt.sm); // Start open on desktop, closed on mobile
-const miniState = ref(false);
+const navigationOpen = ref($q.screen.gt.md); // Start open on desktop, closed on mobile
 
-// Get current sector from the SectorSelector component
-const currentSector = computed(() => sectorSelector.value?.currentSector || 'buildings');
+// Get current sector from route
+const currentSector = computed(() => route.path.split('/')[1] || 'buildings');
 
 // Get current sector display name
 const currentSectorDisplay = computed(() => {
@@ -125,10 +131,10 @@ const leversOpen = computed({
   },
 });
 
-function toggleSectorSelector() {
+function toggleNavigation() {
   // On mobile, toggle the drawer state
   if ($q.screen.lt.md) {
-    sectorSelectorOpen.value = !sectorSelectorOpen.value;
+    navigationOpen.value = !navigationOpen.value;
   }
 }
 
@@ -160,12 +166,11 @@ function resetToDefaults() {
   overflow-y: auto;
 }
 
-// .levers-col {
-//   flex: 1 2 300px;
-//   min-width: 250px;
-//   max-width: 400px;
-//   max-height: 100%;
-// }
+.vertical-nav-drawer {
+  :deep(.q-drawer__content) {
+    overflow: hidden;
+  }
+}
 
 .right-column {
   flex: 6 1 400px;
@@ -174,7 +179,7 @@ function resetToDefaults() {
 
 .responsive-layout {
   transition: all 0.3s ease;
-  overflow-x: auto; // Allow horizontal scrolling on mobile if needed
+  overflow-x: auto;
 }
 
 // Mobile-specific styles
@@ -186,23 +191,8 @@ function resetToDefaults() {
 
 // Tablet-specific styles
 @media (min-width: 601px) and (max-width: 1024px) {
-  .levers-col {
-    flex: 1 2 250px;
-    min-width: 200px;
-    max-width: 300px;
-  }
-
   .right-column {
     flex: 2 1 400px;
-  }
-}
-
-// Ensure drawer is properly sized on mobile
-:deep(.q-drawer) {
-  @media (max-width: 600px) {
-    .q-drawer__content {
-      width: 100% !important;
-    }
   }
 }
 </style>

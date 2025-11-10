@@ -5,7 +5,7 @@
       :inline-label="true"
       active-class="active"
       vertical
-      class="tabs"
+      class="tabs col"
     >
       <q-tab
         v-for="{ label, value, icon, disabled } in sectors"
@@ -19,6 +19,29 @@
         <q-tooltip v-if="disabled" class="bg-grey-8"> {{ $t('featureNotReady') }} </q-tooltip>
       </q-tab>
     </q-tabs>
+
+    <!-- Footer links -->
+    <div v-if="!mini" class="footer-links q-pa-sm">
+      <q-separator class="q-mb-sm" />
+      <q-btn
+        flat
+        dense
+        size="sm"
+        icon="info"
+        :label="$t('about')"
+        :to="{ name: 'about' }"
+        class="full-width text-left"
+      />
+      <q-btn
+        flat
+        dense
+        size="sm"
+        icon="gavel"
+        :label="$t('legal')"
+        :to="{ name: 'legal' }"
+        class="full-width text-left"
+      />
+    </div>
   </div>
 </template>
 
@@ -122,5 +145,14 @@ defineExpose({
 // Disabled tab in mini mode should also hide label
 .tab.disabled.mini :deep(.q-tab__label) {
   color: transparent !important;
+}
+
+.footer-links {
+  flex-shrink: 0;
+  border-top: 1px solid #e0e0e0;
+
+  .q-btn {
+    justify-content: flex-start;
+  }
 }
 </style>
