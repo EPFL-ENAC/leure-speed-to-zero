@@ -29,15 +29,15 @@
       side="right"
       v-model="leversOpen"
       :overlay="$q.screen.lt.sm"
-      :width="240"
       :breakpoint="$q.screen.sizes.sm"
       class="levers-col"
       style="border-left: 1px solid #e0e0e0"
     >
       <div class="column full-height">
-        <div class="q-pa-md">
-          <div class="text-h5 q-mb-md row justify-between">
-            {{ $t('levers') }} <language-switcher />
+        <q-scroll-area visible class="col align-center q-pa-md">
+          <div class="levers-header q-mb-md">
+            <q-icon name="tune" class="header-icon" />
+            <span>{{ $t('levers') }}</span>
           </div>
           <q-select
             v-model="selectedPathway"
@@ -55,12 +55,9 @@
             :label="$t('resetDefault')"
             color="grey"
             outline
-            class="full-width q-mb-md"
+            class="q-mb-md full-width"
             @click="resetToDefaults"
           />
-        </div>
-        <q-separator />
-        <q-scroll-area visible class="col q-pa-xs">
           <LeverGroups :sector="currentSector" />
         </q-scroll-area>
       </div>
@@ -85,7 +82,6 @@ import { ExamplePathways } from 'utils/examplePathways';
 import { sectors } from 'utils/sectors';
 import LeverGroups from 'components/LeverGroups.vue';
 import VerticalNavigation from 'components/VerticalNavigation.vue';
-import LanguageSwitcher from 'components/LanguageSwitcher.vue';
 import { useQuasar } from 'quasar';
 import { useRoute } from 'vue-router';
 import { getTranslatedText } from 'src/utils/translationHelpers';
@@ -167,7 +163,7 @@ function resetToDefaults() {
 }
 
 .vertical-nav-drawer {
-  width: clamp(180px, 18vw, 320px) !important;
+  width: clamp(180px, 16vw, 320px) !important;
   min-width: 180px !important;
   max-width: 320px !important;
   :deep(.q-drawer__content) {
@@ -176,9 +172,38 @@ function resetToDefaults() {
 }
 
 .levers-col {
-  width: clamp(180px, 18vw, 320px) !important;
+  width: clamp(180px, 30vw, 600px) !important;
   min-width: 180px !important;
-  max-width: 320px !important;
+  max-width: 600px !important;
+  scrollbar-gutter: stable;
+  align-items: center;
+  justify-content: center;
+  justify-items: center;
+}
+
+.levers-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 8px;
+  font-size: small;
+  font-weight: normal;
+  color: #6e6e73;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.header-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+  margin-right: 12px;
+  opacity: 0.7;
+  transition: opacity 150ms ease;
+}
+
+.header-text {
+  flex: 1;
 }
 
 .right-column {
