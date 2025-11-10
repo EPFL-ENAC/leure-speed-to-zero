@@ -2,9 +2,9 @@
   <div class="sector-tab-container">
     <!-- KPI bar at top - only show when subtab is selected -->
     <template v-if="$q.screen.gt.sm && currentTab && modelResults">
-      <div horizontal class="top-kpis-bar">
+      <q-scroll-area visible class="top-kpis-bar">
         <kpi-list :kpis="kpis" :horizontal="true" class="top-kpis-content" />
-      </div>
+      </q-scroll-area>
     </template>
 
     <!-- Main content area - scrollable -->
@@ -28,7 +28,7 @@
         </div>
 
         <!-- Charts content - scrollable (when subtab is selected) -->
-        <div v-else class="charts-content">
+        <q-scroll-area class="charts-content">
           <q-tab-panels v-if="$q.screen.gt.sm" v-model="currentTab" animated>
             <q-tab-panel
               v-for="tab in config.subtabs"
@@ -68,7 +68,7 @@
               <q-separator class="q-mt-xl"></q-separator>
             </div>
           </div>
-        </div>
+        </q-scroll-area>
       </template>
     </div>
 
@@ -222,14 +222,15 @@ async function runModel() {
 }
 
 .top-kpis-bar {
-  display: flex;
   flex-shrink: 0;
-  position: sticky;
-  top: 0; /* Height of top-toolbar */
+  height: 10.5rem; /* Fixed height required for q-scroll-area */
   border-bottom: 1px solid #e0e0e0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 0.5rem 1rem;
+
+  :deep(.q-scrollarea__content) {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+  }
 }
 
 .bottom-tab-selector {
@@ -293,9 +294,10 @@ async function runModel() {
 
 .charts-content {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-top: 2rem;
+
+  :deep(.q-scrollarea__content) {
+    padding-top: 2rem;
+  }
 }
 
 .graph-placeholder {
