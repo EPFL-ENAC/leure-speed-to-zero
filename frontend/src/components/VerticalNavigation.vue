@@ -260,6 +260,7 @@ watch(
 
 .logo-svg {
   width: 100%;
+  border-radius: 0.2rem;
   display: block;
   object-fit: contain;
 }
@@ -308,7 +309,7 @@ watch(
   text-decoration: none;
   cursor: pointer;
   transition: all 150ms ease;
-  font-size: 14px;
+  font-size: small;
   font-weight: 400;
   letter-spacing: -0.01em;
   user-select: none;

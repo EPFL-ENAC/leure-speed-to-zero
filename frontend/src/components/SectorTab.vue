@@ -197,18 +197,15 @@ async function runModel() {
 }
 
 .left-kpis-bar {
-  /* Use a responsive width instead of a hardcoded pixel value. */
-  flex: 0 0 clamp(180px, 18vw, 320px);
+  flex: 0 0 clamp(180px, 18vw, 260px);
   min-width: 160px;
-  max-width: 360px;
+  max-width: 260px;
 
-  /* Make it a column container so q-scroll-area can flex-grow properly */
   display: flex;
   flex-direction: column;
   align-self: stretch;
   min-height: 0;
 
-  /* Visual separation from the main content */
   border-right: 1px solid #e0e0e0;
   background: white;
 

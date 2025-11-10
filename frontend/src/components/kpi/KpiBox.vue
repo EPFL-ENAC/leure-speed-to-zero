@@ -202,7 +202,7 @@ const zoneStyles = computed(() => {
 }
 
 .title {
-  font-size: 0.875rem;
+  font-size: small;
   font-weight: normal;
   margin: 0;
   line-height: 1.2;
