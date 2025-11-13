@@ -54,7 +54,7 @@
     "lever_biodiversity": 1,
     "lever_land-prioritisation": 1,
     "lever_pop": 1,
-    "lever_urbpop": 1,
+    "lever_ruminant-feed": 1,
     "lever_ems-after-2050": 1,
     "lever_food-net-import": 1,
     "lever_product-net-import": 1,
@@ -82,7 +82,7 @@
     "lever_residential-cooling-profile": 1,
     "lever_eol-waste-management": 1,
     "lever_eol-material-recovery": 1,
-    "lever_lca-material-decomp": 1,
-    "lever_harvest-rate": 2
+    "lever_harvest-rate": 2,
+    "lever_footprint" : 1
   }
 ]

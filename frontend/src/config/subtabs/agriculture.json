@@ -251,8 +251,8 @@
         "agr_demand_rice[kcal]",
         "agr_demand_seafood[kcal]",
         "agr_demand_coffee[kcal]",
-	"agr_demand_cocoa[kcal]",
-	"agr_demand_tea[kcal]"
+        "agr_demand_cocoa[kcal]",
+        "agr_demand_tea[kcal]"
       ]
     },
     "FoodWaste": {
@@ -290,8 +290,8 @@
         "lfs_food-wastes_tpe_rice[t]",
         "lfs_food-wastes_tpe_seafood[t]",
         "lfs_food-wastes_tpe_coffee[t]",
-	"lfs_food-wastes_tpe_cocoa[t]",
-	"lfs_food-wastes_tpe_tea[t]"
+        "lfs_food-wastes_tpe_cocoa[t]",
+        "lfs_food-wastes_tpe_tea[t]"
       ]
     },
     "CropSSR": {
@@ -470,10 +470,7 @@
       "title": "Stimulant supply",
       "type": "StackedArea",
       "unit": "t",
-      "outputs": [
-	"agr_demand_tpe_coffee[t]",
-	"agr_demand_tpe_cocoa[t]",
- 	"agr_demand_tpe_tea[t]"]
+      "outputs": ["agr_demand_tpe_coffee[t]", "agr_demand_tpe_cocoa[t]", "agr_demand_tpe_tea[t]"]
     },
     "OtherFoodSupply": {
       "title": "Other food supply",
