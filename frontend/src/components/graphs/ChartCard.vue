@@ -6,7 +6,13 @@
         <p>No data available</p>
       </div>
       <div v-else class="chart-visualization">
-        <v-chart ref="chartRef" class="chart" :option="chartOption" autoresize />
+        <v-chart
+          ref="chartRef"
+          class="chart"
+          autoresize
+          :option="chartOption"
+          @legendselectchanged="handleLegendSelectChanged"
+        />
       </div>
     </q-card-section>
   </q-card>
@@ -19,6 +25,7 @@ import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { LineChart, BarChart } from 'echarts/charts';
 import type { SectorData, ChartConfig } from 'stores/leversStore';
+import type { ECharts } from 'echarts/core';
 import {
   TitleComponent,
   TooltipComponent,
@@ -26,6 +33,7 @@ import {
   GridComponent,
   DatasetComponent,
   DataZoomComponent,
+  MarkAreaComponent,
 } from 'echarts/components';
 import VChart from 'vue-echarts';
 import { getPlotLabel } from 'utils/labelsPlot';
@@ -41,6 +49,7 @@ use([
   GridComponent,
   DatasetComponent,
   DataZoomComponent,
+  MarkAreaComponent,
 ]);
 
 // Types
@@ -48,7 +57,7 @@ interface ChartSeries {
   name: string;
   color: string | null;
   years: number[];
-  data: number[] | [number, number][];
+  data: number[] | [number | Date, number][];
 }
 
 interface YearData {
@@ -69,7 +78,15 @@ const props = defineProps<{
   modelData: SectorData;
 }>();
 
-const chartRef = ref(null);
+const chartRef = ref<ECharts>();
+
+// Track legend selection state
+const legendSelected = ref<Record<string, boolean>>({});
+
+// Handle legend selection changes
+const handleLegendSelectChanged = (params: { selected: Record<string, boolean> }) => {
+  legendSelected.value = { ...params.selected };
+};
 
 // Extract chart data from model results
 const chartData = computed<ChartSeries[]>(() => {
@@ -106,7 +123,7 @@ function extractChartData(
     countryData.forEach((yearData: YearData) => {
       if (fieldName in yearData) {
         years.push(yearData.year);
-        values.push([yearData.year, yearData[fieldName] as number]);
+        values.push([new Date(yearData.year, 0, 1).getTime(), yearData[fieldName] as number]);
       }
     });
 
@@ -127,18 +144,74 @@ function extractChartData(
 const chartOption = computed(() => {
   if (!chartData.value.length) return {};
 
+  // Get the max year from data to determine chart end
+  const maxYear = Math.max(...chartData.value.flatMap((series) => series.years));
+
+  // Create mark area configuration for forecast period
+  const forecastMarkArea = {
+    silent: true,
+    itemStyle: {
+      color: 'transparent', // No background fill
+      borderColor: '#999',
+      borderWidth: 2,
+      borderType: [5, 10],
+      opacity: 0.8,
+    },
+    label: {
+      show: true,
+      position: 'top',
+      fontSize: 11,
+      color: '#666',
+    },
+    data: [
+      [
+        {
+          name: 'Historical',
+          xAxis: new Date(1990, 0, 1).getTime(), // January 1st, 1990
+        },
+        {
+          xAxis: new Date(2024, 0, 1).getTime(), // January 1st, 2024
+        },
+      ],
+      [
+        {
+          name: 'Model Forecast',
+          xAxis: new Date(2024, 0, 1).getTime(), // January 1st, 2024
+        },
+        {
+          xAxis: new Date(maxYear, 11, 31).getTime(), // December 31st of max year
+        },
+      ],
+    ],
+  };
+
   // Create series array for ECharts
   const isStacked = props.chartConfig.type.toLowerCase() === 'stackedarea';
   const series = chartData.value.map((series) => ({
     name: series.name,
-    type: isStacked ? 'line' : 'bar',
+    type: 'line',
     stack: isStacked ? 'total' : undefined,
     symbol: 'none',
     areaStyle: isStacked ? {} : undefined,
-    emphasis: { focus: 'series' },
     itemStyle: { color: series.color },
     data: series.data,
   }));
+
+  // Create the invisible markArea series
+  const markAreaSeries = {
+    name: '__markArea__', // Hidden series name
+    type: 'line',
+    data: [], // No data points
+    symbol: 'none',
+    lineStyle: { opacity: 0 }, // Invisible line
+    markArea: forecastMarkArea,
+    showSymbol: false,
+    legendHoverLink: false,
+  };
+
+  // Combine all series
+  const allSeries = [...series, markAreaSeries];
+  const legendData = series.map((serie) => serie.name);
 
   return {
     title: {
@@ -162,18 +235,20 @@ const chartOption = computed(() => {
       },
     },
     legend: {
-      orient: 'horizontal',
       type: 'scroll',
-      bottom: '0%',
+      orient: 'none',
+      bottom: 0,
+      height: '10%',
+      data: legendData,
+      selected: legendSelected.value,
     },
     grid: {
       top: '20%',
       left: '5%',
       right: '5%',
-      bottom: '10%',
+      bottom: '13%',
       containLabel: true,
     },
-
     xAxis: {
       type: 'time',
       // boundaryGap: false,
@@ -193,14 +268,14 @@ const chartOption = computed(() => {
         },
       },
     },
-    series,
+    series: allSeries,
   };
 });
 </script>
 
 <style lang="scss" scoped>
 .chart-card {
-  min-width: 400px;
+  min-width: 500px;
   height: 450px;
   display: flex;
   flex-direction: column;
@@ -233,5 +308,13 @@ const chartOption = computed(() => {
 
 .chart {
   height: 100%;
+}
+
+@media screen and (max-width: 600px) {
+  .chart-card {
+    min-width: 100%;
+    min-height: 400px;
+    height: 55vh;
+  }
 }
 </style>
