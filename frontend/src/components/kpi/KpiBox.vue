@@ -182,9 +182,11 @@ const zoneStyles = computed(() => {
   text-decoration: none;
   color: inherit;
   transition: box-shadow 0.2s;
-  min-width: 7rem;
+  min-width: 8rem;
   flex-grow: 1;
-  max-width: 10rem;
+  flex-shrink: 1;
+  flex-basis: 9rem;
+  max-width: 11rem;
 
   &.clickable {
     cursor: pointer;
