@@ -1,12 +1,37 @@
 <template>
   <div class="sector-tab-container">
-    <!-- KPI bar at top - only show when subtab is selected -->
-    <q-scroll-area visible class="left-kpis-bar">
-      <kpi-list :kpis="kpis" :horizontal="false" class="left-kpis-content" />
-    </q-scroll-area>
-
-    <!-- Main content area - scrollable -->
+    <!-- Main content area -->
     <div class="content-area">
+      <!-- KPI bar at top - horizontal with scroll arrows -->
+      <div v-if="modelResults && currentTab && currentTab !== 'overview'" class="top-kpis-bar">
+        <q-btn
+          flat
+          dense
+          round
+          icon="chevron_left"
+          @click="scrollKpis('left')"
+          class="kpi-nav-btn"
+          :disable="!canScrollKpis"
+        />
+        <div class="kpis-container" ref="kpisContainerRef">
+          <kpi-list
+            ref="kpiListRef"
+            :kpis="kpis"
+            :horizontal="true"
+            @can-scroll="canScrollKpis = $event"
+          />
+        </div>
+        <q-btn
+          flat
+          dense
+          round
+          icon="chevron_right"
+          @click="scrollKpis('right')"
+          class="kpi-nav-btn"
+          :disable="!canScrollKpis"
+        />
+      </div>
+
       <div v-if="!modelResults" class="graph-placeholder">
         <q-icon name="show_chart" size="4rem" />
         <p>{{ $t('runModelToSeeData', { sector: sectorDisplayName }) }}</p>
@@ -22,7 +47,7 @@
       <template v-else>
         <!-- Show KPI Cards when no subtab is selected (overview) -->
         <div v-if="!currentTab || currentTab === 'overview'" class="overview-content">
-          <kpi-card-list :kpis="kpis" />
+          <kpi-list :kpis="kpis" />
         </div>
 
         <!-- Charts content - scrollable (when subtab is selected) -->
@@ -73,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch, nextTick } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useLeverStore, type SectorWithKpis, type ChartConfig } from 'stores/leversStore';
@@ -106,6 +131,9 @@ const props = defineProps<{
 const router = useRouter();
 const route = useRoute();
 const leverStore = useLeverStore();
+const kpisContainerRef = ref<HTMLElement | null>(null);
+const kpiListRef = ref<InstanceType<typeof KpiList> | null>(null);
+const canScrollKpis = ref(false);
 
 // Helper function to get translated subtab title
 const getSubtabTitle = (subtab: { title: string | TranslationObject; route: string }): string => {
@@ -127,6 +155,13 @@ const currentTab = computed({
       });
     }
   },
+});
+
+// Watch for tab changes and scroll to active KPI
+watch(currentTab, async (newTab) => {
+  if (!newTab || newTab === 'overview') return;
+  await nextTick();
+  kpiListRef.value?.scrollToRoute(newTab);
 });
 
 // If no subtab is present in the URL, redirect to first subtab
@@ -185,48 +220,53 @@ async function runModel() {
     console.error('Error running model:', error);
   }
 }
+
+// Scroll KPIs left or right
+function scrollKpis(direction: 'left' | 'right') {
+  if (!kpiListRef.value) return;
+  const container = kpiListRef.value.$el as HTMLElement;
+  const scrollAmount = 300;
+  container.scrollBy({
+    left: direction === 'left' ? -scrollAmount : scrollAmount,
+    behavior: 'smooth',
+  });
+}
 </script>
 
 <style lang="scss" scoped>
 .sector-tab-container {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   overflow: hidden;
   height: 100%;
-  min-height: 0; /* allow children with min-height:0 to scroll */
+  min-height: 0;
+  width: 100%;
 }
 
-.left-kpis-bar {
-  flex: 0 0 clamp(180px, 18vw, 260px);
-  min-width: 160px;
-  max-width: 260px;
-
+.top-kpis-bar {
+  flex-shrink: 0;
   display: flex;
-  flex-direction: column;
-  align-self: stretch;
-  min-height: 0;
-
-  border-right: 1px solid #e0e0e0;
+  align-items: center;
+  padding: 0.5rem;
   background: white;
+  border-bottom: 1px solid #e0e0e0;
+  min-height: 100px;
+}
 
-  /* Hide KPI column on small screens to save space */
-  @media (max-width: 960px) {
-    display: none;
-  }
+.kpi-nav-btn {
+  flex-shrink: 0;
+  transition: opacity 0.3s;
 
-  /* Let the q-scroll-area fill the available vertical space */
-  :deep(.q-scrollarea) {
-    flex: 1 1 auto;
-    min-height: 0;
+  &:disabled,
+  &.disabled {
+    opacity: 0.3;
+    color: #9e9e9e;
   }
+}
 
-  :deep(.q-scrollarea__content) {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    align-items: stretch;
-    padding: 1rem;
-  }
+.kpis-container {
+  flex: 1;
+  min-width: 0;
 }
 
 .bottom-tab-selector {

@@ -113,7 +113,9 @@
             <div class="feature-item text-center q-pa-md">
               <div class="feature-number text-primary text-h3 text-weight-bold">3</div>
               <div class="text-h6 q-mt-md q-mb-sm">Analyze Results</div>
-              <p class="text-grey-7">Visualize emissions, energy consumption, and key performance indicators</p>
+              <p class="text-grey-7">
+                Visualize emissions, energy consumption, and key performance indicators
+              </p>
             </div>
           </div>
         </div>

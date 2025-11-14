@@ -176,13 +176,15 @@ const zoneStyles = computed(() => {
 .kpi-box {
   display: flex;
   flex-direction: column;
-  padding: 0.5rem;
-  border: 0.125rem solid;
-  border-radius: 0.5rem;
+  padding: 0.375rem;
+  border: 0.0625rem solid;
+  border-radius: 0.375rem;
   text-decoration: none;
   color: inherit;
   transition: box-shadow 0.2s;
-  min-width: 12rem;
+  min-width: 7rem;
+  flex-grow: 1;
+  max-width: 10rem;
 
   &.clickable {
     cursor: pointer;
@@ -196,16 +198,16 @@ const zoneStyles = computed(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-  min-height: 2.2rem;
+  gap: 0.375rem;
+  margin-bottom: 0.375rem;
+  min-height: 1.75rem;
 }
 
 .title {
-  font-size: small;
+  font-size: smaller;
   font-weight: normal;
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.1;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -219,17 +221,17 @@ const zoneStyles = computed(() => {
   display: flex;
   align-items: baseline;
   gap: 0.25rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.375rem;
 }
 
 .value {
-  font-size: 1.125rem;
+  font-size: 0.95rem;
   font-weight: 500;
   line-height: 1;
 }
 
 .unit {
-  font-size: 0.875rem;
+  font-size: 0.7rem;
   opacity: 0.7;
 }
 
@@ -239,7 +241,7 @@ const zoneStyles = computed(() => {
 
 .bar {
   position: relative;
-  height: 0.375rem;
+  height: 0.3rem;
   background: #e5e7eb;
   border-radius: 9999px;
   overflow: visible;
@@ -254,21 +256,21 @@ const zoneStyles = computed(() => {
 .indicator {
   position: absolute;
   top: 50%;
-  width: 0.1875rem;
-  height: 0.75rem;
+  width: 0.15rem;
+  height: 0.6rem;
   transform: translate(-50%, -50%);
   z-index: 10;
-  border-radius: 0.09375rem;
+  border-radius: 0.075rem;
   transition: left 0.3s;
 
   &::before {
     content: '';
     position: absolute;
-    top: -0.125rem;
+    top: -0.1rem;
     left: 50%;
     transform: translateX(-50%);
-    width: 0.5rem;
-    height: 0.5rem;
+    width: 0.4rem;
+    height: 0.4rem;
     border-radius: 50%;
     background: inherit;
   }
@@ -276,8 +278,8 @@ const zoneStyles = computed(() => {
 
 .markers {
   position: relative;
-  height: 1.125rem;
-  margin-top: 0.125rem;
+  height: 0.95rem;
+  margin-top: 0.1rem;
 }
 
 .marker {
@@ -290,12 +292,12 @@ const zoneStyles = computed(() => {
 
 .line {
   width: 0.0625rem;
-  height: 0.1875rem;
+  height: 0.15rem;
   background: #9ca3af;
 }
 
 .label {
-  font-size: 0.625rem;
+  font-size: 0.55rem;
   color: #6b7280;
   white-space: nowrap;
 }
