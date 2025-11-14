@@ -35,6 +35,7 @@ import {
   DataZoomComponent,
   MarkAreaComponent,
   MarkLineComponent,
+  ToolboxComponent,
 } from 'echarts/components';
 import VChart from 'vue-echarts';
 import { plotLabels } from 'config/plotLabels';
@@ -56,6 +57,7 @@ use([
   DatasetComponent,
   DataZoomComponent,
   MarkAreaComponent,
+  ToolboxComponent,
   MarkLineComponent,
 ]);
 
@@ -150,6 +152,55 @@ function extractChartData(
   });
 
   return series;
+}
+
+// Function to download chart data as CSV
+function downloadCSV() {
+  if (!chartData.value.length) return;
+
+  // Collect all unique years from all series
+  const allYears = new Set<number>();
+  chartData.value.forEach((series) => {
+    series.years.forEach((year) => allYears.add(year));
+  });
+  const sortedYears = Array.from(allYears).sort((a, b) => a - b);
+
+  // Create CSV header
+  const headers = ['Year', ...chartData.value.map((series) => series.name)];
+  const csvRows = [headers.join(',')];
+
+  // Create CSV data rows
+  sortedYears.forEach((year) => {
+    const row = [year.toString()];
+    chartData.value.forEach((series) => {
+      const yearIndex = series.years.indexOf(year);
+      if (yearIndex !== -1) {
+        const dataPoint = series.data[yearIndex];
+        const value = Array.isArray(dataPoint) ? dataPoint[1] : dataPoint;
+        row.push(value !== undefined ? value.toString() : '');
+      } else {
+        row.push('');
+      }
+    });
+    csvRows.push(row.join(','));
+  });
+
+  // Create and download the CSV file
+  const csvContent = csvRows.join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+
+  link.setAttribute('href', url);
+  link.setAttribute(
+    'download',
+    `${translatedTitle.value.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`,
+  );
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 // Format data for ECharts
@@ -270,6 +321,23 @@ const chartOption = computed(() => {
         fontWeight: 'bold',
       },
     },
+    toolbox: {
+      show: true,
+      feature: {
+        dataZoom: {
+          yAxisIndex: 'none',
+        },
+        restore: {},
+        myCsvDownload: {
+          show: true,
+          title: t('downloadCSV'),
+          icon: 'path://M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z',
+          onclick: () => {
+            downloadCSV();
+          },
+        },
+      },
+    },
     tooltip: {
       trigger: 'axis',
       formatter: (params: EChartsTooltipParam[]) => {
@@ -283,6 +351,7 @@ const chartOption = computed(() => {
         }, '');
       },
     },
+
     legend: {
       type: 'scroll',
       orient: 'none',

@@ -39,6 +39,7 @@ export default {
   retry: 'Réessayer',
   noChartDataAvailable: 'Aucune donnée de graphique disponible',
   noDataAvailable: 'Aucune donnée disponible',
+  downloadCSV: 'Télécharger CSV',
   // Time periods
   historical: 'Historique',
   forecast: 'Prévision',
