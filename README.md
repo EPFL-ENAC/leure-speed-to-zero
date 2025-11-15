@@ -72,7 +72,7 @@ make run
 
 ## ⚙️ Configuration
 
-**Region**: Edit `model_config.json`, then run `make install-config`  
+**Region**: Edit `model_config.json`, in both folders `frontend/` and `backend/`  
 **Redis**: Optional caching - `docker compose up -d redis`
 
 ## 🛠️ Development

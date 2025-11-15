@@ -23,11 +23,6 @@ install: install-backend install-frontend install-config
 	npx lefthook install
 	@echo "Setup complete!"
 
-install-config:
-	@echo "Installing config: copy model_config.json to frontend and backend..."
-	@cp -r model_config.json backend/ || true
-	@cp -r model_config.json frontend/ || true
-	@echo "Configuration files installed!"
 
 # Install backend dependencies
 install-backend:
