@@ -258,7 +258,27 @@ async def debug_region():
     return {
         "status": "success",
         "current_region": RegionConfig.get_current_region(),
-        "available_regions": RegionConfig.AVAILABLE_REGIONS,
+        "available_regions": RegionConfig.get_available_regions(),
+    }
+
+
+@router.post("/reload-config")
+async def reload_config():
+    """Force reload the region configuration from model_config.json."""
+    from src.utils.region_config import RegionConfig
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    logger.info("🔄 Manual configuration reload requested")
+    
+    result = RegionConfig.force_reload()
+    
+    logger.info(f"✅ Configuration reloaded - New region: {result['current_region']}")
+    
+    return {
+        "status": "success",
+        "message": "Configuration reloaded successfully",
+        **result
     }
 
 
