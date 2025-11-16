@@ -1,1 +1,67 @@
 // app global css in SCSS form
+
+// Shared utility classes
+.app-disabled {
+  color: #a0a0a0 !important;
+  opacity: 0.5;
+
+  // For components with icons
+  .q-icon,
+  .material-icons {
+    color: #a0a0a0 !important;
+  }
+
+  // For Quasar tabs specifically
+  &.q-tab {
+    pointer-events: none; // Only disable pointer events for tabs
+    .q-tab__icon,
+    .q-tab__label {
+      color: #a0a0a0 !important;
+    }
+  }
+
+  // For nested elements in tabs
+  &.tab .q-tab,
+  &.tab .q-tab__icon,
+  &.tab .q-tab__label {
+    color: #a0a0a0 !important;
+  }
+
+  // For Quasar select components
+  &.q-select {
+    .q-field__control,
+    .q-field__label,
+    .q-field__native {
+      color: #a0a0a0 !important;
+    }
+
+    .q-field__append .q-icon {
+      color: #a0a0a0 !important;
+    }
+
+    // Disable the actual input interaction but allow hover for tooltips
+    .q-field__native {
+      pointer-events: none !important;
+    }
+
+    .q-field__control::before {
+      pointer-events: none !important;
+    }
+  }
+
+  // For Quasar buttons
+  &.q-btn {
+    background-color: #f5f5f5 !important;
+    color: #a0a0a0 !important;
+    border-color: #d0d0d0 !important;
+
+    .q-btn__content {
+      color: #a0a0a0 !important;
+    }
+
+    // Disable click but allow hover for tooltips
+    .q-btn__content {
+      pointer-events: none !important;
+    }
+  }
+}

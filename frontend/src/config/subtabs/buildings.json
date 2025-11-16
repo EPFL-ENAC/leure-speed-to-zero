@@ -1,85 +1,153 @@
 {
   "kpis": [
     {
-      "name": "CO2 emissions",
+      "name": {
+        "enUS": "CO2 emissions",
+        "frFR": "Émissions de CO2",
+        "deDE": "CO2-Emissionen"
+      },
       "unit": "Mt",
       "route": "building-types-emissions",
       "maximize": false,
+      "min": 0,
+      "max": 0.5,
       "thresholds": {
         "warning": 0.15,
         "danger": 0.3
       },
-      "info": "Total CO2 emissions in 2050 from residential buildings including space heating across all energy carriers. Lower values indicate better environmental performance and progress toward climate goals."
+      "info": {
+        "enUS": "Total CO2 emissions in 2050 from residential buildings including space heating across all energy carriers. Lower values indicate better environmental performance and progress toward climate goals.",
+        "frFR": "Émissions totales de CO2 en 2050 des bâtiments résidentiels, y compris le chauffage des locaux pour tous les vecteurs énergétiques. Des valeurs plus faibles indiquent une meilleure performance environnementale et des progrès vers les objectifs climatiques.",
+        "deDE": "Gesamte CO2-Emissionen im Jahr 2050 aus Wohngebäuden einschließlich Raumheizung über alle Energieträger. Niedrigere Werte zeigen bessere Umweltleistung und Fortschritte in Richtung Klimaziele."
+      }
     },
     {
-      "name": "Energy Demand for Space Heating",
+      "name": {
+        "enUS": "Energy Demand for Space Heating",
+        "frFR": "Demande énergétique pour le chauffage des locaux",
+        "deDE": "Energiebedarf für Raumheizung"
+      },
       "unit": "TWh",
       "route": "energy-carriers",
       "maximize": false,
+      "min": 0,
+      "max": 4,
       "thresholds": {
         "warning": 1.5,
         "danger": 2.5
       },
-      "info": "Total energy delivered for space heating in residential buildings, in 2050. This includes all heating sources but excludes ambient heat extracted by heat pumps, reflecting only the actual energy input required for heating."
+      "info": {
+        "enUS": "Total energy delivered for space heating in residential buildings, in 2050. This includes all heating sources but excludes ambient heat extracted by heat pumps, reflecting only the actual energy input required for heating.",
+        "frFR": "Énergie totale fournie pour le chauffage des locaux dans les bâtiments résidentiels, en 2050. Cela inclut toutes les sources de chauffage mais exclut la chaleur ambiante extraite par les pompes à chaleur, reflétant uniquement l'apport énergétique réel nécessaire pour le chauffage.",
+        "deDE": "Gesamte gelieferte Energie für die Raumheizung in Wohngebäuden im Jahr 2050. Dies umfasst alle Heizquellen, schließt jedoch die von Wärmepumpen extrahierte Umgebungswärme aus und spiegelt nur den tatsächlich erforderlichen Energieeinsatz für die Heizung wider."
+      }
     },
     {
-      "name": "A-C class",
+      "name": {
+        "enUS": "A-C class",
+        "frFR": "Classe A-C",
+        "deDE": "A-C-Klasse"
+      },
       "unit": "%",
       "route": "building-types-area",
       "maximize": true,
+      "min": 0,
+      "max": 100,
       "thresholds": {
         "warning": 60,
         "danger": 40
       },
-      "info": "Share of residential floor area with high-quality thermal envelopes (categories A, B, C), in 2050. The rating reflects the building envelope's thermal resistance including insulation, windows, and thermal bridges based on CECB classification."
+      "info": {
+        "enUS": "Share of residential floor area with high-quality thermal envelopes (categories A, B, C), in 2050. The rating reflects the building envelope's thermal resistance including insulation, windows, and thermal bridges based on CECB classification.",
+        "frFR": "Part de la surface résidentielle avec des enveloppes thermiques de haute qualité (catégories A, B, C), en 2050. La classification reflète la résistance thermique de l'enveloppe du bâtiment, incluant l'isolation, les fenêtres et les ponts thermiques selon la classification CECB.",
+        "deDE": "Anteil der Wohnfläche mit hochwertigen Gebäudehüllen (Kategorien A, B, C) im Jahr 2050. Die Bewertung spiegelt den Wärmewiderstand der Gebäudehülle wider, einschließlich Isolierung, Fenster und Wärmebrücken basierend auf der CECB-Klassifizierung."
+      }
     },
     {
-      "name": "Unrenovated Envelope Share",
+      "name": {
+        "enUS": "Unrenovated Envelope Share",
+        "frFR": "Part des enveloppes non rénovées",
+        "deDE": "Anteil nicht renovierter Gebäudehüllen"
+      },
       "unit": "%",
       "route": "renovation-construction",
       "maximize": false,
+      "min": 0,
+      "max": 100,
       "thresholds": {
         "warning": 15,
         "danger": 30
       },
-      "info": "Share of residential floor area that has not undergone envelope renovation in 2050. This includes buildings whose envelope efficiency class has not improved since construction, indicating poor thermal performance."
+      "info": {
+        "enUS": "Share of residential floor area that has not undergone envelope renovation in 2050. This includes buildings whose envelope efficiency class has not improved since construction, indicating poor thermal performance.",
+        "frFR": "Part de la surface résidentielle qui n'a pas fait l'objet d'une rénovation de l'enveloppe en 2050. Cela inclut les bâtiments dont la classe d'efficacité de l'enveloppe ne s'est pas améliorée depuis la construction, indiquant une mauvaise performance thermique.",
+        "deDE": "Anteil der Wohnfläche, die im Jahr 2050 keine Hüllensanierung erfahren hat. Dies umfasst Gebäude, deren Effizienzklasse der Hülle sich seit dem Bau nicht verbessert hat, was auf eine schlechte thermische Leistung hinweist."
+      }
     }
   ],
   "subtabs": [
     {
-      "title": "Heating emissions",
+      "title": {
+        "enUS": "Heating emissions",
+        "frFR": "Émissions de chauffage",
+        "deDE": "Heizungsemissionen"
+      },
       "charts": ["SHGHGEmissionsPerBuildingType", "GHGEmissionsPerCarrier"],
       "route": "building-types-emissions"
     },
     {
-      "title": "Energy mix",
+      "title": {
+        "enUS": "Energy mix",
+        "frFR": "Mix énergétique",
+        "deDE": "Energiemix"
+      },
       "charts": ["SHEnergyDemandPerCarrier", "EnergyDemandPerCarrier"],
       "route": "energy-carriers"
     },
     {
-      "title": "Floor area per building type",
+      "title": {
+        "enUS": "Floor area per building type",
+        "frFR": "Surface au sol par type de bâtiment",
+        "deDE": "Wohnfläche nach Gebäudetyp"
+      },
       "charts": ["FloorAreaPerBuildingType", "SHEnergyDemandPerBuildingType"],
       "route": "building-types-area"
     },
     {
-      "title": "Building stock and Renovation",
+      "title": {
+        "enUS": "Building stock and Renovation",
+        "frFR": "Parc immobilier et rénovation",
+        "deDE": "Gebäudebestand und Renovierung"
+      },
       "charts": ["FloorAreaBldType", "FloorAreaRenovationConstruction"],
       "route": "renovation-construction"
     },
     {
-      "title": "Residential, other",
+      "title": {
+        "enUS": "Residential, other",
+        "frFR": "Résidentiel, autre",
+        "deDE": "Wohngebäude, sonstiges"
+      },
       "charts": ["HotWaterRes", "AppliancesLightRes"],
       "route": "residential-other"
     },
     {
-      "title": "Non-residential",
+      "title": {
+        "enUS": "Non-residential",
+        "frFR": "Non-résidentiel",
+        "deDE": "Nicht-Wohngebäude"
+      },
       "charts": ["NonResByType", "NonResByFuel"],
       "route": "non-residential"
     }
   ],
   "charts": {
     "SHGHGEmissionsPerBuildingType": {
-      "title": "CO2 emissions for residential space heating per building type",
+      "title": {
+        "enUS": "CO2 emissions for residential space heating per building type",
+        "frFR": "Émissions de CO2 pour le chauffage résidentiel par type de bâtiment",
+        "deDE": "CO2-Emissionen für Raumheizung in Wohngebäuden nach Gebäudetyp"
+      },
       "type": "StackedArea",
       "unit": "Mt",
       "outputs": [
@@ -91,7 +159,11 @@
       ]
     },
     "GHGEmissionsPerCarrier": {
-      "title": "CO2 emissions for residential heating per carrier",
+      "title": {
+        "enUS": "CO2 emissions for residential heating per carrier",
+        "frFR": "Émissions de CO2 pour le chauffage résidentiel par vecteur",
+        "deDE": "CO2-Emissionen für Raumheizung in Wohngebäuden nach Energieträger"
+      },
       "type": "StackedArea",
       "unit": "Mt",
       "outputs": [
@@ -108,7 +180,11 @@
       ]
     },
     "SHEnergyDemandPerCarrier": {
-      "title": "Demand for residential space heating per heating technology",
+      "title": {
+        "enUS": "Demand for residential space heating per heating technology",
+        "frFR": "Demande d'énergie pour le chauffage résidentiel par vecteur",
+        "deDE": "Energiebedarf für Raumheizung in Wohngebäuden nach Energieträger"
+      },
       "type": "StackedArea",
       "unit": "TWh",
       "outputs": [
@@ -124,7 +200,11 @@
       ]
     },
     "EnergyDemandPerCarrier": {
-      "title": "Final energy demand for residential heating per carrier",
+      "title": {
+        "enUS": "Final energy demand for residential heating per carrier",
+        "frFR": "Demande d'énergie pour le chauffage résidentiel par vecteur",
+        "deDE": "Energiebedarf für Raumheizung in Wohngebäuden nach Energieträger"
+      },
       "type": "StackedArea",
       "unit": "TWh",
       "outputs": [
@@ -141,7 +221,11 @@
       ]
     },
     "FloorAreaPerBuildingType": {
-      "title": "Residential energy reference area per envelope class",
+      "title": {
+        "enUS": "Residential energy reference area per envelope class",
+        "frFR": "Surface au sol par type de bâtiment",
+        "deDE": "Wohnfläche nach Gebäudetyp"
+      },
       "type": "StackedArea",
       "unit": "Mm²",
       "outputs": [
@@ -153,7 +237,11 @@
       ]
     },
     "SHEnergyDemandPerBuildingType": {
-      "title": "Demand for residential space heating per envelope class",
+      "title": {
+        "enUS": "Demand for residential space heating per envelope class",
+        "frFR": "Demande d'énergie pour le chauffage résidentiel par type de bâtiment",
+        "deDE": "Energiebedarf für Raumheizung in Wohngebäuden nach Gebäudetyp"
+      },
       "type": "StackedArea",
       "unit": "TWh",
       "outputs": [
@@ -165,7 +253,11 @@
       ]
     },
     "FloorAreaBldType": {
-      "title": "Residential building stock by type",
+      "title": {
+        "enUS": "Residential building stock by type",
+        "frFR": "Surface au sol par type de bâtiment",
+        "deDE": "Wohnfläche nach Gebäudetyp"
+      },
       "type": "StackedArea",
       "unit": "Mm²",
       "outputs": [
@@ -174,7 +266,11 @@
       ]
     },
     "FloorAreaRenovationConstruction": {
-      "title": "Renovated and constructed residential floor area",
+      "title": {
+        "enUS": "Renovated and constructed residential floor area",
+        "frFR": "Surface au sol par rénovation et construction",
+        "deDE": "Wohnfläche nach Renovierung und Neubau"
+      },
       "type": "StackedArea",
       "unit": "Mm²",
       "outputs": [
@@ -184,7 +280,11 @@
       ]
     },
     "HotWaterRes": {
-      "title": "Hot water - residential energy consumption",
+      "title": {
+        "enUS": "Hot water - residential energy consumption",
+        "frFR": "Eau chaude résidentielle",
+        "deDE": "Warmwasser in Wohngebäuden"
+      },
       "type": "StackedArea",
       "unit": "TWh",
       "outputs": [
@@ -198,13 +298,21 @@
       ]
     },
     "AppliancesLightRes": {
-      "title": "Appliances and Lighting - residential electricity consumption",
+      "title": {
+        "enUS": "Appliances and Lighting - residential electricity consumption",
+        "frFR": "Appareils et éclairage résidentiels",
+        "deDE": "Geräte und Beleuchtung in Wohngebäuden"
+      },
       "type": "StackedArea",
       "unit": "TWh",
       "outputs": ["bld_residential-lighting[TWh]", "bld_appliances_tot-elec-demand[TWh]"]
     },
     "NonResByType": {
-      "title": "Non-residential energy consumption by end-use",
+      "title": {
+        "enUS": "Non-residential energy consumption by end-use",
+        "frFR": "Énergie non-résidentielle par type",
+        "deDE": "Energie in Nicht-Wohngebäuden nach Typ"
+      },
       "type": "StackedArea",
       "unit": "TWh",
       "outputs": [
@@ -215,7 +323,11 @@
       ]
     },
     "NonResByFuel": {
-      "title": "Non-residential energy consumption by fuel",
+      "title": {
+        "enUS": "Non-residential energy consumption by fuel",
+        "frFR": "Énergie non-résidentielle par combustible",
+        "deDE": "Energie in Nicht-Wohngebäuden nach Brennstoff"
+      },
       "type": "StackedArea",
       "unit": "TWh",
       "outputs": [

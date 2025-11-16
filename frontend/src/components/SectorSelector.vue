@@ -5,31 +5,65 @@
       :inline-label="true"
       active-class="active"
       vertical
-      class="tabs"
+      class="tabs col"
     >
       <q-tab
-        v-for="{ label, value, icon } in sectors"
+        v-for="{ label, value, icon, disabled } in sectors"
         :key="value"
         :name="value"
         :icon="icon"
-        :label="label"
-        :class="'tab' + (mini ? ' mini' : '')"
-      />
+        :label="getLabel(label)"
+        :class="'tab' + (mini ? ' mini' : '') + (disabled ? ' disabled' : '')"
+        :disable="disabled"
+      >
+        <q-tooltip v-if="disabled" class="bg-grey-8"> {{ $t('featureNotReady') }} </q-tooltip>
+      </q-tab>
     </q-tabs>
+
+    <!-- Footer links -->
+    <div v-if="!mini" class="footer-links q-pa-sm">
+      <q-separator class="q-mb-sm" />
+      <q-btn
+        flat
+        dense
+        size="sm"
+        icon="info"
+        :label="$t('about')"
+        :to="{ name: 'about' }"
+        class="full-width text-left"
+      />
+      <q-btn
+        flat
+        dense
+        size="sm"
+        icon="gavel"
+        :label="$t('legal')"
+        :to="{ name: 'legal' }"
+        class="full-width text-left"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { sectors } from 'utils/sectors';
+import { getTranslatedText, type TranslationObject } from 'src/utils/translationHelpers';
 
 const route = useRoute();
 const router = useRouter();
+const { locale } = useI18n();
 
 const { mini } = defineProps<{
   mini: boolean;
 }>();
+
+// Helper function to get translated text (can be called in template)
+const getLabel = (label: string | TranslationObject) => {
+  return getTranslatedText(label, locale.value);
+};
 
 // Reactive sector selection
 const currentSector = ref(route.path.split('/')[1] || 'buildings');
@@ -91,5 +125,34 @@ defineExpose({
 
 .tab.mini :deep(.q-tab__label) {
   color: transparent;
+}
+
+// Disabled tab styling
+.tab.disabled :deep(.q-tab) {
+  color: #a0a0a0 !important;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.tab.disabled :deep(.q-tab__icon) {
+  color: #a0a0a0 !important;
+}
+
+.tab.disabled :deep(.q-tab__label) {
+  color: #a0a0a0 !important;
+}
+
+// Disabled tab in mini mode should also hide label
+.tab.disabled.mini :deep(.q-tab__label) {
+  color: transparent !important;
+}
+
+.footer-links {
+  flex-shrink: 0;
+  border-top: 1px solid #e0e0e0;
+
+  .q-btn {
+    justify-content: flex-start;
+  }
 }
 </style>

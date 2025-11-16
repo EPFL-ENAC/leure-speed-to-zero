@@ -2,7 +2,7 @@
   <div class="lever-chart-container" :style="{ height, width }">
     <div v-if="isLoading" class="flex flex-center q-pa-lg">
       <q-spinner-dots size="2rem" />
-      <span class="q-ml-sm">Loading chart data...</span>
+      <span class="q-ml-sm">{{ $t('loadingChartData') }}</span>
     </div>
 
     <div v-else-if="error" class="text-negative q-pa-md text-center">
@@ -16,12 +16,12 @@
         class="q-mt-md"
         :loading="isLoading"
       >
-        Retry
+        {{ $t('retry') }}
       </q-btn>
     </div>
 
     <div v-else-if="!chartData.length" class="text-center q-pa-md text-grey-7">
-      No chart data available
+      {{ $t('noChartDataAvailable') }}
     </div>
 
     <v-chart
@@ -49,8 +49,12 @@ import {
 import VChart from 'vue-echarts';
 import { useLeverStore } from 'stores/leversStore';
 import type { LeverResults, LeverYearData } from 'stores/leversStore';
-import { getPlotLabel } from 'utils/labelsPlot';
+import { plotLabels } from 'config/plotLabels';
 import { type Lever, levers as leversConfigs } from 'src/utils/leversData';
+import { useI18n } from 'vue-i18n';
+import { getTranslatedText } from 'src/utils/translationHelpers';
+
+const i18n = useI18n();
 
 // Types for ECharts
 interface ChartSeries {
@@ -173,7 +177,7 @@ const chartData = computed(() => {
 
     if (data.length > 0) {
       // Clean up the display name
-      const displayName = getPlotLabel(varName);
+      const displayName = getTranslatedText(plotLabels[varName] || varName, i18n.locale.value);
       series.push({
         name: displayName,
         years,
