@@ -27,9 +27,10 @@
     <!-- Levers Column - Desktop/Tablet always shown, Mobile controlled by leversOpen -->
     <q-drawer
       side="right"
+      bordered
       v-model="leversOpen"
-      :overlay="$q.screen.lt.sm"
-      :breakpoint="$q.screen.sizes.sm"
+      :overlay="$q.screen.lt.md"
+      :breakpoint="$q.screen.sizes.md"
       class="levers-col"
       style="border-left: 1px solid #e0e0e0"
     >
@@ -113,7 +114,7 @@ watch(
 
 // Mobile UI state
 const leversOpenState = ref(false);
-const navigationOpen = ref($q.screen.gt.md); // Start open on desktop, closed on mobile
+const navigationOpen = ref($q.screen.gt.sm); // Start open on desktop, closed on mobile
 
 // Get current sector from route
 const currentSector = computed(() => route.path.split('/')[1] || 'buildings');
