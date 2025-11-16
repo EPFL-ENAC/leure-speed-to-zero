@@ -1,36 +1,42 @@
 <template>
   <div class="sector-tab-container">
-    <!-- Tab selector bar - sticky at top -->
-    <template v-if="$q.screen.gt.sm">
-      <div class="tab-selector-bar">
-        <q-tabs
-          v-model="currentTab"
-          :ripple="true"
-          outside-arrows
-          active-color="primary"
-          no-caps
-          align="justify"
-          content-class="text-grey-8"
-          active-bg-color="white"
-        >
-          <q-tab
-            v-for="tab in config.subtabs"
-            :key="tab.route"
-            :name="tab.route"
-            :label="tab.title"
-          />
-        </q-tabs>
-        <q-separator></q-separator>
-      </div>
-    </template>
-
-    <!-- Main content area - scrollable -->
+    <!-- Main content area -->
     <div class="content-area">
+      <!-- KPI bar at top - horizontal with scroll arrows -->
+      <div v-if="modelResults && currentTab && currentTab !== 'overview'" class="top-kpis-bar">
+        <q-btn
+          flat
+          dense
+          round
+          icon="chevron_left"
+          @click="scrollKpis('left')"
+          class="kpi-nav-btn"
+          :disable="!canScrollKpis"
+        />
+        <div class="kpis-container" ref="kpisContainerRef">
+          <kpi-list
+            ref="kpiListRef"
+            :kpis="kpis"
+            :horizontal="true"
+            @can-scroll="canScrollKpis = $event"
+          />
+        </div>
+        <q-btn
+          flat
+          dense
+          round
+          icon="chevron_right"
+          @click="scrollKpis('right')"
+          class="kpi-nav-btn"
+          :disable="!canScrollKpis"
+        />
+      </div>
+
       <div v-if="!modelResults" class="graph-placeholder">
         <q-icon name="show_chart" size="4rem" />
-        <p>Run the model to see {{ sectorDisplayName }} data</p>
+        <p>{{ $t('runModelToSeeData', { sector: sectorDisplayName }) }}</p>
         <q-btn
-          label="Run Model"
+          :label="$t('runModel')"
           color="primary"
           :loading="isLoading"
           @click="runModel"
@@ -39,8 +45,13 @@
       </div>
 
       <template v-else>
-        <!-- Charts content - scrollable -->
-        <div class="charts-content">
+        <!-- Show KPI Cards when no subtab is selected (overview) -->
+        <div v-if="!currentTab || currentTab === 'overview'" class="overview-content">
+          <kpi-list :kpis="kpis" />
+        </div>
+
+        <!-- Charts content - scrollable (when subtab is selected) -->
+        <q-scroll-area class="charts-content">
           <q-tab-panels v-if="$q.screen.gt.sm" v-model="currentTab" animated>
             <q-tab-panel
               v-for="tab in config.subtabs"
@@ -52,6 +63,8 @@
                 <chart-card
                   v-for="chartId in tab.charts"
                   :chart-config="config.charts[chartId] as ChartConfig"
+                  :chart-id="chartId"
+                  :sector-name="sectorName"
                   :key="chartId"
                   :model-data="modelResults"
                 />
@@ -63,12 +76,14 @@
           <div v-else class="q-pa-md">
             <div v-for="tab in config.subtabs" :key="tab.route" class="mobile-tab-section">
               <div class="mobile-tab-header">
-                <div class="text-h6 mobile-tab-title">{{ tab.title }}</div>
+                <div class="text-h6 mobile-tab-title">{{ getSubtabTitle(tab) }}</div>
               </div>
               <div class="row flex-wrap">
                 <chart-card
                   v-for="chartId in tab.charts"
                   :chart-config="config.charts[chartId] as ChartConfig"
+                  :chart-id="chartId"
+                  :sector-name="sectorName"
                   :key="chartId"
                   :model-data="modelResults"
                 />
@@ -76,30 +91,31 @@
               <q-separator class="q-mt-xl"></q-separator>
             </div>
           </div>
-          <div class="kpis-section">
-            <kpi-list :kpis="kpis" class="kpis-content" />
-          </div>
-        </div>
+        </q-scroll-area>
       </template>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch, nextTick } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useLeverStore, type SectorWithKpis, type ChartConfig } from 'stores/leversStore';
 import type { KPI, KPIConfig } from 'src/utils/sectors';
 import KpiList from 'src/components/kpi/KpiList.vue';
 import ChartCard from 'components/graphs/ChartCard.vue';
 import { useQuasar } from 'quasar';
+import { getTranslatedText } from 'src/utils/translationHelpers';
+import type { TranslationObject } from 'src/utils/translationHelpers';
 
 const $q = useQuasar();
+const { locale } = useI18n();
 
 interface SectorConfig {
   kpis?: KPIConfig[];
   subtabs: Array<{
-    title: string;
+    title: string | TranslationObject;
     route: string;
     charts: string[];
   }>;
@@ -115,6 +131,14 @@ const props = defineProps<{
 const router = useRouter();
 const route = useRoute();
 const leverStore = useLeverStore();
+const kpisContainerRef = ref<HTMLElement | null>(null);
+const kpiListRef = ref<InstanceType<typeof KpiList> | null>(null);
+const canScrollKpis = ref(false);
+
+// Helper function to get translated subtab title
+const getSubtabTitle = (subtab: { title: string | TranslationObject; route: string }): string => {
+  return getTranslatedText(subtab.title, locale.value);
+};
 
 // Tab state - reactive to route changes
 const currentTab = computed({
@@ -133,7 +157,14 @@ const currentTab = computed({
   },
 });
 
-// If no subtab is present in the URL, redirect to the default one.
+// Watch for tab changes and scroll to active KPI
+watch(currentTab, async (newTab) => {
+  if (!newTab || newTab === 'overview') return;
+  await nextTick();
+  kpiListRef.value?.scrollToRoute(newTab);
+});
+
+// If no subtab is present in the URL, redirect to first subtab
 if (!route.params.subtab && props.config.subtabs[0]?.route) {
   void router.replace({
     name: props.sectorName,
@@ -154,8 +185,18 @@ const kpis = computed((): KPI[] => {
 
   const returnData = newData
     .map((kpi) => {
-      const confKpi = confKpis.find((conf) => conf.name === kpi.title);
-      if (!confKpi) return null;
+      // Find matching config by comparing backend title with translated name
+      const confKpi = confKpis.find((conf) => {
+        // Handle both string and TranslationObject types
+        const confName =
+          typeof conf.name === 'string' ? conf.name : getTranslatedText(conf.name, 'enUS'); // Use English as the canonical matching key
+        return confName === kpi.title;
+      });
+
+      if (!confKpi) {
+        console.warn(`No config found for KPI: ${kpi.title}`);
+        return null;
+      }
 
       // Merge config with runtime data, ensuring the KPI interface is satisfied
       return {
@@ -179,6 +220,17 @@ async function runModel() {
     console.error('Error running model:', error);
   }
 }
+
+// Scroll KPIs left or right
+function scrollKpis(direction: 'left' | 'right') {
+  if (!kpiListRef.value) return;
+  const container = kpiListRef.value.$el as HTMLElement;
+  const scrollAmount = 300;
+  container.scrollBy({
+    left: direction === 'left' ? -scrollAmount : scrollAmount,
+    behavior: 'smooth',
+  });
+}
 </script>
 
 <style lang="scss" scoped>
@@ -187,6 +239,43 @@ async function runModel() {
   flex-direction: column;
   overflow: hidden;
   height: 100%;
+  min-height: 0;
+  width: 100%;
+}
+
+.top-kpis-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+  min-height: 100px;
+}
+
+.kpi-nav-btn {
+  flex-shrink: 0;
+  transition: opacity 0.3s;
+
+  &:disabled,
+  &.disabled {
+    opacity: 0.3;
+    color: #9e9e9e;
+  }
+}
+
+.kpis-container {
+  flex: 1;
+  min-width: 0;
+}
+
+.bottom-tab-selector {
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background: white;
+  border-top: 1px solid #e0e0e0;
 }
 
 .tab-selector-bar {
@@ -194,6 +283,27 @@ async function runModel() {
   position: sticky;
   top: 0;
   z-index: 10;
+  background: white;
+}
+
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  gap: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.sector-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.back-button {
+  flex-shrink: 0;
 }
 
 .content-area {
@@ -203,11 +313,27 @@ async function runModel() {
   overflow: hidden;
 }
 
-.charts-content {
+.overview-content {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-bottom: 200px;
+}
+
+.overview-header {
+  text-align: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 0 0 16px 16px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.charts-content {
+  flex: 1;
+
+  :deep(.q-scrollarea__content) {
+    padding-top: 2rem;
+  }
 }
 
 .graph-placeholder {
@@ -222,20 +348,6 @@ async function runModel() {
   text-align: center;
   padding: 2rem;
   margin: 1rem;
-}
-
-@media screen and (min-width: 600px) {
-  .kpis-section {
-    flex-shrink: 0;
-    position: absolute;
-    width: 100%;
-    bottom: 0;
-    z-index: 5;
-  }
-}
-
-.kpis-content {
-  padding: 1rem;
 }
 
 .title {

@@ -2,8 +2,9 @@
   <div v-if="currentSector == 'overall'" class="lever-groups">
     <div v-for="(levers, headline) in leverStore.leversByHeadline" :key="headline" class="q-mb-xl">
       <q-list>
-        <div class="text-subtitle1 q-ml-xs q-mb-sm">
-          {{ headline }}
+        <div class="headline-section q-ml-xs q-mb-sm">
+          <q-icon :name="getHeadlineIcon(headline)" class="headline-icon" />
+          <span class="headline-text">{{ headline }}</span>
         </div>
         <q-expansion-item
           v-for="(groupLevers, group) in getGroupedLevers(levers)"
@@ -52,7 +53,7 @@
   </div>
   <div v-else class="lever-groups">
     <q-list>
-      <div v-for="lever in filteredLevers" :key="lever.code" class="q-mx-md q-my-xs lever-item">
+      <div v-for="lever in filteredLevers" :key="lever.code" class="lever-item">
         <LeverSelector
           :lever="lever"
           :value="leverStore.getLeverValue(lever.code)"
@@ -66,12 +67,15 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useLeverStore } from 'stores/leversStore';
 import LeverSelector from 'components/LeverSelector.vue';
 import type { Lever } from 'utils/leversData';
+import { getTranslatedText } from 'src/utils/translationHelpers';
 
 const leverStore = useLeverStore();
 const route = useRoute();
+const { locale } = useI18n();
 
 const minValue = 1,
   maxValue = 4;
@@ -92,10 +96,11 @@ function getGroupedLevers(levers: Lever[]): Record<string, Lever[]> {
   const result: Record<string, Lever[]> = {};
 
   levers.forEach((lever) => {
-    if (!result[lever.group]) {
-      result[lever.group] = [];
+    const groupKey = getTranslatedText(lever.group, locale.value);
+    if (!result[groupKey]) {
+      result[groupKey] = [];
     }
-    result[lever.group]?.push(lever);
+    result[groupKey]?.push(lever);
   });
 
   return result;
@@ -113,6 +118,23 @@ function updateGroupLevers(levers: Lever[], value: number): void {
   // Apply all updates in a single operation
   leverStore.batchUpdateLevers(updates);
 }
+
+// Icon mapping for headlines
+const headlineIcons: Record<string, string> = {
+  'Energy Supply': 'bolt',
+  'Energy Demand': 'energy_savings_leaf',
+  'Land Use': 'landscape',
+  Agriculture: 'agriculture',
+  Industry: 'factory',
+  Transport: 'local_shipping',
+  Buildings: 'home',
+  Forestry: 'park',
+  // Add more mappings as needed
+};
+
+function getHeadlineIcon(headline: string): string {
+  return headlineIcons[headline] || 'category';
+}
 </script>
 
 <style lang="scss" scoped>
@@ -125,5 +147,26 @@ function updateGroupLevers(levers: Lever[], value: number): void {
 .lever-group:deep(.q-item__section--side) {
   padding-right: 4px;
   min-width: auto;
+}
+
+.headline-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 8px 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+  letter-spacing: -0.02em;
+}
+
+.headline-icon {
+  font-size: 20px;
+  color: var(--q-primary);
+  opacity: 0.8;
+}
+
+.headline-text {
+  flex: 1;
 }
 </style>

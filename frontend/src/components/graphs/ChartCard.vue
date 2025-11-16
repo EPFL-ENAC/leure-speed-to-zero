@@ -3,7 +3,7 @@
     <q-card-section class="chart-section">
       <div v-if="!chartData.length" class="chart-placeholder">
         <q-icon name="mdi-chart-line-variant" size="2rem" color="grey-5" />
-        <p>No data available</p>
+        <p>{{ $t('noDataAvailable') }}</p>
       </div>
       <div v-else class="chart-visualization">
         <v-chart
@@ -34,9 +34,16 @@ import {
   DatasetComponent,
   DataZoomComponent,
   MarkAreaComponent,
+  MarkLineComponent,
+  ToolboxComponent,
 } from 'echarts/components';
 import VChart from 'vue-echarts';
-import { getPlotLabel } from 'utils/labelsPlot';
+import { plotLabels } from 'config/plotLabels';
+import { useI18n } from 'vue-i18n';
+import { getTranslatedText } from 'src/utils/translationHelpers';
+
+const i18n = useI18n();
+const { t } = i18n;
 
 // Register ECharts components
 use([
@@ -50,6 +57,8 @@ use([
   DatasetComponent,
   DataZoomComponent,
   MarkAreaComponent,
+  ToolboxComponent,
+  MarkLineComponent,
 ]);
 
 // Types
@@ -68,7 +77,7 @@ interface YearData {
 interface EChartsTooltipParam {
   axisValueLabel: string;
   seriesName: string;
-  value: number;
+  value: number | [number, number];
   marker: string;
 }
 
@@ -76,6 +85,8 @@ interface EChartsTooltipParam {
 const props = defineProps<{
   chartConfig: ChartConfig;
   modelData: SectorData;
+  chartId?: string;
+  sectorName?: string;
 }>();
 
 const chartRef = ref<ECharts>();
@@ -83,7 +94,10 @@ const chartRef = ref<ECharts>();
 // Track legend selection state
 const legendSelected = ref<Record<string, boolean>>({});
 
-// Handle legend selection changes
+// Computed property for translated chart title
+const translatedTitle = computed<string>(() => {
+  return getTranslatedText(props.chartConfig.title, i18n.locale.value);
+}); // Handle legend selection changes
 const handleLegendSelectChanged = (params: { selected: Record<string, boolean> }) => {
   legendSelected.value = { ...params.selected };
 };
@@ -129,7 +143,7 @@ function extractChartData(
 
     if (years.length > 0) {
       series.push({
-        name: getPlotLabel(outputId),
+        name: getTranslatedText(plotLabels[outputId] || outputId, i18n.locale.value, outputId),
         color: outputConfig.color || null,
         years,
         data: values,
@@ -138,6 +152,55 @@ function extractChartData(
   });
 
   return series;
+}
+
+// Function to download chart data as CSV
+function downloadCSV() {
+  if (!chartData.value.length) return;
+
+  // Collect all unique years from all series
+  const allYears = new Set<number>();
+  chartData.value.forEach((series) => {
+    series.years.forEach((year) => allYears.add(year));
+  });
+  const sortedYears = Array.from(allYears).sort((a, b) => a - b);
+
+  // Create CSV header
+  const headers = ['Year', ...chartData.value.map((series) => series.name)];
+  const csvRows = [headers.join(',')];
+
+  // Create CSV data rows
+  sortedYears.forEach((year) => {
+    const row = [year.toString()];
+    chartData.value.forEach((series) => {
+      const yearIndex = series.years.indexOf(year);
+      if (yearIndex !== -1) {
+        const dataPoint = series.data[yearIndex];
+        const value = Array.isArray(dataPoint) ? dataPoint[1] : dataPoint;
+        row.push(value !== undefined ? value.toString() : '');
+      } else {
+        row.push('');
+      }
+    });
+    csvRows.push(row.join(','));
+  });
+
+  // Create and download the CSV file
+  const csvContent = csvRows.join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+
+  link.setAttribute('href', url);
+  link.setAttribute(
+    'download',
+    `${translatedTitle.value.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`,
+  );
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 // Format data for ECharts
@@ -152,10 +215,6 @@ const chartOption = computed(() => {
     silent: true,
     itemStyle: {
       color: 'transparent', // No background fill
-      borderColor: '#999',
-      borderWidth: 2,
-      borderType: [5, 10],
-      opacity: 0.8,
     },
     label: {
       show: true,
@@ -163,10 +222,11 @@ const chartOption = computed(() => {
       fontSize: 11,
       color: '#666',
     },
+
     data: [
       [
         {
-          name: 'Historical',
+          name: t('historical'),
           xAxis: new Date(1990, 0, 1).getTime(), // January 1st, 1990
         },
         {
@@ -175,11 +235,33 @@ const chartOption = computed(() => {
       ],
       [
         {
-          name: 'Model Forecast',
+          name: t('forecast'),
           xAxis: new Date(2024, 0, 1).getTime(), // January 1st, 2024
         },
         {
           xAxis: new Date(maxYear, 11, 31).getTime(), // December 31st of max year
+        },
+      ],
+    ],
+  };
+
+  // Create mark area configuration for the transition period (2023-2025)
+  const transitionMarkArea = {
+    silent: true,
+    itemStyle: {
+      color: 'rgba(0, 0, 0, 0.1)',
+      borderColor: 'rgba(0, 0, 0, 0.15)',
+      borderWidth: 2,
+      borderType: 'dashed',
+    },
+
+    data: [
+      [
+        {
+          xAxis: new Date(2023, 0, 1).getTime(),
+        },
+        {
+          xAxis: new Date(2025, 0, 1).getTime(),
         },
       ],
     ],
@@ -192,33 +274,68 @@ const chartOption = computed(() => {
     type: 'line',
     stack: isStacked ? 'total' : undefined,
     symbol: 'none',
+    z: 0,
     areaStyle: isStacked ? {} : undefined,
     itemStyle: { color: series.color },
     data: series.data,
   }));
 
-  // Create the invisible markArea series
-  const markAreaSeries = {
-    name: '__markArea__', // Hidden series name
+  // Create the invisible series with mark areas - put them first so they're rendered last (on top)
+  const markAreaSeriesForecast = {
+    name: '__mark_forecast__', // Hidden series name
     type: 'line',
     data: [], // No data points
     symbol: 'none',
-    lineStyle: { opacity: 0 }, // Invisible line
-    markArea: forecastMarkArea,
-    showSymbol: false,
+    z: 100,
+    zlevel: 10,
+    markArea: {
+      ...forecastMarkArea,
+      z: 10,
+    },
     legendHoverLink: false,
   };
 
-  // Combine all series
-  const allSeries = [...series, markAreaSeries];
+  const markAreaSeriesTransition = {
+    name: '__mark_transition__', // Hidden series name
+    type: 'line',
+    data: [], // No data points
+    symbol: 'none',
+    z: 100,
+    zlevel: 10,
+    markArea: {
+      ...transitionMarkArea,
+      z: 10,
+    },
+    legendHoverLink: false,
+  };
+
+  // Put mark area series at the end so they render on top
+  const allSeries = [...series, markAreaSeriesForecast, markAreaSeriesTransition];
   const legendData = series.map((serie) => serie.name);
 
   return {
     title: {
-      text: props.chartConfig.title,
+      text: translatedTitle.value,
       textStyle: {
         fontSize: 13,
         fontWeight: 'bold',
+      },
+    },
+    toolbox: {
+      show: true,
+      feature: {
+        dataZoom: {
+          yAxisIndex: 'none',
+        },
+        restore: {},
+        myCsvDownload: {
+          show: true,
+          title: t('downloadCSV'),
+          icon: 'path://M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z',
+          onclick: () => {
+            downloadCSV();
+          },
+        },
       },
     },
     tooltip: {
@@ -226,14 +343,15 @@ const chartOption = computed(() => {
       formatter: (params: EChartsTooltipParam[]) => {
         const year = params[0]?.axisValueLabel;
         const unit = props.chartConfig.unit;
-
-        return params.reduce(
-          (text, param, i) =>
-            `${text}${i === 0 ? `${year}<br/>` : ''}${param.marker} ${param.seriesName}: ${param.value} ${unit}<br/>`,
-          '',
-        );
+        return params.reduce((text, param, i) => {
+          // Extract the value from the [timestamp, value] array
+          const value = (Array.isArray(param.value) ? param.value[1] : param.value).toFixed(2);
+          const val = `${text}${i === 0 ? `${year}<br/>` : ''}${param.marker} ${param.seriesName}: ${value} ${unit}<br/>`;
+          return val;
+        }, '');
       },
     },
+
     legend: {
       type: 'scroll',
       orient: 'none',
@@ -251,12 +369,14 @@ const chartOption = computed(() => {
     },
     xAxis: {
       type: 'time',
+      z: -1,
       // boundaryGap: false,
     },
     yAxis: {
       type: 'value',
       name: props.chartConfig.unit,
       nameLocation: 'end',
+      z: -1,
       nameTextStyle: { padding: [0, 0, 0, 5] },
       axisLabel: {
         formatter: function (value: number) {

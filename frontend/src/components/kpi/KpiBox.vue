@@ -1,164 +1,216 @@
 <template>
-  <div class="kpi-box-wrapper">
-    <component
-      :is="route ? 'router-link' : 'div'"
-      :to="
-        route
-          ? {
-              name: $route.name,
-              params: {
-                ...$route.params,
-                subtab: route,
-              },
-            }
-          : undefined
-      "
-      class="kpi-circle"
-      :class="{ 'cursor-pointer': route }"
-      @click="handleClick"
-    >
-      <div class="kpi-circle-content">
-        <div class="kpi-value">
-          {{ value.toFixed(1) }}<span class="kpi-unit">{{ unit }}</span>
+  <component
+    :is="route ? 'router-link' : 'div'"
+    :to="route ? { name: $route.name, params: { ...$route.params, subtab: route } } : undefined"
+    class="kpi-box"
+    :class="{ active: isActive, clickable: route }"
+    :style="boxStyle"
+  >
+    <div class="header">
+      <h4 class="title">{{ translatedName }}</h4>
+      <q-icon :name="statusIcon" size="1rem" :color="statusColor" />
+    </div>
+
+    <div class="metric">
+      <span class="value">{{ formatValue(value) }}</span>
+      <span class="unit">{{ unit }}</span>
+    </div>
+
+    <div class="scale">
+      <div class="bar">
+        <div v-for="zone in zoneStyles" :key="zone.name" class="zone" :style="zone.style" />
+        <div class="indicator" :style="indicatorStyle" />
+      </div>
+      <div class="markers">
+        <div class="marker" :style="`left: ${warningPosition}%`">
+          <div class="line" />
+          <span class="label">{{ formatValue(thresholds.warning) }}</span>
+        </div>
+        <div class="marker" :style="`left: ${dangerPosition}%`">
+          <div class="line" />
+          <span class="label">{{ formatValue(thresholds.danger) }}</span>
         </div>
       </div>
-      <div class="kpi-name">{{ name }}</div>
-      <div class="kpi-status-ring" :style="`border-color: ${colorName}`"></div>
-      <q-icon
-        :name="statusIcon"
-        :style="`color: ${colorName}`"
-        class="kpi-status-icon"
-        :class="{ rotating: isRotating }"
-        size="1.2rem"
-      />
-      <q-tooltip v-if="info" max-width="250px" anchor="top middle" self="bottom middle">
-        <div class="tooltip-text">{{ info }}</div>
-      </q-tooltip>
-    </component>
-  </div>
+    </div>
+
+    <q-tooltip v-if="translatedInfo" max-width="15rem">
+      {{ translatedInfo }}
+    </q-tooltip>
+  </component>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 import { type KPI } from 'src/utils/sectors';
+import { getTranslatedText } from 'src/utils/translationHelpers';
 
-const props = withDefaults(defineProps<KPI>(), {
-  maximize: false,
-});
+const { locale } = useI18n();
+const $route = useRoute();
+const props = withDefaults(defineProps<KPI>(), { maximize: false });
 
-const isRotating = ref(false);
+const translatedName = computed(() =>
+  typeof props.name === 'string' ? props.name : getTranslatedText(props.name, locale.value),
+);
 
-function handleClick() {
-  if (props.route) {
-    // Trigger rotation animation
-    isRotating.value = true;
+const translatedInfo = computed(() =>
+  !props.info
+    ? ''
+    : typeof props.info === 'string'
+      ? props.info
+      : getTranslatedText(props.info, locale.value),
+);
 
-    // Reset animation after it completes
-    setTimeout(() => {
-      isRotating.value = false;
-    }, 600); // Match the animation duration
-  }
-}
+const isActive = computed(() => props.route && $route.params.subtab === props.route);
+
+const formatValue = (val: number) =>
+  val >= 1000 ? val.toFixed(0) : val >= 10 ? val.toFixed(1) : val.toFixed(2);
 
 const currentStatus = computed(() => {
   const { warning, danger } = props.thresholds;
-
-  if (props.maximize) {
-    // For maximize: higher values are better
-    // Green if >= warning, Yellow if > danger and < warning, Red if <= danger
-    if (props.value >= warning) return 'good';
-    if (props.value > danger) return 'warning';
-    return 'danger';
-  } else {
-    // For minimize: lower values are better
-    // Green if <= warning, Yellow if > warning and < danger, Red if >= danger
-    if (props.value <= warning) return 'good';
-    if (props.value < danger) return 'warning';
-    return 'danger';
-  }
+  return props.maximize
+    ? props.value >= danger
+      ? 'excellent'
+      : props.value >= warning
+        ? 'warning'
+        : 'danger'
+    : props.value <= warning
+      ? 'excellent'
+      : props.value <= danger
+        ? 'warning'
+        : 'danger';
 });
 
-const colorName = computed(() => {
-  switch (currentStatus.value) {
-    case 'good':
-      return '#4CAF50';
-    case 'warning':
-      return '#FF9800';
-    case 'danger':
-      return '#F44336';
-    default:
-      return '#4CAF50';
-  }
+const statusIcon = computed(
+  () =>
+    ({
+      excellent: 'o_check_circle',
+      warning: 'r_warning',
+      danger: 'o_dangerous',
+    })[currentStatus.value] || 'check_circle',
+);
+
+const statusColor = computed(
+  () =>
+    ({
+      excellent: 'positive',
+      warning: 'warning',
+      danger: 'negative',
+    })[currentStatus.value],
+);
+
+const boxStyle = computed(() => {
+  if (!isActive.value) return { borderColor: '#e0e0e0', background: 'white' };
+  const colors = {
+    excellent: { border: '#10b981', bg: '#f0fdf4' },
+    warning: { border: '#f59e0b', bg: '#fffbeb' },
+    danger: { border: '#ef4444', bg: '#fef2f2' },
+  };
+  const c = colors[currentStatus.value];
+  return { borderColor: c.border, background: c.bg };
 });
 
-const statusIcon = computed(() => {
-  switch (currentStatus.value) {
-    case 'good':
-      return 'check_circle';
-    case 'warning':
-      return 'warning';
-    case 'danger':
-      return 'dangerous';
-    default:
-      return 'check_circle';
-  }
+const indicatorStyle = computed(() => {
+  const colors = { excellent: '#10b981', warning: '#f59e0b', danger: '#ef4444' };
+  return {
+    left: `${valuePosition.value}%`,
+    background: colors[currentStatus.value],
+  };
+});
+
+const scaleMin = computed(() => props.min ?? 0);
+const scaleMax = computed(() =>
+  props.max !== undefined
+    ? props.max
+    : Math.max(props.value, props.thresholds.danger, props.thresholds.warning) * 1.2,
+);
+const scaleRange = computed(() => scaleMax.value - scaleMin.value);
+
+const normalize = (val: number) => ((val - scaleMin.value) / scaleRange.value) * 100;
+const valuePosition = computed(() => Math.min(100, Math.max(0, normalize(props.value))));
+const warningPosition = computed(() => normalize(props.thresholds.warning));
+const dangerPosition = computed(() => normalize(props.thresholds.danger));
+
+const zoneStyles = computed(() => {
+  const zones = props.maximize
+    ? [
+        { name: 'danger', bg: '#fca5a5', left: 0, width: warningPosition.value },
+        {
+          name: 'warning',
+          bg: '#fcd34d',
+          left: warningPosition.value,
+          width: dangerPosition.value - warningPosition.value,
+        },
+        {
+          name: 'excellent',
+          bg: '#86efac',
+          left: dangerPosition.value,
+          width: 100 - dangerPosition.value,
+        },
+      ]
+    : [
+        { name: 'excellent', bg: '#86efac', left: 0, width: warningPosition.value },
+        {
+          name: 'warning',
+          bg: '#fcd34d',
+          left: warningPosition.value,
+          width: dangerPosition.value - warningPosition.value,
+        },
+        {
+          name: 'danger',
+          bg: '#fca5a5',
+          left: dangerPosition.value,
+          width: 100 - dangerPosition.value,
+        },
+      ];
+
+  return zones.map((z) => ({
+    name: z.name,
+    style: { left: `${z.left}%`, width: `${z.width}%`, background: z.bg },
+  }));
 });
 </script>
 
 <style lang="scss" scoped>
-.kpi-box-wrapper {
-  display: block;
-  height: 100%;
-  min-height: 140px;
-}
-
-.kpi-circle {
-  position: relative;
-  width: 140px;
-  height: 140px;
-  gap: 8px;
+.kpi-box {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  border: 3px solid #e0e0e0;
+  padding: 0.375rem;
+  border: 0.0625rem solid;
+  border-radius: 0.375rem;
   text-decoration: none;
   color: inherit;
-  background: white;
-  box-shadow: 0 1px 6px rgba(255, 255, 255, 0.5);
-  &:hover {
-    background: rgb(245, 245, 245);
-  }
+  transition: box-shadow 0.2s;
+  min-width: 8rem;
+  flex-grow: 1;
+  flex-shrink: 1;
+  flex-basis: 9rem;
+  max-width: 11rem;
 
-  &.cursor-pointer {
+  &.clickable {
     cursor: pointer;
+    &:hover {
+      box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+    }
   }
 }
 
-.kpi-circle-content {
-  text-align: center;
-  z-index: 2;
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.375rem;
+  margin-bottom: 0.375rem;
+  min-height: 1.75rem;
 }
 
-.kpi-value {
-  font-size: x-large;
-  font-weight: bold;
-  line-height: 1;
-}
-
-.kpi-unit {
-  font-size: small;
+.title {
+  font-size: smaller;
   font-weight: normal;
-  margin-left: 4px;
-}
-
-.kpi-name {
-  font-size: small;
-  color: var(--q-dark);
-  text-align: center;
-  line-height: 1.2;
-  max-width: 120px;
+  margin: 0;
+  line-height: 1.1;
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -167,44 +219,88 @@ const statusIcon = computed(() => {
   -webkit-box-orient: vertical;
 }
 
-.kpi-status-ring {
+.metric {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  margin-bottom: 0.375rem;
+}
+
+.value {
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.unit {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.scale {
+  margin-top: auto;
+}
+
+.bar {
+  position: relative;
+  height: 0.3rem;
+  background: #e5e7eb;
+  border-radius: 9999px;
+  overflow: visible;
+}
+
+.zone {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 50%;
-  border: 4px solid;
-  pointer-events: none;
-  transition: all 0.2s ease-in-out;
+  height: 100%;
+  transition: all 0.3s;
 }
 
-.kpi-status-icon {
+.indicator {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  background: white;
-  border-radius: 50%;
-  padding: 4px;
-  border: 1px solid;
-  transition: transform 0.4s ease-in-out;
+  top: 50%;
+  width: 0.15rem;
+  height: 0.6rem;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  border-radius: 0.075rem;
+  transition: left 0.3s;
 
-  &.rotating {
-    animation: rotateAroundCircle 0.4s ease-in-out;
+  &::before {
+    content: '';
+    position: absolute;
+    top: -0.1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background: inherit;
   }
 }
 
-@keyframes rotateAroundCircle {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+.markers {
+  position: relative;
+  height: 0.95rem;
+  margin-top: 0.1rem;
 }
 
-.tooltip-text {
-  font-size: medium;
-  padding: 4px;
+.marker {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+}
+
+.line {
+  width: 0.0625rem;
+  height: 0.15rem;
+  background: #9ca3af;
+}
+
+.label {
+  font-size: 0.55rem;
+  color: #6b7280;
+  white-space: nowrap;
 }
 </style>

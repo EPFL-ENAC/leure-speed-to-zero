@@ -3,25 +3,25 @@
     <!-- Mobile Header with Menu Button -->
     <q-header v-if="$q.screen.lt.md" elevated class="bg-white text-dark">
       <q-toolbar>
-        <q-btn flat round dense icon="menu" @click="toggleSectorSelector" />
-        <q-toolbar-title class="color-primary text-h6">{{ currentSectorDisplay }}</q-toolbar-title>
+        <q-btn flat round dense icon="menu" @click="toggleNavigation" />
+        <q-toolbar-title class="color-primary text-h6">{{
+          getTranslatedText(currentSectorDisplay, $i18n.locale)
+        }}</q-toolbar-title>
         <q-btn flat round dense icon="tune" @click="toggleMobileLevers" />
       </q-toolbar>
     </q-header>
 
-    <!-- Sector Column - Desktop always shown, Mobile controlled by sectorSelectorOpen -->
+    <!-- Vertical Navigation Sidebar - Desktop always shown, Mobile controlled by navigationOpen -->
     <q-drawer
-      v-model="sectorSelectorOpen"
+      v-model="navigationOpen"
       side="left"
       bordered
-      :mini="miniState"
-      @mouseenter="$q.screen.gt.sm ? (miniState = false) : null"
-      @mouseleave="$q.screen.gt.sm ? (miniState = true) : null"
-      :breakpoint="$q.screen.sizes.sm"
-      :width="$q.screen.lt.sm ? 180 : 200"
+      :breakpoint="$q.screen.sizes.md"
+      :width="240"
       :overlay="$q.screen.lt.md"
+      class="vertical-nav-drawer"
     >
-      <SectorSelector :mini="miniState" ref="sectorSelector" />
+      <VerticalNavigation />
     </q-drawer>
 
     <!-- Levers Column - Desktop/Tablet always shown, Mobile controlled by leversOpen -->
@@ -29,47 +29,45 @@
       side="right"
       v-model="leversOpen"
       :overlay="$q.screen.lt.sm"
-      :width="300"
       :breakpoint="$q.screen.sizes.sm"
-      class="col-auto levers-col"
+      class="levers-col"
       style="border-left: 1px solid #e0e0e0"
     >
       <div class="column full-height">
-        <div class="non-scrollable-part q-pa-md">
-          <div class="text-h5 q-mb-md">Levers</div>
+        <q-scroll-area visible class="col align-center q-pa-md">
+          <div class="levers-header q-mb-md">
+            <q-icon name="tune" class="header-icon" />
+            <span>{{ $t('levers') }}</span>
+          </div>
           <q-select
             v-model="selectedPathway"
             :options="pathwayOptions"
-            label="Select Pathway"
+            :label="$t('selectPathway')"
             outlined
             dense
             emit-value
             map-options
             class="q-mb-md"
-          />
+          >
+            <q-tooltip class="bg-grey-8">{{ $t('featureNotReady') }}</q-tooltip>
+          </q-select>
           <q-btn
-            label="Reset to Defaults"
+            :label="$t('resetDefault')"
             color="grey"
             outline
-            class="full-width q-mb-md"
+            class="q-mb-md full-width"
             @click="resetToDefaults"
           />
-        </div>
-        <q-separator />
-        <q-scroll-area visible class="col q-pa-md">
           <LeverGroups :sector="currentSector" />
         </q-scroll-area>
       </div>
     </q-drawer>
 
     <q-page-container>
-      <div class="row" :style="{ height: $q.screen.lt.md ? 'calc(100vh - 50px)' : '100vh' }">
-        <!-- Main Content Column -->
+      <div class="row full-height">
         <div class="col right-column">
           <q-page class="column full-height">
-            <div class="col full-width">
-              <router-view />
-            </div>
+            <router-view />
           </q-page>
         </div>
       </div>
@@ -78,25 +76,38 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useLeverStore } from 'stores/leversStore';
 import { ExamplePathways } from 'utils/examplePathways';
 import { sectors } from 'utils/sectors';
 import LeverGroups from 'components/LeverGroups.vue';
-import SectorSelector from 'components/SectorSelector.vue';
+import VerticalNavigation from 'components/VerticalNavigation.vue';
 import { useQuasar } from 'quasar';
-const $q = useQuasar();
+import { useRoute } from 'vue-router';
+import { getTranslatedText } from 'src/utils/translationHelpers';
+import { useI18n } from 'vue-i18n';
 
+const $q = useQuasar();
+const route = useRoute();
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const { locale } = useI18n();
 const leverStore = useLeverStore();
-const sectorSelector = ref<InstanceType<typeof SectorSelector>>();
+
+// Navigation tab state
+const currentTab = ref(route.name as string);
+watch(
+  () => route.name,
+  (newName) => {
+    if (newName) currentTab.value = newName as string;
+  },
+);
 
 // Mobile UI state
 const leversOpenState = ref(false);
-const sectorSelectorOpen = ref($q.screen.gt.sm); // Start open on desktop, closed on mobile
-const miniState = ref(false);
+const navigationOpen = ref($q.screen.gt.md); // Start open on desktop, closed on mobile
 
-// Get current sector from the SectorSelector component
-const currentSector = computed(() => sectorSelector.value?.currentSector || 'buildings');
+// Get current sector from route
+const currentSector = computed(() => route.path.split('/')[1] || 'buildings');
 
 // Get current sector display name
 const currentSectorDisplay = computed(() => {
@@ -116,10 +127,10 @@ const leversOpen = computed({
   },
 });
 
-function toggleSectorSelector() {
+function toggleNavigation() {
   // On mobile, toggle the drawer state
   if ($q.screen.lt.md) {
-    sectorSelectorOpen.value = !sectorSelectorOpen.value;
+    navigationOpen.value = !navigationOpen.value;
   }
 }
 
@@ -151,49 +162,53 @@ function resetToDefaults() {
   overflow-y: auto;
 }
 
-// .levers-col {
-//   flex: 1 2 300px;
-//   min-width: 250px;
-//   max-width: 400px;
-//   max-height: 100%;
-// }
+.vertical-nav-drawer {
+  width: clamp(180px, 16vw, 320px) !important;
+  min-width: 180px !important;
+  max-width: 320px !important;
+  :deep(.q-drawer__content) {
+    overflow: hidden;
+  }
+}
+
+.levers-col {
+  width: clamp(180px, 30vw, 600px) !important;
+  min-width: 180px !important;
+  max-width: 600px !important;
+  scrollbar-gutter: stable;
+  align-items: center;
+  justify-content: center;
+  justify-items: center;
+}
+
+.levers-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 8px;
+  font-size: small;
+  font-weight: normal;
+  color: #6e6e73;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.header-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+  margin-right: 12px;
+  opacity: 0.7;
+  transition: opacity 150ms ease;
+}
+
+.header-text {
+  flex: 1;
+}
 
 .right-column {
-  flex: 6 1 400px;
+  flex: 1;
   max-height: 100%;
-}
-
-.responsive-layout {
-  transition: all 0.3s ease;
-  overflow-x: auto; // Allow horizontal scrolling on mobile if needed
-}
-
-// Mobile-specific styles
-@media (max-width: 600px) {
-  .right-column {
-    flex: 1;
-  }
-}
-
-// Tablet-specific styles
-@media (min-width: 601px) and (max-width: 1024px) {
-  .levers-col {
-    flex: 1 2 250px;
-    min-width: 200px;
-    max-width: 300px;
-  }
-
-  .right-column {
-    flex: 2 1 400px;
-  }
-}
-
-// Ensure drawer is properly sized on mobile
-:deep(.q-drawer) {
-  @media (max-width: 600px) {
-    .q-drawer__content {
-      width: 100% !important;
-    }
-  }
+  overflow: hidden;
 }
 </style>
