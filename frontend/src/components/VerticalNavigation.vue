@@ -89,6 +89,7 @@
 
     <!-- Footer Section -->
     <div v-if="!mini" class="nav-footer">
+      <region-flag />
       <language-switcher />
     </div>
   </aside>
@@ -101,6 +102,7 @@ import { useI18n } from 'vue-i18n';
 import { sectors } from 'utils/sectors';
 import { getTranslatedText, type TranslationObject } from 'src/utils/translationHelpers';
 import LanguageSwitcher from './LanguageSwitcher.vue';
+import RegionFlag from './RegionFlag.vue';
 
 // Import subtab configs
 import buildingsConfig from 'config/subtabs/buildings.json';
@@ -423,6 +425,9 @@ watch(
   flex-shrink: 0;
   padding: 16px 20px;
   border-top: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 /* Mini mode adjustments */
