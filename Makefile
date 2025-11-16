@@ -1,4 +1,4 @@
-.PHONY: install install-config install-backend install-frontend clean uninstall help run run-backend run-frontend wait-for-backend up
+.PHONY: install install-config install-backend install-frontend clean uninstall help run run-backend run-backend-with-cache run-frontend wait-for-backend up
 
 # Default target
 help:
@@ -10,7 +10,8 @@ help:
 	@echo "  clean			   - Clean node_modules and package-lock.json"
 	@echo "  uninstall		   - Remove git hooks and clean dependencies"
 	@echo "  run			   - Run backend and frontend locally (waits for backend health check)"
-	@echo "  run-backend	   - Run backend only"
+	@echo "  run-backend	   - Run backend only (cache disabled for development)"
+	@echo "  run-backend-with-cache - Run backend with cache enabled (for testing)"
 	@echo "  run-frontend	   - Run frontend only"
 	@echo "  wait-for-backend  - Wait for backend health endpoint to respond"
 	@echo "  up				   - Run docker compose with rebuild and no cache"
@@ -82,6 +83,7 @@ run:
 	@echo "Starting local development servers..."
 	@echo "Backend will be available at http://localhost:8000"
 	@echo "Frontend will be available at http://localhost:9000 (Quasar default)"
+	@echo "⚠️  Cache is DISABLED in development mode"
 	@echo "Press Ctrl+C to stop both servers"
 	@set -e; \
 	SHUTDOWN_FLAG="/tmp/shutdown_$$$$"; \
@@ -108,7 +110,7 @@ run:
 		exit 0; \
 	}; \
 	trap 'cleanup_servers' INT TERM EXIT; \
-	$(MAKE) -C backend run & \
+	ENABLE_CACHE=false $(MAKE) -C backend run & \
 	BACKEND_PID=$$!; \
 	$(MAKE) wait-for-backend; \
 	cd frontend && npm run dev & \
@@ -123,7 +125,16 @@ run-backend:
 	@echo "Starting backend development server..."
 	@echo "Backend will be available at http://localhost:8000"
 	@echo "API docs available at http://localhost:8000/docs"
-	$(MAKE) -C backend run
+	@echo "⚠️  Cache is DISABLED in development mode"
+	ENABLE_CACHE=false $(MAKE) -C backend run
+
+# Run backend with cache enabled (for testing cache behavior)
+run-backend-with-cache:
+	@echo "Starting backend development server WITH cache..."
+	@echo "Backend will be available at http://localhost:8000"
+	@echo "API docs available at http://localhost:8000/docs"
+	@echo "✅ Cache is ENABLED"
+	ENABLE_CACHE=true $(MAKE) -C backend run
 
 # Run frontend only
 run-frontend:
