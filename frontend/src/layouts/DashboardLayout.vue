@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue';
 import { useLeverStore } from 'stores/leversStore';
 import { ExamplePathways } from 'utils/examplePathways';
 import { sectors } from 'utils/sectors';
@@ -86,12 +86,21 @@ import { useQuasar } from 'quasar';
 import { useRoute } from 'vue-router';
 import { getTranslatedText } from 'src/utils/translationHelpers';
 import { useI18n } from 'vue-i18n';
+import { useTour } from 'src/composables/useTour';
 
 const $q = useQuasar();
 const route = useRoute();
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const { locale } = useI18n();
 const leverStore = useLeverStore();
+const { startTour } = useTour();
+
+onMounted(() => {
+  // Small delay to ensure all elements are rendered
+  setTimeout(() => {
+    startTour();
+  }, 500);
+});
 
 // Navigation tab state
 const currentTab = ref(route.name as string);

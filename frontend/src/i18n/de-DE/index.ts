@@ -113,6 +113,20 @@ export default {
   contactDesc:
     'Für Fragen, Feedback oder Kooperationsmöglichkeiten kontaktieren Sie uns bitte über die Website der EPFL ENAC-Fakultät.',
   lastUpdated: 'Zuletzt aktualisiert',
+  // Tour translations
+  tour: {
+    sectors:
+      'Willkommen! Wählen Sie zunächst einen Sektor aus diesem Menü. Jeder Sektor enthält detaillierte Unterregisterkarten mit Diagrammen und Analysen.',
+    levers:
+      'Dies sind politische Hebel. Passen Sie sie an, um zu sehen, wie verschiedene Interventionen die Ergebnisse beeinflussen. Klicken Sie zum Erweitern und detaillierte Optionen anzuzeigen.',
+    kpis: 'Die wichtigsten Leistungsindikatoren zeigen die Hauptmetriken für den ausgewählten Sektor. Sie werden in Echtzeit aktualisiert, wenn Sie die Hebel anpassen.',
+    charts:
+      'Hier erscheinen detaillierte Diagramme und Visualisierungen. Sie bieten eine eingehende Analyse von Emissionen, Energieverbrauch und anderen Metriken.',
+    skip: 'Überspringen',
+    next: 'Weiter',
+    back: 'Zurück',
+    finish: 'Verstanden!',
+  },
   // Nested translations
   lever: levers,
 };

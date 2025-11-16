@@ -113,6 +113,20 @@ export default {
   contactDesc:
     "Pour toute question, retour d'information ou opportunité de collaboration, veuillez nous contacter via le site web de la faculté ENAC de l'EPFL.",
   lastUpdated: 'Dernière mise à jour',
+  // Tour translations
+  tour: {
+    sectors:
+      'Bienvenue ! Commencez par sélectionner un secteur dans ce menu. Chaque secteur contient des sous-onglets détaillés avec graphiques et analyses.',
+    levers:
+      'Ce sont les leviers politiques. Ajustez-les pour voir comment différentes interventions impactent les résultats. Cliquez pour développer et voir les options détaillées.',
+    kpis: 'Les indicateurs de performance clés affichent les principales métriques du secteur sélectionné. Ils se mettent à jour en temps réel lorsque vous ajustez les leviers.',
+    charts:
+      "Les graphiques et visualisations détaillés apparaissent ici. Ils fournissent une analyse approfondie des émissions, de la consommation d'énergie et d'autres métriques.",
+    skip: 'Passer',
+    next: 'Suivant',
+    back: 'Retour',
+    finish: 'Compris !',
+  },
   // Nested translations
   lever: levers,
 };
