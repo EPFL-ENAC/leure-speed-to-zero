@@ -45,6 +45,7 @@ services:
       - PYTHONPATH=/app
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - ENABLE_CACHE=true
     expose:
       - "8081"
     depends_on:

@@ -31,6 +31,11 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     """Initialize cache with Redis fallback to in-memory cache."""
     logger = logging.getLogger(__name__)
     
+    if not settings.ENABLE_CACHE:
+        logger.info("🚫 Caching disabled (development mode)")
+        yield
+        return
+    
     logger.info("🚀 Initializing caching system...")
     
     # Get current region for cache namespacing
