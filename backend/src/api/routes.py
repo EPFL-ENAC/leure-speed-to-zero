@@ -22,7 +22,7 @@ from src.utils.transform_model import (
 from src.utils.region_config import RegionConfig
 
 
-from fastapi_cache.decorator import cache
+from src.utils.cache_decorator import conditional_cache
 
 
 router = APIRouter()
@@ -119,7 +119,7 @@ async def run_model(levers: str = None):
 
 
 @router.get("/v1/run-model-clean-structure")
-@cache(expire=600)
+@conditional_cache(expire=600)
 async def run_model_clean_structure(levers: str = None):
     try:
         # Parse levers string or use default (all 1s)
