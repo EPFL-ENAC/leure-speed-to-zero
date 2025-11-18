@@ -3,7 +3,7 @@
   "subtabs": [
     {
       "title": "Power production",
-      "charts": ["PowerProductionByTech", "PowerCapacityByTech"],
+      "charts": ["PowerProductionByTech", "PowerCapacityByTech", "PowerDemand"],
       "route": "power-production-tech"
     }
   ],
@@ -14,6 +14,8 @@
       "unit": "TWh",
       "type": "StackedArea",
       "outputs": [
+        "pow_production_Net-import[TWh]",
+        "pow_production_Losses[TWh]",
         "pow_production_Dam[TWh]",
         "pow_production_RoR[TWh]",
         "pow_production_PV-roof[TWh]",
@@ -35,6 +37,17 @@
         "pow_capacity_Nuclear[GW]",
         "pow_capacity_Gas[GW]",
         "pow_capacity_GasCC-CCS[GW]"
+      ]
+    },
+    "PowerDemand": {
+      "title": "Electricity demand by sector at cantonal level",
+      "unit": "TWh",
+      "type": "StackedArea",
+      "outputs": [
+        "bld_energy-consumption[TWh]",
+        "ind_energy-consumption[TWh]",
+        "tra_energy-consumption[TWh]",
+        "agr_energy-consumption[TWh]"
       ]
     }
   }
