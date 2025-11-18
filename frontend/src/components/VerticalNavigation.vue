@@ -107,6 +107,7 @@ import RegionFlag from './RegionFlag.vue';
 // Import subtab configs
 import buildingsConfig from 'config/subtabs/buildings.json';
 import transportConfig from 'config/subtabs/transport.json';
+import energyConfig from 'config/subtabs/energy.json';
 import forestryConfig from 'config/subtabs/forestry.json';
 import agricultureConfig from 'config/subtabs/agriculture.json';
 import overallConfig from 'config/subtabs/overall.json';
@@ -164,6 +165,7 @@ const subtabsMap = computed<Record<string, Array<{ route: string; title: Transla
   () => ({
     buildings: buildingsConfig.subtabs || [],
     transport: transportConfig.subtabs || [],
+    energy: energyConfig.subtabs || [],
     forestry: forestryConfig.subtabs || [],
     agriculture: agricultureConfig.subtabs || [],
     overall: overallConfig.subtabs || [],

@@ -411,8 +411,8 @@ export const useLeverStore = defineStore('lever', () => {
 
     buildings,
     transport,
-    forestry,
     energy,
+    forestry,
     agriculture,
     getSectorDataWithKpis,
 
