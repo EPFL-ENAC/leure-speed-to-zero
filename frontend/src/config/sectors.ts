@@ -45,6 +45,21 @@ export const sectors: Sector[] = [
   },
   {
     label: {
+      enUS: 'Energy',
+      frFR: 'Énergie',
+      deDE: 'Energie',
+    },
+    value: 'energy',
+    icon: 'forest',
+    levers: [
+      'lever_pkm',
+      'lever_passenger_technology-share_new',
+      'lever_building-renovation-rate',
+      'lever_heating-technology-fuel'
+      ],
+  },
+  {
+    label: {
       enUS: 'Forestry',
       frFR: 'Foresterie',
       deDE: 'Forstwirtschaft',
