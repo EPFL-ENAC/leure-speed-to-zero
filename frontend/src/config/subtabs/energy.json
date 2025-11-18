@@ -2,7 +2,11 @@
   "kpis": [],
   "subtabs": [
     {
-      "title": "Power production",
+      "title":  {
+        "enUS": "Power production",
+        "frFR": "Production d'électricité",
+        "deDE": "Stromerzeugung"
+      },
       "charts": ["PowerProductionByTech", "PowerCapacityByTech", "PowerDemand"],
       "route": "power-production-tech"
     }
@@ -10,7 +14,11 @@
 
   "charts": {
     "PowerProductionByTech": {
-      "title": "Power production by technology at country level",
+      "title": {
+        "enUS": "Power production by technology at country level",
+        "frFR": "Production d'électricité par technologie au niveau national",
+        "deDE": "Stromerzeugung nach Technologie auf Länderebene"
+      },
       "unit": "TWh",
       "type": "StackedArea",
       "outputs": [
@@ -26,7 +34,11 @@
       ]
     },
     "PowerCapacityByTech": {
-      "title": "Capacity installed by technology at country level",
+      "title": {
+        "enUS": "Capacity installed by technology at country level",
+        "frFR": "Capacité installée par technologie au niveau national",
+        "deDE": "Installierte Kapazität nach Technologie auf Länderebene"
+      },
       "unit": "GW",
       "type": "StackedArea",
       "outputs": [
@@ -40,7 +52,11 @@
       ]
     },
     "PowerDemand": {
-      "title": "Electricity demand by sector at cantonal level",
+      "title": {
+        "enUS": "Electricity demand by sector at cantonal level",
+        "frFR": "Demande d'électricité par secteur au niveau cantonal",
+        "deDE": "Strombedarf nach Sektoren auf Kantonsebene"
+      },
       "unit": "TWh",
       "type": "StackedArea",
       "outputs": [

@@ -66,6 +66,20 @@
               bordered
               clickable
               class="sector-card full-height"
+              :to="{ name: 'energy' }"
+            >
+              <q-card-section class="text-center">
+                <q-icon name="park" size="3rem" color="primary" />
+                <div class="text-h6 q-mt-md">Energy</div>
+              </q-card-section>
+            </q-card>
+          </div>
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-card
+              flat
+              bordered
+              clickable
+              class="sector-card full-height"
               :to="{ name: 'agriculture' }"
             >
               <q-card-section class="text-center">
