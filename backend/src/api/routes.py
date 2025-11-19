@@ -15,6 +15,7 @@ import pickle
 from src.utils.serialize_model import serialize_model_output
 from src.utils.transform_model import (
     transform_datamatrix_to_clean_structure,
+    transform_lever_data_for_echarts,
 )
 
 from src.utils.region_config import RegionConfig
@@ -274,6 +275,86 @@ async def get_datamatrix(name: str):
     except Exception as e:
         return ORJSONResponse(
             content={"status": "error", "message": str(e)}, status_code=500
+        )
+
+
+@router.get("/v1/lever-data/{lever_name}")
+async def get_lever_data(
+    lever_name: str,
+    sector: str | None = None,
+    country: str | None = None,
+):
+    """Get lever data for plotting and visualization."""
+    try:
+        from model.common.auxiliary_functions import (
+            filter_country_and_load_data_from_pickles,
+            get_lever_data_to_plot,
+        )
+
+        # Use provided country or default to current region
+        if country is None:
+            country = RegionConfig.get_current_region()
+
+        # Get modules list based on sector
+        if sector:
+            modules_list = SectorConfig.get_sectors_for(sector)
+            logger.info(
+                f"Getting lever data for lever: {lever_name}, "
+                f"sector: {sector}, modules: {modules_list}, country: {country}"
+            )
+        else:
+            # Default to all sectors if no sector specified
+            modules_list = SectorConfig.get_all_available_sectors()
+            logger.info(
+                f"Getting lever data for lever: {lever_name}, "
+                f"all sectors, country: {country}"
+            )
+
+        # Load data
+        start = time.perf_counter()
+        DM_input = filter_country_and_load_data_from_pickles(
+            country_list=[country], modules_list=modules_list
+        )
+        load_duration = (time.perf_counter() - start) * 1000
+
+        # Get lever data
+        start = time.perf_counter()
+        DM_lever = get_lever_data_to_plot(lever_name=lever_name, DM_input=DM_input)
+        lever_duration = (time.perf_counter() - start) * 1000
+        # Log detailed information about the lever data
+        logger.info(f"DM_lever structure: {type(DM_lever)}")
+        logger.info(
+            f"DM_lever keys: {list(DM_lever.keys()) if hasattr(DM_lever, 'keys') else 'Not a dict'}"
+        )
+
+        serializable_lever_data = serialize_model_output(
+            transform_lever_data_for_echarts(DM_lever)
+        )
+
+        response = ORJSONResponse(
+            content={
+                "status": "success",
+                "lever_name": lever_name,
+                "country": country,
+                "sector": sector,
+                "modules": modules_list,
+                "data": serializable_lever_data,
+            }
+        )
+
+        response.headers["Server-Timing"] = (
+            f"load;dur={load_duration:.2f}, lever;dur={lever_duration:.2f}"
+        )
+        return response
+
+    except Exception as e:
+        logger.error(f"Get lever data failed: {str(e)}", exc_info=True)
+        return ORJSONResponse(
+            content={
+                "status": "error",
+                "message": f"Failed to get lever data: {str(e)}",
+            },
+            status_code=500,
         )
 
 

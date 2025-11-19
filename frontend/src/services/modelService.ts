@@ -44,13 +44,13 @@ export const modelService = {
   /**
    * Get lever data for plotting/visualization
    * @param leverName - The name of the lever to get data for (default: "lever_heatcool-behaviour")
-   * @param modules - Comma-separated list of modules (default: "transport,buildings")
+   * @param sector - Sector to get data for (optional, uses all sectors if not provided)
    * @param country - Country to get data for (optional, uses default region if not provided)
    * @returns Promise with lever data results
    */
-  getLeverData(leverName: string, modules?: string, country?: string) {
+  getLeverData(leverName: string, sector?: string, country?: string) {
     const params: Record<string, string> = {};
-    if (modules) params.modules = modules;
+    if (sector) params.sector = sector;
     if (country) params.country = country;
 
     return apiClient.get(`/v1/lever-data/${leverName}`, {

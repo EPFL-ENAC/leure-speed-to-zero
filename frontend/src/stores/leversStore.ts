@@ -201,7 +201,9 @@ export const useLeverStore = defineStore('lever', () => {
   // Lever data operations
   async function fetchLeverData(leverName: string, modules?: string, country?: string) {
     try {
-      const response = await modelService.getLeverData(leverName, modules, country);
+      // Use current sector if no modules specified
+      const sector = currentSector.value || undefined;
+      const response = await modelService.getLeverData(leverName, sector, country);
 
       // Handle error status from API
       if (response.data?.status === 'error') {
