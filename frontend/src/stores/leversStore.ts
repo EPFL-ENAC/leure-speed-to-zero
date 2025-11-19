@@ -120,6 +120,7 @@ export const useLeverStore = defineStore('lever', () => {
   const error = ref<string | null>(null);
   const autoRun = ref(true);
   const leverData = ref<LeverResults | null>(null);
+  const currentSector = ref<string | null>(null);
 
   // Private variables (not exposed in the return)
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -253,7 +254,7 @@ export const useLeverStore = defineStore('lever', () => {
     }
   }
 
-  async function runModel() {
+  async function runModel(sector?: string) {
     try {
       isLoading.value = true;
       error.value = null;
@@ -266,9 +267,12 @@ export const useLeverStore = defineStore('lever', () => {
       // Convert to string format expected by API
       const leverString = leverValues.join('');
 
+      // Use current sector if not provided
+      const sectorToRun = sector || currentSector.value || undefined;
+
       // Use the API service
-      const response = await modelService.runModel(leverString);
-      console.log('Running model with lever string:', leverString);
+      const response = await modelService.runModel(leverString, sectorToRun);
+      console.log('Running model with lever string:', leverString, 'for sector:', sectorToRun);
       // Handle error status from API
       if (response.data?.status === 'error') {
         error.value = response.data.message || 'An error occurred in the model';
@@ -402,6 +406,7 @@ export const useLeverStore = defineStore('lever', () => {
     isLoading,
     error,
     leverData,
+    currentSector,
 
     // Getters with translations
     getLeverValue,
@@ -427,6 +432,13 @@ export const useLeverStore = defineStore('lever', () => {
     fetchLeverData,
     setCustomPathwayName: (name: string) => {
       customPathwayName.value = name;
+    },
+    setCurrentSector: (sector: string | null) => {
+      currentSector.value = sector;
+      // Re-run model with new sector if auto-run is enabled
+      if (autoRun.value) {
+        debouncedRunModel();
+      }
     },
     toggleAutoRun: () => {
       autoRun.value = !autoRun.value;

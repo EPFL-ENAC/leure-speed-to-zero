@@ -108,6 +108,7 @@ import ChartCard from 'components/graphs/ChartCard.vue';
 import { useQuasar } from 'quasar';
 import { getTranslatedText } from 'src/utils/translationHelpers';
 import type { TranslationObject } from 'src/utils/translationHelpers';
+import { useCurrentSector } from 'src/composables/useCurrentSector';
 
 const $q = useQuasar();
 const { locale } = useI18n();
@@ -127,6 +128,9 @@ const props = defineProps<{
   sectorDisplayName: string;
   config: SectorConfig;
 }>();
+
+// Set current sector for optimized API calls
+useCurrentSector(props.sectorName);
 
 const router = useRouter();
 const route = useRoute();

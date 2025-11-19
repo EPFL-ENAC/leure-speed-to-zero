@@ -18,6 +18,7 @@ from src.utils.transform_model import (
 )
 
 from src.utils.region_config import RegionConfig
+from src.utils.sector_config import SectorConfig
 
 
 from src.utils.cache_decorator import conditional_cache
@@ -52,17 +53,19 @@ years_setting = [
     5,
 ]  # [start_year, current_year, future_year, end_year, step]
 country_list = [RegionConfig.get_current_region()]
-sectors = ["climate", "lifestyles", "buildings", "energy", "forestry", "transport"]
+
+# Get all possible sectors for data loading (use the most complete sector's dependencies)
+all_sectors = SectorConfig.get_all_available_sectors()
 
 # Filter country
 # from database/data/datamatrix/.* reads the pickles, filters the countries, and loads them
 DM_input = filter_country_and_load_data_from_pickles(
-    country_list=country_list, modules_list=sectors
+    country_list=country_list, modules_list=all_sectors
 )
 
 
 @router.get("/v1/run-model")
-async def run_model(levers: str = None):
+async def run_model(levers: str = None, sector: str = None):
     try:
         # Parse levers string or use default (all 1s)
         if levers is None:
@@ -80,12 +83,20 @@ async def run_model(levers: str = None):
         lever_setting = dict(zip(LEVER_KEYS, lever_values))
         logger.info(f"Levers input: {str(lever_setting)}")
 
+        # Get sectors to run based on requested sector or all if not specified
+        if sector:
+            sectors_to_run = SectorConfig.get_sectors_for(sector)
+            logger.info(f"Running sectors for '{sector}': {sectors_to_run}")
+        else:
+            sectors_to_run = SectorConfig.get_all_available_sectors()
+            logger.info(f"Running all sectors: {sectors_to_run}")
+
         start = time.perf_counter()
         output, KPI = runner(
             lever_setting,
             years_setting,
             DM_input,
-            sectors,
+            sectors_to_run,
             logger,
         )
         duration = (time.perf_counter() - start) * 1000  # ms
@@ -118,7 +129,7 @@ async def run_model(levers: str = None):
 
 @router.get("/v1/run-model-clean-structure")
 @conditional_cache(expire=600)
-async def run_model_clean_structure(levers: str = None):
+async def run_model_clean_structure(levers: str = None, sector: str = None):
     try:
         # Parse levers string or use default (all 1s)
         if levers is None:
@@ -136,14 +147,22 @@ async def run_model_clean_structure(levers: str = None):
 
         lever_setting = dict(zip(LEVER_KEYS, lever_values))
 
+        # Get sectors to run based on requested sector or all if not specified
+        if sector:
+            sectors_to_run = SectorConfig.get_sectors_for(sector)
+            logger.info(f"Running sectors for '{sector}': {sectors_to_run}")
+        else:
+            sectors_to_run = SectorConfig.get_all_available_sectors()
+            logger.info(f"Running all sectors: {sectors_to_run}")
+
         start = time.perf_counter()
         logger.info("Starting model run...")
-        logger.info(f"Sectors: {sectors}")
+        logger.info(f"Sectors: {sectors_to_run}")
         output, KPI = runner(
             lever_setting,
             years_setting,
             DM_input,
-            sectors,
+            sectors_to_run,
             logger,
         )
         logger.info(
@@ -261,21 +280,40 @@ async def debug_region():
     }
 
 
+@router.get("/debug-sectors")
+async def debug_sectors():
+    """Debug endpoint to check current sector configuration."""
+    return {
+        "status": "success",
+        "available_sectors": SectorConfig.get_available_sector_names(),
+        "all_sectors_execution_order": SectorConfig.get_all_available_sectors(),
+        "sector_dependencies": {
+            sector: SectorConfig.get_sectors_for(sector)
+            for sector in SectorConfig.get_available_sector_names()
+        },
+    }
+
+
 @router.post("/reload-config")
 async def reload_config():
-    """Force reload the region configuration from model_config.json."""
+    """Force reload the region and sector configuration from model_config.json."""
     from src.utils.region_config import RegionConfig
     import logging
 
     logger = logging.getLogger(__name__)
     logger.info("🔄 Manual configuration reload requested")
 
-    result = RegionConfig.force_reload()
+    region_result = RegionConfig.force_reload()
+    sector_result = SectorConfig.force_reload()
 
-    logger.info(f"✅ Configuration reloaded - New region: {result['current_region']}")
+    logger.info(
+        f"✅ Configuration reloaded - New region: {region_result['current_region']}"
+    )
+    logger.info(f"✅ Sectors configured: {sector_result['sectors_configured']}")
 
     return {
         "status": "success",
         "message": "Configuration reloaded successfully",
-        **result,
+        "region": region_result,
+        "sectors": sector_result,
     }

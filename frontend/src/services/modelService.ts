@@ -23,11 +23,12 @@ export const modelService = {
   /**
    * Run the model with the provided lever values
    * @param levers - String of lever values
+   * @param sector - Optional sector to run (will run only necessary dependencies)
    * @returns Promise with model results
    */
-  runModel(levers: string) {
+  runModel(levers: string, sector?: string) {
     return apiClient.get('/v1/run-model-clean-structure', {
-      params: { levers },
+      params: { levers, sector },
     });
   },
 
