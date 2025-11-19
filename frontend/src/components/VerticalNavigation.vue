@@ -97,7 +97,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { sectors } from 'utils/sectors';
 import { getTranslatedText, type TranslationObject } from 'src/utils/translationHelpers';
@@ -121,6 +121,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const route = useRoute();
+const router = useRouter();
 const { locale } = useI18n();
 
 // Main pages configuration
@@ -200,12 +201,23 @@ const toggleSection = (sectionName: string) => {
   const sector = sectors.find((s) => s.value === sectionName);
   if (sector?.disabled) return;
 
-  // If no subtabs, just navigate
+  // Get subtabs for this section
   const subtabs = subtabsMap.value[sectionName];
+
+  // If no subtabs, just navigate to the section
   if (!subtabs?.length && sectionName !== 'overall') {
     return;
   }
 
+  // Navigate to first subtab if not already on this section
+  if (route.name !== sectionName && subtabs && subtabs.length > 0) {
+    const firstSubtab = subtabs[0];
+    if (firstSubtab) {
+      void router.push({ name: sectionName, params: { subtab: firstSubtab.route } });
+    }
+  }
+
+  // Toggle expansion
   if (expandedSections.value.has(sectionName)) {
     expandedSections.value.delete(sectionName);
   } else {
