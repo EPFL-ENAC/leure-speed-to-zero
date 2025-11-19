@@ -113,7 +113,9 @@
             <div class="feature-item text-center q-pa-md">
               <div class="feature-number text-primary text-h3 text-weight-bold">1</div>
               <div class="text-h6 q-mt-md q-mb-sm">Select a Sector</div>
-              <p class="text-grey-7">Choose from buildings, transport, energy, agriculture, or forestry</p>
+              <p class="text-grey-7">
+                Choose from buildings, transport, energy, agriculture, or forestry
+              </p>
             </div>
           </div>
           <div class="col-12 col-md-4">

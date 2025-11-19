@@ -6,7 +6,6 @@ import logging
 import orjson
 from model.interactions import runner
 from model.common.auxiliary_functions import filter_country_and_load_data_from_pickles
-import numpy as np
 import time
 import re
 from pathlib import Path
@@ -53,11 +52,13 @@ years_setting = [
     5,
 ]  # [start_year, current_year, future_year, end_year, step]
 country_list = [RegionConfig.get_current_region()]
-sectors = ['climate', 'lifestyles', 'buildings','energy','forestry', 'transport']
+sectors = ["climate", "lifestyles", "buildings", "energy", "forestry", "transport"]
 
 # Filter country
 # from database/data/datamatrix/.* reads the pickles, filters the countries, and loads them
-DM_input = filter_country_and_load_data_from_pickles(country_list= country_list, modules_list = sectors)
+DM_input = filter_country_and_load_data_from_pickles(
+    country_list=country_list, modules_list=sectors
+)
 
 
 @router.get("/v1/run-model")
@@ -80,7 +81,13 @@ async def run_model(levers: str = None):
         logger.info(f"Levers input: {str(lever_setting)}")
 
         start = time.perf_counter()
-        output, KPI = runner(lever_setting, years_setting, DM_input, sectors, logger, )
+        output, KPI = runner(
+            lever_setting,
+            years_setting,
+            DM_input,
+            sectors,
+            logger,
+        )
         duration = (time.perf_counter() - start) * 1000  # ms
 
         serializable_output = {k: serialize_model_output(v) for k, v in output.items()}
@@ -132,7 +139,13 @@ async def run_model_clean_structure(levers: str = None):
         start = time.perf_counter()
         logger.info("Starting model run...")
         logger.info(f"Sectors: {sectors}")
-        output, KPI = runner(lever_setting, years_setting, DM_input, sectors, logger, )
+        output, KPI = runner(
+            lever_setting,
+            years_setting,
+            DM_input,
+            sectors,
+            logger,
+        )
         logger.info(
             f"Model run completed in {(time.perf_counter() - start) * 1000:.2f}ms"
         )
@@ -253,16 +266,16 @@ async def reload_config():
     """Force reload the region configuration from model_config.json."""
     from src.utils.region_config import RegionConfig
     import logging
-    
+
     logger = logging.getLogger(__name__)
     logger.info("🔄 Manual configuration reload requested")
-    
+
     result = RegionConfig.force_reload()
-    
+
     logger.info(f"✅ Configuration reloaded - New region: {result['current_region']}")
-    
+
     return {
         "status": "success",
         "message": "Configuration reloaded successfully",
-        **result
+        **result,
     }

@@ -2,7 +2,7 @@
   "kpis": [],
   "subtabs": [
     {
-      "title":  {
+      "title": {
         "enUS": "Power production",
         "frFR": "Production d'électricité",
         "deDE": "Stromerzeugung"
@@ -22,15 +22,15 @@
       "unit": "TWh",
       "type": "StackedArea",
       "outputs": [
-        { "id": "pow_production_Net-import[TWh]", "color":  "#A593C8"},
-        { "id": "pow_production_Losses[TWh]", "color": "#DFA06E"},
-        { "id": "pow_production_Dam[TWh]", "color": "#5A8FCC"},
-        { "id": "pow_production_RoR[TWh]", "color": "#8BC4E9"},
-        { "id": "pow_production_PV-roof[TWh]", "color": "#E8C96F"},
-        { "id": "pow_production_WindOn[TWh]", "color": "#5BAE9D"},
-        { "id": "pow_production_Nuclear[TWh]", "color": "#D87BA5"},
-        { "id": "pow_production_Gas[TWh]", "color": "#62676B"},
-        { "id": "pow_production_GasCC-CCS[TWh]", "color": "#8A8F93"}
+        { "id": "pow_production_Net-import[TWh]", "color": "#A593C8" },
+        { "id": "pow_production_Losses[TWh]", "color": "#DFA06E" },
+        { "id": "pow_production_Dam[TWh]", "color": "#5A8FCC" },
+        { "id": "pow_production_RoR[TWh]", "color": "#8BC4E9" },
+        { "id": "pow_production_PV-roof[TWh]", "color": "#E8C96F" },
+        { "id": "pow_production_WindOn[TWh]", "color": "#5BAE9D" },
+        { "id": "pow_production_Nuclear[TWh]", "color": "#D87BA5" },
+        { "id": "pow_production_Gas[TWh]", "color": "#62676B" },
+        { "id": "pow_production_GasCC-CCS[TWh]", "color": "#8A8F93" }
       ]
     },
     "PowerCapacityByTech": {
@@ -42,13 +42,13 @@
       "unit": "GW",
       "type": "StackedArea",
       "outputs": [
-        { "id": "pow_capacity_Dam[GW]", "color": "#5A8FCC"},
-        { "id": "pow_capacity_RoR[GW]", "color": "#8BC4E9"},
-        { "id": "pow_capacity_PV-roof[GW]", "color": "#E8C96F"},
-        { "id": "pow_capacity_WindOn[GW]", "color": "#5BAE9D"},
-        { "id": "pow_capacity_Nuclear[GW]", "color": "#D87BA5"},
-        { "id": "pow_capacity_Gas[GW]", "color": "#62676B"},
-        { "id": "pow_capacity_GasCC-CCS[GW]", "color": "#8A8F93"}
+        { "id": "pow_capacity_Dam[GW]", "color": "#5A8FCC" },
+        { "id": "pow_capacity_RoR[GW]", "color": "#8BC4E9" },
+        { "id": "pow_capacity_PV-roof[GW]", "color": "#E8C96F" },
+        { "id": "pow_capacity_WindOn[GW]", "color": "#5BAE9D" },
+        { "id": "pow_capacity_Nuclear[GW]", "color": "#D87BA5" },
+        { "id": "pow_capacity_Gas[GW]", "color": "#62676B" },
+        { "id": "pow_capacity_GasCC-CCS[GW]", "color": "#8A8F93" }
       ]
     },
     "PowerDemand": {
@@ -60,10 +60,10 @@
       "unit": "TWh",
       "type": "StackedArea",
       "outputs": [
-        { "id": "bld_energy-consumption[TWh]", "color": "#C97A63"},
-        { "id": "ind_energy-consumption[TWh]", "color": "#6A7C8F"},
-        { "id": "tra_energy-consumption[TWh]", "color": "#D6A55A"},
-        { "id": "agr_energy-consumption[TWh]", "color": "#86B37A"}
+        { "id": "bld_energy-consumption[TWh]", "color": "#C97A63" },
+        { "id": "ind_energy-consumption[TWh]", "color": "#6A7C8F" },
+        { "id": "tra_energy-consumption[TWh]", "color": "#D6A55A" },
+        { "id": "agr_energy-consumption[TWh]", "color": "#86B37A" }
       ]
     }
   }
