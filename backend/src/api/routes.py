@@ -129,7 +129,9 @@ async def run_model(levers: str | None = None, sector: str | None = None):
 
 @router.get("/v1/run-model-clean-structure")
 @conditional_cache(expire=600)
-async def run_model_clean_structure(levers: str | None = None, sector: str | None = None):
+async def run_model_clean_structure(
+    levers: str | None = None, sector: str | None = None
+):
     try:
         # Parse levers string or use default (all 1s)
         if levers is None:
@@ -196,7 +198,11 @@ async def run_model_clean_structure(levers: str | None = None, sector: str | Non
                 "fingerprint_result": fingerprint_result,
                 "fingerprint_input": fingerprint_input,
                 "status": "success",
-                "sectors": list(cleaned_output.keys()) if isinstance(cleaned_output, dict) else [],
+                "sectors": (
+                    list(cleaned_output.keys())
+                    if isinstance(cleaned_output, dict)
+                    else []
+                ),
                 "kpis": KPI,
                 "data": cleaned_output,
             }
