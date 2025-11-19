@@ -181,7 +181,9 @@ export const useLeverStore = defineStore('lever', () => {
   // Sectors computed values
   const getSectorDataWithKpis = (sectorName: keyof ModelResults['data']): SectorWithKpis | null => {
     if (!modelResults.value) return null;
-    return Object.assign(modelResults.value.data[sectorName], {
+    const sectorData = modelResults.value.data[sectorName];
+    if (!sectorData) return null;
+    return Object.assign({}, sectorData, {
       kpis: modelResults.value.kpis[sectorName],
     });
   };
