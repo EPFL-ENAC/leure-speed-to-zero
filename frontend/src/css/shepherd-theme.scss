@@ -1,0 +1,70 @@
+/* Shepherd.js custom theme */
+.shepherd-theme-custom {
+  .shepherd-element {
+    max-width: 400px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  }
+
+  .shepherd-header {
+    padding: 1rem 1rem 0;
+  }
+
+  .shepherd-text {
+    padding: 1rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #333;
+  }
+
+  .shepherd-footer {
+    padding: 0 1rem 1rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .shepherd-button {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    border: none;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:not(.shepherd-button-secondary) {
+      background: var(--q-primary);
+      color: white;
+
+      &:hover {
+        opacity: 0.9;
+      }
+    }
+
+    &.shepherd-button-secondary {
+      background: transparent;
+      color: #666;
+
+      &:hover {
+        background: #f5f5f5;
+      }
+    }
+  }
+
+  .shepherd-cancel-icon {
+    color: #999;
+
+    &:hover {
+      color: #333;
+    }
+  }
+}
+
+.shepherd-modal-overlay-container {
+  z-index: 9998;
+}
+
+.shepherd-element {
+  z-index: 9999;
+}

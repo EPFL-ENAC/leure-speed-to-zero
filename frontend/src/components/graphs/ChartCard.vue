@@ -23,7 +23,7 @@ import { getCurrentRegion } from 'src/utils/region';
 import { computed, ref } from 'vue';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
-import { LineChart, BarChart } from 'echarts/charts';
+import { LineChart, BarChart, SankeyChart } from 'echarts/charts';
 import type { SectorData, ChartConfig } from 'stores/leversStore';
 import type { ECharts } from 'echarts/core';
 import {
@@ -41,6 +41,7 @@ import VChart from 'vue-echarts';
 import { plotLabels } from 'config/plotLabels';
 import { useI18n } from 'vue-i18n';
 import { getTranslatedText } from 'src/utils/translationHelpers';
+import { getSeriesConfig } from 'src/utils/chartTypes';
 
 const i18n = useI18n();
 const { t } = i18n;
@@ -50,6 +51,7 @@ use([
   CanvasRenderer,
   LineChart,
   BarChart,
+  SankeyChart,
   TitleComponent,
   TooltipComponent,
   LegendComponent,
@@ -268,14 +270,11 @@ const chartOption = computed(() => {
   };
 
   // Create series array for ECharts
-  const isStacked = props.chartConfig.type.toLowerCase() === 'stackedarea';
+  const seriesConfig = getSeriesConfig(props.chartConfig.type);
   const series = chartData.value.map((series) => ({
     name: series.name,
-    type: 'line',
-    stack: isStacked ? 'total' : undefined,
-    symbol: 'none',
+    ...seriesConfig,
     z: 0,
-    areaStyle: isStacked ? {} : undefined,
     itemStyle: { color: series.color },
     data: series.data,
   }));
