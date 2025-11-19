@@ -1,5 +1,59 @@
 # Changelog
 
+## [0.8.0](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.7.1...v0.8.0) (2025-11-19)
+
+
+### Features
+
+* add CSV download functionality and update translations ([a193c1d](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/a193c1d80b1b61d83b8fe933ee417399d3127ca5))
+* add endpoint to reload region configuration and enhance region management ([c405867](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/c405867398e288288dbb222bca0b46e3a58fc12f))
+* add i18n to main components ([0e1853a](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/0e1853a96a9fe3338436804dc0f13d698b3ffabc))
+* Add labelKey to sectors for i18n support ([405ff94](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/405ff94d539c21c1438b0e305ac2a3dcd9c4e1e0))
+* add min and max properties to KPI configuration ([1dc973e](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/1dc973ef16c5302231a8a5c4eebe69a31525bdc9))
+* Add multilingual support for KPIs and subtabs in buildings, forestry, and transport configurations ([d1d5859](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/d1d585945d1534a91782e56d2582058dd131ab07))
+* add new chart types [#16](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/16) ([da48fcf](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/da48fcf2a91f8c3cfb3b26710457400d724860a2))
+* Add Switzerland and Vaud flags and integrate RegionFlag component ([85eec4f](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/85eec4f988afd1af2430895a48f7256954ba4117))
+* add translation scripts for plotlabels using RCP AI ([eb97d43](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/eb97d4312b5dcc39493ee86cda7eb21ade8aa00a))
+* Add tutorial for adding a new lever with definition and sector association ([879a5e2](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/879a5e24d6d8e60de81c79c70bccdc58a936f2be))
+* Add tutorial for creating a new sector with configuration and routing ([f133c13](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/f133c139fe465053a42099be1a9303eed3d49b09))
+* **chart:** format tooltip values to two decimal places [#42](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/42) ([9ef6f06](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/9ef6f06012124a55bce8d837ddb777a69a02f49c))
+* **chart:** update transition mark area styling for better visibility [#42](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/42) ([aea887d](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/aea887d1074ca95e5dfe248ce99315368c0cbba1))
+* enhance KPI components and improve UI/UX ([f762eb1](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/f762eb1a594a86539aab91de687b711faad38118))
+* enhance LeverGroups and LeverSelector components with improved styling and icon integration ([8a90db8](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/8a90db856ae6e6a251bb0d9327140d6f4dc3f830))
+* **i18n:** add translations for chart components and update chart labels ([61ebccb](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/61ebccbc44f8619d86a617203451928048ef1904))
+* **i18n:** refactor config files to one location ([474a757](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/474a7571436f05cb1d25d8bcdcd95824a9c51ce7))
+* Implement conditional caching and update Makefile for development mode ([6676bdf](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/6676bdff62764f8c3e29b8934b3a954165e887b3))
+* implement horizontal KPI scrolling and enhance KPI list styling ([f0bd96b](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/f0bd96bd6cff9e6c615cd5c77b8d5b7710beb3e6))
+* Implement region configuration loading from backend and update related components ([cb5f2b9](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/cb5f2b95cd8577abbec64a9dde10006893e56823))
+* Integrate Shepherd.js for guided tours and add translations for tour steps ([6f33d49](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/6f33d49ddfeba49a6c266d5742f450c63a825df7))
+* **levers:** adjust slider circle to middle of segments [#42](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/42) ([9abe441](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/9abe441744535c5c3cbac39a97b77677d51805e9))
+* **navigation:** Add router integration for section navigation and handle subtab redirection ([b4d997d](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/b4d997d8a96c7d31295f2f67ba00d2b9889d3c3c))
+* Refactor getTranslatedText to accept locale as a parameter ([1cd451c](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/1cd451c0acd6e9eecba8dcfabd43db4465f4df80))
+* refactor main layout and navigation structure ([be80d85](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/be80d858c810168c4f1447890a24c19b3c35f6b5))
+* remove deprecated graph and API test components; move sector tabs to subfolder ([2eb2188](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/2eb2188b66f0627f9b088c53f1ef0e03be7e1f85))
+* remove overview kpi large card list ([db69a7d](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/db69a7d0224b21df15518a9b4448d806928a8f2d))
+* **sectors:** Update energy icon and correct array formatting ([e23e317](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/e23e317ffefecb6292acd35be9240b19e418bffe))
+* translate all plot labels ([8c9446b](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/8c9446b44c294275b5d7cae411f1a2ea68cffbe6))
+* update guidelines for concise code and documentation practices ([5e505c6](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/5e505c6c2aee873379eaae417689679cfa57c151))
+* update layout and styling to vertical kpis column ([8f06f99](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/8f06f993787af96967b0bebe46072efd2b14d294))
+
+
+### Bug Fixes
+
+* add disabled property to agriculture sector ([9307be0](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/9307be0c6efe669a320864da81bb20fe2db4c43d))
+* adjust responsive behavior of navigation drawers for better mobile experience ([4c88520](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/4c885209dd6a6d84c94b9c916f5043ec38ce292f))
+* adjust responsive widths and styling for KPI components ([1c287ae](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/1c287aef44f6fbc6159bfcddffd1688931a7e4e6))
+* **backend:** Add missing sectors to model run and log sector information ([714ba3f](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/714ba3fb8ad4022242880674ac2412dc4cc9f3b1))
+* **backend:** Add pyomo and highspy dependencies to project ([b3b0915](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/b3b0915ad8e476c45b321c6b91f0dc4c845aada7))
+* **frontend:** Ensure sector data retrieval handles missing data gracefully ([e34aad0](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/e34aad0a864c00a70d1010134d3237c0e125f362))
+* harmonize scrollbar ([b8a52f3](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/b8a52f327c73e05a15111884a2aba3c01d720740))
+* harmonize scrollbar styling ([0c5c467](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/0c5c467fb52d07a10280f1d9567c9ca670cb0f23))
+* **i18n:** fix kpi i18n system ([02f0caa](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/02f0caaa366e4db070c1e34b5f946b22ab7cb166))
+* implement copilot suggestions ([c76425a](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/c76425a12aff444ae97f510e115f5abd4211e8d9))
+* **interactions:** Handle missing country data gracefully in filtering process ([05bd207](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/05bd2078f98f2568de88795f7a3c486a2c205e1d))
+* remove compact prop from LanguageSwitcher component in VerticalNavigation ([e344477](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/e344477bbcdafb4d23b202c6bc8bae16e347018b))
+* remove model_config.json copy from Dockerfile ([32697f1](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/32697f1247ee12ea04ba9014b9a77e7c6bc428d0))
+
 ## [0.7.1](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.7.0...v0.7.1) (2025-10-09)
 
 
