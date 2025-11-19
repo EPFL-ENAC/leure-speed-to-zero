@@ -26,13 +26,17 @@
     </div>
     <div class="row items-center q-col-gutter-xs">
       <div class="content-center col-grow">
-        <div class="custom-slider-container">
+        <div class="custom-slider-container" :class="{ 'is-loading': isLoading }">
           <div class="custom-slider-track">
             <div
               v-for="(area, index) in lever.difficultyColors"
               :key="index"
               class="custom-slider-segment"
-              :style="{ flex: area.max - area.min + 1, 'background-color': area.color }"
+              :style="{
+                flex: area.max - area.min + 1,
+                'background-color': area.color,
+                'animation-delay': `${index * 0.15}s`,
+              }"
             ></div>
           </div>
           <q-slider
@@ -95,9 +99,10 @@ import type { Lever } from 'src/utils/leversData';
 import { getTranslatedText } from 'src/utils/translationHelpers';
 import LeverDataPopup from 'src/components/LeverDataPopup.vue';
 import LeverChart from 'src/components/graphs/LeverChart.vue';
-
+import { useLeverStore } from 'stores/leversStore';
 // eslint-disable-next-line @typescript-eslint/unbound-method
 const { t, te, locale } = useI18n();
+const leverStore = useLeverStore();
 
 const props = withDefaults(
   defineProps<{
@@ -121,6 +126,8 @@ const showLeverDialog = ref(false);
 const showChart = ref(false);
 
 const disabled = computed(() => props.lever.disabled || false);
+
+const isLoading = computed(() => leverStore.isLoading);
 
 // Get translated lever title
 const leverTitle = computed(() => {
@@ -219,6 +226,22 @@ function toggleChart() {
   height: 10px; /* Adjust height as needed */
   display: flex;
   align-items: center;
+
+  &.is-loading .custom-slider-segment {
+    animation: shimmer 0.7s ease-in-out infinite;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(2);
+  }
+  50% {
+    transform: scale(1);
+  }
 }
 
 .custom-slider-track {

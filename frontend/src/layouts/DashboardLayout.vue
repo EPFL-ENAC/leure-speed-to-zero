@@ -35,11 +35,8 @@
       style="border-left: 1px solid #e0e0e0"
     >
       <div class="column full-height">
+        <LeversColumnHeader />
         <q-scroll-area visible class="col align-center q-pa-md">
-          <div class="levers-header q-mb-md">
-            <q-icon name="tune" class="header-icon" />
-            <span>{{ $t('levers') }}</span>
-          </div>
           <q-select
             v-model="selectedPathway"
             :options="pathwayOptions"
@@ -82,6 +79,7 @@ import { useLeverStore } from 'stores/leversStore';
 import { ExamplePathways } from 'utils/examplePathways';
 import { sectors } from 'utils/sectors';
 import LeverGroups from 'components/LeverGroups.vue';
+import LeversColumnHeader from 'src/components/LeversColumnHeader.vue';
 import VerticalNavigation from 'components/VerticalNavigation.vue';
 import { useQuasar } from 'quasar';
 import { useRoute } from 'vue-router';
@@ -189,17 +187,6 @@ function resetToDefaults() {
   align-items: center;
   justify-content: center;
   justify-items: center;
-}
-
-.levers-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 8px;
-  font-size: small;
-  font-weight: normal;
-  color: #6e6e73;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .header-icon {
