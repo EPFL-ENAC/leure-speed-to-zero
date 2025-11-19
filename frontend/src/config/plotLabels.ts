@@ -4991,170 +4991,105 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Verkehr',
     frFR: 'Transport',
   },
-  'pow_emissions-CO2e[Mt]': {
-    enUS: 'Electricity',
-    deDE: 'Strom',
-    frFR: 'Électricité',
+  'pow_production_Net-import[TWh]': {
+    enUS: 'Net-import',
+    deDE: 'a',
+    frFR: 'a',
   },
-  'pow_emissions-CO2e_RES_bio[Mt]': {
-    enUS: 'in Electricity production',
-    deDE: 'im Stromerzeugungsprozess',
-    frFR: 'dans la production d',
+  'pow_production_Losses[TWh]': {
+    enUS: 'Losses',
+    deDE: 'a',
+    frFR: 'a',
   },
-  'pow_emissions-CO2e_fossil_coal[Mt]': {
-    enUS: 'CO2 emission of coal power',
-    deDE: 'CO2-Emissionen von Kohlekraftwerken',
-    frFR: 'Émission de CO2 des centrales au charbon',
+  'pow_production_Dam[TWh]': {
+    enUS: 'Dam',
+    deDE: 'a',
+    frFR: 'a',
   },
-  'pow_emissions-CO2e_fossil_gas[Mt]': {
-    enUS: 'CO2 emission of gas power',
-    deDE: 'CO2-Emissionen von Gaskraftwerken',
-    frFR: 'Émission de CO2 des centrales au gaz',
+  'pow_production_RoR[TWh]': {
+    enUS: 'Run-of-River',
+    deDE: 'a',
+    frFR: 'a',
   },
-  'pow_emissions-CO2e_fossil_oil[Mt]': {
-    enUS: 'CO2 emission of oil power',
-    deDE: 'CO2-Emissionen von Ölkraftwerken',
-    frFR: 'Émission de CO2 des centrales au pétrole',
+  'pow_production_PV-roof[TWh]': {
+    enUS: 'PV-roof',
+    deDE: 'a',
+    frFR: 'a',
   },
-  'pow_existing-capacity_biogas[GW]': {
-    enUS: 'Biogas power plant',
-    deDE: 'Biogaskraftwerk',
-    frFR: 'Centrale à biogaz',
+  'pow_production_WindOn[TWh]': {
+    enUS: 'Wind-onshore',
+    deDE: 'a',
+    frFR: 'a',
   },
-  'pow_existing-capacity_biomass[GW]': {
-    enUS: 'Biomass power plant',
-    deDE: 'Biomassekraftwerk',
-    frFR: 'Centrale à biomasse',
+  'pow_production_Nuclear[TWh]': {
+    enUS: 'Nuclear',
+    deDE: 'a',
+    frFR: 'a',
   },
-  'pow_existing-capacity_coal[GW]': {
-    enUS: 'Coal-fired power plant',
-    deDE: 'Kohlekraftwerk',
-    frFR: 'Centrale à charbon',
+  'pow_production_Gas[TWh]': {
+    enUS: 'Gas',
+    deDE: 'a',
+    frFR: 'a',
   },
-  'pow_existing-capacity_gas[GW]': {
-    enUS: 'Gas-fired power plant',
-    deDE: 'Gaskraftwerk',
-    frFR: 'Centrale au gaz',
+  'pow_production_GasCC-CCS[TWh]': {
+    enUS: 'Gas-CCS',
+    deDE: 'a',
+    frFR: 'a',
   },
-  'pow_existing-capacity_geothermal[GW]': {
-    enUS: 'geothermal power',
-    deDE: 'Geothermie',
-    frFR: 'Énergie géothermique',
+  'pow_capacity_Dam[GW]': {
+    enUS: 'Dam',
+    deDE: 'a',
+    frFR: 'a',
   },
-  'pow_existing-capacity_hydroelectric[GW]': {
-    enUS: 'Hydroelectric power plant',
-    deDE: 'Wasserkraftwerk',
-    frFR: 'Centrale hydroélectrique',
+  'pow_capacity_RoR[GW]': {
+    enUS: 'Run-of-River',
+    deDE: 'a',
+    frFR: 'a',
   },
-  'pow_existing-capacity_marine[GW]': {
-    enUS: 'marine power',
-    deDE: 'Meereskraftwerk',
-    frFR: 'Énergie marine',
+  'pow_capacity_PV-roof[GW]': {
+    enUS: 'PV-roof',
+    deDE: 'a',
+    frFR: 'a',
   },
-  'pow_existing-capacity_nuclear[GW]': {
-    enUS: 'Nuclear power plants',
-    deDE: 'Kernkraftwerke',
-    frFR: 'Centrales nucléaires',
+  'pow_capacity_WindOn[GW]': {
+    enUS: 'Wind-onshore',
+    deDE: 'a',
+    frFR: 'a',
   },
-  'pow_existing-capacity_oil[GW]': {
-    enUS: 'Oil-fired power plant',
-    deDE: 'Ölheizkraftwerk',
-    frFR: 'Centrale à fuel',
+  'pow_capacity_Nuclear[GW]': {
+    enUS: 'Nuclear',
+    deDE: 'a',
+    frFR: 'a',
   },
-  'pow_existing-capacity_solar-csp[GW]': {
-    enUS: 'Concentrated solar power plant',
-    deDE: 'Konzentrierte Solaranlage',
-    frFR: 'Centrale solaire à concentration',
+  'pow_capacity_Gas[GW]': {
+    enUS: 'Gas',
+    deDE: 'a',
+    frFR: 'a',
   },
-  'pow_existing-capacity_solar-pv[GW]': {
-    enUS: 'Solar PV',
-    deDE: 'Solar-Photovoltaik',
-    frFR: 'Photovoltaïque',
+  'pow_capacity_GasCC-CCS[GW]': {
+    enUS: 'Gas-CCS',
+    deDE: 'a',
+    frFR: 'a',
   },
-  'pow_existing-capacity_wind-offshore[GW]': {
-    enUS: 'Offshore wind farm',
-    deDE: 'Offshore-Windpark',
-    frFR: 'Parc éolien offshore',
+  'bld_energy-consumption[TWh]': {
+    enUS: 'Buildings',
+    deDE: 'a',
+    frFR: 'a',
   },
-  'pow_existing-capacity_wind-onshore[GW]': {
-    enUS: 'Onshore wind farm',
-    deDE: 'Onshore-Windpark',
-    frFR: 'Parc éolien onshore',
+  'ind_energy-consumption[TWh]': {
+    enUS: 'Industry',
+    deDE: 'a',
+    frFR: 'a',
   },
-  'pow_gross-yearly-production_biogas[TWh]': {
-    enUS: 'NaN',
-    deDE: 'NaN',
-    frFR: 'NaN',
+  'tra_energy-consumption[TWh]': {
+    enUS: 'Transport',
+    deDE: 'a',
+    frFR: 'a',
   },
-  'pow_gross-yearly-production_biomass[TWh]': {
-    enUS: 'NaN',
-    deDE: 'NaN',
-    frFR: 'NaN',
-  },
-  'pow_gross-yearly-production_coal[TWh]': {
-    enUS: 'Electricity by coal',
-    deDE: 'Elektrizität aus Kohle',
-    frFR: 'Électricité issue du charbon',
-  },
-  'pow_gross-yearly-production_electricity[TWh]': {
-    enUS: 'Total electricity production',
-    deDE: 'Gesamtelektrizitätsproduktion',
-    frFR: 'Production totale d’électricité',
-  },
-  'pow_gross-yearly-production_gas[TWh]': {
-    enUS: 'Electricity by gas',
-    deDE: 'Elektrizität aus Gas',
-    frFR: 'Électricité issue du gaz',
-  },
-  'pow_gross-yearly-production_geothermal[TWh]': {
-    enUS: 'Electricity by geothermal',
-    deDE: 'Elektrizität aus Geothermie',
-    frFR: 'Électricité issue de la géothermie',
-  },
-  'pow_gross-yearly-production_hydroelectric[TWh]': {
-    enUS: 'Electricity by hydropower',
-    deDE: 'Elektrizität aus Wasserkraft',
-    frFR: 'Électricité issue de l’hydroélectricité',
-  },
-  'pow_gross-yearly-production_marine[TWh]': {
-    enUS: 'Electricity by marine power',
-    deDE: 'Elektrizität aus Meereskraft',
-    frFR: 'Électricité issue de l’énergie marine',
-  },
-  'pow_gross-yearly-production_nuclear[TWh]': {
-    enUS: 'Electricity by nuclear power',
-    deDE: 'Elektrizität aus Kernkraft',
-    frFR: 'Électricité issue de la production nucléaire',
-  },
-  'pow_gross-yearly-production_oil[TWh]': {
-    enUS: 'Electricity by oil',
-    deDE: 'Elektrizität aus Öl',
-    frFR: 'Électricité issue du pétrole',
-  },
-  'pow_gross-yearly-production_solar-csp[TWh]': {
-    enUS: 'Electricity by CSP',
-    deDE: 'Elektrizität aus CSP',
-    frFR: 'Électricité issue de la CSP',
-  },
-  'pow_gross-yearly-production_solar-pv[TWh]': {
-    enUS: 'Electricity by PV',
-    deDE: 'Elektrizität aus PV',
-    frFR: 'Électricité issue du photovoltaïque',
-  },
-  'pow_gross-yearly-production_wind-offshore[TWh]': {
-    enUS: 'Electricity by offshore wind',
-    deDE: 'Elektrizität aus Offshore-Wind',
-    frFR: 'Électricité issue de l’éolien offshore',
-  },
-  'pow_gross-yearly-production_wind-onshore[TWh]': {
-    enUS: 'Electricity by onshore wind',
-    deDE: 'Elektrizität aus Onshore-Wind',
-    frFR: 'Électricité issue de l’éolien onshore',
-  },
-  'ref_stored_CO2[Mt]': {
-    enUS: 'Oil refinery',
-    deDE: 'Ölraffinerie',
-    frFR: 'Raffinerie de pétrole',
+  'agr_energy-consumption[TWh]': {
+    enUS: 'Agriculture',
+    deDE: 'a',
+    frFR: 'a',
   },
   'ref_total_product[TWh]': {
     enUS: 'NaN',
