@@ -51,13 +51,17 @@ uninstall:
 
 
 lint:
-	@echo "Running linter..."
+	@echo "Running linter on frontend..."
 	npx prettier --check .
+	@echo "Running linter on backend..."
+	$(MAKE) -C backend lint
 	@echo "Linting complete!"
 
 format:
-	@echo "Running formatter..."
+	@echo "Running formatter on frontend..."
 	npx prettier --write .
+	@echo "Running formatter on backend..."
+	$(MAKE) -C backend format
 	@echo "Formatting complete!"
 
 # Wait for backend health check
