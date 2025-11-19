@@ -61,6 +61,92 @@ def transform_datamatrix_to_clean_structure_by_dataframe(output):
     return cleaned_output
 
 
+def _extract_units_from_datamatrix(datamatrix, col_labels, variable_labels):
+    """Extract unit information from DataMatrix."""
+    units = {}
+
+    # Try to get units from col_labels
+    if "Units" in col_labels and isinstance(col_labels["Units"], dict):
+        units = col_labels["Units"]
+    # Check if units are stored in a separate attribute
+    elif hasattr(datamatrix, "units") and datamatrix.units:
+        units = datamatrix.units
+    # Check if units are stored in __dict__
+    elif hasattr(datamatrix, "__dict__") and "units" in datamatrix.__dict__:
+        units = datamatrix.__dict__["units"]
+
+    # Map units to variable names
+    result = {}
+    for var_name in variable_labels:
+        result[var_name] = units.get(var_name, "")
+
+    return result
+
+
+def _get_array_value(array, country_idx, year_idx, var_idx):
+    """Extract value from array based on its dimensionality."""
+    try:
+        if len(array.shape) == 3:
+            value = array[country_idx, year_idx, var_idx]
+        elif len(array.shape) == 4:
+            value = array[country_idx, year_idx, var_idx, 0]
+        else:
+            return None
+
+        if isinstance(value, np.ndarray):
+            value = value.item()
+        return value
+    except Exception:
+        return None
+
+
+def _process_year_data(array, idx, year, year_labels, variable_labels):
+    """Process data for a single year."""
+    year_idx = (
+        idx.get(year)
+        if year in idx
+        else (idx.get(int(year)) if year.isdigit() and int(year) in idx else None)
+    )
+
+    if year_idx is None:
+        return None, 0
+
+    year_data = {"year": str(year)}
+
+    return year_data, year_idx
+
+
+def _process_country_data(
+    array, idx, country_name, year_labels, variable_labels, country_idx
+):
+    """Process all year data for a single country."""
+    country_data = []
+
+    for year in year_labels:
+        year_data, year_idx = _process_year_data(
+            array, idx, year, year_labels, variable_labels
+        )
+
+        if year_data is None or year_idx is None:
+            continue
+
+        values_found = 0
+        for var_name in variable_labels:
+            var_idx = idx.get(var_name)
+            if var_idx is None:
+                continue
+
+            value = _get_array_value(array, country_idx, year_idx, var_idx)
+            if value is not None:
+                year_data[var_name] = value
+                values_found += 1
+
+        if values_found > 0:
+            country_data.append(year_data)
+
+    return country_data
+
+
 def transform_datamatrix_to_clean_structure(output):
     """
     Transform DataMatrix objects into a clean, hierarchical JSON structure.
@@ -100,110 +186,43 @@ def transform_datamatrix_to_clean_structure(output):
         col_labels = dm_dict.get("col_labels", {})
         idx = dm_dict.get("idx", {})
 
-        # Get country and year labels from col_labels
+        # Get labels
         country_labels = col_labels.get("Country", [])
         year_labels = [str(y) for y in col_labels.get("Years", [])]
         variable_labels = col_labels.get("Variables", [])
 
-        # If no variable labels found, try col_labels directly
         if not variable_labels and isinstance(col_labels, list):
             variable_labels = col_labels
 
-        # Initialize the country structure
+        # Initialize sector structure
         cleaned_output[sector] = {"countries": {}, "units": {}}
 
-        # Extract unit information if available
-        units = {}
-        # Try to get units from col_labels
-        if "Units" in col_labels and isinstance(col_labels["Units"], dict):
-            units = col_labels["Units"]
-        # Check if units are stored in a separate attribute
-        elif hasattr(datamatrix, "units") and datamatrix.units:
-            units = datamatrix.units
-        # Check if units are stored in the dm_dict
-        elif "units" in dm_dict and dm_dict["units"]:
-            units = dm_dict["units"]
-
-        # Store units in output
-        for var_name in variable_labels:
-            if var_name in units:
-                cleaned_output[sector]["units"][var_name] = units[var_name]
-            else:
-                cleaned_output[sector]["units"][
-                    var_name
-                ] = ""  # Empty string if no unit is found
+        # Extract and store units
+        units = _extract_units_from_datamatrix(datamatrix, col_labels, variable_labels)
+        cleaned_output[sector]["units"] = units
 
         # Process each country
         country_stats = {}
         for country_name in country_labels:
-            # Get country index from idx
             country_idx = idx.get(country_name)
             if country_idx is None:
-                continue  # Skip if country can't be found
+                continue
 
-            cleaned_output[sector]["countries"][country_name] = []
-            values_by_year = 0
-
-            # Process each year
-            for year in year_labels:
-                # Get year index
-                year_idx = (
-                    idx.get(year)
-                    if year in idx
-                    else (
-                        idx.get(int(year))
-                        if year.isdigit() and int(year) in idx
-                        else None
-                    )
-                )
-
-                if year_idx is None:
-                    continue  # Skip if year can't be found
-
-                year_data = {"year": str(year)}
-                values_found = 0
-
-                # Process each variable
-                for var_name in variable_labels:
-                    var_idx = idx.get(var_name)
-                    if var_idx is None:
-                        continue  # Skip if variable not found
-
-                    try:
-                        # Access the data based on the number of dimensions in the array
-                        if len(array.shape) == 3:
-                            value = array[country_idx, year_idx, var_idx]
-                        elif len(array.shape) == 4:
-                            value = array[country_idx, year_idx, var_idx, 0]
-                        else:
-                            continue  # Skip unsupported array shapes
-
-                        if isinstance(value, np.ndarray):
-                            value = (
-                                value.item()
-                            )  # Convert numpy scalar to Python scalar
-
-                        year_data[var_name] = value
-                        values_found += 1
-                    except Exception:
-                        year_data[var_name] = None
-
-                if values_found > 0:
-                    cleaned_output[sector]["countries"][country_name].append(year_data)
-                    values_by_year += values_found
-
-            # Keep track of how much data was found for this country
-            country_stats[country_name] = len(
-                cleaned_output[sector]["countries"][country_name]
+            country_data = _process_country_data(
+                array, idx, country_name, year_labels, variable_labels, country_idx
             )
 
-        # Log summary for this sector
+            cleaned_output[sector]["countries"][country_name] = country_data
+            country_stats[country_name] = len(country_data)
+
+        # Log summary
         populated_countries = sum(1 for count in country_stats.values() if count > 0)
         logger.info(
-            f"Sector {sector}: populated {populated_countries} countries, {len(variable_labels)} variables"
+            f"Sector {sector}: populated {populated_countries} countries, "
+            f"{len(variable_labels)} variables"
         )
 
-    # Convert NumPy types to standard Python types
+    # Convert NumPy types
     cleaned_output = _convert_numpy_types(cleaned_output)
 
     return cleaned_output
@@ -274,6 +293,7 @@ def transform_lever_data_for_echarts(lever_data_dict):
     result = _convert_numpy_types(result)
 
     logger.info(
-        f"Lever data transformation completed for {len(result['lever_positions'])} positions"
+        f"Lever data transformation completed for "
+        f"{len(result['lever_positions'])} positions"  # type: ignore
     )
     return result

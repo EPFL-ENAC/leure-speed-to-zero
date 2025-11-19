@@ -5,36 +5,22 @@
     "lifestyles": ["climate", "lifestyles"],
     "transport": ["climate", "lifestyles", "transport"],
     "buildings": ["climate", "lifestyles", "transport", "buildings"],
-    "industry": ["climate", "lifestyles", "transport", "buildings", "industry"],
-    "forestry": ["climate", "lifestyles", "transport", "buildings", "industry", "forestry"],
+    "industry": ["climate", "lifestyles", "transport", "buildings"],
+    "forestry": ["climate", "lifestyles", "transport", "buildings",  "forestry"],
     "agriculture": [
       "climate",
       "lifestyles",
       "transport",
       "buildings",
-      "industry",
       "forestry",
       "agriculture"
-    ],
-    "ammonia": [
-      "climate",
-      "lifestyles",
-      "transport",
-      "buildings",
-      "industry",
-      "forestry",
-      "agriculture",
-      "ammonia"
     ],
     "energy": [
       "climate",
       "lifestyles",
       "transport",
       "buildings",
-      "industry",
       "forestry",
-      "agriculture",
-      "ammonia",
       "energy"
     ]
   },
