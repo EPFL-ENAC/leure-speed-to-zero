@@ -53,7 +53,7 @@ years_setting = [
     5,
 ]  # [start_year, current_year, future_year, end_year, step]
 country_list = [RegionConfig.get_current_region()]
-sectors = ['climate', 'lifestyles', 'buildings', 'transport']
+sectors = ['climate', 'lifestyles', 'buildings','energy','forestry', 'transport']
 
 # Filter country
 # from database/data/datamatrix/.* reads the pickles, filters the countries, and loads them
@@ -131,6 +131,7 @@ async def run_model_clean_structure(levers: str = None):
 
         start = time.perf_counter()
         logger.info("Starting model run...")
+        logger.info(f"Sectors: {sectors}")
         output, KPI = runner(lever_setting, years_setting, DM_input, sectors, logger, )
         logger.info(
             f"Model run completed in {(time.perf_counter() - start) * 1000:.2f}ms"
