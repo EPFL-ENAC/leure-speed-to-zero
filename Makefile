@@ -19,10 +19,16 @@ help:
 
 
 # Install dependencies and set up git hooks
-install: install-backend install-frontend install-config
-	@echo "Installing git hooks with lefthook..."
-	npx lefthook install
+install: install-config install-backend install-frontend
+	@echo "Installing root dependencies and git hooks..."
+	npm install
 	@echo "Setup complete!"
+
+# Install configuration (placeholder for future config setup)
+install-config:
+	@echo "Configuration setup..."
+	@# Add any config file generation here if needed
+	@echo "Configuration ready!"
 
 
 # Install backend dependencies
@@ -33,7 +39,7 @@ install-backend:
 # Install frontend dependencies
 install-frontend:
 	@echo "Installing frontend dependencies..."
-	cd frontend && npm install
+	@cd frontend && npm install
 	@echo "Frontend dependencies installed!"
 
 # Clean dependencies

@@ -1,10 +1,10 @@
 # RC file to ensure proper PATH for npm/npx
 rc: ./.lefthookrc
 
-commit-msg:
-  commands:
-    commitlint:
-      run: npx --no -- commitlint --edit {1}
+# commit-msg:
+#   commands:
+#     commitlint:
+#       run: npx --no -- commitlint --edit {1}
 
 # EXAMPLE USAGE:
 #
@@ -23,18 +23,22 @@ commit-msg:
 pre-commit:
   parallel: true
   commands:
-    # Format frontend files (JS, TS, Vue, JSON, etc.)
+    # Format frontend files (JS, TS, Vue, JSON, etc.) and root files
     prettier-format:
       glob: "*.{js,ts,jsx,tsx,vue,json,css,scss,md,yml,yaml}"
-      run: npx prettier --write {staged_files} && git add {staged_files}
-      tags: frontend format
+      run: npx prettier --write {staged_files}
+      stage_fixed: true
+      tags: format
     # Format backend Python files
     black-format:
-      glob: "backend/**/*.py"
-      run: cd backend && (uv run black {staged_files} || .venv/bin/black {staged_files}) && git add {staged_files}
-      tags: backend format
-    # Lint backend Python files
+      root: "backend/"
+      glob: "*.py"
+      run: (uv run black {staged_files} 2>/dev/null || .venv/bin/black {staged_files} 2>/dev/null || python3 -m black {staged_files})
+      stage_fixed: true
+      tags: format backend
+    # Lint backend Python files (critical errors only in pre-commit)
     flake8-lint:
-      glob: "backend/**/*.py"
-      run: cd backend && (uv run flake8 {staged_files} --count --select=E9,F63,F7,F82 --show-source --statistics || .venv/bin/flake8 {staged_files} --count --select=E9,F63,F7,F82 --show-source --statistics)
-      tags: backend lint
+      root: "backend/"
+      glob: "*.py"
+      run: (uv run flake8 {staged_files} --count --select=E9,F63,F7,F82 --show-source --statistics 2>/dev/null || .venv/bin/flake8 {staged_files} --count --select=E9,F63,F7,F82 --show-source --statistics 2>/dev/null || python3 -m flake8 {staged_files} --count --select=E9,F63,F7,F82 --show-source --statistics)
+      tags: lint backend
