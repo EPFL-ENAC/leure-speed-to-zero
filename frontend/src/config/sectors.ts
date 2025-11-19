@@ -50,13 +50,13 @@ export const sectors: Sector[] = [
       deDE: 'Energie',
     },
     value: 'energy',
-    icon: 'forest',
+    icon: 'bolt',
     levers: [
       'lever_pkm',
       'lever_passenger_technology-share_new',
       'lever_building-renovation-rate',
-      'lever_heating-technology-fuel'
-      ],
+      'lever_heating-technology-fuel',
+    ],
   },
   {
     label: {
