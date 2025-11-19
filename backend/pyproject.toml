@@ -18,5 +18,7 @@ dependencies = [
     "fastapi-cache2[redis]>=0.2.2",
     "requests",
     "deepl",
+    "pyomo==6.9.5",
+    "highspy>=1.12.0",
 ]
 

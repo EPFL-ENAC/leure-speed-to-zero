@@ -109,6 +109,20 @@ export default {
   contactDesc:
     'For questions, feedback, or collaboration opportunities, please contact us through the EPFL ENAC faculty website.',
   lastUpdated: 'Last updated',
+  // Tour translations
+  tour: {
+    sectors:
+      'Welcome! Start by selecting a sector from this menu. Each sector has detailed sub-tabs with charts and analysis.',
+    levers:
+      'These are policy levers. Adjust them to see how different interventions impact the results. Click to expand and see detailed options.',
+    kpis: 'Key Performance Indicators show the main metrics for the selected sector. They update in real-time as you adjust levers.',
+    charts:
+      'Detailed charts and visualizations appear here. They provide in-depth analysis of emissions, energy consumption, and other metrics.',
+    skip: 'Skip',
+    next: 'Next',
+    back: 'Back',
+    finish: 'Got it!',
+  },
   // Nested translations
   lever: levers,
 };

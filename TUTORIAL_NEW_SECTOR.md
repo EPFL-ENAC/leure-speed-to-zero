@@ -74,7 +74,12 @@ Add to `/frontend/src/router/routes.ts`:
 ## Key Points
 
 - **Output IDs**: Must match backend model outputs exactly
-- **Chart types**: `StackedArea` or `Line`
+- **Chart types**: Available types (just change the `"type"` field):
+  - `StackedArea` - Stacked area chart (shows composition over time)
+  - `Line` - Line chart (shows trends over time)
+  - `Bar` - Bar chart (compares values across categories)
+  - `StackedBar` - Stacked bar chart (shows composition across categories)
+  - `Sankey` - Sankey diagram (shows flow relationships, requires special data format)
 - **Translations**: Required for all titles (enUS, frFR, deDE)
 - **Levers**: Define in `/frontend/src/config/levers.ts` if new
 - **Plot labels**: Add output labels in `/frontend/src/config/plotLabels.ts`

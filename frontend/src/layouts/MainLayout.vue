@@ -33,7 +33,7 @@ import { useQuasar } from 'quasar';
 import VerticalNavigation from 'components/VerticalNavigation.vue';
 
 const $q = useQuasar();
-const drawer = ref($q.screen.gt.md);
+const drawer = ref($q.screen.gt.sm);
 </script>
 
 <style lang="scss" scoped>

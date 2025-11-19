@@ -27,9 +27,10 @@
     <!-- Levers Column - Desktop/Tablet always shown, Mobile controlled by leversOpen -->
     <q-drawer
       side="right"
+      bordered
       v-model="leversOpen"
-      :overlay="$q.screen.lt.sm"
-      :breakpoint="$q.screen.sizes.sm"
+      :overlay="$q.screen.lt.md"
+      :breakpoint="$q.screen.sizes.md"
       class="levers-col"
       style="border-left: 1px solid #e0e0e0"
     >
@@ -76,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue';
 import { useLeverStore } from 'stores/leversStore';
 import { ExamplePathways } from 'utils/examplePathways';
 import { sectors } from 'utils/sectors';
@@ -86,12 +87,21 @@ import { useQuasar } from 'quasar';
 import { useRoute } from 'vue-router';
 import { getTranslatedText } from 'src/utils/translationHelpers';
 import { useI18n } from 'vue-i18n';
+import { useTour } from 'src/composables/useTour';
 
 const $q = useQuasar();
 const route = useRoute();
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const { locale } = useI18n();
 const leverStore = useLeverStore();
+const { startTour } = useTour();
+
+onMounted(() => {
+  // Small delay to ensure all elements are rendered
+  setTimeout(() => {
+    startTour();
+  }, 500);
+});
 
 // Navigation tab state
 const currentTab = ref(route.name as string);
@@ -104,7 +114,7 @@ watch(
 
 // Mobile UI state
 const leversOpenState = ref(false);
-const navigationOpen = ref($q.screen.gt.md); // Start open on desktop, closed on mobile
+const navigationOpen = ref($q.screen.gt.sm); // Start open on desktop, closed on mobile
 
 // Get current sector from route
 const currentSector = computed(() => route.path.split('/')[1] || 'buildings');
