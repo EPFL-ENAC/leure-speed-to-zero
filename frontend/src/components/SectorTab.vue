@@ -32,17 +32,13 @@
         />
       </div>
 
-      <div v-if="!modelResults" class="graph-placeholder">
-        <q-icon name="show_chart" size="4rem" />
-        <p>{{ $t('runModelToSeeData', { sector: sectorDisplayName }) }}</p>
-        <q-btn
-          :label="$t('runModel')"
-          color="primary"
-          :loading="isLoading"
-          @click="runModel"
-          class="q-mt-md"
-        />
-      </div>
+      <empty-state
+        v-if="!modelResults"
+        :loading="isLoading"
+        :message="$t('runModelToSeeData', { sector: sectorDisplayName })"
+        :refresh-label="$t('runModel')"
+        @refresh="forceRunModel"
+      />
 
       <template v-else>
         <!-- Show KPI Cards when no subtab is selected (overview) -->
@@ -105,6 +101,7 @@ import { useLeverStore, type SectorWithKpis, type ChartConfig } from 'stores/lev
 import type { KPI, KPIConfig } from 'src/utils/sectors';
 import KpiList from 'src/components/kpi/KpiList.vue';
 import ChartCard from 'components/graphs/ChartCard.vue';
+import EmptyState from 'components/EmptyState.vue';
 import { useQuasar } from 'quasar';
 import { getTranslatedText } from 'src/utils/translationHelpers';
 import type { TranslationObject } from 'src/utils/translationHelpers';
@@ -216,8 +213,8 @@ const kpis = computed((): KPI[] => {
 
 const isLoading = computed(() => leverStore.isLoading);
 
-// Method to run the model
-async function runModel() {
+// Force re-run the model
+async function forceRunModel() {
   try {
     await leverStore.runModel();
   } catch (error) {
@@ -338,20 +335,6 @@ function scrollKpis(direction: 'left' | 'right') {
   :deep(.q-scrollarea__content) {
     padding-top: 2rem;
   }
-}
-
-.graph-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  background-color: #f5f5f5;
-  border-radius: 8px;
-  color: #9e9e9e;
-  text-align: center;
-  padding: 2rem;
-  margin: 1rem;
 }
 
 .title {
