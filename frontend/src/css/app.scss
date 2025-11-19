@@ -1,5 +1,8 @@
 // app global css in SCSS form
 
+// Import Shepherd.js theme
+@import './shepherd-theme.scss';
+
 // Shared utility classes
 .app-disabled {
   color: #a0a0a0 !important;
