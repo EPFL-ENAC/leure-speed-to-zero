@@ -1,18 +1,14 @@
 {
-  "MODEL_PRIMARY_REGION": "Switzerland",
+  "MODEL_PRIMARY_REGION": "Vaud",
   "SECTORS_TO_RUN": {
     "climate": ["climate"],
     "lifestyles": ["climate", "lifestyles"],
-    "transport": ["climate", "lifestyles", "transport"],
+    "transport": ["lifestyles", "transport"],
     "buildings": ["climate", "lifestyles", "transport", "buildings"],
     "industry": ["climate", "lifestyles", "transport", "buildings"],
-    "forestry": ["climate", "lifestyles", "transport", "buildings",  "forestry"],
+    "forestry": ["forestry"],
     "agriculture": [
-      "climate",
       "lifestyles",
-      "transport",
-      "buildings",
-      "forestry",
       "agriculture"
     ],
     "energy": [
@@ -20,7 +16,6 @@
       "lifestyles",
       "transport",
       "buildings",
-      "forestry",
       "energy"
     ]
   },
