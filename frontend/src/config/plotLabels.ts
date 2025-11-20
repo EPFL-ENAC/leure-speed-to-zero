@@ -1179,7 +1179,7 @@ export const plotLabels: Record<string, TranslationObject | string> = {
   'bld_CO2-emissions_heating_district-heating[Mt]': {
     enUS: 'District-heating',
     deDE: 'Fernwärme',
-    frFR: 'Chauffage urbain',
+    frFR: 'Chauffage à distance',
   },
   'bld_CO2-emissions_heating_electricity[Mt]': {
     enUS: 'Electricity',
@@ -1259,7 +1259,7 @@ export const plotLabels: Record<string, TranslationObject | string> = {
   'bld_energy-demand_heating_district-heating[TWh]': {
     enUS: 'District-heating',
     deDE: 'Fernwärme',
-    frFR: 'Chauffage urbain',
+    frFR: 'Chauffage à distance',
   },
   'bld_energy-demand_heating_electricity[TWh]': {
     enUS: 'Elec. (resistance)',
@@ -1389,97 +1389,97 @@ export const plotLabels: Record<string, TranslationObject | string> = {
   'bld_heating-mix_multi-family-households_B_district-heating': {
     enUS: 'mfh, A-B, district-heating',
     deDE: 'Mehrfamilienhaus, A-B, Fernwärme',
-    frFR: 'lm, A-B, chauffage urbain',
+    frFR: 'lm, A-B, chauffage à distance',
   },
   'bld_heating-mix_multi-family-households_B_gas': {
     enUS: 'mfh, A-B, gas',
     deDE: 'Mehrfamilienhaus, A-B, Gas',
-    frFR: 'lm, A-B, gaz',
+    frFR: 'Imm., A-B, gaz',
   },
   'bld_heating-mix_multi-family-households_B_heat-pump': {
     enUS: 'mfh, A-B, heat-pump',
     deDE: 'Mehrfamilienhaus, A-B, Wärmepumpe',
-    frFR: 'lm, A-B, pompe à chaleur',
+    frFR: 'Imm., A-B, pompe à chaleur',
   },
   'bld_heating-mix_multi-family-households_B_heating-oil': {
     enUS: 'mfh, A-B, heating-oil',
     deDE: 'Mehrfamilienhaus, A-B, Heizöl',
-    frFR: 'lm, A-B, huile de chauffage',
+    frFR: 'Imm., A-B, mazout',
   },
   'bld_heating-mix_multi-family-households_B_wood': {
     enUS: 'mfh, A-B, wood',
     deDE: 'Mehrfamilienhaus, A-B, Holz',
-    frFR: 'lm, A-B, bois',
+    frFR: 'Imm., A-B, bois',
   },
   'bld_heating-mix_multi-family-households_F_district-heating': {
     enUS: 'mfh, F, district-heating',
     deDE: 'Mehrfamilienhaus, F, Fernwärme',
-    frFR: 'lm, F, chauffage urbain',
+    frFR: 'Imm., F, chauffage à distance',
   },
   'bld_heating-mix_multi-family-households_F_gas': {
     enUS: 'mfh, F, gas',
     deDE: 'Mehrfamilienhaus, F, Gas',
-    frFR: 'lm, F, gaz',
+    frFR: 'Imm., F, gaz',
   },
   'bld_heating-mix_multi-family-households_F_heat-pump': {
     enUS: 'mfh, F, heat-pump',
     deDE: 'Mehrfamilienhaus, F, Wärmepumpe',
-    frFR: 'lm, F, pompe à chaleur',
+    frFR: 'Imm., F, pompe à chaleur',
   },
   'bld_heating-mix_multi-family-households_F_heating-oil': {
     enUS: 'mfh, F, heating-oil',
     deDE: 'Mehrfamilienhaus, F, Heizöl',
-    frFR: 'lm, F, huile de chauffage',
+    frFR: 'Imm., F, mazout',
   },
   'bld_heating-mix_multi-family-households_F_wood': {
     enUS: 'mfh, F, wood',
     deDE: 'Mehrfamilienhaus, F, Holz',
-    frFR: 'lm, F, bois',
+    frFR: 'Imm., F, bois',
   },
   'bld_heating-mix_single-family-households_B_district-heating': {
     enUS: 'sfh, A-B, district-heating',
     deDE: 'Einfamilienhaus, A-B, Fernwärme',
-    frFR: 'li, A-B, chauffage urbain',
+    frFR: 'MI, A-B, chauffage à distance',
   },
   'bld_heating-mix_single-family-households_B_gas': {
     enUS: 'sfh, A-B, gas',
     deDE: 'Einfamilienhaus, A-B, Gas',
-    frFR: 'li, A-B, gaz',
+    frFR: 'MI, A-B, gaz',
   },
   'bld_heating-mix_single-family-households_B_heat-pump': {
     enUS: 'sfh, A-B, heat-pump',
     deDE: 'Einfamilienhaus, A-B, Wärmepumpe',
-    frFR: 'li, A-B, pompe à chaleur',
+    frFR: 'MI, A-B, pompe à chaleur',
   },
   'bld_heating-mix_single-family-households_B_heating-oil': {
     enUS: 'sfh, A-B, heating-oil',
     deDE: 'Einfamilienhaus, A-B, Heizöl',
-    frFR: 'li, A-B, huile de chauffage',
+    frFR: 'MI, A-B, mazout',
   },
   'bld_heating-mix_single-family-households_B_wood': {
     enUS: 'sfh, A-B, wood',
     deDE: 'Einfamilienhaus, A-B, Holz',
-    frFR: 'li, A-B, bois',
+    frFR: 'MI, A-B, bois',
   },
   'bld_heating-mix_single-family-households_F_district-heating': {
     enUS: 'sfh, F, district-heating',
     deDE: 'Einfamilienhaus, F, Fernwärme',
-    frFR: 'li, F, chauffage urbain',
+    frFR: 'MI, F, chauffage à distance',
   },
   'bld_heating-mix_single-family-households_F_gas': {
     enUS: 'sfh, F, gas',
     deDE: 'Einfamilienhaus, F, Gas',
-    frFR: 'maison individuelle, F, gaz',
+    frFR: 'MI, F, gaz',
   },
   'bld_heating-mix_single-family-households_F_heat-pump': {
     enUS: 'sfh, F, heat-pump',
     deDE: 'Einfamilienhaus, F, Wärmepumpe',
-    frFR: 'maison individuelle, F, pompe à chaleur',
+    frFR: 'MI, F, pompe à chaleur',
   },
   'bld_heating-mix_single-family-households_F_heating-oil': {
     enUS: 'sfh, F, heating-oil',
     deDE: 'Einfamilienhaus, F, Heizöl',
-    frFR: 'maison individuelle, F, fioul',
+    frFR: 'MI, F, fioul',
   },
   'bld_heating-mix_single-family-households_F_wood': {
     enUS: 'sfh, F, wood',
@@ -1519,7 +1519,7 @@ export const plotLabels: Record<string, TranslationObject | string> = {
   'bld_heating_district-heating[TWh]': {
     enUS: 'District-heating',
     deDE: 'Fernwärme',
-    frFR: 'Chauffage urbain',
+    frFR: 'Chauffage à distance',
   },
   'bld_heating_electricity[TWh]': {
     enUS: 'Electricity',
@@ -1559,7 +1559,7 @@ export const plotLabels: Record<string, TranslationObject | string> = {
   'bld_hot-water_energy-demand_district-heating[TWh]': {
     enUS: 'District-heating',
     deDE: 'Fernwärme',
-    frFR: 'Chauffage urbain',
+    frFR: 'Chauffage à distance',
   },
   'bld_hot-water_energy-demand_electricity[TWh]': {
     enUS: 'Elec. (resistance)',
@@ -1614,7 +1614,7 @@ export const plotLabels: Record<string, TranslationObject | string> = {
   'bld_services_energy-consumption_district-heating[TWh]': {
     enUS: 'District-heating',
     deDE: 'Fernwärme',
-    frFR: 'Chauffage urbain',
+    frFR: 'Chauffage à distance',
   },
   'bld_services_energy-consumption_elec[TWh]': {
     enUS: 'Electricity',
@@ -1949,7 +1949,7 @@ export const plotLabels: Record<string, TranslationObject | string> = {
   'dhg_emissions-CO2e_heat-district[Mt]': {
     enUS: 'District heating',
     deDE: 'Fernwärme',
-    frFR: 'Chauffage urbain',
+    frFR: 'Chauffage à distance',
   },
   'dhg_emissions-CO2e_heat-geothermal[Mt]': {
     enUS: 'Geothermal',
@@ -2019,7 +2019,7 @@ export const plotLabels: Record<string, TranslationObject | string> = {
   'dhg_energy-demand_added-district-heat_renewable[TWh]': {
     enUS: 'District heat renewables',
     deDE: 'Erneuerbare Energien für Fernwärme',
-    frFR: 'Énergies renouvelables de chauffage urbain',
+    frFR: 'Énergies renouvelables de chauffage à distance',
   },
   'dhg_energy-demand_added-district-heat_solid-bio[TWh]': {
     enUS: 'Biomass',
@@ -2049,7 +2049,7 @@ export const plotLabels: Record<string, TranslationObject | string> = {
   'dhg_energy-demand_heat-district[TWh]': {
     enUS: 'District heating',
     deDE: 'Fernwärme',
-    frFR: 'Chauffage urbain',
+    frFR: 'Chauffage à distance',
   },
   'elc_capacity_RES_bio_gas[GW]': {
     enUS: 'Total bio gas capacities',
@@ -4993,103 +4993,103 @@ export const plotLabels: Record<string, TranslationObject | string> = {
   },
   'pow_production_Net-import[TWh]': {
     enUS: 'Net-import',
-    deDE: 'a',
-    frFR: 'a',
+    deDE: 'Nettoimporte',
+    frFR: 'Import net',
   },
   'pow_production_Losses[TWh]': {
     enUS: 'Losses',
-    deDE: 'a',
-    frFR: 'a',
+    deDE: 'Verluste',
+    frFR: 'Pertes',
   },
   'pow_production_Dam[TWh]': {
     enUS: 'Dam',
-    deDE: 'a',
-    frFR: 'a',
+    deDE: 'Speicherkraftwerk',
+    frFR: 'Barrage',
   },
   'pow_production_RoR[TWh]': {
     enUS: 'Run-of-River',
-    deDE: 'a',
-    frFR: 'a',
+    deDE: 'Laufwasserkraftwerk',
+    frFR: 'Au fil de l’eau',
   },
   'pow_production_PV-roof[TWh]': {
     enUS: 'PV-roof',
-    deDE: 'a',
-    frFR: 'a',
+    deDE: 'PV-dach',
+    frFR: 'PV toiture',
   },
   'pow_production_WindOn[TWh]': {
     enUS: 'Wind-onshore',
-    deDE: 'a',
-    frFR: 'a',
+    deDE: 'Onshore-Windkraft',
+    frFR: 'Éolien terrestre',
   },
   'pow_production_Nuclear[TWh]': {
     enUS: 'Nuclear',
-    deDE: 'a',
-    frFR: 'a',
+    deDE: 'Kernenergie',
+    frFR: 'Nucléaire',
   },
   'pow_production_Gas[TWh]': {
     enUS: 'Gas',
-    deDE: 'a',
-    frFR: 'a',
+    deDE: 'Gaskraftwerk',
+    frFR: 'Gaz',
   },
   'pow_production_GasCC-CCS[TWh]': {
     enUS: 'Gas-CCS',
-    deDE: 'a',
-    frFR: 'a',
+    deDE: 'Gaskraftwerk mit CCS',
+    frFR: 'Gaz avec CSC',
   },
   'pow_capacity_Dam[GW]': {
     enUS: 'Dam',
-    deDE: 'a',
-    frFR: 'a',
+    deDE: 'Speicherkraftwerk',
+    frFR: 'Barrage',
   },
   'pow_capacity_RoR[GW]': {
     enUS: 'Run-of-River',
-    deDE: 'a',
-    frFR: 'a',
+    deDE: 'Laufwasserkraftwerk',
+    frFR: 'Au fil de l’eau',
   },
   'pow_capacity_PV-roof[GW]': {
     enUS: 'PV-roof',
-    deDE: 'a',
-    frFR: 'a',
+    deDE: 'PV-dach',
+    frFR: 'PV toiture',
   },
   'pow_capacity_WindOn[GW]': {
     enUS: 'Wind-onshore',
-    deDE: 'a',
-    frFR: 'a',
+    deDE: 'Onshore-Windkraft',
+    frFR: 'Éolien terrestre',
   },
   'pow_capacity_Nuclear[GW]': {
     enUS: 'Nuclear',
-    deDE: 'a',
-    frFR: 'a',
+    deDE: 'Kernenergie',
+    frFR: 'Nucléaire',
   },
   'pow_capacity_Gas[GW]': {
     enUS: 'Gas',
-    deDE: 'a',
-    frFR: 'a',
+    deDE: 'Gaskraftwerk',
+    frFR: 'Gaz',
   },
   'pow_capacity_GasCC-CCS[GW]': {
     enUS: 'Gas-CCS',
-    deDE: 'a',
-    frFR: 'a',
+    deDE: 'Gaskraftwerk mit CCS',
+    frFR: 'Gaz avec CSC',
   },
   'bld_energy-consumption[TWh]': {
     enUS: 'Buildings',
-    deDE: 'a',
-    frFR: 'a',
+    deDE: 'Gebäude',
+    frFR: 'Bâtiments',
   },
   'ind_energy-consumption[TWh]': {
     enUS: 'Industry',
-    deDE: 'a',
-    frFR: 'a',
+    deDE: 'Industrie',
+    frFR: 'Industrie',
   },
   'tra_energy-consumption[TWh]': {
     enUS: 'Transport',
-    deDE: 'a',
-    frFR: 'a',
+    deDE: 'Verkehr',
+    frFR: 'Transport',
   },
   'agr_energy-consumption[TWh]': {
     enUS: 'Agriculture',
-    deDE: 'a',
-    frFR: 'a',
+    deDE: 'Landwirtschaft',
+    frFR: 'Agriculture',
   },
   'ref_total_product[TWh]': {
     enUS: 'NaN',
