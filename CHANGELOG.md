@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.8.0...v0.8.1) (2025-11-20)
+
+
+### Bug Fixes
+
+* **backend:** refactor get_all_available_sectors to return unique sectors from all dependency chains ([896bfa0](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/896bfa0e59b4017c66a4dfbaa8354eebd6c83b85))
+
 ## [0.8.0](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.7.1...v0.8.0) (2025-11-20)
 
 
