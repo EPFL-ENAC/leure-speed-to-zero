@@ -68,10 +68,10 @@ class SectorConfig:
     @classmethod
     def get_all_available_sectors(cls) -> List[str]:
         """
-        Get the most complete list of all available sectors in execution order.
+        Get all unique sectors from all dependency chains.
 
         Returns:
-            List of all sectors (uses the longest dependency chain)
+            List of all unique sectors across all dependency chains
         """
         cls._load_config()
 
@@ -86,9 +86,13 @@ class SectorConfig:
                 "transport",
             ]
 
-        # Find the sector with the most dependencies (longest list)
-        max_sectors = max(cls._config_cache.values(), key=len, default=[])
-        return max_sectors
+        # Collect all unique sectors from all dependency chains
+        all_sectors = set()
+        for sectors_list in cls._config_cache.values():
+            all_sectors.update(sectors_list)
+
+        # Return as list to maintain consistency with return type
+        return list(all_sectors)
 
     @classmethod
     def get_available_sector_names(cls) -> List[str]:
