@@ -24,7 +24,7 @@
     {
       "name": {
         "enUS": "Energy Demand for Space Heating",
-        "frFR": "Demande énergétique pour le chauffage des locaux",
+        "frFR": "Demande d'énergie pour chauffage des locaux",
         "deDE": "Energiebedarf für Raumheizung"
       },
       "unit": "TWh",
@@ -144,9 +144,9 @@
   "charts": {
     "SHGHGEmissionsPerBuildingType": {
       "title": {
-        "enUS": "CO2 emissions for residential space heating per building type",
-        "frFR": "Émissions de CO2 pour le chauffage résidentiel par type de bâtiment",
-        "deDE": "CO2-Emissionen für Raumheizung in Wohngebäuden nach Gebäudetyp"
+        "enUS": "CO₂ emissions for residential space heating per building envelope CECB category",
+        "frFR": "Émissions de CO₂ pour le chauffage résidentiel par catégorie d’enveloppe CECB",
+        "deDE": "CO₂-Emissionen der Raumheizung im Wohnbereich nach GEAK-Gebäudehüllenkategorie"
       },
       "type": "StackedArea",
       "unit": "Mt",
@@ -222,9 +222,9 @@
     },
     "FloorAreaPerBuildingType": {
       "title": {
-        "enUS": "Residential energy reference area per envelope class",
-        "frFR": "Surface au sol par type de bâtiment",
-        "deDE": "Wohnfläche nach Gebäudetyp"
+        "enUS": "Residential energy reference area per envelope CECB category",
+        "frFR": "Surface de référence énergétique résidentielle selon la catégorie d’enveloppe CECB",
+        "deDE": "Energiebezugsfläche von Wohngebäuden nach GEAK-Gebäudehüllenkategorie"
       },
       "type": "StackedArea",
       "unit": "Mm²",
@@ -238,9 +238,9 @@
     },
     "SHEnergyDemandPerBuildingType": {
       "title": {
-        "enUS": "Demand for residential space heating per envelope class",
-        "frFR": "Demande d'énergie pour le chauffage résidentiel par type de bâtiment",
-        "deDE": "Energiebedarf für Raumheizung in Wohngebäuden nach Gebäudetyp"
+        "enUS": "Demand for residential space heating per envelope category CECB",
+        "frFR": "Demande de chauffage résidentiel par catégorie d’enveloppe CECB",
+        "deDE": "Heizwärmebedarf von Wohngebäuden nach Gebäudehüllenkategorie des GEAK"
       },
       "type": "StackedArea",
       "unit": "TWh",
