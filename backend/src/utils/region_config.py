@@ -1,6 +1,7 @@
 """Region configuration for the application."""
 
 import json
+import os
 from pathlib import Path
 
 _config_cache = {"data": None, "mtime": 0}
@@ -30,7 +31,16 @@ class RegionConfig:
 
     @classmethod
     def get_current_region(cls) -> str:
-        """Get the current primary region (reloads config if file changed)."""
+        """Get the current primary region (reloads config if file changed).
+
+        Environment variable MODEL_PRIMARY_REGION takes precedence over config file.
+        """
+        # Check environment variable first
+        env_region = os.getenv("MODEL_PRIMARY_REGION")
+        if env_region:
+            return env_region
+
+        # Fall back to config file
         config = load_shared_config()
         return config.get("MODEL_PRIMARY_REGION", "Vaud")
 
