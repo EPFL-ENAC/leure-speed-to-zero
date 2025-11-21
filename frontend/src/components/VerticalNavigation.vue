@@ -441,6 +441,7 @@ watch(
   border-top: 1px solid rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
 }
 

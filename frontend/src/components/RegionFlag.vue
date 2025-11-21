@@ -1,14 +1,6 @@
 <template>
-  <div
-    class="region-flag"
-    :title="`Region: ${currentRegion}`"
-    :class="{ 'vaud-region': currentRegion.toLowerCase() === 'vaud' }"
-  >
-    <img
-      :src="regionFlag"
-      :alt="`${currentRegion} flag`"
-      :class="{ 'rotate-90': currentRegion.toLowerCase() === 'vaud' }"
-    />
+  <div class="region-flag" :title="`Region: ${currentRegion}`">
+    <img :src="regionFlag" :alt="`${currentRegion} flag`" />
   </div>
 </template>
 
@@ -33,25 +25,19 @@ const regionFlag = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 3rem;
-  min-width: 6rem;
+  width: fit-content;
+  max-width: 6rem;
+  max-height: 3rem;
   border-radius: 4px;
-  overflow: visible;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.region-flag.vaud-region {
-  height: 5rem;
+  overflow: hidden;
+  border: 1px solid rgba(67, 67, 67, 0.741);
 }
 
 .region-flag img {
-  height: 100%;
-  width: auto;
-  max-width: none;
+  width: 4rem;
+  height: auto;
+  max-width: 6rem;
+  max-height: 3rem;
   object-fit: contain;
-}
-
-.region-flag img.rotate-90 {
-  transform: rotate(90deg);
 }
 </style>
