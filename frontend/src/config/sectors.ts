@@ -76,7 +76,7 @@ export const sectors: Sector[] = [
     },
     value: 'agriculture',
     icon: 'agriculture',
-    disabled: true,
+    disabled: false,
     levers: [
       'lever_kcal-req',
       'lever_diet',
