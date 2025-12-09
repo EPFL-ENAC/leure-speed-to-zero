@@ -394,9 +394,9 @@
     },
     "PassengerGHGEmissionsPerMode": {
       "title": {
-        "enUS": "Passenger GHG emissions per mode",
-        "frFR": "Émissions de GES passagers par mode",
-        "deDE": "Passagier-THG-Emissionen nach Verkehrsträger"
+        "enUS": "Passenger land transport emissions per mode",
+        "frFR": "Émissions du transport passagers terrestre par mode",
+        "deDE": "Emissionen des Personenverkehrs auf dem Landweg nach Verkehrsträgern"
       },
       "unit": "Mt",
       "type": "StackedArea",
@@ -404,8 +404,7 @@
         "tra_emissions-CO2e_passenger_rail[Mt]",
         "tra_emissions-CO2e_passenger_bus[Mt]",
         "tra_emissions-CO2e_passenger_2W[Mt]",
-        "tra_emissions-CO2e_passenger_LDV[Mt]",
-        "tra_emissions-CO2e_passenger_aviation[Mt]"
+        "tra_emissions-CO2e_passenger_LDV[Mt]"
       ]
     },
     "FreightGHGEmissionsPerMode": {
