@@ -17,11 +17,11 @@
       side="left"
       bordered
       :breakpoint="$q.screen.sizes.md"
-      :width="240"
+      :width="miniMode ? 60 : 240"
       :overlay="$q.screen.lt.md"
       class="vertical-nav-drawer"
     >
-      <VerticalNavigation />
+      <VerticalNavigation :mini="miniMode" @toggle="toggleMiniMode" />
     </q-drawer>
 
     <!-- Levers Column - Desktop/Tablet always shown, Mobile controlled by leversOpen -->
@@ -113,6 +113,7 @@ watch(
 // Mobile UI state
 const leversOpenState = ref(false);
 const navigationOpen = ref($q.screen.gt.sm); // Start open on desktop, closed on mobile
+const miniMode = ref(false);
 
 // Get current sector from route
 const currentSector = computed(() => route.path.split('/')[1] || 'buildings');
@@ -140,6 +141,10 @@ function toggleNavigation() {
   if ($q.screen.lt.md) {
     navigationOpen.value = !navigationOpen.value;
   }
+}
+
+function toggleMiniMode() {
+  miniMode.value = !miniMode.value;
 }
 
 // Pathway selection

@@ -14,11 +14,11 @@
       side="left"
       bordered
       :breakpoint="$q.screen.sizes.md"
-      :width="240"
+      :width="miniMode ? 60 : 240"
       :overlay="$q.screen.lt.md"
       class="vertical-nav-drawer"
     >
-      <VerticalNavigation />
+      <VerticalNavigation :mini="miniMode" @toggle="toggleMiniMode" />
     </q-drawer>
 
     <q-page-container>
@@ -34,6 +34,11 @@ import VerticalNavigation from 'components/VerticalNavigation.vue';
 
 const $q = useQuasar();
 const drawer = ref($q.screen.gt.sm);
+const miniMode = ref(false);
+
+const toggleMiniMode = () => {
+  miniMode.value = !miniMode.value;
+};
 </script>
 
 <style lang="scss" scoped>

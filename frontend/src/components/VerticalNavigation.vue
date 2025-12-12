@@ -1,5 +1,5 @@
 <template>
-  <aside class="vertical-nav">
+  <aside class="vertical-nav" :class="{ mini }">
     <!-- Logo/Header -->
     <div class="nav-header">
       <div class="nav-logo">
@@ -27,42 +27,41 @@
       <!-- Sectors Section -->
       <div class="nav-section">
         <!-- Overall -->
-        <div
+        <router-link
           v-if="overallSector"
-          class="nav-item-expandable"
+          :to="getNavigationTarget('overall')"
+          class="nav-item"
           :class="{ active: isActive('overall'), disabled: overallSector.disabled }"
         >
-          <div class="nav-item" @click="toggleSection('overall')">
-            <q-icon :name="overallSector.icon" class="nav-item-icon" />
-            <span v-if="!mini" class="nav-item-label">{{ getLabel(overallSector.label) }}</span>
-            <q-icon
-              v-if="!mini && overallSubtabs.length > 0"
-              name="expand_more"
-              class="expand-icon"
-              :class="{ expanded: expandedSections.has('overall') }"
-            />
-          </div>
-          <div v-if="!mini && expandedSections.has('overall')" class="sub-nav">
-            <router-link
-              v-for="subtab in overallSubtabs"
-              :key="subtab.route"
-              :to="{ name: 'overall', params: { subtab: subtab.route } }"
-              class="sub-nav-item"
-              :class="{ active: isSubtabActive('overall', subtab.route) }"
-            >
-              {{ getLabel(subtab.title) }}
-            </router-link>
-          </div>
-        </div>
+          <q-icon :name="overallSector.icon" class="nav-item-icon" />
+          <span v-if="!mini" class="nav-item-label">{{ getLabel(overallSector.label) }}</span>
+          <q-icon
+            v-if="!mini && overallSubtabs.length > 0"
+            name="expand_more"
+            class="expand-icon"
+            :class="{ expanded: expandedSections.has('overall') }"
+            @click.prevent="toggleExpand('overall')"
+          />
+        </router-link>
+        <template v-if="!mini && expandedSections.has('overall')">
+          <router-link
+            v-for="subtab in overallSubtabs"
+            :key="subtab.route"
+            :to="{ name: 'overall', params: { subtab: subtab.route } }"
+            class="sub-nav-item"
+            :class="{ active: isSubtabActive('overall', subtab.route) }"
+          >
+            {{ getLabel(subtab.title) }}
+          </router-link>
+        </template>
 
         <!-- Other Sectors -->
-        <div
-          v-for="sector in activeSectors"
-          :key="sector.value"
-          class="nav-item-expandable"
-          :class="{ active: isActive(sector.value), disabled: sector.disabled }"
-        >
-          <div class="nav-item" @click="toggleSection(sector.value)">
+        <template v-for="sector in activeSectors" :key="sector.value">
+          <router-link
+            :to="getNavigationTarget(sector.value)"
+            class="nav-item"
+            :class="{ active: isActive(sector.value), disabled: sector.disabled }"
+          >
             <q-icon :name="sector.icon" class="nav-item-icon" />
             <span v-if="!mini" class="nav-item-label">{{ getLabel(sector.label) }}</span>
             <q-icon
@@ -70,9 +69,10 @@
               name="expand_more"
               class="expand-icon"
               :class="{ expanded: expandedSections.has(sector.value) }"
+              @click.prevent="toggleExpand(sector.value)"
             />
-          </div>
-          <div v-if="!mini && expandedSections.has(sector.value)" class="sub-nav">
+          </router-link>
+          <template v-if="!mini && expandedSections.has(sector.value)">
             <router-link
               v-for="subtab in subtabsMap[sector.value]"
               :key="subtab.route"
@@ -82,8 +82,8 @@
             >
               {{ getLabel(subtab.title) }}
             </router-link>
-          </div>
-        </div>
+          </template>
+        </template>
       </div>
     </nav>
 
@@ -92,17 +92,34 @@
       <region-flag />
       <language-switcher />
     </div>
+
+    <!-- Collapse Toggle Button -->
+    <div class="nav-toggle">
+      <q-btn
+        flat
+        dense
+        round
+        :icon="mini ? 'chevron_right' : 'chevron_left'"
+        size="sm"
+        class="toggle-btn"
+        @click="emit('toggle')"
+      />
+    </div>
   </aside>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { sectors } from 'utils/sectors';
 import { getTranslatedText, type TranslationObject } from 'src/utils/translationHelpers';
 import LanguageSwitcher from './LanguageSwitcher.vue';
 import RegionFlag from './RegionFlag.vue';
+
+const emit = defineEmits<{
+  toggle: [];
+}>();
 
 // Import subtab configs
 import buildingsConfig from 'config/subtabs/buildings.json';
@@ -116,12 +133,12 @@ interface Props {
   mini?: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const props = withDefaults(defineProps<Props>(), {
   mini: false,
 });
 
 const route = useRoute();
-const router = useRouter();
 const { locale } = useI18n();
 
 // Main pages configuration
@@ -194,30 +211,17 @@ const isSubtabActive = (sectorName: string, subtabRoute: string) => {
   return route.name === sectorName && route.params.subtab === subtabRoute;
 };
 
-// Toggle section expand/collapse
-const toggleSection = (sectionName: string) => {
-  if (props.mini) return;
-
-  const sector = sectors.find((s) => s.value === sectionName);
-  if (sector?.disabled) return;
-
-  // Get subtabs for this section
-  const subtabs = subtabsMap.value[sectionName];
-
-  // If no subtabs, just navigate to the section
-  if (!subtabs?.length && sectionName !== 'overall') {
-    return;
+// Get navigation target for a sector
+const getNavigationTarget = (sectorName: string) => {
+  const subtabs = subtabsMap.value[sectorName];
+  if (subtabs && subtabs.length > 0 && subtabs[0]) {
+    return { name: sectorName, params: { subtab: subtabs[0].route } };
   }
+  return { name: sectorName };
+};
 
-  // Navigate to first subtab if not already on this section
-  if (route.name !== sectionName && subtabs && subtabs.length > 0) {
-    const firstSubtab = subtabs[0];
-    if (firstSubtab) {
-      void router.push({ name: sectionName, params: { subtab: firstSubtab.route } });
-    }
-  }
-
-  // Toggle expansion
+// Toggle expand/collapse for subtabs
+const toggleExpand = (sectionName: string) => {
   if (expandedSections.value.has(sectionName)) {
     expandedSections.value.delete(sectionName);
   } else {
@@ -248,6 +252,8 @@ watch(
   background: #ffffff;
   border-right: 1px solid rgba(0, 0, 0, 0.06);
   overflow: hidden;
+  position: relative;
+  transition: width 200ms ease;
 }
 
 .nav-header {
@@ -365,23 +371,10 @@ watch(
   text-overflow: ellipsis;
 }
 
-.nav-item-expandable {
-  &.disabled {
-    .nav-item {
-      opacity: 0.4;
-      cursor: not-allowed;
-      pointer-events: none;
-    }
-  }
-
-  &.active > .nav-item {
-    color: #1a1a1a;
-    font-weight: 500;
-
-    .nav-item-icon {
-      opacity: 1;
-    }
-  }
+.nav-item.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .expand-icon {
@@ -393,22 +386,6 @@ watch(
 
   &.expanded {
     transform: rotate(180deg);
-  }
-}
-
-.sub-nav {
-  animation: expandDown 200ms ease;
-  overflow: hidden;
-}
-
-@keyframes expandDown {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -445,10 +422,42 @@ watch(
   gap: 12px;
 }
 
+.nav-toggle {
+  position: fixed;
+  top: 50%;
+  right: -12px;
+  transform: translateY(-50%);
+  z-index: 10;
+}
+
+.toggle-btn {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  color: #6e6e73;
+  transition: all 150ms ease;
+
+  &:hover {
+    background: #f5f5f7;
+    color: #1a1a1a;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  }
+}
+
 /* Mini mode adjustments */
 .vertical-nav.mini {
+  .nav-header {
+    padding: 24px 10px;
+    visibility: hidden;
+  }
+
   .nav-logo {
     justify-content: center;
+  }
+
+  .logo-svg {
+    height: 24px;
+    width: auto;
   }
 
   .nav-item {
@@ -458,9 +467,6 @@ watch(
 
   .nav-item-icon {
     margin-right: 0;
-  }
-  .logo-svg {
-    height: 24px;
   }
 }
 
