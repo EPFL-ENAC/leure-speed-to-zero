@@ -11,26 +11,24 @@
       </q-toolbar>
     </q-header>
 
-    <!-- Vertical Navigation Sidebar - Desktop always shown, Mobile controlled by navigationOpen -->
+    <!-- Vertical Navigation Sidebar -->
     <q-drawer
       v-model="navigationOpen"
       side="left"
       bordered
-      :breakpoint="$q.screen.sizes.md"
+      :behavior="$q.screen.lt.md ? 'mobile' : 'desktop'"
       :width="miniMode ? 60 : 240"
-      :overlay="$q.screen.lt.md"
       class="vertical-nav-drawer"
     >
       <VerticalNavigation :mini="miniMode" @toggle="toggleMiniMode" />
     </q-drawer>
 
-    <!-- Levers Column - Desktop/Tablet always shown, Mobile controlled by leversOpen -->
+    <!-- Levers Column -->
     <q-drawer
+      v-model="leversOpen"
       side="right"
       bordered
-      v-model="leversOpen"
-      :overlay="$q.screen.lt.md"
-      :breakpoint="$q.screen.sizes.md"
+      :behavior="$q.screen.lt.md ? 'mobile' : 'desktop'"
       class="levers-col"
       style="border-left: 1px solid #e0e0e0"
     >
@@ -110,10 +108,10 @@ watch(
   },
 );
 
-// Mobile UI state
-const leversOpenState = ref(false);
-const navigationOpen = ref($q.screen.gt.sm); // Start open on desktop, closed on mobile
+// Drawer state - controlled by Quasar breakpoint, manual toggle only for mobile
 const miniMode = ref(false);
+const navigationOpen = ref($q.screen.gt.sm);
+const leversOpen = ref($q.screen.gt.sm);
 
 // Get current sector from route
 const currentSector = computed(() => route.path.split('/')[1] || 'buildings');
@@ -124,23 +122,13 @@ const currentSectorDisplay = computed(() => {
   return sector?.label || 'Dashboard';
 });
 
-// Mobile UI methods
+// Mobile toggle methods
 function toggleMobileLevers() {
-  leversOpenState.value = !leversOpenState.value;
+  leversOpen.value = !leversOpen.value;
 }
 
-const leversOpen = computed({
-  get: () => leversOpenState.value || $q.screen.gt.sm,
-  set: (value) => {
-    leversOpenState.value = value;
-  },
-});
-
 function toggleNavigation() {
-  // On mobile, toggle the drawer state
-  if ($q.screen.lt.md) {
-    navigationOpen.value = !navigationOpen.value;
-  }
+  navigationOpen.value = !navigationOpen.value;
 }
 
 function toggleMiniMode() {
@@ -168,6 +156,21 @@ const pathwayOptions = computed(() => {
 function resetToDefaults() {
   leverStore.resetToDefaults();
 }
+
+watch(
+  () => $q.screen.lt.md,
+  (mobileMode) => {
+    if (mobileMode) {
+      navigationOpen.value = false;
+      leversOpen.value = false;
+      miniMode.value = false;
+    } else {
+      leversOpen.value = true;
+      navigationOpen.value = true;
+      miniMode.value = false;
+    }
+  },
+);
 </script>
 
 <style lang="scss" scoped>

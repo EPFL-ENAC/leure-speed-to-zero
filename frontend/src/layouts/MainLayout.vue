@@ -13,9 +13,8 @@
       v-model="drawer"
       side="left"
       bordered
-      :breakpoint="$q.screen.sizes.md"
+      :behavior="$q.screen.lt.md ? 'mobile' : 'desktop'"
       :width="miniMode ? 60 : 240"
-      :overlay="$q.screen.lt.md"
       class="vertical-nav-drawer"
     >
       <VerticalNavigation :mini="miniMode" @toggle="toggleMiniMode" />
@@ -28,17 +27,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import VerticalNavigation from 'components/VerticalNavigation.vue';
 
 const $q = useQuasar();
-const drawer = ref($q.screen.gt.sm);
 const miniMode = ref(false);
+const drawer = ref($q.screen.gt.sm);
 
 const toggleMiniMode = () => {
   miniMode.value = !miniMode.value;
 };
+
+watch(
+  () => $q.screen.lt.md,
+  (mobileMode) => {
+    if (mobileMode) {
+      drawer.value = false;
+      miniMode.value = false;
+    } else {
+      drawer.value = true;
+      miniMode.value = false;
+    }
+  },
+);
 </script>
 
 <style lang="scss" scoped>
