@@ -32,6 +32,7 @@
           :to="getNavigationTarget('overall')"
           class="nav-item"
           :class="{ active: isActive('overall'), disabled: overallSector.disabled }"
+          @click="(e) => handleSectorClick(e, 'overall')"
         >
           <q-icon :name="overallSector.icon" class="nav-item-icon" />
           <span v-if="!mini" class="nav-item-label">{{ getLabel(overallSector.label) }}</span>
@@ -61,6 +62,7 @@
             :to="getNavigationTarget(sector.value)"
             class="nav-item"
             :class="{ active: isActive(sector.value), disabled: sector.disabled }"
+            @click="(e) => handleSectorClick(e, sector.value)"
           >
             <q-icon :name="sector.icon" class="nav-item-icon" />
             <span v-if="!mini" class="nav-item-label">{{ getLabel(sector.label) }}</span>
@@ -228,6 +230,16 @@ const toggleExpand = (sectionName: string) => {
     expandedSections.value.add(sectionName);
   }
   saveExpandedState();
+};
+
+// Handle sector click - toggle expansion
+const handleSectorClick = (event: Event, sectorName: string) => {
+  const currentSector = route.path.split('/')[1];
+  // If we're already on this sector, toggle the expansion
+  if (currentSector === sectorName) {
+    event.preventDefault();
+    toggleExpand(sectorName);
+  }
 };
 
 // Auto-expand current section
