@@ -6,6 +6,7 @@
         <p>{{ $t('noDataAvailable') }}</p>
       </div>
       <div v-else class="chart-visualization">
+        <div class="chart-title">{{ translatedTitle }}</div>
         <v-chart
           ref="chartRef"
           class="chart"
@@ -313,15 +314,10 @@ const chartOption = computed(() => {
   const legendData = series.map((serie) => serie.name);
 
   return {
-    title: {
-      text: translatedTitle.value,
-      textStyle: {
-        fontSize: 13,
-        fontWeight: 'bold',
-      },
-    },
     toolbox: {
       show: true,
+      right: 10,
+      top: 5,
       feature: {
         dataZoom: {
           yAxisIndex: 'none',
@@ -360,7 +356,7 @@ const chartOption = computed(() => {
       selected: legendSelected.value,
     },
     grid: {
-      top: '20%',
+      top: '15%',
       left: '5%',
       right: '5%',
       bottom: '13%',
@@ -423,10 +419,26 @@ const chartOption = computed(() => {
 
 .chart-visualization {
   height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-title {
+  position: absolute;
+  color: #6a6a6a;
+  top: 0px;
+  left: 2rem;
+  font-size: 13px;
+  font-weight: bold;
+  white-space: wrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 150px);
 }
 
 .chart {
-  height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 @media screen and (max-width: 600px) {
