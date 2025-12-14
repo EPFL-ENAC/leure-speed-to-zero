@@ -32,73 +32,27 @@
       <div class="sectors-section q-mb-xl">
         <h2 class="text-h4 text-center q-mb-lg">Explore by Sector</h2>
         <div class="row q-col-gutter-md">
-          <div class="col-12 col-sm-6 col-md-3">
-            <q-card
-              flat
-              bordered
-              clickable
-              class="sector-card full-height"
-              :to="{ name: 'buildings' }"
+          <div
+            v-for="sector in availableSectors"
+            :key="sector.value"
+            class="col-12 col-sm-6 col-md-3"
+          >
+            <router-link
+              v-if="!sector.disabled"
+              :to="getNavigationTarget(sector.value)"
+              class="sector-link"
             >
+              <q-card flat bordered class="sector-card full-height">
+                <q-card-section class="text-center">
+                  <q-icon :name="sector.icon" size="3rem" color="primary" />
+                  <div class="text-h6 q-mt-md">{{ getLabel(sector.label) }}</div>
+                </q-card-section>
+              </q-card>
+            </router-link>
+            <q-card v-else flat bordered class="sector-card full-height disabled">
               <q-card-section class="text-center">
-                <q-icon name="home" size="3rem" color="primary" />
-                <div class="text-h6 q-mt-md">Buildings</div>
-              </q-card-section>
-            </q-card>
-          </div>
-          <div class="col-12 col-sm-6 col-md-3">
-            <q-card
-              flat
-              bordered
-              clickable
-              class="sector-card full-height"
-              :to="{ name: 'transport' }"
-            >
-              <q-card-section class="text-center">
-                <q-icon name="directions_car" size="3rem" color="primary" />
-                <div class="text-h6 q-mt-md">Transport</div>
-              </q-card-section>
-            </q-card>
-          </div>
-          <div class="col-12 col-sm-6 col-md-3">
-            <q-card
-              flat
-              bordered
-              clickable
-              class="sector-card full-height"
-              :to="{ name: 'energy' }"
-            >
-              <q-card-section class="text-center">
-                <q-icon name="park" size="3rem" color="primary" />
-                <div class="text-h6 q-mt-md">Energy</div>
-              </q-card-section>
-            </q-card>
-          </div>
-          <div class="col-12 col-sm-6 col-md-3">
-            <q-card
-              flat
-              bordered
-              clickable
-              class="sector-card full-height"
-              :to="{ name: 'agriculture' }"
-            >
-              <q-card-section class="text-center">
-                <q-icon name="agriculture" size="3rem" color="primary" />
-                <div class="text-h6 q-mt-md">Agriculture</div>
-              </q-card-section>
-            </q-card>
-          </div>
-          <div class="col-12 col-sm-6 col-md-3">
-            <q-card
-              flat
-              bordered
-              clickable
-              class="sector-card full-height"
-              :to="{ name: 'forestry' }"
-            >
-              <q-card-section class="text-center">
-                <q-icon name="park" size="3rem" color="primary" />
-                <div class="text-h6 q-mt-md">Forestry</div>
+                <q-icon :name="sector.icon" size="3rem" color="primary" />
+                <div class="text-h6 q-mt-md">{{ getLabel(sector.label) }}</div>
               </q-card-section>
             </q-card>
           </div>
@@ -141,7 +95,14 @@
 </template>
 
 <script setup lang="ts">
-// Component logic if needed
+import { useI18n } from 'vue-i18n';
+import { getTranslatedText, type TranslationObject } from 'src/utils/translationHelpers';
+import { useSectorNavigation } from 'src/composables/useSectorNavigation';
+
+const { locale } = useI18n();
+const { availableSectors, getNavigationTarget } = useSectorNavigation();
+
+const getLabel = (label: string | TranslationObject) => getTranslatedText(label, locale.value);
 </script>
 
 <style lang="scss" scoped>
@@ -163,13 +124,25 @@
   flex-wrap: wrap;
 }
 
+.sector-link {
+  text-decoration: none;
+  display: block;
+  height: 100%;
+}
+
 .sector-card {
   transition: all 0.3s ease;
   cursor: pointer;
+  height: 100%;
 
   &:hover {
     transform: translateY(-8px);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  &.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 }
 

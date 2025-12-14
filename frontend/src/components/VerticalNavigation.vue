@@ -114,8 +114,8 @@
 import { ref, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { sectors } from 'utils/sectors';
 import { getTranslatedText, type TranslationObject } from 'src/utils/translationHelpers';
+import { useSectorNavigation } from 'src/composables/useSectorNavigation';
 import LanguageSwitcher from './LanguageSwitcher.vue';
 import RegionFlag from './RegionFlag.vue';
 
@@ -123,13 +123,12 @@ const emit = defineEmits<{
   toggle: [];
 }>();
 
-// Import subtab configs
-import buildingsConfig from 'config/subtabs/buildings.json';
-import transportConfig from 'config/subtabs/transport.json';
-import energyConfig from 'config/subtabs/energy.json';
-import forestryConfig from 'config/subtabs/forestry.json';
-import agricultureConfig from 'config/subtabs/agriculture.json';
-import overallConfig from 'config/subtabs/overall.json';
+const {
+  subtabsMap,
+  availableSectors: activeSectors,
+  overallSector,
+  getNavigationTarget,
+} = useSectorNavigation();
 
 interface Props {
   mini?: boolean;
@@ -180,23 +179,8 @@ const saveExpandedState = () => {
 
 loadExpandedState();
 
-// Subtabs configuration map
-const subtabsMap = computed<Record<string, Array<{ route: string; title: TranslationObject }>>>(
-  () => ({
-    buildings: buildingsConfig.subtabs || [],
-    transport: transportConfig.subtabs || [],
-    energy: energyConfig.subtabs || [],
-    forestry: forestryConfig.subtabs || [],
-    agriculture: agricultureConfig.subtabs || [],
-    overall: overallConfig.subtabs || [],
-  }),
-);
-
-// Separate Overall sector from others
-const overallSector = computed(() => sectors.find((s) => s.value === 'overall'));
+// Overall subtabs
 const overallSubtabs = computed(() => subtabsMap.value.overall || []);
-
-const activeSectors = computed(() => sectors.filter((s) => s.value !== 'overall'));
 
 // Helper function to get translated label
 const getLabel = (label: string | TranslationObject) => {
@@ -211,15 +195,6 @@ const isActive = (routeName: string) => {
 // Check if a subtab is active
 const isSubtabActive = (sectorName: string, subtabRoute: string) => {
   return route.name === sectorName && route.params.subtab === subtabRoute;
-};
-
-// Get navigation target for a sector
-const getNavigationTarget = (sectorName: string) => {
-  const subtabs = subtabsMap.value[sectorName];
-  if (subtabs && subtabs.length > 0 && subtabs[0]) {
-    return { name: sectorName, params: { subtab: subtabs[0].route } };
-  }
-  return { name: sectorName };
 };
 
 // Toggle expand/collapse for subtabs
