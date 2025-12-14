@@ -237,7 +237,7 @@ const chartOption = computed(() => {
       top: props.minimal ? '15%' : '8%',
       bottom: props.minimal ? '5%' : '18%',
       containLabel: true,
-      left: '0%',
+      left: '5%',
       right: '0%',
       width: '100%',
     },
