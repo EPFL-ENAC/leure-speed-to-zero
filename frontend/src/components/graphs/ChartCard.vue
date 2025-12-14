@@ -348,6 +348,7 @@ const chartOption = computed(() => {
     },
 
     legend: {
+      selector: true,
       type: 'scroll',
       orient: 'none',
       bottom: 0,
