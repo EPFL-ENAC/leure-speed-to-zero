@@ -65,14 +65,14 @@
             <q-icon :name="sector.icon" class="nav-item-icon" />
             <span v-if="!mini" class="nav-item-label">{{ getLabel(sector.label) }}</span>
             <q-icon
-              v-if="!mini && (subtabsMap[sector.value]?.length ?? 0) > 0"
+              v-if="!mini && (subtabsMap[sector.value]?.length ?? 0) > 0 && !sector.disabled"
               name="expand_more"
               class="expand-icon"
               :class="{ expanded: expandedSections.has(sector.value) }"
               @click.prevent="toggleExpand(sector.value)"
             />
           </router-link>
-          <template v-if="!mini && expandedSections.has(sector.value)">
+          <template v-if="!mini && expandedSections.has(sector.value) && !sector.disabled">
             <router-link
               v-for="subtab in subtabsMap[sector.value]"
               :key="subtab.route"
