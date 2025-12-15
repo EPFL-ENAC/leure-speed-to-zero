@@ -2,7 +2,6 @@ node_modules
 .idea
 .DS_Store
 .vs/slnx.sqlite
-package-lock.json
 npm-shrinkwrap.json
 *.pdf
 *.zip
