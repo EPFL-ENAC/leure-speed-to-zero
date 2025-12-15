@@ -1,29 +1,10 @@
 <template>
   <aside class="vertical-nav" :class="{ mini }">
-    <!-- Logo/Header -->
     <div class="nav-header">
-      <div class="nav-logo">
-        <!-- Use SVG logo from public folder -->
-        <img src="/speed2zero-logo-final.svg" alt="Speed to Zero" class="logo-svg" />
-      </div>
+      <img src="/speed2zero-logo-final.svg" alt="Speed to Zero" class="logo-svg" />
     </div>
 
-    <!-- Main Navigation -->
     <nav class="nav-content">
-      <!-- Main Pages Section -->
-      <div class="nav-section">
-        <router-link
-          v-for="page in mainPages"
-          :key="page.name"
-          :to="{ name: page.name }"
-          class="nav-item"
-          :class="{ active: isActive(page.name) }"
-        >
-          <q-icon :name="page.icon" class="nav-item-icon" />
-          <span v-if="!mini" class="nav-item-label">{{ getLabel(page.label) }}</span>
-        </router-link>
-      </div>
-
       <!-- Sectors Section -->
       <div class="nav-section">
         <!-- Overall -->
@@ -88,6 +69,19 @@
         </template>
       </div>
     </nav>
+    <!-- Main Pages Section -->
+    <div class="nav-section">
+      <router-link
+        v-for="page in mainPages"
+        :key="page.name"
+        :to="{ name: page.name }"
+        class="nav-item"
+        :class="{ active: isActive(page.name) }"
+      >
+        <q-icon :name="page.icon" class="nav-item-icon" />
+        <span v-if="!mini" class="nav-item-label">{{ getLabel(page.label) }}</span>
+      </router-link>
+    </div>
 
     <!-- Footer Section -->
     <div v-if="!mini" class="nav-footer">
@@ -144,7 +138,6 @@ const { locale } = useI18n();
 
 // Main pages configuration
 const mainPages = [
-  { name: 'home', label: { enUS: 'Home', frFR: 'Accueil', deDE: 'Startseite' }, icon: 'home' },
   { name: 'about', label: { enUS: 'About', frFR: 'À propos', deDE: 'Über' }, icon: 'info' },
   {
     name: 'legal',
@@ -232,123 +225,82 @@ watch(
 </script>
 
 <style lang="scss" scoped>
+$border: 1px solid rgba(0, 0, 0, 0.06);
+$text-muted: #6e6e73;
+$text-dark: #1a1a1a;
+$hover-bg: #f5f5f7;
+
 .vertical-nav {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #ffffff;
-  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fff;
+  border-right: $border;
   overflow: hidden;
   position: relative;
-  transition: width 200ms ease;
 }
 
 .nav-header {
-  flex-shrink: 0;
-  padding: 24px 20px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.nav-logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #1a1a1a;
-  letter-spacing: -0.02em;
-}
-
-.logo-icon {
-  color: var(--q-primary);
-}
-
-.logo-text {
-  white-space: nowrap;
+  padding: 1rem;
 }
 
 .logo-svg {
   width: 100%;
   border-radius: 0.2rem;
-  display: block;
-  object-fit: contain;
 }
 
 .nav-content {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px 0;
   scrollbar-gutter: stable;
 
-  /* Custom scrollbar */
   &::-webkit-scrollbar {
     width: 6px;
   }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
   &::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.1);
     border-radius: 3px;
-  }
-
-  &::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.15);
   }
 }
 
 .nav-section {
   padding: 8px 0;
-
-  & + & {
-    border-top: 1px solid rgba(0, 0, 0, 0.06);
-    margin-top: 8px;
-    padding-top: 16px;
-  }
+  border-top: $border;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
   padding: 10px 20px;
-  color: #6e6e73;
+  color: $text-muted;
   text-decoration: none;
-  cursor: pointer;
-  transition: all 150ms ease;
   font-size: small;
-  font-weight: 400;
-  user-select: none;
+  transition: all 150ms;
 
-  &:hover {
-    background: #f5f5f7;
-    color: #1a1a1a;
-
+  &:hover,
+  &.active {
+    background: $hover-bg;
+    color: $text-dark;
     .nav-item-icon {
       opacity: 1;
     }
   }
-
   &.active {
-    color: #1a1a1a;
     font-weight: 500;
-
-    .nav-item-icon {
-      opacity: 1;
-    }
+  }
+  &.disabled {
+    opacity: 0.4;
+    pointer-events: none;
   }
 }
 
 .nav-item-icon {
-  flex-shrink: 0;
   width: 20px;
   height: 20px;
   font-size: 20px;
   margin-right: 12px;
   opacity: 0.7;
-  transition: opacity 150ms ease;
 }
 
 .nav-item-label {
@@ -358,18 +310,11 @@ watch(
   text-overflow: ellipsis;
 }
 
-.nav-item.disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  pointer-events: none;
-}
-
 .expand-icon {
-  flex-shrink: 0;
   font-size: 16px;
   margin-left: auto;
   opacity: 0.5;
-  transition: transform 200ms ease;
+  transition: transform 200ms;
 
   &.expanded {
     transform: rotate(180deg);
@@ -383,26 +328,19 @@ watch(
   text-decoration: none;
   font-size: 13px;
   line-height: 1.4;
-  cursor: pointer;
-  transition: color 150ms ease;
-  letter-spacing: -0.01em;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
 
-  &:hover {
-    color: #1a1a1a;
-  }
-
+  &:hover,
   &.active {
-    color: #1a1a1a;
+    color: $text-dark;
+  }
+  &.active {
     font-weight: 500;
   }
 }
 
 .nav-footer {
-  flex-shrink: 0;
   padding: 16px 20px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  border-top: $border;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -418,55 +356,46 @@ watch(
 }
 
 .toggle-btn {
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fff;
+  border: $border;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  color: #6e6e73;
-  transition: all 150ms ease;
+  color: $text-muted;
 
   &:hover {
-    background: #f5f5f7;
-    color: #1a1a1a;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+    background: $hover-bg;
+    color: $text-dark;
   }
 }
 
-/* Mini mode adjustments */
 .vertical-nav.mini {
   .nav-header {
     padding: 24px 10px;
     visibility: hidden;
   }
-
-  .nav-logo {
-    justify-content: center;
-  }
-
   .logo-svg {
     height: 24px;
     width: auto;
   }
-
   .nav-item {
     justify-content: center;
     padding: 10px;
   }
-
   .nav-item-icon {
     margin-right: 0;
   }
+
+  .nav-content {
+    scrollbar-gutter: initial;
+  }
 }
 
-/* Mobile responsiveness */
 @media (max-width: 600px) {
   .nav-header {
     padding: 16px;
   }
-
   .nav-item {
     padding: 12px 16px;
   }
-
   .sub-nav-item {
     padding: 10px 16px 10px 48px;
   }

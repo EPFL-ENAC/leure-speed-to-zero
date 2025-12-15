@@ -109,6 +109,17 @@ export default {
   contactDesc:
     'For questions, feedback, or collaboration opportunities, please contact us through the EPFL ENAC faculty website.',
   lastUpdated: 'Last updated',
+  // Welcome Popup
+  welcomePopup: {
+    subtitle: 'Interactive carbon neutrality calculator for Switzerland',
+    description:
+      'Explore pathways to net-zero emissions by adjusting policy levers and visualizing their impact across different sectors.',
+    featureLevers: 'Adjust policy levers to model interventions',
+    featureVisualize: 'Visualize emissions and energy metrics',
+    featureCompare: 'Compare scenarios across sectors',
+    dontShowAgain: "Don't show this again",
+    getStarted: 'Get Started',
+  },
   // Tour translations
   tour: {
     sectors:

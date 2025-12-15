@@ -68,6 +68,8 @@
         </div>
       </div>
     </q-page-container>
+
+    <WelcomePopup />
   </q-layout>
 </template>
 
@@ -79,6 +81,7 @@ import { sectors } from 'utils/sectors';
 import LeverGroups from 'components/LeverGroups.vue';
 import LeversColumnHeader from 'src/components/LeversColumnHeader.vue';
 import VerticalNavigation from 'components/VerticalNavigation.vue';
+import WelcomePopup from 'components/WelcomePopup.vue';
 import { useQuasar } from 'quasar';
 import { useRoute } from 'vue-router';
 import { getTranslatedText } from 'src/utils/translationHelpers';
