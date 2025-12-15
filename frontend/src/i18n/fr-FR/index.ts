@@ -113,6 +113,17 @@ export default {
   contactDesc:
     "Pour toute question, retour d'information ou opportunité de collaboration, veuillez nous contacter via le site web de la faculté ENAC de l'EPFL.",
   lastUpdated: 'Dernière mise à jour',
+  // Welcome Popup
+  welcomePopup: {
+    subtitle: 'Calculateur interactif de neutralité carbone pour la Suisse',
+    description:
+      'Explorez les trajectoires vers la neutralité carbone en ajustant les leviers politiques et en visualisant leur impact sur différents secteurs.',
+    featureLevers: 'Ajustez les leviers pour modéliser les interventions',
+    featureVisualize: "Visualisez les émissions et les métriques d'énergie",
+    featureCompare: 'Comparez les scénarios entre secteurs',
+    dontShowAgain: 'Ne plus afficher',
+    getStarted: 'Commencer',
+  },
   // Tour translations
   tour: {
     sectors:

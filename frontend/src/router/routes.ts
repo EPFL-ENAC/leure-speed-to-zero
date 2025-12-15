@@ -1,16 +1,17 @@
 import type { RouteRecordRaw } from 'vue-router';
 
 const routes: RouteRecordRaw[] = [
-  // Main Layout Routes (Home, About, Legal)
+  // Redirect root to overall sector
+  {
+    path: '/',
+    redirect: '/overall',
+  },
+
+  // Main Layout Routes (About, Legal)
   {
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     children: [
-      {
-        path: '',
-        name: 'home',
-        component: () => import('src/pages/HomePage.vue'),
-      },
       {
         path: 'about',
         name: 'about',

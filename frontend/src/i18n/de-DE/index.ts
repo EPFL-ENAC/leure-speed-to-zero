@@ -113,6 +113,17 @@ export default {
   contactDesc:
     'Für Fragen, Feedback oder Kooperationsmöglichkeiten kontaktieren Sie uns bitte über die Website der EPFL ENAC-Fakultät.',
   lastUpdated: 'Zuletzt aktualisiert',
+  // Welcome Popup
+  welcomePopup: {
+    subtitle: 'Interaktiver Klimaneutralitätsrechner für die Schweiz',
+    description:
+      'Erkunden Sie Wege zur Netto-Null-Emission, indem Sie politische Hebel anpassen und deren Auswirkungen auf verschiedene Sektoren visualisieren.',
+    featureLevers: 'Passen Sie Hebel an, um Interventionen zu modellieren',
+    featureVisualize: 'Visualisieren Sie Emissionen und Energiekennzahlen',
+    featureCompare: 'Vergleichen Sie Szenarien über Sektoren hinweg',
+    dontShowAgain: 'Nicht mehr anzeigen',
+    getStarted: 'Loslegen',
+  },
   // Tour translations
   tour: {
     sectors:
