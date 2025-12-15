@@ -2,7 +2,13 @@
 
 Interactive platform for climate pathway modeling and visualization. Enables real-time exploration of policy impacts on emissions, energy, and environmental indicators across sectors.
 
-## 📚 Tutorials
+## 📚 Documentation
+
+### For Contributors
+
+- **[Contributing Guide](CONTRIBUTING.md)** - Git workflow, branches, and PR process
+
+### For Developers
 
 - **[Adding a New Sector](TUTORIAL_NEW_SECTOR.md)** - Create new sectors with charts and subtabs
 - **[Adding a New Lever](TUTORIAL_NEW_LEVER.md)** - Add policy controls to sectors
@@ -70,6 +76,15 @@ make run
 
 **Services**: Frontend (http://localhost:9000) | Backend API (http://localhost:8000) | Docs (http://localhost:8000/docs)
 
+### Branch Workflow
+
+```
+main (production) ← dev (staging) ← model (research) ← feature/* (tasks)
+```
+
+**For researchers**: Work on `model` branch, create PRs to `dev` for review.  
+**See [Contributing Guide](CONTRIBUTING.md)** for detailed workflow, PR process, and how to stay synced with `dev`.
+
 ## ⚙️ Configuration
 
 **Region**: Edit `backend/model_config.json`  
@@ -79,6 +94,16 @@ make run
 
 **Commands**: `make clean` | `make lint` | `make format` | `make run-backend` | `make run-frontend`  
 **Quality**: Lefthook hooks, Conventional Commits, ESLint + Prettier, Python linting
+
+**Before committing:**
+
+```bash
+make lint      # Check code quality
+make format    # Auto-fix formatting
+make run       # Test locally
+```
+
+**See [Contributing Guide](CONTRIBUTING.md)** for complete development workflow and PR process.
 
 ## 🔧 API & Model
 
@@ -115,7 +140,16 @@ make run
 
 ## 🤝 Contributing
 
-Fork → Feature branch → Conventional commits → Tests → PR  
+**Quick workflow**: `model` branch → Changes → `make lint` + `make format` → Commit → Push → PR to `dev`
+
+**Read the [Contributing Guide](CONTRIBUTING.md)** for:
+
+- Complete Git workflow and branching strategy
+- How to sync your branch with latest `dev` changes
+- PR creation and review process
+- Handling merge conflicts
+- Conventional commit examples
+
 **Standards**: TypeScript, Pydantic validation, error handling, performance optimization
 
 ---
