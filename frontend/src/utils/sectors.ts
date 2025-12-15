@@ -5,6 +5,7 @@ export interface Sector {
   value: string;
   icon: string;
   levers: string[];
+  description?: string | TranslationObject;
   disabled?: boolean;
 }
 
