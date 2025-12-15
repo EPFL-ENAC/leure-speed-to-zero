@@ -97,7 +97,7 @@
 import { computed, ref, watch, nextTick } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { useLeverStore, type SectorWithKpis, type ChartConfig } from 'stores/leversStore';
+import { useLeverStore, type ChartConfig } from 'stores/leversStore';
 import type { KPI, KPIConfig } from 'src/utils/sectors';
 import KpiList from 'src/components/kpi/KpiList.vue';
 import ChartCard from 'components/graphs/ChartCard.vue';
@@ -175,7 +175,7 @@ if (!route.params.subtab && props.config.subtabs[0]?.route) {
 
 // Get model results for this sector
 const modelResults = computed(() => {
-  return leverStore[props.sectorName as keyof typeof leverStore] as SectorWithKpis | null;
+  return leverStore.getSectorDataWithKpis(props.sectorName);
 });
 
 const kpis = computed((): KPI[] => {

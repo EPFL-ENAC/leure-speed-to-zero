@@ -41,6 +41,9 @@ export interface ChartConfig {
 export interface SectorWithKpis extends SectorData {
   kpis: KpiData[];
 }
+
+export type SectorKey = string;
+
 export interface LeverYearData {
   Country: string;
   Years: number;
@@ -75,22 +78,10 @@ export interface ModelResults {
   status: string;
   sectors: string[];
   data: {
-    climate: SectorData;
-    lifestyles: SectorData;
-    transport: SectorData;
-    buildings: SectorData;
-    energy: SectorData;
-    forestry: SectorData;
-    agriculture: SectorData;
+    [sector: string]: SectorData;
   };
   kpis: {
-    climate: KpiData[];
-    lifestyles: KpiData[];
-    transport: KpiData[];
-    buildings: KpiData[];
-    energy: KpiData[];
-    forestry: KpiData[];
-    agriculture: KpiData[];
+    [sector: string]: KpiData[];
   };
 }
 
@@ -180,20 +171,13 @@ export const useLeverStore = defineStore('lever', () => {
   });
 
   // Sectors computed values
-  const getSectorDataWithKpis = (sectorName: keyof ModelResults['data']): SectorWithKpis | null => {
+  const getSectorDataWithKpis = (sectorName: string): SectorWithKpis | null => {
     if (!modelResults.value) return null;
     const sectorData = modelResults.value.data[sectorName];
     if (!sectorData) return null;
-    return Object.assign({}, sectorData, {
-      kpis: modelResults.value.kpis[sectorName],
-    });
+    const kpis = modelResults.value.kpis[sectorName] || [];
+    return { ...sectorData, kpis };
   };
-
-  const buildings = computed(() => getSectorDataWithKpis('buildings'));
-  const transport = computed(() => getSectorDataWithKpis('transport'));
-  const energy = computed(() => getSectorDataWithKpis('energy'));
-  const forestry = computed(() => getSectorDataWithKpis('forestry'));
-  const agriculture = computed(() => getSectorDataWithKpis('agriculture'));
 
   // Model operations
   let lastRunTime = 0;
@@ -418,11 +402,6 @@ export const useLeverStore = defineStore('lever', () => {
     getLeversForSector,
     isCustomPathway,
 
-    buildings,
-    transport,
-    energy,
-    forestry,
-    agriculture,
     getSectorDataWithKpis,
 
     // Actions
