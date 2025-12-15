@@ -287,10 +287,6 @@ async def get_lever_data(
 ):
     """Get lever data for plotting and visualization."""
     try:
-        from model.common.auxiliary_functions import (
-            filter_country_and_load_data_from_pickles,
-        )
-        from model.common.lever_plotting import get_lever_data_to_plot
 
         # Use provided country or default to current region
         if country is None:
