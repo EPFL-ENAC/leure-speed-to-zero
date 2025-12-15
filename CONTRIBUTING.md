@@ -307,3 +307,4 @@ make clean             # Clean dependencies
 - [Project README](README.md)
 - [New Sector Tutorial](TUTORIAL_NEW_SECTOR.md)
 - [New Lever Tutorial](TUTORIAL_NEW_LEVER.md)
+- [Add Region Flag Tutorial](TUTORIAL_ADD_REGION_FLAG.md)

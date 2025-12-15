@@ -12,6 +12,7 @@ Interactive platform for climate pathway modeling and visualization. Enables rea
 
 - **[Adding a New Sector](TUTORIAL_NEW_SECTOR.md)** - Create new sectors with charts and subtabs
 - **[Adding a New Lever](TUTORIAL_NEW_LEVER.md)** - Add policy controls to sectors
+- **[Adding a Region Flag](TUTORIAL_ADD_REGION_FLAG.md)** - Add or change country/region flag symbols
 
 ## 🌍 Live Platforms
 
@@ -132,7 +133,8 @@ make run       # Test locally
 **Ports**: 9000 (frontend), 8000 (backend), 6379 (redis)  
 **WSL2**: `git config --global core.autocrlf input && dos2unix Makefile`  
 **Python**: Activate venv, verify `requirements.txt`  
-**Node**: Version 22+, try `rm -rf node_modules && npm install`
+**Node**: Version 22+, try `rm -rf node_modules && npm install`  
+**Flags**: Add SVG to `frontend/src/assets/flags/` with lowercase region name - see [Flag Tutorial](TUTORIAL_ADD_REGION_FLAG.md)
 
 ## 📄 License
 
