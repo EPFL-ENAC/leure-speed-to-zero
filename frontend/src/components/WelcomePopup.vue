@@ -63,9 +63,7 @@ const features = [
 
 onMounted(() => {
   const dismissed = localStorage.getItem(STORAGE_KEY);
-  if (!dismissed) {
-    showDialog.value = true;
-  }
+  showDialog.value = !dismissed;
 });
 
 const savePreference = () => {
