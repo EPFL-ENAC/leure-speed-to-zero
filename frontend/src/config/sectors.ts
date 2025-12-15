@@ -8,6 +8,11 @@ export const sectors: Sector[] = [
     },
     value: 'buildings',
     icon: 'apartment',
+    description: {
+      enUS: 'Model heating, cooling, and energy efficiency improvements in residential and commercial buildings',
+      frFR: "Modélisez le chauffage, la climatisation et les améliorations de l'efficacité énergétique dans les bâtiments résidentiels et commerciaux",
+      deDE: 'Modellieren Sie Heizung, Kühlung und Energieeffizienzverbesserungen in Wohn- und Geschäftsgebäuden',
+    },
     levers: [
       'lever_heatcool-behaviour',
       'lever_floor-intensity',
@@ -27,6 +32,11 @@ export const sectors: Sector[] = [
     },
     value: 'transport',
     icon: 'bike_scooter',
+    description: {
+      enUS: 'Analyze transitions to electric vehicles, public transport, and sustainable mobility',
+      frFR: 'Analysez les transitions vers les véhicules électriques, les transports publics et la mobilité durable',
+      deDE: 'Analysieren Sie Übergänge zu Elektrofahrzeugen, öffentlichen Verkehrsmitteln und nachhaltiger Mobilität',
+    },
     levers: [
       'lever_pkm',
       'lever_passenger_aviation-pkm',
@@ -51,6 +61,11 @@ export const sectors: Sector[] = [
     },
     value: 'energy',
     icon: 'bolt',
+    description: {
+      enUS: 'Explore energy production, distribution, and consumption patterns',
+      frFR: "Explorez la production, la distribution et les modèles de consommation d'énergie",
+      deDE: 'Erkunden Sie Energieproduktion, -verteilung und -verbrauchsmuster',
+    },
     levers: [
       'lever_pkm',
       'lever_passenger_technology-share_new',
@@ -66,6 +81,11 @@ export const sectors: Sector[] = [
     },
     value: 'forestry',
     icon: 'forest',
+    description: {
+      enUS: 'Understand carbon sequestration potential and sustainable forest management',
+      frFR: 'Comprenez le potentiel de séquestration du carbone et la gestion durable des forêts',
+      deDE: 'Verstehen Sie das Kohlenstoffbindungspotenzial und nachhaltige Waldwirtschaft',
+    },
     levers: ['lever_harvest-rate'],
   },
   {
@@ -76,6 +96,11 @@ export const sectors: Sector[] = [
     },
     value: 'agriculture',
     icon: 'agriculture',
+    description: {
+      enUS: 'Explore sustainable farming practices and emission reduction strategies',
+      frFR: 'Explorez les pratiques agricoles durables et les stratégies de réduction des émissions',
+      deDE: 'Erkunden Sie nachhaltige landwirtschaftliche Praktiken und Strategien zur Emissionsreduzierung',
+    },
     disabled: false,
     levers: [
       'lever_kcal-req',
@@ -96,6 +121,11 @@ export const sectors: Sector[] = [
     },
     value: 'overall',
     icon: 'dashboard',
+    description: {
+      enUS: 'View comprehensive overview across all sectors and key metrics',
+      frFR: "Vue d'ensemble complète de tous les secteurs et indicateurs clés",
+      deDE: 'Umfassende Übersicht über alle Sektoren und wichtige Kennzahlen',
+    },
     disabled: true,
     levers: [],
   },
