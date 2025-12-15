@@ -6,3 +6,4 @@ package-lock.json
 npm-shrinkwrap.json
 *.pdf
 *.zip
+*.code-workspace
