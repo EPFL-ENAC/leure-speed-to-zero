@@ -6,6 +6,7 @@ import logging
 import orjson
 from model.interactions import runner
 from model.common.auxiliary_functions import filter_country_and_load_data_from_pickles
+from model.common.lever_plotting import get_lever_data_to_plot
 import time
 import re
 from pathlib import Path
@@ -288,8 +289,8 @@ async def get_lever_data(
     try:
         from model.common.auxiliary_functions import (
             filter_country_and_load_data_from_pickles,
-            get_lever_data_to_plot,
         )
+        from model.common.lever_plotting import get_lever_data_to_plot
 
         # Use provided country or default to current region
         if country is None:
