@@ -331,9 +331,9 @@ function scrollKpis(direction: 'left' | 'right') {
 
 .charts-content {
   flex: 1;
-
   :deep(.q-scrollarea__content) {
     padding-top: 2rem;
+    width: 100%;
   }
 }
 
