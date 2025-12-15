@@ -1,5 +1,27 @@
 {
-  "kpis": [],
+  "kpis": [
+    {
+      "name": {
+        "enUS": "Land use: Cropland",
+        "frFR": "Land use: Cropland",
+        "deDE": "Land use: Cropland"
+      },
+      "unit": "ha",
+      "route": "cropland",
+      "maximize": false,
+      "min": 500000,
+      "max": 1500000,
+      "thresholds": {
+        "warning": 1000000,
+        "danger": 1250000
+      },
+      "info": {
+        "enUS": "Total CO2 emissions in 2050 from residential buildings including space heating across all energy carriers. Lower values indicate better environmental performance and progress toward climate goals.",
+        "frFR": "Émissions totales de CO2 en 2050 des bâtiments résidentiels, y compris le chauffage des locaux pour tous les vecteurs énergétiques. Des valeurs plus faibles indiquent une meilleure performance environnementale et des progrès vers les objectifs climatiques.",
+        "deDE": "Gesamte CO2-Emissionen im Jahr 2050 aus Wohngebäuden einschließlich Raumheizung über alle Energieträger. Niedrigere Werte zeigen bessere Umweltleistung und Fortschritte in Richtung Klimaziele."
+      }
+    }
+  ],
   "subtabs": [
     {
       "title": {
