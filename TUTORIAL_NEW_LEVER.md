@@ -67,6 +67,7 @@ Add lever code to sector in `/frontend/src/config/sectors.ts`:
 - **Group**: Organizes levers in sidebar sections
 - **Headline**: Higher-level grouping above groups
 - **Difficulty colors**: Visual feedback for ambition levels
+- **Popup text**: Optional detailed explanation for users when opened in popup
 
 ## Example
 
