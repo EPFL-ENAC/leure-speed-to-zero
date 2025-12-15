@@ -9,12 +9,6 @@
       "unit": "Mt",
       "route": "passenger-emissions-mode",
       "maximize": false,
-      "min": 0,
-      "max": 1,
-      "thresholds": {
-        "warning": 0.1,
-        "danger": 0.5
-      },
       "info": {
         "enUS": "CO₂ emissions from how residents travel on land. Lower emissions mean better environmental outcomes and alignment with climate goals.",
         "frFR": "Émissions de CO₂ provenant des déplacements terrestres des résidents. Des émissions plus faibles signifient de meilleurs résultats environnementaux et un alignement avec les objectifs climatiques.",
@@ -30,12 +24,6 @@
       "unit": "Mt",
       "route": "passenger-emissions-mode",
       "maximize": false,
-      "min": 0,
-      "max": 5,
-      "thresholds": {
-        "warning": 1,
-        "danger": 3
-      },
       "info": {
         "enUS": "The aviation emissions shown here represent the climate impact of flights taken by the resident population, including international trips. They are expressed as CO₂-equivalent emissions to account not only for CO₂ but also for other warming effects from aviation, such as water vapour, nitrogen oxides (NOₓ), contrails, and short-lived ozone. Following best-practice estimates, we assume the total climate impact of aviation is approximately three times the impact of CO₂ emissions alone.",
         "frFR": "Les émissions d'aviation présentées ici représentent l'impact climatique des vols effectués par la population résidente, y compris les voyages internationaux. Elles sont exprimées en émissions équivalent CO₂ pour tenir compte non seulement du CO₂ mais aussi d'autres effets de réchauffement de l'aviation, tels que la vapeur d'eau, les oxydes d'azote (NOₓ), les traînées de condensation et l'ozone de courte durée. Selon les meilleures estimations, nous supposons que l'impact climatique total de l'aviation est environ trois fois supérieur à celui des seules émissions de CO₂.",
@@ -51,12 +39,6 @@
       "unit": "TWh",
       "route": "passenger-energy-demand",
       "maximize": false,
-      "min": 0,
-      "max": 3,
-      "thresholds": {
-        "warning": 1,
-        "danger": 2
-      },
       "info": {
         "enUS": "Total energy demand for passenger transport.",
         "frFR": "Demande énergétique totale pour le transport de passagers.",
@@ -72,12 +54,6 @@
       "unit": "%",
       "route": "passenger-distance",
       "maximize": true,
-      "min": 0,
-      "max": 100,
-      "thresholds": {
-        "warning": 90,
-        "danger": 50
-      },
       "info": {
         "enUS": "Share of electric vehicles in the passenger car fleet.",
         "frFR": "Part des véhicules électriques dans le parc de voitures particulières.",
@@ -93,12 +69,6 @@
       "unit": "TWh",
       "route": "freight-energy-demand",
       "maximize": false,
-      "min": 0,
-      "max": 1,
-      "thresholds": {
-        "warning": 0.2,
-        "danger": 0.5
-      },
       "info": {
         "enUS": "Total energy demand for freight transport.",
         "frFR": "Demande énergétique totale pour le transport de marchandises.",
@@ -114,12 +84,6 @@
       "unit": "%",
       "route": "trucks-technology-share",
       "maximize": true,
-      "min": 0,
-      "max": 100,
-      "thresholds": {
-        "warning": 70,
-        "danger": 30
-      },
       "info": {
         "enUS": "Share of low-emission trucks in the freight vehicle fleet.",
         "frFR": "Part des camions à faibles émissions dans le parc de véhicules de fret.",

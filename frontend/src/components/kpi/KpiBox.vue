@@ -24,11 +24,11 @@
       <div class="markers">
         <div class="marker" :style="`left: ${warningPosition}%`">
           <div class="line" />
-          <span class="label">{{ formatValue(thresholds.warning) }}</span>
+          <span class="label">{{ formatValue(thresholds?.warning ?? 0) }}</span>
         </div>
         <div class="marker" :style="`left: ${dangerPosition}%`">
           <div class="line" />
-          <span class="label">{{ formatValue(thresholds.danger) }}</span>
+          <span class="label">{{ formatValue(thresholds?.danger ?? 0) }}</span>
         </div>
       </div>
     </div>
@@ -68,7 +68,7 @@ const formatValue = (val: number) =>
   val >= 1000 ? val.toFixed(0) : val >= 10 ? val.toFixed(1) : val.toFixed(2);
 
 const currentStatus = computed(() => {
-  const { warning, danger } = props.thresholds;
+  const { warning, danger } = props.thresholds || { warning: 0, danger: 0 };
   return props.maximize
     ? props.value >= danger
       ? 'excellent'
@@ -120,17 +120,17 @@ const indicatorStyle = computed(() => {
 });
 
 const scaleMin = computed(() => props.min ?? 0);
-const scaleMax = computed(() =>
-  props.max !== undefined
-    ? props.max
-    : Math.max(props.value, props.thresholds.danger, props.thresholds.warning) * 1.2,
-);
+const scaleMax = computed(() => {
+  if (props.max !== undefined) return props.max;
+  const thresholds = props.thresholds || { warning: 0, danger: 0 };
+  return Math.max(props.value, thresholds.danger, thresholds.warning) * 1.2;
+});
 const scaleRange = computed(() => scaleMax.value - scaleMin.value);
 
 const normalize = (val: number) => ((val - scaleMin.value) / scaleRange.value) * 100;
 const valuePosition = computed(() => Math.min(100, Math.max(0, normalize(props.value))));
-const warningPosition = computed(() => normalize(props.thresholds.warning));
-const dangerPosition = computed(() => normalize(props.thresholds.danger));
+const warningPosition = computed(() => normalize(props.thresholds?.warning ?? 0));
+const dangerPosition = computed(() => normalize(props.thresholds?.danger ?? 0));
 
 const zoneStyles = computed(() => {
   const zones = props.maximize
