@@ -122,7 +122,8 @@ export default {
     featureVisualize: 'Visualisieren Sie Emissionen und Energiekennzahlen',
     featureCompare: 'Vergleichen Sie Szenarien über Sektoren hinweg',
     dontShowAgain: 'Nicht mehr anzeigen',
-    getStarted: 'Loslegen',
+    startTutorial: 'Tutorial starten',
+    skipTutorial: 'Überspringen',
   },
   // Tour translations
   tour: {

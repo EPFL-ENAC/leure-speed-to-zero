@@ -68,39 +68,29 @@
         </div>
       </div>
     </q-page-container>
-
-    <WelcomePopup />
   </q-layout>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onMounted } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useLeverStore } from 'stores/leversStore';
 import { ExamplePathways } from 'utils/examplePathways';
 import { sectors } from 'utils/sectors';
 import LeverGroups from 'components/LeverGroups.vue';
 import LeversColumnHeader from 'src/components/LeversColumnHeader.vue';
 import VerticalNavigation from 'components/VerticalNavigation.vue';
-import WelcomePopup from 'components/WelcomePopup.vue';
 import { useQuasar } from 'quasar';
 import { useRoute } from 'vue-router';
 import { getTranslatedText } from 'src/utils/translationHelpers';
 import { useI18n } from 'vue-i18n';
-import { useTour } from 'src/composables/useTour';
+import { useNavigationDrawer } from 'src/composables/useNavigationDrawer';
 
 const $q = useQuasar();
 const route = useRoute();
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const { locale } = useI18n();
 const leverStore = useLeverStore();
-const { startTour } = useTour();
-
-onMounted(() => {
-  // Small delay to ensure all elements are rendered
-  setTimeout(() => {
-    startTour();
-  }, 500);
-});
+const { miniMode, navigationOpen, toggleMiniMode, toggleNavigation } = useNavigationDrawer();
 
 // Navigation tab state
 const currentTab = ref(route.name as string);
@@ -111,9 +101,7 @@ watch(
   },
 );
 
-// Drawer state - controlled by Quasar breakpoint, manual toggle only for mobile
-const miniMode = ref(false);
-const navigationOpen = ref($q.screen.gt.sm);
+// Drawer state for levers (right drawer)
 const leversOpen = ref($q.screen.gt.sm);
 
 // Get current sector from route
@@ -125,17 +113,9 @@ const currentSectorDisplay = computed(() => {
   return sector?.label || 'Dashboard';
 });
 
-// Mobile toggle methods
+// Mobile toggle method for levers
 function toggleMobileLevers() {
   leversOpen.value = !leversOpen.value;
-}
-
-function toggleNavigation() {
-  navigationOpen.value = !navigationOpen.value;
-}
-
-function toggleMiniMode() {
-  miniMode.value = !miniMode.value;
 }
 
 // Pathway selection
@@ -163,15 +143,7 @@ function resetToDefaults() {
 watch(
   () => $q.screen.lt.md,
   (mobileMode) => {
-    if (mobileMode) {
-      navigationOpen.value = false;
-      leversOpen.value = false;
-      miniMode.value = false;
-    } else {
-      leversOpen.value = true;
-      navigationOpen.value = true;
-      miniMode.value = false;
-    }
+    leversOpen.value = !mobileMode;
   },
 );
 </script>

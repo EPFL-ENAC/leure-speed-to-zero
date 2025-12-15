@@ -1,8 +1,10 @@
 <template>
-  <q-dialog v-model="showDialog" persistent>
+  <q-dialog v-model="showDialog" no-route-dismiss>
     <q-card class="welcome-card">
       <q-card-section class="q-pt-lg q-px-lg">
-        <div class="text-h4 text-weight-medium q-mb-sm">{{ $t('welcome') }}</div>
+        <div class="row items-center justify-between q-mb-sm">
+          <div class="text-h5 text-weight-medium">{{ $t('welcome') }}</div>
+        </div>
         <p class="text-body1 text-grey-7">{{ $t('welcomePopup.subtitle') }}</p>
       </q-card-section>
 
@@ -19,22 +21,23 @@
         </div>
       </q-card-section>
 
-      <q-card-section class="q-px-lg q-pt-none">
+      <q-card-actions class="q-px-lg q-pb-lg">
+        <language-switcher />
+        <q-space />
         <q-checkbox
           v-model="dontShowAgain"
           :label="$t('welcomePopup.dontShowAgain')"
           dense
           class="text-grey-7"
         />
-      </q-card-section>
-
-      <q-card-actions class="q-px-lg q-pb-lg">
+        <q-space />
+        <q-btn flat color="grey" :label="$t('welcomePopup.skipTutorial')" @click="handleSkip" />
         <q-space />
         <q-btn
           unelevated
           color="primary"
-          :label="$t('welcomePopup.getStarted')"
-          @click="handleClose"
+          :label="$t('welcomePopup.startTutorial')"
+          @click="handleStartTutorial"
         />
       </q-card-actions>
     </q-card>
@@ -43,11 +46,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useTour } from 'src/composables/useTour';
+import LanguageSwitcher from './LanguageSwitcher.vue';
 
 const STORAGE_KEY = 'speed-to-zero-welcome-dismissed';
 
-const showDialog = ref(false);
+const showDialog = ref(true);
 const dontShowAgain = ref(false);
+const { startTour } = useTour();
 
 const features = [
   { icon: 'tune', label: 'welcomePopup.featureLevers' },
@@ -62,17 +68,27 @@ onMounted(() => {
   }
 });
 
-const handleClose = () => {
+const savePreference = () => {
   if (dontShowAgain.value) {
     localStorage.setItem(STORAGE_KEY, 'true');
   }
+};
+
+const handleSkip = () => {
+  savePreference();
   showDialog.value = false;
+};
+
+const handleStartTutorial = () => {
+  savePreference();
+  showDialog.value = false;
+  setTimeout(() => startTour(true), 300);
 };
 </script>
 
 <style lang="scss" scoped>
 .welcome-card {
-  max-width: 440px;
+  max-width: 600px;
   width: 90vw;
   border-radius: 12px;
 }

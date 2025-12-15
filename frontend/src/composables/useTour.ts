@@ -2,6 +2,8 @@ import Shepherd from 'shepherd.js';
 import 'shepherd.js/dist/css/shepherd.css';
 import { useI18n } from 'vue-i18n';
 
+const TOUR_STORAGE_KEY = 'hasSeenTour';
+
 export function useTour() {
   const { t } = useI18n();
 
@@ -86,16 +88,16 @@ export function useTour() {
     return tour;
   };
 
-  const startTour = () => {
-    const hasSeenTour = localStorage.getItem('hasSeenTour');
-    if (!hasSeenTour) {
+  const startTour = (force = false) => {
+    const hasSeenTour = localStorage.getItem(TOUR_STORAGE_KEY);
+    if (force || !hasSeenTour) {
       const tour = createTour();
       void tour.start();
       tour.on('complete', () => {
-        localStorage.setItem('hasSeenTour', 'true');
+        localStorage.setItem(TOUR_STORAGE_KEY, 'true');
       });
       tour.on('cancel', () => {
-        localStorage.setItem('hasSeenTour', 'true');
+        localStorage.setItem(TOUR_STORAGE_KEY, 'true');
       });
     }
   };
