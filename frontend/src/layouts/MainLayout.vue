@@ -2,7 +2,7 @@
   <q-layout view="hHh Lpr lff">
     <q-header v-if="$q.screen.lt.md" elevated class="bg-white text-dark">
       <q-toolbar>
-        <q-btn flat round dense icon="menu" @click="drawer = !drawer" />
+        <q-btn flat round dense icon="menu" @click="toggleNavigation" />
         <q-toolbar-title class="text-h6 text-weight-bold color-primary"
           >Speed to Zero</q-toolbar-title
         >
@@ -10,7 +10,7 @@
     </q-header>
 
     <q-drawer
-      v-model="drawer"
+      v-model="navigationOpen"
       side="left"
       bordered
       :behavior="$q.screen.lt.md ? 'mobile' : 'desktop'"
@@ -27,30 +27,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import VerticalNavigation from 'components/VerticalNavigation.vue';
+import { useNavigationDrawer } from 'src/composables/useNavigationDrawer';
 
 const $q = useQuasar();
-const miniMode = ref(false);
-const drawer = ref($q.screen.gt.sm);
-
-const toggleMiniMode = () => {
-  miniMode.value = !miniMode.value;
-};
-
-watch(
-  () => $q.screen.lt.md,
-  (mobileMode) => {
-    if (mobileMode) {
-      drawer.value = false;
-      miniMode.value = false;
-    } else {
-      drawer.value = true;
-      miniMode.value = false;
-    }
-  },
-);
+const { miniMode, navigationOpen, toggleMiniMode, toggleNavigation } = useNavigationDrawer();
 </script>
 
 <style lang="scss" scoped>

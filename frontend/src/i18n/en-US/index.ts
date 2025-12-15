@@ -118,7 +118,8 @@ export default {
     featureVisualize: 'Visualize emissions and energy metrics',
     featureCompare: 'Compare scenarios across sectors',
     dontShowAgain: "Don't show this again",
-    getStarted: 'Get Started',
+    startTutorial: 'Start Tutorial',
+    skipTutorial: 'Skip',
   },
   // Tour translations
   tour: {

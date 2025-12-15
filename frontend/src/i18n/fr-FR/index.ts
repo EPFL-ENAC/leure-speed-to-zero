@@ -122,7 +122,8 @@ export default {
     featureVisualize: "Visualisez les émissions et les métriques d'énergie",
     featureCompare: 'Comparez les scénarios entre secteurs',
     dontShowAgain: 'Ne plus afficher',
-    getStarted: 'Commencer',
+    startTutorial: 'Démarrer le tutoriel',
+    skipTutorial: 'Passer',
   },
   // Tour translations
   tour: {
