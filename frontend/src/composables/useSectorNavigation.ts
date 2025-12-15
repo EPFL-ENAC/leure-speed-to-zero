@@ -2,27 +2,35 @@ import { computed } from 'vue';
 import { sectors } from 'utils/sectors';
 import type { TranslationObject } from 'src/utils/translationHelpers';
 
+type SubtabConfig = Array<{ route: string; title: TranslationObject }>;
+
 // Dynamically import all subtab configs
-const subtabModules = import.meta.glob<{
-  subtabs?: Array<{ route: string; title: TranslationObject }>;
-}>('../config/subtabs/*.json', { eager: true });
+const subtabModules = import.meta.glob<{ subtabs?: SubtabConfig }>('../config/subtabs/*.json', {
+  eager: true,
+});
 
-// Build subtabs map from dynamic imports
-function buildSubtabsMap(): Record<string, Array<{ route: string; title: TranslationObject }>> {
-  const map: Record<string, Array<{ route: string; title: TranslationObject }>> = {};
+// Build subtabs map keyed by sector value
+const subtabsMapData: Record<string, SubtabConfig> = {};
+for (const sector of sectors) {
+  const configPath = `../config/subtabs/${sector.value}.json`;
+  const module = subtabModules[configPath];
 
-  for (const [path, module] of Object.entries(subtabModules)) {
-    // Extract sector name from path: '../config/subtabs/buildings.json' -> 'buildings'
-    const match = path.match(/\/([^/]+)\.json$/);
-    if (match?.[1]) {
-      map[match[1]] = module.subtabs || [];
-    }
+  if (!module) {
+    console.warn(
+      `⚠️ Missing subtabs configuration for sector "${sector.value}".\n` +
+        `Expected file: src/config/subtabs/${sector.value}.json\n` +
+        `This sector will have no subtabs in navigation.`,
+    );
+  } else if (!module.subtabs || module.subtabs.length === 0) {
+    console.warn(
+      `⚠️ Empty or missing "subtabs" array in configuration for sector "${sector.value}".\n` +
+        `File: src/config/subtabs/${sector.value}.json\n` +
+        `This sector will have no subtabs in navigation.`,
+    );
   }
 
-  return map;
+  subtabsMapData[sector.value] = module?.subtabs || [];
 }
-
-const subtabsMapData = buildSubtabsMap();
 
 export function useSectorNavigation() {
   const subtabsMap = computed(() => subtabsMapData);
