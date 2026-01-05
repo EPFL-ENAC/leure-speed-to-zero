@@ -126,7 +126,6 @@ export const sectors: Sector[] = [
       frFR: "Vue d'ensemble complète de tous les secteurs et indicateurs clés",
       deDE: 'Umfassende Übersicht über alle Sektoren und wichtige Kennzahlen',
     },
-    disabled: true,
     levers: [],
   },
 ];
