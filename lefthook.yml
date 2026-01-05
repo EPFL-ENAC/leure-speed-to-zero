@@ -29,6 +29,12 @@ pre-commit:
       run: npx prettier --write {staged_files}
       stage_fixed: true
       tags: format
+    # Lint frontend files
+    eslint-lint:
+      root: "frontend/"
+      glob: "*.{js,ts,vue}"
+      run: npm run lint -- {staged_files}
+      tags: lint frontend
     # Format backend Python files
     black-format:
       root: "backend/"
