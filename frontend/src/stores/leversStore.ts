@@ -173,6 +173,42 @@ export const useLeverStore = defineStore('lever', () => {
   // Sectors computed values
   const getSectorDataWithKpis = (sectorName: string): SectorWithKpis | null => {
     if (!modelResults.value) return null;
+
+    // Special case: empty sectorName means "overall" - aggregate all sectors
+    if (!sectorName || sectorName === '') {
+      // Merge all sector data into one object
+      const allSectorData = modelResults.value.data;
+      const countries: { [key: string]: YearData[] } = {};
+
+      // Iterate through all sectors and merge their country data
+      Object.values(allSectorData).forEach((sectorData) => {
+        if (sectorData.countries) {
+          Object.entries(sectorData.countries).forEach(([country, yearDataArray]) => {
+            if (!countries[country]) {
+              // Initialize with the year structure from the first sector
+              countries[country] = yearDataArray.map((yd) => ({ year: yd.year }));
+            }
+
+            // Merge outputs from this sector into each year's data
+            yearDataArray.forEach((yearData, index) => {
+              if (countries[country]?.[index]) {
+                Object.assign(countries[country][index], yearData);
+              }
+            });
+          });
+        }
+      });
+
+      // Aggregate all KPIs from all sectors
+      const allKpis = Object.values(modelResults.value.kpis).flat();
+
+      return {
+        countries,
+        units: {}, // Units are merged per-output, not needed at this level
+        kpis: allKpis,
+      };
+    }
+
     const sectorData = modelResults.value.data[sectorName];
     if (!sectorData) return null;
     const kpis = modelResults.value.kpis[sectorName] || [];
