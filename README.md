@@ -138,7 +138,7 @@ make run       # Test locally
 
 ## 📄 License
 
-[GNU General Public License v3.0](LICENSE)
+[Apache License 2.0](LICENSE)
 
 ## 🤝 Contributing
 

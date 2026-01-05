@@ -3,6 +3,7 @@ name = "pathwaycalc"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
+license = "Apache-2.0"
 authors = [
     { name = "Guilbert Pierre", email = "pierre.guilbert@epfl.ch" }
 ]
