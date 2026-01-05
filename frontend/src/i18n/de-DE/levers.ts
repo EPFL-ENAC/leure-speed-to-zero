@@ -1,4 +1,5 @@
 export default {
+  uncategorized: 'Unkategorisiert',
   difficulty: {
     easy: 'Einfach',
     moderate: 'Mäßig',
