@@ -8,7 +8,7 @@
         Transition C<q-icon name="o_explore" class="compass-icon" size="xs" />mpass
       </h1>
     </div>
-
+    <q-separator />
     <nav class="nav-content">
       <!-- Sectors Section -->
       <div class="nav-section">
@@ -43,6 +43,7 @@
         </template>
       </div>
     </nav>
+    <q-separator />
     <!-- Main Pages Section -->
     <div class="nav-section">
       <router-link
@@ -238,7 +239,6 @@ $hover-bg: #f5f5f7;
 
 .nav-section {
   padding: 8px 0;
-  border-top: $border;
 }
 
 .nav-item {
@@ -312,7 +312,6 @@ $hover-bg: #f5f5f7;
 
 .nav-footer {
   padding: 16px 20px;
-  border-top: $border;
   display: flex;
   align-items: center;
   justify-content: space-between;
