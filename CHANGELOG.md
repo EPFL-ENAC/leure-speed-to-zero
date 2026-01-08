@@ -1,5 +1,53 @@
 # Changelog
 
+## [1.0.0](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.8.0...v1.0.0) (2026-01-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename project from SpeedToZero to Transition Compass
+
+### Features
+
+* add 'uncategorized' label to lever translations in multiple languages ([94e3ad9](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/94e3ad95279dc68a4e3fe76832efeb0f3315049d))
+* add eslint linting for frontend files in pre-commit hook ([41e8065](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/41e806508f5d56195ce971ea76ef7c59f29cbbba))
+* add FastAPI backend launch configurations for multiple regions ([bd46aea](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/bd46aea99a7706c0394afa8560b74604dbb9d854))
+* add launch configuration for FastAPI backend debugging ([d7cbf4c](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/d7cbf4c5e46bbb97835a5aa057a5cd48efe26b50))
+* add multilingual descriptions for sectors in sectors.ts and update AboutPage.vue to utilize them ([451a042](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/451a042d8e1c06c4e896fbae94ee6ed43a7e00e7))
+* add placeholder fake overall config ([4933718](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/4933718b0a9f420128d8dbe26a38bfb12b49834b))
+* add tutorial for adding region flags and update README [#51](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/51) ([fef928f](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/fef928ff3a03884da51010549e3328454b362279))
+* enhance WelcomePopup with improved layout and navigation drawer integration ([2839a30](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/2839a30a4a5409fc90cacd5f2c68f4b00626131a))
+* **frontend:** implement sector navigation with dynamic subtab loading [#52](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/52) ([a911f67](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/a911f67d03b389d7d2ac1000f3ead8afecdb53f6))
+* implement welcome popup with localization support ([62b4ab8](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/62b4ab8a267b4391ccb9cb9d835afdf2d245ace0))
+* **layout:** implement mini mode for VerticalNavigation component [#52](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/52) ([ac53f52](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/ac53f52dce3e02cf683d0672cf04463c50c542e2))
+* localize legal page content and update date formatting ([824ae87](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/824ae875020199e2a903916645ca93244d7e9eba))
+* makes overall sector aggregate all sectors data ([cf1fe72](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/cf1fe7215affffb29940436d6f8585ce97c3afea))
+* update documentation on contributing & development good practices [#51](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/51) ([f9e55a0](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/f9e55a0c669de3debb1a81bc1a27f35ec995f9cf))
+* update KPI configuration to allow optional min, max, and thresholds properties from API directly ([820771b](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/820771b00b746dcbe40e4d017a14b254b617450c))
+
+
+### Bug Fixes
+
+* add .code-workspace to .gitignore ([8cf1700](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/8cf170020f66859a2dfff4e3d9d40eb54c611541))
+* add separators for improved navigation section clarity ([94fc82d](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/94fc82d774fa8fab0f4b4e06974bf38efca6582a))
+* **backend:** Add numpy dependency to pyproject.toml and uv.lock ([b6f70e1](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/b6f70e12696803a1f788feff71037c76f2f06048))
+* **backend:** prioritize environment variable for current region in RegionConfig ([6b7d9b6](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/6b7d9b6454d7044dc10dbd5cc5f374c18f522d1f))
+* **chart:** enable legend selector for improved interaction [#52](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/52) ([e02cbb2](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/e02cbb28dcc4360ecb70d4d46353f543b9517c3a))
+* **frontend:** add click handler to toggle sector expansion ([c7c405b](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/c7c405b1d72f50ac7d784a0b2f11a38b557e2e55))
+* **frontend:** adjust left padding in chart options to prevent unit truncated [#52](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/52) ([72f23ae](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/72f23ae6256e50d7fdb3bc0df4a84a15769da096))
+* **frontend:** fix chart autoresize ([3a28ee1](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/3a28ee1e2246ece964c38efb88cb0ffaec0c83e3))
+* **frontend:** simplify region flag logic by dynamically generating flag URLs ([826037e](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/826037edc531cf6cffc320d27fdb66091ce66fea))
+* **frontend:** wrap chart title in div to wrap automatically when too long [#52](https://github.com/EPFL-ENAC/leure-speed-to-zero/issues/52) ([45e95c6](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/45e95c625d47884c11982ee514c2d08e950c8229))
+* **layout:** improve drawer behavior for mobile and desktop in Dashboard and Main layouts ([5ad8b53](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/5ad8b535982e42c411b3bcfc44c891951ac54502))
+* prevent event propagation on expand icon click ([d87af95](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/d87af95d6f5a29fd2be8dc375eb16cb8ce576b9c))
+* simplify overall subtab generation ([23e4545](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/23e45452efe4854e2b6f38d6f58295c9f90adb5b))
+* **VerticalNavigation:** prevent interaction with disabled sectors in navigation ([763d5f6](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/763d5f679baf8150b11e99fdf9d6c2edfb41c38b))
+
+
+### Code Refactoring
+
+* rename project from SpeedToZero to Transition Compass ([5b96a8e](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/5b96a8ec99a09b72cd696c8a08230574cd9fa39b))
+
 ## [0.8.0](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.7.1...v0.8.0) (2025-11-20)
 
 
