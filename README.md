@@ -1,4 +1,4 @@
-# SpeedToZero - Interactive Climate Pathway Visualization Platform
+# TransitionCompassViz - Interactive Climate Pathway Visualization Platform
 
 Interactive platform for climate pathway modeling and visualization. Enables real-time exploration of policy impacts on emissions, energy, and environmental indicators across sectors.
 

@@ -4,7 +4,7 @@
       <q-toolbar>
         <q-btn flat round dense icon="menu" @click="toggleNavigation" />
         <q-toolbar-title class="text-h6 text-weight-bold color-primary"
-          >Speed to Zero</q-toolbar-title
+          >Transition Compass</q-toolbar-title
         >
       </q-toolbar>
     </q-header>

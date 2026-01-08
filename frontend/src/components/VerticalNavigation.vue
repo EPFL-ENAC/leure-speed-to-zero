@@ -1,7 +1,12 @@
 <template>
   <aside class="vertical-nav" :class="{ mini }">
     <div class="nav-header">
-      <img src="/speed2zero-logo-final.svg" alt="Speed to Zero" class="logo-svg" />
+      <h1
+        class="text-subtitle1 text-primary text-weight-bold text-uppercase text-dark q-ma-none text-center logo-title"
+        :class="{ 'vertical-text': mini }"
+      >
+        Transition C<q-icon name="o_explore" class="compass-icon" size="xs" />mpass
+      </h1>
     </div>
 
     <nav class="nav-content">
@@ -244,9 +249,15 @@ $hover-bg: #f5f5f7;
   padding: 1rem;
 }
 
-.logo-svg {
-  width: 100%;
-  border-radius: 0.2rem;
+.logo-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.compass-icon {
+  font-size: inherit;
+  vertical-align: middle;
 }
 
 .nav-content {
@@ -370,11 +381,12 @@ $hover-bg: #f5f5f7;
 .vertical-nav.mini {
   .nav-header {
     padding: 24px 10px;
-    visibility: hidden;
   }
-  .logo-svg {
-    height: 24px;
-    width: auto;
+  .vertical-text {
+    font-size: 0.75rem;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    flex-direction: column;
   }
   .nav-item {
     justify-content: center;

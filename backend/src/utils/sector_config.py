@@ -1,5 +1,5 @@
 """
-Sector configuration management for the Speed to Zero model.
+Sector configuration management for the Transition Compass model.
 
 This module provides utilities to manage sector dependencies and execution order
 based on the model_config.json configuration file.
