@@ -30,12 +30,12 @@ interface Props {
   refreshLabel?: string;
 }
 
-const { loading, icon, showRefresh, refreshLabel } = withDefaults(defineProps<Props>(), {
-  loading: false,
-  icon: 'insights',
-  showRefresh: true,
-  refreshLabel: 'Refresh',
-});
+const {
+  loading = false,
+  icon = 'insights',
+  showRefresh = true,
+  refreshLabel = 'Refresh',
+} = defineProps<Props>();
 
 const emit = defineEmits<{
   refresh: [];

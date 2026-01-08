@@ -11,26 +11,24 @@
       </q-toolbar>
     </q-header>
 
-    <!-- Vertical Navigation Sidebar - Desktop always shown, Mobile controlled by navigationOpen -->
+    <!-- Vertical Navigation Sidebar -->
     <q-drawer
       v-model="navigationOpen"
       side="left"
       bordered
-      :breakpoint="$q.screen.sizes.md"
-      :width="240"
-      :overlay="$q.screen.lt.md"
+      :behavior="$q.screen.lt.md ? 'mobile' : 'desktop'"
+      :width="miniMode ? 60 : 240"
       class="vertical-nav-drawer"
     >
-      <VerticalNavigation />
+      <VerticalNavigation :mini="miniMode" @toggle="toggleMiniMode" />
     </q-drawer>
 
-    <!-- Levers Column - Desktop/Tablet always shown, Mobile controlled by leversOpen -->
+    <!-- Levers Column -->
     <q-drawer
+      v-model="leversOpen"
       side="right"
       bordered
-      v-model="leversOpen"
-      :overlay="$q.screen.lt.md"
-      :breakpoint="$q.screen.sizes.md"
+      :behavior="$q.screen.lt.md ? 'mobile' : 'desktop'"
       class="levers-col"
       style="border-left: 1px solid #e0e0e0"
     >
@@ -74,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onMounted } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useLeverStore } from 'stores/leversStore';
 import { ExamplePathways } from 'utils/examplePathways';
 import { sectors } from 'utils/sectors';
@@ -85,21 +83,14 @@ import { useQuasar } from 'quasar';
 import { useRoute } from 'vue-router';
 import { getTranslatedText } from 'src/utils/translationHelpers';
 import { useI18n } from 'vue-i18n';
-import { useTour } from 'src/composables/useTour';
+import { useNavigationDrawer } from 'src/composables/useNavigationDrawer';
 
 const $q = useQuasar();
 const route = useRoute();
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const { locale } = useI18n();
 const leverStore = useLeverStore();
-const { startTour } = useTour();
-
-onMounted(() => {
-  // Small delay to ensure all elements are rendered
-  setTimeout(() => {
-    startTour();
-  }, 500);
-});
+const { miniMode, navigationOpen, toggleMiniMode, toggleNavigation } = useNavigationDrawer();
 
 // Navigation tab state
 const currentTab = ref(route.name as string);
@@ -110,9 +101,8 @@ watch(
   },
 );
 
-// Mobile UI state
-const leversOpenState = ref(false);
-const navigationOpen = ref($q.screen.gt.sm); // Start open on desktop, closed on mobile
+// Drawer state for levers (right drawer)
+const leversOpen = ref($q.screen.gt.sm);
 
 // Get current sector from route
 const currentSector = computed(() => route.path.split('/')[1] || 'buildings');
@@ -123,23 +113,9 @@ const currentSectorDisplay = computed(() => {
   return sector?.label || 'Dashboard';
 });
 
-// Mobile UI methods
+// Mobile toggle method for levers
 function toggleMobileLevers() {
-  leversOpenState.value = !leversOpenState.value;
-}
-
-const leversOpen = computed({
-  get: () => leversOpenState.value || $q.screen.gt.sm,
-  set: (value) => {
-    leversOpenState.value = value;
-  },
-});
-
-function toggleNavigation() {
-  // On mobile, toggle the drawer state
-  if ($q.screen.lt.md) {
-    navigationOpen.value = !navigationOpen.value;
-  }
+  leversOpen.value = !leversOpen.value;
 }
 
 // Pathway selection
@@ -163,6 +139,13 @@ const pathwayOptions = computed(() => {
 function resetToDefaults() {
   leverStore.resetToDefaults();
 }
+
+watch(
+  () => $q.screen.lt.md,
+  (mobileMode) => {
+    leversOpen.value = !mobileMode;
+  },
+);
 </script>
 
 <style lang="scss" scoped>

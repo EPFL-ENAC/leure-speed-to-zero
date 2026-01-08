@@ -1,4 +1,4 @@
-# SpeedToZero (leure-speed-to-zero)
+# TransitionCompassViz (leure-speed-to-zero)
 
 A Quasar Project for interactive climate pathway visualization
 

@@ -2,23 +2,22 @@
   <q-layout view="hHh Lpr lff">
     <q-header v-if="$q.screen.lt.md" elevated class="bg-white text-dark">
       <q-toolbar>
-        <q-btn flat round dense icon="menu" @click="drawer = !drawer" />
+        <q-btn flat round dense icon="menu" @click="toggleNavigation" />
         <q-toolbar-title class="text-h6 text-weight-bold color-primary"
-          >Speed to Zero</q-toolbar-title
+          >Transition Compass</q-toolbar-title
         >
       </q-toolbar>
     </q-header>
 
     <q-drawer
-      v-model="drawer"
+      v-model="navigationOpen"
       side="left"
       bordered
-      :breakpoint="$q.screen.sizes.md"
-      :width="240"
-      :overlay="$q.screen.lt.md"
+      :behavior="$q.screen.lt.md ? 'mobile' : 'desktop'"
+      :width="miniMode ? 60 : 240"
       class="vertical-nav-drawer"
     >
-      <VerticalNavigation />
+      <VerticalNavigation :mini="miniMode" @toggle="toggleMiniMode" />
     </q-drawer>
 
     <q-page-container>
@@ -28,12 +27,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
 import { useQuasar } from 'quasar';
 import VerticalNavigation from 'components/VerticalNavigation.vue';
+import { useNavigationDrawer } from 'src/composables/useNavigationDrawer';
 
 const $q = useQuasar();
-const drawer = ref($q.screen.gt.sm);
+const { miniMode, navigationOpen, toggleMiniMode, toggleNavigation } = useNavigationDrawer();
 </script>
 
 <style lang="scss" scoped>

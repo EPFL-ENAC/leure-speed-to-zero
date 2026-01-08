@@ -1,100 +1,62 @@
 <template>
   <q-page class="q-pa-md">
     <div class="container q-pa-md">
-      <h1 class="text-h3 text-weight-bold q-mb-lg">About Speed to Zero</h1>
+      <h1 class="text-h3 text-weight-bold q-mb-lg">{{ $t('aboutTitle') }}</h1>
 
       <div class="content-section">
         <section class="q-mb-xl">
-          <h2 class="text-h5 q-mb-md">Our Mission</h2>
+          <h2 class="text-h5 q-mb-md">{{ $t('ourMission') }}</h2>
           <p class="text-body1 text-grey-8">
-            Speed to Zero is a comprehensive carbon neutrality modeling calculator designed to help
-            policymakers, researchers, and organizations explore pathways to achieve net-zero
-            emissions. Our mission is to provide transparent, data-driven insights into the complex
-            transitions required across multiple sectors of the economy.
+            {{ $t('ourMissionDesc') }}
           </p>
         </section>
 
         <section class="q-mb-xl">
-          <h2 class="text-h5 q-mb-md">What We Offer</h2>
+          <h2 class="text-h5 q-mb-md">{{ $t('whatWeOffer') }}</h2>
           <p class="text-body1 text-grey-8 q-mb-md">
-            Our platform provides detailed modeling and analysis across key sectors:
+            {{ $t('whatWeOfferDesc') }}
           </p>
           <q-list bordered separator>
-            <q-item>
+            <q-item
+              v-for="sector in displaySectors"
+              :key="sector.value"
+              clickable
+              :to="getNavigationTarget(sector.value)"
+            >
               <q-item-section avatar>
-                <q-icon color="primary" name="home" />
+                <q-icon color="primary" :name="sector.icon" />
               </q-item-section>
               <q-item-section>
-                <q-item-label class="text-weight-medium">Buildings Sector</q-item-label>
-                <q-item-label caption
-                  >Model heating, cooling, and energy efficiency improvements in residential and
-                  commercial buildings</q-item-label
-                >
-              </q-item-section>
-            </q-item>
-            <q-item>
-              <q-item-section avatar>
-                <q-icon color="primary" name="directions_car" />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label class="text-weight-medium">Transport Sector</q-item-label>
-                <q-item-label caption
-                  >Analyze transitions to electric vehicles, public transport, and sustainable
-                  mobility</q-item-label
-                >
-              </q-item-section>
-            </q-item>
-            <q-item>
-              <q-item-section avatar>
-                <q-icon color="primary" name="agriculture" />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label class="text-weight-medium">Agriculture Sector</q-item-label>
-                <q-item-label caption
-                  >Explore sustainable farming practices and emission reduction
-                  strategies</q-item-label
-                >
-              </q-item-section>
-            </q-item>
-            <q-item>
-              <q-item-section avatar>
-                <q-icon color="primary" name="park" />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label class="text-weight-medium">Forestry Sector</q-item-label>
-                <q-item-label caption
-                  >Understand carbon sequestration potential and sustainable forest
-                  management</q-item-label
-                >
+                <q-item-label class="text-weight-medium">
+                  {{ getLabel(sector.label) }}
+                </q-item-label>
+                <q-item-label v-if="sector.description" caption>
+                  {{ getLabel(sector.description) }}
+                </q-item-label>
               </q-item-section>
             </q-item>
           </q-list>
         </section>
 
         <section class="q-mb-xl">
-          <h2 class="text-h5 q-mb-md">How It Works</h2>
+          <h2 class="text-h5 q-mb-md">{{ $t('howItWorks') }}</h2>
           <p class="text-body1 text-grey-8">
-            Speed to Zero uses a sophisticated modeling engine that allows you to adjust policy
-            levers and immediately see the impact on emissions, energy consumption, and other key
-            metrics. The calculator combines historical data with forward-looking scenarios to
-            provide comprehensive insights into potential pathways to carbon neutrality.
+            {{ $t('howItWorksDesc') }}
           </p>
         </section>
 
         <section class="q-mb-xl">
-          <h2 class="text-h5 q-mb-md">The Team</h2>
+          <h2 class="text-h5 q-mb-md">{{ $t('theTeam') }}</h2>
           <p class="text-body1 text-grey-8">
-            Speed to Zero is developed and maintained by EPFL (École polytechnique fédérale de
-            Lausanne), bringing together expertise in climate science, energy systems, and data
-            visualization.
+            {{ $t('theTeamDesc') }}
           </p>
         </section>
 
         <div class="text-center q-mt-xl">
           <q-btn
             color="primary"
-            label="Try Calculator"
-            :to="{ name: 'buildings' }"
+            :label="$t('tryCalculator')"
+            :to="getNavigationTarget('overall')"
             size="lg"
             icon-right="calculate"
             unelevated
@@ -106,7 +68,16 @@
 </template>
 
 <script setup lang="ts">
-// Component logic if needed
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useSectorNavigation } from 'src/composables/useSectorNavigation';
+import { getTranslatedText, type TranslationObject } from 'src/utils/translationHelpers';
+
+const { locale } = useI18n();
+const { availableSectors, getNavigationTarget } = useSectorNavigation();
+
+const displaySectors = computed(() => availableSectors.value.filter((s) => !s.disabled));
+const getLabel = (label: string | TranslationObject) => getTranslatedText(label, locale.value);
 </script>
 
 <style lang="scss" scoped>

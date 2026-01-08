@@ -4,7 +4,7 @@ export default {
   failed: 'Action failed',
   success: 'Action was successful',
   // Common UI elements
-  welcome: 'Welcome to Speed to Zero',
+  welcome: 'Welcome to Transition Compass',
   loading: 'Loading...',
   save: 'Save',
   cancel: 'Cancel',
@@ -55,7 +55,7 @@ export default {
     clickToViewDetails: 'Click to view detailed charts',
   },
   // Home Page
-  welcomeToSpeedToZero: 'Welcome to Speed to Zero',
+  welcomeToTransitionCompass: 'Welcome to Transition Compass',
   homeSubtitle: 'Interactive carbon neutrality calculator for Switzerland',
   exploreBySector: 'Explore by Sector',
   selectSector: 'Select a Sector',
@@ -65,10 +65,10 @@ export default {
   analyzeResults: 'Analyze Results',
   analyzeResultsDesc: 'Visualize emissions, energy consumption, and key performance indicators',
   // About Page
-  aboutTitle: 'About Speed to Zero',
+  aboutTitle: 'About Transition Compass',
   ourMission: 'Our Mission',
   ourMissionDesc:
-    'Speed to Zero is a comprehensive carbon neutrality modeling tool designed to help policymakers, researchers, and organizations explore pathways to achieve net-zero emissions. Our mission is to provide transparent, data-driven insights into the complex transitions required across multiple sectors of the economy.',
+    'Transition Compass is a comprehensive carbon neutrality modeling tool designed to help policymakers, researchers, and organizations explore pathways to achieve net-zero emissions. Our mission is to provide transparent, data-driven insights into the complex transitions required across multiple sectors of the economy.',
   whatWeOffer: 'What We Offer',
   whatWeOfferDesc: 'Our platform provides detailed modeling and analysis across key sectors:',
   buildingsSector: 'Buildings Sector',
@@ -83,32 +83,44 @@ export default {
   forestrySectorDesc: 'Understand carbon sequestration potential and sustainable forest management',
   howItWorks: 'How It Works',
   howItWorksDesc:
-    'Speed to Zero uses a sophisticated modeling engine that allows you to adjust policy levers and immediately see the impact on emissions, energy consumption, and other key metrics. The calculator combines historical data with forward-looking scenarios to provide comprehensive insights into potential pathways to carbon neutrality.',
+    'Transition Compass uses a sophisticated modeling engine that allows you to adjust policy levers and immediately see the impact on emissions, energy consumption, and other key metrics. The calculator combines historical data with forward-looking scenarios to provide comprehensive insights into potential pathways to carbon neutrality.',
   theTeam: 'The Team',
   theTeamDesc:
-    'Speed to Zero is developed and maintained by EPFL (École polytechnique fédérale de Lausanne), bringing together expertise in climate science, energy systems, and data visualization.',
+    'Transition Compass is developed and maintained by EPFL (École polytechnique fédérale de Lausanne), bringing together expertise in climate science, energy systems, and data visualization.',
   startExploring: 'Start Exploring',
   // Legal Page
   legalNotice: 'Legal Notice',
   termsOfUse: 'Terms of Use',
   termsOfUseDesc:
-    'By accessing and using Speed to Zero, you agree to these terms of use. This calculator is provided for informational and research purposes. While we strive for accuracy, the projections and models should not be used as the sole basis for policy or investment decisions.',
+    'By accessing and using Transition Compass, you agree to these terms of use. This calculator is provided for informational and research purposes. While we strive for accuracy, the projections and models should not be used as the sole basis for policy or investment decisions.',
   privacyPolicy: 'Privacy Policy',
   privacyPolicyDesc:
-    'We respect your privacy. Speed to Zero does not collect personal information unless you explicitly provide it. Any data you input into the calculator remains on your device and is not transmitted to our servers without your consent.',
+    'We respect your privacy. Transition Compass does not collect personal information unless you explicitly provide it. Any data you input into the calculator remains on your device and is not transmitted to our servers without your consent.',
   dataUsage: 'Data Usage',
   dataUsageDesc:
     'The underlying data used in our models comes from publicly available sources including Eurostat, national statistics agencies, and research institutions. All data sources are documented and referenced within the application.',
   disclaimer: 'Disclaimer',
   disclaimerDesc:
-    'The models and projections provided by Speed to Zero are based on assumptions and historical data. Actual outcomes may vary significantly. EPFL and the project contributors are not liable for decisions made based on the information provided by this calculator.',
+    'The models and projections provided by Transition Compass are based on assumptions and historical data. Actual outcomes may vary significantly. EPFL and the project contributors are not liable for decisions made based on the information provided by this calculator.',
   intellectualProperty: 'Intellectual Property',
   intellectualPropertyDesc:
-    'Speed to Zero is open source software. The code and methodology are available for review and contribution. Please see our GitHub repository for licensing details.',
+    'Transition Compass is open source software. The code and methodology are available for review and contribution. Please see our GitHub repository for licensing details.',
   contact: 'Contact',
   contactDesc:
     'For questions, feedback, or collaboration opportunities, please contact us through the EPFL ENAC faculty website.',
   lastUpdated: 'Last updated',
+  // Welcome Popup
+  welcomePopup: {
+    subtitle: 'Interactive carbon neutrality calculator for Switzerland',
+    description:
+      'Explore pathways to net-zero emissions by adjusting policy levers and visualizing their impact across different sectors.',
+    featureLevers: 'Adjust policy levers to model interventions',
+    featureVisualize: 'Visualize emissions and energy metrics',
+    featureCompare: 'Compare scenarios across sectors',
+    dontShowAgain: "Don't show this again",
+    startTutorial: 'Start Tutorial',
+    skipTutorial: 'Skip',
+  },
   // Tour translations
   tour: {
     sectors:

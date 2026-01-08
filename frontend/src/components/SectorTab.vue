@@ -97,7 +97,7 @@
 import { computed, ref, watch, nextTick } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { useLeverStore, type SectorWithKpis, type ChartConfig } from 'stores/leversStore';
+import { useLeverStore, type ChartConfig } from 'stores/leversStore';
 import type { KPI, KPIConfig } from 'src/utils/sectors';
 import KpiList from 'src/components/kpi/KpiList.vue';
 import ChartCard from 'components/graphs/ChartCard.vue';
@@ -175,7 +175,7 @@ if (!route.params.subtab && props.config.subtabs[0]?.route) {
 
 // Get model results for this sector
 const modelResults = computed(() => {
-  return leverStore[props.sectorName as keyof typeof leverStore] as SectorWithKpis | null;
+  return leverStore.getSectorDataWithKpis(props.sectorName);
 });
 
 const kpis = computed((): KPI[] => {
@@ -200,10 +200,18 @@ const kpis = computed((): KPI[] => {
       }
 
       // Merge config with runtime data, ensuring the KPI interface is satisfied
+      // Prefer API values when available, fallback to config values
       return {
-        ...confKpi, // config provides: name, route, maximize, thresholds, info
+        ...confKpi, // config provides: name, route, maximize, info, and fallback values
         value: kpi.value, // runtime provides: value
         unit: kpi.unit || confKpi.unit, // prefer runtime unit, fallback to config
+        min: kpi.min ?? confKpi.min, // prefer API min, fallback to config
+        max: kpi.max ?? confKpi.max, // prefer API max, fallback to config
+        // Handle thresholds: API provides warning/danger directly, config has thresholds object
+        thresholds: {
+          warning: kpi.warning ?? confKpi.thresholds?.warning ?? 0,
+          danger: kpi.danger ?? confKpi.thresholds?.danger ?? 0,
+        },
       } as KPI;
     })
     .filter((kpi): kpi is KPI => kpi !== null); // Remove null entries and assert type
@@ -331,9 +339,9 @@ function scrollKpis(direction: 'left' | 'right') {
 
 .charts-content {
   flex: 1;
-
   :deep(.q-scrollarea__content) {
     padding-top: 2rem;
+    width: 100%;
   }
 }
 

@@ -5,6 +5,7 @@ export interface Sector {
   value: string;
   icon: string;
   levers: string[];
+  description?: string | TranslationObject;
   disabled?: boolean;
 }
 
@@ -16,9 +17,9 @@ export interface KPIConfig {
   info: string | TranslationObject;
   maximize: boolean;
   unit: string;
-  min: number;
-  max: number;
-  thresholds: {
+  min?: number;
+  max?: number;
+  thresholds?: {
     warning: number;
     danger: number;
   };
@@ -27,5 +28,9 @@ export interface KpiData {
   title: string;
   value: number;
   unit: string;
+  min?: number;
+  max?: number;
+  warning?: number;
+  danger?: number;
 }
 export interface KPI extends KpiData, KPIConfig {}

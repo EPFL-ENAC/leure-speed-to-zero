@@ -1,78 +1,35 @@
 <template>
-  <aside class="vertical-nav">
-    <!-- Logo/Header -->
+  <aside class="vertical-nav" :class="{ mini }">
     <div class="nav-header">
-      <div class="nav-logo">
-        <!-- Use SVG logo from public folder -->
-        <img src="/speed2zero-logo-final.svg" alt="Speed to Zero" class="logo-svg" />
-      </div>
+      <h1
+        class="text-subtitle1 text-primary text-weight-bold text-uppercase text-dark q-ma-none text-center logo-title"
+        :class="{ 'vertical-text': mini }"
+      >
+        Transition C<q-icon name="o_explore" class="compass-icon" size="xs" />mpass
+      </h1>
     </div>
 
-    <!-- Main Navigation -->
     <nav class="nav-content">
-      <!-- Main Pages Section -->
-      <div class="nav-section">
-        <router-link
-          v-for="page in mainPages"
-          :key="page.name"
-          :to="{ name: page.name }"
-          class="nav-item"
-          :class="{ active: isActive(page.name) }"
-        >
-          <q-icon :name="page.icon" class="nav-item-icon" />
-          <span v-if="!mini" class="nav-item-label">{{ getLabel(page.label) }}</span>
-        </router-link>
-      </div>
-
       <!-- Sectors Section -->
       <div class="nav-section">
-        <!-- Overall -->
-        <div
-          v-if="overallSector"
-          class="nav-item-expandable"
-          :class="{ active: isActive('overall'), disabled: overallSector.disabled }"
-        >
-          <div class="nav-item" @click="toggleSection('overall')">
-            <q-icon :name="overallSector.icon" class="nav-item-icon" />
-            <span v-if="!mini" class="nav-item-label">{{ getLabel(overallSector.label) }}</span>
-            <q-icon
-              v-if="!mini && overallSubtabs.length > 0"
-              name="expand_more"
-              class="expand-icon"
-              :class="{ expanded: expandedSections.has('overall') }"
-            />
-          </div>
-          <div v-if="!mini && expandedSections.has('overall')" class="sub-nav">
-            <router-link
-              v-for="subtab in overallSubtabs"
-              :key="subtab.route"
-              :to="{ name: 'overall', params: { subtab: subtab.route } }"
-              class="sub-nav-item"
-              :class="{ active: isSubtabActive('overall', subtab.route) }"
-            >
-              {{ getLabel(subtab.title) }}
-            </router-link>
-          </div>
-        </div>
-
-        <!-- Other Sectors -->
-        <div
-          v-for="sector in activeSectors"
-          :key="sector.value"
-          class="nav-item-expandable"
-          :class="{ active: isActive(sector.value), disabled: sector.disabled }"
-        >
-          <div class="nav-item" @click="toggleSection(sector.value)">
+        <template v-for="sector in activeSectors" :key="sector.value">
+          <router-link
+            :to="getNavigationTarget(sector.value)"
+            class="nav-item"
+            :class="{ active: isActive(sector.value), disabled: sector.disabled }"
+            @click="(e) => handleSectorClick(e, sector.value)"
+          >
             <q-icon :name="sector.icon" class="nav-item-icon" />
             <span v-if="!mini" class="nav-item-label">{{ getLabel(sector.label) }}</span>
             <q-icon
-              v-if="!mini && (subtabsMap[sector.value]?.length ?? 0) > 0"
+              v-if="!mini && (subtabsMap[sector.value]?.length ?? 0) > 0 && !sector.disabled"
               name="expand_more"
               class="expand-icon"
               :class="{ expanded: expandedSections.has(sector.value) }"
+              @click.stop.prevent="toggleExpand(sector.value)"
             />
-          </div>
-          <div v-if="!mini && expandedSections.has(sector.value)" class="sub-nav">
+          </router-link>
+          <template v-if="!mini && expandedSections.has(sector.value) && !sector.disabled">
             <router-link
               v-for="subtab in subtabsMap[sector.value]"
               :key="subtab.route"
@@ -82,51 +39,74 @@
             >
               {{ getLabel(subtab.title) }}
             </router-link>
-          </div>
-        </div>
+          </template>
+        </template>
       </div>
     </nav>
+    <!-- Main Pages Section -->
+    <div class="nav-section">
+      <router-link
+        v-for="page in mainPages"
+        :key="page.name"
+        :to="{ name: page.name }"
+        class="nav-item"
+        :class="{ active: isActive(page.name) }"
+      >
+        <q-icon :name="page.icon" class="nav-item-icon" />
+        <span v-if="!mini" class="nav-item-label">{{ getLabel(page.label) }}</span>
+      </router-link>
+    </div>
 
     <!-- Footer Section -->
     <div v-if="!mini" class="nav-footer">
       <region-flag />
       <language-switcher />
     </div>
+
+    <!-- Collapse Toggle Button -->
+    <div class="nav-toggle">
+      <q-btn
+        flat
+        dense
+        round
+        :icon="mini ? 'chevron_right' : 'chevron_left'"
+        size="sm"
+        class="toggle-btn"
+        @click="emit('toggle')"
+      />
+    </div>
   </aside>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { sectors } from 'utils/sectors';
 import { getTranslatedText, type TranslationObject } from 'src/utils/translationHelpers';
+import { useSectorNavigation } from 'src/composables/useSectorNavigation';
 import LanguageSwitcher from './LanguageSwitcher.vue';
 import RegionFlag from './RegionFlag.vue';
 
-// Import subtab configs
-import buildingsConfig from 'config/subtabs/buildings.json';
-import transportConfig from 'config/subtabs/transport.json';
-import energyConfig from 'config/subtabs/energy.json';
-import forestryConfig from 'config/subtabs/forestry.json';
-import agricultureConfig from 'config/subtabs/agriculture.json';
-import overallConfig from 'config/subtabs/overall.json';
+const emit = defineEmits<{
+  toggle: [];
+}>();
+
+const { subtabsMap, availableSectors: activeSectors, getNavigationTarget } = useSectorNavigation();
 
 interface Props {
   mini?: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const props = withDefaults(defineProps<Props>(), {
   mini: false,
 });
 
 const route = useRoute();
-const router = useRouter();
 const { locale } = useI18n();
 
 // Main pages configuration
 const mainPages = [
-  { name: 'home', label: { enUS: 'Home', frFR: 'Accueil', deDE: 'Startseite' }, icon: 'home' },
   { name: 'about', label: { enUS: 'About', frFR: 'À propos', deDE: 'Über' }, icon: 'info' },
   {
     name: 'legal',
@@ -161,24 +141,6 @@ const saveExpandedState = () => {
 
 loadExpandedState();
 
-// Subtabs configuration map
-const subtabsMap = computed<Record<string, Array<{ route: string; title: TranslationObject }>>>(
-  () => ({
-    buildings: buildingsConfig.subtabs || [],
-    transport: transportConfig.subtabs || [],
-    energy: energyConfig.subtabs || [],
-    forestry: forestryConfig.subtabs || [],
-    agriculture: agricultureConfig.subtabs || [],
-    overall: overallConfig.subtabs || [],
-  }),
-);
-
-// Separate Overall sector from others
-const overallSector = computed(() => sectors.find((s) => s.value === 'overall'));
-const overallSubtabs = computed(() => subtabsMap.value.overall || []);
-
-const activeSectors = computed(() => sectors.filter((s) => s.value !== 'overall'));
-
 // Helper function to get translated label
 const getLabel = (label: string | TranslationObject) => {
   return getTranslatedText(label, locale.value);
@@ -194,36 +156,24 @@ const isSubtabActive = (sectorName: string, subtabRoute: string) => {
   return route.name === sectorName && route.params.subtab === subtabRoute;
 };
 
-// Toggle section expand/collapse
-const toggleSection = (sectionName: string) => {
-  if (props.mini) return;
-
-  const sector = sectors.find((s) => s.value === sectionName);
-  if (sector?.disabled) return;
-
-  // Get subtabs for this section
-  const subtabs = subtabsMap.value[sectionName];
-
-  // If no subtabs, just navigate to the section
-  if (!subtabs?.length && sectionName !== 'overall') {
-    return;
-  }
-
-  // Navigate to first subtab if not already on this section
-  if (route.name !== sectionName && subtabs && subtabs.length > 0) {
-    const firstSubtab = subtabs[0];
-    if (firstSubtab) {
-      void router.push({ name: sectionName, params: { subtab: firstSubtab.route } });
-    }
-  }
-
-  // Toggle expansion
+// Toggle expand/collapse for subtabs
+const toggleExpand = (sectionName: string) => {
   if (expandedSections.value.has(sectionName)) {
     expandedSections.value.delete(sectionName);
   } else {
     expandedSections.value.add(sectionName);
   }
   saveExpandedState();
+};
+
+// Handle sector click - toggle expansion
+const handleSectorClick = (event: Event, sectorName: string) => {
+  const currentSector = route.path.split('/')[1];
+  // If we're already on this sector, toggle the expansion
+  if (currentSector === sectorName) {
+    event.preventDefault();
+    toggleExpand(sectorName);
+  }
 };
 
 // Auto-expand current section
@@ -241,121 +191,88 @@ watch(
 </script>
 
 <style lang="scss" scoped>
+$border: 1px solid rgba(0, 0, 0, 0.06);
+$text-muted: #6e6e73;
+$text-dark: #1a1a1a;
+$hover-bg: #f5f5f7;
+
 .vertical-nav {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #ffffff;
-  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fff;
+  border-right: $border;
   overflow: hidden;
+  position: relative;
 }
 
 .nav-header {
-  flex-shrink: 0;
-  padding: 24px 20px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 1rem;
 }
 
-.nav-logo {
+.logo-title {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #1a1a1a;
-  letter-spacing: -0.02em;
+  justify-content: center;
 }
 
-.logo-icon {
-  color: var(--q-primary);
-}
-
-.logo-text {
-  white-space: nowrap;
-}
-
-.logo-svg {
-  width: 100%;
-  border-radius: 0.2rem;
-  display: block;
-  object-fit: contain;
+.compass-icon {
+  font-size: inherit;
+  vertical-align: middle;
 }
 
 .nav-content {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px 0;
   scrollbar-gutter: stable;
 
-  /* Custom scrollbar */
   &::-webkit-scrollbar {
     width: 6px;
   }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
   &::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.1);
     border-radius: 3px;
-  }
-
-  &::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.15);
   }
 }
 
 .nav-section {
   padding: 8px 0;
-
-  & + & {
-    border-top: 1px solid rgba(0, 0, 0, 0.06);
-    margin-top: 8px;
-    padding-top: 16px;
-  }
+  border-top: $border;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
   padding: 10px 20px;
-  color: #6e6e73;
+  color: $text-muted;
   text-decoration: none;
-  cursor: pointer;
-  transition: all 150ms ease;
   font-size: small;
-  font-weight: 400;
-  user-select: none;
+  transition: all 150ms;
 
-  &:hover {
-    background: #f5f5f7;
-    color: #1a1a1a;
-
+  &:hover,
+  &.active {
+    background: $hover-bg;
+    color: $text-dark;
     .nav-item-icon {
       opacity: 1;
     }
   }
-
   &.active {
-    color: #1a1a1a;
     font-weight: 500;
-
-    .nav-item-icon {
-      opacity: 1;
-    }
+  }
+  &.disabled {
+    opacity: 0.4;
+    pointer-events: none;
   }
 }
 
 .nav-item-icon {
-  flex-shrink: 0;
   width: 20px;
   height: 20px;
   font-size: 20px;
   margin-right: 12px;
   opacity: 0.7;
-  transition: opacity 150ms ease;
 }
 
 .nav-item-label {
@@ -365,50 +282,14 @@ watch(
   text-overflow: ellipsis;
 }
 
-.nav-item-expandable {
-  &.disabled {
-    .nav-item {
-      opacity: 0.4;
-      cursor: not-allowed;
-      pointer-events: none;
-    }
-  }
-
-  &.active > .nav-item {
-    color: #1a1a1a;
-    font-weight: 500;
-
-    .nav-item-icon {
-      opacity: 1;
-    }
-  }
-}
-
 .expand-icon {
-  flex-shrink: 0;
   font-size: 16px;
   margin-left: auto;
   opacity: 0.5;
-  transition: transform 200ms ease;
+  transition: transform 200ms;
 
   &.expanded {
     transform: rotate(180deg);
-  }
-}
-
-.sub-nav {
-  animation: expandDown 200ms ease;
-  overflow: hidden;
-}
-
-@keyframes expandDown {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -419,61 +300,75 @@ watch(
   text-decoration: none;
   font-size: 13px;
   line-height: 1.4;
-  cursor: pointer;
-  transition: color 150ms ease;
-  letter-spacing: -0.01em;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
 
-  &:hover {
-    color: #1a1a1a;
-  }
-
+  &:hover,
   &.active {
-    color: #1a1a1a;
+    color: $text-dark;
+  }
+  &.active {
     font-weight: 500;
   }
 }
 
 .nav-footer {
-  flex-shrink: 0;
   padding: 16px 20px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  border-top: $border;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-/* Mini mode adjustments */
-.vertical-nav.mini {
-  .nav-logo {
-    justify-content: center;
-  }
+.nav-toggle {
+  position: fixed;
+  top: 50%;
+  right: -12px;
+  transform: translateY(-50%);
+  z-index: 10;
+}
 
+.toggle-btn {
+  background: #fff;
+  border: $border;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  color: $text-muted;
+
+  &:hover {
+    background: $hover-bg;
+    color: $text-dark;
+  }
+}
+
+.vertical-nav.mini {
+  .nav-header {
+    padding: 24px 10px;
+  }
+  .vertical-text {
+    font-size: 0.75rem;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    flex-direction: column;
+  }
   .nav-item {
     justify-content: center;
     padding: 10px;
   }
-
   .nav-item-icon {
     margin-right: 0;
   }
-  .logo-svg {
-    height: 24px;
+
+  .nav-content {
+    scrollbar-gutter: initial;
   }
 }
 
-/* Mobile responsiveness */
 @media (max-width: 600px) {
   .nav-header {
     padding: 16px;
   }
-
   .nav-item {
     padding: 12px 16px;
   }
-
   .sub-nav-item {
     padding: 10px 16px 10px 48px;
   }

@@ -7,16 +7,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { getCurrentRegion } from 'src/utils/region';
-import vaudFlag from 'src/assets/flags/vaud.svg';
-import switzerlandFlag from 'src/assets/flags/switzerland.svg';
 
 const currentRegion = computed(() => getCurrentRegion());
 
 const regionFlag = computed(() => {
   const region = currentRegion.value.toLowerCase();
-  if (region === 'vaud') return vaudFlag;
-  if (region === 'switzerland') return switzerlandFlag;
-  return switzerlandFlag; // Default fallback
+  return new URL(`../assets/flags/${region}.svg`, import.meta.url).href;
 });
 </script>
 
