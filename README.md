@@ -16,8 +16,8 @@ Interactive platform for climate pathway modeling and visualization. Enables rea
 
 ## 🌍 Live Platforms
 
-- **Production**: [https://speed-to-zero.epfl.ch/](https://speed-to-zero.epfl.ch/)
-- **Development**: [https://speed-to-zero-dev.epfl.ch/](https://speed-to-zero-dev.epfl.ch/)
+- **Production**: [https://transition-compass.epfl.ch/](https://transition-compass.epfl.ch/)
+- **Development**: [https://transition-compass-dev.epfl.ch/](https://transition-compass-dev.epfl.ch/)
 
 ## 🏗️ Architecture
 

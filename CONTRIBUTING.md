@@ -16,8 +16,8 @@ feature/*, fix/* (individual tasks)
 
 ### Branch Purposes
 
-- **`main`**: Production-ready code, deployed to https://speed-to-zero.epfl.ch/
-- **`dev`**: Integration branch for testing, deployed to https://speed-to-zero-dev.epfl.ch/
+- **`main`**: Production-ready code, deployed to https://transition-compass.epfl.ch/
+- **`dev`**: Integration branch for testing, deployed to https://transition-compass-dev.epfl.ch/
 - **`model`**: Research and model development branch (long-lived)
 - **`feature/*`, `fix/*`**: Short-lived branches for specific changes
 
