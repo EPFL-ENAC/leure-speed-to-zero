@@ -26,7 +26,7 @@
               name="expand_more"
               class="expand-icon"
               :class="{ expanded: expandedSections.has(sector.value) }"
-              @click.prevent="toggleExpand(sector.value)"
+              @click.stop.prevent="toggleExpand(sector.value)"
             />
           </router-link>
           <template v-if="!mini && expandedSections.has(sector.value) && !sector.disabled">
