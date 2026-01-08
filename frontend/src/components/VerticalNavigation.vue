@@ -12,37 +12,6 @@
     <nav class="nav-content">
       <!-- Sectors Section -->
       <div class="nav-section">
-        <!-- Overall -->
-        <router-link
-          v-if="overallSector"
-          :to="getNavigationTarget('overall')"
-          class="nav-item"
-          :class="{ active: isActive('overall'), disabled: overallSector.disabled }"
-          @click="(e) => handleSectorClick(e, 'overall')"
-        >
-          <q-icon :name="overallSector.icon" class="nav-item-icon" />
-          <span v-if="!mini" class="nav-item-label">{{ getLabel(overallSector.label) }}</span>
-          <q-icon
-            v-if="!mini && overallSubtabs.length > 0"
-            name="expand_more"
-            class="expand-icon"
-            :class="{ expanded: expandedSections.has('overall') }"
-            @click.prevent="toggleExpand('overall')"
-          />
-        </router-link>
-        <template v-if="!mini && expandedSections.has('overall')">
-          <router-link
-            v-for="subtab in overallSubtabs"
-            :key="subtab.route"
-            :to="{ name: 'overall', params: { subtab: subtab.route } }"
-            class="sub-nav-item"
-            :class="{ active: isSubtabActive('overall', subtab.route) }"
-          >
-            {{ getLabel(subtab.title) }}
-          </router-link>
-        </template>
-
-        <!-- Other Sectors -->
         <template v-for="sector in activeSectors" :key="sector.value">
           <router-link
             :to="getNavigationTarget(sector.value)"
@@ -110,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { getTranslatedText, type TranslationObject } from 'src/utils/translationHelpers';
@@ -122,12 +91,7 @@ const emit = defineEmits<{
   toggle: [];
 }>();
 
-const {
-  subtabsMap,
-  availableSectors: activeSectors,
-  overallSector,
-  getNavigationTarget,
-} = useSectorNavigation();
+const { subtabsMap, availableSectors: activeSectors, getNavigationTarget } = useSectorNavigation();
 
 interface Props {
   mini?: boolean;
@@ -176,9 +140,6 @@ const saveExpandedState = () => {
 };
 
 loadExpandedState();
-
-// Overall subtabs
-const overallSubtabs = computed(() => subtabsMap.value.overall || []);
 
 // Helper function to get translated label
 const getLabel = (label: string | TranslationObject) => {

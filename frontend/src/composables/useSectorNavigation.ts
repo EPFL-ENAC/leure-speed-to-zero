@@ -43,10 +43,10 @@ export function useSectorNavigation() {
     return { name: sectorName };
   };
 
-  // Sectors without 'overall'
-  const availableSectors = computed(() => sectors.filter((s) => s.value !== 'overall'));
+  // All sectors including 'overall'
+  const availableSectors = computed(() => sectors);
 
-  // Overall sector
+  // Overall sector (kept for backward compatibility)
   const overallSector = computed(() => sectors.find((s) => s.value === 'overall'));
 
   return {

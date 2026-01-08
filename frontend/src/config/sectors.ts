@@ -2,6 +2,21 @@ import { type Sector } from 'src/utils/sectors';
 export const sectors: Sector[] = [
   {
     label: {
+      enUS: 'Overall',
+      frFR: "Vue d'ensemble",
+      deDE: 'Gesamt',
+    },
+    value: 'overall',
+    icon: 'dashboard',
+    description: {
+      enUS: 'View comprehensive overview across all sectors and key metrics',
+      frFR: "Vue d'ensemble complète de tous les secteurs et indicateurs clés",
+      deDE: 'Umfassende Übersicht über alle Sektoren und wichtige Kennzahlen',
+    },
+    levers: [],
+  },
+  {
+    label: {
       enUS: 'Buildings',
       frFR: 'Bâtiments',
       deDE: 'Gebäude',
@@ -112,20 +127,5 @@ export const sectors: Sector[] = [
       'lever_alt-protein',
       'lever_biomass-hierarchy',
     ],
-  },
-  {
-    label: {
-      enUS: 'Overall',
-      frFR: "Vue d'ensemble",
-      deDE: 'Gesamt',
-    },
-    value: 'overall',
-    icon: 'dashboard',
-    description: {
-      enUS: 'View comprehensive overview across all sectors and key metrics',
-      frFR: "Vue d'ensemble complète de tous les secteurs et indicateurs clés",
-      deDE: 'Umfassende Übersicht über alle Sektoren und wichtige Kennzahlen',
-    },
-    levers: [],
   },
 ];
