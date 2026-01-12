@@ -116,7 +116,7 @@ export const sectors: Sector[] = [
       frFR: 'Explorez les pratiques agricoles durables et les stratégies de réduction des émissions',
       deDE: 'Erkunden Sie nachhaltige landwirtschaftliche Praktiken und Strategien zur Emissionsreduzierung',
     },
-    disabled: false,
+    disabled: true,
     levers: [
       'lever_kcal-req',
       'lever_diet',
