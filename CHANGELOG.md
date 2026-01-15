@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v1.0.0...v1.1.0) (2026-01-15)
+
+
+### Features
+
+* migrate urls to transition compass ([5d41814](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/5d41814f6cf228acf8a7589f228bf08c46607fdf))
+
+
+### Bug Fixes
+
+* disable Agriculture sector and remove Agriculture's chart in overall ([65c4779](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/65c47791d4e47426e21c6fec6b599304da09206f))
+
 ## [1.0.0](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.8.0...v1.0.0) (2026-01-08)
 
 
