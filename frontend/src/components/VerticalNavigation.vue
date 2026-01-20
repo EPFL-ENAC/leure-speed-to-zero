@@ -1,9 +1,10 @@
 <template>
   <aside class="vertical-nav" :class="{ mini }">
     <div class="nav-header">
+      <q-icon v-if="mini" name="o_explore" class="nav-item-icon" color="primary" />
       <h1
+        v-else
         class="text-subtitle1 text-primary text-weight-bold text-uppercase text-dark q-ma-none text-center logo-title"
-        :class="{ 'vertical-text': mini }"
       >
         Transition C<q-icon name="o_explore" class="compass-icon" size="xs" />mpass
       </h1>
@@ -207,6 +208,9 @@ $hover-bg: #f5f5f7;
 
 .nav-header {
   padding: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .logo-title {
@@ -338,13 +342,7 @@ $hover-bg: #f5f5f7;
 
 .vertical-nav.mini {
   .nav-header {
-    padding: 24px 10px;
-  }
-  .vertical-text {
-    font-size: 0.75rem;
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-    flex-direction: column;
+    padding: 1rem 10px;
   }
   .nav-item {
     justify-content: center;
@@ -352,6 +350,7 @@ $hover-bg: #f5f5f7;
   }
   .nav-item-icon {
     margin-right: 0;
+    opacity: 1;
   }
 
   .nav-content {
