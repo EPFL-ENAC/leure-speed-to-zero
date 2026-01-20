@@ -253,7 +253,7 @@ const chartOption = computed(() => {
     silent: true,
     itemStyle: {
       color: 'rgba(0, 0, 0, 0.1)',
-      borderColor: 'rgba(0, 0, 0, 0.15)',
+      borderColor: 'rgba(0, 0, 0, 0.06)',
       borderWidth: 2,
       borderType: 'dashed',
     },

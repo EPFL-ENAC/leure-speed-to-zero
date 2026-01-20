@@ -84,7 +84,7 @@
                   :model-data="modelResults"
                 />
               </div>
-              <q-separator class="q-mt-xl"></q-separator>
+              <q-separator color="grey-3" class="q-mt-xl"></q-separator>
             </div>
           </div>
         </q-scroll-area>
@@ -258,7 +258,6 @@ function scrollKpis(direction: 'left' | 'right') {
   align-items: center;
   padding: 0.5rem;
   background: white;
-  border-bottom: 1px solid #e0e0e0;
   min-height: 100px;
 }
 
@@ -293,14 +292,6 @@ function scrollKpis(direction: 'left' | 'right') {
   top: 0;
   z-index: 10;
   background: white;
-}
-
-.toolbar-row {
-  display: flex;
-  align-items: center;
-  padding: 0.5rem;
-  gap: 1rem;
-  border-bottom: 1px solid #e0e0e0;
 }
 
 .sector-title {

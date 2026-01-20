@@ -30,7 +30,6 @@
       bordered
       :behavior="$q.screen.lt.md ? 'mobile' : 'desktop'"
       class="levers-col"
-      style="border-left: 1px solid #e0e0e0"
     >
       <div class="column full-height">
         <LeversColumnHeader />

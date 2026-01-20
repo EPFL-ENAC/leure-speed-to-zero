@@ -8,7 +8,7 @@
         Transition C<q-icon name="o_explore" class="compass-icon" size="xs" />mpass
       </h1>
     </div>
-    <q-separator />
+    <q-separator color="grey-3" />
     <nav class="nav-content">
       <!-- Sectors Section -->
       <div class="nav-section">
@@ -43,7 +43,7 @@
         </template>
       </div>
     </nav>
-    <q-separator />
+    <q-separator color="grey-3" />
     <!-- Main Pages Section -->
     <div class="nav-section">
       <router-link
@@ -192,7 +192,6 @@ watch(
 </script>
 
 <style lang="scss" scoped>
-$border: 1px solid rgba(0, 0, 0, 0.06);
 $text-muted: #6e6e73;
 $text-dark: #1a1a1a;
 $hover-bg: #f5f5f7;
@@ -202,7 +201,6 @@ $hover-bg: #f5f5f7;
   flex-direction: column;
   height: 100vh;
   background: #fff;
-  border-right: $border;
   overflow: hidden;
   position: relative;
 }
@@ -328,7 +326,7 @@ $hover-bg: #f5f5f7;
 
 .toggle-btn {
   background: #fff;
-  border: $border;
+  border: 1px solid rgba(0, 0, 0, 0.06);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   color: $text-muted;
 

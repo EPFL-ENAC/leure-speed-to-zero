@@ -84,7 +84,7 @@
       <div class="inline-chart-container" style="height: 200px; width: 100%">
         <LeverChart :lever-code="lever.code" height="200px" width="100%" minimal />
       </div>
-      <q-separator class="q-mb-md" />
+      <q-separator color="grey-3" class="q-mb-md" />
     </div>
   </div>
 

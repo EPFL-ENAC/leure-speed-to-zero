@@ -46,7 +46,7 @@
           </p>
         </section>
 
-        <q-separator class="q-my-lg" />
+        <q-separator color="grey-3" class="q-my-lg" />
 
         <div class="text-caption text-grey-6 text-center">
           {{ $t('lastUpdated') }}: {{ formattedDate }}
