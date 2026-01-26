@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.1.0](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v1.0.0...v1.1.0) (2026-01-26)
+
+
+### Features
+
+* add contact section to AboutPage and localize testing notes in German, English, and French ([06bd117](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/06bd117c56cb2366478a2ed1597a2e52776a77f1))
+* add disclaimer to WelcomePopup and localize in German, English, and French ([436fa1f](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/436fa1f7f3077cd4f2d6711bb83014a9f6458006))
+* add DisclaimerBanner component and localize disclaimer messages in German, English, and French ([ce7d0d4](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/ce7d0d488a6e1f3044481c82bc57c56d6d28b1e8))
+* enhance vertical navigation header layout and icon visibility ([80046a8](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/80046a82981b266f7a7a6608e4f1daef9fc39ee9))
+* harmonize border colors ([37d3339](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/37d333921f9b4c264c83d23b598329dde641c575))
+* migrate urls to transition compass ([5d41814](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/5d41814f6cf228acf8a7589f228bf08c46607fdf))
+
+
+### Bug Fixes
+
+* disable Agriculture sector and remove Agriculture's chart in overall ([65c4779](https://github.com/EPFL-ENAC/leure-speed-to-zero/commit/65c47791d4e47426e21c6fec6b599304da09206f))
+
 ## [1.0.0](https://github.com/EPFL-ENAC/leure-speed-to-zero/compare/v0.8.0...v1.0.0) (2026-01-08)
 
 
