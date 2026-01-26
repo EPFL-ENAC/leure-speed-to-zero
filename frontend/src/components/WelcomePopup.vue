@@ -13,6 +13,12 @@
           {{ $t('welcomePopup.description') }}
         </div>
 
+        <div
+          class="text-body2 text-orange-9 q-mb-md text-italic bg-orange-1 q-pa-sm rounded-borders"
+        >
+          {{ $t('welcomePopup.disclaimer') }}
+        </div>
+
         <div class="features q-mb-md">
           <div v-for="feature in features" :key="feature.icon" class="feature-item q-mb-sm">
             <q-icon :name="feature.icon" size="20px" color="primary" class="q-mr-sm" />

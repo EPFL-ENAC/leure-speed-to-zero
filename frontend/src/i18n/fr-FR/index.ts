@@ -118,6 +118,8 @@ export default {
     subtitle: 'Calculateur interactif de neutralité carbone pour la Suisse',
     description:
       'Explorez les trajectoires vers la neutralité carbone en ajustant les leviers politiques et en visualisant leur impact sur différents secteurs.',
+    disclaimer:
+      "Ceci est une version de développement fournie uniquement à des fins de test et d'évaluation. La version officielle est prévue pour mi-2026.",
     featureLevers: 'Ajustez les leviers pour modéliser les interventions',
     featureVisualize: "Visualisez les émissions et les métriques d'énergie",
     featureCompare: 'Comparez les scénarios entre secteurs',
