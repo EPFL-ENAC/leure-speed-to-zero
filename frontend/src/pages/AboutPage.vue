@@ -52,6 +52,17 @@
           </p>
         </section>
 
+        <section class="q-mb-xl">
+          <h2 class="text-h5 q-mb-md">{{ $t('contact') }}</h2>
+          <p class="text-body1 text-grey-8 q-mb-md">
+            {{ $t('contactTestingNote') }}
+          </p>
+          <p class="text-body1 text-grey-8">
+            {{ $t('contactEmailText') }}
+            <a :href="'mailto:gino.baudry@epfl.ch'">gino.baudry@epfl.ch</a>
+          </p>
+        </section>
+
         <div class="text-center q-mt-xl">
           <q-btn
             color="primary"

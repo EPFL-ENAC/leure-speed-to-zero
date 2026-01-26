@@ -112,6 +112,10 @@ export default {
   contact: 'Contact',
   contactDesc:
     "Pour toute question, retour d'information ou opportunité de collaboration, veuillez nous contacter via le site web de la faculté ENAC de l'EPFL.",
+  contactTestingNote:
+    "Cette version est publiée uniquement à des fins de test et d'évaluation. Les commentaires et avis des utilisateurs sont explicitement encouragés et contribueront au développement et à l'amélioration future avant la sortie officielle prévue pour la mi-2026.",
+  contactEmailText:
+    'Pour toute demande ou commentaire, veuillez contacter Dr. Gino Baudry (EPFL) à ',
   lastUpdated: 'Dernière mise à jour',
   // Welcome Popup
   welcomePopup: {
