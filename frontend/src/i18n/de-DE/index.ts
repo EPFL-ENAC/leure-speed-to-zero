@@ -120,6 +120,7 @@ export default {
       'Erkunden Sie Wege zur Netto-Null-Emission, indem Sie politische Hebel anpassen und deren Auswirkungen auf verschiedene Sektoren visualisieren.',
     disclaimer:
       'Dies ist eine Entwicklungsversion, die nur zu Test- und Evaluierungszwecken bereitgestellt wird. Die offizielle Version ist für Mitte 2026 geplant.',
+    disclaimerShort: 'Entwicklungsversion (nur Test). Release: Mitte 2026.',
     featureLevers: 'Passen Sie Hebel an, um Interventionen zu modellieren',
     featureVisualize: 'Visualisieren Sie Emissionen und Energiekennzahlen',
     featureCompare: 'Vergleichen Sie Szenarien über Sektoren hinweg',

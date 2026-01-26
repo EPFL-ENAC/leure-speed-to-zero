@@ -90,6 +90,7 @@
         </q-scroll-area>
       </template>
     </div>
+    <DisclaimerBanner />
   </div>
 </template>
 
@@ -106,6 +107,7 @@ import { useQuasar } from 'quasar';
 import { getTranslatedText } from 'src/utils/translationHelpers';
 import type { TranslationObject } from 'src/utils/translationHelpers';
 import { useCurrentSector } from 'src/composables/useCurrentSector';
+import DisclaimerBanner from 'components/DisclaimerBanner.vue';
 
 const $q = useQuasar();
 const { locale } = useI18n();
@@ -250,6 +252,7 @@ function scrollKpis(direction: 'left' | 'right') {
   height: 100%;
   min-height: 0;
   width: 100%;
+  padding-top: 0.5rem;
 }
 
 .top-kpis-bar {

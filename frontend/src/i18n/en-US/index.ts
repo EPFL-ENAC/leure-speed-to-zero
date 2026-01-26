@@ -116,6 +116,7 @@ export default {
       'Explore pathways to net-zero emissions by adjusting policy levers and visualizing their impact across different sectors.',
     disclaimer:
       'This is a development version, and it is provided for testing and evaluation purposes only. The official release version is planned for mid-2026.',
+    disclaimerShort: 'Dev version (testing only). Official release: mid-2026.',
     featureLevers: 'Adjust policy levers to model interventions',
     featureVisualize: 'Visualize emissions and energy metrics',
     featureCompare: 'Compare scenarios across sectors',
