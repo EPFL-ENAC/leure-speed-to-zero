@@ -5,4 +5,6 @@ node_modules
 npm-shrinkwrap.json
 *.pdf
 *.zip
+*.Identifier
+*.Identifier
 *.code-workspace
