@@ -1,0 +1,14 @@
+numpy<2,>=1.21
+matplotlib==3.8.2
+pandas==2.2.3
+plotly==5.18.0
+scipy==1.15.3
+fastapi[standard]>=0.115.12
+orjson
+pydantic-settings>=2.9.1
+fastapi-cache2[redis]>=0.2.2
+requests
+deepl
+pyomo==6.9.5
+highspy>=1.12.0
+leure-transition-compass-model
