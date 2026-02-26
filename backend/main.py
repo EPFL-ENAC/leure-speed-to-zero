@@ -1,14 +1,18 @@
 import logging
 import json
 import sys
-#from model.interactions import runner
-#from model.common.auxiliary_functions import filter_country_and_load_data_from_pickles
-# Redirect old 'model' imports to new package for pickle compatibility
-import leure_transition_compass_model.model as model
-sys.modules['model'] = model
 
-from leure_transition_compass_model.model.interactions import runner
-from leure_transition_compass_model.model.common.auxiliary_functions import filter_country_and_load_data_from_pickles
+# from model.interactions import runner
+# from model.common.auxiliary_functions import filter_country_and_load_data_from_pickles
+# Redirect old 'model' imports to new package for pickle compatibility
+import transition_compass_model.model as model
+
+sys.modules["model"] = model
+
+from transition_compass_model.model.interactions import runner
+from transition_compass_model.model.common.auxiliary_functions import (
+    filter_country_and_load_data_from_pickles,
+)
 from src.utils.region_config import RegionConfig
 
 # Configure logger
