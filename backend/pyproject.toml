@@ -22,7 +22,7 @@ dependencies = [
     "deepl",
     "pyomo==6.9.5",
     "highspy>=1.12.0",
-    "transition-compass-model @ git+https://github.com/EPFL-ENAC/transition-compass-model.git",
+    "transition-compass-model @ git+https://github.com/EPFL-ENAC/transition-compass-model.git@v0.1.0",
 ]
 
 [dependency-groups]
