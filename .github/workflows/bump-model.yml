@@ -30,7 +30,7 @@ jobs:
       - name: Pin new tag in pyproject.toml
         run: |
           TAG=${{ steps.tag.outputs.tag }}
-          sed -i "s|transition-compass-model @ git+https://github.com/EPFL-ENAC/transition-compass-model.git[^\"]*|transition-compass-model @ git+https://github.com/EPFL-ENAC/transition-compass-model.git@${TAG}|" backend/pyproject.toml
+          sed -i "s|transition-compass-model @ git+https://github.com/2050Calculators/transition-compass-model.git[^\"]*|transition-compass-model @ git+https://github.com/2050Calculators/transition-compass-model.git@${TAG}|" backend/pyproject.toml
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5

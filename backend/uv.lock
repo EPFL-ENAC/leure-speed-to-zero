@@ -875,7 +875,7 @@ requires-dist = [
     { name = "pyomo", specifier = "==6.9.5" },
     { name = "requests" },
     { name = "scipy", specifier = "==1.15.3" },
-    { name = "transition-compass-model", git = "https://github.com/EPFL-ENAC/transition-compass-model.git" },
+    { name = "transition-compass-model", git = "https://github.com/2050Calculators/transition-compass-model.git" },
 ]
 
 [package.metadata.requires-dev]
@@ -1506,7 +1506,7 @@ wheels = [
 [[package]]
 name = "transition-compass-model"
 version = "0.1.0"
-source = { git = "https://github.com/EPFL-ENAC/transition-compass-model.git#b63b6f0b86b34d3bc806aa769cd76ffc47d9c676" }
+source = { git = "https://github.com/2050Calculators/transition-compass-model.git#b63b6f0b86b34d3bc806aa769cd76ffc47d9c676" }
 dependencies = [
     { name = "amplpy" },
     { name = "amply" },
