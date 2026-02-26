@@ -9,6 +9,9 @@ ENV UV_LINK_MODE=copy
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_PROJECT_ENVIRONMENT=/app/.venv
 
+# Install git (required by uv to fetch git-sourced dependencies)
+RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
+
 # Create the app directory
 WORKDIR /app
 

@@ -56,10 +56,10 @@ install-config:
 	@echo "Configuration ready!"
 
 
-# Install backend dependencies
+# Install backend dependencies (local editable mode for dev)
 install-backend:
 	@echo "Installing backend dependencies..."
-	$(MAKE) -C backend install
+	$(MAKE) -C backend install-local
 
 # Install frontend dependencies
 install-frontend:
