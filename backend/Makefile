@@ -1,23 +1,24 @@
-.PHONY: install run up format lint test docker-build docker-run cleanup
+.PHONY: install install-local run up format lint test docker-build docker-run cleanup check-model
 
 # Define Python version and name
 PYTHON_VERSION = 3.12
 NAME = backend-web-rest-api
 
-# Install backend dependencies
+# CI/CD install (uses git source from lock)
 install:
-	@echo "Installing backend dependencies..."
-	@if uv --version >/dev/null 2>&1; then \
-		echo "Using uv for backend dependencies..."; \
-		uv sync; \
+	@echo "Installing backend dependencies (CI/CD mode - git source)..."
+	uv sync --frozen
+	@echo "Backend dependencies installed!"
+
+# Local dev install: installs from git (lock), then overrides model with local editable
+install-local:
+	@echo "Installing backend dependencies (local mode - editable)..."
+	uv sync --frozen
+	@if [ -d "../../transition-compass-model" ]; then \
+		echo "Local model found, installing as editable..."; \
+		uv pip install --editable ../../transition-compass-model; \
 	else \
-		echo "uv not available in current environment, using virtual environment and pip..."; \
-		if [ ! -d ".venv" ]; then \
-			python -m venv .venv && \
-			.venv/bin/pip install --upgrade pip; \
-		fi && \
-		.venv/bin/pip install -r requirements.txt; \
-		echo "Virtual environment ready at backend/.venv"; \
+		echo "Local model not found at ../../transition-compass-model, using git source"; \
 	fi
 	@echo "Backend dependencies installed!"
 
@@ -28,17 +29,15 @@ cleanup:
 	@pkill -f "WatchFiles" 2>/dev/null || true
 	@echo "Cleanup complete!"
 
+check-model:
+	@uv run --no-sync python -c "import transition_compass_model; print('Model source:', transition_compass_model.__file__)"
+
 run:
 	@echo "Starting FastAPI development server..."
 	@echo "Open your browser at http://localhost:8000/docs"
 	@echo "Press Ctrl+C to stop the server"
-	@if uv --version >/dev/null 2>&1; then \
-		echo "Using uv..."; \
-		uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000; \
-	else \
-		echo "uv not found, using virtual environment..."; \
-		.venv/bin/uvicorn src.main:app --reload --host 0.0.0.0 --port 8000; \
-	fi
+	@echo "Model source: $$(uv run --no-sync python -c 'import transition_compass_model; print(transition_compass_model.__file__)')"
+	uv run --no-sync uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 	@echo "Backend server stopped."
 
 
