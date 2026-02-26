@@ -1,0 +1,26 @@
+name: CI Build Check
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: ['feat/**', 'fix/**']
+
+jobs:
+  build-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend Docker image
+        run: docker build -t backend-test ./backend
+
+      - name: Smoke test backend
+        run: |
+          docker run -d --name backend-smoke -p 8081:8081 \
+            -e ENABLE_CACHE=false \
+            backend-test
+          # Wait for startup (model loading takes a few seconds)
+          sleep 15
+          curl -f http://localhost:8081/health
+          docker stop backend-smoke
