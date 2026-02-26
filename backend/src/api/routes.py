@@ -3,15 +3,25 @@ from fastapi import APIRouter
 from fastapi.responses import ORJSONResponse
 import logging
 import sys
+from pathlib import Path
 
 import orjson
-# Redirect old 'model' imports to new package for pickle compatibility
-import leure_transition_compass_model.model as model
-sys.modules['model'] = model
 
-from leure_transition_compass_model.model.interactions import runner
-from leure_transition_compass_model.model.common.auxiliary_functions import filter_country_and_load_data_from_pickles
-from leure_transition_compass_model.model.common.lever_plotting import get_lever_data_to_plot
+# Redirect old 'model' imports to new package for pickle compatibility
+import transition_compass_model
+import transition_compass_model.model as model
+
+sys.modules["model"] = model
+
+_DATAMATRIX_DIR = (
+    Path(transition_compass_model.__file__).parent / "_database" / "data" / "datamatrix"
+)
+
+from transition_compass_model.model.interactions import runner
+from transition_compass_model.model.common.auxiliary_functions import (
+    filter_country_and_load_data_from_pickles,
+)
+from transition_compass_model.model.common.lever_plotting import get_lever_data_to_plot
 import time
 import re
 from pathlib import Path
@@ -272,7 +282,7 @@ async def get_datamatrix(name: str):
                 content={"status": "error", "message": f"Unknown datamatrix: {name}"},
                 status_code=404,
             )
-        file = f"_database/data/datamatrix/{name}.pickle"
+        file = _DATAMATRIX_DIR / f"{name}.pickle"
 
         with open(file, "rb") as f:
             data = pickle.load(f)
