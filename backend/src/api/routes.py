@@ -25,7 +25,6 @@ from src.utils.sector_config import SectorConfig
 
 from src.utils.cache_decorator import conditional_cache
 
-
 router = APIRouter()
 logger = logging.getLogger("uvicorn")
 
