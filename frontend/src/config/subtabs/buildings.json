@@ -93,8 +93,9 @@
         "deDE": "Heizungsemissionen"
       },
       "charts": [
+        "GHGEmissionstotalPerCarrier",
         "SHGHGEmissionsPerBuildingType",
-        "GHGEmissionsPerCarrier",
+        "GHGEmissionsheatingPerCarrier",
         "GHGEmissionsservicesPerCarrier",
         "GHGEmissionshotwaterPerCarrier"
       ],
@@ -163,7 +164,28 @@
         { "id": "bld_CO2-emissions_heating_B[Mt]", "color": "#388E3C" }
       ]
     },
-    "GHGEmissionsPerCarrier": {
+    "GHGEmissionstotalPerCarrier": {
+      "title": {
+        "enUS": "Territorial CO₂ Emissions from the buildings sector",
+        "frFR": "Émissions totales de CO₂du secteur du batiments",
+        "deDE": "CTerritoriale CO₂-Emissionen aus dem Gebäudesektor"
+      },
+      "type": "StackedArea",
+      "unit": "Mt",
+      "outputs": [
+        { "id": "bld_CO2-emissions_coal[Mt]", "color": "#434348" },
+        { "id": "bld_CO2-emissions_electricity[Mt]", "color": "#f15c80" },
+        { "id": "bld_CO2-emissions_heating-oil[Mt]", "color": "#2b908f" },
+        { "id": "bld_CO2-emissions_gas[Mt]", "color": "#e4d354" },
+        { "id": "bld_CO2-emissions_wood[Mt]", "color": "#5d4037" },
+        { "id": "bld_CO2-emissions_district-heating[Mt]", "color": "#f45b5b" },
+        { "id": "bld_CO2-emissions_heat-pump[Mt]", "color": "#aee791" },
+        { "id": "bld_CO2-emissions_ambient-heat[Mt]", "color": "#7FAEC0" },
+        { "id": "bld_CO2-emissions_other[Mt]", "color": "#f7a35c" },
+        { "id": "bld_CO2-emissions_solar[Mt]", "color": "#e4d354" }
+      ]
+    },
+    "GHGEmissionsheatingPerCarrier": {
       "title": {
         "enUS": "CO2 emissions for residential heating per carrier",
         "frFR": "Émissions de CO2 pour le chauffage résidentiel par vecteur",

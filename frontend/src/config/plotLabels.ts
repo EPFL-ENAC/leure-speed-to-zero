@@ -1171,6 +1171,51 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'F, G',
     frFR: 'F, G',
   },
+  'bld_CO2-emissions_coal[Mt]': {
+    enUS: 'Coal',
+    deDE: 'Kohle',
+    frFR: 'Charbon',
+  },
+  'bld_CO2-emissions_district-heating[Mt]': {
+    enUS: 'District-heating',
+    deDE: 'Fernwärme',
+    frFR: 'Chauffage à distance',
+  },
+  'bld_CO2-emissions_electricity[Mt]': {
+    enUS: 'Electricity',
+    deDE: 'Strom',
+    frFR: 'Électricité',
+  },
+  'bld_CO2-emissions_gas[Mt]': {
+    enUS: 'Gas',
+    deDE: 'Gas',
+    frFR: 'Gaz',
+  },
+  'bld_CO2-emissions_heat-pump[Mt]': {
+    enUS: 'Heat-pump',
+    deDE: 'Wärmepumpe',
+    frFR: 'Pompe à chaleur',
+  },
+  'bld_CO2-emissions_heating-oil[Mt]': {
+    enUS: 'Heating-oil',
+    deDE: 'Heizöl',
+    frFR: 'Huile de chauffage',
+  },
+  'bld_CO2-emissions_other[Mt]': {
+    enUS: 'Other',
+    deDE: 'Sonstige',
+    frFR: 'Autre',
+  },
+  'bld_CO2-emissions_solar[Mt]': {
+    enUS: 'Solar-heat',
+    deDE: 'Solarwärme',
+    frFR: 'Chaleur solaire',
+  },
+  'bld_CO2-emissions_wood[Mt]': {
+    enUS: 'Wood',
+    deDE: 'Holz',
+    frFR: 'Bois',
+  },
   'bld_CO2-emissions_heating_coal[Mt]': {
     enUS: 'Coal',
     deDE: 'Kohle',
