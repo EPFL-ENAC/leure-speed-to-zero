@@ -8,3 +8,5 @@ npm-shrinkwrap.json
 *.Identifier
 *.Identifier
 *.code-workspace
+GitHubDesktop-linux-amd64-3.4.13-linux1.deb
+backend/_database/data/datamatrix/transport_wo_aviation.pickle

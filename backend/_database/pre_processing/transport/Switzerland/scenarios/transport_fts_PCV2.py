@@ -11,6 +11,40 @@ from model.common.auxiliary_functions import (
 )
 import os
 from _database.pre_processing.transport.Switzerland.get_data_functions import utils
+from model.common.data_matrix_class import DataMatrix
+
+
+def define_variables_for_lever(DM_transport, lever: int):
+
+    dm_modal_share_lever = DM_transport["fts"]["passenger_modal-share"][lever].filter(
+        {"Country": ["Vaud"]}
+    )
+    idx = dm_modal_share_lever.idx
+    dm_modal_share_lever.array[idx["Vaud"], idx[2025] + 1 :, :, :] = (
+        np.nan
+    )  # clear level except for 2025
+    dm_modal_share_lever_tmp = None
+
+    return dm_modal_share_lever, idx, dm_modal_share_lever, dm_modal_share_lever_tmp
+
+
+def update_lever_in_loop(key, cat, dm_modal_ots_cat, idx_ots, dict_ratio, array_lever):
+
+    dm_modal_share_lever, idx, dm_modal_share_lever, dm_modal_share_lever_tmp = (
+        array_lever
+    )
+
+    dm_modal_fts_cat_lever = dm_modal_share_lever.filter({"Categories1": cat})
+    dm_modal_fts_cat_lever.array[idx["Vaud"], idx[2050], ...] = (
+        dict_ratio[key] * dm_modal_ots_cat.array[idx_ots["Vaud"], idx_ots[2023], ...]
+    )
+
+    if dm_modal_share_lever_tmp is None:
+        dm_modal_share_lever_tmp = dm_modal_fts_cat_lever.copy()
+    else:
+        dm_modal_share_lever_tmp.append(dm_modal_fts_cat_lever, dim="Categories1")
+
+    return dm_modal_share_lever, idx, dm_modal_share_lever, dm_modal_share_lever_tmp
 
 
 def run(DM_transport):
@@ -18,12 +52,6 @@ def run(DM_transport):
     DM_fts = {"fts": dict()}
 
     # ======================  MODAL_SHARE  ========================================================
-    dm_modal_share_2 = DM_transport["fts"]["passenger_modal-share"][2].filter(
-        {"Country": ["Vaud"]}
-    )
-    dm_modal_share_4 = DM_transport["fts"]["passenger_modal-share"][4].filter(
-        {"Country": ["Vaud"]}
-    )
     dm_modal_share_ots = DM_transport["ots"]["passenger_modal-share"].filter(
         {"Country": ["Vaud"]}
     )
@@ -34,12 +62,14 @@ def run(DM_transport):
         "MA": ["walk", "bike"],
     }
 
-    # Scénario 2 and 4: PCV, DLS
+    # Scénario 2, 3 and 4 respectively: PCV1, PCV2,  DLS
 
     # Calcul coefficient 2050 selon OTS. On prend les parts modales de 2050,
     # mais on garde les proportions de 2023 entre les différents modes dans TP, MA et TIM
     # (Source: vision 2050)
     CITEC_2050_val_dict = {"TIM": 0.55, "TP": 0.38, "MA": 0.07}
+    # 10% velo et 5% marche
+    obj_PCV2_205 = {"TIM": 0.49, "TP": 0.38, "MA": 0.15}
     DLS_2050_val_dict = {
         "TIM": 587 / 3241,
         "TP": 1143 / 3241,
@@ -48,39 +78,36 @@ def run(DM_transport):
 
     # Assing CITEC values to 2050 using the 2023 split within categories
     idx_ots = dm_modal_share_ots.idx
-    idx_fts = dm_modal_share_2.idx
-    dm_modal_share_2.array[idx_fts["Vaud"], idx_fts[2025] + 1 :, :, :] = (
-        np.nan
-    )  # clear level 2 except for 2025
-    dm_modal_share_4.array[idx_fts["Vaud"], idx_fts[2025] + 1 :, :, :] = (
-        np.nan
-    )  # clear level 4 except for 2025
-    dm_modal_share_2_tmp = None
-    dm_modal_share_4_tmp = None
+    param_2 = define_variables_for_lever(DM_transport, 2)
+    param_3 = define_variables_for_lever(DM_transport, 3)
+    param_4 = define_variables_for_lever(DM_transport, 4)
+
     for key, cat in cat_dict.items():
         dm_modal_ots_cat = dm_modal_share_ots.filter({"Categories1": cat})
         dm_modal_ots_cat.normalise(dim="Categories1", inplace=True, keep_original=False)
+
         # level 2
-        dm_modal_fts_cat_2 = dm_modal_share_2.filter({"Categories1": cat})
-        dm_modal_fts_cat_2.array[idx_fts["Vaud"], idx_fts[2050], ...] = (
-            CITEC_2050_val_dict[key]
-            * dm_modal_ots_cat.array[idx_ots["Vaud"], idx_ots[2023], ...]
+        param_2 = update_lever_in_loop(
+            key, cat, dm_modal_ots_cat, idx_ots, CITEC_2050_val_dict, param_2
+        )
+        # level 3
+
+        param_3 = update_lever_in_loop(
+            key, cat, dm_modal_ots_cat, idx_ots, obj_PCV2_205, param_3
         )
         # level 4
-        dm_modal_fts_cat_4 = dm_modal_share_4.filter({"Categories1": cat})
-        dm_modal_fts_cat_4.array[idx_fts["Vaud"], idx_fts[2050], ...] = (
-            DLS_2050_val_dict[key]
-            * dm_modal_ots_cat.array[idx_ots["Vaud"], idx_ots[2023], ...]
+        param_4 = update_lever_in_loop(
+            key, cat, dm_modal_ots_cat, idx_ots, DLS_2050_val_dict, param_4
         )
-        if dm_modal_share_2_tmp is None:
-            dm_modal_share_2_tmp = dm_modal_fts_cat_2.copy()
-            dm_modal_share_4_tmp = dm_modal_fts_cat_4.copy()
-        else:
-            dm_modal_share_2_tmp.append(dm_modal_fts_cat_2, dim="Categories1")
-            dm_modal_share_4_tmp.append(dm_modal_fts_cat_4, dim="Categories1")
+
+    dm_modal_share_2, idx_fts, dm_modal_share_2, dm_modal_share_2_tmp = param_2
+    dm_modal_share_3, idx_fts, dm_modal_share_3, dm_modal_share_3_tmp = param_3
+    dm_modal_share_4, idx_fts, dm_modal_share_4, dm_modal_share_4_tmp = param_4
 
     dm_modal_share_2 = dm_modal_share_2_tmp.copy()
     dm_modal_share_2.sort("Categories1")
+    dm_modal_share_3 = dm_modal_share_3_tmp.copy()
+    dm_modal_share_3.sort("Categories1")
     dm_modal_share_4 = dm_modal_share_4_tmp.copy()
     dm_modal_share_4.sort("Categories1")
 
@@ -94,6 +121,7 @@ def run(DM_transport):
         "LDV": 0.6,
         "2W": 0.03,
     }  # Source: PCV
+    values_pcv2 = {"walk": 0.05, "bike": 0.10}  # Source: PCV2
     for key, values in values_2030.items():
         dm_modal_share_2.array[
             idx_fts["Vaud"],
@@ -102,15 +130,34 @@ def run(DM_transport):
             idx_fts[key],
         ] = values
 
+    dm_modal_share_3.array[
+        idx_fts["Vaud"],
+        idx_fts[2030],
+        idx_fts["tra_passenger_modal-share"],
+        idx_fts["bike"],
+    ] = 0.10
+    for key, values in values_pcv2.items():
+        dm_modal_share_3.array[
+            idx_fts["Vaud"],
+            idx_fts[2050],
+            idx_fts["tra_passenger_modal-share"],
+            idx_fts[key],
+        ] = values
+
     linear_fitting(dm_modal_share_2, dm_modal_share_2.col_labels["Years"])
     dm_modal_share_2.normalise(dim="Categories1", inplace=True)
-
+    linear_fitting(dm_modal_share_3, dm_modal_share_3.col_labels["Years"])
+    dm_modal_share_3.normalise(dim="Categories1", inplace=True)
     linear_fitting(dm_modal_share_4, dm_modal_share_4.col_labels["Years"])
     dm_modal_share_4.normalise(dim="Categories1", inplace=True)
 
-    DM_fts["fts"]["passenger_modal-share"] = {2: dm_modal_share_2, 4: dm_modal_share_4}
+    DM_fts["fts"]["passenger_modal-share"] = {
+        2: dm_modal_share_2,
+        3: dm_modal_share_3,
+        4: dm_modal_share_4,
+    }
 
-    # FIXME ! Level 4 is missing the LDV reduction in 2025 (should it be there?)
+    #  FIXME ! Level 4 is missing the LDV reduction in 2025 (should it be there?)
 
     # ======================  OCCUPANCY  ========================================================
     dm_occupancy_2 = DM_transport["fts"]["passenger_occupancy"][2].filter(
@@ -637,3 +684,15 @@ def run(DM_transport):
     sort_pickle(pickle_file)
 
     return
+
+
+if __name__ == "__main__":
+    this_dir = os.path.dirname(os.path.abspath(__file__))
+    file = os.path.join(
+        this_dir, "../../../../data/datamatrix/transport_wo_aviation.pickle"
+    )
+
+    with open(file, "rb") as handle:
+        DM_transport = pickle.load(handle)
+
+    DM_transport = run(DM_transport)
