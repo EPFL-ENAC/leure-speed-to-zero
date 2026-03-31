@@ -84,13 +84,15 @@ def runner(lever_setting, years_setting, DM_in, sectors, logger):
         )
     if "agriculture" in sectors:
         start_time = time.time()
-        TPE['ammonia'] = ammonia(lever_setting, years_setting, DM_input['ammonia'], interface)
-        logger.info('Execution time Ammonia: {0:.3g} s'.format(time.time() - start_time))
+        TPE['agriculture'] = agriculture(
+            lever_setting, years_setting, DM_input["agriculture"], interface
+        )
+        logger.info('Execution time Agriculture: {0:.3g} s'.format(time.time() - start_time))
     # if "energy" in sectors:
     #     start_time = time.time()
     #     TPE["energy"] = energy(lever_setting, years_setting, country_list, interface)
     #     logger.info("Execution time Energy: {0:.3g} s".format(time.time() - start_time))
-    if 'emissions' in sectors:
+    if 'ammonia' in sectors:
         start_time = time.time()
         TPE["ammonia"] = ammonia(
             lever_setting, years_setting, DM_input["ammonia"], interface
