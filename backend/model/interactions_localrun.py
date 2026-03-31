@@ -13,7 +13,7 @@ from model.climate_module import climate
 
 from model.ammonia_module import ammonia
 from model.industry_module import industry
-# from model.power_module import power
+from model.energy_module import energy
 # from model.landuse_module import land_use
 # from model.oilrefinery_module import refinery
 from model.lca_module import lca
@@ -31,6 +31,9 @@ import json
 def runner(lever_setting, years_setting, DM_in, sectors, logger):
     # lever setting dictionary convert float to integer
     lever_setting = {key: math.floor(value) for key, value in lever_setting.items()}
+    country_list = DM_in["lifestyles"]["ots"]["pop"]["lfs_population_"].col_labels[
+        "Country"
+    ]
     # Transport module
 
     init_time = time.time()
@@ -66,6 +69,10 @@ def runner(lever_setting, years_setting, DM_in, sectors, logger):
         start_time = time.time()
         TPE['ammonia'] = ammonia(lever_setting, years_setting, DM_input['ammonia'], interface)
         logger.info('Execution time Ammonia: {0:.3g} s'.format(time.time() - start_time))
+    # if "energy" in sectors:
+    #     start_time = time.time()
+    #     TPE["energy"] = energy(lever_setting, years_setting, country_list, interface)
+    #     logger.info("Execution time Energy: {0:.3g} s".format(time.time() - start_time))
     if 'emissions' in sectors:
         start_time = time.time()
         TPE['emissions'] = emissions(years_setting, interface)
@@ -125,7 +132,8 @@ def local_interactions_run():
 
     sectors = ['climate', 'lifestyles', 'transport', 'buildings', 'industry', 
                'agriculture', 'ammonia', 
-               # 'landuse', 'energy', 
+               # 'landuse', 
+               # 'energy', 
                'emissions', 
                'forestry', 'lca']
     # Filter geoscale
