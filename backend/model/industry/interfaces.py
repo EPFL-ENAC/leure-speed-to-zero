@@ -206,18 +206,24 @@ def industry_landuse_interface(
     # return
     return DM_lus
 
-
-def industry_energy_interface(
-    dm_energy_demand_by_carr, cdm_split, cdm_eneff, write_pickle=False
-):
-
+def industry_energy_interface(dm_energy_demand_by_carr, cdm_split, cdm_eneff, write_pickle = False):
+    
+    # NEXT WEEK: there is a difference when using pickle local for interaction ind -> ene
+    # and the run. At the moment the run has a pickle with elec_electricity, lighting_electricity
+    # and process-heat_allcarriers (electricity, gas, etc), and zero everywhere else, while
+    # the saved pickle has non-zero values for hot water etc. To understand if these
+    # other ones are needed to make energy run correctly.
+    
     # TODO: here give to energy only electricity (so total is same of excluding feedstock, as there
     # is no feedstock for electricity). For the other energy carriers, fossil fuels should be
     # given to refinery, wood to forestry, and bio to agriculture possibly
-
-    # split between electricity and lighting
-    dm_temp = dm_energy_demand_by_carr.filter({"Categories1": ["electricity"]})
-    dm_temp.add(dm_temp.array, "Categories1", "lighting")
+    
+    # split between electricity (from process heat), lighting, electricity-else (from fans etc)
+    dm_temp = dm_energy_demand_by_carr.filter({"Categories1" : ["electricity"]})
+    arr_temp = dm_temp.array
+    dm_temp.add(arr_temp, "Categories1", "lighting")
+    dm_temp.add(arr_temp, "Categories1", "electricity-else")
+    dm_temp.sort("Categories1")
     dm_temp.array = dm_temp[...] * cdm_split[np.newaxis, np.newaxis, ...]
     dm_energy_demand_by_carr.drop("Categories1", "electricity")
     dm_energy_demand_by_carr.append(dm_temp, "Categories1")
@@ -225,22 +231,14 @@ def industry_energy_interface(
 
     # reshape
     dm_temp = dm_energy_demand_by_carr.copy()
-    dm_temp.drop("Categories1", "lighting")
+    dm_temp.drop("Categories1","lighting")
+    dm_temp.drop("Categories1","electricity-else")
     for c in dm_temp.col_labels["Variables"]:
         dm_temp.rename_col(c, c + "_process-heat", "Variables")
-    dm_temp.deepen("_", "Variables")
-    dm_temp.switch_categories_order("Categories1", "Categories2")
-    dm_temp[:, :, :, "electricity"] = (
-        0  # note: to understand why we said zero electricity for process heat
-    )
-    dm_temp1 = dm_energy_demand_by_carr.filter(
-        {"Categories1": ["lighting", "electricity"]}
-    )
-    dm_temp1.rename_col(
-        ["lighting", "electricity"],
-        ["lighting_electricity", "elec_electricity"],
-        "Categories1",
-    )
+    dm_temp.deepen("_","Variables")
+    dm_temp.switch_categories_order("Categories1","Categories2")
+    dm_temp1 = dm_energy_demand_by_carr.filter({"Categories1" : ["lighting","electricity-else"]})
+    dm_temp1.rename_col(["lighting","electricity-else"], ["lighting_electricity","elec_electricity"], "Categories1")
     dm_temp1.deepen()
     missing = dm_temp.col_labels["Categories2"].copy()
     missing.remove("electricity")
@@ -356,11 +354,13 @@ def industry_energy_interface(
         cmd_temp[:, "process-heat", :], "Categories1", "space-heating"
     )  # put same of process heat for now
     cmd_temp.sort("Categories1")
-
-    DM_ene = {
-        "ind-energy-demand": dm_useful_energy_demand_by_carr,
-        "ind-energy-efficiency-const": cmd_temp,
-    }
+    
+    # df_temp = dm_useful_energy_demand_by_carr.write_df()
+    # columns = df_temp.columns
+    # columns[[not all(df_temp[c].values == 0) for c in columns]]
+    
+    DM_ene = {'ind-energy-demand' : dm_useful_energy_demand_by_carr,
+              "ind-energy-efficiency-const" : cmd_temp}
 
     # of write_pickle is True, write pickle
     if write_pickle is True:
