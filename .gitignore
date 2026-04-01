@@ -6,3 +6,5 @@ npm-shrinkwrap.json
 *.pdf
 *.zip
 *.code-workspace
+CLAUDE.md
+.claude/*
