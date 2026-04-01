@@ -1,28 +1,36 @@
-# TransitionCompassViz - Interactive Climate Pathway Visualization Platform
+# TransitionCompassViz — Interactive Climate Pathway Visualization Platform
 
 Interactive platform for climate pathway modeling and visualization. Enables real-time exploration of policy impacts on emissions, energy, and environmental indicators across sectors.
 
-## 📚 Documentation
-
-### For Contributors
-
-- **[Contributing Guide](CONTRIBUTING.md)** - Git workflow, branches, and PR process
-
-### For Developers
-
-- **[Adding a New Sector](TUTORIAL_NEW_SECTOR.md)** - Create new sectors with charts and subtabs
-- **[Adding a New Lever](TUTORIAL_NEW_LEVER.md)** - Add policy controls to sectors
-- **[Adding a Region Flag](TUTORIAL_ADD_REGION_FLAG.md)** - Add or change country/region flag symbols
-
-## 🌍 Live Platforms
+## Live Platforms
 
 - **Production**: [https://transition-compass.epfl.ch/](https://transition-compass.epfl.ch/)
 - **Development**: [https://transition-compass-dev.epfl.ch/](https://transition-compass-dev.epfl.ch/)
 
-## 🏗️ Architecture
+## Dual-Repository Architecture
 
-**Frontend**: Vue.js 3 + TypeScript, Quasar, ECharts, Pinia, Vite  
-**Backend**: FastAPI (Python 3.12), Pandas, NumPy, Redis (optional), Pydantic  
+This project is split into two repositories:
+
+| Repository                                                                                  | Purpose                                                                  |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **[speed-to-zero](https://github.com/EPFL-ENAC/leure-speed-to-zero)** (this repo)           | Web application — frontend UI, backend API, deployment                   |
+| **[transition-compass-model](https://github.com/2050Calculators/transition-compass-model)** | Climate calculation engine — sector modules, data matrices, optimization |
+
+The app imports the model as a Python package. The backend calls the model's `runner()` function with lever settings and receives time-series results and KPIs to serve to the frontend.
+
+```
+Vue UI  →  Pinia Store  →  modelService  →  FastAPI backend  →  transition-compass-model
+```
+
+### Who works where?
+
+- **App developers** (frontend, API, charts, UI): work in this repo
+- **Model researchers** (sector calculations, data, parameters): work in the [transition-compass-model](https://github.com/2050Calculators/transition-compass-model) repo
+
+## Tech Stack
+
+**Frontend**: Vue.js 3 + TypeScript, Quasar 2, ECharts (vue-echarts), Pinia, Vite, vue-i18n (DE/EN/FR)
+**Backend**: FastAPI, Python 3.12, Pandas, NumPy, Redis (optional), Pydantic
 **Infrastructure**: Docker, Traefik, nginx
 
 ### Project Structure
@@ -31,128 +39,129 @@ Interactive platform for climate pathway modeling and visualization. Enables rea
 speed-to-zero/
 ├── frontend/                 # Vue.js 3 application
 │   ├── src/
-│   │   ├── components/       # UI components
-│   │   │   ├── graphs/       # Chart components
-│   │   │   ├── kpi/          # KPI widgets
-│   │   │   └── levers/       # Policy controls
-│   │   ├── pages/            # Route components
-│   │   ├── stores/           # Pinia stores
-│   │   └── utils/            # Utility functions
-│   └── public/               # Static assets
+│   │   ├── components/       # UI components (graphs/, kpi/, levers/)
+│   │   ├── pages/            # Route/sector tab components
+│   │   ├── stores/           # Pinia stores (leversStore.ts)
+│   │   ├── services/         # API client (modelService.ts)
+│   │   ├── composables/      # Reusable composition functions
+│   │   └── config/           # Lever and sector definitions
+│   └── public/
 ├── backend/                  # FastAPI application
 │   ├── src/
-│   │   ├── api/              # API endpoints
-│   │   ├── config/           # Configuration
-│   │   └── utils/            # Backend utilities
-│   ├── model/                # Climate calculation modules
-│   │   ├── agriculture_module.py
-│   │   ├── buildings_module.py
-│   │   ├── transport_module.py
-│   │   ├── industry_module.py
-│   │   ├── power_module.py
-│   │   ├── emissions_module.py
-│   │   └── interactions.py
-│   └── _database/            # Data processing
-│       ├── data/             # Datasets
-│       └── pre_processing/   # Data preparation
+│   │   ├── main.py           # App entry point (Redis/in-memory cache)
+│   │   ├── api/routes.py     # API endpoints
+│   │   └── utils/
+│   └── pyproject.toml        # Dependencies (includes transition-compass-model)
 ├── model_config.json         # Regional configuration
-├── docker-compose.yml        # Development setup
-└── Makefile                  # Build automation
+├── docker-compose.yml
+└── Makefile
 ```
 
-## 🚀 Quick Start
+The model code is **not** in this repo — it is installed as a dependency via `transition-compass-model`.
+
+## Quick Start
 
 **Prerequisites**: Node.js 22+, Python 3.12+, Docker (optional)
 
 ```bash
-git clone https://github.com/EPFL-ENAC/leure-speed-to-zero.git
-cd leure-speed-to-zero
+git clone https://github.com/EPFL-ENAC/leure-speed-to-zero.git speed-to-zero
+cd speed-to-zero
 
-# Install dependencies and setup git hooks
-make install
-
-# Start both services
-make run
+make install       # Install all dependencies (backend + frontend) and git hooks
+make run           # Start backend (port 8000) + frontend (port 9000)
 ```
 
-**Services**: Frontend (http://localhost:9000) | Backend API (http://localhost:8000) | Docs (http://localhost:8000/docs)
+**Services**: Frontend ([localhost:9000](http://localhost:9000)) | Backend API ([localhost:8000](http://localhost:8000)) | API docs ([localhost:8000/docs](http://localhost:8000/docs))
 
-### Branch Workflow
+### Working with a local model (for researchers)
+
+If you're developing the model and want to see changes reflected in the app in real time, clone both repos as siblings and use the local install:
 
 ```
-main (production) ← dev (staging) ← model (research) ← feature/* (tasks)
+parent-dir/
+├── speed-to-zero/                  ← this repo
+└── transition-compass-model/       ← model repo
 ```
-
-**For researchers**: Work on `model` branch, create PRs to `dev` for review.  
-**See [Contributing Guide](CONTRIBUTING.md)** for detailed workflow, PR process, and how to stay synced with `dev`.
-
-## ⚙️ Configuration
-
-**Region**: Edit `backend/model_config.json`  
-**Redis**: Optional caching - `docker compose up -d redis`
-
-## 🛠️ Development
-
-**Commands**: `make clean` | `make lint` | `make format` | `make run-backend` | `make run-frontend`  
-**Quality**: Lefthook hooks, Conventional Commits, ESLint + Prettier, Python linting
-
-**Before committing:**
 
 ```bash
-make lint      # Check code quality
-make format    # Auto-fix formatting
-make run       # Test locally
+# From speed-to-zero/
+make install       # Installs deps and links to local model (editable)
+make run           # Changes in ../transition-compass-model/ are reflected immediately
 ```
 
-**See [Contributing Guide](CONTRIBUTING.md)** for complete development workflow and PR process.
+`make install` runs `make install-local` in the backend, which detects the sibling model directory and installs it as an editable package. Verify with:
 
-## 🔧 API & Model
+```bash
+cd backend && make check-model
+# Local mode:  path points to ../../transition-compass-model/
+# Remote mode: path points inside .venv/lib/.../site-packages/
+```
 
-**Key Endpoints**: `/api/calculate` (POST) | `/api/regions/{region}/data` (GET) | `/api/config` (GET)  
-**Modules**: Agriculture, Buildings, Transport, Industry, Power, Emissions  
-**Docs**: http://localhost:8000/docs
+To switch back to the remote (git-pinned) model: `cd backend && make install`.
 
-## 📊 Data
+See the [transition-compass-model DEVELOPMENT.md](https://github.com/2050Calculators/transition-compass-model/blob/main/DEVELOPMENT.md) for full details.
 
-**Sources**: Eurostat, World Bank, JRC, national statistics  
-**Pipeline**: Ingestion → Regional filtering → Validation → Model integration  
-**Caching**: Redis with region namespacing
+## Development
 
-## 🧪 Testing
+| Command             | Description                                   |
+| ------------------- | --------------------------------------------- |
+| `make install`      | Install all dependencies and git hooks        |
+| `make run`          | Run backend + frontend                        |
+| `make run-backend`  | Backend only (cache disabled)                 |
+| `make run-frontend` | Frontend only                                 |
+| `make lint`         | Check code quality (ESLint, Prettier, flake8) |
+| `make format`       | Auto-fix formatting                           |
+| `make up`           | Docker compose build and start                |
 
-**Run**: `make lint` | `cd frontend && npm test` | `cd backend && python -m pytest`  
-**Workflow**: Feature branch → Conventional commits → PR
+**Code quality**: Lefthook pre-commit hooks, Conventional Commits (`feat:`, `fix:`, `docs:`, etc.), ESLint + Prettier (frontend), Black + flake8 (backend).
 
-## 🐳 Docker
+## Branch Workflow
 
-**Dev**: `docker compose up -d`  
+```
+main (production) ← dev (staging) ← feature/*, fix/*
+```
+
+- **`main`**: Production-ready, deployed to [transition-compass.epfl.ch](https://transition-compass.epfl.ch/)
+- **`dev`**: Integration/staging, deployed to [transition-compass-dev.epfl.ch](https://transition-compass-dev.epfl.ch/)
+- **`feature/*`, `fix/*`**: Short-lived branches for specific changes, PR into `dev`
+
+See [Contributing Guide](CONTRIBUTING.md) for the full workflow.
+
+## Model Updates
+
+When a new version of `transition-compass-model` is tagged (e.g. `v1.2.3`), a GitHub Actions workflow automatically creates a PR in this repo (`chore/bump-model-v1.2.3 → dev`) that updates the dependency and regenerates the lock file. Review and merge to deploy.
+
+## API
+
+| Endpoint                                              | Description              |
+| ----------------------------------------------------- | ------------------------ |
+| `GET /health`                                         | Health check             |
+| `GET /v1/run-model?levers=...&sector=...&country=...` | Run climate model        |
+| `GET /v1/lever-data/{leverName}`                      | Lever visualization data |
+| `GET /v1/datamatrix/{name}`                           | Raw datamatrix           |
+| `GET /docs`                                           | Swagger UI               |
+
+## Configuration
+
+**Region**: Edit `model_config.json` (available: Vaud, Switzerland, EU27)
+**Redis**: Optional caching — `docker compose up -d redis`
+
+## Docker
+
+**Dev**: `docker compose up -d`
 **Prod**: `docker compose -f docker-compose.prod.yml up -d`
+**Ports**: 9000 (frontend), 8000 (backend), 6379 (redis)
 
-## 🔍 Troubleshooting
+## Documentation
 
-**Ports**: 9000 (frontend), 8000 (backend), 6379 (redis)  
-**WSL2**: `git config --global core.autocrlf input && dos2unix Makefile`  
-**Python**: Activate venv, verify `requirements.txt`  
-**Node**: Version 22+, try `rm -rf node_modules && npm install`  
-**Flags**: Add SVG to `frontend/src/assets/flags/` with lowercase region name - see [Flag Tutorial](TUTORIAL_ADD_REGION_FLAG.md)
+- [Contributing Guide](CONTRIBUTING.md) — Git workflow, branches, PR process
+- [Adding a New Sector](TUTORIAL_NEW_SECTOR.md) — Create new sectors with charts and subtabs
+- [Adding a New Lever](TUTORIAL_NEW_LEVER.md) — Add policy controls to sectors
+- [Adding a Region Flag](TUTORIAL_ADD_REGION_FLAG.md) — Add or change country/region flag symbols
 
-## 📄 License
+## License
 
 [Apache License 2.0](LICENSE)
-
-## 🤝 Contributing
-
-**Quick workflow**: `model` branch → Changes → `make lint` + `make format` → Commit → Push → PR to `dev`
-
-**Read the [Contributing Guide](CONTRIBUTING.md)** for:
-
-- Complete Git workflow and branching strategy
-- How to sync your branch with latest `dev` changes
-- PR creation and review process
-- Handling merge conflicts
-- Conventional commit examples
-
-**Standards**: TypeScript, Pydantic validation, error handling, performance optimization
 
 ---
 
