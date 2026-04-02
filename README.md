@@ -67,7 +67,7 @@ The model code is **not** in this repo — it is installed as a dependency via `
 git clone https://github.com/EPFL-ENAC/leure-speed-to-zero.git speed-to-zero
 cd speed-to-zero
 
-make install       # Install all dependencies (backend + frontend) and git hooks
+make install       # Install all dependencies using git source (CI/CD mode)
 make run           # Start backend (port 8000) + frontend (port 9000)
 ```
 
@@ -85,11 +85,11 @@ parent-dir/
 
 ```bash
 # From speed-to-zero/
-make install       # Installs deps and links to local model (editable)
+make install-dev   # Installs deps and links to local model (editable)
 make run           # Changes in ../transition-compass-model/ are reflected immediately
 ```
 
-`make install` runs `make install-local` in the backend, which detects the sibling model directory and installs it as an editable package. Verify with:
+`make install-dev` runs `make install-local` in the backend, which detects the sibling model directory and installs it as an editable package. Verify with:
 
 ```bash
 cd backend && make check-model
@@ -97,7 +97,7 @@ cd backend && make check-model
 # Remote mode: path points inside .venv/lib/.../site-packages/
 ```
 
-To switch back to the remote (git-pinned) model: `cd backend && make install`.
+To switch back to the remote (git-pinned) model: `make install`.
 
 See the [transition-compass-model DEVELOPMENT.md](https://github.com/2050Calculators/transition-compass-model/blob/main/DEVELOPMENT.md) for full details.
 
@@ -105,7 +105,8 @@ See the [transition-compass-model DEVELOPMENT.md](https://github.com/2050Calcula
 
 | Command             | Description                                   |
 | ------------------- | --------------------------------------------- |
-| `make install`      | Install all dependencies and git hooks        |
+| `make install`      | Install all dependencies (git source)         |
+| `make install-dev`  | Install all dependencies (local model)        |
 | `make run`          | Run backend + frontend                        |
 | `make run-backend`  | Backend only (cache disabled)                 |
 | `make run-frontend` | Frontend only                                 |
