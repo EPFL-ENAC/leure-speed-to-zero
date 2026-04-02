@@ -1,44 +1,38 @@
 import hashlib
-from fastapi import APIRouter
-from fastapi.responses import ORJSONResponse
 import logging
+import pickle
+import re
 import sys
+import time
 from pathlib import Path
 
 import orjson
-
-# Redirect old 'model' imports to new package for pickle compatibility
 import transition_compass_model
 import transition_compass_model.model as model
-
-sys.modules["model"] = model
-
-_DATAMATRIX_DIR = (
-    Path(transition_compass_model.__file__).parent / "_database" / "data" / "datamatrix"
-)
-
-from transition_compass_model.model.interactions import runner
+from fastapi import APIRouter
+from fastapi.responses import ORJSONResponse
 from transition_compass_model.model.common.auxiliary_functions import (
     filter_country_and_load_data_from_pickles,
 )
 from transition_compass_model.model.common.lever_plotting import get_lever_data_to_plot
-import time
-import re
-from pathlib import Path
-from src.api.lever_keys import LEVER_KEYS
-import pickle
+from transition_compass_model.model.interactions import runner
 
+from src.api.lever_keys import LEVER_KEYS
+from src.utils.cache_decorator import conditional_cache
+from src.utils.region_config import RegionConfig
+from src.utils.sector_config import SectorConfig
 from src.utils.serialize_model import serialize_model_output
 from src.utils.transform_model import (
     transform_datamatrix_to_clean_structure,
     transform_lever_data_for_echarts,
 )
 
-from src.utils.region_config import RegionConfig
-from src.utils.sector_config import SectorConfig
+# Redirect old 'model' imports to new package for pickle compatibility
+sys.modules["model"] = model
 
-
-from src.utils.cache_decorator import conditional_cache
+_DATAMATRIX_DIR = (
+    Path(transition_compass_model.__file__).parent / "_database" / "data" / "datamatrix"
+)
 
 
 router = APIRouter()
@@ -302,7 +296,6 @@ async def get_lever_data(
 ):
     """Get lever data for plotting and visualization."""
     try:
-
         # Use provided country or default to current region
         if country is None:
             country = RegionConfig.get_current_region()
@@ -399,8 +392,9 @@ async def debug_sectors():
 @router.post("/reload-config")
 async def reload_config():
     """Force reload the region and sector configuration from model_config.json."""
-    from src.utils.region_config import RegionConfig
     import logging
+
+    from src.utils.region_config import RegionConfig
 
     logger = logging.getLogger(__name__)
     logger.info("🔄 Manual configuration reload requested")

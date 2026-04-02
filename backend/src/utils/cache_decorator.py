@@ -1,6 +1,8 @@
-from src.config.settings import settings
-from fastapi_cache.decorator import cache
 from functools import wraps
+
+from fastapi_cache.decorator import cache
+
+from src.config.settings import settings
 
 
 def conditional_cache(expire: int = 600):

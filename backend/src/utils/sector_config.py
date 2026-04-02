@@ -8,7 +8,7 @@ based on the model_config.json configuration file.
 import json
 import logging
 from pathlib import Path
-from typing import List, Dict
+from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 

@@ -1,23 +1,21 @@
-from src.api.routes import router
-from src.config.settings import settings
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from pydantic import ValidationError
 import logging
-
+import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi_cache import FastAPICache
-from fastapi_cache.backends.redis import RedisBackend
-from fastapi_cache.backends.inmemory import InMemoryBackend
-from fastapi_cache.decorator import cache
-
-from src.utils.region_config import RegionConfig
-
-from redis import asyncio as aioredis
+from fastapi import FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
-import time
+from fastapi.responses import JSONResponse
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.inmemory import InMemoryBackend
+from fastapi_cache.backends.redis import RedisBackend
+from fastapi_cache.decorator import cache
+from pydantic import ValidationError
+from redis import asyncio as aioredis
+
+from src.api.routes import router
+from src.config.settings import settings
+from src.utils.region_config import RegionConfig
 
 
 # Initialize cache on startup
@@ -135,8 +133,9 @@ async def validation_exception_handler(request: Request, exc: ValidationError):
 # Optional: Serve the main HTML file at the root
 @app.get("/")
 async def get_index():
-    from fastapi.responses import FileResponse
     from pathlib import Path
+
+    from fastapi.responses import FileResponse
 
     index_path = Path(__file__).parent.parent / "index.html"
     if index_path.exists():

@@ -48,18 +48,18 @@ up:
 
 format:
 	@if uv --version >/dev/null 2>&1; then \
-		uv run black src; \
+		uv run ruff format src; \
+		uv run ruff check --fix src; \
 	else \
-		.venv/bin/black src; \
+		ruff format src; \
+		ruff check --fix src; \
 	fi
 
 lint:
 	@if uv --version >/dev/null 2>&1; then \
-		uv run flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics; \
-		uv run flake8 src --count --exit-zero --max-complexity=15 --max-line-length=127 --statistics; \
+		uv run ruff check src; \
 	else \
-		.venv/bin/flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics; \
-		.venv/bin/flake8 src --count --exit-zero --max-complexity=15 --max-line-length=127 --statistics; \
+		ruff check src; \
 	fi
 
 test:
