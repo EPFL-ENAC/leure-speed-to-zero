@@ -1,4 +1,4 @@
-.PHONY: install install-config install-backend install-frontend clean uninstall help run run-backend run-backend-with-cache run-frontend wait-for-backend up
+.PHONY: install install-dev install-config install-backend install-backend-local install-frontend clean uninstall help run run-backend run-backend-with-cache run-frontend wait-for-backend up
 
 # Default target
 help:
@@ -7,8 +7,9 @@ help:
 	@echo "╚════════════════════════════════════════════════════════════════╝"
 	@echo ""
 	@echo "Setup:"
-	@echo "  make install           - Install all dependencies (backend + frontend) and git hooks"
-	@echo "  make install-backend   - Install backend dependencies only"
+	@echo "  make install           - Install all dependencies using git source (CI/CD mode)"
+	@echo "  make install-dev       - Install all dependencies using local model (dev mode)"
+	@echo "  make install-backend   - Install backend dependencies only (git source)"
 	@echo "  make install-frontend  - Install frontend dependencies only"
 	@echo "  make clean             - Clean node_modules and package-lock.json"
 	@echo "  make uninstall         - Remove git hooks and clean dependencies"
@@ -44,11 +45,17 @@ help:
 	@echo "See CONTRIBUTING.md for complete workflow details"
 
 
-# Install dependencies and set up git hooks
+# Install dependencies using git source (CI/CD mode)
 install: install-config install-backend install-frontend
 	@echo "Installing root dependencies and git hooks..."
 	npm install
 	@echo "Setup complete!"
+
+# Install dependencies using local transition-compass-model (dev mode)
+install-dev: install-config install-backend-local install-frontend
+	@echo "Installing root dependencies and git hooks..."
+	npm install
+	@echo "Setup complete! (using local transition-compass-model)"
 
 # Install configuration (placeholder for future config setup)
 install-config:
@@ -57,9 +64,14 @@ install-config:
 	@echo "Configuration ready!"
 
 
-# Install backend dependencies (local editable mode for dev)
+# Install backend dependencies (git source / CI mode)
 install-backend:
 	@echo "Installing backend dependencies..."
+	$(MAKE) -C backend install
+
+# Install backend dependencies (local editable model override)
+install-backend-local:
+	@echo "Installing backend dependencies (local model)..."
 	$(MAKE) -C backend install-local
 
 # Install frontend dependencies
