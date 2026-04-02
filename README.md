@@ -103,18 +103,18 @@ See the [transition-compass-model DEVELOPMENT.md](https://github.com/2050Calcula
 
 ## Development
 
-| Command             | Description                                   |
-| ------------------- | --------------------------------------------- |
-| `make install`      | Install all dependencies (git source)         |
-| `make install-dev`  | Install all dependencies (local model)        |
-| `make run`          | Run backend + frontend                        |
-| `make run-backend`  | Backend only (cache disabled)                 |
-| `make run-frontend` | Frontend only                                 |
-| `make lint`         | Check code quality (ESLint, Prettier, flake8) |
-| `make format`       | Auto-fix formatting                           |
-| `make up`           | Docker compose build and start                |
+| Command             | Description                                 |
+| ------------------- | ------------------------------------------- |
+| `make install`      | Install all dependencies (git source)       |
+| `make install-dev`  | Install all dependencies (local model)      |
+| `make run`          | Run backend + frontend                      |
+| `make run-backend`  | Backend only (cache disabled)               |
+| `make run-frontend` | Frontend only                               |
+| `make lint`         | Check code quality (ESLint, Prettier, ruff) |
+| `make format`       | Auto-fix formatting                         |
+| `make up`           | Docker compose build and start              |
 
-**Code quality**: Lefthook pre-commit hooks, Conventional Commits (`feat:`, `fix:`, `docs:`, etc.), ESLint + Prettier (frontend), Black + flake8 (backend).
+**Code quality**: Lefthook pre-commit hooks, Conventional Commits (`feat:`, `fix:`, `docs:`, etc.), ESLint + Prettier (frontend), ruff (backend).
 
 ## Branch Workflow
 
