@@ -16,7 +16,7 @@ feature/*, fix/* (individual tasks)
 - **`dev`**: Integration branch for testing, deployed to https://transition-compass-dev.epfl.ch/
 - **`feature/*`, `fix/*`**: Short-lived branches for specific changes
 
-> **Note**: Model research is done in the separate [transition-compass-model](https://github.com/2050Calculators/transition-compass-model) repository. If you're working on sector calculations, data, or parameters, see that repo's contributing guide instead.
+> **Note**: Model research is done in the separate [transition-compass-model](https://github.com/2050Calculators/transition-compass-model) repository. If you're working on sector calculations, data, or parameters, see the [model contributing guide](https://github.com/2050Calculators/transition-compass-model/blob/main/CONTRIBUTING.md) instead.
 
 ## Development Workflow
 
