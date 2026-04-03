@@ -814,7 +814,7 @@ requires-dist = [
     { name = "pyomo", specifier = "==6.9.5" },
     { name = "requests" },
     { name = "scipy", specifier = "==1.15.3" },
-    { name = "transition-compass-model", git = "https://github.com/2050Calculators/transition-compass-model.git" },
+    { name = "transition-compass-model", specifier = ">=0.1.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -1459,7 +1459,7 @@ wheels = [
 [[package]]
 name = "transition-compass-model"
 version = "0.1.0"
-source = { git = "https://github.com/2050Calculators/transition-compass-model.git#b63b6f0b86b34d3bc806aa769cd76ffc47d9c676" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "amplpy" },
     { name = "amply" },
@@ -1480,6 +1480,10 @@ dependencies = [
     { name = "scipy" },
     { name = "statsmodels" },
     { name = "tqdm" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5b/da/80373cc0078cfa1aa2ad3d7b95194bf51b733b7e00705f9d7741698f2cbc/transition_compass_model-0.1.0.tar.gz", hash = "sha256:ae47604bdcdef3fe56df8d9e02f8167c985ca8863e408f571fdbff6199114e60", size = 3409588, upload-time = "2026-04-03T14:49:40.958Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9c/82/6916856ee9623ba4d39e1e3c8398d77330f6049591c9c437b12e474d141b/transition_compass_model-0.1.0-py3-none-any.whl", hash = "sha256:b01af4741d30dbcfd452e6a5e928921d09549b2ad961beaacf4489c4916ea424", size = 3697956, upload-time = "2026-04-03T14:49:38.742Z" },
 ]
 
 [[package]]
