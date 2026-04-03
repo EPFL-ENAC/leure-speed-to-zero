@@ -67,7 +67,7 @@ The model code is **not** in this repo — it is installed as a dependency via `
 git clone https://github.com/EPFL-ENAC/leure-speed-to-zero.git speed-to-zero
 cd speed-to-zero
 
-make install       # Install all dependencies using git source (CI/CD mode)
+make install       # Install all dependencies (from PyPI)
 make run           # Start backend (port 8000) + frontend (port 9000)
 ```
 
@@ -97,7 +97,7 @@ cd backend && make check-model
 # Remote mode: path points inside .venv/lib/.../site-packages/
 ```
 
-To switch back to the remote (git-pinned) model: `make install`.
+To switch back to the PyPI-installed model: `make install`.
 
 See the [transition-compass-model DEVELOPMENT.md](https://github.com/2050Calculators/transition-compass-model/blob/main/DEVELOPMENT.md) for full details.
 
@@ -105,7 +105,7 @@ See the [transition-compass-model DEVELOPMENT.md](https://github.com/2050Calcula
 
 | Command             | Description                                 |
 | ------------------- | ------------------------------------------- |
-| `make install`      | Install all dependencies (git source)       |
+| `make install`      | Install all dependencies (from PyPI)        |
 | `make install-dev`  | Install all dependencies (local model)      |
 | `make run`          | Run backend + frontend                      |
 | `make run-backend`  | Backend only (cache disabled)               |

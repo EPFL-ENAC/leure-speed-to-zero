@@ -4,13 +4,13 @@
 PYTHON_VERSION = 3.12
 NAME = backend-web-rest-api
 
-# CI/CD install (uses git source from lock)
+# CI/CD install (uses PyPI package from lock)
 install:
-	@echo "Installing backend dependencies (CI/CD mode - git source)..."
+	@echo "Installing backend dependencies..."
 	uv sync --frozen
 	@echo "Backend dependencies installed!"
 
-# Local dev install: installs from git (lock), then overrides model with local editable
+# Local dev install: installs from PyPI (lock), then overrides model with local editable
 install-local:
 	@echo "Installing backend dependencies (local mode - editable)..."
 	uv sync --frozen
@@ -18,7 +18,7 @@ install-local:
 		echo "Local model found, installing as editable..."; \
 		uv pip install --editable ../../transition-compass-model; \
 	else \
-		echo "Local model not found at ../../transition-compass-model, using git source"; \
+		echo "Local model not found at ../../transition-compass-model, using PyPI version"; \
 	fi
 	@echo "Backend dependencies installed!"
 
