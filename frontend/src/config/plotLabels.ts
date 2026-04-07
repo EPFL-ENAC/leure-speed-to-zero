@@ -1216,6 +1216,141 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Holz',
     frFR: 'Bois',
   },
+  'bld_CO2-emissions_coal[Mt]': {
+    enUS: 'Coal',
+    deDE: 'Kohle',
+    frFR: 'Charbon',
+  },
+  'bld_CO2-emissions_district-heating[Mt]': {
+    enUS: 'District-heating',
+    deDE: 'Fernwärme',
+    frFR: 'Chauffage à distance',
+  },
+  'bld_CO2-emissions_electricity[Mt]': {
+    enUS: 'Electricity',
+    deDE: 'Strom',
+    frFR: 'Électricité',
+  },
+  'bld_CO2-emissions_gas[Mt]': {
+    enUS: 'Gas',
+    deDE: 'Gas',
+    frFR: 'Gaz',
+  },
+  'bld_CO2-emissions_heat-pump[Mt]': {
+    enUS: 'Heat-pump',
+    deDE: 'Wärmepumpe',
+    frFR: 'Pompe à chaleur',
+  },
+  'bld_CO2-emissions_heating-oil[Mt]': {
+    enUS: 'Heating-oil',
+    deDE: 'Heizöl',
+    frFR: 'Huile de chauffage',
+  },
+  'bld_CO2-emissions_other[Mt]': {
+    enUS: 'Other',
+    deDE: 'Sonstige',
+    frFR: 'Autre',
+  },
+  'bld_CO2-emissions_solar[Mt]': {
+    enUS: 'Solar-heat',
+    deDE: 'Solarwärme',
+    frFR: 'Chaleur solaire',
+  },
+  'bld_CO2-emissions_wood[Mt]': {
+    enUS: 'Wood',
+    deDE: 'Holz',
+    frFR: 'Bois',
+  },
+  'services_CO2-emissions_heating_coal[Mt]': {
+    enUS: 'Coal',
+    deDE: 'Kohle',
+    frFR: 'Charbon',
+  },
+  'services_CO2-emissions_heating_district-heating[Mt]': {
+    enUS: 'District-heating',
+    deDE: 'Fernwärme',
+    frFR: 'Chauffage à distance',
+  },
+  'services_CO2-emissions_heating_electricity[Mt]': {
+    enUS: 'Electricity',
+    deDE: 'Strom',
+    frFR: 'Électricité',
+  },
+  'services_CO2-emissions_heating_gas[Mt]': {
+    enUS: 'Gas',
+    deDE: 'Gas',
+    frFR: 'Gaz',
+  },
+  'services_CO2-emissions_heating_heat-pump[Mt]': {
+    enUS: 'Heat-pump',
+    deDE: 'Wärmepumpe',
+    frFR: 'Pompe à chaleur',
+  },
+  'services_CO2-emissions_heating_heating-oil[Mt]': {
+    enUS: 'Heating-oil',
+    deDE: 'Heizöl',
+    frFR: 'Huile de chauffage',
+  },
+  'services_CO2-emissions_heating_other[Mt]': {
+    enUS: 'Other',
+    deDE: 'Sonstige',
+    frFR: 'Autre',
+  },
+  'services_CO2-emissions_heating_solar[Mt]': {
+    enUS: 'Solar-heat',
+    deDE: 'Solarwärme',
+    frFR: 'Chaleur solaire',
+  },
+  'services_CO2-emissions_heating_wood[Mt]': {
+    enUS: 'Wood',
+    deDE: 'Holz',
+    frFR: 'Bois',
+  },
+  'bld_hotwater_CO2-emissions_coal[Mt]': {
+    enUS: 'Coal',
+    deDE: 'Kohle',
+    frFR: 'Charbon',
+  },
+  'bld_hotwater_CO2-emissions_district-heating[Mt]': {
+    enUS: 'District-heating',
+    deDE: 'Fernwärme',
+    frFR: 'Chauffage à distance',
+  },
+  'bld_hotwater_CO2-emissions_electricity[Mt]': {
+    enUS: 'Electricity',
+    deDE: 'Strom',
+    frFR: 'Électricité',
+  },
+  'bld_hotwater_CO2-emissions_gas[Mt]': {
+    enUS: 'Gas',
+    deDE: 'Gas',
+    frFR: 'Gaz',
+  },
+  'bld_hotwater_CO2-emissions_heat-pump[Mt]': {
+    enUS: 'Heat-pump',
+    deDE: 'Wärmepumpe',
+    frFR: 'Pompe à chaleur',
+  },
+  'bld_hotwater_CO2-emissions_heating-oil[Mt]': {
+    enUS: 'Heating-oil',
+    deDE: 'Heizöl',
+    frFR: 'Huile de chauffage',
+  },
+  'bld_hotwater_CO2-emissions_other[Mt]': {
+    enUS: 'Other',
+    deDE: 'Sonstige',
+    frFR: 'Autre',
+  },
+  'bld_hotwater_CO2-emissions_solar[Mt]': {
+    enUS: 'Solar-heat',
+    deDE: 'Solarwärme',
+    frFR: 'Chaleur solaire',
+  },
+  'bld_hotwater_CO2-emissions_wood[Mt]': {
+    enUS: 'Wood',
+    deDE: 'Holz',
+    frFR: 'Bois',
+  },
   'bld_Tint-heating_B': {
     enUS: 'A, B',
     deDE: 'A, B',

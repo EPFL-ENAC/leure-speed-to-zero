@@ -92,7 +92,13 @@
         "frFR": "Émissions de chauffage",
         "deDE": "Heizungsemissionen"
       },
-      "charts": ["SHGHGEmissionsPerBuildingType", "GHGEmissionsPerCarrier"],
+      "charts": [
+        "GHGEmissionstotalPerCarrier",
+        "SHGHGEmissionsPerBuildingType",
+        "GHGEmissionsheatingPerCarrier",
+        "GHGEmissionsservicesPerCarrier",
+        "GHGEmissionshotwaterPerCarrier"
+      ],
       "route": "building-types-emissions"
     },
     {
@@ -158,7 +164,28 @@
         { "id": "bld_CO2-emissions_heating_B[Mt]", "color": "#388E3C" }
       ]
     },
-    "GHGEmissionsPerCarrier": {
+    "GHGEmissionstotalPerCarrier": {
+      "title": {
+        "enUS": "Territorial CO₂ Emissions from the buildings sector",
+        "frFR": "Émissions totales de CO₂du secteur du batiments",
+        "deDE": "CTerritoriale CO₂-Emissionen aus dem Gebäudesektor"
+      },
+      "type": "StackedArea",
+      "unit": "Mt",
+      "outputs": [
+        { "id": "bld_CO2-emissions_coal[Mt]", "color": "#434348" },
+        { "id": "bld_CO2-emissions_electricity[Mt]", "color": "#f15c80" },
+        { "id": "bld_CO2-emissions_heating-oil[Mt]", "color": "#2b908f" },
+        { "id": "bld_CO2-emissions_gas[Mt]", "color": "#e4d354" },
+        { "id": "bld_CO2-emissions_wood[Mt]", "color": "#5d4037" },
+        { "id": "bld_CO2-emissions_district-heating[Mt]", "color": "#f45b5b" },
+        { "id": "bld_CO2-emissions_heat-pump[Mt]", "color": "#aee791" },
+        { "id": "bld_CO2-emissions_ambient-heat[Mt]", "color": "#7FAEC0" },
+        { "id": "bld_CO2-emissions_other[Mt]", "color": "#f7a35c" },
+        { "id": "bld_CO2-emissions_solar[Mt]", "color": "#e4d354" }
+      ]
+    },
+    "GHGEmissionsheatingPerCarrier": {
       "title": {
         "enUS": "CO2 emissions for residential heating per carrier",
         "frFR": "Émissions de CO2 pour le chauffage résidentiel par vecteur",
@@ -177,6 +204,48 @@
         { "id": "bld_CO2-emissions_heating_ambient-heat[Mt]", "color": "#7FAEC0" },
         { "id": "bld_CO2-emissions_heating_other[Mt]", "color": "#f7a35c" },
         { "id": "bld_CO2-emissions_heating_solar[Mt]", "color": "#e4d354" }
+      ]
+    },
+    "GHGEmissionsservicesPerCarrier": {
+      "title": {
+        "enUS": "Non-residential CO₂ Emissions by energy carrier",
+        "frFR": "Émissions de CO2 non résidentielles par source d’énergie",
+        "deDE": "CO₂-Emissionen im Nichtwohnsektor nach Energieträgern"
+      },
+      "type": "StackedArea",
+      "unit": "Mt",
+      "outputs": [
+        { "id": "services_CO2-emissions_heating_coal[Mt]", "color": "#434348" },
+        { "id": "services_CO2-emissions_heating_electricity[Mt]", "color": "#f15c80" },
+        { "id": "services_CO2-emissions_heating_heating-oil[Mt]", "color": "#2b908f" },
+        { "id": "services_CO2-emissions_heating_gas[Mt]", "color": "#e4d354" },
+        { "id": "services_CO2-emissions_heating_wood[Mt]", "color": "#5d4037" },
+        { "id": "services_CO2-emissions_heating_district-heating[Mt]", "color": "#f45b5b" },
+        { "id": "services_CO2-emissions_heating_heat-pump[Mt]", "color": "#aee791" },
+        { "id": "services_CO2-emissions_heating_ambient-heat[Mt]", "color": "#7FAEC0" },
+        { "id": "services_CO2-emissions_heating_other[Mt]", "color": "#f7a35c" },
+        { "id": "services_CO2-emissions_heating_solar[Mt]", "color": "#e4d354" }
+      ]
+    },
+    "GHGEmissionshotwaterPerCarrier": {
+      "title": {
+        "enUS": "CO₂ Emissions from Residential Hot Water by Energy Source",
+        "frFR": "Émissions de CO₂ liées à l’eau chaude sanitaire résidentielle par source d’énergie",
+        "deDE": "CO₂-Emissionen für die Warmwasserbereitung im Wohnbereich nach Energieträger"
+      },
+      "type": "StackedArea",
+      "unit": "Mt",
+      "outputs": [
+        { "id": "bld_hotwater_CO2-emissions_coal[Mt]", "color": "#434348" },
+        { "id": "bld_hotwater_CO2-emissions_electricity[Mt]", "color": "#f15c80" },
+        { "id": "bld_hotwater_CO2-emissions_heating-oil[Mt]", "color": "#2b908f" },
+        { "id": "bld_hotwater_CO2-emissions_gas[Mt]", "color": "#e4d354" },
+        { "id": "bld_hotwater_CO2-emissions_wood[Mt]", "color": "#5d4037" },
+        { "id": "bld_hotwater_CO2-emissions_district-heating[Mt]", "color": "#f45b5b" },
+        { "id": "bld_hotwater_CO2-emissions_heat-pump[Mt]", "color": "#aee791" },
+        { "id": "bld_hotwater_CO2-emissions_ambient-heat[Mt]", "color": "#7FAEC0" },
+        { "id": "bld_hotwater_CO2-emissions_other[Mt]", "color": "#f7a35c" },
+        { "id": "bld_hotwater_CO2-emissions_solar[Mt]", "color": "#e4d354" }
       ]
     },
     "SHEnergyDemandPerCarrier": {
