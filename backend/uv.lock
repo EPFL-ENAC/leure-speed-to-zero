@@ -814,7 +814,7 @@ requires-dist = [
     { name = "pyomo", specifier = "==6.9.5" },
     { name = "requests" },
     { name = "scipy", specifier = "==1.15.3" },
-    { name = "transition-compass-model", specifier = ">=0.1.0" },
+    { name = "transition-compass-model", specifier = "==0.1.3" },
 ]
 
 [package.metadata.requires-dev]
@@ -1458,7 +1458,7 @@ wheels = [
 
 [[package]]
 name = "transition-compass-model"
-version = "0.1.0"
+version = "0.1.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "amplpy" },
@@ -1481,9 +1481,9 @@ dependencies = [
     { name = "statsmodels" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5b/da/80373cc0078cfa1aa2ad3d7b95194bf51b733b7e00705f9d7741698f2cbc/transition_compass_model-0.1.0.tar.gz", hash = "sha256:ae47604bdcdef3fe56df8d9e02f8167c985ca8863e408f571fdbff6199114e60", size = 3409588, upload-time = "2026-04-03T14:49:40.958Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ba/35/d0b5d1dc3870a9dde3cc3a40e49dadd595684a0e0943df5d79c78841f3ec/transition_compass_model-0.1.3.tar.gz", hash = "sha256:b40ceaa16bae6a0e44e7bd3088c5e77762946389a6e47acb141d96afe2373c96", size = 4931212, upload-time = "2026-04-16T12:49:25.522Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9c/82/6916856ee9623ba4d39e1e3c8398d77330f6049591c9c437b12e474d141b/transition_compass_model-0.1.0-py3-none-any.whl", hash = "sha256:b01af4741d30dbcfd452e6a5e928921d09549b2ad961beaacf4489c4916ea424", size = 3697956, upload-time = "2026-04-03T14:49:38.742Z" },
+    { url = "https://files.pythonhosted.org/packages/92/91/e5f609f6a4935e165ca37ea676e13e52378eec7204b32cc4270b61d1ca9d/transition_compass_model-0.1.3-py3-none-any.whl", hash = "sha256:9a24cc20e70a9936b78ca25b9c15f00d62f5a33813faf40538062cf543f47691", size = 5121684, upload-time = "2026-04-16T12:49:22.753Z" },
 ]
 
 [[package]]
