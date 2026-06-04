@@ -1,0 +1,25 @@
+{
+  "kpis": [],
+  "subtabs": [
+    {
+      "title": { "enUS": "LCA", "frFR": "ACV", "deDE": "LCA" },
+      "charts": ["heavy-metals"],
+      "route": "route-name"
+    }
+  ],
+  "charts": {
+    "heavy-metals": {
+      "title": { "enUS": "Heavy Metals", "frFR": "Métaux lourds", "deDE": "Schwere Metalle" },
+      "type": "StackedArea",
+      "unit": "kWh",
+      "outputs": [
+        { "id": "heavy-metals_heavy-metals-to-soil-arsenic[kg]", "color": "#434348" },
+        { "id": "heavy-metals_heavy-metals-to-soil-cadmium[kg]", "color": "#f15c80" },
+        { "id": "heavy-metals_heavy-metals-to-soil-chromium[kg]", "color": "#2b908f" },
+        { "id": "heavy-metals_heavy-metals-to-soil-lead[kg]", "color": "#e4d354" },
+        { "id": "heavy-metals_heavy-metals-to-soil-mercury[kg]", "color": "#5d4037" },
+        { "id": "heavy-metals_heavy-metals-to-soil-nickel[kg]", "color": "#f45b5b" }
+      ]
+    }
+  }
+}

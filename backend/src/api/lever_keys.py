@@ -83,4 +83,5 @@ LEVER_KEYS = [
     "lever_eol-waste-management",
     "lever_eol-material-recovery",
     "lever_harvest-rate",
+    "lever_footprint",
 ]

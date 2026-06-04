@@ -105,6 +105,21 @@ export const sectors: Sector[] = [
   },
   {
     label: {
+      enUS: 'Industry',
+      frFR: 'Industrie',
+      deDE: 'Industrie',
+    },
+    value: 'industry',
+    icon: 'factory',
+    description: {
+      enUS: 'Analyze industrial production, material efficiency, and emission reduction strategies',
+      frFR: "Analysez la production industrielle, l'efficacité matérielle et les stratégies de réduction des émissions",
+      deDE: 'Analysieren Sie die Industrieproduktion, Materialeffizienz und Emissionsreduktionsstrategien',
+    },
+    levers: [],
+  },
+  {
+    label: {
       enUS: 'Agriculture',
       frFR: 'Agriculture',
       deDE: 'Landwirtschaft',
@@ -127,5 +142,20 @@ export const sectors: Sector[] = [
       'lever_alt-protein',
       'lever_biomass-hierarchy',
     ],
+  },
+  {
+    label: {
+      enUS: 'LCA',
+      frFR: 'ACV',
+      deDE: 'LCA',
+    },
+    value: 'lca',
+    icon: 'eco',
+    description: {
+      enUS: 'Life Cycle Assessment',
+      frFR: 'Analyse du Cycle de Vie',
+      deDE: 'Lebenszyklusanalyse',
+    },
+    levers: ['lever_footprint'],
   },
 ];

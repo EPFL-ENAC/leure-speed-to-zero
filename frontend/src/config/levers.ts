@@ -2130,4 +2130,30 @@ export const levers: Lever[] = [
       { min: 4, max: 4, color: '#1876D2', label: 'lever.difficulty.ambitious' },
     ],
   },
+  {
+    code: 'lever_footprint',
+    title: {
+      enUS: 'Footprint',
+      frFR: 'Empreinte',
+      deDE: 'Fußabdruck',
+    },
+    group: {
+      enUS: 'Life Cycle Assessment',
+      frFR: 'Analyse du Cycle de Vie',
+      deDE: 'Lebenszyklusanalyse',
+    },
+    headline: {
+      enUS: 'Environmental impact',
+      frFR: 'Impact environnemental',
+      deDE: 'Umweltauswirkungen',
+    },
+    range: [1, 2, 3, 4],
+    type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
+      { min: 2, max: 2, color: '#92BFEB', label: 'lever.difficulty.moderate' },
+      { min: 3, max: 3, color: '#559ADE', label: 'lever.difficulty.hard' },
+      { min: 4, max: 4, color: '#1876D2', label: 'lever.difficulty.ambitious' },
+    ],
+  },
 ];

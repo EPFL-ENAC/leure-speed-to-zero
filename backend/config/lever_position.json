@@ -36,8 +36,6 @@
     "lever_ccus": 1,
     "lever_decom_fossil": 1,
     "lever_ccs": 1,
-    "lever_eol-waste-management": 1,
-    "lever_eol-material-recovery": 1,
     "lever_capacity_nuclear": 1,
     "lever_capacity_RES_wind": 1,
     "lever_capacity_RES_solar": 1,

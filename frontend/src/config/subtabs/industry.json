@@ -1,0 +1,62 @@
+{
+  "kpis": [],
+  "subtabs": [
+    {
+      "title": {
+        "enUS": "Production",
+        "frFR": "Production",
+        "deDE": "Produktion"
+      },
+      "charts": ["ProductionOverview"],
+      "route": "production"
+    },
+    {
+      "title": {
+        "enUS": "Emissions",
+        "frFR": "Émissions",
+        "deDE": "Emissionen"
+      },
+      "charts": ["IndustryEmissions"],
+      "route": "emissions"
+    }
+  ],
+  "charts": {
+    "ProductionOverview": {
+      "title": {
+        "enUS": "Industrial Production",
+        "frFR": "Production industrielle",
+        "deDE": "Industrieproduktion"
+      },
+      "type": "StackedArea",
+      "unit": "Mt",
+      "outputs": [
+        "material-production_aluminium",
+        "material-production_cement",
+        "material-production_chem",
+        "material-production_copper",
+        "material-production_fbt",
+        "material-production_glass",
+        "material-production_lime",
+        "material-production_mae",
+        "material-production_ois",
+        "material-production_other",
+        "material-production_paper",
+        "material-production_steel",
+        "material-production_textiles",
+        "material-production_timber",
+        "material-production_tra-equip",
+        "material-production_wwp"
+      ]
+    },
+    "IndustryEmissions": {
+      "title": {
+        "enUS": "Industry CO2 Emissions",
+        "frFR": "Émissions CO2 de l'industrie",
+        "deDE": "Industrie CO2-Emissionen"
+      },
+      "type": "StackedArea",
+      "unit": "Mt CO2",
+      "outputs": ["emissions_CH4", "emissions_CO2", "emissions_N2O"]
+    }
+  }
+}
