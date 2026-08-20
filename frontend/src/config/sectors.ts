@@ -32,6 +32,7 @@ export const sectors: Sector[] = [
       'lever_heatcool-behaviour',
       'lever_floor-intensity',
       'lever_building-renovation-rate',
+      'lever_services-floor-area',
       'lever_heating-technology-fuel',
       'lever_heating-efficiency',
       'lever_appliance-own',
@@ -131,7 +132,6 @@ export const sectors: Sector[] = [
       frFR: 'Explorez les pratiques agricoles durables et les stratégies de réduction des émissions',
       deDE: 'Erkunden Sie nachhaltige landwirtschaftliche Praktiken und Strategien zur Emissionsreduzierung',
     },
-    disabled: true,
     levers: [
       'lever_kcal-req',
       'lever_diet',

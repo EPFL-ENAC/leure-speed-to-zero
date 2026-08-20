@@ -622,6 +622,38 @@ export const levers: Lever[] = [
     ],
   },
   {
+    code: 'lever_services-floor-area',
+    title: {
+      enUS: 'Services floor area',
+      frFR: 'Surface au sol des services',
+      deDE: 'Fläche der Dienstleistungen',
+    },
+    group: {
+      enUS: 'Buildings',
+      frFR: 'Bâtiments',
+      deDE: 'Gebäude',
+    },
+    headline: {
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
+    },
+    range: [1, 2, 3, 4], // Adjust min/max as needed
+    type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
+      { min: 2, max: 2, color: '#92BFEB', label: 'lever.difficulty.moderate' },
+      { min: 3, max: 3, color: '#559ADE', label: 'lever.difficulty.hard' },
+      { min: 4, max: 4, color: '#1876D2', label: 'lever.difficulty.ambitious' },
+    ],
+    popupText: {
+      // Optional: shown in lever details popup
+      enUS: 'Explanation text',
+      frFR: 'Surface au sol utilisée pour les services',
+      deDE: 'Erklärungstext',
+    },
+  },
+  {
     code: 'lever_district-heating-share',
     title: {
       enUS: 'District heating share',

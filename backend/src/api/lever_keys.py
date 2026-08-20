@@ -25,6 +25,7 @@ LEVER_KEYS = [
     "lever_freight_utilization-rate",
     "lever_fuel-mix",
     "lever_building-renovation-rate",
+    "lever_services-floor-area",
     "lever_district-heating-share",
     "lever_heating-technology-fuel",
     "lever_heating-efficiency",
