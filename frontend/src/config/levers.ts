@@ -391,7 +391,6 @@ export const levers: Lever[] = [
     },
     range: [1, 2, 3, 4],
     type: 'num',
-    disabled: true,
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
       { min: 2, max: 2, color: '#92BFEB', label: 'lever.difficulty.moderate' },
@@ -475,7 +474,6 @@ export const levers: Lever[] = [
     },
     range: [1, 2, 3, 4],
     type: 'num',
-    disabled: true,
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
       { min: 2, max: 2, color: '#92BFEB', label: 'lever.difficulty.moderate' },
@@ -507,7 +505,6 @@ export const levers: Lever[] = [
     },
     range: [1, 2, 3, 4],
     type: 'num',
-    disabled: true,
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
       { min: 2, max: 2, color: '#92BFEB', label: 'lever.difficulty.moderate' },
@@ -534,7 +531,6 @@ export const levers: Lever[] = [
     },
     range: [1, 2, 3, 4],
     type: 'num',
-    disabled: true,
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
       { min: 2, max: 2, color: '#92BFEB', label: 'lever.difficulty.moderate' },
@@ -561,7 +557,6 @@ export const levers: Lever[] = [
     },
     range: [1, 2, 3, 4],
     type: 'num',
-    disabled: true,
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
       { min: 2, max: 2, color: '#92BFEB', label: 'lever.difficulty.moderate' },
