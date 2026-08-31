@@ -183,60 +183,7 @@ export const levers: Lever[] = [
       { min: 4, max: 4, color: '#1876D2', label: 'lever.difficulty.ambitious' },
     ],
   },
-  {
-    code: 'lever_appliance-own',
-    title: {
-      enUS: 'Appliances owned',
-      frFR: 'Appareils possédés',
-      deDE: 'Gerätebesitz',
-    },
-    group: {
-      enUS: 'Homes',
-      frFR: 'Logements',
-      deDE: 'Wohnungen',
-    },
-    headline: {
-      enUS: 'Key behaviours',
-      frFR: 'Comportements clés',
-      deDE: 'Schlüsselverhalten',
-    },
-    range: [1, 2, 3, 4],
-    type: 'num',
-    disabled: true,
-    difficultyColors: [
-      { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
-      { min: 2, max: 2, color: '#92BFEB', label: 'lever.difficulty.moderate' },
-      { min: 3, max: 3, color: '#559ADE', label: 'lever.difficulty.hard' },
-      { min: 4, max: 4, color: '#1876D2', label: 'lever.difficulty.ambitious' },
-    ],
-  },
-  {
-    code: 'lever_appliance-use',
-    title: {
-      enUS: 'Appliance use',
-      frFR: "Utilisation d'appareils",
-      deDE: 'Gerätenutzung',
-    },
-    group: {
-      enUS: 'Homes',
-      frFR: 'Logements',
-      deDE: 'Wohnungen',
-    },
-    headline: {
-      enUS: '',
-      frFR: '',
-      deDE: '',
-    },
-    range: [1, 2, 3, 4],
-    type: 'num',
-    disabled: true,
-    difficultyColors: [
-      { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
-      { min: 2, max: 2, color: '#92BFEB', label: 'lever.difficulty.moderate' },
-      { min: 3, max: 3, color: '#559ADE', label: 'lever.difficulty.hard' },
-      { min: 4, max: 4, color: '#1876D2', label: 'lever.difficulty.ambitious' },
-    ],
-  },
+
   {
     code: 'lever_kcal-req',
     title: {
@@ -719,33 +666,6 @@ export const levers: Lever[] = [
     },
     range: [1, 2, 3, 4],
     type: 'num',
-    difficultyColors: [
-      { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
-      { min: 2, max: 2, color: '#92BFEB', label: 'lever.difficulty.moderate' },
-      { min: 3, max: 3, color: '#559ADE', label: 'lever.difficulty.hard' },
-      { min: 4, max: 4, color: '#1876D2', label: 'lever.difficulty.ambitious' },
-    ],
-  },
-  {
-    code: 'lever_appliance-efficiency',
-    title: {
-      enUS: 'Appliances efficiency',
-      frFR: 'Efficacité appareils',
-      deDE: 'Geräteeffizienz',
-    },
-    group: {
-      enUS: 'Buildings',
-      frFR: 'Bâtiments',
-      deDE: 'Gebäude',
-    },
-    headline: {
-      enUS: 'Technology and fuels',
-      frFR: 'Technologie et combustibles',
-      deDE: 'Technik und Brennstoffe',
-    },
-    range: [1, 2, 3, 4],
-    type: 'num',
-    disabled: true,
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
       { min: 2, max: 2, color: '#92BFEB', label: 'lever.difficulty.moderate' },

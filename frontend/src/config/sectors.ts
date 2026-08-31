@@ -35,9 +35,6 @@ export const sectors: Sector[] = [
       'lever_services-floor-area',
       'lever_heating-technology-fuel',
       'lever_heating-efficiency',
-      'lever_appliance-own',
-      'lever_appliance-use',
-      'lever_appliance-efficiency',
     ],
   },
   {
