@@ -6,8 +6,6 @@
     "transport": ["lifestyles", "transport"],
     "buildings": ["climate", "lifestyles", "transport", "buildings"],
     "agriculture": ["climate", "lifestyles", "transport", "buildings", "agriculture"],
-    "energy": ["climate", "lifestyles", "transport", "buildings", "energy"],
-    "forestry": ["climate", "lifestyles", "transport", "buildings", "energy"],
     "lca": ["climate", "lifestyles", "transport", "buildings", "lca"]
   },
   "AVAILABLE_REGIONS": ["Vaud", "Switzerland", "EU27"]

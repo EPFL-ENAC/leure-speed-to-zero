@@ -16,6 +16,9 @@ export interface Lever {
   disabled?: boolean;
   range: (string | number)[];
   type: string;
+  // Use the same chart type identifiers as `src/utils/chartTypes.ts`
+  // so lever entries can request 'Line' or 'StackedArea'.
+  chartType?: 'Line' | 'StackedArea';
   difficultyColors: DifficultyArea[];
 }
 

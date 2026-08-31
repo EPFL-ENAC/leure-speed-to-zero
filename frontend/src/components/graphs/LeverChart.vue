@@ -53,6 +53,7 @@ import { plotLabels } from 'config/plotLabels';
 import { type Lever, levers as leversConfigs } from 'src/utils/leversData';
 import { useI18n } from 'vue-i18n';
 import { getTranslatedText } from 'src/utils/translationHelpers';
+import { getSeriesConfig } from 'src/utils/chartTypes';
 
 const i18n = useI18n();
 
@@ -202,12 +203,17 @@ const chartOption = computed(() => {
     return {};
   }
 
-  const series = chartData.value.map((series) => ({
-    name: series.name,
-    type: 'line',
-    symbol: 'none',
-    data: series.data,
-  }));
+  // Use chartType from lever config (matching src/utils/chartTypes.ts)
+  const chartType = (leverConfig.value?.chartType as string) ?? 'Line';
+
+  const series = chartData.value.map((s) => {
+    const cfg = getSeriesConfig(chartType);
+    return {
+      name: s.name,
+      ...cfg,
+      data: s.data,
+    };
+  });
   const legendData = series.map((serie) => serie.name);
 
   return {
