@@ -5531,27 +5531,27 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Eisenbahn',
     frFR: 'Ferroviaire',
   },
-  'tra_emissions_freight_HDV_CO2[Mt]': {
+  'tra_freight_emissions_HDV_CO2[Mt]': {
     enUS: 'Trucks',
     deDE: 'Lastkraftwagen',
     frFR: 'Camions',
   },
-  'tra_emissions_freight_IWW_CO2[Mt]': {
+  'tra_freight_emissions_IWW_CO2[Mt]': {
     enUS: 'Internal waterways',
     deDE: 'Inlandswasserstraßen',
     frFR: 'Voies navigables intérieures',
   },
-  'tra_emissions_freight_aviation_CO2[Mt]': {
+  'tra_freight_emissions_aviation_CO2[Mt]': {
     enUS: 'Aviation',
     deDE: 'Luftverkehr',
     frFR: 'Aviation',
   },
-  'tra_emissions_freight_marine_CO2[Mt]': {
+  'tra_freight_emissions_marine_CO2[Mt]': {
     enUS: 'Marine',
     deDE: 'Seeverkehr',
     frFR: 'Maritime',
   },
-  'tra_emissions_freight_rail_CO2[Mt]': {
+  'tra_freight_emissions_rail_CO2[Mt]': {
     enUS: 'Rail',
     deDE: 'Eisenbahn',
     frFR: 'Ferroviaire',
