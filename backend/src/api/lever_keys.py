@@ -1,7 +1,14 @@
-# List of lever keys used throughout the API and model
-# This file is intended to be imported wherever LEVER_KEYS is needed
+# The lever keys, in the order the frontend sends them.
+#
+# They come from the installed model (config/lever_position.json), so a model
+# with other levers, like the TCAF build, works without touching the app. The
+# list below is only the fallback, for a model too old to have config_loader.
 
-LEVER_KEYS = [
+import logging
+
+logger = logging.getLogger("uvicorn")
+
+_FALLBACK_LEVER_KEYS = [
     "lever_pkm",
     "lever_passenger_modal-share",
     "lever_passenger_occupancy",
@@ -84,3 +91,21 @@ LEVER_KEYS = [
     "lever_eol-material-recovery",
     "lever_harvest-rate",
 ]
+
+
+def _load_lever_keys() -> list[str]:
+    try:
+        from transition_compass_model.model.common.config_loader import (
+            load_lever_config,
+        )
+
+        keys = list(load_lever_config().keys())
+        if keys:
+            return keys
+        logger.warning("Model lever config is empty, using the built-in list")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"Could not read the lever config from the model: {exc}")
+    return _FALLBACK_LEVER_KEYS
+
+
+LEVER_KEYS = _load_lever_keys()

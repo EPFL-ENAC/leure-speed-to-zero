@@ -1,0 +1,252 @@
+{
+  "kpis": [],
+  "subtabs": [
+    {
+      "title": {
+        "enUS": "Diet",
+        "frFR": "Régime alimentaire",
+        "deDE": "Ernährung"
+      },
+      "route": "diet",
+      "charts": ["DietPlant", "DietAnimal", "DietFish", "DietOther"]
+    },
+    {
+      "title": {
+        "enUS": "Food demand",
+        "frFR": "Demande alimentaire",
+        "deDE": "Lebensmittelnachfrage"
+      },
+      "route": "food-demand",
+      "charts": ["DemandPlant", "DemandAnimal", "DemandOther"]
+    },
+    {
+      "title": {
+        "enUS": "True cost: health",
+        "frFR": "Coût réel : santé",
+        "deDE": "Reale Kosten: Gesundheit"
+      },
+      "route": "true-cost-health",
+      "charts": ["HealthTotal", "HealthByDisease"]
+    },
+    {
+      "title": {
+        "enUS": "Land and livestock",
+        "frFR": "Terres et bétail",
+        "deDE": "Land und Vieh"
+      },
+      "route": "land",
+      "charts": ["Cropland", "Livestock", "Population"]
+    }
+  ],
+  "charts": {
+    "DietPlant": {
+      "title": {
+        "enUS": "Plant-based diet",
+        "frFR": "Régime végétal",
+        "deDE": "Pflanzliche Ernährung"
+      },
+      "type": "StackedArea",
+      "unit": "g/cap/day",
+      "outputs": [
+        "lfs_consumers-diet_crop-cereal[g/cap/day]",
+        "lfs_consumers-diet_crop-fruit[g/cap/day]",
+        "lfs_consumers-diet_crop-oilcrop[g/cap/day]",
+        "lfs_consumers-diet_crop-pulse[g/cap/day]",
+        "lfs_consumers-diet_crop-rice[g/cap/day]",
+        "lfs_consumers-diet_crop-starch[g/cap/day]",
+        "lfs_consumers-diet_crop-veg[g/cap/day]",
+        "lfs_consumers-diet_crop-cereal-whole[g/cap/day]"
+      ]
+    },
+    "DietAnimal": {
+      "title": {
+        "enUS": "Animal-based diet",
+        "frFR": "Régime animal",
+        "deDE": "Tierische Ernährung"
+      },
+      "type": "StackedArea",
+      "unit": "g/cap/day",
+      "outputs": [
+        "lfs_consumers-diet_pro-liv-abp-dairy-milk[g/cap/day]",
+        "lfs_consumers-diet_pro-liv-abp-hens-egg[g/cap/day]",
+        "lfs_consumers-diet_pro-liv-abp-processed-afat[g/cap/day]",
+        "lfs_consumers-diet_pro-liv-abp-processed-offal[g/cap/day]",
+        "lfs_consumers-diet_pro-liv-meat-bovine[g/cap/day]",
+        "lfs_consumers-diet_pro-liv-meat-oth-animal[g/cap/day]",
+        "lfs_consumers-diet_pro-liv-meat-pig[g/cap/day]",
+        "lfs_consumers-diet_pro-liv-meat-poultry[g/cap/day]",
+        "lfs_consumers-diet_pro-liv-meat-sheep[g/cap/day]",
+        "lfs_consumers-diet_pro-liv-meat-processed[g/cap/day]"
+      ]
+    },
+    "DietFish": {
+      "title": {
+        "enUS": "Fish and seafood",
+        "frFR": "Poissons et fruits de mer",
+        "deDE": "Fisch und Meeresfrüchte"
+      },
+      "type": "StackedArea",
+      "unit": "g/cap/day",
+      "outputs": [
+        "lfs_consumers-diet_seafood-dfish[g/cap/day]",
+        "lfs_consumers-diet_seafood-ffish[g/cap/day]",
+        "lfs_consumers-diet_seafood-oth-aq-animal[g/cap/day]",
+        "lfs_consumers-diet_seafood-pfish[g/cap/day]",
+        "lfs_consumers-diet_seafood-seafood[g/cap/day]"
+      ]
+    },
+    "DietOther": {
+      "title": {
+        "enUS": "Drinks, sugar and stimulants",
+        "frFR": "Boissons, sucre et stimulants",
+        "deDE": "Getränke, Zucker und Genussmittel"
+      },
+      "type": "StackedArea",
+      "unit": "g/cap/day",
+      "outputs": [
+        "lfs_consumers-diet_pro-bev-beer[g/cap/day]",
+        "lfs_consumers-diet_pro-bev-bev-alc[g/cap/day]",
+        "lfs_consumers-diet_pro-bev-bev-fer[g/cap/day]",
+        "lfs_consumers-diet_pro-bev-wine[g/cap/day]",
+        "lfs_consumers-diet_pro-crop-processed-sugar[g/cap/day]",
+        "lfs_consumers-diet_pro-crop-processed-sweet[g/cap/day]",
+        "lfs_consumers-diet_pro-crop-processed-voil[g/cap/day]",
+        "lfs_consumers-diet_stm-cocoa[g/cap/day]",
+        "lfs_consumers-diet_stm-coffee[g/cap/day]",
+        "lfs_consumers-diet_stm-tea[g/cap/day]"
+      ]
+    },
+    "DemandPlant": {
+      "title": {
+        "enUS": "Food demand, plant-based",
+        "frFR": "Demande alimentaire végétale",
+        "deDE": "Nachfrage, pflanzlich"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_demand_crop-cereal[kcal]",
+        "agr_demand_crop-fruit[kcal]",
+        "agr_demand_crop-oilcrop[kcal]",
+        "agr_demand_crop-pulse[kcal]",
+        "agr_demand_crop-rice[kcal]",
+        "agr_demand_crop-starch[kcal]",
+        "agr_demand_crop-veg[kcal]"
+      ]
+    },
+    "DemandAnimal": {
+      "title": {
+        "enUS": "Food demand, animal-based",
+        "frFR": "Demande alimentaire animale",
+        "deDE": "Nachfrage, tierisch"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_demand_pro-liv-abp-dairy-milk[kcal]",
+        "agr_demand_pro-liv-abp-hens-egg[kcal]",
+        "agr_demand_pro-liv-abp-processed-afat[kcal]",
+        "agr_demand_pro-liv-abp-processed-offal[kcal]",
+        "agr_demand_pro-liv-meat-bovine[kcal]",
+        "agr_demand_pro-liv-meat-oth-animal[kcal]",
+        "agr_demand_pro-liv-meat-pig[kcal]",
+        "agr_demand_pro-liv-meat-poultry[kcal]",
+        "agr_demand_pro-liv-meat-sheep[kcal]",
+        "agr_demand_seafood-dfish[kcal]",
+        "agr_demand_seafood-ffish[kcal]",
+        "agr_demand_seafood-oth-aq-animal[kcal]",
+        "agr_demand_seafood-pfish[kcal]",
+        "agr_demand_seafood-seafood[kcal]"
+      ]
+    },
+    "DemandOther": {
+      "title": {
+        "enUS": "Food demand, drinks and other",
+        "frFR": "Demande, boissons et autres",
+        "deDE": "Nachfrage, Getränke und Sonstiges"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_demand_pro-bev-beer[kcal]",
+        "agr_demand_pro-bev-bev-alc[kcal]",
+        "agr_demand_pro-bev-bev-fer[kcal]",
+        "agr_demand_pro-bev-wine[kcal]",
+        "agr_demand_pro-crop-processed-sugar[kcal]",
+        "agr_demand_pro-crop-processed-sweet[kcal]",
+        "agr_demand_pro-crop-processed-voil[kcal]",
+        "agr_demand_stm-cocoa[kcal]",
+        "agr_demand_stm-coffee[kcal]",
+        "agr_demand_stm-tea[kcal]"
+      ]
+    },
+    "HealthTotal": {
+      "title": {
+        "enUS": "Health cost of the diet",
+        "frFR": "Coût sanitaire du régime",
+        "deDE": "Gesundheitskosten der Ernährung"
+      },
+      "type": "StackedArea",
+      "unit": "DALYs",
+      "outputs": [
+        "tcaf_health-diet_dalys_total_crop-cereal-whole[DALYs]",
+        "tcaf_health-diet_dalys_total_crop-fruit[DALYs]",
+        "tcaf_health-diet_dalys_total_crop-oilcrop[DALYs]",
+        "tcaf_health-diet_dalys_total_crop-pulse[DALYs]",
+        "tcaf_health-diet_dalys_total_crop-veg[DALYs]",
+        "tcaf_health-diet_dalys_total_pro-liv-abp-dairy-milk[DALYs]",
+        "tcaf_health-diet_dalys_total_pro-liv-meat-processed[DALYs]",
+        "tcaf_health-diet_dalys_total_pro-liv-meat-red[DALYs]"
+      ]
+    },
+    "HealthByDisease": {
+      "title": {
+        "enUS": "Health cost by disease",
+        "frFR": "Coût sanitaire par maladie",
+        "deDE": "Gesundheitskosten nach Krankheit"
+      },
+      "type": "StackedArea",
+      "unit": "DALYs",
+      "outputs": [
+        "tcaf_health-diet_dalys_pro-liv-meat-red_CRC[DALYs]",
+        "tcaf_health-diet_dalys_pro-liv-meat-red_DT2[DALYs]",
+        "tcaf_health-diet_dalys_pro-liv-meat-red_EC[DALYs]",
+        "tcaf_health-diet_dalys_pro-liv-meat-red_ICH[DALYs]",
+        "tcaf_health-diet_dalys_pro-liv-meat-red_IHD[DALYs]",
+        "tcaf_health-diet_dalys_pro-liv-meat-red_IS[DALYs]",
+        "tcaf_health-diet_dalys_pro-liv-meat-red_SH[DALYs]",
+        "tcaf_health-diet_dalys_pro-liv-meat-red_TBLC[DALYs]"
+      ]
+    },
+    "Population": {
+      "title": {
+        "enUS": "Population",
+        "frFR": "Population",
+        "deDE": "Bevölkerung"
+      },
+      "type": "Line",
+      "unit": "inhabitants",
+      "outputs": ["lfs_population_total[inhabitants]"]
+    },
+    "Cropland": {
+      "title": {
+        "enUS": "Cropland",
+        "frFR": "Terres cultivées",
+        "deDE": "Ackerland"
+      },
+      "type": "Line",
+      "unit": "ha",
+      "outputs": ["agr_cropland_total[ha]"]
+    },
+    "Livestock": {
+      "title": {
+        "enUS": "Livestock population",
+        "frFR": "Population de bétail",
+        "deDE": "Viehbestand"
+      },
+      "type": "Line",
+      "unit": "lsu",
+      "outputs": ["agr_liv_population[lsu]"]
+    }
+  }
+}
