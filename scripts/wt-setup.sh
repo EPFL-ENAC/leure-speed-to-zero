@@ -173,5 +173,45 @@ PYVER="$(cat "$ROOT/.python-version" 2>/dev/null || echo 3.12)"
   echo "model installed editable from $TCM_PATH"
 npx --no-install lefthook install >/dev/null 2>&1 || echo "note: lefthook install failed, commits will run no hooks here"
 
-# 7. Detached tmux session "<repo>/<branch>"; switch to it with prefix+s.
+# 7. The push guard, as a plain pre-push hook, installed AFTER lefthook so it is
+#    not the one that gets replaced. It is not a lefthook job on purpose:
+#    lefthook decides a push "has no matching files" and skips the job, which it
+#    did on a real `git push origin HEAD:dev`. git runs .git/hooks/pre-push
+#    every time, with the refs on stdin.
+#    Worktrees share the common hooks directory with the main checkout, so this
+#    installs it once for everyone; the guard exits early in the main checkout.
+#    A pre-push hook that was already there is kept and still runs after the
+#    guard, with the same refs on its stdin.
+HOOK_MARK="# wt push guard"
+# core.hooksPath wins over .git/hooks when it is set, so follow it: a guard
+# installed in the directory git ignores would never run.
+hooks_path="$(git config --get core.hooksPath || true)"
+if [ -n "$hooks_path" ]; then
+  case "$hooks_path" in /*) hooks_dir="$hooks_path";; *) hooks_dir="$MAIN/$hooks_path";; esac
+else
+  hooks_dir="$(git rev-parse --path-format=absolute --git-common-dir)/hooks"
+fi
+mkdir -p "$hooks_dir"
+if [ -f "$hooks_dir/pre-push" ] && ! grep -qF "$HOOK_MARK" "$hooks_dir/pre-push"; then
+  mv "$hooks_dir/pre-push" "$hooks_dir/pre-push.before-wt"
+  echo "kept the existing pre-push hook as pre-push.before-wt, it still runs"
+fi
+cat > "$hooks_dir/pre-push" <<HOOK
+#!/bin/sh
+$HOOK_MARK — installed by scripts/wt-setup.sh, shared by every checkout of this repo.
+# git feeds the refs it is about to push on stdin, and both consumers need them,
+# so read them once and hand a copy to each.
+refs=\$(cat)
+guard="\$(git rev-parse --show-toplevel)/scripts/git-push-guard.sh"
+[ -f "\$guard" ] || guard="\$(dirname "\$(git rev-parse --path-format=absolute --git-common-dir)")/scripts/git-push-guard.sh"
+[ -f "\$guard" ] || { echo "push-guard: scripts/git-push-guard.sh not found, refusing to push unguarded" >&2; exit 1; }
+printf '%s\n' "\$refs" | bash "\$guard" "\$@" || exit 1
+prev="\$(dirname "\$0")/pre-push.before-wt"
+[ -x "\$prev" ] || exit 0
+printf '%s\n' "\$refs" | "\$prev" "\$@"
+HOOK
+chmod +x "$hooks_dir/pre-push"
+echo "installed pre-push guard in $hooks_dir"
+
+# 8. Detached tmux session "<repo>/<branch>"; switch to it with prefix+s.
 ROOT="$ROOT" "$(tooling tmux-dev.sh)" --no-attach   # ROOT: the script may be the main checkout's copy

@@ -88,8 +88,18 @@ tcm_main() {
 }
 
 # Path of the worktree that has BRANCH checked out, empty if none.
+# Prune first, and check the path is still a worktree. git keeps listing one
+# whose directory was deleted (it marks it "prunable"), and a directory that is
+# no longer a worktree resolves through its parents to the MAIN checkout: every
+# command aimed at it then acts on the main checkout instead, silently. That is
+# how a `wtgo` once landed in the main checkout, took its branch and ports, and
+# let a push reach dev (the guard exempts the main checkout, rightly).
 worktree_path_for() {
-  git -C "$ROOT" worktree list --porcelain | awk -v b="refs/heads/$1" '/^worktree /{p=$2} $0=="branch "b{print p}'
+  git -C "$ROOT" worktree prune 2>/dev/null || true
+  local p
+  p="$(git -C "$ROOT" worktree list --porcelain | awk -v b="refs/heads/$1" '/^worktree /{p=$2} $0=="branch "b{print p}')"
+  [ -n "$p" ] && [ -e "$p/.git" ] || return 0
+  printf '%s' "$p"
 }
 # Claude's sandbox bind-mounts its deny list over a worktree and leaves the mount
 # points behind as 0-byte files and empty dirs (.bashrc, .idea, .claude/hooks,

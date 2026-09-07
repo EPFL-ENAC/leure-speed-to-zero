@@ -188,7 +188,7 @@ file the running backend actually imports.
 
 - **You own exactly one branch**: the worktree's. Commit and push to it freely. Never
   push `dev` or `main`, never push another branch, never force-push.
-  `scripts/git-push-guard.sh` refuses it in git itself (a lefthook `pre-push` job), and
+  `scripts/git-push-guard.sh` refuses it in git itself (the shared `pre-push` hook), and
   the session's deny rules refuse it before that. Landing into `dev` is a human's job,
   from the main checkout, with `scripts/wt-land.sh`.
 - **Never tag**: a `v*` tag here deploys, and a tag on the model repo publishes to PyPI
