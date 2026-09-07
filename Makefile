@@ -1,4 +1,9 @@
-.PHONY: install install-dev install-config install-backend install-backend-local install-frontend clean uninstall help run run-backend run-backend-with-cache run-frontend wait-for-backend up
+.PHONY: install install-dev install-config install-backend install-backend-local install-frontend clean uninstall help run run-backend run-backend-with-cache run-frontend wait-for-backend up tmux-dev-all new go wt-land wt-done wt-open
+
+# Per-checkout ports. A git worktree exports its own pair from .env.worktree
+# (scripts/wt-setup.sh, see docs/worktree-env.md); the main checkout keeps these.
+BACKEND_PORT ?= 8000
+FRONTEND_PORT ?= 9000
 
 # Default target
 help:
@@ -113,7 +118,7 @@ wait-for-backend:
 	@echo "Waiting for backend to be healthy..."
 	@timeout=60; \
 	while [ $$timeout -gt 0 ]; do \
-		if curl -f -s http://localhost:8000/health >/dev/null 2>&1; then \
+		if curl -f -s http://localhost:$(BACKEND_PORT)/health >/dev/null 2>&1; then \
 			echo "Backend is healthy!"; \
 			break; \
 		fi; \
@@ -129,29 +134,25 @@ wait-for-backend:
 # Run backend and frontend locally via recursive makefiles
 run:
 	@echo "Starting local development servers..."
-	@echo "Backend will be available at http://localhost:8000"
-	@echo "Frontend will be available at http://localhost:9000 (Quasar default)"
+	@echo "Backend will be available at http://localhost:$(BACKEND_PORT)"
+	@echo "Frontend will be available at http://localhost:$(FRONTEND_PORT)"
 	@echo "⚠️  Cache is DISABLED in development mode"
 	@echo "Press Ctrl+C to stop both servers"
 	@set -e; \
 	SHUTDOWN_FLAG="/tmp/shutdown_$$$$"; \
+	kill_tree() { \
+		for child in $$(pgrep -P $$1 2>/dev/null || true); do kill_tree $$child; done; \
+		kill -TERM $$1 2>/dev/null || true; \
+	}; \
 	cleanup_servers() { \
 		if [ ! -f "$$SHUTDOWN_FLAG" ]; then \
 			touch "$$SHUTDOWN_FLAG"; \
 			echo ""; \
 			echo "Shutting down servers..."; \
-			for uvicorn_pid in $$(pgrep -f "uvicorn src.main:app" 2>/dev/null || true); do \
-				kill -TERM $$uvicorn_pid 2>/dev/null || true; \
-				for child_pid in $$(pgrep -P $$uvicorn_pid 2>/dev/null || true); do \
-					kill -TERM $$child_pid 2>/dev/null || true; \
-				done; \
-			done; \
-			pkill -f "quasar dev" 2>/dev/null || true; \
-			pkill -f "npm run dev" 2>/dev/null || true; \
-			pkill -f "esbuild" 2>/dev/null || true; \
-			pkill -f "vite" 2>/dev/null || true; \
+			kill_tree $$BACKEND_PID; \
+			kill_tree $$FRONTEND_PID; \
 			echo "Waiting for processes to finish..."; \
-			sleep 4; \
+			sleep 2; \
 			echo "All servers stopped."; \
 			rm -f "$$SHUTDOWN_FLAG" 2>/dev/null || true; \
 		fi; \
@@ -171,23 +172,23 @@ run:
 # Run backend only
 run-backend:
 	@echo "Starting backend development server..."
-	@echo "Backend will be available at http://localhost:8000"
-	@echo "API docs available at http://localhost:8000/docs"
+	@echo "Backend will be available at http://localhost:$(BACKEND_PORT)"
+	@echo "API docs available at http://localhost:$(BACKEND_PORT)/docs"
 	@echo "⚠️  Cache is DISABLED in development mode"
 	ENABLE_CACHE=false $(MAKE) -C backend run
 
 # Run backend with cache enabled (for testing cache behavior)
 run-backend-with-cache:
 	@echo "Starting backend development server WITH cache..."
-	@echo "Backend will be available at http://localhost:8000"
-	@echo "API docs available at http://localhost:8000/docs"
+	@echo "Backend will be available at http://localhost:$(BACKEND_PORT)"
+	@echo "API docs available at http://localhost:$(BACKEND_PORT)/docs"
 	@echo "✅ Cache is ENABLED"
 	ENABLE_CACHE=true $(MAKE) -C backend run
 
 # Run frontend only
 run-frontend:
 	@echo "Starting frontend development server..."
-	@echo "Frontend will be available at http://localhost:9000 (Quasar default)"
+	@echo "Frontend will be available at http://localhost:$(FRONTEND_PORT)"
 	cd frontend && npm run dev
 
 # Run docker compose with rebuild and no cache
@@ -199,3 +200,24 @@ up:
 	@echo "Frontend available at https://lgb-trsc.localhost"
 	@echo "Backend API available at https://lgb-trsc.localhost/api"
 	@echo "Traefik dashboard available at http://localhost:8080"
+
+# --- git worktrees (docs/worktree-env.md)
+# One branch = one worktree = one tmux session = one Claude Code agent, with its
+# own ports and its own model checkout. Tab completion: source scripts/wt-go.bash.
+
+tmux-dev-all:           ## tmux session "<repo>/<branch>" with claude, backend, frontend and shell panes
+	scripts/tmux-dev.sh
+
+new:                    ## make new BRANCH=feat/x [BASE=origin/dev] [MODEL=feat/y] [PROMPT=brief.md] : worktree + deps + session, attached
+	scripts/wt-new.sh $(BRANCH) $(BASE) $(if $(MODEL),--model '$(MODEL)') $(if $(PROMPT),--prompt '$(PROMPT)')
+
+go: new                 ## make go BRANCH=feat/x : jump to the branch's session, creating branch/worktree/session as needed (tab completion: wtgo)
+
+wt-land:                ## make wt-land BRANCH=feat/x [MODE=--local] : rebase, PR + squash-merge into dev, clean up
+	scripts/wt-land.sh $(BRANCH) $(MODE)
+
+wt-done:                ## make wt-done BRANCH=feat/x : kill the session + remove the worktree, keep the branch
+	scripts/wt-done.sh $(BRANCH)
+
+wt-open:                ## make wt-open [TARGET=frontend|backend] [BRANCH=feat/x] : print and open the URL
+	scripts/wt-open.sh $(or $(TARGET),frontend) $(BRANCH)

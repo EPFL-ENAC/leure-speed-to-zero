@@ -106,12 +106,17 @@ export default defineConfig((/* ctx */) => {
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#devserver
     devServer: {
-      open: true,
+      // One dev server per checkout. A git worktree exports its own ports from
+      // .env.worktree (see docs/worktree-env.md); the main checkout keeps
+      // 9000 / 8000. Quasar reads this file in Node, so process.env is enough.
+      port: Number(process.env.FRONTEND_PORT) || 9000,
+      // A browser tab per agent session is noise; the main checkout still opens one.
+      open: !process.env.FRONTEND_PORT,
       proxy: {
         // proxy all requests starting with /api to your API server
         '/api': {
-          target: 'http://localhost:8000', // When run development server directly
-          // target: 'https://localhost:80', // When using Docker
+          // When run development server directly. For Docker: https://localhost:80
+          target: `http://127.0.0.1:${Number(process.env.BACKEND_PORT) || 8000}`,
           changeOrigin: true,
           // secure: false,
         },

@@ -1,6 +1,11 @@
 # RC file to ensure proper PATH for npm/npx
 rc: ./.lefthookrc
 
+# Without this the generated hook exits quietly when it cannot find lefthook in
+# the checkout, and commits run no checks at all. A git worktree needs its own
+# root `npm ci` (scripts/wt-setup.sh does it).
+assert_lefthook_installed: true
+
 # commit-msg:
 #   commands:
 #     commitlint:
@@ -39,12 +44,23 @@ pre-commit:
     ruff-format:
       root: "backend/"
       glob: "*.py"
-      run: uv run ruff format {staged_files}
+      run: uv run --no-sync ruff format {staged_files}
       stage_fixed: true
       tags: format backend
     # Lint backend Python files
     ruff-lint:
       root: "backend/"
       glob: "*.py"
-      run: uv run ruff check {staged_files}
+      run: uv run --no-sync ruff check {staged_files}
       tags: lint backend
+
+pre-push:
+  parallel: true
+  commands:
+    # Inside a git worktree, only the worktree's own branch may be pushed, and
+    # dev/main never. Claude Code sessions live in worktrees. The main checkout
+    # is exempt: scripts/wt-land.sh lands branches from there.
+    # use_stdin is required, git feeds the refs it is about to push on stdin.
+    push-guard:
+      run: bash scripts/git-push-guard.sh
+      use_stdin: true

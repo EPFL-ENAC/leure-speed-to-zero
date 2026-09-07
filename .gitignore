@@ -6,5 +6,19 @@ npm-shrinkwrap.json
 *.pdf
 *.zip
 *.code-workspace
-CLAUDE.md
 .claude/*
+
+# --- per-worktree dev environment (docs/worktree-env.md)
+# .claude/* above already covers the rendered settings and the worktrees
+# themselves, which live at .claude/worktrees/<branch>.
+
+# Per-worktree ports and model checkout, written by scripts/wt-setup.sh
+.env.worktree
+
+# Server pane output mirrored by scripts/tmux-dev.sh (pipe-pane)
+.wt-logs/
+
+# One-shot agent briefs (wtgo --prompt) and local brief drafts
+PROMPT.md
+PROMPT.sent.md
+.wt-prompts/
