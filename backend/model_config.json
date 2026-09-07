@@ -13,6 +13,7 @@
   "AVAILABLE_REGIONS": ["Vaud", "Switzerland", "EU27"],
   "PROFILES": {
     "tcaf": {
+      "MODEL_PACKAGE": "tcaf_model",
       "TITLE": "True Cost Accounting of Food",
       "LOGO": "tcaf-logo.svg",
       "MODEL_PRIMARY_REGION": "Switzerland",

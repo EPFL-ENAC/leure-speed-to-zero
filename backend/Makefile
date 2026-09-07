@@ -12,9 +12,12 @@ TCM_BRANCH ?=
 # for reloads: with the shared main checkout, someone else's edit would restart
 # every backend on the machine. Naming any --reload-dir drops uvicorn's default
 # (the working directory), so src has to be listed too.
+# The package directory is found, not hardcoded: a model checkout holds
+# transition_compass_model or tcaf_model depending on the build.
+TCM_PKG_DIR = $(patsubst %/model/,%,$(dir $(firstword $(wildcard $(TCM_PATH)/*/model/__init__.py))))
 RELOAD_DIRS =
 ifneq ($(strip $(TCM_BRANCH)),)
-RELOAD_DIRS = --reload-dir src --reload-dir $(TCM_PATH)/transition_compass_model
+RELOAD_DIRS = --reload-dir src --reload-dir $(TCM_PKG_DIR)
 endif
 
 # Define Python version and name
@@ -47,14 +50,15 @@ cleanup:
 	@fuser -k -n tcp $(BACKEND_PORT) 2>/dev/null || true
 	@echo "Cleanup complete!"
 
+# Prints the model the backend really imports, MODEL_PROFILE included.
 check-model:
-	@uv run --no-sync python -c "import transition_compass_model; print('Model source:', transition_compass_model.__file__)"
+	@uv run --no-sync python -c "from src.utils.model_package import model_package; print('Model source:', model_package.__file__)"
 
 run:
 	@echo "Starting FastAPI development server..."
 	@echo "Open your browser at http://localhost:$(BACKEND_PORT)/docs"
 	@echo "Press Ctrl+C to stop the server"
-	@echo "Model source: $$(uv run --no-sync python -c 'import transition_compass_model; print(transition_compass_model.__file__)')"
+	@echo "Model source: $$(uv run --no-sync python -c 'from src.utils.model_package import model_package; print(model_package.__file__)')"
 	uv run --no-sync uvicorn src.main:app --reload $(RELOAD_DIRS) --host 0.0.0.0 --port $(BACKEND_PORT)
 	@echo "Backend server stopped."
 

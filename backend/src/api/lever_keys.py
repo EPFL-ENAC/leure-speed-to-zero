@@ -95,11 +95,9 @@ _FALLBACK_LEVER_KEYS = [
 
 def _load_lever_keys() -> list[str]:
     try:
-        from transition_compass_model.model.common.config_loader import (
-            load_lever_config,
-        )
+        from src.utils.model_package import load_lever_keys
 
-        keys = list(load_lever_config().keys())
+        keys = load_lever_keys()
         if keys:
             return keys
         logger.warning("Model lever config is empty, using the built-in list")

@@ -2,23 +2,21 @@ import hashlib
 import logging
 import pickle
 import re
-import sys
 import time
 from pathlib import Path
 
 import orjson
-import transition_compass_model
-import transition_compass_model.model as model
 from fastapi import APIRouter
 from fastapi.responses import ORJSONResponse
-from transition_compass_model.model.common.auxiliary_functions import (
-    filter_country_and_load_data_from_pickles,
-)
-from transition_compass_model.model.common.lever_plotting import get_lever_data_to_plot
-from transition_compass_model.model.interactions import runner
 
 from src.api.lever_keys import LEVER_KEYS
 from src.utils.cache_decorator import conditional_cache
+from src.utils.model_package import (
+    DATAMATRIX_DIR,
+    filter_country_and_load_data_from_pickles,
+    get_lever_data_to_plot,
+    runner,
+)
 from src.utils.profile_config import get_active_profile, profile_value
 from src.utils.region_config import RegionConfig
 from src.utils.sector_config import SectorConfig
@@ -28,12 +26,7 @@ from src.utils.transform_model import (
     transform_lever_data_for_echarts,
 )
 
-# Redirect old 'model' imports to new package for pickle compatibility
-sys.modules["model"] = model
-
-_DATAMATRIX_DIR = (
-    Path(transition_compass_model.__file__).parent / "_database" / "data" / "datamatrix"
-)
+_DATAMATRIX_DIR = DATAMATRIX_DIR
 
 
 router = APIRouter()
