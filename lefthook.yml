@@ -54,13 +54,9 @@ pre-commit:
       run: uv run --no-sync ruff check {staged_files}
       tags: lint backend
 
-pre-push:
-  parallel: true
-  commands:
-    # Inside a git worktree, only the worktree's own branch may be pushed, and
-    # dev/main never. Claude Code sessions live in worktrees. The main checkout
-    # is exempt: scripts/wt-land.sh lands branches from there.
-    # use_stdin is required, git feeds the refs it is about to push on stdin.
-    push-guard:
-      run: bash scripts/git-push-guard.sh
-      use_stdin: true
+# No pre-push section on purpose. The worktree push guard used to live here, but
+# lefthook decides a push "has no matching files" and skips the job — it did that
+# on a real `git push origin HEAD:dev`, and a guard that can be skipped is not a
+# guard. scripts/wt-setup.sh installs it as a plain .git/hooks/pre-push instead,
+# chaining whatever hook was there before. Keeping pre-push out of this file is
+# what stops `lefthook install` from replacing it.

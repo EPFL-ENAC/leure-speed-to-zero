@@ -134,10 +134,21 @@ not be able to change the agent's own permissions):
 | `deny`    | pushes to `dev`/`main` in every spelling, force push, tags, `git remote set-url/add`, `claude *`, every mutating connector tool                                                                        |
 | `sandbox` | writes confined to the worktree (plus the paired model worktree); network to github, pypi and npm without a check. `curl` and `docker` run outside the sandbox, which cannot reach loopback            |
 
-Outside Claude, and not negotiable by it: `scripts/git-push-guard.sh` runs as a lefthook
-`pre-push` job. Inside a worktree it refuses any push whose target is not the worktree's
-own branch, and any push to `dev` or `main`. The main checkout is exempt, which is why
-`wt-land.sh` runs from there.
+Outside Claude, and not negotiable by it: `scripts/git-push-guard.sh` runs as the shared
+`.git/hooks/pre-push`, installed by `wt-setup.sh`. Inside a worktree it refuses any push
+whose target is not the worktree's own branch, and any push to `dev` or `main`. The main
+checkout is exempt, which is why `wt-land.sh` runs from there.
+
+It is deliberately **not** a lefthook job. lefthook builds a file list for `pre-push` and
+skips the job when that list is empty, which is what `git push origin HEAD:dev` produces:
+it printed `push-guard (skip) no matching push files` and let the push through. There is
+no config option to force it (see `buildCommand` in lefthook's source), so `lefthook.yml`
+carries no `pre-push` section at all. That also stops `lefthook install` from replacing
+the hook. Check yours with:
+
+```bash
+grep -c 'wt push guard' "$(git rev-parse --git-common-dir)/hooks/pre-push"   # 1
+```
 
 ## Smoke test
 
@@ -151,8 +162,9 @@ cd .claude/worktrees/test-smoke && cat .env.worktree
 make -C backend check-model                             # the TCM_PATH checkout
 curl -sI "http://localhost:$FRONTEND_PORT/"             # 200
 curl -sf "http://127.0.0.1:$BACKEND_PORT/health"        # ok
+grep -c 'wt push guard' "$(git rev-parse --git-common-dir)/hooks/pre-push"   # 1
 git commit --allow-empty -m "test: smoke" && git push   # must work
-git push origin HEAD:dev                                # must be REFUSED
+git push --dry-run origin HEAD:dev                      # must be REFUSED
 git branch -vv                                          # upstream is origin/test/smoke, not origin/dev
 wtdone test/smoke                                       # session gone, ports free
 ```

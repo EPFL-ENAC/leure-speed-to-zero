@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# pre-push guard, installed by scripts/wt-setup.sh in the shared hooks directory
-# (git feeds the refs it is about to push on stdin). Inside a git worktree a push
+# pre-push guard, installed by scripts/wt-setup.sh as .git/hooks/pre-push in the
+# shared hooks directory (git feeds the refs it is about to push on stdin).
+# Not a lefthook job: lefthook skips a pre-push job it thinks has no matching
+# files, which it did on a real push to dev. Inside a git worktree a push
 # may only update that worktree's own branch, and never dev/main. The main
 # checkout is unrestricted: that's where scripts/wt-land.sh lands branches.
 # Claude's own deny rules cover the same pushes, but this runs in git itself, so
