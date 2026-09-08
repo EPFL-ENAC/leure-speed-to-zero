@@ -30,12 +30,12 @@
     },
     {
       "title": {
-        "enUS": "Land and livestock",
-        "frFR": "Terres et bétail",
-        "deDE": "Land und Vieh"
+        "enUS": "Production and livestock",
+        "frFR": "Production et bétail",
+        "deDE": "Produktion und Vieh"
       },
       "route": "land",
-      "charts": ["Cropland", "Livestock", "Population"]
+      "charts": ["DomesticProduction", "Livestock", "Population"]
     }
   ],
   "charts": {
@@ -228,15 +228,15 @@
       "unit": "inhabitants",
       "outputs": ["lfs_population_total[inhabitants]"]
     },
-    "Cropland": {
+    "DomesticProduction": {
       "title": {
-        "enUS": "Cropland",
-        "frFR": "Terres cultivées",
-        "deDE": "Ackerland"
+        "enUS": "Domestic food production",
+        "frFR": "Production alimentaire nationale",
+        "deDE": "Inländische Lebensmittelproduktion"
       },
       "type": "Line",
-      "unit": "ha",
-      "outputs": ["agr_cropland_total[ha]"]
+      "unit": "kcal",
+      "outputs": ["agr_domestic-production_afw[kcal]"]
     },
     "Livestock": {
       "title": {
