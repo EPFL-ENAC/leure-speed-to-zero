@@ -29,12 +29,14 @@ class SectorConfig:
 
         try:
             with open(config_path, "r") as f:
-                config = json.load(f)
-                cls._config_cache = config.get("SECTORS_TO_RUN", {})
-                cls._config_loaded = True
-                logger.info(
-                    f"Loaded sector configuration with {len(cls._config_cache)} sectors"
-                )
+                json.load(f)  # read it here so a broken file is reported below
+            from src.utils.profile_config import profile_value
+
+            cls._config_cache = profile_value("SECTORS_TO_RUN", {})
+            cls._config_loaded = True
+            logger.info(
+                f"Loaded sector configuration with {len(cls._config_cache)} sectors"
+            )
         except FileNotFoundError:
             logger.warning(f"Configuration file not found: {config_path}")
             cls._config_cache = {}
@@ -86,13 +88,15 @@ class SectorConfig:
                 "transport",
             ]
 
-        # Collect all unique sectors from all dependency chains
-        all_sectors = set()
+        # Collect the sectors of all dependency chains, keeping the order
+        # they are written in: a module reads what the ones before it produced.
+        all_sectors = []
         for sectors_list in cls._config_cache.values():
-            all_sectors.update(sectors_list)
+            for sector in sectors_list:
+                if sector not in all_sectors:
+                    all_sectors.append(sector)
 
-        # Return as list to maintain consistency with return type
-        return list(all_sectors)
+        return all_sectors
 
     @classmethod
     def get_available_sector_names(cls) -> List[str]:

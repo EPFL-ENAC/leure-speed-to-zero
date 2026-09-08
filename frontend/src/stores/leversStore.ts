@@ -6,7 +6,7 @@ import { sectors } from 'utils/sectors';
 import { ExamplePathways } from 'utils/examplePathways';
 import { modelService } from 'services/modelService';
 import { AxiosError } from 'axios';
-import type { Region } from 'src/utils/region';
+import { getLeverKeys, type Region } from 'src/utils/region';
 import type { KpiData } from 'src/utils/sectors';
 import { getTranslatedText, type TranslationObject } from 'src/utils/translationHelpers';
 import { useI18n } from 'vue-i18n';
@@ -140,8 +140,11 @@ export const useLeverStore = defineStore('lever', () => {
     const sector = sectors.find((s) => s.value === sectorCode);
     if (!sector) return [];
 
-    // Filter levers that belong to this sector and translate them
+    // Keep only the levers the loaded model knows: a sector may list levers
+    // a given model build does not have.
+    const known = getLeverKeys();
     const sectorLevers = sector.levers
+      .filter((leverId) => known.length === 0 || known.includes(leverId))
       .map((leverId) => leversData.find((l) => l.code === leverId))
       .filter((lever): lever is Lever => lever !== undefined);
 
@@ -281,9 +284,13 @@ export const useLeverStore = defineStore('lever', () => {
       isLoading.value = true;
       error.value = null;
 
-      // Get all lever values as a flat array
-      const leverValues = leversData.map((lever) =>
-        Math.round(levers.value[lever.code] ?? getDefaultLeverValue(lever.code)),
+      // The API reads the string by position, so it must follow the order the
+      // backend gave us (it comes from the model). Fall back to the local list
+      // when the config could not be loaded.
+      const modelKeys = getLeverKeys();
+      const order = modelKeys.length > 0 ? modelKeys : leversData.map((l) => l.code);
+      const leverValues = order.map((code) =>
+        Math.round(levers.value[code] ?? getDefaultLeverValue(code)),
       );
 
       // Convert to string format expected by API

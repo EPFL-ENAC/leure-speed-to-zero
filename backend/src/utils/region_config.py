@@ -40,15 +40,17 @@ class RegionConfig:
         if env_region:
             return env_region
 
-        # Fall back to config file
-        config = load_shared_config()
-        return config.get("MODEL_PRIMARY_REGION", "Vaud")
+        # Then the deployment profile, then the config file
+        from src.utils.profile_config import profile_value
+
+        return profile_value("MODEL_PRIMARY_REGION", "Vaud")
 
     @classmethod
     def get_available_regions(cls) -> list[str]:
         """Get available regions (reloads config if file changed)."""
-        config = load_shared_config()
-        return config.get("AVAILABLE_REGIONS", ["Vaud", "Switzerland", "EU27"])
+        from src.utils.profile_config import profile_value
+
+        return profile_value("AVAILABLE_REGIONS", ["Vaud", "Switzerland", "EU27"])
 
     @classmethod
     def force_reload(cls) -> dict:

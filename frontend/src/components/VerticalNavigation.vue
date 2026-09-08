@@ -1,13 +1,24 @@
 <template>
   <aside class="vertical-nav" :class="{ mini }">
     <div class="nav-header">
-      <q-icon v-if="mini" name="o_explore" class="nav-item-icon" color="primary" />
-      <h1
-        v-else
-        class="text-subtitle1 text-primary text-weight-bold text-uppercase text-dark q-ma-none text-center logo-title"
-      >
-        Transition C<q-icon name="o_explore" class="compass-icon" size="xs" />mpass
-      </h1>
+      <!-- A deployment with its own logo shows it instead of the wordmark -->
+      <img
+        v-if="profileLogo"
+        :src="`/${profileLogo}`"
+        :alt="profileTitle || ''"
+        :title="profileTitle || ''"
+        class="profile-logo"
+        :class="{ mini }"
+      />
+      <template v-else>
+        <q-icon v-if="mini" name="o_explore" class="nav-item-icon" color="primary" />
+        <h1
+          v-else
+          class="text-subtitle1 text-primary text-weight-bold text-uppercase text-dark q-ma-none text-center logo-title"
+        >
+          Transition C<q-icon name="o_explore" class="compass-icon" size="xs" />mpass
+        </h1>
+      </template>
     </div>
     <q-separator color="grey-3" />
     <nav class="nav-content">
@@ -81,19 +92,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { getTranslatedText, type TranslationObject } from 'src/utils/translationHelpers';
 import { useSectorNavigation } from 'src/composables/useSectorNavigation';
 import LanguageSwitcher from './LanguageSwitcher.vue';
 import RegionFlag from './RegionFlag.vue';
+import { getProfileLogo, getProfileTitle } from 'src/utils/region';
 
 const emit = defineEmits<{
   toggle: [];
 }>();
 
 const { subtabsMap, availableSectors: activeSectors, getNavigationTarget } = useSectorNavigation();
+
+const profileLogo = computed(() => getProfileLogo());
+const profileTitle = computed(() => getProfileTitle());
 
 interface Props {
   mini?: boolean;
@@ -217,6 +232,16 @@ $hover-bg: #f5f5f7;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.profile-logo {
+  max-width: 100%;
+  max-height: 88px;
+  object-fit: contain;
+
+  &.mini {
+    max-height: 32px;
+  }
 }
 
 .compass-icon {

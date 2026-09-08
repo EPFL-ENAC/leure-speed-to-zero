@@ -2,23 +2,22 @@ import hashlib
 import logging
 import pickle
 import re
-import sys
 import time
 from pathlib import Path
 
 import orjson
-import transition_compass_model
-import transition_compass_model.model as model
 from fastapi import APIRouter
 from fastapi.responses import ORJSONResponse
-from transition_compass_model.model.common.auxiliary_functions import (
-    filter_country_and_load_data_from_pickles,
-)
-from transition_compass_model.model.common.lever_plotting import get_lever_data_to_plot
-from transition_compass_model.model.interactions import runner
 
 from src.api.lever_keys import LEVER_KEYS
 from src.utils.cache_decorator import conditional_cache
+from src.utils.model_package import (
+    DATAMATRIX_DIR,
+    filter_country_and_load_data_from_pickles,
+    get_lever_data_to_plot,
+    runner,
+)
+from src.utils.profile_config import get_active_profile, profile_value
 from src.utils.region_config import RegionConfig
 from src.utils.sector_config import SectorConfig
 from src.utils.serialize_model import serialize_model_output
@@ -27,12 +26,7 @@ from src.utils.transform_model import (
     transform_lever_data_for_echarts,
 )
 
-# Redirect old 'model' imports to new package for pickle compatibility
-sys.modules["model"] = model
-
-_DATAMATRIX_DIR = (
-    Path(transition_compass_model.__file__).parent / "_database" / "data" / "datamatrix"
-)
+_DATAMATRIX_DIR = DATAMATRIX_DIR
 
 
 router = APIRouter()
@@ -68,11 +62,52 @@ country_list = [RegionConfig.get_current_region()]
 # Get all possible sectors for data loading (use the most complete sector's dependencies)
 all_sectors = SectorConfig.get_all_available_sectors()
 
-# Filter country
+# Some modules need every country, not only the region: they model imports, so
+# they need the trade partners too. The profile lists them.
+UNFILTERED_SECTORS = profile_value("UNFILTERED_SECTORS", [])
+
+
+def load_model_input(countries: list[str], sectors: list[str]) -> dict:
+    """Read the pickles of these sectors, keeping only the countries asked for.
+
+    The sectors in UNFILTERED_SECTORS keep all their countries.
+    """
+    filtered = [s for s in sectors if s not in UNFILTERED_SECTORS]
+    unfiltered = [s for s in sectors if s in UNFILTERED_SECTORS]
+
+    data = {}
+    if filtered:
+        data.update(
+            filter_country_and_load_data_from_pickles(
+                country_list=countries, modules_list=filtered
+            )
+        )
+    if unfiltered:
+        data.update(
+            filter_country_and_load_data_from_pickles(
+                country_list=countries, modules_list=unfiltered, filter_country=False
+            )
+        )
+    return data
+
+
 # from database/data/datamatrix/.* reads the pickles, filters the countries, and loads them
-DM_input = filter_country_and_load_data_from_pickles(
-    country_list=country_list, modules_list=all_sectors
-)
+DM_input = load_model_input(country_list, all_sectors)
+
+
+@router.get("/v1/app-config")
+async def app_config() -> dict:
+    """Everything the frontend needs to know about this deployment."""
+    return {
+        "status": "success",
+        "profile": get_active_profile(),
+        "title": profile_value("TITLE"),
+        "logo": profile_value("LOGO"),
+        "current_region": RegionConfig.get_current_region(),
+        "available_regions": RegionConfig.get_available_regions(),
+        "sectors": profile_value("SECTORS", []),
+        "lever_keys": LEVER_KEYS,
+    }
 
 
 @router.get("/v1/run-model")
@@ -317,9 +352,7 @@ async def get_lever_data(
 
         # Load data
         start = time.perf_counter()
-        DM_input = filter_country_and_load_data_from_pickles(
-            country_list=[country], modules_list=modules_list
-        )
+        DM_input = load_model_input([country], modules_list)
         load_duration = (time.perf_counter() - start) * 1000
 
         # Get lever data
@@ -353,13 +386,16 @@ async def get_lever_data(
         return response
 
     except Exception as e:
-        logger.error(f"Get lever data failed: {str(e)}", exc_info=True)
+        # A lever the loaded model has no plottable data for is normal: the
+        # lever list comes from the model and not every lever is charted yet.
+        # Say so with a 200, a chart that cannot be drawn is not a server error.
+        logger.warning(f"No lever data for {lever_name}: {str(e)}")
         return ORJSONResponse(
             content={
-                "status": "error",
-                "message": f"Failed to get lever data: {str(e)}",
+                "status": "unavailable",
+                "lever_name": lever_name,
+                "message": f"No data to plot for this lever: {str(e)}",
             },
-            status_code=500,
         )
 
 
