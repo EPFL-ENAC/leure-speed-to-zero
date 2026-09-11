@@ -116,6 +116,7 @@ const popupText = computed(() => {
   padding: 10px;
   .text-body2 {
     line-height: 1.5;
+    white-space: pre-line;
   }
 }
 </style>

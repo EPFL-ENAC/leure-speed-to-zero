@@ -79,12 +79,7 @@ export const sectors: Sector[] = [
       frFR: "Explorez la production, la distribution et les modèles de consommation d'énergie",
       deDE: 'Erkunden Sie Energieproduktion, -verteilung und -verbrauchsmuster',
     },
-    levers: [
-      'lever_pkm',
-      'lever_passenger_technology-share_new',
-      'lever_building-renovation-rate',
-      'lever_heating-technology-fuel',
-    ],
+    levers: ['lever_pv-capacity', 'lever_onshore-wind-capacity', 'lever_nuclear-capacity'],
   },
   {
     label: {

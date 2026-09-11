@@ -16,7 +16,7 @@ install-local:
 	uv sync --frozen
 	@if [ -d "../../transition-compass-model" ]; then \
 		echo "Local model found, installing as editable..."; \
-		uv pip install --editable ../../transition-compass-model; \
+		uv pip install --editable ../../transition-compass-model --python .venv/bin/python; \
 	else \
 		echo "Local model not found at ../../transition-compass-model, using PyPI version"; \
 	fi
