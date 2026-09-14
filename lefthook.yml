@@ -2,8 +2,8 @@
 rc: ./.lefthookrc
 
 # Without this the generated hook exits quietly when it cannot find lefthook in
-# the checkout, and commits run no checks at all. A git worktree needs its own
-# root `npm ci` (scripts/wt-setup.sh does it).
+# the checkout, and commits run no checks at all. A wtx worktree needs its own
+# root `npm ci` (wtx's post_create hook does it, see wtx.toml [deps]).
 assert_lefthook_installed: true
 
 # commit-msg:
@@ -57,6 +57,6 @@ pre-commit:
 # No pre-push section on purpose. The worktree push guard used to live here, but
 # lefthook decides a push "has no matching files" and skips the job — it did that
 # on a real `git push origin HEAD:dev`, and a guard that can be skipped is not a
-# guard. scripts/wt-setup.sh installs it as a plain .git/hooks/pre-push instead,
-# chaining whatever hook was there before. Keeping pre-push out of this file is
-# what stops `lefthook install` from replacing it.
+# guard. `wtx setup` installs it as a plain .git/hooks/pre-push instead, chaining
+# whatever hook was there before. Keeping pre-push out of this file is what stops
+# `lefthook install` from replacing it.

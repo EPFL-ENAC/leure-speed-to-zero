@@ -1,17 +1,17 @@
 .PHONY: install install-local run up format lint test docker-build docker-run cleanup check-model
 
-# Per-checkout overrides. A git worktree exports these from .env.worktree
-# (scripts/wt-setup.sh, see docs/worktree-env.md); the main checkout keeps the
-# defaults. TCM_PATH must be absolute from a worktree: the relative default
-# only resolves from a checkout sitting next to the model repo.
+# Per-checkout overrides. A wtx worktree exports these from .env.worktree; the
+# main checkout keeps the defaults. TCM_PATH must be absolute from a worktree:
+# the relative default only resolves from a checkout sitting next to the model
+# repo.
 BACKEND_PORT ?= 8000
 TCM_PATH ?= ../../transition-compass-model
 TCM_BRANCH ?=
 
-# Only a worktree paired with a model worktree (wtgo --model) watches the model
-# for reloads: with the shared main checkout, someone else's edit would restart
-# every backend on the machine. Naming any --reload-dir drops uvicorn's default
-# (the working directory), so src has to be listed too.
+# Only a worktree paired with a model worktree (wtx go --with) watches the
+# model for reloads: with the shared main checkout, someone else's edit would
+# restart every backend on the machine. Naming any --reload-dir drops
+# uvicorn's default (the working directory), so src has to be listed too.
 RELOAD_DIRS =
 ifneq ($(strip $(TCM_BRANCH)),)
 RELOAD_DIRS = --reload-dir src --reload-dir $(TCM_PATH)/transition_compass_model
