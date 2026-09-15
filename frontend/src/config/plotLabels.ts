@@ -831,6 +831,86 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Hühnereier',
     frFR: 'Oeufs de poule',
   },
+  'agr_domestic-production_afw_tpe_cereal[t]': {
+    enUS: 'Cereal',
+    deDE: 'Getreide',
+    frFR: 'Céréales',
+  },
+  'agr_domestic-production_afw_tpe_fruit[t]': {
+    enUS: 'Fruits',
+    deDE: 'Obst',
+    frFR: 'Fruits',
+  },
+  'agr_domestic-production_afw_tpe_oilcrop[t]': {
+    enUS: 'Oilcrop',
+    deDE: 'Ölpflanze',
+    frFR: 'Culture oléagineuse',
+  },
+  'agr_domestic-production_afw_tpe_pulse[t]': {
+    enUS: 'Pulse',
+    deDE: 'Hülsenfrüchte',
+    frFR: 'légumineuses',
+  },
+  'agr_domestic-production_afw_tpe_starch[t]': {
+    enUS: 'Starch',
+    deDE: 'Stärke',
+    frFR: 'Amidon',
+  },
+  'agr_domestic-production_afw_tpe_sugarcrop[t]': {
+    enUS: 'Sugarcrop',
+    deDE: 'Zuckerrüben',
+    frFR: 'Plantes sucrières',
+  },
+  'agr_domestic-production_afw_tpe_veg[t]': {
+    enUS: 'Vegetables',
+    deDE: 'Gemüse',
+    frFR: 'Légumes',
+  },
+  'agr_domestic-production_afw_tpe_rice[t]': {
+    enUS: 'Rice',
+    deDE: 'Reis',
+    frFR: 'Riz',
+  },
+  'agr_demand_tpe_pro-liv-abp-processed-offal[t]': {
+    enUS: 'Offal',
+    deDE: 'Innereien',
+    frFR: 'Abats',
+  },
+  'agr_demand_tpe_pro-liv-meat-bovine[t]': {
+    enUS: 'Bovine',
+    deDE: 'Rinder',
+    frFR: 'Bovins',
+  },
+  'agr_demand_tpe_pro-liv-meat-pig[t]': {
+    enUS: 'Pigs',
+    deDE: 'Schweine',
+    frFR: 'Cochons',
+  },
+  'agr_demand_tpe_pro-liv-meat-poultry[t]': {
+    enUS: 'Poultry',
+    deDE: 'Geflügel',
+    frFR: 'Volaille',
+  },
+  'agr_demand_tpe_pro-liv-meat-sheep[t]': {
+    enUS: 'Sheeps',
+    deDE: 'Schafe',
+    frFR: 'Moutons',
+  },
+  'agr_demand_tpe_pro-liv-meat-oth-animals[t]': {
+    enUS: 'Other animals',
+    deDE: 'Andere Tiere',
+    frFR: 'Autres animaux',
+  },
+  'agr_demand_tpe_pro-liv-abp-dairy-milk[t]': {
+    enUS: 'Dairy products',
+    deDE: 'Milchprodukte',
+    frFR: 'Produits laitiers',
+  },
+  'agr_demand_tpe_pro-liv-abp-hens-egg[t]': {
+    enUS: 'Hens eggs',
+    deDE: 'Hühnereier',
+    frFR: 'Oeufs de poule',
+  },
   'agr_demand_tpe_crop-cereal[t]': {
     enUS: 'Cereal',
     deDE: 'Getreide',
