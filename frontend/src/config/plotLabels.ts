@@ -761,6 +761,111 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Behandeltes Gülle, Schafe',
     frFR: 'Fumier traité, moutons',
   },
+  'agr_liv_population_slau_abp-dairy-milk[lsu]': {
+    enUS: 'Dairy products',
+    deDE: 'Milchprodukte',
+    frFR: 'Produits laitiers',
+  },
+  'agr_liv_population_slau_abp-hens-egg[lsu]': {
+    enUS: 'Hens eggs',
+    deDE: 'Hühnereier',
+    frFR: 'Oeufs de poule',
+  },
+  'agr_liv_population_slau_meat-bovine[lsu]': {
+    enUS: 'Bovine',
+    deDE: 'Rinder',
+    frFR: 'Bovins',
+  },
+  'agr_liv_population_slau_meat-oth-animals[lsu]': {
+    enUS: 'Other animals',
+    deDE: 'Andere Tiere',
+    frFR: 'Autres animaux',
+  },
+  'agr_liv_population_slau_meat-pig[lsu]': {
+    enUS: 'Pigs',
+    deDE: 'Schweine',
+    frFR: 'Cochons',
+  },
+  'agr_liv_population_slau_meat-poultry[lsu]': {
+    enUS: 'Poultry',
+    deDE: 'Geflügel',
+    frFR: 'Volaille',
+  },
+  'agr_liv_population_slau_meat-sheep[lsu]': {
+    enUS: 'Sheeps',
+    deDE: 'Schafe',
+    frFR: 'Moutons',
+  },
+  'agr_domestic-production_afw_tpe_meat-bovine[t]': {
+    enUS: 'Bovine',
+    deDE: 'Rinder',
+    frFR: 'Bovins',
+  },
+  'agr_domestic-production_afw_tpe_meat-pig[t]': {
+    enUS: 'Pigs',
+    deDE: 'Schweine',
+    frFR: 'Cochons',
+  },
+  'agr_domestic-production_afw_tpe_meat-poultry[t]': {
+    enUS: 'Poultry',
+    deDE: 'Geflügel',
+    frFR: 'Volaille',
+  },
+  'agr_domestic-production_afw_tpe_meat-sheep[t]': {
+    enUS: 'Sheeps',
+    deDE: 'Schafe',
+    frFR: 'Moutons',
+  },
+  'agr_domestic-production_afw_tpe_meat-oth-animals[t]': {
+    enUS: 'Other animals',
+    deDE: 'Andere Tiere',
+    frFR: 'Autres animaux',
+  },
+  'agr_domestic-production_afw_tpe_abp-dairy-milk[t]': {
+    enUS: 'Dairy products',
+    deDE: 'Milchprodukte',
+    frFR: 'Produits laitiers',
+  },
+  'agr_domestic-production_afw_tpe_abp-hens-egg[t]': {
+    enUS: 'Hens eggs',
+    deDE: 'Hühnereier',
+    frFR: 'Oeufs de poule',
+  },
+  'agr_demand_tpe_crop-cereal[t]': {
+    enUS: 'Cereal',
+    deDE: 'Getreide',
+    frFR: 'Céréales',
+  },
+  'agr_demand_tpe_crop-fruit[t]': {
+    enUS: 'Fruits',
+    deDE: 'Obst',
+    frFR: 'Fruits',
+  },
+  'agr_demand_tpe_crop-oilcrop[t]': {
+    enUS: 'Oilcrop',
+    deDE: 'Ölpflanze',
+    frFR: 'Culture oléagineuse',
+  },
+  'agr_demand_tpe_crop-pulse[t]': {
+    enUS: 'Pulse',
+    deDE: 'Hülsenfrüchte',
+    frFR: 'légumineuses',
+  },
+  'agr_demand_tpe_crop-starch[t]': {
+    enUS: 'Starch',
+    deDE: 'Stärke',
+    frFR: 'Amidon',
+  },
+  'agr_demand_tpe_crop-veg[t]': {
+    enUS: 'Vegetables',
+    deDE: 'Gemüse',
+    frFR: 'Légumes',
+  },
+  'agr_demand_tpe_rice[t]': {
+    enUS: 'Rice',
+    deDE: 'Reis',
+    frFR: 'Riz',
+  },
   'agr_energy-cost[MEUR]': {
     enUS: 'Fossil fuel cost (Agriculture)',
     deDE: 'Kosten fossiler Brennstoffe (Landwirtschaft)',
