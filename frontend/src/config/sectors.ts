@@ -138,6 +138,7 @@ export const sectors: Sector[] = [
       'lever_bioenergy-capacity',
       'lever_alt-protein',
       'lever_biomass-hierarchy',
+      'lever_food-net-import',
     ],
   },
   {

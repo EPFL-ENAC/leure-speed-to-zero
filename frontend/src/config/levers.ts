@@ -1082,7 +1082,7 @@ export const levers: Lever[] = [
       frFR: 'Ressources et utilisation des terres',
       deDE: 'Ressourcen und Landnutzung',
     },
-    range: [],
+    range: [1, 2, 3, 4],
     type: 'char',
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
@@ -1108,7 +1108,7 @@ export const levers: Lever[] = [
       frFR: 'Ressources et utilisation des terres',
       deDE: 'Ressourcen und Landnutzung',
     },
-    range: [],
+    range: [1, 2, 3, 4],
     type: 'char',
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
@@ -1238,7 +1238,7 @@ export const levers: Lever[] = [
       frFR: 'Ressources et utilisation des terres',
       deDE: 'Ressourcen und Landnutzung',
     },
-    range: [],
+    range: [1, 2, 3, 4],
     type: 'char',
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
@@ -1380,9 +1380,9 @@ export const levers: Lever[] = [
   {
     code: 'lever_food-net-import',
     title: {
-      enUS: 'Food production',
-      frFR: 'Production alimentaire',
-      deDE: 'Lebensmittelproduktion',
+      enUS: 'Food self-sufficiency',
+      frFR: 'Autosuffisance alimentaire',
+      deDE: 'Selbstversorgung mit Lebensmitteln',
     },
     group: {
       enUS: 'Domestic supply',
@@ -1394,7 +1394,7 @@ export const levers: Lever[] = [
       frFR: 'Conditions limites',
       deDE: 'Randbedingungen',
     },
-    range: [],
+    range: [1, 2, 3, 4],
     type: 'char',
     difficultyColors: [
       { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
