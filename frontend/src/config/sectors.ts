@@ -221,4 +221,19 @@ export const sectors: Sector[] = [
       'lever_feed-ration',
     ],
   },
+  {
+    label: {
+      enUS: 'True Cost',
+      frFR: 'Coût réel',
+      deDE: 'Wahre Kosten',
+    },
+    value: 'true-cost',
+    icon: 'paid',
+    description: {
+      enUS: 'The true cost of food: health impacts and environmental damage priced alongside what we pay at the till',
+      frFR: "Le coût réel de l'alimentation : impacts sanitaires et dommages environnementaux chiffrés en plus de ce que nous payons à la caisse",
+      deDE: 'Die wahren Kosten der Ernährung: Gesundheitsfolgen und Umweltschäden, beziffert neben dem, was wir an der Kasse zahlen',
+    },
+    levers: [],
+  },
 ];
