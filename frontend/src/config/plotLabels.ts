@@ -946,6 +946,16 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Reis',
     frFR: 'Riz',
   },
+  'agr_demand_tpe_oth-aq-animals[t]': {
+    enUS: 'Other aquatic animals',
+    deDE: 'Sonstige Wassertiere',
+    frFR: 'Autres animaux aquatiques',
+  },
+  'agr_demand_tpe_seafood[t]': {
+    enUS: 'Seafood',
+    deDE: 'Meeresfrüchte',
+    frFR: 'Fruits de mer',
+  },
   'agr_energy-cost[MEUR]': {
     enUS: 'Fossil fuel cost (Agriculture)',
     deDE: 'Kosten fossiler Brennstoffe (Landwirtschaft)',

@@ -81,21 +81,21 @@ export const sectors: Sector[] = [
     },
     levers: ['lever_pv-capacity', 'lever_onshore-wind-capacity', 'lever_nuclear-capacity'],
   },
-  {
-    label: {
-      enUS: 'Forestry',
-      frFR: 'Foresterie',
-      deDE: 'Forstwirtschaft',
-    },
-    value: 'forestry',
-    icon: 'forest',
-    description: {
-      enUS: 'Understand carbon sequestration potential and sustainable forest management',
-      frFR: 'Comprenez le potentiel de séquestration du carbone et la gestion durable des forêts',
-      deDE: 'Verstehen Sie das Kohlenstoffbindungspotenzial und nachhaltige Waldwirtschaft',
-    },
-    levers: ['lever_harvest-rate'],
-  },
+  // {
+  //   label: {
+  //     enUS: 'Forestry',
+  //     frFR: 'Foresterie',
+  //     deDE: 'Forstwirtschaft',
+  //   },
+  //   value: 'forestry',
+  //   icon: 'forest',
+  //   description: {
+  //     enUS: 'Understand carbon sequestration potential and sustainable forest management',
+  //     frFR: 'Comprenez le potentiel de séquestration du carbone et la gestion durable des forêts',
+  //     deDE: 'Verstehen Sie das Kohlenstoffbindungspotenzial und nachhaltige Waldwirtschaft',
+  //   },
+  //   levers: ['lever_harvest-rate'],
+  // },
   {
     label: {
       enUS: 'Industry',
@@ -136,19 +136,19 @@ export const sectors: Sector[] = [
       'lever_food-net-import',
     ],
   },
-  {
-    label: {
-      enUS: 'LCA',
-      frFR: 'ACV',
-      deDE: 'LCA',
-    },
-    value: 'lca',
-    icon: 'eco',
-    description: {
-      enUS: 'Life Cycle Assessment',
-      frFR: 'Analyse du Cycle de Vie',
-      deDE: 'Lebenszyklusanalyse',
-    },
-    levers: ['lever_footprint'],
-  },
+  // {
+  //   label: {
+  //     enUS: 'LCA',
+  //     frFR: 'ACV',
+  //     deDE: 'LCA',
+  //   },
+  //   value: 'lca',
+  //   icon: 'eco',
+  //   description: {
+  //     enUS: 'Life Cycle Assessment',
+  //     frFR: 'Analyse du Cycle de Vie',
+  //     deDE: 'Lebenszyklusanalyse',
+  //   },
+  //   levers: ['lever_footprint'],
+  // },
 ];
