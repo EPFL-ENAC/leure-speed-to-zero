@@ -22,3 +22,5 @@ npm-shrinkwrap.json
 PROMPT.md
 PROMPT.sent.md
 .wt-prompts/
+
+data/
