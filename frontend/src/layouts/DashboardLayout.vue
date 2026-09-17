@@ -83,6 +83,7 @@ import { useRoute } from 'vue-router';
 import { getTranslatedText } from 'src/utils/translationHelpers';
 import { useI18n } from 'vue-i18n';
 import { useNavigationDrawer } from 'src/composables/useNavigationDrawer';
+import { getLeverKeys } from 'src/utils/region';
 
 const $q = useQuasar();
 const route = useRoute();
@@ -127,9 +128,16 @@ const selectedPathway = computed({
   },
 });
 
-// Create pathway options for dropdown
+// Create pathway options for dropdown, hiding pathways whose required levers
+// (e.g. TCAF diet levers) aren't in the currently loaded model build.
 const pathwayOptions = computed(() => {
-  return ExamplePathways.map((pathway) => ({
+  const known = getLeverKeys();
+  return ExamplePathways.filter(
+    (pathway) =>
+      !pathway.requiresLevers ||
+      known.length === 0 ||
+      pathway.requiresLevers.every((code) => known.includes(code)),
+  ).map((pathway) => ({
     label: pathway.title,
     value: pathway.title,
   }));
