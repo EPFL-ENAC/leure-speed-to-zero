@@ -8,7 +8,7 @@
         "deDE": "Ernährung"
       },
       "route": "diet",
-      "charts": ["DietPlant", "DietAnimal", "DietFish", "DietOther"]
+      "charts": ["DietPlant", "DietAnimal", "DietFish", "DietOther", "DietBauVsTarget"]
     },
     {
       "title": {
@@ -177,6 +177,161 @@
       "type": "StackedArea",
       "unit": "kcal",
       "outputs": [
+        "agr_demand_pro-bev-beer[kcal]",
+        "agr_demand_pro-bev-bev-alc[kcal]",
+        "agr_demand_pro-bev-bev-fer[kcal]",
+        "agr_demand_pro-bev-wine[kcal]",
+        "agr_demand_pro-crop-processed-sugar[kcal]",
+        "agr_demand_pro-crop-processed-sweet[kcal]",
+        "agr_demand_pro-crop-processed-voil[kcal]",
+        "agr_demand_stm-cocoa[kcal]",
+        "agr_demand_stm-coffee[kcal]",
+        "agr_demand_stm-tea[kcal]"
+      ]
+    },
+    "DietBauVsTarget": {
+      "title": {
+        "enUS": "Diet: BAU vs target",
+        "frFR": "Régime : tendanciel vs cible",
+        "deDE": "Ernährung: Trend vs Ziel"
+      },
+      "type": "StackedBar",
+      "unit": "kcal",
+      "snapshotYears": [2023, 99999, 2050],
+      "snapshotLabels": [
+        { "enUS": "BAU (2023)", "frFR": "Tendanciel (2023)", "deDE": "Trend (2023)" },
+        { "enUS": "BAU (2050)", "frFR": "Tendanciel (2050)", "deDE": "Trend (2050)" },
+        { "enUS": "Target (2050)", "frFR": "Cible (2050)", "deDE": "Ziel (2050)" }
+      ],
+      "groups": {
+        "cereals-starches": {
+          "label": {
+            "enUS": "Cereals & starches",
+            "frFR": "Céréales et féculents",
+            "deDE": "Getreide & Stärke"
+          },
+          "color": "#2a78d6",
+          "outputs": [
+            "agr_demand_crop-cereal[kcal]",
+            "agr_demand_crop-rice[kcal]",
+            "agr_demand_crop-starch[kcal]"
+          ]
+        },
+        "fruit-veg": {
+          "label": {
+            "enUS": "Fruit & vegetables",
+            "frFR": "Fruits et légumes",
+            "deDE": "Obst & Gemüse"
+          },
+          "color": "#eb6834",
+          "outputs": ["agr_demand_crop-fruit[kcal]", "agr_demand_crop-veg[kcal]"]
+        },
+        "oilcrops-pulses": {
+          "label": {
+            "enUS": "Oil crops & pulses",
+            "frFR": "Oléagineux et légumineuses",
+            "deDE": "Ölpflanzen & Hülsenfrüchte"
+          },
+          "color": "#1baf7a",
+          "outputs": ["agr_demand_crop-oilcrop[kcal]", "agr_demand_crop-pulse[kcal]"]
+        },
+        "dairy-eggs": {
+          "label": {
+            "enUS": "Dairy & eggs",
+            "frFR": "Produits laitiers et oeufs",
+            "deDE": "Milchprodukte & Eier"
+          },
+          "color": "#eda100",
+          "outputs": [
+            "agr_demand_pro-liv-abp-dairy-milk[kcal]",
+            "agr_demand_pro-liv-abp-hens-egg[kcal]"
+          ]
+        },
+        "meat": {
+          "label": {
+            "enUS": "Meat & animal by-products",
+            "frFR": "Viande et sous-produits animaux",
+            "deDE": "Fleisch & tierische Nebenprodukte"
+          },
+          "color": "#e87ba4",
+          "outputs": [
+            "agr_demand_pro-liv-abp-processed-afat[kcal]",
+            "agr_demand_pro-liv-abp-processed-offal[kcal]",
+            "agr_demand_pro-liv-meat-bovine[kcal]",
+            "agr_demand_pro-liv-meat-oth-animal[kcal]",
+            "agr_demand_pro-liv-meat-pig[kcal]",
+            "agr_demand_pro-liv-meat-poultry[kcal]",
+            "agr_demand_pro-liv-meat-sheep[kcal]"
+          ]
+        },
+        "seafood": {
+          "label": {
+            "enUS": "Fish & seafood",
+            "frFR": "Poissons et fruits de mer",
+            "deDE": "Fisch & Meeresfrüchte"
+          },
+          "color": "#008300",
+          "outputs": [
+            "agr_demand_seafood-dfish[kcal]",
+            "agr_demand_seafood-ffish[kcal]",
+            "agr_demand_seafood-oth-aq-animal[kcal]",
+            "agr_demand_seafood-pfish[kcal]",
+            "agr_demand_seafood-seafood[kcal]"
+          ]
+        },
+        "beverages": {
+          "label": {
+            "enUS": "Alcoholic beverages",
+            "frFR": "Boissons alcoolisées",
+            "deDE": "Alkoholische Getränke"
+          },
+          "color": "#4a3aa7",
+          "outputs": [
+            "agr_demand_pro-bev-beer[kcal]",
+            "agr_demand_pro-bev-bev-alc[kcal]",
+            "agr_demand_pro-bev-bev-fer[kcal]",
+            "agr_demand_pro-bev-wine[kcal]"
+          ]
+        },
+        "sweeteners-stimulants": {
+          "label": {
+            "enUS": "Sweeteners & stimulants",
+            "frFR": "Édulcorants et stimulants",
+            "deDE": "Süssungsmittel & Genussmittel"
+          },
+          "color": "#e34948",
+          "outputs": [
+            "agr_demand_pro-crop-processed-sugar[kcal]",
+            "agr_demand_pro-crop-processed-sweet[kcal]",
+            "agr_demand_pro-crop-processed-voil[kcal]",
+            "agr_demand_stm-cocoa[kcal]",
+            "agr_demand_stm-coffee[kcal]",
+            "agr_demand_stm-tea[kcal]"
+          ]
+        }
+      },
+      "outputs": [
+        "agr_demand_crop-cereal[kcal]",
+        "agr_demand_crop-fruit[kcal]",
+        "agr_demand_crop-oilcrop[kcal]",
+        "agr_demand_crop-pulse[kcal]",
+        "agr_demand_crop-rice[kcal]",
+        "agr_demand_crop-starch[kcal]",
+        "agr_demand_crop-veg[kcal]",
+        "agr_demand_pro-liv-abp-dairy-milk[kcal]",
+        "agr_demand_pro-liv-abp-hens-egg[kcal]",
+        "agr_demand_pro-liv-abp-processed-afat[kcal]",
+        "agr_demand_pro-liv-abp-processed-offal[kcal]",
+        "agr_demand_pro-liv-meat-bovine[kcal]",
+        "agr_demand_pro-liv-meat-oth-animal[kcal]",
+        "agr_demand_pro-liv-meat-pig[kcal]",
+        "agr_demand_pro-liv-meat-poultry[kcal]",
+        "agr_demand_pro-liv-meat-sheep[kcal]",
+        "agr_demand_seafood-dfish[kcal]",
+        "agr_demand_seafood-ffish[kcal]",
+        "agr_demand_seafood-oth-aq-animal[kcal]",
+        "agr_demand_seafood-pfish[kcal]",
+        "agr_demand_seafood-seafood[kcal]",
         "agr_demand_pro-bev-beer[kcal]",
         "agr_demand_pro-bev-bev-alc[kcal]",
         "agr_demand_pro-bev-bev-fer[kcal]",

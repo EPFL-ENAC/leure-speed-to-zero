@@ -10,6 +10,7 @@ import { getLeverKeys, type Region } from 'src/utils/region';
 import type { KpiData } from 'src/utils/sectors';
 import { getTranslatedText, type TranslationObject } from 'src/utils/translationHelpers';
 import { useI18n } from 'vue-i18n';
+import { withSelfSufficiencyMetrics } from 'src/utils/selfSufficiency';
 
 // Types
 export interface YearData {
@@ -36,6 +37,14 @@ export interface ChartConfig {
   type: string;
   unit: string;
   outputs: Array<string | OutputConfig>;
+  // When set (as [yearA, yearB, ...]), the chart compares these years side by
+  // side as a bar chart (categories, not a time series) instead of plotting
+  // the full trajectory.
+  snapshotYears?: number[];
+  snapshotLabels?: Array<string | TranslationObject>;
+  // When set, sums the listed outputs into one series per group instead of one
+  // series per output - keeps a long category list readable in a snapshot chart.
+  groups?: Record<string, { label: string | TranslationObject; color?: string; outputs: string[] }>;
 }
 
 export interface SectorWithKpis extends SectorData {
@@ -173,42 +182,113 @@ export const useLeverStore = defineStore('lever', () => {
     });
   });
 
+  // Merges every sector's country data into one object, keyed by output name.
+  function mergeAllSectorData(): { countries: { [key: string]: YearData[] }; kpis: KpiData[] } {
+    const allSectorData = modelResults.value?.data || {};
+    const countries: { [key: string]: YearData[] } = {};
+
+    Object.values(allSectorData).forEach((sectorData) => {
+      if (sectorData.countries) {
+        Object.entries(sectorData.countries).forEach(([country, yearDataArray]) => {
+          if (!countries[country]) {
+            // Initialize with the year structure from the first sector
+            countries[country] = yearDataArray.map((yd) => ({ year: yd.year }));
+          }
+
+          // Merge outputs from this sector into each year's data
+          yearDataArray.forEach((yearData, index) => {
+            if (countries[country]?.[index]) {
+              Object.assign(countries[country][index], yearData);
+            }
+          });
+        });
+      }
+    });
+
+    const allKpis = Object.values(modelResults.value?.kpis || {}).flat();
+
+    return { countries, kpis: allKpis };
+  }
+
+  // A fixed "business as usual" diet reference, fetched once (it does not
+  // depend on the user's current levers) and used to add a "BAU (2050)" bar
+  // to the diet snapshot chart, isolating the diet-policy effect from
+  // everything else (population, ...) that also changes between 2023 and 2050.
+  const bauReferenceSectorData = ref<SectorData | null>(null);
+  let bauReferenceLoading = false;
+
+  const BAU_2050_SNAPSHOT_YEAR = 99999;
+
+  async function ensureBauReference() {
+    if (bauReferenceSectorData.value || bauReferenceLoading) return;
+    const pathway = ExamplePathways.find((p) => p.title === 'Business as usual (diet)');
+    if (!pathway) return;
+
+    bauReferenceLoading = true;
+    try {
+      const modelKeys = getLeverKeys();
+      const order = modelKeys.length > 0 ? modelKeys : leversData.map((l) => l.code);
+      const leverValues = order.map((code) =>
+        Math.round(pathway.values[code] ?? getDefaultLeverValue(code)),
+      );
+      const response = await modelService.runModel(leverValues.join(''), 'dietary-habits');
+      if (response.data?.status !== 'error') {
+        bauReferenceSectorData.value = response.data.data?.['dietary-habits'] ?? null;
+      }
+    } catch (err) {
+      console.error('Failed to fetch the BAU reference scenario:', err);
+    } finally {
+      bauReferenceLoading = false;
+    }
+  }
+
   // Sectors computed values
   const getSectorDataWithKpis = (sectorName: string): SectorWithKpis | null => {
     if (!modelResults.value) return null;
 
+    // Special case: the Production tab reads the "agriculture" module's output
+    // (demand + domestic production, computed together so they stay consistent)
+    // and adds the derived import/export/self-sufficiency fields it charts.
+    if (sectorName === 'production') {
+      const sectorData = modelResults.value.data['agriculture'];
+      if (!sectorData) return null;
+      const kpis = modelResults.value.kpis['agriculture'] || [];
+      return {
+        countries: withSelfSufficiencyMetrics(sectorData.countries) as SectorData['countries'],
+        units: sectorData.units,
+        kpis,
+      };
+    }
+
+    // Special case: the Dietary habits page merges every sector like "" does,
+    // and also appends a synthetic BAU (2050) row (year = BAU_2050_SNAPSHOT_YEAR)
+    // for its diet snapshot chart.
+    if (sectorName === 'dietary-habits') {
+      void ensureBauReference();
+      const merged = mergeAllSectorData();
+
+      const bauCountries = bauReferenceSectorData.value?.countries;
+      if (bauCountries) {
+        Object.entries(bauCountries).forEach(([region, rows]) => {
+          const row2050 = rows.find((r) => Number(r.year) === 2050);
+          if (!row2050 || !merged.countries[region]) return;
+          merged.countries[region] = [
+            ...merged.countries[region],
+            { ...row2050, year: BAU_2050_SNAPSHOT_YEAR },
+          ];
+        });
+      }
+
+      return { countries: merged.countries, units: {}, kpis: merged.kpis };
+    }
+
     // Special case: empty sectorName means "overall" - aggregate all sectors
     if (!sectorName || sectorName === '') {
-      // Merge all sector data into one object
-      const allSectorData = modelResults.value.data;
-      const countries: { [key: string]: YearData[] } = {};
-
-      // Iterate through all sectors and merge their country data
-      Object.values(allSectorData).forEach((sectorData) => {
-        if (sectorData.countries) {
-          Object.entries(sectorData.countries).forEach(([country, yearDataArray]) => {
-            if (!countries[country]) {
-              // Initialize with the year structure from the first sector
-              countries[country] = yearDataArray.map((yd) => ({ year: yd.year }));
-            }
-
-            // Merge outputs from this sector into each year's data
-            yearDataArray.forEach((yearData, index) => {
-              if (countries[country]?.[index]) {
-                Object.assign(countries[country][index], yearData);
-              }
-            });
-          });
-        }
-      });
-
-      // Aggregate all KPIs from all sectors
-      const allKpis = Object.values(modelResults.value.kpis).flat();
-
+      const merged = mergeAllSectorData();
       return {
-        countries,
+        countries: merged.countries,
         units: {}, // Units are merged per-output, not needed at this level
-        kpis: allKpis,
+        kpis: merged.kpis,
       };
     }
 

@@ -223,6 +223,21 @@ export const sectors: Sector[] = [
   },
   {
     label: {
+      enUS: 'Production',
+      frFR: 'Production',
+      deDE: 'Produktion',
+    },
+    value: 'production',
+    icon: 'inventory_2',
+    description: {
+      enUS: 'Domestic food production, trade flows and self-sufficiency by category',
+      frFR: 'Production alimentaire nationale, flux commerciaux et autosuffisance par catégorie',
+      deDE: 'Inländische Lebensmittelproduktion, Handelsströme und Selbstversorgungsgrad nach Kategorie',
+    },
+    levers: [],
+  },
+  {
+    label: {
       enUS: 'True Cost',
       frFR: 'Coût réel',
       deDE: 'Wahre Kosten',

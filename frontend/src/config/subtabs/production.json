@@ -1,0 +1,156 @@
+{
+  "kpis": [],
+  "subtabs": [
+    {
+      "title": {
+        "enUS": "Self Sufficiency",
+        "frFR": "Autosuffisance",
+        "deDE": "Selbstversorgung"
+      },
+      "route": "self-sufficiency",
+      "charts": [
+        "ProductionPlant",
+        "ProductionAnimal",
+        "ImportsPlant",
+        "ImportsAnimal",
+        "ExportsPlant",
+        "ExportsAnimal",
+        "SelfSufficiencyRatio"
+      ]
+    }
+  ],
+  "charts": {
+    "ProductionPlant": {
+      "title": {
+        "enUS": "Domestic production, plant-based",
+        "frFR": "Production nationale, végétal",
+        "deDE": "Inländische Produktion, pflanzlich"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_domestic-production_afw_cereal[kcal]",
+        "agr_domestic-production_afw_fruit[kcal]",
+        "agr_domestic-production_afw_oilcrop[kcal]",
+        "agr_domestic-production_afw_pulse[kcal]",
+        "agr_domestic-production_afw_rice[kcal]",
+        "agr_domestic-production_afw_starch[kcal]",
+        "agr_domestic-production_afw_veg[kcal]"
+      ]
+    },
+    "ProductionAnimal": {
+      "title": {
+        "enUS": "Domestic production, animal-based",
+        "frFR": "Production nationale, animal",
+        "deDE": "Inländische Produktion, tierisch"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_domestic-production_afw_abp-dairy-milk[kcal]",
+        "agr_domestic-production_afw_abp-hens-egg[kcal]",
+        "agr_domestic-production_afw_meat-bovine[kcal]",
+        "agr_domestic-production_afw_meat-oth-animals[kcal]",
+        "agr_domestic-production_afw_meat-pig[kcal]",
+        "agr_domestic-production_afw_meat-poultry[kcal]",
+        "agr_domestic-production_afw_meat-sheep[kcal]"
+      ]
+    },
+    "ImportsPlant": {
+      "title": {
+        "enUS": "Imports, plant-based",
+        "frFR": "Importations, végétal",
+        "deDE": "Importe, pflanzlich"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_import_crop-cereal[kcal]",
+        "agr_import_crop-fruit[kcal]",
+        "agr_import_crop-oilcrop[kcal]",
+        "agr_import_crop-pulse[kcal]",
+        "agr_import_crop-rice[kcal]",
+        "agr_import_crop-starch[kcal]",
+        "agr_import_crop-veg[kcal]"
+      ]
+    },
+    "ImportsAnimal": {
+      "title": {
+        "enUS": "Imports, animal-based",
+        "frFR": "Importations, animal",
+        "deDE": "Importe, tierisch"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_import_pro-liv-abp-dairy-milk[kcal]",
+        "agr_import_pro-liv-abp-hens-egg[kcal]",
+        "agr_import_pro-liv-abp-processed-afat[kcal]",
+        "agr_import_pro-liv-abp-processed-offal[kcal]",
+        "agr_import_pro-liv-meat-bovine[kcal]",
+        "agr_import_pro-liv-meat-oth-animals[kcal]",
+        "agr_import_pro-liv-meat-pig[kcal]",
+        "agr_import_pro-liv-meat-poultry[kcal]",
+        "agr_import_pro-liv-meat-sheep[kcal]",
+        "agr_import_seafood-dfish[kcal]",
+        "agr_import_seafood-ffish[kcal]",
+        "agr_import_seafood-oth-aq-animals[kcal]",
+        "agr_import_seafood-pfish[kcal]",
+        "agr_import_seafood-seafood[kcal]"
+      ]
+    },
+    "ExportsPlant": {
+      "title": {
+        "enUS": "Exports, plant-based",
+        "frFR": "Exportations, végétal",
+        "deDE": "Exporte, pflanzlich"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_export_crop-cereal[kcal]",
+        "agr_export_crop-fruit[kcal]",
+        "agr_export_crop-oilcrop[kcal]",
+        "agr_export_crop-pulse[kcal]",
+        "agr_export_crop-rice[kcal]",
+        "agr_export_crop-starch[kcal]",
+        "agr_export_crop-veg[kcal]"
+      ]
+    },
+    "ExportsAnimal": {
+      "title": {
+        "enUS": "Exports, animal-based",
+        "frFR": "Exportations, animal",
+        "deDE": "Exporte, tierisch"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_export_pro-liv-abp-dairy-milk[kcal]",
+        "agr_export_pro-liv-abp-hens-egg[kcal]",
+        "agr_export_pro-liv-abp-processed-afat[kcal]",
+        "agr_export_pro-liv-abp-processed-offal[kcal]",
+        "agr_export_pro-liv-meat-bovine[kcal]",
+        "agr_export_pro-liv-meat-oth-animals[kcal]",
+        "agr_export_pro-liv-meat-pig[kcal]",
+        "agr_export_pro-liv-meat-poultry[kcal]",
+        "agr_export_pro-liv-meat-sheep[kcal]",
+        "agr_export_seafood-dfish[kcal]",
+        "agr_export_seafood-ffish[kcal]",
+        "agr_export_seafood-oth-aq-animals[kcal]",
+        "agr_export_seafood-pfish[kcal]",
+        "agr_export_seafood-seafood[kcal]"
+      ]
+    },
+    "SelfSufficiencyRatio": {
+      "title": {
+        "enUS": "Self-sufficiency ratio",
+        "frFR": "Taux d'autosuffisance",
+        "deDE": "Selbstversorgungsgrad"
+      },
+      "type": "Line",
+      "unit": "%",
+      "outputs": ["agr_ssr_plant-based[%]", "agr_ssr_animal-based[%]"]
+    }
+  }
+}
