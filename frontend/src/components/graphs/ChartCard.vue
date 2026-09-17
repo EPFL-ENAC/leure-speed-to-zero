@@ -25,7 +25,7 @@ import { computed, ref } from 'vue';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { LineChart, BarChart, SankeyChart } from 'echarts/charts';
-import type { SectorData, ChartConfig } from 'stores/leversStore';
+import { BAU_2050_SNAPSHOT_YEAR, type SectorData, type ChartConfig } from 'stores/leversStore';
 import type { ECharts } from 'echarts/core';
 import {
   TitleComponent,
@@ -112,8 +112,17 @@ const chartData = computed<ChartSeries[]>(() => {
 
   const outputs = props.chartConfig.outputs;
   const region = getCurrentRegion();
-  const countryData = props.modelData.countries?.[region];
+  let countryData = props.modelData.countries?.[region];
   if (!countryData || !outputs) return [];
+
+  // The merged dietary-habits data carries a synthetic BAU (2050) row (see
+  // BAU_2050_SNAPSHOT_YEAR) for the snapshot chart to read. Any other (time
+  // series) chart must not plot it - it would stretch the time axis out to
+  // that sentinel year and squash the real 1990-2050 range into a sliver.
+  if (!props.chartConfig.snapshotYears) {
+    countryData = countryData.filter((yd) => Number(yd.year) !== BAU_2050_SNAPSHOT_YEAR);
+  }
+
   return extractChartData(outputs, countryData);
 });
 

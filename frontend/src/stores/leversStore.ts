@@ -53,6 +53,11 @@ export interface SectorWithKpis extends SectorData {
 
 export type SectorKey = string;
 
+// Sentinel "year" for the synthetic BAU (2050) row appended to the merged
+// dietary-habits data (see getSectorDataWithKpis). Chart components must
+// exclude it from any time-series (non-snapshot) rendering.
+export const BAU_2050_SNAPSHOT_YEAR = 99999;
+
 export interface LeverYearData {
   Country: string;
   Years: number;
@@ -216,8 +221,6 @@ export const useLeverStore = defineStore('lever', () => {
   // everything else (population, ...) that also changes between 2023 and 2050.
   const bauReferenceSectorData = ref<SectorData | null>(null);
   let bauReferenceLoading = false;
-
-  const BAU_2050_SNAPSHOT_YEAR = 99999;
 
   async function ensureBauReference() {
     if (bauReferenceSectorData.value || bauReferenceLoading) return;
