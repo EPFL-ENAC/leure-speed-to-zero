@@ -5401,6 +5401,41 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Gaskraftwerk mit CCS',
     frFR: 'Gaz avec CSC',
   },
+  'pow_capacity-cantonal_Dam[GW]': {
+    enUS: 'Dam',
+    deDE: 'Speicherkraftwerk',
+    frFR: 'Barrage',
+  },
+  'pow_capacity-cantonal_RoR[GW]': {
+    enUS: 'Run-of-River',
+    deDE: 'Laufwasserkraftwerk',
+    frFR: 'Au fil de l’eau',
+  },
+  'pow_capacity-cantonal_PV-roof[GW]': {
+    enUS: 'PV-roof',
+    deDE: 'PV-dach',
+    frFR: 'PV toiture',
+  },
+  'pow_capacity-cantonal_WindOn[GW]': {
+    enUS: 'Wind-onshore',
+    deDE: 'Onshore-Windkraft',
+    frFR: 'Éolien terrestre',
+  },
+  'pow_capacity-cantonal_Nuclear[GW]': {
+    enUS: 'Nuclear',
+    deDE: 'Kernenergie',
+    frFR: 'Nucléaire',
+  },
+  'pow_capacity-cantonal_Gas[GW]': {
+    enUS: 'Gas',
+    deDE: 'Gaskraftwerk',
+    frFR: 'Gaz',
+  },
+  'pow_capacity-cantonal_GasCC-CCS[GW]': {
+    enUS: 'Gas-CCS',
+    deDE: 'Gaskraftwerk mit CCS',
+    frFR: 'Gaz avec CSC',
+  },
   'bld_energy-consumption[TWh]': {
     enUS: 'Buildings',
     deDE: 'Gebäude',

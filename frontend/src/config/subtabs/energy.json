@@ -3,12 +3,21 @@
   "subtabs": [
     {
       "title": {
-        "enUS": "Power production",
-        "frFR": "Production d'électricité",
-        "deDE": "Stromerzeugung"
+        "enUS": "National overview",
+        "frFR": "Vue nationale",
+        "deDE": "Nationale Übersicht"
       },
       "charts": ["PowerProductionByTech", "PowerCapacityByTech", "PowerDemand"],
       "route": "power-production-tech"
+    },
+    {
+      "title": {
+        "enUS": "Cantonal overview",
+        "frFR": "Vue cantonale",
+        "deDE": "Kantonale Übersicht"
+      },
+      "charts": ["PowerCapacityByTechCantonal"],
+      "route": "power-cantonal-overview"
     }
   ],
 
@@ -49,6 +58,24 @@
         { "id": "pow_capacity_Nuclear[GW]", "color": "#D87BA5" },
         { "id": "pow_capacity_Gas[GW]", "color": "#62676B" },
         { "id": "pow_capacity_GasCC-CCS[GW]", "color": "#8A8F93" }
+      ]
+    },
+    "PowerCapacityByTechCantonal": {
+      "title": {
+        "enUS": "Capacity installed by technology at cantonal level",
+        "frFR": "Capacité installée par technologie au niveau cantonal",
+        "deDE": "Installierte Kapazität nach Technologie auf Kantonsebene"
+      },
+      "unit": "GW",
+      "type": "StackedArea",
+      "outputs": [
+        { "id": "pow_capacity-cantonal_Dam[GW]", "color": "#5A8FCC" },
+        { "id": "pow_capacity-cantonal_RoR[GW]", "color": "#8BC4E9" },
+        { "id": "pow_capacity-cantonal_PV-roof[GW]", "color": "#E8C96F" },
+        { "id": "pow_capacity-cantonal_WindOn[GW]", "color": "#5BAE9D" },
+        { "id": "pow_capacity-cantonal_Nuclear[GW]", "color": "#D87BA5" },
+        { "id": "pow_capacity-cantonal_Gas[GW]", "color": "#62676B" },
+        { "id": "pow_capacity-cantonal_GasCC-CCS[GW]", "color": "#8A8F93" }
       ]
     },
     "PowerDemand": {
