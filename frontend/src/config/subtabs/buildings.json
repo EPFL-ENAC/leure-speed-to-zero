@@ -2,90 +2,65 @@
   "kpis": [
     {
       "name": {
-        "enUS": "CO2 emissions",
-        "frFR": "Émissions de CO2",
-        "deDE": "CO2-Emissionen"
+        "enUS": "Total emissions",
+        "frFR": "Émissions totales",
+        "deDE": "Gesamtemissionen"
       },
       "unit": "Mt",
       "route": "emissions",
-      "view": "residential",
       "maximize": false,
       "min": 0,
-      "max": 0.5,
+      "max": 6,
       "thresholds": {
-        "warning": 0.15,
-        "danger": 0.3
+        "warning": 2.5,
+        "danger": 4
       },
       "info": {
-        "enUS": "Total CO2 emissions in 2050 from residential buildings including space heating across all energy carriers. Lower values indicate better environmental performance and progress toward climate goals.",
-        "frFR": "Émissions totales de CO2 en 2050 des bâtiments résidentiels, y compris le chauffage des locaux pour tous les vecteurs énergétiques. Des valeurs plus faibles indiquent une meilleure performance environnementale et des progrès vers les objectifs climatiques.",
-        "deDE": "Gesamte CO2-Emissionen im Jahr 2050 aus Wohngebäuden einschließlich Raumheizung über alle Energieträger. Niedrigere Werte zeigen bessere Umweltleistung und Fortschritte in Richtung Klimaziele."
+        "enUS": "Total CO2 emissions in 2050 from the whole buildings sector, residential and non-residential combined, including space heating and hot water across all energy carriers. Lower values indicate better environmental performance and progress toward climate goals.",
+        "frFR": "Émissions totales de CO2 en 2050 pour l'ensemble du secteur du bâtiment, résidentiel et non résidentiel confondus, y compris le chauffage des locaux et l'eau chaude pour tous les vecteurs énergétiques. Des valeurs plus faibles indiquent une meilleure performance environnementale et des progrès vers les objectifs climatiques.",
+        "deDE": "Gesamte CO2-Emissionen im Jahr 2050 für den gesamten Gebäudesektor, Wohn- und Nichtwohngebäude zusammen, einschließlich Raumheizung und Warmwasser über alle Energieträger. Niedrigere Werte zeigen bessere Umweltleistung und Fortschritte in Richtung Klimaziele."
       }
     },
     {
       "name": {
-        "enUS": "Energy Demand for Space Heating",
-        "frFR": "Demande d'énergie pour chauffage des locaux",
-        "deDE": "Energiebedarf für Raumheizung"
+        "enUS": "Total energy demand",
+        "frFR": "Demande d'énergie totale",
+        "deDE": "Gesamter Energiebedarf"
       },
       "unit": "TWh",
       "route": "energy",
-      "view": "residential",
       "maximize": false,
       "min": 0,
-      "max": 4,
-      "thresholds": {
-        "warning": 1.5,
-        "danger": 2.5
-      },
-      "info": {
-        "enUS": "Total energy delivered for space heating in residential buildings, in 2050. This includes all heating sources but excludes ambient heat extracted by heat pumps, reflecting only the actual energy input required for heating.",
-        "frFR": "Énergie totale fournie pour le chauffage des locaux dans les bâtiments résidentiels, en 2050. Cela inclut toutes les sources de chauffage mais exclut la chaleur ambiante extraite par les pompes à chaleur, reflétant uniquement l'apport énergétique réel nécessaire pour le chauffage.",
-        "deDE": "Gesamte gelieferte Energie für die Raumheizung in Wohngebäuden im Jahr 2050. Dies umfasst alle Heizquellen, schließt jedoch die von Wärmepumpen extrahierte Umgebungswärme aus und spiegelt nur den tatsächlich erforderlichen Energieeinsatz für die Heizung wider."
-      }
-    },
-    {
-      "name": {
-        "enUS": "A-C class",
-        "frFR": "Classe A-C",
-        "deDE": "A-C-Klasse"
-      },
-      "unit": "%",
-      "route": "stock",
-      "view": "residential",
-      "maximize": true,
-      "min": 0,
-      "max": 100,
+      "max": 110,
       "thresholds": {
         "warning": 60,
-        "danger": 40
+        "danger": 85
       },
       "info": {
-        "enUS": "Share of residential floor area with high-quality thermal envelopes (categories A, B, C), in 2050. The rating reflects the building envelope's thermal resistance including insulation, windows, and thermal bridges based on CECB classification.",
-        "frFR": "Part de la surface résidentielle avec des enveloppes thermiques de haute qualité (catégories A, B, C), en 2050. La classification reflète la résistance thermique de l'enveloppe du bâtiment, incluant l'isolation, les fenêtres et les ponts thermiques selon la classification CECB.",
-        "deDE": "Anteil der Wohnfläche mit hochwertigen Gebäudehüllen (Kategorien A, B, C) im Jahr 2050. Die Bewertung spiegelt den Wärmewiderstand der Gebäudehülle wider, einschließlich Isolierung, Fenster und Wärmebrücken basierend auf der CECB-Klassifizierung."
+        "enUS": "Total final energy demand in 2050 for the whole buildings sector, residential and non-residential combined: space heating, hot water, appliances, lighting and other electricity uses across all energy carriers.",
+        "frFR": "Demande totale d'énergie finale en 2050 pour l'ensemble du secteur du bâtiment, résidentiel et non résidentiel confondus : chauffage des locaux, eau chaude, appareils, éclairage et autres usages électriques, tous vecteurs énergétiques confondus.",
+        "deDE": "Gesamter Endenergiebedarf im Jahr 2050 für den gesamten Gebäudesektor, Wohn- und Nichtwohngebäude zusammen: Raumheizung, Warmwasser, Geräte, Beleuchtung und sonstige Stromnutzung über alle Energieträger."
       }
     },
     {
       "name": {
-        "enUS": "Unrenovated Envelope Share",
-        "frFR": "Part des enveloppes non rénovées",
-        "deDE": "Anteil nicht renovierter Gebäudehüllen"
+        "enUS": "Floor Area Stock",
+        "frFR": "Parc de surface au sol",
+        "deDE": "Flächenbestand"
       },
-      "unit": "%",
+      "unit": "Mm²",
       "route": "stock",
-      "view": "residential",
       "maximize": false,
       "min": 0,
-      "max": 100,
+      "max": 1300,
       "thresholds": {
-        "warning": 15,
-        "danger": 30
+        "warning": 1150,
+        "danger": 1250
       },
       "info": {
-        "enUS": "Share of residential floor area that has not undergone envelope renovation in 2050. This includes buildings whose envelope efficiency class has not improved since construction, indicating poor thermal performance.",
-        "frFR": "Part de la surface résidentielle qui n'a pas fait l'objet d'une rénovation de l'enveloppe en 2050. Cela inclut les bâtiments dont la classe d'efficacité de l'enveloppe ne s'est pas améliorée depuis la construction, indiquant une mauvaise performance thermique.",
-        "deDE": "Anteil der Wohnfläche, die im Jahr 2050 keine Hüllensanierung erfahren hat. Dies umfasst Gebäude, deren Effizienzklasse der Hülle sich seit dem Bau nicht verbessert hat, was auf eine schlechte thermische Leistung hinweist."
+        "enUS": "Total building floor area stock in 2050, residential and non-residential combined.",
+        "frFR": "Parc total de surface de plancher en 2050, résidentiel et non résidentiel confondus.",
+        "deDE": "Gesamter Gebäudeflächenbestand im Jahr 2050, Wohn- und Nichtwohngebäude zusammen."
       }
     }
   ],

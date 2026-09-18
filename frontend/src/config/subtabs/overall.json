@@ -2,23 +2,23 @@
   "kpis": [
     {
       "name": {
-        "enUS": "CO2 emissions",
-        "frFR": "Émissions de CO2",
-        "deDE": "CO2-Emissionen"
+        "enUS": "Total emissions",
+        "frFR": "Émissions totales",
+        "deDE": "Gesamtemissionen"
       },
       "unit": "Mt",
       "route": "building-types-emissions",
       "maximize": false,
       "min": 0,
-      "max": 0.5,
+      "max": 6,
       "thresholds": {
-        "warning": 0.15,
-        "danger": 0.3
+        "warning": 2.5,
+        "danger": 4
       },
       "info": {
-        "enUS": "Total CO2 emissions in 2050 from residential buildings including space heating across all energy carriers. Lower values indicate better environmental performance and progress toward climate goals.",
-        "frFR": "Émissions totales de CO2 en 2050 des bâtiments résidentiels, y compris le chauffage des locaux pour tous les vecteurs énergétiques. Des valeurs plus faibles indiquent une meilleure performance environnementale et des progrès vers les objectifs climatiques.",
-        "deDE": "Gesamte CO2-Emissionen im Jahr 2050 aus Wohngebäuden einschließlich Raumheizung über alle Energieträger. Niedrigere Werte zeigen bessere Umweltleistung und Fortschritte in Richtung Klimaziele."
+        "enUS": "Total CO2 emissions in 2050 from the whole buildings sector, residential and non-residential combined, including space heating and hot water across all energy carriers. Lower values indicate better environmental performance and progress toward climate goals.",
+        "frFR": "Émissions totales de CO2 en 2050 pour l'ensemble du secteur du bâtiment, résidentiel et non résidentiel confondus, y compris le chauffage des locaux et l'eau chaude pour tous les vecteurs énergétiques. Des valeurs plus faibles indiquent une meilleure performance environnementale et des progrès vers les objectifs climatiques.",
+        "deDE": "Gesamte CO2-Emissionen im Jahr 2050 für den gesamten Gebäudesektor, Wohn- und Nichtwohngebäude zusammen, einschließlich Raumheizung und Warmwasser über alle Energieträger. Niedrigere Werte zeigen bessere Umweltleistung und Fortschritte in Richtung Klimaziele."
       }
     },
     {
@@ -38,23 +38,23 @@
     },
     {
       "name": {
-        "enUS": "Energy Demand for Space Heating",
-        "frFR": "Demande d'énergie pour chauffage des locaux",
-        "deDE": "Energiebedarf für Raumheizung"
+        "enUS": "Total energy demand",
+        "frFR": "Demande d'énergie totale",
+        "deDE": "Gesamter Energiebedarf"
       },
       "unit": "TWh",
       "route": "energy-carriers",
       "maximize": false,
       "min": 0,
-      "max": 4,
+      "max": 110,
       "thresholds": {
-        "warning": 1.5,
-        "danger": 2.5
+        "warning": 60,
+        "danger": 85
       },
       "info": {
-        "enUS": "Total energy delivered for space heating in residential buildings, in 2050. This includes all heating sources but excludes ambient heat extracted by heat pumps, reflecting only the actual energy input required for heating.",
-        "frFR": "Énergie totale fournie pour le chauffage des locaux dans les bâtiments résidentiels, en 2050. Cela inclut toutes les sources de chauffage mais exclut la chaleur ambiante extraite par les pompes à chaleur, reflétant uniquement l'apport énergétique réel nécessaire pour le chauffage.",
-        "deDE": "Gesamte gelieferte Energie für die Raumheizung in Wohngebäuden im Jahr 2050. Dies umfasst alle Heizquellen, schließt jedoch die von Wärmepumpen extrahierte Umgebungswärme aus und spiegelt nur den tatsächlich erforderlichen Energieeinsatz für die Heizung wider."
+        "enUS": "Total final energy demand in 2050 for the whole buildings sector, residential and non-residential combined: space heating, hot water, appliances, lighting and other electricity uses across all energy carriers.",
+        "frFR": "Demande totale d'énergie finale en 2050 pour l'ensemble du secteur du bâtiment, résidentiel et non résidentiel confondus : chauffage des locaux, eau chaude, appareils, éclairage et autres usages électriques, tous vecteurs énergétiques confondus.",
+        "deDE": "Gesamter Endenergiebedarf im Jahr 2050 für den gesamten Gebäudesektor, Wohn- und Nichtwohngebäude zusammen: Raumheizung, Warmwasser, Geräte, Beleuchtung und sonstige Stromnutzung über alle Energieträger."
       }
     }
   ],
