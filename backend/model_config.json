@@ -18,7 +18,7 @@
       "LOGO": "tcaf-logo.svg",
       "MODEL_PRIMARY_REGION": "Switzerland",
       "AVAILABLE_REGIONS": ["Switzerland"],
-      "SECTORS": ["dietary-habits", "true-cost", "agriculture", "production"],
+      "SECTORS": ["dietary-habits", "true-cost", "agriculture", "production", "population"],
       "SECTORS_TO_RUN": {
         "dietary-habits": [
           "population",
@@ -39,6 +39,7 @@
           "TCAF"
         ],
         "agriculture": ["population", "agriculture"],
+        "population": ["population"],
         "production": [
           "population",
           "dietary-habits",

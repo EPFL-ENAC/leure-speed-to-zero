@@ -38,25 +38,25 @@
       },
       "type": "StackedArea",
       "unit": "CHF",
-      "outputs": ["tcaf_lca_cost_total[CHF]", "tcaf_health-diet_cost_total[CHF]"]
+      "outputs": ["tcaf_lca_cost_total[CHF]", "tcaf_health-diet_cost-residual_total[CHF]"]
     },
     "TrueCostHealthByDisease": {
       "title": {
-        "enUS": "Monetized health cost by disease",
-        "frFR": "Coût sanitaire monétarisé par maladie",
-        "deDE": "Monetarisierte Gesundheitskosten nach Krankheit"
+        "enUS": "Residual health cost by disease",
+        "frFR": "Coût sanitaire résiduel par maladie",
+        "deDE": "Verbleibende Gesundheitskosten nach Krankheit"
       },
       "type": "StackedArea",
       "unit": "CHF",
       "outputs": [
-        "tcaf_health-diet_cost_CRC[CHF]",
-        "tcaf_health-diet_cost_DT2[CHF]",
-        "tcaf_health-diet_cost_EC[CHF]",
-        "tcaf_health-diet_cost_ICH[CHF]",
-        "tcaf_health-diet_cost_IHD[CHF]",
-        "tcaf_health-diet_cost_IS[CHF]",
-        "tcaf_health-diet_cost_SH[CHF]",
-        "tcaf_health-diet_cost_TBLC[CHF]"
+        "tcaf_health-diet_cost-residual_CRC[CHF]",
+        "tcaf_health-diet_cost-residual_DT2[CHF]",
+        "tcaf_health-diet_cost-residual_EC[CHF]",
+        "tcaf_health-diet_cost-residual_ICH[CHF]",
+        "tcaf_health-diet_cost-residual_IHD[CHF]",
+        "tcaf_health-diet_cost-residual_IS[CHF]",
+        "tcaf_health-diet_cost-residual_SH[CHF]",
+        "tcaf_health-diet_cost-residual_TBLC[CHF]"
       ]
     },
     "TrueCostHealthTotal": {

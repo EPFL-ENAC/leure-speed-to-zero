@@ -6,11 +6,13 @@ import { sectors } from 'utils/sectors';
 import { ExamplePathways } from 'utils/examplePathways';
 import { modelService } from 'services/modelService';
 import { AxiosError } from 'axios';
-import { getLeverKeys, type Region } from 'src/utils/region';
+import { getCurrentRegion, getLeverKeys, type Region } from 'src/utils/region';
 import type { KpiData } from 'src/utils/sectors';
 import { getTranslatedText, type TranslationObject } from 'src/utils/translationHelpers';
 import { useI18n } from 'vue-i18n';
 import { withSelfSufficiencyMetrics } from 'src/utils/selfSufficiency';
+import { withDietMetrics, type EnergyRequirementRow } from 'src/utils/dietMetrics';
+import { withPopulationMetrics } from 'src/utils/populationMetrics';
 
 // Types
 export interface YearData {
@@ -263,12 +265,43 @@ export const useLeverStore = defineStore('lever', () => {
       );
       const response = await modelService.runModel(leverValues.join(''), 'dietary-habits');
       if (response.data?.status !== 'error') {
-        bauReferenceSectorData.value = response.data.data?.['dietary-habits'] ?? null;
+        // Population rides along so the synthetic BAU (2050) row can be
+        // converted to a per-capita value like the other snapshot rows.
+        const { data } = response.data;
+        bauReferenceSectorData.value = data?.['dietary-habits']
+          ? (mergeSectorsData([data['population'], data['dietary-habits']]) as SectorData)
+          : null;
       }
     } catch (err) {
       console.error('Failed to fetch the BAU reference scenario:', err);
     } finally {
       bauReferenceLoading = false;
+    }
+  }
+
+  // The individual energy requirement by sex and age group is an input of the
+  // model (the "kcal-req" lever), not one of its outputs, so the Diet page
+  // reads it from the lever-data endpoint: one time series per lever position
+  // (1-4), fetched once per region. The selected position is merged into the
+  // page's rows (see withDietMetrics).
+  const ENERGY_REQUIREMENT_LEVER = 'lever_kcal-req';
+  const energyRequirement = ref<Record<string, Record<string, EnergyRequirementRow[]>>>({});
+  const energyRequirementLoading = new Set<string>();
+
+  async function ensureEnergyRequirement(region: string) {
+    if (energyRequirement.value[region] || energyRequirementLoading.has(region)) return;
+
+    energyRequirementLoading.add(region);
+    try {
+      const response = await modelService.getLeverData(ENERGY_REQUIREMENT_LEVER, undefined, region);
+      const positions = response.data?.data?.lever_positions;
+      if (response.data?.status === 'success' && positions) {
+        energyRequirement.value = { ...energyRequirement.value, [region]: positions };
+      }
+    } catch (err) {
+      console.error('Failed to fetch the energy requirement:', err);
+    } finally {
+      energyRequirementLoading.delete(region);
     }
   }
 
@@ -298,9 +331,22 @@ export const useLeverStore = defineStore('lever', () => {
       };
     }
 
+    // Special case: the Population page charts the population sector's total
+    // and adds the change and growth rate derived from it.
+    if (sectorName === 'population') {
+      const populationSector = modelResults.value.data['population'];
+      if (!populationSector) return null;
+      return {
+        countries: withPopulationMetrics(populationSector.countries) as SectorData['countries'],
+        units: populationSector.units,
+        kpis: modelResults.value.kpis['population'] || [],
+      };
+    }
+
     // Special case: the Dietary habits page merges every sector like "" does,
-    // and also appends a synthetic BAU (2050) row (year = BAU_2050_SNAPSHOT_YEAR)
-    // for its diet snapshot chart.
+    // appends a synthetic BAU (2050) row (year = BAU_2050_SNAPSHOT_YEAR) for its
+    // diet snapshot chart, and adds the derived intake / food-waste fields and the
+    // energy requirement.
     if (sectorName === 'dietary-habits') {
       void ensureBauReference();
       const merged = mergeAllSectorData();
@@ -317,7 +363,19 @@ export const useLeverStore = defineStore('lever', () => {
         });
       }
 
-      return { countries: merged.countries, units: {}, kpis: merged.kpis };
+      const region = getCurrentRegion();
+      void ensureEnergyRequirement(region);
+      const position = String(Math.round(getLeverValue(ENERGY_REQUIREMENT_LEVER)));
+      const requirementRows = energyRequirement.value[region]?.[position];
+
+      return {
+        countries: withDietMetrics(
+          merged.countries,
+          requirementRows && { region, rows: requirementRows },
+        ) as SectorData['countries'],
+        units: {},
+        kpis: merged.kpis,
+      };
     }
 
     // Special case: empty sectorName means "overall" - aggregate all sectors

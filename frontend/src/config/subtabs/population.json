@@ -1,0 +1,46 @@
+{
+  "kpis": [],
+  "subtabs": [
+    {
+      "title": {
+        "enUS": "Demographics",
+        "frFR": "Démographie",
+        "deDE": "Demografie"
+      },
+      "route": "demographics",
+      "charts": ["PopulationTotal", "PopulationChange", "PopulationGrowthRate"]
+    }
+  ],
+  "charts": {
+    "PopulationTotal": {
+      "title": {
+        "enUS": "Total population",
+        "frFR": "Population totale",
+        "deDE": "Gesamtbevölkerung"
+      },
+      "type": "Line",
+      "unit": "inhabitants",
+      "outputs": ["lfs_population_total[inhabitants]"]
+    },
+    "PopulationChange": {
+      "title": {
+        "enUS": "Annual population change",
+        "frFR": "Variation annuelle de la population",
+        "deDE": "Jährliche Bevölkerungsveränderung"
+      },
+      "type": "Line",
+      "unit": "inhabitants/year",
+      "outputs": ["lfs_population_change[inhabitants/year]"]
+    },
+    "PopulationGrowthRate": {
+      "title": {
+        "enUS": "Population growth rate",
+        "frFR": "Taux de croissance de la population",
+        "deDE": "Bevölkerungswachstumsrate"
+      },
+      "type": "Line",
+      "unit": "%/year",
+      "outputs": ["lfs_population_growth-rate[%/year]"]
+    }
+  }
+}

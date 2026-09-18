@@ -70,6 +70,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('src/pages/sectors/TrueCostTab.vue'),
       },
       {
+        path: 'population/:subtab?',
+        name: 'population',
+        component: () => import('src/pages/sectors/PopulationTab.vue'),
+      },
+      {
         path: 'production/:subtab?',
         name: 'production',
         component: () => import('src/pages/sectors/ProductionTab.vue'),

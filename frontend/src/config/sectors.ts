@@ -251,4 +251,19 @@ export const sectors: Sector[] = [
     },
     levers: [],
   },
+  {
+    label: {
+      enUS: 'Population',
+      frFR: 'Population',
+      deDE: 'Bevölkerung',
+    },
+    value: 'population',
+    icon: 'groups',
+    description: {
+      enUS: 'How the population evolves under the different demographic scenarios',
+      frFR: "L'évolution de la population selon les différents scénarios démographiques",
+      deDE: 'Wie sich die Bevölkerung unter den verschiedenen demografischen Szenarien entwickelt',
+    },
+    levers: ['lever_pop'],
+  },
 ];
