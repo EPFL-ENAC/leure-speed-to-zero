@@ -75,6 +75,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('src/pages/sectors/PopulationTab.vue'),
       },
       {
+        path: 'pathway-comparison/:subtab?',
+        name: 'pathway-comparison',
+        component: () => import('src/pages/sectors/PathwayComparisonTab.vue'),
+      },
+      {
         path: 'production/:subtab?',
         name: 'production',
         component: () => import('src/pages/sectors/ProductionTab.vue'),

@@ -38,6 +38,10 @@ export default {
   // Chart components
   loadingChartData: 'Diagrammdaten werden geladen...',
   retry: 'Erneut versuchen',
+  comparingPathways: 'Berechne Pfad {done} von {total}...',
+  pathwayComparisonFailed: 'Der Pfadvergleich konnte nicht geladen werden',
+  pathwayComparisonNote:
+    'Gleiche Farbe = gleiche Ernährung. Gestrichelte Linien und Balken mit „+ low waste“ sind die verschwendungsarme Variante dieser Ernährung.',
   noChartDataAvailable: 'Keine Diagrammdaten verfügbar',
   noDataAvailable: 'Keine Daten verfügbar',
   downloadCSV: 'CSV herunterladen',

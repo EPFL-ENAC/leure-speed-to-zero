@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 import type { Lever } from 'utils/leversData';
 import { levers as leversData } from 'utils/leversData';
 import { sectors } from 'utils/sectors';
-import { ExamplePathways } from 'utils/examplePathways';
+import { ExamplePathways, type PathWay } from 'utils/examplePathways';
 import { modelService } from 'services/modelService';
 import { AxiosError } from 'axios';
 import { getCurrentRegion, getLeverKeys, type Region } from 'src/utils/region';
@@ -14,6 +14,11 @@ import { withSelfSufficiencyMetrics } from 'src/utils/selfSufficiency';
 import { withDietMetrics, type EnergyRequirementRow } from 'src/utils/dietMetrics';
 import { withPopulationMetrics } from 'src/utils/populationMetrics';
 import { withTrueCostPerCapita, withTrueCostSavings } from 'src/utils/trueCostMetrics';
+import {
+  COMPARISON_PATHWAYS,
+  buildPathwayRuns,
+  type PathwayRun,
+} from 'src/utils/pathwayComparison';
 
 // Types
 export interface YearData {
@@ -258,6 +263,20 @@ export const useLeverStore = defineStore('lever', () => {
   const bauReferenceAllSectorData = ref<SectorData | null>(null);
   let bauReferenceLoading = false;
 
+  // Runs the model for a pathway's lever values (whatever the user's levers are
+  // now) and returns the results of every sector, or null when the run failed.
+  // Every TCAF page's sectors are covered by the "dietary-habits" run.
+  async function runPathwayModel(pathway: PathWay): Promise<ModelResults['data'] | null> {
+    const modelKeys = getLeverKeys();
+    const order = modelKeys.length > 0 ? modelKeys : leversData.map((l) => l.code);
+    const leverValues = order.map((code) =>
+      Math.round(pathway.values[code] ?? getDefaultLeverValue(code)),
+    );
+    const response = await modelService.runModel(leverValues.join(''), 'dietary-habits');
+    if (response.data?.status === 'error') return null;
+    return response.data?.data ?? null;
+  }
+
   async function ensureBauReference() {
     if (bauReferenceSectorData.value || bauReferenceLoading) return;
     const pathway = ExamplePathways.find((p) => p.title === 'Business as usual (diet)');
@@ -265,27 +284,69 @@ export const useLeverStore = defineStore('lever', () => {
 
     bauReferenceLoading = true;
     try {
-      const modelKeys = getLeverKeys();
-      const order = modelKeys.length > 0 ? modelKeys : leversData.map((l) => l.code);
-      const leverValues = order.map((code) =>
-        Math.round(pathway.values[code] ?? getDefaultLeverValue(code)),
-      );
-      const response = await modelService.runModel(leverValues.join(''), 'dietary-habits');
-      if (response.data?.status !== 'error') {
+      const data = await runPathwayModel(pathway);
+      if (data) {
         // Population rides along so the synthetic BAU (2050) row can be
         // converted to a per-capita value like the other snapshot rows.
-        const { data } = response.data;
-        bauReferenceSectorData.value = data?.['dietary-habits']
+        bauReferenceSectorData.value = data['dietary-habits']
           ? (mergeSectorsData([data['population'], data['dietary-habits']]) as SectorData)
           : null;
-        bauReferenceAllSectorData.value = data
-          ? (mergeSectorsData(Object.values(data)) as SectorData)
-          : null;
+        bauReferenceAllSectorData.value = mergeSectorsData(Object.values(data)) as SectorData;
       }
     } catch (err) {
       console.error('Failed to fetch the BAU reference scenario:', err);
     } finally {
       bauReferenceLoading = false;
+    }
+  }
+
+  // The Pathway comparison page charts the six TCAF diet pathways side by side,
+  // so it needs a run of each, all fixed (none depends on the user's levers):
+  // fetched once, in parallel, and kept by pathway title. The backend caches each
+  // run, and the BAU one is the run the reference above already made.
+  const pathwayComparisonResults = ref<Record<string, SectorData>>({});
+  const pathwayComparisonLoading = ref(false);
+  const pathwayComparisonError = ref<string | null>(null);
+
+  const pathwayComparisonProgress = computed(() => ({
+    done: Object.keys(pathwayComparisonResults.value).length,
+    total: COMPARISON_PATHWAYS.length,
+  }));
+
+  const pathwayComparison = computed<PathwayRun[]>(() =>
+    buildPathwayRuns(pathwayComparisonResults.value, getCurrentRegion()),
+  );
+
+  async function ensurePathwayComparison() {
+    if (pathwayComparisonLoading.value) return;
+
+    const missing = COMPARISON_PATHWAYS.filter(
+      (cp) =>
+        !pathwayComparisonResults.value[cp.title] &&
+        ExamplePathways.some((p) => p.title === cp.title),
+    );
+    if (missing.length === 0) return;
+
+    pathwayComparisonLoading.value = true;
+    pathwayComparisonError.value = null;
+    try {
+      await Promise.all(
+        missing.map(async (cp) => {
+          const pathway = ExamplePathways.find((p) => p.title === cp.title) as PathWay;
+          const data = await runPathwayModel(pathway);
+          if (!data) throw new Error(`The model failed to run the "${cp.title}" pathway`);
+          // Reassign rather than mutate, so the results (and what is derived from them) update
+          pathwayComparisonResults.value = {
+            ...pathwayComparisonResults.value,
+            [cp.title]: mergeSectorsData(Object.values(data)) as SectorData,
+          };
+        }),
+      );
+    } catch (err) {
+      console.error('Failed to fetch the pathway comparison runs:', err);
+      pathwayComparisonError.value = err instanceof Error ? err.message : String(err);
+    } finally {
+      pathwayComparisonLoading.value = false;
     }
   }
 
@@ -646,6 +707,13 @@ export const useLeverStore = defineStore('lever', () => {
     isCustomPathway,
 
     getSectorDataWithKpis,
+
+    // Pathway comparison
+    pathwayComparison,
+    pathwayComparisonProgress,
+    pathwayComparisonLoading,
+    pathwayComparisonError,
+    ensurePathwayComparison,
 
     // Actions
     batchUpdateLevers,

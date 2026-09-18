@@ -37,6 +37,10 @@ export default {
   // Chart components
   loadingChartData: 'Chargement des données du graphique...',
   retry: 'Réessayer',
+  comparingPathways: 'Calcul de la trajectoire {done} sur {total}...',
+  pathwayComparisonFailed: 'Impossible de charger la comparaison des trajectoires',
+  pathwayComparisonNote:
+    'Même couleur = même régime. Les lignes pointillées et les barres « + low waste » sont la variante à faible gaspillage de ce régime.',
   noChartDataAvailable: 'Aucune donnée de graphique disponible',
   noDataAvailable: 'Aucune donnée disponible',
   downloadCSV: 'Télécharger CSV',
