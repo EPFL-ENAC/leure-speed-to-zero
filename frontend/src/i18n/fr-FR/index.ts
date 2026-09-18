@@ -40,6 +40,9 @@ export default {
   noChartDataAvailable: 'Aucune donnée de graphique disponible',
   noDataAvailable: 'Aucune donnée disponible',
   downloadCSV: 'Télécharger CSV',
+  moreInfo: "Plus d'informations",
+  lessInfo: "Moins d'informations",
+  notYetAvailable: 'Pas encore disponible pour cette vue.',
   // Time periods
   historical: 'Historique',
   forecast: 'Prévision',

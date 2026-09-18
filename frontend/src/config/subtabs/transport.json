@@ -7,7 +7,8 @@
         "deDE": "CO2 Landverkehr Passagiere"
       },
       "unit": "Mt",
-      "route": "passenger-emissions-mode",
+      "route": "emissions",
+      "view": "passenger",
       "maximize": false,
       "info": {
         "enUS": "CO₂ emissions from how residents travel on land. Lower emissions mean better environmental outcomes and alignment with climate goals.",
@@ -22,7 +23,8 @@
         "deDE": "CO2 Luftverkehr Passagiere"
       },
       "unit": "Mt",
-      "route": "passenger-emissions-mode",
+      "route": "emissions",
+      "view": "passenger",
       "maximize": false,
       "info": {
         "enUS": "The aviation emissions shown here represent the climate impact of flights taken by the resident population, including international trips. They are expressed as CO₂-equivalent emissions to account not only for CO₂ but also for other warming effects from aviation, such as water vapour, nitrogen oxides (NOₓ), contrails, and short-lived ozone. Following best-practice estimates, we assume the total climate impact of aviation is approximately three times the impact of CO₂ emissions alone.",
@@ -37,7 +39,8 @@
         "deDE": "Energiebedarf Passagiere"
       },
       "unit": "TWh",
-      "route": "passenger-energy-demand",
+      "route": "energy",
+      "view": "passenger",
       "maximize": false,
       "info": {
         "enUS": "Total energy demand for passenger transport.",
@@ -52,7 +55,8 @@
         "deDE": "Elektroauto-Anteil"
       },
       "unit": "%",
-      "route": "passenger-distance",
+      "route": "stock",
+      "view": "passenger",
       "maximize": true,
       "info": {
         "enUS": "Share of electric vehicles in the passenger car fleet.",
@@ -67,7 +71,8 @@
         "deDE": "Energiebedarf Fracht"
       },
       "unit": "TWh",
-      "route": "freight-energy-demand",
+      "route": "energy",
+      "view": "freight",
       "maximize": false,
       "info": {
         "enUS": "Total energy demand for freight transport.",
@@ -82,7 +87,8 @@
         "deDE": "Anteil emissionsarmer LKW"
       },
       "unit": "%",
-      "route": "trucks-technology-share",
+      "route": "stock",
+      "view": "freight",
       "maximize": true,
       "info": {
         "enUS": "Share of low-emission trucks in the freight vehicle fleet.",
@@ -94,69 +100,94 @@
   "subtabs": [
     {
       "title": {
-        "enUS": "Passenger GHG emissions per mode",
-        "frFR": "Émissions de GES des passagers par mode",
-        "deDE": "Passagier-THG-Emissionen nach Verkehrsträger"
+        "enUS": "Emissions",
+        "frFR": "Émissions",
+        "deDE": "Emissionen"
       },
-      "charts": [
-        "PassengerGHGEmissionsPerMode",
-        "PassengerAviationEmissionsTech",
-        "PassengerAviationEmissionsLocal"
-      ],
-      "route": "passenger-emissions-mode"
+      "route": "emissions",
+      "toggle": {
+        "default": "passenger",
+        "options": [
+          {
+            "value": "passenger",
+            "label": { "enUS": "Passenger", "frFR": "Passagers", "deDE": "Passagiere" }
+          },
+          {
+            "value": "freight",
+            "label": { "enUS": "Freight", "frFR": "Fret", "deDE": "Fracht" }
+          }
+        ],
+        "charts": {
+          "passenger": ["PassengerGHGEmissionsPerMode"],
+          "freight": ["FreightGHGEmissionsPerMode"]
+        }
+      },
+      "moreInfo": {
+        "passenger": ["PassengerAviationEmissionsTech", "PassengerAviationEmissionsLocal"],
+        "freight": []
+      }
     },
     {
       "title": {
-        "enUS": "Passenger energy demand",
-        "frFR": "Demande énergétique des passagers",
-        "deDE": "Passagier-Energiebedarf"
+        "enUS": "Energy",
+        "frFR": "Énergie",
+        "deDE": "Energie"
       },
-      "charts": [
-        "PassengerEnergyDemandPerMode",
-        "PassengerEnergyDemandPerFuel",
-        "PassengerAviationEnergyDemandPerTech"
-      ],
-      "route": "passenger-energy-demand"
+      "route": "energy",
+      "toggle": {
+        "default": "passenger",
+        "options": [
+          {
+            "value": "passenger",
+            "label": { "enUS": "Passenger", "frFR": "Passagers", "deDE": "Passagiere" }
+          },
+          {
+            "value": "freight",
+            "label": { "enUS": "Freight", "frFR": "Fret", "deDE": "Fracht" }
+          }
+        ],
+        "charts": {
+          "passenger": ["PassengerEnergyDemandPerMode"],
+          "freight": ["FreightEnergyDemandPerMode"]
+        }
+      },
+      "moreInfo": {
+        "passenger": ["PassengerEnergyDemandPerFuel", "PassengerAviationEnergyDemandPerTech"],
+        "freight": ["FreightEnergyDemandPerFuel"]
+      }
     },
     {
       "title": {
-        "enUS": "Passenger transport demand and fleet",
-        "frFR": "Demande de transport de passagers et flotte",
-        "deDE": "Passagier-Transportnachfrage und Flotte"
+        "enUS": "Stock",
+        "frFR": "Parc",
+        "deDE": "Bestand"
       },
-      "charts": [
-        "PassengerDistancePerMode",
-        "PassengerDistanceVkmPerMode",
-        "PassengerVehiclesFleet"
-      ],
-      "route": "passenger-distance"
-    },
-    {
-      "title": {
-        "enUS": "Freight GHG emissions per mode",
-        "frFR": "Émissions de GES du fret par mode",
-        "deDE": "Fracht-THG-Emissionen nach Verkehrsträger"
+      "route": "stock",
+      "toggle": {
+        "default": "passenger",
+        "options": [
+          {
+            "value": "passenger",
+            "label": { "enUS": "Passenger", "frFR": "Passagers", "deDE": "Passagiere" }
+          },
+          {
+            "value": "freight",
+            "label": { "enUS": "Freight", "frFR": "Fret", "deDE": "Fracht" }
+          }
+        ],
+        "charts": {
+          "passenger": ["PassengerVehiclesFleet"],
+          "freight": ["TrucksTechnologyShare"]
+        }
       },
-      "charts": ["FreightGHGEmissionsPerMode"],
-      "route": "freight-emissions-mode"
-    },
-    {
-      "title": {
-        "enUS": "Freight energy demand per mode",
-        "frFR": "Demande énergétique du fret par mode",
-        "deDE": "Fracht-Energiebedarf nach Verkehrsträger"
-      },
-      "charts": ["FreightEnergyDemandPerMode", "FreightEnergyDemandPerFuel"],
-      "route": "freight-energy-demand"
-    },
-    {
-      "title": {
-        "enUS": "Trucks technology share",
-        "frFR": "Part technologique des camions",
-        "deDE": "LKW-Technologieanteil"
-      },
-      "charts": ["TrucksTechnologyShare"],
-      "route": "trucks-technology-share"
+      "moreInfo": {
+        "passenger": [
+          "PassengerFleetOtherModes",
+          "PassengerDistancePerMode",
+          "PassengerDistanceVkmPerMode"
+        ],
+        "freight": []
+      }
     }
   ],
 
@@ -296,6 +327,20 @@
         "tra_passenger_vehicle-fleet_LDV_ICE-gas[millions]",
         "tra_passenger_vehicle-fleet_LDV_ICE-diesel[millions]",
         "tra_passenger_vehicle-fleet_LDV_ICE-gasoline[millions]"
+      ]
+    },
+    "PassengerFleetOtherModes": {
+      "title": {
+        "enUS": "Passenger fleet - rail, tram/metro and aviation",
+        "frFR": "Flotte passagers - rail, métro/tram et aviation",
+        "deDE": "Passagierflotte - Bahn, Tram/Metro und Luftfahrt"
+      },
+      "unit": "Million vehicles",
+      "type": "StackedArea",
+      "outputs": [
+        "tra_passenger_vehicle-fleet_rail[millions]",
+        "tra_passenger_vehicle-fleet_metrotram[millions]",
+        "tra_passenger_vehicle-fleet_aviation[millions]"
       ]
     },
     "FreightEnergyDemandPerMode": {

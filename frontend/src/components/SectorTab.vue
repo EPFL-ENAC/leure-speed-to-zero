@@ -55,9 +55,24 @@
               :key="tab.route"
               :name="tab.route"
             >
-              <div class="row flex-wrap">
+              <div v-if="tab.toggle" class="view-toggle-bar">
+                <q-btn-toggle
+                  v-model="currentView"
+                  :options="getToggleOptions(tab)"
+                  dense
+                  unelevated
+                  no-caps
+                  toggle-color="primary"
+                  color="white"
+                  text-color="primary"
+                />
+              </div>
+              <div v-if="tab.toggle && getPrimaryCharts(tab).length === 0" class="not-available">
+                {{ $t('notYetAvailable') }}
+              </div>
+              <div v-else class="row flex-wrap">
                 <chart-card
-                  v-for="chartId in tab.charts"
+                  v-for="chartId in getPrimaryCharts(tab)"
                   :chart-config="config.charts[chartId] as ChartConfig"
                   :chart-id="chartId"
                   :sector-name="sectorName"
@@ -65,6 +80,30 @@
                   :model-data="modelResults"
                 />
               </div>
+              <template v-if="getMoreInfoCharts(tab).length">
+                <div class="more-info-toggle">
+                  <q-btn
+                    flat
+                    dense
+                    no-caps
+                    :label="showMoreInfo ? $t('lessInfo') : $t('moreInfo')"
+                    :icon-right="showMoreInfo ? 'expand_less' : 'expand_more'"
+                    @click="showMoreInfo = !showMoreInfo"
+                  />
+                </div>
+                <q-slide-transition>
+                  <div v-show="showMoreInfo" class="row flex-wrap">
+                    <chart-card
+                      v-for="chartId in getMoreInfoCharts(tab)"
+                      :chart-config="config.charts[chartId] as ChartConfig"
+                      :chart-id="chartId"
+                      :sector-name="sectorName"
+                      :key="chartId"
+                      :model-data="modelResults"
+                    />
+                  </div>
+                </q-slide-transition>
+              </template>
             </q-tab-panel>
           </q-tab-panels>
 
@@ -74,9 +113,24 @@
               <div class="mobile-tab-header">
                 <div class="text-h6 mobile-tab-title">{{ getSubtabTitle(tab) }}</div>
               </div>
-              <div class="row flex-wrap">
+              <div v-if="tab.toggle" class="view-toggle-bar">
+                <q-btn-toggle
+                  v-model="currentView"
+                  :options="getToggleOptions(tab)"
+                  dense
+                  unelevated
+                  no-caps
+                  toggle-color="primary"
+                  color="white"
+                  text-color="primary"
+                />
+              </div>
+              <div v-if="tab.toggle && getPrimaryCharts(tab).length === 0" class="not-available">
+                {{ $t('notYetAvailable') }}
+              </div>
+              <div v-else class="row flex-wrap">
                 <chart-card
-                  v-for="chartId in tab.charts"
+                  v-for="chartId in getPrimaryCharts(tab)"
                   :chart-config="config.charts[chartId] as ChartConfig"
                   :chart-id="chartId"
                   :sector-name="sectorName"
@@ -84,6 +138,30 @@
                   :model-data="modelResults"
                 />
               </div>
+              <template v-if="getMoreInfoCharts(tab).length">
+                <div class="more-info-toggle">
+                  <q-btn
+                    flat
+                    dense
+                    no-caps
+                    :label="showMoreInfo ? $t('lessInfo') : $t('moreInfo')"
+                    :icon-right="showMoreInfo ? 'expand_less' : 'expand_more'"
+                    @click="showMoreInfo = !showMoreInfo"
+                  />
+                </div>
+                <q-slide-transition>
+                  <div v-show="showMoreInfo" class="row flex-wrap">
+                    <chart-card
+                      v-for="chartId in getMoreInfoCharts(tab)"
+                      :chart-config="config.charts[chartId] as ChartConfig"
+                      :chart-id="chartId"
+                      :sector-name="sectorName"
+                      :key="chartId"
+                      :model-data="modelResults"
+                    />
+                  </div>
+                </q-slide-transition>
+              </template>
               <q-separator color="grey-3" class="q-mt-xl"></q-separator>
             </div>
           </div>
@@ -112,13 +190,26 @@ import DisclaimerBanner from 'components/DisclaimerBanner.vue';
 const $q = useQuasar();
 const { locale } = useI18n();
 
+interface SubtabToggleOption {
+  value: string;
+  label: string | TranslationObject;
+}
+
+interface SubtabConfig {
+  title: string | TranslationObject;
+  route: string;
+  charts?: string[];
+  toggle?: {
+    default: string;
+    options: SubtabToggleOption[];
+    charts: Record<string, string[]>;
+  };
+  moreInfo?: string[] | Record<string, string[]>;
+}
+
 interface SectorConfig {
   kpis?: KPIConfig[];
-  subtabs: Array<{
-    title: string | TranslationObject;
-    route: string;
-    charts: string[];
-  }>;
+  subtabs: SubtabConfig[];
   charts: Record<string, ChartConfig>;
 }
 
@@ -166,6 +257,54 @@ watch(currentTab, async (newTab) => {
   await nextTick();
   kpiListRef.value?.scrollToRoute(newTab);
 });
+
+// Toggle state (e.g. passenger/freight, residential/non-residential) for subtabs that declare one
+const currentTabConfig = computed(() =>
+  props.config.subtabs.find((tab) => tab.route === currentTab.value),
+);
+
+const currentView = ref('');
+const showMoreInfo = ref(false);
+
+// Initialize/refresh the toggle state from the tab's default, or from a `?view=` deep link (set by KPI clicks)
+watch(
+  [currentTabConfig, () => route.query.view],
+  ([tab, queryView]) => {
+    if (!tab?.toggle) {
+      currentView.value = '';
+      return;
+    }
+    const validValues = tab.toggle.options.map((o) => o.value);
+    const requestedView = typeof queryView === 'string' ? queryView : undefined;
+    currentView.value =
+      requestedView && validValues.includes(requestedView) ? requestedView : tab.toggle.default;
+  },
+  { immediate: true },
+);
+
+// Collapse the "more info" section whenever the active subtab changes
+watch(currentTab, () => {
+  showMoreInfo.value = false;
+});
+
+const getToggleOptions = (tab: SubtabConfig) =>
+  (tab.toggle?.options ?? []).map((option) => ({
+    value: option.value,
+    label: getTranslatedText(option.label, locale.value),
+  }));
+
+const getPrimaryCharts = (tab: SubtabConfig): string[] => {
+  if (tab.toggle) {
+    return tab.toggle.charts[currentView.value] ?? tab.toggle.charts[tab.toggle.default] ?? [];
+  }
+  return tab.charts ?? [];
+};
+
+const getMoreInfoCharts = (tab: SubtabConfig): string[] => {
+  if (!tab.moreInfo) return [];
+  if (Array.isArray(tab.moreInfo)) return tab.moreInfo;
+  return tab.moreInfo[currentView.value] ?? [];
+};
 
 // If no subtab is present in the URL, redirect to first subtab
 if (!route.params.subtab && props.config.subtabs[0]?.route) {
@@ -356,6 +495,28 @@ function scrollKpis(direction: 'left' | 'right') {
   margin-bottom: 1.5rem;
   position: relative;
   text-align: center;
+}
+
+.view-toggle-bar {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.not-available {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: #9e9e9e;
+  font-style: italic;
+}
+
+.more-info-toggle {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 0.5rem;
 }
 
 .mobile-tab-title {

@@ -14,6 +14,7 @@ export const sectors: Sector[] = sectorsJSON;
 export interface KPIConfig {
   name: string | TranslationObject;
   route: string;
+  view?: string;
   info: string | TranslationObject;
   maximize: boolean;
   unit: string;

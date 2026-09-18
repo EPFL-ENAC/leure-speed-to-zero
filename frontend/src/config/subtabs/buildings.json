@@ -7,7 +7,8 @@
         "deDE": "CO2-Emissionen"
       },
       "unit": "Mt",
-      "route": "building-types-emissions",
+      "route": "emissions",
+      "view": "residential",
       "maximize": false,
       "min": 0,
       "max": 0.5,
@@ -28,7 +29,8 @@
         "deDE": "Energiebedarf für Raumheizung"
       },
       "unit": "TWh",
-      "route": "energy-carriers",
+      "route": "energy",
+      "view": "residential",
       "maximize": false,
       "min": 0,
       "max": 4,
@@ -49,7 +51,8 @@
         "deDE": "A-C-Klasse"
       },
       "unit": "%",
-      "route": "building-types-area",
+      "route": "stock",
+      "view": "residential",
       "maximize": true,
       "min": 0,
       "max": 100,
@@ -70,7 +73,8 @@
         "deDE": "Anteil nicht renovierter Gebäudehüllen"
       },
       "unit": "%",
-      "route": "renovation-construction",
+      "route": "stock",
+      "view": "residential",
       "maximize": false,
       "min": 0,
       "max": 100,
@@ -88,63 +92,110 @@
   "subtabs": [
     {
       "title": {
-        "enUS": "Heating emissions",
-        "frFR": "Émissions de chauffage",
-        "deDE": "Heizungsemissionen"
+        "enUS": "Emissions",
+        "frFR": "Émissions",
+        "deDE": "Emissionen"
       },
-      "charts": [
-        "GHGEmissionstotalPerCarrier",
-        "SHGHGEmissionsPerBuildingType",
-        "GHGEmissionsheatingPerCarrier",
-        "GHGEmissionsservicesPerCarrier",
-        "GHGEmissionshotwaterPerCarrier"
-      ],
-      "route": "building-types-emissions"
+      "route": "emissions",
+      "toggle": {
+        "default": "residential",
+        "options": [
+          {
+            "value": "residential",
+            "label": { "enUS": "Residential", "frFR": "Résidentiel", "deDE": "Wohngebäude" }
+          },
+          {
+            "value": "non-residential",
+            "label": {
+              "enUS": "Non-residential",
+              "frFR": "Non-résidentiel",
+              "deDE": "Nicht-Wohngebäude"
+            }
+          }
+        ],
+        "charts": {
+          "residential": ["GHGEmissionsheatingPerCarrier"],
+          "non-residential": ["GHGEmissionsservicesPerCarrier"]
+        }
+      },
+      "moreInfo": {
+        "residential": [
+          "SHGHGEmissionsPerBuildingType",
+          "GHGEmissionshotwaterPerCarrier",
+          "GHGEmissionstotalPerCarrier"
+        ],
+        "non-residential": ["GHGEmissionstotalPerCarrier"]
+      }
     },
     {
       "title": {
-        "enUS": "Energy mix",
-        "frFR": "Mix énergétique",
-        "deDE": "Energiemix"
+        "enUS": "Energy",
+        "frFR": "Énergie",
+        "deDE": "Energie"
       },
-      "charts": ["SHEnergyDemandPerCarrier", "EnergyDemandPerCarrier"],
-      "route": "energy-carriers"
+      "route": "energy",
+      "toggle": {
+        "default": "residential",
+        "options": [
+          {
+            "value": "residential",
+            "label": { "enUS": "Residential", "frFR": "Résidentiel", "deDE": "Wohngebäude" }
+          },
+          {
+            "value": "non-residential",
+            "label": {
+              "enUS": "Non-residential",
+              "frFR": "Non-résidentiel",
+              "deDE": "Nicht-Wohngebäude"
+            }
+          }
+        ],
+        "charts": {
+          "residential": ["EnergyDemandPerCarrier"],
+          "non-residential": ["NonResByFuel"]
+        }
+      },
+      "moreInfo": {
+        "residential": ["SHEnergyDemandPerCarrier", "HotWaterRes", "AppliancesLightRes"],
+        "non-residential": ["NonResByType"]
+      }
     },
     {
       "title": {
-        "enUS": "Floor area per building type",
-        "frFR": "Surface au sol par type de bâtiment",
-        "deDE": "Wohnfläche nach Gebäudetyp"
+        "enUS": "Stock",
+        "frFR": "Parc",
+        "deDE": "Bestand"
       },
-      "charts": ["FloorAreaPerBuildingType", "SHEnergyDemandPerBuildingType"],
-      "route": "building-types-area"
-    },
-    {
-      "title": {
-        "enUS": "Building stock and Renovation",
-        "frFR": "Parc immobilier et rénovation",
-        "deDE": "Gebäudebestand und Renovierung"
+      "route": "stock",
+      "toggle": {
+        "default": "residential",
+        "options": [
+          {
+            "value": "residential",
+            "label": { "enUS": "Residential", "frFR": "Résidentiel", "deDE": "Wohngebäude" }
+          },
+          {
+            "value": "non-residential",
+            "label": {
+              "enUS": "Non-residential",
+              "frFR": "Non-résidentiel",
+              "deDE": "Nicht-Wohngebäude"
+            }
+          }
+        ],
+        "charts": {
+          "residential": ["FloorAreaPerBuildingType"],
+          "non-residential": ["FloorAreaPerBuildingType"]
+        }
       },
-      "charts": ["FloorAreaBldType", "FloorAreaRenovationConstruction"],
-      "route": "renovation-construction"
-    },
-    {
-      "title": {
-        "enUS": "Residential, other",
-        "frFR": "Résidentiel, autre",
-        "deDE": "Wohngebäude, sonstiges"
-      },
-      "charts": ["HotWaterRes", "AppliancesLightRes"],
-      "route": "residential-other"
-    },
-    {
-      "title": {
-        "enUS": "Non-residential",
-        "frFR": "Non-résidentiel",
-        "deDE": "Nicht-Wohngebäude"
-      },
-      "charts": ["NonResByType", "NonResByFuel"],
-      "route": "non-residential"
+      "moreInfo": {
+        "residential": [
+          "FloorAreaBldType",
+          "FloorAreaRenovationConstruction",
+          "SHEnergyDemandPerBuildingType"
+        ],
+        "non-residential": []
+      }
     }
   ],
   "charts": {

@@ -1,7 +1,15 @@
 <template>
   <component
     :is="route ? 'router-link' : 'div'"
-    :to="route ? { name: $route.name, params: { ...$route.params, subtab: route } } : undefined"
+    :to="
+      route
+        ? {
+            name: $route.name,
+            params: { ...$route.params, subtab: route },
+            query: view ? { ...$route.query, view } : $route.query,
+          }
+        : undefined
+    "
     class="kpi-box"
     :class="{ active: isActive, clickable: route }"
     :style="boxStyle"
