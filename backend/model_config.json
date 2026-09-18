@@ -39,7 +39,14 @@
           "TCAF"
         ],
         "agriculture": ["population", "agriculture"],
-        "production": ["population", "agriculture"]
+        "production": [
+          "population",
+          "dietary-habits",
+          "alcoholic-beverages",
+          "livestock",
+          "crop",
+          "land-use"
+        ]
       },
       "UNFILTERED_SECTORS": ["alcoholic-beverages", "livestock", "crop", "land-use", "TCAF"]
     }

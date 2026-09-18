@@ -15,7 +15,8 @@
         "ImportsAnimal",
         "ExportsPlant",
         "ExportsAnimal",
-        "SelfSufficiencyRatio"
+        "SelfSufficiencyRatioPlant",
+        "SelfSufficiencyRatioAnimal"
       ]
     }
   ],
@@ -29,13 +30,13 @@
       "type": "StackedArea",
       "unit": "kcal",
       "outputs": [
-        "agr_domestic-production_afw_cereal[kcal]",
-        "agr_domestic-production_afw_fruit[kcal]",
-        "agr_domestic-production_afw_oilcrop[kcal]",
-        "agr_domestic-production_afw_pulse[kcal]",
-        "agr_domestic-production_afw_rice[kcal]",
-        "agr_domestic-production_afw_starch[kcal]",
-        "agr_domestic-production_afw_veg[kcal]"
+        "agr_domestic-production_afw_crop-cereal[kcal]",
+        "agr_domestic-production_afw_crop-fruit[kcal]",
+        "agr_domestic-production_afw_crop-oilcrop[kcal]",
+        "agr_domestic-production_afw_crop-pulse[kcal]",
+        "agr_domestic-production_afw_crop-rice[kcal]",
+        "agr_domestic-production_afw_crop-starch[kcal]",
+        "agr_domestic-production_afw_crop-veg[kcal]"
       ]
     },
     "ProductionAnimal": {
@@ -50,7 +51,7 @@
         "agr_domestic-production_afw_abp-dairy-milk[kcal]",
         "agr_domestic-production_afw_abp-hens-egg[kcal]",
         "agr_domestic-production_afw_meat-bovine[kcal]",
-        "agr_domestic-production_afw_meat-oth-animals[kcal]",
+        "agr_domestic-production_afw_meat-oth-animal[kcal]",
         "agr_domestic-production_afw_meat-pig[kcal]",
         "agr_domestic-production_afw_meat-poultry[kcal]",
         "agr_domestic-production_afw_meat-sheep[kcal]"
@@ -142,15 +143,48 @@
         "agr_export_seafood-seafood[kcal]"
       ]
     },
-    "SelfSufficiencyRatio": {
+    "SelfSufficiencyRatioPlant": {
       "title": {
-        "enUS": "Self-sufficiency ratio",
-        "frFR": "Taux d'autosuffisance",
-        "deDE": "Selbstversorgungsgrad"
+        "enUS": "Self-sufficiency ratio, plant-based",
+        "frFR": "Taux d'autosuffisance, végétal",
+        "deDE": "Selbstversorgungsgrad, pflanzlich"
       },
       "type": "Line",
       "unit": "%",
-      "outputs": ["agr_ssr_plant-based[%]", "agr_ssr_animal-based[%]"]
+      "outputs": [
+        "agr_ssr-ratio_crop-cereal[%]",
+        "agr_ssr-ratio_crop-fruit[%]",
+        "agr_ssr-ratio_crop-oilcrop[%]",
+        "agr_ssr-ratio_crop-pulse[%]",
+        "agr_ssr-ratio_crop-rice[%]",
+        "agr_ssr-ratio_crop-starch[%]",
+        "agr_ssr-ratio_crop-veg[%]"
+      ]
+    },
+    "SelfSufficiencyRatioAnimal": {
+      "title": {
+        "enUS": "Self-sufficiency ratio, animal-based",
+        "frFR": "Taux d'autosuffisance, animal",
+        "deDE": "Selbstversorgungsgrad, tierisch"
+      },
+      "type": "Line",
+      "unit": "%",
+      "outputs": [
+        "agr_ssr-ratio_pro-liv-abp-dairy-milk[%]",
+        "agr_ssr-ratio_pro-liv-abp-hens-egg[%]",
+        "agr_ssr-ratio_pro-liv-abp-processed-afat[%]",
+        "agr_ssr-ratio_pro-liv-abp-processed-offal[%]",
+        "agr_ssr-ratio_pro-liv-meat-bovine[%]",
+        "agr_ssr-ratio_pro-liv-meat-oth-animals[%]",
+        "agr_ssr-ratio_pro-liv-meat-pig[%]",
+        "agr_ssr-ratio_pro-liv-meat-poultry[%]",
+        "agr_ssr-ratio_pro-liv-meat-sheep[%]",
+        "agr_ssr-ratio_seafood-dfish[%]",
+        "agr_ssr-ratio_seafood-ffish[%]",
+        "agr_ssr-ratio_seafood-oth-aq-animals[%]",
+        "agr_ssr-ratio_seafood-pfish[%]",
+        "agr_ssr-ratio_seafood-seafood[%]"
+      ]
     }
   }
 }

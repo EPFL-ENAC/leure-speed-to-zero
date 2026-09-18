@@ -215,6 +215,33 @@ export const useLeverStore = defineStore('lever', () => {
     return { countries, kpis: allKpis };
   }
 
+  // Merges a specific list of sectors' country data into one object, aligning
+  // rows by position (every TCAF sector shares the same year range/order).
+  function mergeSectorsData(sectorDatas: Array<SectorData | undefined>): {
+    countries: { [key: string]: YearData[] };
+    units: { [key: string]: string };
+  } {
+    const countries: { [key: string]: YearData[] } = {};
+    const units: { [key: string]: string } = {};
+
+    sectorDatas.forEach((sectorData) => {
+      if (!sectorData?.countries) return;
+      Object.assign(units, sectorData.units);
+      Object.entries(sectorData.countries).forEach(([country, yearDataArray]) => {
+        if (!countries[country]) {
+          countries[country] = yearDataArray.map((yd) => ({ year: yd.year }));
+        }
+        yearDataArray.forEach((yearData, index) => {
+          if (countries[country]?.[index]) {
+            Object.assign(countries[country][index], yearData);
+          }
+        });
+      });
+    });
+
+    return { countries, units };
+  }
+
   // A fixed "business as usual" diet reference, fetched once (it does not
   // depend on the user's current levers) and used to add a "BAU (2050)" bar
   // to the diet snapshot chart, isolating the diet-policy effect from
@@ -249,16 +276,24 @@ export const useLeverStore = defineStore('lever', () => {
   const getSectorDataWithKpis = (sectorName: string): SectorWithKpis | null => {
     if (!modelResults.value) return null;
 
-    // Special case: the Production tab reads the "agriculture" module's output
-    // (demand + domestic production, computed together so they stay consistent)
-    // and adds the derived import/export/self-sufficiency fields it charts.
+    // Special case: the Production tab needs demand (from "dietary-habits",
+    // which reacts to the diet-composition levers) and domestic production
+    // (from "crop" and "livestock", which react to the self-sufficiency
+    // levers) together, to add the derived import/export/self-sufficiency
+    // fields it charts. The "agriculture" module is a legacy computation that
+    // ignores every TCAF lever, so it must never be used as a data source here.
     if (sectorName === 'production') {
-      const sectorData = modelResults.value.data['agriculture'];
-      if (!sectorData) return null;
-      const kpis = modelResults.value.kpis['agriculture'] || [];
+      const demandSector = modelResults.value.data['dietary-habits'];
+      if (!demandSector) return null;
+      const merged = mergeSectorsData([
+        demandSector,
+        modelResults.value.data['crop'],
+        modelResults.value.data['livestock'],
+      ]);
+      const kpis = modelResults.value.kpis['crop'] || [];
       return {
-        countries: withSelfSufficiencyMetrics(sectorData.countries) as SectorData['countries'],
-        units: sectorData.units,
+        countries: withSelfSufficiencyMetrics(merged.countries) as SectorData['countries'],
+        units: merged.units,
         kpis,
       };
     }
