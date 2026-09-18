@@ -4,12 +4,15 @@ import type { Region } from 'src/utils/region';
 /**
  * Derived import/export/self-sufficiency metrics for the Production tab.
  *
- * The model does not expose separate import/export flows or a self-sufficiency
- * ratio as output variables (only domestic production and total demand). These
- * are the standard trade-balance identities computed from those two:
+ * The model does not expose separate import/export flows as output variables
+ * (only domestic production and total demand). These are the standard
+ * trade-balance identities computed from those two:
  *   import = max(demand - production, 0)
  *   export = max(production - demand, 0)
- *   SSR    = production / demand, per category
+ * The self-sufficiency ratio shown is the model's own SSR (the lever value,
+ * "agr_ssr_<category>", exposed by the crop and livestock sectors). Where the
+ * model exposes none (seafood, animal by-products) it falls back to
+ * production / demand.
  *
  * Demand comes from the "dietary-habits" sector and production from "crop"
  * (plant categories) and "livestock" (meat/dairy/eggs) - all three react to
@@ -25,6 +28,9 @@ interface Category {
   key: string;
   demandField: string;
   productionField: string | null;
+  // The model's own self-sufficiency ratio (the lever value, 0-1), when it
+  // exposes one for this category.
+  ssrField?: string;
 }
 
 export const PLANT_CATEGORIES: Category[] = [
@@ -32,36 +38,43 @@ export const PLANT_CATEGORIES: Category[] = [
     key: 'crop-cereal',
     demandField: 'agr_demand_crop-cereal',
     productionField: 'agr_domestic-production_afw_crop-cereal',
+    ssrField: 'agr_ssr_crop-cereal',
   },
   {
     key: 'crop-fruit',
     demandField: 'agr_demand_crop-fruit',
     productionField: 'agr_domestic-production_afw_crop-fruit',
+    ssrField: 'agr_ssr_crop-fruit',
   },
   {
     key: 'crop-oilcrop',
     demandField: 'agr_demand_crop-oilcrop',
     productionField: 'agr_domestic-production_afw_crop-oilcrop',
+    ssrField: 'agr_ssr_crop-oilcrop',
   },
   {
     key: 'crop-pulse',
     demandField: 'agr_demand_crop-pulse',
     productionField: 'agr_domestic-production_afw_crop-pulse',
+    ssrField: 'agr_ssr_crop-pulse',
   },
   {
     key: 'crop-rice',
     demandField: 'agr_demand_crop-rice',
     productionField: 'agr_domestic-production_afw_crop-rice',
+    ssrField: 'agr_ssr_crop-rice',
   },
   {
     key: 'crop-starch',
     demandField: 'agr_demand_crop-starch',
     productionField: 'agr_domestic-production_afw_crop-starch',
+    ssrField: 'agr_ssr_crop-starch',
   },
   {
     key: 'crop-veg',
     demandField: 'agr_demand_crop-veg',
     productionField: 'agr_domestic-production_afw_crop-veg',
+    ssrField: 'agr_ssr_crop-veg',
   },
 ];
 
@@ -70,11 +83,13 @@ export const ANIMAL_CATEGORIES: Category[] = [
     key: 'pro-liv-abp-dairy-milk',
     demandField: 'agr_demand_pro-liv-abp-dairy-milk',
     productionField: 'agr_domestic-production_afw_abp-dairy-milk',
+    ssrField: 'agr_ssr_pro-liv-abp-dairy-milk',
   },
   {
     key: 'pro-liv-abp-hens-egg',
     demandField: 'agr_demand_pro-liv-abp-hens-egg',
     productionField: 'agr_domestic-production_afw_abp-hens-egg',
+    ssrField: 'agr_ssr_pro-liv-abp-hens-egg',
   },
   {
     key: 'pro-liv-abp-processed-afat',
@@ -90,26 +105,31 @@ export const ANIMAL_CATEGORIES: Category[] = [
     key: 'pro-liv-meat-bovine',
     demandField: 'agr_demand_pro-liv-meat-bovine',
     productionField: 'agr_domestic-production_afw_meat-bovine',
+    ssrField: 'agr_ssr_pro-liv-meat-bovine',
   },
   {
     key: 'pro-liv-meat-oth-animals',
     demandField: 'agr_demand_pro-liv-meat-oth-animal',
     productionField: 'agr_domestic-production_afw_meat-oth-animal',
+    ssrField: 'agr_ssr_pro-liv-meat-oth-animal',
   },
   {
     key: 'pro-liv-meat-pig',
     demandField: 'agr_demand_pro-liv-meat-pig',
     productionField: 'agr_domestic-production_afw_meat-pig',
+    ssrField: 'agr_ssr_pro-liv-meat-pig',
   },
   {
     key: 'pro-liv-meat-poultry',
     demandField: 'agr_demand_pro-liv-meat-poultry',
     productionField: 'agr_domestic-production_afw_meat-poultry',
+    ssrField: 'agr_ssr_pro-liv-meat-poultry',
   },
   {
     key: 'pro-liv-meat-sheep',
     demandField: 'agr_demand_pro-liv-meat-sheep',
     productionField: 'agr_domestic-production_afw_meat-sheep',
+    ssrField: 'agr_ssr_pro-liv-meat-sheep',
   },
   { key: 'seafood-dfish', demandField: 'agr_demand_seafood-dfish', productionField: null },
   { key: 'seafood-ffish', demandField: 'agr_demand_seafood-ffish', productionField: null },
@@ -129,6 +149,14 @@ export const EXPORT_FIELD = (key: string) => `agr_export_${key}`;
 export const SSR_RATIO_FIELD = (key: string) => `agr_ssr-ratio_${key}`;
 
 function categoryRatio(row: YearData, category: Category): number {
+  // The model's SSR is the lever value itself, so it only depends on the
+  // self-sufficiency lever - not on the diet. Production / demand (below) also
+  // moves with the diet, because "demand" here is food demand only while the
+  // model applies the SSR to a wider demand (feed, processing, ...) and then
+  // calibrates production.
+  const modelSsr = category.ssrField ? row[category.ssrField] : undefined;
+  if (modelSsr !== undefined && modelSsr !== null) return modelSsr;
+
   const demand = row[category.demandField] ?? 0;
   const production = category.productionField ? (row[category.productionField] ?? 0) : 0;
   return demand > 0 ? production / demand : 0;
