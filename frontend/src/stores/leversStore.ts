@@ -13,7 +13,7 @@ import { useI18n } from 'vue-i18n';
 import { withSelfSufficiencyMetrics } from 'src/utils/selfSufficiency';
 import { withDietMetrics, type EnergyRequirementRow } from 'src/utils/dietMetrics';
 import { withPopulationMetrics } from 'src/utils/populationMetrics';
-import { withTrueCostSavings } from 'src/utils/trueCostMetrics';
+import { withTrueCostPerCapita, withTrueCostSavings } from 'src/utils/trueCostMetrics';
 
 // Types
 export interface YearData {
@@ -389,14 +389,13 @@ export const useLeverStore = defineStore('lever', () => {
     }
 
     // Special case: the True Cost page merges every sector like "" does and adds
-    // the cost saved against the BAU (diet) reference run.
+    // the cost saved against the BAU (diet) reference run and the costs per capita.
     if (sectorName === 'true-cost') {
       void ensureBauReference();
       const merged = mergeAllSectorData();
       return {
-        countries: withTrueCostSavings(
-          merged.countries,
-          bauReferenceAllSectorData.value?.countries,
+        countries: withTrueCostPerCapita(
+          withTrueCostSavings(merged.countries, bauReferenceAllSectorData.value?.countries),
         ) as SectorData['countries'],
         units: {},
         kpis: merged.kpis,
