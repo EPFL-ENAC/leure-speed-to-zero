@@ -1,10 +1,5 @@
 <template>
-  <SectorTab
-    sector-name="true-cost"
-    sector-display-name="true-cost"
-    :config="trueCostConfig"
-    data-sector-name=""
-  />
+  <SectorTab sector-name="true-cost" sector-display-name="true-cost" :config="trueCostConfig" />
 </template>
 
 <script setup lang="ts">
@@ -12,5 +7,6 @@ import trueCostConfig from 'config/subtabs/true-cost.json';
 import SectorTab from 'components/SectorTab.vue';
 
 // The charts are the TCAF module's health and environmental LCA outputs, so
-// the page reads the merged results, not only a single module's.
+// the page reads the merged results (see the 'true-cost' case of
+// getSectorDataWithKpis), plus the cost saved against the BAU (diet) run.
 </script>

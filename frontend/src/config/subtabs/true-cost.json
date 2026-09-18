@@ -8,7 +8,7 @@
         "deDE": "Gesamt"
       },
       "route": "total",
-      "charts": ["TrueCostTotal"]
+      "charts": ["TrueCostTotal", "TrueCostSaved"]
     },
     {
       "title": {
@@ -37,8 +37,26 @@
         "deDE": "Wahre Gesamtkosten der Ernährung"
       },
       "type": "StackedArea",
-      "unit": "CHF",
-      "outputs": ["tcaf_lca_cost_total[CHF]", "tcaf_health-diet_cost-residual_total[CHF]"]
+      "unit": "Million CHF",
+      "scale": 1000000,
+      "outputs": [
+        { "id": "tcaf_lca_cost_total[CHF]", "color": "#1baf7a" },
+        { "id": "tcaf_health-diet_cost-residual_total[CHF]", "color": "#2a78d6" }
+      ]
+    },
+    "TrueCostSaved": {
+      "title": {
+        "enUS": "Cost saved vs business as usual (diet)",
+        "frFR": "Coût économisé par rapport au scénario tendanciel (alimentation)",
+        "deDE": "Eingesparte Kosten gegenüber dem Trend-Szenario (Ernährung)"
+      },
+      "type": "StackedArea",
+      "unit": "Million CHF",
+      "scale": 1000000,
+      "outputs": [
+        { "id": "tcaf_lca_cost-saved_total[CHF]", "color": "#1baf7a" },
+        { "id": "tcaf_health-diet_cost-saved_total[CHF]", "color": "#2a78d6" }
+      ]
     },
     "TrueCostHealthByDisease": {
       "title": {

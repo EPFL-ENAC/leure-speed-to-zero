@@ -13,6 +13,7 @@ import { useI18n } from 'vue-i18n';
 import { withSelfSufficiencyMetrics } from 'src/utils/selfSufficiency';
 import { withDietMetrics, type EnergyRequirementRow } from 'src/utils/dietMetrics';
 import { withPopulationMetrics } from 'src/utils/populationMetrics';
+import { withTrueCostSavings } from 'src/utils/trueCostMetrics';
 
 // Types
 export interface YearData {
@@ -39,6 +40,9 @@ export interface ChartConfig {
   type: string;
   unit: string;
   outputs: Array<string | OutputConfig>;
+  // When set, every plotted value is divided by it, so "unit" can be a multiple
+  // of the model's unit (e.g. scale 1e6 with unit "Million CHF" for CHF outputs).
+  scale?: number;
   // When set (as [yearA, yearB, ...]), the chart compares these years side by
   // side as a bar chart (categories, not a time series) instead of plotting
   // the full trajectory.
@@ -248,7 +252,10 @@ export const useLeverStore = defineStore('lever', () => {
   // depend on the user's current levers) and used to add a "BAU (2050)" bar
   // to the diet snapshot chart, isolating the diet-policy effect from
   // everything else (population, ...) that also changes between 2023 and 2050.
+  // The same run, every module merged, is the baseline the True Cost page
+  // measures its savings against.
   const bauReferenceSectorData = ref<SectorData | null>(null);
+  const bauReferenceAllSectorData = ref<SectorData | null>(null);
   let bauReferenceLoading = false;
 
   async function ensureBauReference() {
@@ -270,6 +277,9 @@ export const useLeverStore = defineStore('lever', () => {
         const { data } = response.data;
         bauReferenceSectorData.value = data?.['dietary-habits']
           ? (mergeSectorsData([data['population'], data['dietary-habits']]) as SectorData)
+          : null;
+        bauReferenceAllSectorData.value = data
+          ? (mergeSectorsData(Object.values(data)) as SectorData)
           : null;
       }
     } catch (err) {
@@ -372,6 +382,21 @@ export const useLeverStore = defineStore('lever', () => {
         countries: withDietMetrics(
           merged.countries,
           requirementRows && { region, rows: requirementRows },
+        ) as SectorData['countries'],
+        units: {},
+        kpis: merged.kpis,
+      };
+    }
+
+    // Special case: the True Cost page merges every sector like "" does and adds
+    // the cost saved against the BAU (diet) reference run.
+    if (sectorName === 'true-cost') {
+      void ensureBauReference();
+      const merged = mergeAllSectorData();
+      return {
+        countries: withTrueCostSavings(
+          merged.countries,
+          bauReferenceAllSectorData.value?.countries,
         ) as SectorData['countries'],
         units: {},
         kpis: merged.kpis,

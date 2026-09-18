@@ -6533,6 +6533,16 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     frFR: 'Coût environnemental (ACV)',
     deDE: 'Umweltkosten (Ökobilanz)',
   },
+  'tcaf_lca_cost-saved_total[CHF]': {
+    enUS: 'Environmental cost saved',
+    frFR: 'Coût environnemental économisé',
+    deDE: 'Eingesparte Umweltkosten',
+  },
+  'tcaf_health-diet_cost-saved_total[CHF]': {
+    enUS: 'Health cost saved',
+    frFR: 'Coût sanitaire économisé',
+    deDE: 'Eingesparte Gesundheitskosten',
+  },
   'tcaf_health-diet_cost_total[CHF]': {
     enUS: 'Attributable to the BAU diet',
     frFR: 'Attribuable au régime tendanciel',

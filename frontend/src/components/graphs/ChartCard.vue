@@ -131,6 +131,7 @@ function extractChartData(
   countryData: YearData[],
 ): ChartSeries[] {
   const series: ChartSeries[] = [];
+  const scale = props.chartConfig.scale ?? 1;
 
   // Normalize outputs to OutputConfig objects
   const outputConfigs: Array<{ id: string; color?: string }> = outputs.map((output) => {
@@ -150,7 +151,10 @@ function extractChartData(
     countryData.forEach((yearData: YearData) => {
       if (fieldName in yearData) {
         years.push(yearData.year);
-        values.push([new Date(yearData.year, 0, 1).getTime(), yearData[fieldName] as number]);
+        values.push([
+          new Date(yearData.year, 0, 1).getTime(),
+          (yearData[fieldName] as number) / scale,
+        ]);
       }
     });
 
