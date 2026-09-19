@@ -6608,4 +6608,215 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     frFR: 'Cancer de la trachée, des bronches et du poumon',
     deDE: 'Luftröhren-, Bronchial- und Lungenkrebs',
   },
+  'cal_agr_imported_production_total_pro-crop-processed-sugar[kcal]': {
+    enUS: 'Sugar',
+    frFR: 'Sucre',
+    deDE: 'Zucker',
+  },
+  'cal_agr_imported_production_total_pro-crop-processed-sweet[kcal]': {
+    enUS: 'Sweeteners',
+    frFR: 'Édulcorants',
+    deDE: 'Süssungsmittel',
+  },
+  'cal_agr_imported_production_total_pro-crop-processed-voil[kcal]': {
+    enUS: 'Vegetable oils',
+    frFR: 'Huiles végétales',
+    deDE: 'Pflanzenöle',
+  },
+  'agr_ssr_crop-sugarcrop[%]': {
+    enUS: 'Sugar crops',
+    frFR: 'Cultures sucrières',
+    deDE: 'Zuckerpflanzen',
+  },
+  'agr_ssr_pro-crop-processed-sugar[%]': { enUS: 'Sugar', frFR: 'Sucre', deDE: 'Zucker' },
+  'agr_ssr_pro-crop-processed-sweet[%]': {
+    enUS: 'Sweeteners',
+    frFR: 'Édulcorants',
+    deDE: 'Süssungsmittel',
+  },
+  'agr_ssr_pro-crop-processed-voil[%]': {
+    enUS: 'Vegetable oils',
+    frFR: 'Huiles végétales',
+    deDE: 'Pflanzenöle',
+  },
+  'agr_liv_population_meat-oth-animal[lsu]': {
+    enUS: 'Other animals',
+    deDE: 'Sonstige Tiere',
+    frFR: 'Autres animaux',
+  },
+  'agr_liv_productivity_abp-dairy-milk[kcal/lsu]': {
+    enUS: 'Dairy cattle',
+    deDE: 'Milchvieh',
+    frFR: 'Bétail laitier',
+  },
+  'agr_liv_productivity_abp-hens-egg[kcal/lsu]': {
+    enUS: 'Laying hens',
+    deDE: 'Leghennen',
+    frFR: 'Poules pondeuses',
+  },
+  'agr_liv_productivity_meat-bovine[kcal/lsu]': {
+    enUS: 'Bovine',
+    deDE: 'Rinder',
+    frFR: 'Bovins',
+  },
+  'agr_liv_productivity_meat-oth-animal[kcal/lsu]': {
+    enUS: 'Other animals',
+    deDE: 'Sonstige Tiere',
+    frFR: 'Autres animaux',
+  },
+  'agr_liv_productivity_meat-pig[kcal/lsu]': {
+    enUS: 'Pigs',
+    deDE: 'Schweine',
+    frFR: 'Porcs',
+  },
+  'agr_liv_productivity_meat-poultry[kcal/lsu]': {
+    enUS: 'Poultry',
+    deDE: 'Geflügel',
+    frFR: 'Volailles',
+  },
+  'agr_liv_productivity_meat-sheep[kcal/lsu]': {
+    enUS: 'Sheep',
+    deDE: 'Schafe',
+    frFR: 'Moutons',
+  },
+  'agr_share_organic_cereal[%]': {
+    enUS: 'Cereals',
+    deDE: 'Getreide',
+    frFR: 'Céréales',
+  },
+  'agr_share_organic_fruit[%]': {
+    enUS: 'Fruits',
+    deDE: 'Obst',
+    frFR: 'Fruits',
+  },
+  'agr_share_organic_oilcrop[%]': {
+    enUS: 'Oil crops',
+    deDE: 'Ölpflanzen',
+    frFR: 'Cultures oléagineuses',
+  },
+  'agr_share_organic_pulse[%]': {
+    enUS: 'Pulses',
+    deDE: 'Leguminosen',
+    frFR: 'Légumineuses',
+  },
+  'agr_share_organic_starch[%]': {
+    enUS: 'Starchy roots',
+    deDE: 'Stärkehaltige Wurzeln',
+    frFR: 'Racines féculentes',
+  },
+  'agr_share_organic_sugarcrop[%]': {
+    enUS: 'Sugar crops',
+    deDE: 'Zuckerpflanzen',
+    frFR: 'Cultures sucrières',
+  },
+  'agr_share_organic_veg[%]': {
+    enUS: 'Vegetables',
+    deDE: 'Gemüse',
+    frFR: 'Légumes',
+  },
+  'livestock_share-organic_abp-dairy-milk[%]': {
+    enUS: 'Dairy cattle',
+    deDE: 'Milchvieh',
+    frFR: 'Bétail laitier',
+  },
+  'livestock_share-organic_abp-hens-egg[%]': {
+    enUS: 'Laying hens',
+    deDE: 'Leghennen',
+    frFR: 'Poules pondeuses',
+  },
+  'livestock_share-organic_meat-bovine[%]': {
+    enUS: 'Bovine',
+    deDE: 'Rinder',
+    frFR: 'Bovins',
+  },
+  'livestock_share-organic_meat-oth-animal[%]': {
+    enUS: 'Other animals',
+    deDE: 'Sonstige Tiere',
+    frFR: 'Autres animaux',
+  },
+  'livestock_share-organic_meat-pig[%]': {
+    enUS: 'Pigs',
+    deDE: 'Schweine',
+    frFR: 'Porcs',
+  },
+  'livestock_share-organic_meat-poultry[%]': {
+    enUS: 'Poultry',
+    deDE: 'Geflügel',
+    frFR: 'Volailles',
+  },
+  'livestock_share-organic_meat-sheep[%]': {
+    enUS: 'Sheep',
+    deDE: 'Schafe',
+    frFR: 'Moutons',
+  },
+  'agr_cropland_ch_crop-cereal[ha]': {
+    enUS: 'Cereals',
+    deDE: 'Getreide',
+    frFR: 'Céréales',
+  },
+  'agr_cropland_ch_crop-fruit[ha]': {
+    enUS: 'Fruits',
+    deDE: 'Obst',
+    frFR: 'Fruits',
+  },
+  'agr_cropland_ch_crop-oilcrop[ha]': {
+    enUS: 'Oil crops',
+    deDE: 'Ölpflanzen',
+    frFR: 'Cultures oléagineuses',
+  },
+  'agr_cropland_ch_crop-pulse[ha]': {
+    enUS: 'Pulses',
+    deDE: 'Leguminosen',
+    frFR: 'Légumineuses',
+  },
+  'agr_cropland_ch_crop-starch[ha]': {
+    enUS: 'Starchy roots',
+    deDE: 'Stärkehaltige Wurzeln',
+    frFR: 'Racines féculentes',
+  },
+  'agr_cropland_ch_crop-sugarcrop[ha]': {
+    enUS: 'Sugar crops',
+    deDE: 'Zuckerpflanzen',
+    frFR: 'Cultures sucrières',
+  },
+  'agr_cropland_ch_crop-veg[ha]': {
+    enUS: 'Vegetables',
+    deDE: 'Gemüse',
+    frFR: 'Légumes',
+  },
+  'agr_crop_yield_ch_crop-cereal[kcal/ha]': {
+    enUS: 'Cereals',
+    deDE: 'Getreide',
+    frFR: 'Céréales',
+  },
+  'agr_crop_yield_ch_crop-fruit[kcal/ha]': {
+    enUS: 'Fruits',
+    deDE: 'Obst',
+    frFR: 'Fruits',
+  },
+  'agr_crop_yield_ch_crop-oilcrop[kcal/ha]': {
+    enUS: 'Oil crops',
+    deDE: 'Ölpflanzen',
+    frFR: 'Cultures oléagineuses',
+  },
+  'agr_crop_yield_ch_crop-pulse[kcal/ha]': {
+    enUS: 'Pulses',
+    deDE: 'Leguminosen',
+    frFR: 'Légumineuses',
+  },
+  'agr_crop_yield_ch_crop-starch[kcal/ha]': {
+    enUS: 'Starchy roots',
+    deDE: 'Stärkehaltige Wurzeln',
+    frFR: 'Racines féculentes',
+  },
+  'agr_crop_yield_ch_crop-sugarcrop[kcal/ha]': {
+    enUS: 'Sugar crops',
+    deDE: 'Zuckerpflanzen',
+    frFR: 'Cultures sucrières',
+  },
+  'agr_crop_yield_ch_crop-veg[kcal/ha]': {
+    enUS: 'Vegetables',
+    deDE: 'Gemüse',
+    frFR: 'Légumes',
+  },
 };

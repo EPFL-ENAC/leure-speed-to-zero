@@ -18,6 +18,30 @@
         "SelfSufficiencyRatioPlant",
         "SelfSufficiencyRatioAnimal"
       ]
+    },
+    {
+      "title": {
+        "enUS": "Crops",
+        "frFR": "Cultures",
+        "deDE": "Pflanzenbau"
+      },
+      "route": "crops",
+      "charts": [
+        "Cropland",
+        "CropYield",
+        "ImportsProcessedPlant",
+        "SelfSufficiencyRatioProcessed",
+        "OrganicShareCrops"
+      ]
+    },
+    {
+      "title": {
+        "enUS": "Livestock",
+        "frFR": "Élevage",
+        "deDE": "Tierhaltung"
+      },
+      "route": "livestock",
+      "charts": ["LivestockPopulation", "LivestockProductivity", "OrganicShareLivestock"]
     }
   ],
   "charts": {
@@ -184,6 +208,148 @@
         "agr_ssr-ratio_seafood-oth-aq-animals[%]",
         "agr_ssr-ratio_seafood-pfish[%]",
         "agr_ssr-ratio_seafood-seafood[%]"
+      ]
+    },
+    "Cropland": {
+      "title": {
+        "enUS": "Cropland area",
+        "frFR": "Surface de terres cultivées",
+        "deDE": "Ackerfläche"
+      },
+      "type": "StackedArea",
+      "unit": "ha",
+      "outputs": [
+        "agr_cropland_ch_crop-cereal[ha]",
+        "agr_cropland_ch_crop-fruit[ha]",
+        "agr_cropland_ch_crop-oilcrop[ha]",
+        "agr_cropland_ch_crop-pulse[ha]",
+        "agr_cropland_ch_crop-starch[ha]",
+        "agr_cropland_ch_crop-sugarcrop[ha]",
+        "agr_cropland_ch_crop-veg[ha]"
+      ]
+    },
+    "CropYield": {
+      "title": {
+        "enUS": "Crop yield",
+        "frFR": "Rendement des cultures",
+        "deDE": "Ernteertrag"
+      },
+      "type": "Line",
+      "unit": "Mkcal/ha",
+      "scale": 1000000,
+      "outputs": [
+        "agr_crop_yield_ch_crop-cereal[kcal/ha]",
+        "agr_crop_yield_ch_crop-fruit[kcal/ha]",
+        "agr_crop_yield_ch_crop-oilcrop[kcal/ha]",
+        "agr_crop_yield_ch_crop-pulse[kcal/ha]",
+        "agr_crop_yield_ch_crop-starch[kcal/ha]",
+        "agr_crop_yield_ch_crop-sugarcrop[kcal/ha]",
+        "agr_crop_yield_ch_crop-veg[kcal/ha]"
+      ]
+    },
+    "ImportsProcessedPlant": {
+      "title": {
+        "enUS": "Imports, processed plant products",
+        "frFR": "Importations, produits végétaux transformés",
+        "deDE": "Importe, verarbeitete pflanzliche Produkte"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "cal_agr_imported_production_total_pro-crop-processed-sugar[kcal]",
+        "cal_agr_imported_production_total_pro-crop-processed-sweet[kcal]",
+        "cal_agr_imported_production_total_pro-crop-processed-voil[kcal]"
+      ]
+    },
+    "SelfSufficiencyRatioProcessed": {
+      "title": {
+        "enUS": "Self-sufficiency ratio, sugar crops and processed plant products",
+        "frFR": "Taux d'autosuffisance, cultures sucrières et produits végétaux transformés",
+        "deDE": "Selbstversorgungsgrad, Zuckerpflanzen und verarbeitete pflanzliche Produkte"
+      },
+      "type": "Line",
+      "unit": "%",
+      "scale": 0.01,
+      "outputs": [
+        "agr_ssr_crop-sugarcrop[%]",
+        "agr_ssr_pro-crop-processed-sugar[%]",
+        "agr_ssr_pro-crop-processed-sweet[%]",
+        "agr_ssr_pro-crop-processed-voil[%]"
+      ]
+    },
+    "LivestockPopulation": {
+      "title": {
+        "enUS": "Livestock population",
+        "frFR": "Effectifs du cheptel",
+        "deDE": "Tierbestand"
+      },
+      "type": "StackedArea",
+      "unit": "lsu",
+      "outputs": [
+        "agr_liv_population_abp-dairy-milk[lsu]",
+        "agr_liv_population_abp-hens-egg[lsu]",
+        "agr_liv_population_meat-bovine[lsu]",
+        "agr_liv_population_meat-oth-animal[lsu]",
+        "agr_liv_population_meat-pig[lsu]",
+        "agr_liv_population_meat-poultry[lsu]",
+        "agr_liv_population_meat-sheep[lsu]"
+      ]
+    },
+    "LivestockProductivity": {
+      "title": {
+        "enUS": "Domestic production per livestock unit",
+        "frFR": "Production nationale par unité de gros bétail",
+        "deDE": "Inländische Produktion je Grossvieheinheit"
+      },
+      "type": "Line",
+      "unit": "Mkcal/lsu",
+      "scale": 1000000,
+      "outputs": [
+        "agr_liv_productivity_abp-dairy-milk[kcal/lsu]",
+        "agr_liv_productivity_abp-hens-egg[kcal/lsu]",
+        "agr_liv_productivity_meat-bovine[kcal/lsu]",
+        "agr_liv_productivity_meat-oth-animal[kcal/lsu]",
+        "agr_liv_productivity_meat-pig[kcal/lsu]",
+        "agr_liv_productivity_meat-poultry[kcal/lsu]",
+        "agr_liv_productivity_meat-sheep[kcal/lsu]"
+      ]
+    },
+    "OrganicShareCrops": {
+      "title": {
+        "enUS": "Share of organic production",
+        "frFR": "Part de la production biologique",
+        "deDE": "Anteil der Bioproduktion"
+      },
+      "type": "Line",
+      "unit": "%",
+      "scale": 0.01,
+      "outputs": [
+        "agr_share_organic_cereal[%]",
+        "agr_share_organic_fruit[%]",
+        "agr_share_organic_oilcrop[%]",
+        "agr_share_organic_pulse[%]",
+        "agr_share_organic_starch[%]",
+        "agr_share_organic_sugarcrop[%]",
+        "agr_share_organic_veg[%]"
+      ]
+    },
+    "OrganicShareLivestock": {
+      "title": {
+        "enUS": "Share of organic livestock (LSU)",
+        "frFR": "Part du cheptel biologique (UGB)",
+        "deDE": "Anteil des Biotierbestands (GVE)"
+      },
+      "type": "Line",
+      "unit": "%",
+      "scale": 0.01,
+      "outputs": [
+        "livestock_share-organic_abp-dairy-milk[%]",
+        "livestock_share-organic_abp-hens-egg[%]",
+        "livestock_share-organic_meat-bovine[%]",
+        "livestock_share-organic_meat-oth-animal[%]",
+        "livestock_share-organic_meat-pig[%]",
+        "livestock_share-organic_meat-poultry[%]",
+        "livestock_share-organic_meat-sheep[%]"
       ]
     }
   }

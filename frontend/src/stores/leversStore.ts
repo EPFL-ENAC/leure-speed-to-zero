@@ -11,6 +11,13 @@ import type { KpiData } from 'src/utils/sectors';
 import { getTranslatedText, type TranslationObject } from 'src/utils/translationHelpers';
 import { useI18n } from 'vue-i18n';
 import { withSelfSufficiencyMetrics } from 'src/utils/selfSufficiency';
+import { withLivestockMetrics } from 'src/utils/livestockMetrics';
+import {
+  ORGANIC_SHARE_LEVERS,
+  withOrganicShares,
+  type LeverSeriesRow,
+  type OrganicShareRows,
+} from 'src/utils/organicShares';
 import { withDietMetrics, type EnergyRequirementRow } from 'src/utils/dietMetrics';
 import { withPopulationMetrics } from 'src/utils/populationMetrics';
 import { withTrueCostPerCapita, withTrueCostSavings } from 'src/utils/trueCostMetrics';
@@ -376,6 +383,50 @@ export const useLeverStore = defineStore('lever', () => {
     }
   }
 
+  // The organic shares of the Production page are the model's
+  // "crop-share-organic" and "share-organic" lever inputs, not outputs: one time
+  // series per lever position (1-4), fetched once per lever and region. The
+  // selected positions are merged into the page's rows (see withOrganicShares).
+  const organicShareSeries = ref<Record<string, Record<string, Record<string, LeverSeriesRow[]>>>>(
+    {},
+  );
+  const organicShareLoading = new Set<string>();
+
+  async function ensureOrganicShares(region: string) {
+    await Promise.all(
+      ORGANIC_SHARE_LEVERS.map(async (lever) => {
+        const key = `${lever}|${region}`;
+        if (organicShareSeries.value[lever]?.[region] || organicShareLoading.has(key)) return;
+
+        organicShareLoading.add(key);
+        try {
+          const response = await modelService.getLeverData(lever, undefined, region);
+          const positions = response.data?.data?.lever_positions;
+          if (response.data?.status === 'success' && positions) {
+            organicShareSeries.value = {
+              ...organicShareSeries.value,
+              [lever]: { ...organicShareSeries.value[lever], [region]: positions },
+            };
+          }
+        } catch (err) {
+          console.error(`Failed to fetch ${lever}:`, err);
+        } finally {
+          organicShareLoading.delete(key);
+        }
+      }),
+    );
+  }
+
+  function selectedOrganicShares(region: string): OrganicShareRows | undefined {
+    const rows: Record<string, LeverSeriesRow[]> = {};
+    ORGANIC_SHARE_LEVERS.forEach((lever) => {
+      const position = String(Math.round(getLeverValue(lever)));
+      const leverRows = organicShareSeries.value[lever]?.[region]?.[position];
+      if (leverRows) rows[lever] = leverRows;
+    });
+    return Object.keys(rows).length ? { region, rows } : undefined;
+  }
+
   // Sectors computed values
   const getSectorDataWithKpis = (sectorName: string): SectorWithKpis | null => {
     if (!modelResults.value) return null;
@@ -384,8 +435,11 @@ export const useLeverStore = defineStore('lever', () => {
     // which reacts to the diet-composition levers) and domestic production
     // (from "crop" and "livestock", which react to the self-sufficiency
     // levers) together, to add the derived import/export/self-sufficiency
-    // fields it charts. The "agriculture" module is a legacy computation that
-    // ignores every TCAF lever, so it must never be used as a data source here.
+    // fields it charts, the livestock productivity of its Livestock sub-tab
+    // the cropland area and yield ("land-use") of its Crops one, and the
+    // organic shares (lever inputs) of both. The
+    // "agriculture" module is a legacy computation that ignores
+    // every TCAF lever, so it must never be used as a data source here.
     if (sectorName === 'production') {
       const demandSector = modelResults.value.data['dietary-habits'];
       if (!demandSector) return null;
@@ -393,10 +447,16 @@ export const useLeverStore = defineStore('lever', () => {
         demandSector,
         modelResults.value.data['crop'],
         modelResults.value.data['livestock'],
+        modelResults.value.data['land-use'],
       ]);
       const kpis = modelResults.value.kpis['crop'] || [];
+      const region = getCurrentRegion();
+      void ensureOrganicShares(region);
       return {
-        countries: withSelfSufficiencyMetrics(merged.countries) as SectorData['countries'],
+        countries: withOrganicShares(
+          withLivestockMetrics(withSelfSufficiencyMetrics(merged.countries)),
+          selectedOrganicShares(region),
+        ) as SectorData['countries'],
         units: merged.units,
         kpis,
       };
