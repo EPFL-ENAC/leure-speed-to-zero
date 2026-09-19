@@ -6280,6 +6280,26 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Holzenergie',
     frFR: 'Bois énergie',
   },
+  'diet-share_meat-processed[%]': {
+    enUS: 'Processed meat',
+    frFR: 'Viande transformée',
+    deDE: 'Verarbeitetes Fleisch',
+  },
+  'diet-share_meat-unprocessed[%]': {
+    enUS: 'Unprocessed meat',
+    frFR: 'Viande non transformée',
+    deDE: 'Unverarbeitetes Fleisch',
+  },
+  'diet-share_cereal-whole[%]': {
+    enUS: 'Whole cereals',
+    frFR: 'Céréales complètes',
+    deDE: 'Vollkorngetreide',
+  },
+  'diet-share_cereal-refined[%]': {
+    enUS: 'Refined cereals',
+    frFR: 'Céréales raffinées',
+    deDE: 'Raffiniertes Getreide',
+  },
   'food-waste_cereals-starches[t]': {
     enUS: 'Cereals & starches',
     frFR: 'Céréales et féculents',

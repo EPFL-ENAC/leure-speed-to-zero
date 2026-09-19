@@ -19,6 +19,15 @@
     },
     {
       "title": {
+        "enUS": "Processed food",
+        "frFR": "Aliments transformés",
+        "deDE": "Verarbeitete Lebensmittel"
+      },
+      "route": "processed-food",
+      "charts": ["ProcessedMeatShare", "WholeCerealShare"]
+    },
+    {
+      "title": {
         "enUS": "Food waste",
         "frFR": "Gaspillage alimentaire",
         "deDE": "Lebensmittelverschwendung"
@@ -61,8 +70,7 @@
         "lfs_consumers-diet_crop-pulse[g/cap/day]",
         "lfs_consumers-diet_crop-rice[g/cap/day]",
         "lfs_consumers-diet_crop-starch[g/cap/day]",
-        "lfs_consumers-diet_crop-veg[g/cap/day]",
-        "lfs_consumers-diet_crop-cereal-whole[g/cap/day]"
+        "lfs_consumers-diet_crop-veg[g/cap/day]"
       ]
     },
     "DietAnimal": {
@@ -82,8 +90,7 @@
         "lfs_consumers-diet_pro-liv-meat-oth-animal[g/cap/day]",
         "lfs_consumers-diet_pro-liv-meat-pig[g/cap/day]",
         "lfs_consumers-diet_pro-liv-meat-poultry[g/cap/day]",
-        "lfs_consumers-diet_pro-liv-meat-sheep[g/cap/day]",
-        "lfs_consumers-diet_pro-liv-meat-processed[g/cap/day]"
+        "lfs_consumers-diet_pro-liv-meat-sheep[g/cap/day]"
       ]
     },
     "DietFish": {
@@ -393,6 +400,44 @@
         {
           "id": "agr_kcal-req_male-above65[kcal/cap/day]",
           "color": "#08306b"
+        }
+      ]
+    },
+    "ProcessedMeatShare": {
+      "title": {
+        "enUS": "Share of processed and unprocessed meat",
+        "frFR": "Part de viande transformée et non transformée",
+        "deDE": "Anteil von verarbeitetem und unverarbeitetem Fleisch"
+      },
+      "type": "StackedArea",
+      "unit": "%",
+      "outputs": [
+        {
+          "id": "diet-share_meat-unprocessed[%]",
+          "color": "#e87ba4"
+        },
+        {
+          "id": "diet-share_meat-processed[%]",
+          "color": "#a3305f"
+        }
+      ]
+    },
+    "WholeCerealShare": {
+      "title": {
+        "enUS": "Share of whole and refined cereals",
+        "frFR": "Part de céréales complètes et raffinées",
+        "deDE": "Anteil von Vollkorn- und raffiniertem Getreide"
+      },
+      "type": "StackedArea",
+      "unit": "%",
+      "outputs": [
+        {
+          "id": "diet-share_cereal-refined[%]",
+          "color": "#9cc3ee"
+        },
+        {
+          "id": "diet-share_cereal-whole[%]",
+          "color": "#2a78d6"
         }
       ]
     },

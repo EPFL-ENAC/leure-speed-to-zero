@@ -59,6 +59,23 @@ export const FOOD_GROUPS: Record<string, string[]> = {
 
 const DAYS_PER_YEAR = 365.25;
 
+// Processed food shares (%) of the Processed food sub-tab. The diet module
+// outputs the processed meat ("pro-liv-meat-processed") and the whole cereals
+// ("crop-cereal-whole") in g/cap/day as parts of the meat and cereal totals,
+// not as extra categories: the model computes them as total * (1 - unprocessed
+// share) and cereal * whole share. The shares are therefore the ratio to those
+// totals, and the other side of each split is the remainder.
+const MEAT_CATEGORIES = [
+  'pro-liv-meat-bovine',
+  'pro-liv-meat-oth-animal',
+  'pro-liv-meat-pig',
+  'pro-liv-meat-poultry',
+  'pro-liv-meat-sheep',
+];
+const CONSUMED_FIELD = (category: string) => `lfs_consumers-diet_${category}`;
+export const MEAT_SHARE_FIELD = (kind: 'processed' | 'unprocessed') => `diet-share_meat-${kind}`;
+export const CEREAL_SHARE_FIELD = (kind: 'whole' | 'refined') => `diet-share_cereal-${kind}`;
+
 export const DIET_INTAKE_FIELD = (category: string) => `diet-intake_${category}`;
 export const FOOD_WASTE_FIELD = (group: string) => `food-waste_${group}`;
 // Waste ratio (%), per food group and per individual category
@@ -106,11 +123,28 @@ function augmentRow(row: YearData): void {
   });
 }
 
+function augmentProcessedShares(row: YearData): void {
+  const totalMeat = MEAT_CATEGORIES.reduce((sum, c) => sum + num(row[CONSUMED_FIELD(c)]), 0);
+  const processedMeat = num(row[CONSUMED_FIELD('pro-liv-meat-processed')]);
+  if (totalMeat > 0 && CONSUMED_FIELD('pro-liv-meat-processed') in row) {
+    const processed = Math.min(processedMeat / totalMeat, 1) * 100;
+    row[MEAT_SHARE_FIELD('processed')] = processed;
+    row[MEAT_SHARE_FIELD('unprocessed')] = 100 - processed;
+  }
+
+  const cereal = num(row[CONSUMED_FIELD('crop-cereal')]);
+  if (cereal > 0 && CONSUMED_FIELD('crop-cereal-whole') in row) {
+    const whole = Math.min(num(row[CONSUMED_FIELD('crop-cereal-whole')]) / cereal, 1) * 100;
+    row[CEREAL_SHARE_FIELD('whole')] = whole;
+    row[CEREAL_SHARE_FIELD('refined')] = 100 - whole;
+  }
+}
+
 /**
  * Returns a new countries object (rows copied, not mutated) augmented with the
- * per-category diet intake and waste ratio, the per-group food waste and waste ratio, and the
- * energy requirement of the given region. Rows without the diet outputs are
- * copied as they are.
+ * per-category diet intake and waste ratio, the per-group food waste and waste ratio, the
+ * processed meat and whole cereal shares, and the energy requirement of the given
+ * region. Rows without the diet outputs are copied as they are.
  */
 export function withDietMetrics(
   countries: { [key in Region]?: YearData[] },
@@ -132,6 +166,7 @@ export function withDietMetrics(
     result[region] = rows.map((row) => {
       const newRow: YearData = { ...row };
       augmentRow(newRow);
+      augmentProcessedShares(newRow);
       Object.entries(requirementByYear.get(Number(row.year)) ?? {}).forEach(([key, value]) => {
         // "agr_kcal-req_<group>[kcal/cap/day]" -> "agr_kcal-req_<group>"
         if (key.startsWith('agr_kcal-req_') && typeof value === 'number')
