@@ -53,7 +53,7 @@ export interface ChartConfig {
   unit: string;
   outputs: Array<string | OutputConfig>;
   // When set, every plotted value is divided by it, so "unit" can be a multiple
-  // of the model's unit (e.g. scale 1e6 with unit "Million CHF" for CHF outputs).
+  // of the model's unit (e.g. scale 1e9 with unit "Billion CHF" for CHF outputs).
   scale?: number;
   // When set (as [yearA, yearB, ...]), the chart compares these years side by
   // side as a bar chart (categories, not a time series) instead of plotting
