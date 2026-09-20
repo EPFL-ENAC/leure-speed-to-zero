@@ -53,7 +53,8 @@
           "alcoholic-beverages",
           "livestock",
           "crop",
-          "land-use"
+          "land-use",
+          "TCAF"
         ]
       },
       "UNFILTERED_SECTORS": ["alcoholic-beverages", "livestock", "crop", "land-use", "TCAF"]

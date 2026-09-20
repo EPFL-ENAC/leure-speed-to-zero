@@ -405,6 +405,15 @@
           },
           "color": "#e34948",
           "outputs": ["tcaf_lca_cost_crop-sugarcrop[CHF]"]
+        },
+        "fish": {
+          "label": {
+            "enUS": "Fish (Swiss production)",
+            "frFR": "Poisson (production suisse)",
+            "deDE": "Fisch (Schweizer Produktion)"
+          },
+          "color": "#8e5bd0",
+          "outputs": ["tcaf_lca_cost_ffish[CHF]"]
         }
       }
     }

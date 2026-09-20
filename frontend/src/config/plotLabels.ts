@@ -6573,6 +6573,116 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     frFR: 'Coût sanitaire économisé',
     deDE: 'Eingesparte Gesundheitskosten',
   },
+  'tcaf_fish_production_aquaculture[t]': {
+    enUS: 'Aquaculture (Swiss production)',
+    frFR: 'Aquaculture (production suisse)',
+    deDE: 'Aquakultur (Schweizer Produktion)',
+  },
+  'tcaf_fish_production_capture[t]': {
+    enUS: 'Wild catch (Swiss production)',
+    frFR: 'Pêche (production suisse)',
+    deDE: 'Fangfischerei (Schweizer Produktion)',
+  },
+  'tcaf_fish_import[t]': {
+    enUS: 'Imports',
+    frFR: 'Importations',
+    deDE: 'Importe',
+  },
+  'tcaf_fish_ssr[%]': {
+    enUS: 'Freshwater fish',
+    frFR: 'Poissons d’eau douce',
+    deDE: 'Süsswasserfische',
+  },
+  'tcaf_fish_cost_aquaculture[CHF]': {
+    enUS: 'Aquaculture',
+    frFR: 'Aquaculture',
+    deDE: 'Aquakultur',
+  },
+  'tcaf_fish_cost_capture[CHF]': {
+    enUS: 'Wild catch',
+    frFR: 'Pêche',
+    deDE: 'Fangfischerei',
+  },
+  'tcaf_fish_ghg_aquaculture[t]': {
+    enUS: 'Aquaculture',
+    frFR: 'Aquaculture',
+    deDE: 'Aquakultur',
+  },
+  'tcaf_fish_ghg_capture[t]': {
+    enUS: 'Wild catch',
+    frFR: 'Pêche',
+    deDE: 'Fangfischerei',
+  },
+  'tcaf_fish_cost_fine-particulate-matter-formation[CHF]': {
+    enUS: 'Fine particulate matter',
+    frFR: 'Particules fines',
+    deDE: 'Feinstaub',
+  },
+  'tcaf_fish_cost_fossil-resource-scarcity[CHF]': {
+    enUS: 'Fossil resource scarcity',
+    frFR: 'Rareté des ressources fossiles',
+    deDE: 'Knappheit fossiler Ressourcen',
+  },
+  'tcaf_fish_cost_freshwater-ecotoxicity[CHF]': {
+    enUS: 'Freshwater ecotoxicity',
+    frFR: 'Écotoxicité de l’eau douce',
+    deDE: 'Süsswasser-Ökotoxizität',
+  },
+  'tcaf_fish_cost_freshwater-eutrophication[CHF]': {
+    enUS: 'Freshwater eutrophication',
+    frFR: 'Eutrophisation de l’eau douce',
+    deDE: 'Süsswasser-Eutrophierung',
+  },
+  'tcaf_fish_cost_global-warming[CHF]': {
+    enUS: 'Global warming',
+    frFR: 'Réchauffement climatique',
+    deDE: 'Klimaerwärmung',
+  },
+  'tcaf_fish_cost_marine-ecotoxicity[CHF]': {
+    enUS: 'Marine ecotoxicity',
+    frFR: 'Écotoxicité marine',
+    deDE: 'Marine Ökotoxizität',
+  },
+  'tcaf_fish_cost_marine-eutrophication[CHF]': {
+    enUS: 'Marine eutrophication',
+    frFR: 'Eutrophisation marine',
+    deDE: 'Marine Eutrophierung',
+  },
+  'tcaf_fish_cost_mineral-resource-scarcity[CHF]': {
+    enUS: 'Mineral resource scarcity',
+    frFR: 'Rareté des ressources minérales',
+    deDE: 'Knappheit mineralischer Ressourcen',
+  },
+  'tcaf_fish_cost_ozone-formation,-human-health[CHF]': {
+    enUS: 'Ozone formation (human health)',
+    frFR: 'Formation d’ozone (santé humaine)',
+    deDE: 'Ozonbildung (menschliche Gesundheit)',
+  },
+  'tcaf_fish_cost_ozone-formation,-terrestrial-ecosystems[CHF]': {
+    enUS: 'Ozone formation (terrestrial ecosystems)',
+    frFR: 'Formation d’ozone (écosystèmes terrestres)',
+    deDE: 'Ozonbildung (terrestrische Ökosysteme)',
+  },
+  'tcaf_fish_cost_stratospheric-ozone-depletion[CHF]': {
+    enUS: 'Stratospheric ozone depletion',
+    frFR: 'Appauvrissement de l’ozone stratosphérique',
+    deDE: 'Abbau der Ozonschicht',
+  },
+  'tcaf_fish_cost_terrestrial-acidification[CHF]': {
+    enUS: 'Terrestrial acidification',
+    frFR: 'Acidification terrestre',
+    deDE: 'Terrestrische Versauerung',
+  },
+  'tcaf_fish_cost_terrestrial-ecotoxicity[CHF]': {
+    enUS: 'Terrestrial ecotoxicity',
+    frFR: 'Écotoxicité terrestre',
+    deDE: 'Terrestrische Ökotoxizität',
+  },
+  'tcaf_fish_cost_water-consumption[CHF]': {
+    enUS: 'Water consumption',
+    frFR: 'Consommation d’eau',
+    deDE: 'Wasserverbrauch',
+  },
   'tcaf_health-diet_cost_total[CHF]': {
     enUS: 'Attributable to the BAU diet',
     frFR: 'Attribuable au régime tendanciel',

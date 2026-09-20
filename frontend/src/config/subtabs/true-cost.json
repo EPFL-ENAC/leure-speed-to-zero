@@ -122,6 +122,7 @@
         "tcaf_lca_cost_crop-starch[CHF]",
         "tcaf_lca_cost_crop-sugarcrop[CHF]",
         "tcaf_lca_cost_crop-veg[CHF]",
+        "tcaf_lca_cost_ffish[CHF]",
         "tcaf_lca_cost_meat-bovine[CHF]",
         "tcaf_lca_cost_meat-oth-animal[CHF]",
         "tcaf_lca_cost_meat-pig[CHF]",

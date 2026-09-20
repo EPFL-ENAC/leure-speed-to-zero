@@ -436,7 +436,8 @@ export const useLeverStore = defineStore('lever', () => {
     // (from "crop" and "livestock", which react to the self-sufficiency
     // levers) together, to add the derived import/export/self-sufficiency
     // fields it charts, the livestock productivity of its Livestock sub-tab
-    // the cropland area and yield ("land-use") of its Crops one, and the
+    // the cropland area and yield ("land-use") of its Crops one, the Swiss
+    // fish production and its cost ("TCAF") of its Blue food one, and the
     // organic shares (lever inputs) of both. The
     // "agriculture" module is a legacy computation that ignores
     // every TCAF lever, so it must never be used as a data source here.
@@ -448,6 +449,7 @@ export const useLeverStore = defineStore('lever', () => {
         modelResults.value.data['crop'],
         modelResults.value.data['livestock'],
         modelResults.value.data['land-use'],
+        modelResults.value.data['TCAF'],
       ]);
       const kpis = modelResults.value.kpis['crop'] || [];
       const region = getCurrentRegion();

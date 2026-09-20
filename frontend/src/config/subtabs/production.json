@@ -42,6 +42,22 @@
       },
       "route": "livestock",
       "charts": ["LivestockPopulation", "LivestockProductivity", "OrganicShareLivestock"]
+    },
+    {
+      "title": {
+        "enUS": "Blue food",
+        "frFR": "Produits de la mer",
+        "deDE": "Blaue Nahrung"
+      },
+      "route": "blue-food",
+      "charts": [
+        "BlueFoodProduction",
+        "BlueFoodSupply",
+        "BlueFoodSelfSufficiency",
+        "BlueFoodCostByMethod",
+        "BlueFoodCostByImpact",
+        "BlueFoodGhg"
+      ]
     }
   ],
   "charts": {
@@ -351,6 +367,87 @@
         "livestock_share-organic_meat-poultry[%]",
         "livestock_share-organic_meat-sheep[%]"
       ]
+    },
+    "BlueFoodProduction": {
+      "title": {
+        "enUS": "Swiss freshwater fish production, by method",
+        "frFR": "Production suisse de poissons d’eau douce, par méthode",
+        "deDE": "Schweizer Süsswasserfischproduktion, nach Methode"
+      },
+      "type": "StackedArea",
+      "unit": "t",
+      "outputs": ["tcaf_fish_production_aquaculture[t]", "tcaf_fish_production_capture[t]"]
+    },
+    "BlueFoodSupply": {
+      "title": {
+        "enUS": "Freshwater fish supply: Swiss production and imports",
+        "frFR": "Approvisionnement en poissons d’eau douce : production suisse et importations",
+        "deDE": "Versorgung mit Süsswasserfisch: Schweizer Produktion und Importe"
+      },
+      "type": "StackedArea",
+      "unit": "t",
+      "outputs": [
+        "tcaf_fish_production_aquaculture[t]",
+        "tcaf_fish_production_capture[t]",
+        "tcaf_fish_import[t]"
+      ]
+    },
+    "BlueFoodSelfSufficiency": {
+      "title": {
+        "enUS": "Self-sufficiency ratio, freshwater fish",
+        "frFR": "Taux d’autosuffisance, poissons d’eau douce",
+        "deDE": "Selbstversorgungsgrad, Süsswasserfische"
+      },
+      "type": "Line",
+      "unit": "%",
+      "outputs": ["tcaf_fish_ssr[%]"]
+    },
+    "BlueFoodCostByMethod": {
+      "title": {
+        "enUS": "Environmental cost of Swiss fish production, by method",
+        "frFR": "Coût environnemental de la production piscicole suisse, par méthode",
+        "deDE": "Umweltkosten der Schweizer Fischproduktion, nach Methode"
+      },
+      "type": "StackedArea",
+      "unit": "Million CHF",
+      "scale": 1000000,
+      "outputs": ["tcaf_fish_cost_aquaculture[CHF]", "tcaf_fish_cost_capture[CHF]"]
+    },
+    "BlueFoodCostByImpact": {
+      "title": {
+        "enUS": "Environmental cost of Swiss fish production, by impact category",
+        "frFR": "Coût environnemental de la production piscicole suisse, par catégorie d’impact",
+        "deDE": "Umweltkosten der Schweizer Fischproduktion, nach Wirkungskategorie"
+      },
+      "type": "StackedArea",
+      "unit": "Million CHF",
+      "scale": 1000000,
+      "outputs": [
+        "tcaf_fish_cost_fine-particulate-matter-formation[CHF]",
+        "tcaf_fish_cost_fossil-resource-scarcity[CHF]",
+        "tcaf_fish_cost_freshwater-ecotoxicity[CHF]",
+        "tcaf_fish_cost_freshwater-eutrophication[CHF]",
+        "tcaf_fish_cost_global-warming[CHF]",
+        "tcaf_fish_cost_marine-ecotoxicity[CHF]",
+        "tcaf_fish_cost_marine-eutrophication[CHF]",
+        "tcaf_fish_cost_mineral-resource-scarcity[CHF]",
+        "tcaf_fish_cost_ozone-formation,-human-health[CHF]",
+        "tcaf_fish_cost_ozone-formation,-terrestrial-ecosystems[CHF]",
+        "tcaf_fish_cost_stratospheric-ozone-depletion[CHF]",
+        "tcaf_fish_cost_terrestrial-acidification[CHF]",
+        "tcaf_fish_cost_terrestrial-ecotoxicity[CHF]",
+        "tcaf_fish_cost_water-consumption[CHF]"
+      ]
+    },
+    "BlueFoodGhg": {
+      "title": {
+        "enUS": "Greenhouse gas emissions of Swiss fish production",
+        "frFR": "Émissions de gaz à effet de serre de la production piscicole suisse",
+        "deDE": "Treibhausgasemissionen der Schweizer Fischproduktion"
+      },
+      "type": "StackedArea",
+      "unit": "t CO2-eq",
+      "outputs": ["tcaf_fish_ghg_aquaculture[t]", "tcaf_fish_ghg_capture[t]"]
     }
   }
 }
