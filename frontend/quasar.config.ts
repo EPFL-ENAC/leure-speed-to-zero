@@ -106,9 +106,9 @@ export default defineConfig((/* ctx */) => {
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#devserver
     devServer: {
-      // One dev server per checkout. A git worktree exports its own ports from
-      // .env.worktree (see docs/worktree-env.md); the main checkout keeps
-      // 9000 / 8000. Quasar reads this file in Node, so process.env is enough.
+      // One dev server per checkout. A wtx worktree exports its own ports from
+      // .env.worktree; the main checkout keeps 9000 / 8000. Quasar reads this
+      // file in Node, so process.env is enough.
       port: Number(process.env.FRONTEND_PORT) || 9000,
       // A browser tab per agent session is noise; the main checkout still opens one.
       open: !process.env.FRONTEND_PORT,

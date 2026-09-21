@@ -1,7 +1,7 @@
-.PHONY: install install-dev install-config install-backend install-backend-local install-frontend clean uninstall help run run-backend run-backend-with-cache run-frontend wait-for-backend up tmux-dev-all new go wt-land wt-done wt-open
+.PHONY: install install-dev install-config install-backend install-backend-local install-frontend clean uninstall help run run-backend run-backend-with-cache run-frontend wait-for-backend up
 
-# Per-checkout ports. A git worktree exports its own pair from .env.worktree
-# (scripts/wt-setup.sh, see docs/worktree-env.md); the main checkout keeps these.
+# Per-checkout ports. A wtx worktree exports its own pair from .env.worktree;
+# the main checkout keeps these.
 BACKEND_PORT ?= 8000
 FRONTEND_PORT ?= 9000
 
@@ -201,23 +201,5 @@ up:
 	@echo "Backend API available at https://lgb-trsc.localhost/api"
 	@echo "Traefik dashboard available at http://localhost:8080"
 
-# --- git worktrees (docs/worktree-env.md)
-# One branch = one worktree = one tmux session = one Claude Code agent, with its
-# own ports and its own model checkout. Tab completion: source scripts/wt-go.bash.
-
-tmux-dev-all:           ## tmux session "<repo>/<branch>" with claude, backend, frontend and shell panes
-	scripts/tmux-dev.sh
-
-new:                    ## make new BRANCH=feat/x [BASE=origin/dev] [MODEL=feat/y] [PROMPT=brief.md] : worktree + deps + session, attached
-	scripts/wt-new.sh $(BRANCH) $(BASE) $(if $(MODEL),--model '$(MODEL)') $(if $(PROMPT),--prompt '$(PROMPT)')
-
-go: new                 ## make go BRANCH=feat/x : jump to the branch's session, creating branch/worktree/session as needed (tab completion: wtgo)
-
-wt-land:                ## make wt-land BRANCH=feat/x [MODE=--local] : rebase, PR + squash-merge into dev, clean up
-	scripts/wt-land.sh $(BRANCH) $(MODE)
-
-wt-done:                ## make wt-done BRANCH=feat/x : kill the session + remove the worktree, keep the branch
-	scripts/wt-done.sh $(BRANCH)
-
-wt-open:                ## make wt-open [TARGET=frontend|backend] [BRANCH=feat/x] : print and open the URL
-	scripts/wt-open.sh $(or $(TARGET),frontend) $(BRANCH)
+# Worktrees, tmux sessions and agents are managed by wtx (wtx.toml): `wtx go
+# <branch>`, `wtx land <branch>`, `wtx curl <family> [path]`. See CLAUDE.md.
