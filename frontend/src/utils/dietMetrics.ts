@@ -23,8 +23,11 @@ import type { Region } from 'src/utils/region';
 // ("agr_kcal-req_<sex>-<age>[kcal/cap/day]").
 export type EnergyRequirementRow = Record<string, number | string>;
 
-// Same food groups (and same members) as the "groups" of the DietBauVsTarget
-// chart in config/subtabs/dietary-habits.json.
+// Food groups used to aggregate food waste (food-waste_<group> fields) and
+// per-category diet intake. These mostly match the "groups" of the
+// DietBauVsTarget chart in config/subtabs/dietary-habits.json, except that
+// chart splits oil crops (with processed vegetable oil) and pulses into two
+// separate groups instead of the combined "oilcrops-pulses" used here.
 export const FOOD_GROUPS: Record<string, string[]> = {
   'cereals-starches': ['crop-cereal', 'crop-rice', 'crop-starch'],
   'fruit-veg': ['crop-fruit', 'crop-veg'],
