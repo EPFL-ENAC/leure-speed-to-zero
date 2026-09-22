@@ -133,66 +133,29 @@ Model research is done in the separate [transition-compass-model](https://github
 
 ## Dev servers and worktrees
 
-Every checkout (the main one and each git worktree under `.claude/worktrees/<branch>`)
-gets its own tmux session `leure-speed-to-zero/<branch>` (the name comes from the git
-remote, not from the directory) with one `dev` window of four titled panes: `claude`
-(the left half, focused on attach), `backend`, `frontend` and `shell` stacked on the
-right (`scripts/tmux-dev.sh`, or `make tmux-dev-all`; `make go
-BRANCH=feat/x` creates the worktree and attaches, `wt create` alone starts it detached
-through `.wt.toml`). Full guide: `docs/worktree-env.md`.
+Every branch has its own git worktree, tmux session and agent. The session is
+`leure-speed-to-zero/<branch>` and its panes are `agent`, `backend`, `frontend`, `shell`.
 
-- **Know where you are**: you are in a worktree exactly when `.env.worktree` exists at
-  the repo root (same thing, your path contains `.claude/worktrees/`). The tmux panes,
-  the claude one included, start with that file exported, so `echo $WT_BRANCH
-$BACKEND_PORT $FRONTEND_PORT` orients you instantly. In a shell without them, run
-  `set -a; . .env.worktree; set +a` first.
-- **Ports**: a worktree's `.env.worktree` holds its `BACKEND_PORT` / `FRONTEND_PORT`
-  (hashed from `<repo>/<branch>`, 18xxx/19xxx, stepping past a pair another worktree
-  holds); the main checkout uses 8000/9000. Read them from that file, never guess, and
-  never start a second server on a port that is already served.
-  `scripts/wt-open.sh [frontend|backend]` prints and opens the URL.
-- **Reuse before starting**: the tmux session already runs both servers in its `backend`
-  and `frontend` panes. If you must start one yourself, `set -a; . .env.worktree;
-set +a` first so uvicorn and quasar pick the worktree's values.
-- **Finish** a frontend or backend change by printing its URL:
-  `http://localhost:$FRONTEND_PORT/` or `http://127.0.0.1:$BACKEND_PORT/docs`. Use the
-  app through the frontend port only: it proxies `/api` to this worktree's backend
-  (`frontend/quasar.config.ts`).
-- **Checking your work**: read-only `curl` against your own `localhost` / `127.0.0.1`
-  ports is pre-allowed in the common forms (bare, `-s`, `-sS`, `-fsS`, `-i`, `-I`), so
-  hit your servers freely; write forms still prompt. The backend and frontend panes
-  mirror their output to `.wt-logs/backend.log` and `.wt-logs/frontend.log` in the
-  checkout root. When a server is down or misbehaving, read those (the tmux socket is
-  outside your sandbox, so `tmux` commands will fail, the log files are the supported
-  path).
+- Ports are per worktree and live in `.env.worktree`, which every pane exports.
+  Never hardcode a port, read `BACKEND_PORT`, `FRONTEND_PORT` from the environment.
+- The dev servers are already running in their own panes. Do not start them
+  again. Read `.wt-logs/*.log` to see what they are doing, the sandbox cannot
+  reach the tmux socket.
+- `wtx curl <family> [path] [curl args]` is how you reach them. It fills in this
+  worktree's port and never prompts, whatever the method: `wtx curl backend
+/api/health`. Plain curl to localhost works for a GET and prompts past that.
+- Work on this branch only. Never push `dev` and `main`. When the work is ready, say
+  so and a human runs `wtx land <branch>` from the main checkout.
+- A pre-push hook enforces this. If it refuses a push, that is the design, not a
+  bug to work around.
 
-### The model, transition-compass-model
+### Directories outside this repo
 
-The backend imports `transition_compass_model`. `backend/pyproject.toml` pins the PyPI
-release, and every checkout overrides it with an editable install of a local clone.
-`TCM_PATH` in `.env.worktree` says which clone; `make -C backend check-model` prints the
-file the running backend actually imports.
+- `k8s` at `~/code/enack8s-app-config/epfl-{lab}/speed-to-zero`, access `pair`.
+- `lgb-trsc` at `../lgb-trsc`, access `read`.
+- `transition-compass-model` at `../transition-compass-model`, access `pair`.
 
-- **`TCM_BRANCH` empty**: `TCM_PATH` is the model's **main checkout**, shared read-only
-  with every other worktree. Read it, never write in it. A task that needs model changes
-  wants its own model worktree, ask for one.
-- **`TCM_BRANCH` set**: this worktree is paired with a model worktree on that branch
-  (`wtgo <branch> --model <model-branch>`). It is yours to edit and commit, under the
-  same one-branch rule as this repo, and the backend reloads on its `.py` changes.
-- **Never `uv sync` or a bare `uv run` in `backend/`**: both re-install the PyPI model
-  over the editable one. `UV_NO_SYNC=1` comes from `.env.worktree` for that reason; in a
-  shell without it, use `uv run --no-sync`. If the model import looks wrong, re-run
-  `scripts/wt-setup.sh`.
-
-### Working in a worktree, rules
-
-- **You own exactly one branch**: the worktree's. Commit and push to it freely. Never
-  push `dev` or `main`, never push another branch, never force-push.
-  `scripts/git-push-guard.sh` refuses it in git itself (the shared `pre-push` hook), and
-  the session's deny rules refuse it before that. Landing into `dev` is a human's job,
-  from the main checkout, with `scripts/wt-land.sh`.
-- **Never tag**: a `v*` tag here deploys, and a tag on the model repo publishes to PyPI
-  and opens a bump PR here. Releases are release-please's job.
-- **Network**: read the web freely. Anything that writes outward (`curl -X POST`,
-  `gh pr create`, and so on) or runs downloaded code (`curl … | sh`, `npx -y …`) prompts
-  the user by design. Do not work around a prompt.
+A `read` directory is yours to read as much as you like, with no prompt, and you
+may never write in it. To change one, ask for a paired worktree instead: a human
+runs `wtx go <branch> --with <name>=<branch>`, and the change lands through that
+repo's own pull request.

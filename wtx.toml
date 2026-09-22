@@ -1,0 +1,114 @@
+# wtx: every branch gets its own worktree, ports, tmux session and agent.
+# Reference for every key: https://github.com/EPFL-ENAC/wtx/blob/main/docs/schema.md
+schema_version = 1
+
+[repo]
+name = "leure-speed-to-zero"
+lab = "leure"   # fills {lab} in the paths below
+base_branch = "dev"
+# The single source for the push guard, the completion and the deny rules.
+protected_branches = ["dev", "main"]
+
+# One offset per worktree, one port per family at that offset.
+[ports]
+
+[[ports.family]]
+name = "backend"
+main = 8000   # what the main checkout keeps
+
+[[ports.family]]
+name = "frontend"
+main = 9000   # what the main checkout keeps
+
+# Gitignored files a fresh worktree needs. Never overwritten.
+[seed]
+copy = ["CLAUDE.md"]
+
+[deps]
+python_version_file = ".python-version"   # uv does not look up the tree for it
+post_install = ["npx --no-install lefthook install"]
+
+[[deps.step]]
+if_missing = "node_modules"
+run = "npm ci"
+
+[[deps.step]]
+if_missing = "frontend/node_modules"
+cwd = "frontend"
+run = "npm ci"
+
+[[deps.step]]
+if_missing = "backend/.venv"
+cwd = "backend"
+run = "uv sync --frozen --python {python_version}"
+
+# The agent pane fills the left half, the rest stack on the right.
+[panes]
+
+[[panes.pane]]
+name = "agent"
+role = "agent"
+
+[[panes.pane]]
+name = "backend"
+role = "server"
+cwd = "backend"
+cmd = "make run"
+log = true   # mirrored to .wt-logs/, the agent reads it
+
+[[panes.pane]]
+name = "frontend"
+role = "server"
+cwd = "frontend"
+cmd = "npm run dev"
+log = true   # mirrored to .wt-logs/, the agent reads it
+
+[[panes.pane]]
+name = "shell"
+role = "shell"
+
+[agent]
+tool = "claude"
+llm = "opus"
+subagent_model = "sonnet"
+auto_compact_window = 200000
+explore_agent_model = "haiku"
+
+# Plan on one model, implement on another. A brief starts on
+# plan_model in plan mode. With Claude, accepting the plan carries
+# the same conversation on to build_model, at the effort its size
+# asks for. With opencode the agent switch does it, and the effort
+# routing does not apply.
+[agent.orchestration]
+enabled = false
+plan_model = "fable"
+build_model = "opus"
+small_effort = "medium"
+large_effort = "xhigh"
+
+# Added to the baseline wtx ships. A repo can tighten, never loosen.
+[permissions]
+allow = ["Bash(make format)", "Bash(make lint)", "Bash(npm run format)", "Bash(npm run lint)", "Bash(uv run ruff *)", "Bash(uv run pytest *)"]
+
+# Run by `wtx land --local`.
+[checks]
+lint = ["make lint"]
+
+[[repos]]
+name = "k8s"
+path = "~/code/enack8s-app-config/epfl-{lab}/speed-to-zero"
+access = "pair"   # read free, edits only through a paired worktree
+base_branch = "main"
+
+[[repos]]
+name = "lgb-trsc"
+path = "../lgb-trsc"
+access = "read"   # read free, never writable
+base_branch = "main"
+
+[[repos]]
+name = "transition-compass-model"
+path = "../transition-compass-model"
+access = "pair"   # read free, edits only through a paired worktree
+base_branch = "main"
+editable_install = { cwd = "backend", run = "uv pip install --quiet --editable {path}" }
