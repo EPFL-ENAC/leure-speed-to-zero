@@ -6320,15 +6320,25 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     frFR: 'Fruits et légumes',
     deDE: 'Obst & Gemüse',
   },
-  'food-waste_oilcrops-pulses[t]': {
-    enUS: 'Oil crops & pulses',
-    frFR: 'Oléagineux et légumineuses',
-    deDE: 'Ölpflanzen & Hülsenfrüchte',
+  'food-waste_oilcrops[t]': {
+    enUS: 'Oil crops',
+    frFR: 'Oléagineux',
+    deDE: 'Ölpflanzen',
   },
-  'food-waste-ratio_oilcrops-pulses[%]': {
-    enUS: 'Oil crops & pulses',
-    frFR: 'Oléagineux et légumineuses',
-    deDE: 'Ölpflanzen & Hülsenfrüchte',
+  'food-waste-ratio_oilcrops[%]': {
+    enUS: 'Oil crops',
+    frFR: 'Oléagineux',
+    deDE: 'Ölpflanzen',
+  },
+  'food-waste_pulses[t]': {
+    enUS: 'Pulses',
+    frFR: 'Légumineuses',
+    deDE: 'Hülsenfrüchte',
+  },
+  'food-waste-ratio_pulses[%]': {
+    enUS: 'Pulses',
+    frFR: 'Légumineuses',
+    deDE: 'Hülsenfrüchte',
   },
   'food-waste_dairy-eggs[t]': {
     enUS: 'Dairy & eggs',

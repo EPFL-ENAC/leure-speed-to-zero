@@ -24,14 +24,13 @@ import type { Region } from 'src/utils/region';
 export type EnergyRequirementRow = Record<string, number | string>;
 
 // Food groups used to aggregate food waste (food-waste_<group> fields) and
-// per-category diet intake. These mostly match the "groups" of the
-// DietBauVsTarget chart in config/subtabs/dietary-habits.json, except that
-// chart splits oil crops (with processed vegetable oil) and pulses into two
-// separate groups instead of the combined "oilcrops-pulses" used here.
+// per-category diet intake. Same food groups (and same members) as the
+// "groups" of the DietBauVsTarget chart in config/subtabs/dietary-habits.json.
 export const FOOD_GROUPS: Record<string, string[]> = {
   'cereals-starches': ['crop-cereal', 'crop-rice', 'crop-starch'],
   'fruit-veg': ['crop-fruit', 'crop-veg'],
-  'oilcrops-pulses': ['crop-oilcrop', 'crop-pulse'],
+  oilcrops: ['crop-oilcrop', 'pro-crop-processed-voil'],
+  pulses: ['crop-pulse'],
   'dairy-eggs': ['pro-liv-abp-dairy-milk', 'pro-liv-abp-hens-egg'],
   meat: [
     'pro-liv-abp-processed-afat',
@@ -53,7 +52,6 @@ export const FOOD_GROUPS: Record<string, string[]> = {
   'sweeteners-stimulants': [
     'pro-crop-processed-sugar',
     'pro-crop-processed-sweet',
-    'pro-crop-processed-voil',
     'stm-cocoa',
     'stm-coffee',
     'stm-tea',

@@ -250,14 +250,23 @@
           "color": "#eb6834",
           "outputs": ["food-waste_fruit-veg[t]"]
         },
-        "oilcrops-pulses": {
+        "oilcrops": {
           "label": {
-            "enUS": "Oil crops & pulses",
-            "frFR": "Oléagineux et légumineuses",
-            "deDE": "Ölpflanzen & Hülsenfrüchte"
+            "enUS": "Oil crops",
+            "frFR": "Oléagineux",
+            "deDE": "Ölpflanzen"
           },
           "color": "#1baf7a",
-          "outputs": ["food-waste_oilcrops-pulses[t]"]
+          "outputs": ["food-waste_oilcrops[t]"]
+        },
+        "pulses": {
+          "label": {
+            "enUS": "Pulses",
+            "frFR": "Légumineuses",
+            "deDE": "Hülsenfrüchte"
+          },
+          "color": "#a8632b",
+          "outputs": ["food-waste_pulses[t]"]
         },
         "dairy-eggs": {
           "label": {
@@ -372,14 +381,23 @@
           "color": "#eb6834",
           "outputs": ["tcaf_lca_cost_crop-fruit[CHF]", "tcaf_lca_cost_crop-veg[CHF]"]
         },
-        "oilcrops-pulses": {
+        "oilcrops": {
           "label": {
-            "enUS": "Oil crops & pulses",
-            "frFR": "Oléagineux et légumineuses",
-            "deDE": "Ölpflanzen & Hülsenfrüchte"
+            "enUS": "Oil crops",
+            "frFR": "Oléagineux",
+            "deDE": "Ölpflanzen"
           },
           "color": "#1baf7a",
-          "outputs": ["tcaf_lca_cost_crop-oilcrop[CHF]", "tcaf_lca_cost_crop-pulse[CHF]"]
+          "outputs": ["tcaf_lca_cost_crop-oilcrop[CHF]"]
+        },
+        "pulses": {
+          "label": {
+            "enUS": "Pulses",
+            "frFR": "Légumineuses",
+            "deDE": "Hülsenfrüchte"
+          },
+          "color": "#a8632b",
+          "outputs": ["tcaf_lca_cost_crop-pulse[CHF]"]
         },
         "dairy-eggs": {
           "label": {

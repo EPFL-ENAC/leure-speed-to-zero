@@ -467,8 +467,12 @@
           "color": "#eb6834"
         },
         {
-          "id": "food-waste_oilcrops-pulses[t]",
+          "id": "food-waste_oilcrops[t]",
           "color": "#1baf7a"
+        },
+        {
+          "id": "food-waste_pulses[t]",
+          "color": "#a8632b"
         },
         {
           "id": "food-waste_dairy-eggs[t]",
@@ -510,8 +514,12 @@
           "color": "#eb6834"
         },
         {
-          "id": "food-waste-ratio_oilcrops-pulses[%]",
+          "id": "food-waste-ratio_oilcrops[%]",
           "color": "#1baf7a"
+        },
+        {
+          "id": "food-waste-ratio_pulses[%]",
+          "color": "#a8632b"
         },
         {
           "id": "food-waste-ratio_dairy-eggs[%]",
