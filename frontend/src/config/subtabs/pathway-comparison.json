@@ -125,17 +125,26 @@
           "color": "#eb6834",
           "outputs": ["diet-intake_crop-fruit[kcal/cap/day]", "diet-intake_crop-veg[kcal/cap/day]"]
         },
-        "oilcrops-pulses": {
+        "oilcrops": {
           "label": {
-            "enUS": "Oil crops & pulses",
-            "frFR": "Oléagineux et légumineuses",
-            "deDE": "Ölpflanzen & Hülsenfrüchte"
+            "enUS": "Oil crops",
+            "frFR": "Oléagineux",
+            "deDE": "Ölpflanzen"
           },
           "color": "#1baf7a",
           "outputs": [
             "diet-intake_crop-oilcrop[kcal/cap/day]",
-            "diet-intake_crop-pulse[kcal/cap/day]"
+            "diet-intake_pro-crop-processed-voil[kcal/cap/day]"
           ]
+        },
+        "pulses": {
+          "label": {
+            "enUS": "Pulses",
+            "frFR": "Légumineuses",
+            "deDE": "Hülsenfrüchte"
+          },
+          "color": "#a8632b",
+          "outputs": ["diet-intake_crop-pulse[kcal/cap/day]"]
         },
         "dairy-eggs": {
           "label": {
@@ -205,7 +214,6 @@
           "outputs": [
             "diet-intake_pro-crop-processed-sugar[kcal/cap/day]",
             "diet-intake_pro-crop-processed-sweet[kcal/cap/day]",
-            "diet-intake_pro-crop-processed-voil[kcal/cap/day]",
             "diet-intake_stm-cocoa[kcal/cap/day]",
             "diet-intake_stm-coffee[kcal/cap/day]",
             "diet-intake_stm-tea[kcal/cap/day]"
