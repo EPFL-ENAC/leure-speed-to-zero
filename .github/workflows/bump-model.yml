@@ -1,13 +1,24 @@
-name: Bump transition-compass-model version
+name: Bump model version
 
+# The model repo sends a model-updated dispatch after a PyPI release, with
+# {"tag": "v1.2.3"} for transition-compass-model (branch main) or
+# {"tag": "tcaf-v1.2.3", "package": "tcaf-model"} for tcaf-model (branch tcaf).
+# No package means transition-compass-model, so old dispatches still work.
 on:
   repository_dispatch:
     types: [model-updated]
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Model version tag (e.g., v1.2.3)'
+        description: 'Model version tag (e.g., v1.2.3 or tcaf-v1.2.3)'
         required: true
+      package:
+        description: 'Package to bump'
+        type: choice
+        options:
+          - transition-compass-model
+          - tcaf-model
+        default: transition-compass-model
 
 jobs:
   bump:
@@ -21,16 +32,44 @@ jobs:
           token: ${{ secrets.LEURE_SPEED_TO_ZERO_BUMP_MODEL_TOKEN }}
           ref: dev
 
-      - name: Get tag
-        id: tag
+      - name: Resolve package and version
+        id: pkg
+        env:
+          PKG: ${{ github.event.client_payload.package || github.event.inputs.package || 'transition-compass-model' }}
+          TAG: ${{ github.event.client_payload.tag || github.event.inputs.tag }}
         run: |
-          TAG=${{ github.event.client_payload.tag || github.event.inputs.tag }}
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          case "$PKG" in
+            transition-compass-model) PREFIX=v ;;
+            tcaf-model) PREFIX=tcaf-v ;;
+            *) echo "ERROR: unknown package '$PKG'"; exit 1 ;;
+          esac
+          if [[ "$TAG" != "$PREFIX"* ]]; then
+            echo "ERROR: tag '$TAG' does not start with '$PREFIX' for $PKG"
+            exit 1
+          fi
+          VERSION=${TAG#"$PREFIX"}
+          if [[ ! "$VERSION" =~ ^[0-9][0-9A-Za-z.+-]*$ ]]; then
+            echo "ERROR: '$VERSION' does not look like a version"
+            exit 1
+          fi
+          {
+            echo "package=$PKG"
+            echo "tag=$TAG"
+            echo "version=$VERSION"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Pin new version in pyproject.toml
+        env:
+          PKG: ${{ steps.pkg.outputs.package }}
+          VERSION: ${{ steps.pkg.outputs.version }}
         run: |
-          TAG=${{ steps.tag.outputs.tag }}
-          sed -i "s/transition-compass-model[^\"']*/transition-compass-model==${TAG#v}/" backend/pyproject.toml
+          # The quotes around the name keep tcaf-model from matching inside
+          # another package name. Only this package's line changes.
+          sed -i -E "s/\"${PKG}[^\"]*\"/\"${PKG}==${VERSION}\"/" backend/pyproject.toml
+          if ! grep -q "\"${PKG}==${VERSION}\"" backend/pyproject.toml; then
+            echo "ERROR: no $PKG dependency in backend/pyproject.toml"
+            exit 1
+          fi
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -42,16 +81,16 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.LEURE_SPEED_TO_ZERO_BUMP_MODEL_TOKEN }}
-          commit-message: "chore: bump transition-compass-model to ${{ steps.tag.outputs.tag }}"
-          title: "chore: bump transition-compass-model to ${{ steps.tag.outputs.tag }}"
+          commit-message: "chore: bump ${{ steps.pkg.outputs.package }} to ${{ steps.pkg.outputs.tag }}"
+          title: "chore: bump ${{ steps.pkg.outputs.package }} to ${{ steps.pkg.outputs.tag }}"
           body: |
-            Automated version bump of `transition-compass-model` to `${{ steps.tag.outputs.tag }}`.
+            Automated version bump of `${{ steps.pkg.outputs.package }}` to `${{ steps.pkg.outputs.version }}` (tag `${{ steps.pkg.outputs.tag }}`).
 
             **Changes:**
-            - `backend/pyproject.toml` — version pinned to `${{ steps.tag.outputs.tag }}`
-            - `backend/uv.lock` — regenerated with new PyPI release
+            - `backend/pyproject.toml`: `${{ steps.pkg.outputs.package }}` pinned to `${{ steps.pkg.outputs.version }}`
+            - `backend/uv.lock`: regenerated with the new PyPI release
 
             Review the diff and merge to deploy the new model version.
-          branch: "chore/bump-model-${{ steps.tag.outputs.tag }}"
+          branch: "chore/bump-${{ steps.pkg.outputs.package }}-${{ steps.pkg.outputs.tag }}"
           base: dev
           labels: dependencies
