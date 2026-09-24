@@ -296,9 +296,9 @@ export const useLeverStore = defineStore('lever', () => {
         // Population rides along so the synthetic BAU (2050) row can be
         // converted to a per-capita value like the other snapshot rows.
         bauReferenceSectorData.value = data['dietary-habits']
-          ? (mergeSectorsData([data['population'], data['dietary-habits']]) as SectorData)
+          ? mergeSectorsData([data['population'], data['dietary-habits']])
           : null;
-        bauReferenceAllSectorData.value = mergeSectorsData(Object.values(data)) as SectorData;
+        bauReferenceAllSectorData.value = mergeSectorsData(Object.values(data));
       }
     } catch (err) {
       console.error('Failed to fetch the BAU reference scenario:', err);
@@ -345,7 +345,7 @@ export const useLeverStore = defineStore('lever', () => {
           // Reassign rather than mutate, so the results (and what is derived from them) update
           pathwayComparisonResults.value = {
             ...pathwayComparisonResults.value,
-            [cp.title]: mergeSectorsData(Object.values(data)) as SectorData,
+            [cp.title]: mergeSectorsData(Object.values(data)),
           };
         }),
       );
