@@ -1,10 +1,14 @@
 import type { RouteRecordRaw } from 'vue-router';
+import { getProfileSectors } from 'src/utils/region';
 
 const routes: RouteRecordRaw[] = [
-  // Redirect root to overall sector
+  // Redirect root to the first sector this deployment shows
   {
     path: '/',
-    redirect: '/overall',
+    redirect: () => {
+      const sectors = getProfileSectors();
+      return `/${sectors[0] ?? 'overall'}`;
+    },
   },
 
   // Main Layout Routes (About, Legal)
@@ -54,6 +58,31 @@ const routes: RouteRecordRaw[] = [
         path: 'agriculture/:subtab?',
         name: 'agriculture',
         component: () => import('src/pages/sectors/AgricultureTab.vue'),
+      },
+      {
+        path: 'dietary-habits/:subtab?',
+        name: 'dietary-habits',
+        component: () => import('src/pages/sectors/DietaryHabitsTab.vue'),
+      },
+      {
+        path: 'true-cost/:subtab?',
+        name: 'true-cost',
+        component: () => import('src/pages/sectors/TrueCostTab.vue'),
+      },
+      {
+        path: 'population/:subtab?',
+        name: 'population',
+        component: () => import('src/pages/sectors/PopulationTab.vue'),
+      },
+      {
+        path: 'pathway-comparison/:subtab?',
+        name: 'pathway-comparison',
+        component: () => import('src/pages/sectors/PathwayComparisonTab.vue'),
+      },
+      {
+        path: 'production/:subtab?',
+        name: 'production',
+        component: () => import('src/pages/sectors/ProductionTab.vue'),
       },
       {
         path: 'overall/:subtab?',

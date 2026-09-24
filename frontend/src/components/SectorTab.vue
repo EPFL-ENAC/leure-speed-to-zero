@@ -126,6 +126,9 @@ const props = defineProps<{
   sectorName: string;
   sectorDisplayName: string;
   config: SectorConfig;
+  // Which sector's results to chart. Left out, it is sectorName. An empty
+  // string merges every sector, for a page mixing several modules.
+  dataSectorName?: string;
 }>();
 
 // Set current sector for optimized API calls
@@ -177,7 +180,7 @@ if (!route.params.subtab && props.config.subtabs[0]?.route) {
 
 // Get model results for this sector
 const modelResults = computed(() => {
-  return leverStore.getSectorDataWithKpis(props.sectorName);
+  return leverStore.getSectorDataWithKpis(props.dataSectorName ?? props.sectorName);
 });
 
 const kpis = computed((): KPI[] => {

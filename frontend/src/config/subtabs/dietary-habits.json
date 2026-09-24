@@ -1,0 +1,630 @@
+{
+  "kpis": [],
+  "subtabs": [
+    {
+      "title": {
+        "enUS": "Diet",
+        "frFR": "Régime alimentaire",
+        "deDE": "Ernährung"
+      },
+      "route": "diet",
+      "charts": [
+        "DietPlant",
+        "DietAnimal",
+        "DietFish",
+        "DietOther",
+        "DietBauVsTarget",
+        "EnergyRequirement"
+      ]
+    },
+    {
+      "title": {
+        "enUS": "Processed food",
+        "frFR": "Aliments transformés",
+        "deDE": "Verarbeitete Lebensmittel"
+      },
+      "route": "processed-food",
+      "charts": ["ProcessedMeatShare", "WholeCerealShare"]
+    },
+    {
+      "title": {
+        "enUS": "Food waste",
+        "frFR": "Gaspillage alimentaire",
+        "deDE": "Lebensmittelverschwendung"
+      },
+      "route": "food-waste",
+      "charts": ["FoodWasteTotal", "FoodWasteRatio", "FoodWastePlant", "FoodWasteAnimal"]
+    },
+    {
+      "title": {
+        "enUS": "Food demand",
+        "frFR": "Demande alimentaire",
+        "deDE": "Lebensmittelnachfrage"
+      },
+      "route": "food-demand",
+      "charts": ["DemandPlant", "DemandAnimal", "DemandOther"]
+    },
+    {
+      "title": {
+        "enUS": "Production and livestock",
+        "frFR": "Production et bétail",
+        "deDE": "Produktion und Vieh"
+      },
+      "route": "land",
+      "charts": ["DomesticProduction", "Livestock", "Population"]
+    }
+  ],
+  "charts": {
+    "DietPlant": {
+      "title": {
+        "enUS": "Plant-based diet",
+        "frFR": "Régime végétal",
+        "deDE": "Pflanzliche Ernährung"
+      },
+      "type": "StackedArea",
+      "unit": "g/cap/day",
+      "outputs": [
+        "lfs_consumers-diet_crop-cereal[g/cap/day]",
+        "lfs_consumers-diet_crop-fruit[g/cap/day]",
+        "lfs_consumers-diet_crop-oilcrop[g/cap/day]",
+        "lfs_consumers-diet_crop-pulse[g/cap/day]",
+        "lfs_consumers-diet_crop-rice[g/cap/day]",
+        "lfs_consumers-diet_crop-starch[g/cap/day]",
+        "lfs_consumers-diet_crop-veg[g/cap/day]"
+      ]
+    },
+    "DietAnimal": {
+      "title": {
+        "enUS": "Animal-based diet",
+        "frFR": "Régime animal",
+        "deDE": "Tierische Ernährung"
+      },
+      "type": "StackedArea",
+      "unit": "g/cap/day",
+      "outputs": [
+        "lfs_consumers-diet_pro-liv-abp-dairy-milk[g/cap/day]",
+        "lfs_consumers-diet_pro-liv-abp-hens-egg[g/cap/day]",
+        "lfs_consumers-diet_pro-liv-abp-processed-afat[g/cap/day]",
+        "lfs_consumers-diet_pro-liv-abp-processed-offal[g/cap/day]",
+        "lfs_consumers-diet_pro-liv-meat-bovine[g/cap/day]",
+        "lfs_consumers-diet_pro-liv-meat-oth-animal[g/cap/day]",
+        "lfs_consumers-diet_pro-liv-meat-pig[g/cap/day]",
+        "lfs_consumers-diet_pro-liv-meat-poultry[g/cap/day]",
+        "lfs_consumers-diet_pro-liv-meat-sheep[g/cap/day]"
+      ]
+    },
+    "DietFish": {
+      "title": {
+        "enUS": "Fish and seafood",
+        "frFR": "Poissons et fruits de mer",
+        "deDE": "Fisch und Meeresfrüchte"
+      },
+      "type": "StackedArea",
+      "unit": "g/cap/day",
+      "outputs": [
+        "lfs_consumers-diet_seafood-dfish[g/cap/day]",
+        "lfs_consumers-diet_seafood-ffish[g/cap/day]",
+        "lfs_consumers-diet_seafood-oth-aq-animal[g/cap/day]",
+        "lfs_consumers-diet_seafood-pfish[g/cap/day]",
+        "lfs_consumers-diet_seafood-seafood[g/cap/day]"
+      ]
+    },
+    "DietOther": {
+      "title": {
+        "enUS": "Drinks, sugar and stimulants",
+        "frFR": "Boissons, sucre et stimulants",
+        "deDE": "Getränke, Zucker und Genussmittel"
+      },
+      "type": "StackedArea",
+      "unit": "g/cap/day",
+      "outputs": [
+        "lfs_consumers-diet_pro-bev-beer[g/cap/day]",
+        "lfs_consumers-diet_pro-bev-bev-alc[g/cap/day]",
+        "lfs_consumers-diet_pro-bev-bev-fer[g/cap/day]",
+        "lfs_consumers-diet_pro-bev-wine[g/cap/day]",
+        "lfs_consumers-diet_pro-crop-processed-sugar[g/cap/day]",
+        "lfs_consumers-diet_pro-crop-processed-sweet[g/cap/day]",
+        "lfs_consumers-diet_pro-crop-processed-voil[g/cap/day]",
+        "lfs_consumers-diet_stm-cocoa[g/cap/day]",
+        "lfs_consumers-diet_stm-coffee[g/cap/day]",
+        "lfs_consumers-diet_stm-tea[g/cap/day]"
+      ]
+    },
+    "DemandPlant": {
+      "title": {
+        "enUS": "Food demand, plant-based",
+        "frFR": "Demande alimentaire végétale",
+        "deDE": "Nachfrage, pflanzlich"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_demand_crop-cereal[kcal]",
+        "agr_demand_crop-fruit[kcal]",
+        "agr_demand_crop-oilcrop[kcal]",
+        "agr_demand_crop-pulse[kcal]",
+        "agr_demand_crop-rice[kcal]",
+        "agr_demand_crop-starch[kcal]",
+        "agr_demand_crop-veg[kcal]"
+      ]
+    },
+    "DemandAnimal": {
+      "title": {
+        "enUS": "Food demand, animal-based",
+        "frFR": "Demande alimentaire animale",
+        "deDE": "Nachfrage, tierisch"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_demand_pro-liv-abp-dairy-milk[kcal]",
+        "agr_demand_pro-liv-abp-hens-egg[kcal]",
+        "agr_demand_pro-liv-abp-processed-afat[kcal]",
+        "agr_demand_pro-liv-abp-processed-offal[kcal]",
+        "agr_demand_pro-liv-meat-bovine[kcal]",
+        "agr_demand_pro-liv-meat-oth-animal[kcal]",
+        "agr_demand_pro-liv-meat-pig[kcal]",
+        "agr_demand_pro-liv-meat-poultry[kcal]",
+        "agr_demand_pro-liv-meat-sheep[kcal]",
+        "agr_demand_seafood-dfish[kcal]",
+        "agr_demand_seafood-ffish[kcal]",
+        "agr_demand_seafood-oth-aq-animal[kcal]",
+        "agr_demand_seafood-pfish[kcal]",
+        "agr_demand_seafood-seafood[kcal]"
+      ]
+    },
+    "DemandOther": {
+      "title": {
+        "enUS": "Food demand, drinks and other",
+        "frFR": "Demande, boissons et autres",
+        "deDE": "Nachfrage, Getränke und Sonstiges"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_demand_pro-bev-beer[kcal]",
+        "agr_demand_pro-bev-bev-alc[kcal]",
+        "agr_demand_pro-bev-bev-fer[kcal]",
+        "agr_demand_pro-bev-wine[kcal]",
+        "agr_demand_pro-crop-processed-sugar[kcal]",
+        "agr_demand_pro-crop-processed-sweet[kcal]",
+        "agr_demand_pro-crop-processed-voil[kcal]",
+        "agr_demand_stm-cocoa[kcal]",
+        "agr_demand_stm-coffee[kcal]",
+        "agr_demand_stm-tea[kcal]"
+      ]
+    },
+    "DietBauVsTarget": {
+      "title": {
+        "enUS": "Diet intake: BAU vs target",
+        "frFR": "Apport alimentaire : tendanciel vs cible",
+        "deDE": "Nahrungsaufnahme: Trend vs Ziel"
+      },
+      "type": "StackedBar",
+      "unit": "kcal/cap/day",
+      "snapshotYears": [2023, 99999, 2050],
+      "snapshotLabels": [
+        { "enUS": "BAU (2023)", "frFR": "Tendanciel (2023)", "deDE": "Trend (2023)" },
+        { "enUS": "BAU (2050)", "frFR": "Tendanciel (2050)", "deDE": "Trend (2050)" },
+        { "enUS": "Target (2050)", "frFR": "Cible (2050)", "deDE": "Ziel (2050)" }
+      ],
+      "groups": {
+        "cereals-starches": {
+          "label": {
+            "enUS": "Cereals & starches",
+            "frFR": "Céréales et féculents",
+            "deDE": "Getreide & Stärke"
+          },
+          "color": "#2a78d6",
+          "outputs": [
+            "diet-intake_crop-cereal[kcal/cap/day]",
+            "diet-intake_crop-rice[kcal/cap/day]",
+            "diet-intake_crop-starch[kcal/cap/day]"
+          ]
+        },
+        "fruit-veg": {
+          "label": {
+            "enUS": "Fruit & vegetables",
+            "frFR": "Fruits et légumes",
+            "deDE": "Obst & Gemüse"
+          },
+          "color": "#eb6834",
+          "outputs": ["diet-intake_crop-fruit[kcal/cap/day]", "diet-intake_crop-veg[kcal/cap/day]"]
+        },
+        "oilcrops": {
+          "label": {
+            "enUS": "Oil crops",
+            "frFR": "Oléagineux",
+            "deDE": "Ölpflanzen"
+          },
+          "color": "#1baf7a",
+          "outputs": [
+            "diet-intake_crop-oilcrop[kcal/cap/day]",
+            "diet-intake_pro-crop-processed-voil[kcal/cap/day]"
+          ]
+        },
+        "pulses": {
+          "label": {
+            "enUS": "Pulses",
+            "frFR": "Légumineuses",
+            "deDE": "Hülsenfrüchte"
+          },
+          "color": "#a8632b",
+          "outputs": ["diet-intake_crop-pulse[kcal/cap/day]"]
+        },
+        "dairy-eggs": {
+          "label": {
+            "enUS": "Dairy & eggs",
+            "frFR": "Produits laitiers et oeufs",
+            "deDE": "Milchprodukte & Eier"
+          },
+          "color": "#eda100",
+          "outputs": [
+            "diet-intake_pro-liv-abp-dairy-milk[kcal/cap/day]",
+            "diet-intake_pro-liv-abp-hens-egg[kcal/cap/day]"
+          ]
+        },
+        "meat": {
+          "label": {
+            "enUS": "Meat & animal by-products",
+            "frFR": "Viande et sous-produits animaux",
+            "deDE": "Fleisch & tierische Nebenprodukte"
+          },
+          "color": "#e87ba4",
+          "outputs": [
+            "diet-intake_pro-liv-abp-processed-afat[kcal/cap/day]",
+            "diet-intake_pro-liv-abp-processed-offal[kcal/cap/day]",
+            "diet-intake_pro-liv-meat-bovine[kcal/cap/day]",
+            "diet-intake_pro-liv-meat-oth-animal[kcal/cap/day]",
+            "diet-intake_pro-liv-meat-pig[kcal/cap/day]",
+            "diet-intake_pro-liv-meat-poultry[kcal/cap/day]",
+            "diet-intake_pro-liv-meat-sheep[kcal/cap/day]"
+          ]
+        },
+        "seafood": {
+          "label": {
+            "enUS": "Fish & seafood",
+            "frFR": "Poissons et fruits de mer",
+            "deDE": "Fisch & Meeresfrüchte"
+          },
+          "color": "#008300",
+          "outputs": [
+            "diet-intake_seafood-dfish[kcal/cap/day]",
+            "diet-intake_seafood-ffish[kcal/cap/day]",
+            "diet-intake_seafood-oth-aq-animal[kcal/cap/day]",
+            "diet-intake_seafood-pfish[kcal/cap/day]",
+            "diet-intake_seafood-seafood[kcal/cap/day]"
+          ]
+        },
+        "beverages": {
+          "label": {
+            "enUS": "Alcoholic beverages",
+            "frFR": "Boissons alcoolisées",
+            "deDE": "Alkoholische Getränke"
+          },
+          "color": "#4a3aa7",
+          "outputs": [
+            "diet-intake_pro-bev-beer[kcal/cap/day]",
+            "diet-intake_pro-bev-bev-alc[kcal/cap/day]",
+            "diet-intake_pro-bev-bev-fer[kcal/cap/day]",
+            "diet-intake_pro-bev-wine[kcal/cap/day]"
+          ]
+        },
+        "sweeteners-stimulants": {
+          "label": {
+            "enUS": "Sweeteners & stimulants",
+            "frFR": "Édulcorants et stimulants",
+            "deDE": "Süssungsmittel & Genussmittel"
+          },
+          "color": "#e34948",
+          "outputs": [
+            "diet-intake_pro-crop-processed-sugar[kcal/cap/day]",
+            "diet-intake_pro-crop-processed-sweet[kcal/cap/day]",
+            "diet-intake_stm-cocoa[kcal/cap/day]",
+            "diet-intake_stm-coffee[kcal/cap/day]",
+            "diet-intake_stm-tea[kcal/cap/day]"
+          ]
+        }
+      },
+      "outputs": [
+        "diet-intake_crop-cereal[kcal/cap/day]",
+        "diet-intake_crop-fruit[kcal/cap/day]",
+        "diet-intake_crop-oilcrop[kcal/cap/day]",
+        "diet-intake_crop-pulse[kcal/cap/day]",
+        "diet-intake_crop-rice[kcal/cap/day]",
+        "diet-intake_crop-starch[kcal/cap/day]",
+        "diet-intake_crop-veg[kcal/cap/day]",
+        "diet-intake_pro-liv-abp-dairy-milk[kcal/cap/day]",
+        "diet-intake_pro-liv-abp-hens-egg[kcal/cap/day]",
+        "diet-intake_pro-liv-abp-processed-afat[kcal/cap/day]",
+        "diet-intake_pro-liv-abp-processed-offal[kcal/cap/day]",
+        "diet-intake_pro-liv-meat-bovine[kcal/cap/day]",
+        "diet-intake_pro-liv-meat-oth-animal[kcal/cap/day]",
+        "diet-intake_pro-liv-meat-pig[kcal/cap/day]",
+        "diet-intake_pro-liv-meat-poultry[kcal/cap/day]",
+        "diet-intake_pro-liv-meat-sheep[kcal/cap/day]",
+        "diet-intake_seafood-dfish[kcal/cap/day]",
+        "diet-intake_seafood-ffish[kcal/cap/day]",
+        "diet-intake_seafood-oth-aq-animal[kcal/cap/day]",
+        "diet-intake_seafood-pfish[kcal/cap/day]",
+        "diet-intake_seafood-seafood[kcal/cap/day]",
+        "diet-intake_pro-bev-beer[kcal/cap/day]",
+        "diet-intake_pro-bev-bev-alc[kcal/cap/day]",
+        "diet-intake_pro-bev-bev-fer[kcal/cap/day]",
+        "diet-intake_pro-bev-wine[kcal/cap/day]",
+        "diet-intake_pro-crop-processed-sugar[kcal/cap/day]",
+        "diet-intake_pro-crop-processed-sweet[kcal/cap/day]",
+        "diet-intake_pro-crop-processed-voil[kcal/cap/day]",
+        "diet-intake_stm-cocoa[kcal/cap/day]",
+        "diet-intake_stm-coffee[kcal/cap/day]",
+        "diet-intake_stm-tea[kcal/cap/day]"
+      ]
+    },
+    "EnergyRequirement": {
+      "title": {
+        "enUS": "Individual energy requirement by sex and age",
+        "frFR": "Besoin énergétique individuel par sexe et âge",
+        "deDE": "Individueller Energiebedarf nach Geschlecht und Alter"
+      },
+      "type": "Line",
+      "unit": "kcal/cap/day",
+      "outputs": [
+        {
+          "id": "agr_kcal-req_female-below19[kcal/cap/day]",
+          "color": "#fdbe85"
+        },
+        {
+          "id": "agr_kcal-req_female-age20-29[kcal/cap/day]",
+          "color": "#fd8d3c"
+        },
+        {
+          "id": "agr_kcal-req_female-age30-54[kcal/cap/day]",
+          "color": "#e6550d"
+        },
+        {
+          "id": "agr_kcal-req_female-age55-64[kcal/cap/day]",
+          "color": "#a63603"
+        },
+        {
+          "id": "agr_kcal-req_female-above65[kcal/cap/day]",
+          "color": "#7f2704"
+        },
+        {
+          "id": "agr_kcal-req_male-below19[kcal/cap/day]",
+          "color": "#9ecae1"
+        },
+        {
+          "id": "agr_kcal-req_male-age20-29[kcal/cap/day]",
+          "color": "#6baed6"
+        },
+        {
+          "id": "agr_kcal-req_male-age30-54[kcal/cap/day]",
+          "color": "#3182bd"
+        },
+        {
+          "id": "agr_kcal-req_male-age55-64[kcal/cap/day]",
+          "color": "#08519c"
+        },
+        {
+          "id": "agr_kcal-req_male-above65[kcal/cap/day]",
+          "color": "#08306b"
+        }
+      ]
+    },
+    "ProcessedMeatShare": {
+      "title": {
+        "enUS": "Share of processed and unprocessed meat",
+        "frFR": "Part de viande transformée et non transformée",
+        "deDE": "Anteil von verarbeitetem und unverarbeitetem Fleisch"
+      },
+      "type": "StackedArea",
+      "unit": "%",
+      "outputs": [
+        {
+          "id": "diet-share_meat-unprocessed[%]",
+          "color": "#e87ba4"
+        },
+        {
+          "id": "diet-share_meat-processed[%]",
+          "color": "#a3305f"
+        }
+      ]
+    },
+    "WholeCerealShare": {
+      "title": {
+        "enUS": "Share of whole and refined cereals",
+        "frFR": "Part de céréales complètes et raffinées",
+        "deDE": "Anteil von Vollkorn- und raffiniertem Getreide"
+      },
+      "type": "StackedArea",
+      "unit": "%",
+      "outputs": [
+        {
+          "id": "diet-share_cereal-refined[%]",
+          "color": "#9cc3ee"
+        },
+        {
+          "id": "diet-share_cereal-whole[%]",
+          "color": "#2a78d6"
+        }
+      ]
+    },
+    "FoodWasteTotal": {
+      "title": {
+        "enUS": "Total food waste by food category",
+        "frFR": "Gaspillage alimentaire total par catégorie",
+        "deDE": "Gesamte Lebensmittelverschwendung nach Kategorie"
+      },
+      "type": "StackedArea",
+      "unit": "t",
+      "outputs": [
+        {
+          "id": "food-waste_cereals-starches[t]",
+          "color": "#2a78d6"
+        },
+        {
+          "id": "food-waste_fruit-veg[t]",
+          "color": "#eb6834"
+        },
+        {
+          "id": "food-waste_oilcrops[t]",
+          "color": "#1baf7a"
+        },
+        {
+          "id": "food-waste_pulses[t]",
+          "color": "#a8632b"
+        },
+        {
+          "id": "food-waste_dairy-eggs[t]",
+          "color": "#eda100"
+        },
+        {
+          "id": "food-waste_meat[t]",
+          "color": "#e87ba4"
+        },
+        {
+          "id": "food-waste_seafood[t]",
+          "color": "#008300"
+        },
+        {
+          "id": "food-waste_beverages[t]",
+          "color": "#4a3aa7"
+        },
+        {
+          "id": "food-waste_sweeteners-stimulants[t]",
+          "color": "#e34948"
+        }
+      ]
+    },
+    "FoodWasteRatio": {
+      "title": {
+        "enUS": "Food waste ratio by food category",
+        "frFR": "Taux de gaspillage alimentaire par catégorie",
+        "deDE": "Verschwendungsquote nach Lebensmittelkategorie"
+      },
+      "type": "Line",
+      "unit": "%",
+      "outputs": [
+        {
+          "id": "food-waste-ratio_cereals-starches[%]",
+          "color": "#2a78d6"
+        },
+        {
+          "id": "food-waste-ratio_fruit-veg[%]",
+          "color": "#eb6834"
+        },
+        {
+          "id": "food-waste-ratio_oilcrops[%]",
+          "color": "#1baf7a"
+        },
+        {
+          "id": "food-waste-ratio_pulses[%]",
+          "color": "#a8632b"
+        },
+        {
+          "id": "food-waste-ratio_dairy-eggs[%]",
+          "color": "#eda100"
+        },
+        {
+          "id": "food-waste-ratio_meat[%]",
+          "color": "#e87ba4"
+        },
+        {
+          "id": "food-waste-ratio_seafood[%]",
+          "color": "#008300"
+        },
+        {
+          "id": "food-waste-ratio_beverages[%]",
+          "color": "#4a3aa7"
+        },
+        {
+          "id": "food-waste-ratio_sweeteners-stimulants[%]",
+          "color": "#e34948"
+        }
+      ]
+    },
+    "FoodWastePlant": {
+      "title": {
+        "enUS": "Food waste ratio, plant-based",
+        "frFR": "Taux de gaspillage alimentaire végétal",
+        "deDE": "Verschwendungsquote, pflanzlich"
+      },
+      "type": "Line",
+      "unit": "%",
+      "outputs": [
+        "food-waste-ratio_crop-cereal[%]",
+        "food-waste-ratio_crop-fruit[%]",
+        "food-waste-ratio_crop-oilcrop[%]",
+        "food-waste-ratio_crop-pulse[%]",
+        "food-waste-ratio_crop-rice[%]",
+        "food-waste-ratio_crop-starch[%]",
+        "food-waste-ratio_crop-veg[%]",
+        "food-waste-ratio_pro-crop-processed-sugar[%]",
+        "food-waste-ratio_pro-crop-processed-sweet[%]",
+        "food-waste-ratio_pro-crop-processed-voil[%]",
+        "food-waste-ratio_pro-bev-beer[%]",
+        "food-waste-ratio_pro-bev-bev-alc[%]",
+        "food-waste-ratio_pro-bev-bev-fer[%]",
+        "food-waste-ratio_pro-bev-wine[%]",
+        "food-waste-ratio_stm-cocoa[%]",
+        "food-waste-ratio_stm-coffee[%]",
+        "food-waste-ratio_stm-tea[%]"
+      ]
+    },
+    "FoodWasteAnimal": {
+      "title": {
+        "enUS": "Food waste ratio, animal-based",
+        "frFR": "Taux de gaspillage alimentaire animal",
+        "deDE": "Verschwendungsquote, tierisch"
+      },
+      "type": "Line",
+      "unit": "%",
+      "outputs": [
+        "food-waste-ratio_pro-liv-abp-dairy-milk[%]",
+        "food-waste-ratio_pro-liv-abp-hens-egg[%]",
+        "food-waste-ratio_pro-liv-abp-processed-afat[%]",
+        "food-waste-ratio_pro-liv-abp-processed-offal[%]",
+        "food-waste-ratio_pro-liv-meat-bovine[%]",
+        "food-waste-ratio_pro-liv-meat-oth-animal[%]",
+        "food-waste-ratio_pro-liv-meat-pig[%]",
+        "food-waste-ratio_pro-liv-meat-poultry[%]",
+        "food-waste-ratio_pro-liv-meat-sheep[%]",
+        "food-waste-ratio_seafood-dfish[%]",
+        "food-waste-ratio_seafood-ffish[%]",
+        "food-waste-ratio_seafood-oth-aq-animal[%]",
+        "food-waste-ratio_seafood-pfish[%]",
+        "food-waste-ratio_seafood-seafood[%]"
+      ]
+    },
+    "Population": {
+      "title": {
+        "enUS": "Population",
+        "frFR": "Population",
+        "deDE": "Bevölkerung"
+      },
+      "type": "Line",
+      "unit": "inhabitants",
+      "outputs": ["lfs_population_total[inhabitants]"]
+    },
+    "DomesticProduction": {
+      "title": {
+        "enUS": "Domestic food production",
+        "frFR": "Production alimentaire nationale",
+        "deDE": "Inländische Lebensmittelproduktion"
+      },
+      "type": "Line",
+      "unit": "kcal",
+      "outputs": ["agr_domestic-production_afw[kcal]"]
+    },
+    "Livestock": {
+      "title": {
+        "enUS": "Livestock population",
+        "frFR": "Population de bétail",
+        "deDE": "Viehbestand"
+      },
+      "type": "Line",
+      "unit": "lsu",
+      "outputs": ["agr_liv_population[lsu]"]
+    }
+  }
+}

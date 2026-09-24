@@ -37,6 +37,10 @@ export default {
   // Chart components
   loadingChartData: 'Loading chart data...',
   retry: 'Retry',
+  comparingPathways: 'Running pathway {done} of {total}...',
+  pathwayComparisonFailed: 'Could not load the pathway comparison',
+  pathwayComparisonNote:
+    'Same colour = same diet. Dashed lines and "+ low waste" bars are the low-waste variant of that diet.',
   noChartDataAvailable: 'No chart data available',
   noDataAvailable: 'No data available',
   downloadCSV: 'Download CSV',

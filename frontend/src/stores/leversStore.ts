@@ -3,13 +3,29 @@ import { computed, ref, watch } from 'vue';
 import type { Lever } from 'utils/leversData';
 import { levers as leversData } from 'utils/leversData';
 import { sectors } from 'utils/sectors';
-import { ExamplePathways } from 'utils/examplePathways';
+import { ExamplePathways, type PathWay } from 'utils/examplePathways';
 import { modelService } from 'services/modelService';
 import { AxiosError } from 'axios';
-import type { Region } from 'src/utils/region';
+import { getCurrentRegion, getLeverKeys, type Region } from 'src/utils/region';
 import type { KpiData } from 'src/utils/sectors';
 import { getTranslatedText, type TranslationObject } from 'src/utils/translationHelpers';
 import { useI18n } from 'vue-i18n';
+import { withSelfSufficiencyMetrics } from 'src/utils/selfSufficiency';
+import { withLivestockMetrics } from 'src/utils/livestockMetrics';
+import {
+  ORGANIC_SHARE_LEVERS,
+  withOrganicShares,
+  type LeverSeriesRow,
+  type OrganicShareRows,
+} from 'src/utils/organicShares';
+import { withDietMetrics, type EnergyRequirementRow } from 'src/utils/dietMetrics';
+import { withPopulationMetrics } from 'src/utils/populationMetrics';
+import { withTrueCostPerCapita, withTrueCostSavings } from 'src/utils/trueCostMetrics';
+import {
+  COMPARISON_PATHWAYS,
+  buildPathwayRuns,
+  type PathwayRun,
+} from 'src/utils/pathwayComparison';
 
 // Types
 export interface YearData {
@@ -36,6 +52,17 @@ export interface ChartConfig {
   type: string;
   unit: string;
   outputs: Array<string | OutputConfig>;
+  // When set, every plotted value is divided by it, so "unit" can be a multiple
+  // of the model's unit (e.g. scale 1e9 with unit "Billion CHF" for CHF outputs).
+  scale?: number;
+  // When set (as [yearA, yearB, ...]), the chart compares these years side by
+  // side as a bar chart (categories, not a time series) instead of plotting
+  // the full trajectory.
+  snapshotYears?: number[];
+  snapshotLabels?: Array<string | TranslationObject>;
+  // When set, sums the listed outputs into one series per group instead of one
+  // series per output - keeps a long category list readable in a snapshot chart.
+  groups?: Record<string, { label: string | TranslationObject; color?: string; outputs: string[] }>;
 }
 
 export interface SectorWithKpis extends SectorData {
@@ -43,6 +70,11 @@ export interface SectorWithKpis extends SectorData {
 }
 
 export type SectorKey = string;
+
+// Sentinel "year" for the synthetic BAU (2050) row appended to the merged
+// dietary-habits data (see getSectorDataWithKpis). Chart components must
+// exclude it from any time-series (non-snapshot) rendering.
+export const BAU_2050_SNAPSHOT_YEAR = 99999;
 
 export interface LeverYearData {
   Country: string;
@@ -140,8 +172,11 @@ export const useLeverStore = defineStore('lever', () => {
     const sector = sectors.find((s) => s.value === sectorCode);
     if (!sector) return [];
 
-    // Filter levers that belong to this sector and translate them
+    // Keep only the levers the loaded model knows: a sector may list levers
+    // a given model build does not have.
+    const known = getLeverKeys();
     const sectorLevers = sector.levers
+      .filter((leverId) => known.length === 0 || known.includes(leverId))
       .map((leverId) => leversData.find((l) => l.code === leverId))
       .filter((lever): lever is Lever => lever !== undefined);
 
@@ -170,42 +205,333 @@ export const useLeverStore = defineStore('lever', () => {
     });
   });
 
+  // Merges every sector's country data into one object, keyed by output name.
+  function mergeAllSectorData(): { countries: { [key: string]: YearData[] }; kpis: KpiData[] } {
+    const allSectorData = modelResults.value?.data || {};
+    const countries: { [key: string]: YearData[] } = {};
+
+    Object.values(allSectorData).forEach((sectorData) => {
+      if (sectorData.countries) {
+        Object.entries(sectorData.countries).forEach(([country, yearDataArray]) => {
+          if (!countries[country]) {
+            // Initialize with the year structure from the first sector
+            countries[country] = yearDataArray.map((yd) => ({ year: yd.year }));
+          }
+
+          // Merge outputs from this sector into each year's data
+          yearDataArray.forEach((yearData, index) => {
+            if (countries[country]?.[index]) {
+              Object.assign(countries[country][index], yearData);
+            }
+          });
+        });
+      }
+    });
+
+    const allKpis = Object.values(modelResults.value?.kpis || {}).flat();
+
+    return { countries, kpis: allKpis };
+  }
+
+  // Merges a specific list of sectors' country data into one object, aligning
+  // rows by position (every TCAF sector shares the same year range/order).
+  function mergeSectorsData(sectorDatas: Array<SectorData | undefined>): {
+    countries: { [key: string]: YearData[] };
+    units: { [key: string]: string };
+  } {
+    const countries: { [key: string]: YearData[] } = {};
+    const units: { [key: string]: string } = {};
+
+    sectorDatas.forEach((sectorData) => {
+      if (!sectorData?.countries) return;
+      Object.assign(units, sectorData.units);
+      Object.entries(sectorData.countries).forEach(([country, yearDataArray]) => {
+        if (!countries[country]) {
+          countries[country] = yearDataArray.map((yd) => ({ year: yd.year }));
+        }
+        yearDataArray.forEach((yearData, index) => {
+          if (countries[country]?.[index]) {
+            Object.assign(countries[country][index], yearData);
+          }
+        });
+      });
+    });
+
+    return { countries, units };
+  }
+
+  // A fixed "business as usual" diet reference, fetched once (it does not
+  // depend on the user's current levers) and used to add a "BAU (2050)" bar
+  // to the diet snapshot chart, isolating the diet-policy effect from
+  // everything else (population, ...) that also changes between 2023 and 2050.
+  // The same run, every module merged, is the baseline the True Cost page
+  // measures its savings against.
+  const bauReferenceSectorData = ref<SectorData | null>(null);
+  const bauReferenceAllSectorData = ref<SectorData | null>(null);
+  let bauReferenceLoading = false;
+
+  // Runs the model for a pathway's lever values (whatever the user's levers are
+  // now) and returns the results of every sector, or null when the run failed.
+  // Every TCAF page's sectors are covered by the "dietary-habits" run.
+  async function runPathwayModel(pathway: PathWay): Promise<ModelResults['data'] | null> {
+    const modelKeys = getLeverKeys();
+    const order = modelKeys.length > 0 ? modelKeys : leversData.map((l) => l.code);
+    const leverValues = order.map((code) =>
+      Math.round(pathway.values[code] ?? getDefaultLeverValue(code)),
+    );
+    const response = await modelService.runModel(leverValues.join(''), 'dietary-habits');
+    if (response.data?.status === 'error') return null;
+    return response.data?.data ?? null;
+  }
+
+  async function ensureBauReference() {
+    if (bauReferenceSectorData.value || bauReferenceLoading) return;
+    const pathway = ExamplePathways.find((p) => p.title === 'Business as usual (diet)');
+    if (!pathway) return;
+
+    bauReferenceLoading = true;
+    try {
+      const data = await runPathwayModel(pathway);
+      if (data) {
+        // Population rides along so the synthetic BAU (2050) row can be
+        // converted to a per-capita value like the other snapshot rows.
+        bauReferenceSectorData.value = data['dietary-habits']
+          ? (mergeSectorsData([data['population'], data['dietary-habits']]) as SectorData)
+          : null;
+        bauReferenceAllSectorData.value = mergeSectorsData(Object.values(data)) as SectorData;
+      }
+    } catch (err) {
+      console.error('Failed to fetch the BAU reference scenario:', err);
+    } finally {
+      bauReferenceLoading = false;
+    }
+  }
+
+  // The Pathway comparison page charts the six TCAF diet pathways side by side,
+  // so it needs a run of each, all fixed (none depends on the user's levers):
+  // fetched once, in parallel, and kept by pathway title. The backend caches each
+  // run, and the BAU one is the run the reference above already made.
+  const pathwayComparisonResults = ref<Record<string, SectorData>>({});
+  const pathwayComparisonLoading = ref(false);
+  const pathwayComparisonError = ref<string | null>(null);
+
+  const pathwayComparisonProgress = computed(() => ({
+    done: Object.keys(pathwayComparisonResults.value).length,
+    total: COMPARISON_PATHWAYS.length,
+  }));
+
+  const pathwayComparison = computed<PathwayRun[]>(() =>
+    buildPathwayRuns(pathwayComparisonResults.value, getCurrentRegion()),
+  );
+
+  async function ensurePathwayComparison() {
+    if (pathwayComparisonLoading.value) return;
+
+    const missing = COMPARISON_PATHWAYS.filter(
+      (cp) =>
+        !pathwayComparisonResults.value[cp.title] &&
+        ExamplePathways.some((p) => p.title === cp.title),
+    );
+    if (missing.length === 0) return;
+
+    pathwayComparisonLoading.value = true;
+    pathwayComparisonError.value = null;
+    try {
+      await Promise.all(
+        missing.map(async (cp) => {
+          const pathway = ExamplePathways.find((p) => p.title === cp.title) as PathWay;
+          const data = await runPathwayModel(pathway);
+          if (!data) throw new Error(`The model failed to run the "${cp.title}" pathway`);
+          // Reassign rather than mutate, so the results (and what is derived from them) update
+          pathwayComparisonResults.value = {
+            ...pathwayComparisonResults.value,
+            [cp.title]: mergeSectorsData(Object.values(data)) as SectorData,
+          };
+        }),
+      );
+    } catch (err) {
+      console.error('Failed to fetch the pathway comparison runs:', err);
+      pathwayComparisonError.value = err instanceof Error ? err.message : String(err);
+    } finally {
+      pathwayComparisonLoading.value = false;
+    }
+  }
+
+  // The individual energy requirement by sex and age group is an input of the
+  // model (the "kcal-req" lever), not one of its outputs, so the Diet page
+  // reads it from the lever-data endpoint: one time series per lever position
+  // (1-4), fetched once per region. The selected position is merged into the
+  // page's rows (see withDietMetrics).
+  const ENERGY_REQUIREMENT_LEVER = 'lever_kcal-req';
+  const energyRequirement = ref<Record<string, Record<string, EnergyRequirementRow[]>>>({});
+  const energyRequirementLoading = new Set<string>();
+
+  async function ensureEnergyRequirement(region: string) {
+    if (energyRequirement.value[region] || energyRequirementLoading.has(region)) return;
+
+    energyRequirementLoading.add(region);
+    try {
+      const response = await modelService.getLeverData(ENERGY_REQUIREMENT_LEVER, undefined, region);
+      const positions = response.data?.data?.lever_positions;
+      if (response.data?.status === 'success' && positions) {
+        energyRequirement.value = { ...energyRequirement.value, [region]: positions };
+      }
+    } catch (err) {
+      console.error('Failed to fetch the energy requirement:', err);
+    } finally {
+      energyRequirementLoading.delete(region);
+    }
+  }
+
+  // The organic shares of the Production page are the model's
+  // "crop-share-organic" and "share-organic" lever inputs, not outputs: one time
+  // series per lever position (1-4), fetched once per lever and region. The
+  // selected positions are merged into the page's rows (see withOrganicShares).
+  const organicShareSeries = ref<Record<string, Record<string, Record<string, LeverSeriesRow[]>>>>(
+    {},
+  );
+  const organicShareLoading = new Set<string>();
+
+  async function ensureOrganicShares(region: string) {
+    await Promise.all(
+      ORGANIC_SHARE_LEVERS.map(async (lever) => {
+        const key = `${lever}|${region}`;
+        if (organicShareSeries.value[lever]?.[region] || organicShareLoading.has(key)) return;
+
+        organicShareLoading.add(key);
+        try {
+          const response = await modelService.getLeverData(lever, undefined, region);
+          const positions = response.data?.data?.lever_positions;
+          if (response.data?.status === 'success' && positions) {
+            organicShareSeries.value = {
+              ...organicShareSeries.value,
+              [lever]: { ...organicShareSeries.value[lever], [region]: positions },
+            };
+          }
+        } catch (err) {
+          console.error(`Failed to fetch ${lever}:`, err);
+        } finally {
+          organicShareLoading.delete(key);
+        }
+      }),
+    );
+  }
+
+  function selectedOrganicShares(region: string): OrganicShareRows | undefined {
+    const rows: Record<string, LeverSeriesRow[]> = {};
+    ORGANIC_SHARE_LEVERS.forEach((lever) => {
+      const position = String(Math.round(getLeverValue(lever)));
+      const leverRows = organicShareSeries.value[lever]?.[region]?.[position];
+      if (leverRows) rows[lever] = leverRows;
+    });
+    return Object.keys(rows).length ? { region, rows } : undefined;
+  }
+
   // Sectors computed values
   const getSectorDataWithKpis = (sectorName: string): SectorWithKpis | null => {
     if (!modelResults.value) return null;
 
-    // Special case: empty sectorName means "overall" - aggregate all sectors
-    if (!sectorName || sectorName === '') {
-      // Merge all sector data into one object
-      const allSectorData = modelResults.value.data;
-      const countries: { [key: string]: YearData[] } = {};
+    // Special case: the Production tab needs demand (from "dietary-habits",
+    // which reacts to the diet-composition levers) and domestic production
+    // (from "crop" and "livestock", which react to the self-sufficiency
+    // levers) together, to add the derived import/export/self-sufficiency
+    // fields it charts, the livestock productivity of its Livestock sub-tab
+    // the cropland area and yield ("land-use") of its Crops one, the Swiss
+    // fish production and its cost ("TCAF") of its Blue food one, and the
+    // organic shares (lever inputs) of both. The
+    // "agriculture" module is a legacy computation that ignores
+    // every TCAF lever, so it must never be used as a data source here.
+    if (sectorName === 'production') {
+      const demandSector = modelResults.value.data['dietary-habits'];
+      if (!demandSector) return null;
+      const merged = mergeSectorsData([
+        demandSector,
+        modelResults.value.data['crop'],
+        modelResults.value.data['livestock'],
+        modelResults.value.data['land-use'],
+        modelResults.value.data['TCAF'],
+      ]);
+      const kpis = modelResults.value.kpis['crop'] || [];
+      const region = getCurrentRegion();
+      void ensureOrganicShares(region);
+      return {
+        countries: withOrganicShares(
+          withLivestockMetrics(withSelfSufficiencyMetrics(merged.countries)),
+          selectedOrganicShares(region),
+        ) as SectorData['countries'],
+        units: merged.units,
+        kpis,
+      };
+    }
 
-      // Iterate through all sectors and merge their country data
-      Object.values(allSectorData).forEach((sectorData) => {
-        if (sectorData.countries) {
-          Object.entries(sectorData.countries).forEach(([country, yearDataArray]) => {
-            if (!countries[country]) {
-              // Initialize with the year structure from the first sector
-              countries[country] = yearDataArray.map((yd) => ({ year: yd.year }));
-            }
+    // Special case: the Population page charts the population sector's total
+    // and adds the change and growth rate derived from it.
+    if (sectorName === 'population') {
+      const populationSector = modelResults.value.data['population'];
+      if (!populationSector) return null;
+      return {
+        countries: withPopulationMetrics(populationSector.countries) as SectorData['countries'],
+        units: populationSector.units,
+        kpis: modelResults.value.kpis['population'] || [],
+      };
+    }
 
-            // Merge outputs from this sector into each year's data
-            yearDataArray.forEach((yearData, index) => {
-              if (countries[country]?.[index]) {
-                Object.assign(countries[country][index], yearData);
-              }
-            });
-          });
-        }
-      });
+    // Special case: the Dietary habits page merges every sector like "" does,
+    // appends a synthetic BAU (2050) row (year = BAU_2050_SNAPSHOT_YEAR) for its
+    // diet snapshot chart, and adds the derived intake / food-waste fields and the
+    // energy requirement.
+    if (sectorName === 'dietary-habits') {
+      void ensureBauReference();
+      const merged = mergeAllSectorData();
 
-      // Aggregate all KPIs from all sectors
-      const allKpis = Object.values(modelResults.value.kpis).flat();
+      const bauCountries = bauReferenceSectorData.value?.countries;
+      if (bauCountries) {
+        Object.entries(bauCountries).forEach(([region, rows]) => {
+          const row2050 = rows.find((r) => Number(r.year) === 2050);
+          if (!row2050 || !merged.countries[region]) return;
+          merged.countries[region] = [
+            ...merged.countries[region],
+            { ...row2050, year: BAU_2050_SNAPSHOT_YEAR },
+          ];
+        });
+      }
+
+      const region = getCurrentRegion();
+      void ensureEnergyRequirement(region);
+      const position = String(Math.round(getLeverValue(ENERGY_REQUIREMENT_LEVER)));
+      const requirementRows = energyRequirement.value[region]?.[position];
 
       return {
-        countries,
+        countries: withDietMetrics(
+          merged.countries,
+          requirementRows && { region, rows: requirementRows },
+        ) as SectorData['countries'],
+        units: {},
+        kpis: merged.kpis,
+      };
+    }
+
+    // Special case: the True Cost page merges every sector like "" does and adds
+    // the cost saved against the BAU (diet) reference run and the costs per capita.
+    if (sectorName === 'true-cost') {
+      void ensureBauReference();
+      const merged = mergeAllSectorData();
+      return {
+        countries: withTrueCostPerCapita(
+          withTrueCostSavings(merged.countries, bauReferenceAllSectorData.value?.countries),
+        ) as SectorData['countries'],
+        units: {},
+        kpis: merged.kpis,
+      };
+    }
+
+    // Special case: empty sectorName means "overall" - aggregate all sectors
+    if (!sectorName || sectorName === '') {
+      const merged = mergeAllSectorData();
+      return {
+        countries: merged.countries,
         units: {}, // Units are merged per-output, not needed at this level
-        kpis: allKpis,
+        kpis: merged.kpis,
       };
     }
 
@@ -281,9 +607,13 @@ export const useLeverStore = defineStore('lever', () => {
       isLoading.value = true;
       error.value = null;
 
-      // Get all lever values as a flat array
-      const leverValues = leversData.map((lever) =>
-        Math.round(levers.value[lever.code] ?? getDefaultLeverValue(lever.code)),
+      // The API reads the string by position, so it must follow the order the
+      // backend gave us (it comes from the model). Fall back to the local list
+      // when the config could not be loaded.
+      const modelKeys = getLeverKeys();
+      const order = modelKeys.length > 0 ? modelKeys : leversData.map((l) => l.code);
+      const leverValues = order.map((code) =>
+        Math.round(levers.value[code] ?? getDefaultLeverValue(code)),
       );
 
       // Convert to string format expected by API
@@ -439,6 +769,13 @@ export const useLeverStore = defineStore('lever', () => {
     isCustomPathway,
 
     getSectorDataWithKpis,
+
+    // Pathway comparison
+    pathwayComparison,
+    pathwayComparisonProgress,
+    pathwayComparisonLoading,
+    pathwayComparisonError,
+    ensurePathwayComparison,
 
     // Actions
     batchUpdateLevers,

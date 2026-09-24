@@ -62,38 +62,38 @@ def transform_datamatrix_to_clean_structure_by_dataframe(output):
     return cleaned_output
 
 
-def _extract_units_from_datamatrix(datamatrix, col_labels, variable_labels):
-    """Extract unit information from DataMatrix."""
-    units = {}
-
-    # Try to get units from col_labels
+def _units_from_datamatrix(datamatrix, col_labels, dm_dict):
+    """Look up the raw {variable_name: unit} dict a DataMatrix carries."""
     if "Units" in col_labels and isinstance(col_labels["Units"], dict):
-        units = col_labels["Units"]
-    # Check if units are stored in a separate attribute
-    elif hasattr(datamatrix, "units") and datamatrix.units:
-        units = datamatrix.units
-    # Check if units are stored in __dict__
-    elif hasattr(datamatrix, "__dict__") and "units" in datamatrix.__dict__:
-        units = datamatrix.__dict__["units"]
-
-    # Map units to variable names
-    result = {}
-    for var_name in variable_labels:
-        result[var_name] = units.get(var_name, "")
-
-    return result
+        return col_labels["Units"]
+    if hasattr(datamatrix, "units") and datamatrix.units:
+        return datamatrix.units
+    return dm_dict.get("units", {})
 
 
-def _get_array_value(array, country_idx, year_idx, var_idx):
-    """Extract value from array based on its dimensionality."""
+def _flattened_variables(col_labels):
+    """List the (flat_name, var_name, cat_name) triples to read off a DataMatrix.
+
+    Most sectors are 3D (Country x Years x Variables) and each variable is its
+    own flat name. Some (e.g. "crop", "land-use") are 4D: Variables x
+    Categories1, e.g. "agr_domestic-production_afw" x "crop-cereal" - those are
+    flattened here into "agr_domestic-production_afw_crop-cereal" the same way
+    other sectors already name their per-category fields (cat_name is None for
+    the 3D case, signalling there is no Categories1 axis to index).
+    """
+    variable_labels = col_labels.get("Variables", [])
+    category_labels = col_labels.get("Categories1")
+    if not category_labels:
+        return [(var, var, None) for var in variable_labels]
+    return [
+        (f"{var}_{cat}", var, cat) for var in variable_labels for cat in category_labels
+    ]
+
+
+def _get_array_value(array, indices):
+    """Extract a scalar from array at the given index tuple."""
     try:
-        if len(array.shape) == 3:
-            value = array[country_idx, year_idx, var_idx]
-        elif len(array.shape) == 4:
-            value = array[country_idx, year_idx, var_idx, 0]
-        else:
-            return None
-
+        value = array[indices]
         if isinstance(value, np.ndarray):
             value = value.item()
         return value
@@ -101,45 +101,47 @@ def _get_array_value(array, country_idx, year_idx, var_idx):
         return None
 
 
-def _process_year_data(array, idx, year, year_labels, variable_labels):
-    """Process data for a single year."""
-    year_idx = (
-        idx.get(year)
-        if year in idx
-        else (idx.get(int(year)) if year.isdigit() and int(year) in idx else None)
-    )
-
-    if year_idx is None:
-        return None, 0
-
-    year_data = {"year": str(year)}
-
-    return year_data, year_idx
+def _resolve_year_idx(idx, year):
+    """Resolve a year label to its position on the DataMatrix's Years axis."""
+    if year in idx:
+        return idx.get(year)
+    if year.isdigit() and int(year) in idx:
+        return idx.get(int(year))
+    return None
 
 
-def _process_country_data(
-    array, idx, country_name, year_labels, variable_labels, country_idx
-):
+def _process_country_data(array, idx, country_idx, year_labels, flattened_vars):
     """Process all year data for a single country."""
     country_data = []
+    ndim = len(array.shape)
 
     for year in year_labels:
-        year_data, year_idx = _process_year_data(
-            array, idx, year, year_labels, variable_labels
-        )
-
-        if year_data is None or year_idx is None:
+        year_idx = _resolve_year_idx(idx, year)
+        if year_idx is None:
             continue
 
+        year_data = {"year": str(year)}
         values_found = 0
-        for var_name in variable_labels:
+
+        for flat_name, var_name, cat_name in flattened_vars:
             var_idx = idx.get(var_name)
             if var_idx is None:
                 continue
 
-            value = _get_array_value(array, country_idx, year_idx, var_idx)
+            if cat_name is None:
+                indices = (country_idx, year_idx, var_idx)
+            else:
+                cat_idx = idx.get(cat_name)
+                if cat_idx is None:
+                    continue
+                indices = (country_idx, year_idx, var_idx, cat_idx)
+
+            if len(indices) != ndim:
+                continue
+
+            value = _get_array_value(array, indices)
             if value is not None:
-                year_data[var_name] = value
+                year_data[flat_name] = value
                 values_found += 1
 
         if values_found > 0:
@@ -148,12 +150,74 @@ def _process_country_data(
     return country_data
 
 
+def _transform_single_datamatrix(datamatrix):
+    """Transform one DataMatrix into {"countries": ..., "units": ...}.
+
+    Returns None if `datamatrix` doesn't have the shape of a DataMatrix, so the
+    caller can decide how to handle it (e.g. treat it as a dict of DataMatrices).
+    """
+    if not hasattr(datamatrix, "__dict__"):
+        return None
+
+    dm_dict = datamatrix.__dict__
+    if "array" not in dm_dict or "col_labels" not in dm_dict or "idx" not in dm_dict:
+        return None
+
+    array = dm_dict["array"]
+    col_labels = dm_dict.get("col_labels", {})
+    idx = dm_dict.get("idx", {})
+
+    country_labels = col_labels.get("Country", [])
+    year_labels = [str(y) for y in col_labels.get("Years", [])]
+    flattened_vars = _flattened_variables(col_labels)
+
+    units_source = _units_from_datamatrix(datamatrix, col_labels, dm_dict)
+    result = {
+        "countries": {},
+        "units": {
+            flat_name: units_source.get(var_name, "")
+            for flat_name, var_name, _cat_name in flattened_vars
+        },
+    }
+
+    for country_name in country_labels:
+        country_idx = idx.get(country_name)
+        if country_idx is None:
+            continue
+        result["countries"][country_name] = _process_country_data(
+            array, idx, country_idx, year_labels, flattened_vars
+        )
+
+    return result
+
+
+def _merge_sector_result(target, source):
+    """Merge one DataMatrix's transformed output into a sector's combined result.
+
+    Some sectors (e.g. "crop") come back from the model as several DataMatrices
+    bundled in a plain dict (production, losses, self-sufficiency ratios, ...)
+    instead of one - this joins their rows by region/year into a single sector
+    so the frontend sees one flat set of fields, same as any other sector.
+    """
+    target["units"].update(source["units"])
+
+    for region, rows in source["countries"].items():
+        by_year = {row["year"]: row for row in target["countries"].get(region, [])}
+        for row in rows:
+            by_year.setdefault(row["year"], {"year": row["year"]}).update(row)
+        target["countries"][region] = sorted(
+            by_year.values(), key=lambda r: int(r["year"])
+        )
+
+
 def transform_datamatrix_to_clean_structure(output):
     """
     Transform DataMatrix objects into a clean, hierarchical JSON structure.
 
     Args:
-        output (dict): Dictionary of DataMatrix objects from model runner
+        output (dict): Dictionary of DataMatrix objects from model runner. A
+            handful of sectors (e.g. "crop") come back as a plain dict of
+            several DataMatrices bundled together instead of a single one.
 
     Returns:
         dict: Cleaned hierarchical structure with countries and years
@@ -163,64 +227,35 @@ def transform_datamatrix_to_clean_structure(output):
     cleaned_output = {}
 
     for sector, datamatrix in output.items():
-        # Get DataMatrix elements
-        if not hasattr(datamatrix, "__dict__"):
+        single = _transform_single_datamatrix(datamatrix)
+
+        if single is not None:
+            cleaned_output[sector] = single
+        elif isinstance(datamatrix, dict):
+            combined = {"countries": {}, "units": {}}
+            for sub_name, sub_datamatrix in datamatrix.items():
+                sub_result = _transform_single_datamatrix(sub_datamatrix)
+                if sub_result is None:
+                    logger.warning(
+                        f"Sub-datamatrix '{sub_name}' of sector '{sector}' is not "
+                        "a recognizable DataMatrix, skipping"
+                    )
+                    continue
+                _merge_sector_result(combined, sub_result)
+            cleaned_output[sector] = combined
+        else:
             logger.warning(
-                f"DataMatrix for {sector} has no __dict__ attribute, skipping"
+                f"DataMatrix for {sector} is neither a DataMatrix nor a dict of "
+                "DataMatrices, skipping"
             )
             continue
 
-        dm_dict = datamatrix.__dict__
-
-        # Check for required elements
-        if (
-            "array" not in dm_dict
-            or "col_labels" not in dm_dict
-            or "idx" not in dm_dict
-        ):
-            logger.warning(
-                f"DataMatrix for {sector} missing required elements, skipping"
-            )
-            continue
-
-        array = dm_dict["array"]
-        col_labels = dm_dict.get("col_labels", {})
-        idx = dm_dict.get("idx", {})
-
-        # Get labels
-        country_labels = col_labels.get("Country", [])
-        year_labels = [str(y) for y in col_labels.get("Years", [])]
-        variable_labels = col_labels.get("Variables", [])
-
-        if not variable_labels and isinstance(col_labels, list):
-            variable_labels = col_labels
-
-        # Initialize sector structure
-        cleaned_output[sector] = {"countries": {}, "units": {}}
-
-        # Extract and store units
-        units = _extract_units_from_datamatrix(datamatrix, col_labels, variable_labels)
-        cleaned_output[sector]["units"] = units
-
-        # Process each country
-        country_stats = {}
-        for country_name in country_labels:
-            country_idx = idx.get(country_name)
-            if country_idx is None:
-                continue
-
-            country_data = _process_country_data(
-                array, idx, country_name, year_labels, variable_labels, country_idx
-            )
-
-            cleaned_output[sector]["countries"][country_name] = country_data
-            country_stats[country_name] = len(country_data)
-
-        # Log summary
-        populated_countries = sum(1 for count in country_stats.values() if count > 0)
+        populated_countries = sum(
+            1 for rows in cleaned_output[sector]["countries"].values() if rows
+        )
         logger.info(
             f"Sector {sector}: populated {populated_countries} countries, "
-            f"{len(variable_labels)} variables"
+            f"{len(cleaned_output[sector]['units'])} variables"
         )
 
     # Convert NumPy types

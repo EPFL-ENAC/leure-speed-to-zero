@@ -1,5 +1,6 @@
 import { computed } from 'vue';
 import { sectors } from 'utils/sectors';
+import { getProfileSectors, getLeverKeys } from 'src/utils/region';
 import type { TranslationObject } from 'src/utils/translationHelpers';
 
 type SubtabConfig = Array<{ route: string; title: TranslationObject }>;
@@ -43,8 +44,26 @@ export function useSectorNavigation() {
     return { name: sectorName };
   };
 
-  // All sectors including 'overall'
-  const availableSectors = computed(() => sectors);
+  // Sectors this deployment shows, in the order the profile lists them.
+  // No profile (empty list) means every sector, as before.
+  const availableSectors = computed(() => {
+    const wanted = getProfileSectors();
+    if (wanted.length === 0) return sectors;
+    return wanted
+      .map((value) => sectors.find((s) => s.value === value))
+      .filter((s): s is (typeof sectors)[number] => s !== undefined)
+      .map((s) => ({ ...s, disabled: false }));
+  });
+
+  // Levers the loaded model knows about. A sector may list a lever a given
+  // model does not have, hide it instead of sending a dead slider.
+  const leversFor = (sectorValue: string): string[] => {
+    const sector = sectors.find((s) => s.value === sectorValue);
+    if (!sector) return [];
+    const known = getLeverKeys();
+    if (known.length === 0) return sector.levers;
+    return sector.levers.filter((code) => known.includes(code));
+  };
 
   // Overall sector (kept for backward compatibility)
   const overallSector = computed(() => sectors.find((s) => s.value === 'overall'));
@@ -53,6 +72,7 @@ export function useSectorNavigation() {
     sectors,
     subtabsMap,
     availableSectors,
+    leversFor,
     overallSector,
     getNavigationTarget,
   };

@@ -29,3 +29,5 @@ PROMPT.sent.md
 .claude/rules/wtx.md
 .claude/worktrees/
 opencode.json
+
+data/

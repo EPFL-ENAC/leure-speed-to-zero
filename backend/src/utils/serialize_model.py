@@ -21,7 +21,7 @@ def serialize_model_output(obj):
         ),
     ):
         return int(obj)
-    elif isinstance(obj, (np.floating, np.float_, np.float16, np.float32, np.float64)):
+    elif isinstance(obj, (np.floating, np.float16, np.float32, np.float64)):
         return float(obj)
     elif hasattr(obj, "__dict__"):
         return {str(k): serialize_model_output(v) for k, v in obj.__dict__.items()}

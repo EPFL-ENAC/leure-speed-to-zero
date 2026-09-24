@@ -1,0 +1,453 @@
+{
+  "kpis": [],
+  "subtabs": [
+    {
+      "title": {
+        "enUS": "Self Sufficiency",
+        "frFR": "Autosuffisance",
+        "deDE": "Selbstversorgung"
+      },
+      "route": "self-sufficiency",
+      "charts": [
+        "ProductionPlant",
+        "ProductionAnimal",
+        "ImportsPlant",
+        "ImportsAnimal",
+        "ExportsPlant",
+        "ExportsAnimal",
+        "SelfSufficiencyRatioPlant",
+        "SelfSufficiencyRatioAnimal"
+      ]
+    },
+    {
+      "title": {
+        "enUS": "Crops",
+        "frFR": "Cultures",
+        "deDE": "Pflanzenbau"
+      },
+      "route": "crops",
+      "charts": [
+        "Cropland",
+        "CropYield",
+        "ImportsProcessedPlant",
+        "SelfSufficiencyRatioProcessed",
+        "OrganicShareCrops"
+      ]
+    },
+    {
+      "title": {
+        "enUS": "Livestock",
+        "frFR": "Élevage",
+        "deDE": "Tierhaltung"
+      },
+      "route": "livestock",
+      "charts": ["LivestockPopulation", "LivestockProductivity", "OrganicShareLivestock"]
+    },
+    {
+      "title": {
+        "enUS": "Blue food",
+        "frFR": "Produits de la mer",
+        "deDE": "Blaue Nahrung"
+      },
+      "route": "blue-food",
+      "charts": [
+        "BlueFoodProduction",
+        "BlueFoodSupply",
+        "BlueFoodSelfSufficiency",
+        "BlueFoodCostByMethod",
+        "BlueFoodCostByImpact",
+        "BlueFoodGhg"
+      ]
+    }
+  ],
+  "charts": {
+    "ProductionPlant": {
+      "title": {
+        "enUS": "Domestic production, plant-based",
+        "frFR": "Production nationale, végétal",
+        "deDE": "Inländische Produktion, pflanzlich"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_domestic-production_afw_crop-cereal[kcal]",
+        "agr_domestic-production_afw_crop-fruit[kcal]",
+        "agr_domestic-production_afw_crop-oilcrop[kcal]",
+        "agr_domestic-production_afw_crop-pulse[kcal]",
+        "agr_domestic-production_afw_crop-rice[kcal]",
+        "agr_domestic-production_afw_crop-starch[kcal]",
+        "agr_domestic-production_afw_crop-veg[kcal]"
+      ]
+    },
+    "ProductionAnimal": {
+      "title": {
+        "enUS": "Domestic production, animal-based",
+        "frFR": "Production nationale, animal",
+        "deDE": "Inländische Produktion, tierisch"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_domestic-production_afw_abp-dairy-milk[kcal]",
+        "agr_domestic-production_afw_abp-hens-egg[kcal]",
+        "agr_domestic-production_afw_meat-bovine[kcal]",
+        "agr_domestic-production_afw_meat-oth-animal[kcal]",
+        "agr_domestic-production_afw_meat-pig[kcal]",
+        "agr_domestic-production_afw_meat-poultry[kcal]",
+        "agr_domestic-production_afw_meat-sheep[kcal]"
+      ]
+    },
+    "ImportsPlant": {
+      "title": {
+        "enUS": "Imports, plant-based",
+        "frFR": "Importations, végétal",
+        "deDE": "Importe, pflanzlich"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_import_crop-cereal[kcal]",
+        "agr_import_crop-fruit[kcal]",
+        "agr_import_crop-oilcrop[kcal]",
+        "agr_import_crop-pulse[kcal]",
+        "agr_import_crop-rice[kcal]",
+        "agr_import_crop-starch[kcal]",
+        "agr_import_crop-veg[kcal]"
+      ]
+    },
+    "ImportsAnimal": {
+      "title": {
+        "enUS": "Imports, animal-based",
+        "frFR": "Importations, animal",
+        "deDE": "Importe, tierisch"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_import_pro-liv-abp-dairy-milk[kcal]",
+        "agr_import_pro-liv-abp-hens-egg[kcal]",
+        "agr_import_pro-liv-abp-processed-afat[kcal]",
+        "agr_import_pro-liv-abp-processed-offal[kcal]",
+        "agr_import_pro-liv-meat-bovine[kcal]",
+        "agr_import_pro-liv-meat-oth-animals[kcal]",
+        "agr_import_pro-liv-meat-pig[kcal]",
+        "agr_import_pro-liv-meat-poultry[kcal]",
+        "agr_import_pro-liv-meat-sheep[kcal]",
+        "agr_import_seafood-dfish[kcal]",
+        "agr_import_seafood-ffish[kcal]",
+        "agr_import_seafood-oth-aq-animals[kcal]",
+        "agr_import_seafood-pfish[kcal]",
+        "agr_import_seafood-seafood[kcal]"
+      ]
+    },
+    "ExportsPlant": {
+      "title": {
+        "enUS": "Exports, plant-based",
+        "frFR": "Exportations, végétal",
+        "deDE": "Exporte, pflanzlich"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_export_crop-cereal[kcal]",
+        "agr_export_crop-fruit[kcal]",
+        "agr_export_crop-oilcrop[kcal]",
+        "agr_export_crop-pulse[kcal]",
+        "agr_export_crop-rice[kcal]",
+        "agr_export_crop-starch[kcal]",
+        "agr_export_crop-veg[kcal]"
+      ]
+    },
+    "ExportsAnimal": {
+      "title": {
+        "enUS": "Exports, animal-based",
+        "frFR": "Exportations, animal",
+        "deDE": "Exporte, tierisch"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_export_pro-liv-abp-dairy-milk[kcal]",
+        "agr_export_pro-liv-abp-hens-egg[kcal]",
+        "agr_export_pro-liv-abp-processed-afat[kcal]",
+        "agr_export_pro-liv-abp-processed-offal[kcal]",
+        "agr_export_pro-liv-meat-bovine[kcal]",
+        "agr_export_pro-liv-meat-oth-animals[kcal]",
+        "agr_export_pro-liv-meat-pig[kcal]",
+        "agr_export_pro-liv-meat-poultry[kcal]",
+        "agr_export_pro-liv-meat-sheep[kcal]",
+        "agr_export_seafood-dfish[kcal]",
+        "agr_export_seafood-ffish[kcal]",
+        "agr_export_seafood-oth-aq-animals[kcal]",
+        "agr_export_seafood-pfish[kcal]",
+        "agr_export_seafood-seafood[kcal]"
+      ]
+    },
+    "SelfSufficiencyRatioPlant": {
+      "title": {
+        "enUS": "Self-sufficiency ratio, plant-based",
+        "frFR": "Taux d'autosuffisance, végétal",
+        "deDE": "Selbstversorgungsgrad, pflanzlich"
+      },
+      "type": "Line",
+      "unit": "%",
+      "outputs": [
+        "agr_ssr-ratio_crop-cereal[%]",
+        "agr_ssr-ratio_crop-fruit[%]",
+        "agr_ssr-ratio_crop-oilcrop[%]",
+        "agr_ssr-ratio_crop-pulse[%]",
+        "agr_ssr-ratio_crop-rice[%]",
+        "agr_ssr-ratio_crop-starch[%]",
+        "agr_ssr-ratio_crop-veg[%]"
+      ]
+    },
+    "SelfSufficiencyRatioAnimal": {
+      "title": {
+        "enUS": "Self-sufficiency ratio, animal-based",
+        "frFR": "Taux d'autosuffisance, animal",
+        "deDE": "Selbstversorgungsgrad, tierisch"
+      },
+      "type": "Line",
+      "unit": "%",
+      "outputs": [
+        "agr_ssr-ratio_pro-liv-abp-dairy-milk[%]",
+        "agr_ssr-ratio_pro-liv-abp-hens-egg[%]",
+        "agr_ssr-ratio_pro-liv-abp-processed-afat[%]",
+        "agr_ssr-ratio_pro-liv-abp-processed-offal[%]",
+        "agr_ssr-ratio_pro-liv-meat-bovine[%]",
+        "agr_ssr-ratio_pro-liv-meat-oth-animals[%]",
+        "agr_ssr-ratio_pro-liv-meat-pig[%]",
+        "agr_ssr-ratio_pro-liv-meat-poultry[%]",
+        "agr_ssr-ratio_pro-liv-meat-sheep[%]",
+        "agr_ssr-ratio_seafood-dfish[%]",
+        "agr_ssr-ratio_seafood-ffish[%]",
+        "agr_ssr-ratio_seafood-oth-aq-animals[%]",
+        "agr_ssr-ratio_seafood-pfish[%]",
+        "agr_ssr-ratio_seafood-seafood[%]"
+      ]
+    },
+    "Cropland": {
+      "title": {
+        "enUS": "Cropland area",
+        "frFR": "Surface de terres cultivées",
+        "deDE": "Ackerfläche"
+      },
+      "type": "StackedArea",
+      "unit": "ha",
+      "outputs": [
+        "agr_cropland_ch_crop-cereal[ha]",
+        "agr_cropland_ch_crop-fruit[ha]",
+        "agr_cropland_ch_crop-oilcrop[ha]",
+        "agr_cropland_ch_crop-pulse[ha]",
+        "agr_cropland_ch_crop-starch[ha]",
+        "agr_cropland_ch_crop-sugarcrop[ha]",
+        "agr_cropland_ch_crop-veg[ha]"
+      ]
+    },
+    "CropYield": {
+      "title": {
+        "enUS": "Crop yield",
+        "frFR": "Rendement des cultures",
+        "deDE": "Ernteertrag"
+      },
+      "type": "Line",
+      "unit": "Mkcal/ha",
+      "scale": 1000000,
+      "outputs": [
+        "agr_crop_yield_ch_crop-cereal[kcal/ha]",
+        "agr_crop_yield_ch_crop-fruit[kcal/ha]",
+        "agr_crop_yield_ch_crop-oilcrop[kcal/ha]",
+        "agr_crop_yield_ch_crop-pulse[kcal/ha]",
+        "agr_crop_yield_ch_crop-starch[kcal/ha]",
+        "agr_crop_yield_ch_crop-sugarcrop[kcal/ha]",
+        "agr_crop_yield_ch_crop-veg[kcal/ha]"
+      ]
+    },
+    "ImportsProcessedPlant": {
+      "title": {
+        "enUS": "Imports, processed plant products",
+        "frFR": "Importations, produits végétaux transformés",
+        "deDE": "Importe, verarbeitete pflanzliche Produkte"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "cal_agr_imported_production_total_pro-crop-processed-sugar[kcal]",
+        "cal_agr_imported_production_total_pro-crop-processed-sweet[kcal]",
+        "cal_agr_imported_production_total_pro-crop-processed-voil[kcal]"
+      ]
+    },
+    "SelfSufficiencyRatioProcessed": {
+      "title": {
+        "enUS": "Self-sufficiency ratio, sugar crops and processed plant products",
+        "frFR": "Taux d'autosuffisance, cultures sucrières et produits végétaux transformés",
+        "deDE": "Selbstversorgungsgrad, Zuckerpflanzen und verarbeitete pflanzliche Produkte"
+      },
+      "type": "Line",
+      "unit": "%",
+      "scale": 0.01,
+      "outputs": [
+        "agr_ssr_crop-sugarcrop[%]",
+        "agr_ssr_pro-crop-processed-sugar[%]",
+        "agr_ssr_pro-crop-processed-sweet[%]",
+        "agr_ssr_pro-crop-processed-voil[%]"
+      ]
+    },
+    "LivestockPopulation": {
+      "title": {
+        "enUS": "Livestock population",
+        "frFR": "Effectifs du cheptel",
+        "deDE": "Tierbestand"
+      },
+      "type": "StackedArea",
+      "unit": "lsu",
+      "outputs": [
+        "agr_liv_population_abp-dairy-milk[lsu]",
+        "agr_liv_population_abp-hens-egg[lsu]",
+        "agr_liv_population_meat-bovine[lsu]",
+        "agr_liv_population_meat-oth-animal[lsu]",
+        "agr_liv_population_meat-pig[lsu]",
+        "agr_liv_population_meat-poultry[lsu]",
+        "agr_liv_population_meat-sheep[lsu]"
+      ]
+    },
+    "LivestockProductivity": {
+      "title": {
+        "enUS": "Domestic production per livestock unit",
+        "frFR": "Production nationale par unité de gros bétail",
+        "deDE": "Inländische Produktion je Grossvieheinheit"
+      },
+      "type": "Line",
+      "unit": "Mkcal/lsu",
+      "scale": 1000000,
+      "outputs": [
+        "agr_liv_productivity_abp-dairy-milk[kcal/lsu]",
+        "agr_liv_productivity_abp-hens-egg[kcal/lsu]",
+        "agr_liv_productivity_meat-bovine[kcal/lsu]",
+        "agr_liv_productivity_meat-oth-animal[kcal/lsu]",
+        "agr_liv_productivity_meat-pig[kcal/lsu]",
+        "agr_liv_productivity_meat-poultry[kcal/lsu]",
+        "agr_liv_productivity_meat-sheep[kcal/lsu]"
+      ]
+    },
+    "OrganicShareCrops": {
+      "title": {
+        "enUS": "Share of organic production",
+        "frFR": "Part de la production biologique",
+        "deDE": "Anteil der Bioproduktion"
+      },
+      "type": "Line",
+      "unit": "%",
+      "scale": 0.01,
+      "outputs": [
+        "agr_share_organic_cereal[%]",
+        "agr_share_organic_fruit[%]",
+        "agr_share_organic_oilcrop[%]",
+        "agr_share_organic_pulse[%]",
+        "agr_share_organic_starch[%]",
+        "agr_share_organic_sugarcrop[%]",
+        "agr_share_organic_veg[%]"
+      ]
+    },
+    "OrganicShareLivestock": {
+      "title": {
+        "enUS": "Share of organic livestock (LSU)",
+        "frFR": "Part du cheptel biologique (UGB)",
+        "deDE": "Anteil des Biotierbestands (GVE)"
+      },
+      "type": "Line",
+      "unit": "%",
+      "scale": 0.01,
+      "outputs": [
+        "livestock_share-organic_abp-dairy-milk[%]",
+        "livestock_share-organic_abp-hens-egg[%]",
+        "livestock_share-organic_meat-bovine[%]",
+        "livestock_share-organic_meat-oth-animal[%]",
+        "livestock_share-organic_meat-pig[%]",
+        "livestock_share-organic_meat-poultry[%]",
+        "livestock_share-organic_meat-sheep[%]"
+      ]
+    },
+    "BlueFoodProduction": {
+      "title": {
+        "enUS": "Swiss freshwater fish production, by method",
+        "frFR": "Production suisse de poissons d’eau douce, par méthode",
+        "deDE": "Schweizer Süsswasserfischproduktion, nach Methode"
+      },
+      "type": "StackedArea",
+      "unit": "t",
+      "outputs": ["tcaf_fish_production_aquaculture[t]", "tcaf_fish_production_capture[t]"]
+    },
+    "BlueFoodSupply": {
+      "title": {
+        "enUS": "Freshwater fish supply: Swiss production and imports",
+        "frFR": "Approvisionnement en poissons d’eau douce : production suisse et importations",
+        "deDE": "Versorgung mit Süsswasserfisch: Schweizer Produktion und Importe"
+      },
+      "type": "StackedArea",
+      "unit": "t",
+      "outputs": [
+        "tcaf_fish_production_aquaculture[t]",
+        "tcaf_fish_production_capture[t]",
+        "tcaf_fish_import[t]"
+      ]
+    },
+    "BlueFoodSelfSufficiency": {
+      "title": {
+        "enUS": "Self-sufficiency ratio, freshwater fish",
+        "frFR": "Taux d’autosuffisance, poissons d’eau douce",
+        "deDE": "Selbstversorgungsgrad, Süsswasserfische"
+      },
+      "type": "Line",
+      "unit": "%",
+      "outputs": ["tcaf_fish_ssr[%]"]
+    },
+    "BlueFoodCostByMethod": {
+      "title": {
+        "enUS": "Environmental cost of Swiss fish production, by method",
+        "frFR": "Coût environnemental de la production piscicole suisse, par méthode",
+        "deDE": "Umweltkosten der Schweizer Fischproduktion, nach Methode"
+      },
+      "type": "StackedArea",
+      "unit": "Million CHF",
+      "scale": 1000000,
+      "outputs": ["tcaf_fish_cost_aquaculture[CHF]", "tcaf_fish_cost_capture[CHF]"]
+    },
+    "BlueFoodCostByImpact": {
+      "title": {
+        "enUS": "Environmental cost of Swiss fish production, by impact category",
+        "frFR": "Coût environnemental de la production piscicole suisse, par catégorie d’impact",
+        "deDE": "Umweltkosten der Schweizer Fischproduktion, nach Wirkungskategorie"
+      },
+      "type": "StackedArea",
+      "unit": "Million CHF",
+      "scale": 1000000,
+      "outputs": [
+        "tcaf_fish_cost_fine-particulate-matter-formation[CHF]",
+        "tcaf_fish_cost_fossil-resource-scarcity[CHF]",
+        "tcaf_fish_cost_freshwater-ecotoxicity[CHF]",
+        "tcaf_fish_cost_freshwater-eutrophication[CHF]",
+        "tcaf_fish_cost_global-warming[CHF]",
+        "tcaf_fish_cost_marine-ecotoxicity[CHF]",
+        "tcaf_fish_cost_marine-eutrophication[CHF]",
+        "tcaf_fish_cost_mineral-resource-scarcity[CHF]",
+        "tcaf_fish_cost_ozone-formation,-human-health[CHF]",
+        "tcaf_fish_cost_ozone-formation,-terrestrial-ecosystems[CHF]",
+        "tcaf_fish_cost_stratospheric-ozone-depletion[CHF]",
+        "tcaf_fish_cost_terrestrial-acidification[CHF]",
+        "tcaf_fish_cost_terrestrial-ecotoxicity[CHF]",
+        "tcaf_fish_cost_water-consumption[CHF]"
+      ]
+    },
+    "BlueFoodGhg": {
+      "title": {
+        "enUS": "Greenhouse gas emissions of Swiss fish production",
+        "frFR": "Émissions de gaz à effet de serre de la production piscicole suisse",
+        "deDE": "Treibhausgasemissionen der Schweizer Fischproduktion"
+      },
+      "type": "StackedArea",
+      "unit": "t CO2-eq",
+      "outputs": ["tcaf_fish_ghg_aquaculture[t]", "tcaf_fish_ghg_capture[t]"]
+    }
+  }
+}

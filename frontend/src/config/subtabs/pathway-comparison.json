@@ -1,0 +1,447 @@
+{
+  "kpis": [],
+  "subtabs": [
+    {
+      "title": {
+        "enUS": "Summary",
+        "frFR": "Résumé",
+        "deDE": "Zusammenfassung"
+      },
+      "route": "summary",
+      "charts": ["PathwayTrueCostTotal", "PathwayTrueCostPerCapita", "PathwayCostSaved"]
+    },
+    {
+      "title": {
+        "enUS": "Diet & waste",
+        "frFR": "Alimentation et gaspillage",
+        "deDE": "Ernährung & Verschwendung"
+      },
+      "route": "diet-waste",
+      "charts": ["PathwayDietIntake", "PathwayFoodWaste"]
+    },
+    {
+      "title": {
+        "enUS": "Health",
+        "frFR": "Santé",
+        "deDE": "Gesundheit"
+      },
+      "route": "health",
+      "charts": ["PathwayHealthResidual", "PathwayHealthAvoided"]
+    },
+    {
+      "title": {
+        "enUS": "Environment",
+        "frFR": "Environnement",
+        "deDE": "Umwelt"
+      },
+      "route": "environment",
+      "charts": ["PathwayEnvCost", "PathwayEnvByFood"]
+    }
+  ],
+  "charts": {
+    "PathwayTrueCostTotal": {
+      "title": {
+        "enUS": "Total true cost of food",
+        "frFR": "Coût réel total de l'alimentation",
+        "deDE": "Wahre Gesamtkosten der Ernährung"
+      },
+      "type": "PathwayLine",
+      "unit": "Billion CHF",
+      "scale": 1000000000,
+      "fromYear": 2020,
+      "outputs": ["tcaf_true-cost_total[CHF]"]
+    },
+    "PathwayTrueCostPerCapita": {
+      "title": {
+        "enUS": "True cost of food per capita per year (2050)",
+        "frFR": "Coût réel de l'alimentation par habitant et par an (2050)",
+        "deDE": "Wahre Kosten der Ernährung pro Kopf und Jahr (2050)"
+      },
+      "type": "PathwayBar",
+      "unit": "CHF/cap/year",
+      "year": 2050,
+      "outputs": [
+        {
+          "id": "tcaf_lca_cost-per-cap_total[CHF/cap/year]",
+          "color": "#1baf7a"
+        },
+        {
+          "id": "tcaf_health-diet_cost-residual-per-cap_total[CHF/cap/year]",
+          "color": "#2a78d6"
+        }
+      ]
+    },
+    "PathwayCostSaved": {
+      "title": {
+        "enUS": "Cost saved vs business as usual (2050)",
+        "frFR": "Coût économisé par rapport au scénario tendanciel (2050)",
+        "deDE": "Eingesparte Kosten gegenüber dem Trend-Szenario (2050)"
+      },
+      "type": "PathwayBar",
+      "unit": "Billion CHF",
+      "scale": 1000000000,
+      "year": 2050,
+      "outputs": [
+        {
+          "id": "tcaf_lca_cost-saved_total[CHF]",
+          "color": "#1baf7a"
+        },
+        {
+          "id": "tcaf_health-diet_cost-saved_total[CHF]",
+          "color": "#2a78d6"
+        }
+      ]
+    },
+    "PathwayDietIntake": {
+      "title": {
+        "enUS": "Diet intake by food group (2050)",
+        "frFR": "Apport alimentaire par groupe d'aliments (2050)",
+        "deDE": "Nahrungsaufnahme nach Lebensmittelgruppe (2050)"
+      },
+      "type": "PathwayBar",
+      "unit": "kcal/cap/day",
+      "year": 2050,
+      "outputs": [],
+      "groups": {
+        "cereals-starches": {
+          "label": {
+            "enUS": "Cereals & starches",
+            "frFR": "Céréales et féculents",
+            "deDE": "Getreide & Stärke"
+          },
+          "color": "#2a78d6",
+          "outputs": [
+            "diet-intake_crop-cereal[kcal/cap/day]",
+            "diet-intake_crop-rice[kcal/cap/day]",
+            "diet-intake_crop-starch[kcal/cap/day]"
+          ]
+        },
+        "fruit-veg": {
+          "label": {
+            "enUS": "Fruit & vegetables",
+            "frFR": "Fruits et légumes",
+            "deDE": "Obst & Gemüse"
+          },
+          "color": "#eb6834",
+          "outputs": ["diet-intake_crop-fruit[kcal/cap/day]", "diet-intake_crop-veg[kcal/cap/day]"]
+        },
+        "oilcrops": {
+          "label": {
+            "enUS": "Oil crops",
+            "frFR": "Oléagineux",
+            "deDE": "Ölpflanzen"
+          },
+          "color": "#1baf7a",
+          "outputs": [
+            "diet-intake_crop-oilcrop[kcal/cap/day]",
+            "diet-intake_pro-crop-processed-voil[kcal/cap/day]"
+          ]
+        },
+        "pulses": {
+          "label": {
+            "enUS": "Pulses",
+            "frFR": "Légumineuses",
+            "deDE": "Hülsenfrüchte"
+          },
+          "color": "#a8632b",
+          "outputs": ["diet-intake_crop-pulse[kcal/cap/day]"]
+        },
+        "dairy-eggs": {
+          "label": {
+            "enUS": "Dairy & eggs",
+            "frFR": "Produits laitiers et oeufs",
+            "deDE": "Milchprodukte & Eier"
+          },
+          "color": "#eda100",
+          "outputs": [
+            "diet-intake_pro-liv-abp-dairy-milk[kcal/cap/day]",
+            "diet-intake_pro-liv-abp-hens-egg[kcal/cap/day]"
+          ]
+        },
+        "meat": {
+          "label": {
+            "enUS": "Meat & animal by-products",
+            "frFR": "Viande et sous-produits animaux",
+            "deDE": "Fleisch & tierische Nebenprodukte"
+          },
+          "color": "#e87ba4",
+          "outputs": [
+            "diet-intake_pro-liv-abp-processed-afat[kcal/cap/day]",
+            "diet-intake_pro-liv-abp-processed-offal[kcal/cap/day]",
+            "diet-intake_pro-liv-meat-bovine[kcal/cap/day]",
+            "diet-intake_pro-liv-meat-oth-animal[kcal/cap/day]",
+            "diet-intake_pro-liv-meat-pig[kcal/cap/day]",
+            "diet-intake_pro-liv-meat-poultry[kcal/cap/day]",
+            "diet-intake_pro-liv-meat-sheep[kcal/cap/day]"
+          ]
+        },
+        "seafood": {
+          "label": {
+            "enUS": "Fish & seafood",
+            "frFR": "Poissons et fruits de mer",
+            "deDE": "Fisch & Meeresfrüchte"
+          },
+          "color": "#008300",
+          "outputs": [
+            "diet-intake_seafood-dfish[kcal/cap/day]",
+            "diet-intake_seafood-ffish[kcal/cap/day]",
+            "diet-intake_seafood-oth-aq-animal[kcal/cap/day]",
+            "diet-intake_seafood-pfish[kcal/cap/day]",
+            "diet-intake_seafood-seafood[kcal/cap/day]"
+          ]
+        },
+        "beverages": {
+          "label": {
+            "enUS": "Alcoholic beverages",
+            "frFR": "Boissons alcoolisées",
+            "deDE": "Alkoholische Getränke"
+          },
+          "color": "#4a3aa7",
+          "outputs": [
+            "diet-intake_pro-bev-beer[kcal/cap/day]",
+            "diet-intake_pro-bev-bev-alc[kcal/cap/day]",
+            "diet-intake_pro-bev-bev-fer[kcal/cap/day]",
+            "diet-intake_pro-bev-wine[kcal/cap/day]"
+          ]
+        },
+        "sweeteners-stimulants": {
+          "label": {
+            "enUS": "Sweeteners & stimulants",
+            "frFR": "Édulcorants et stimulants",
+            "deDE": "Süssungsmittel & Genussmittel"
+          },
+          "color": "#e34948",
+          "outputs": [
+            "diet-intake_pro-crop-processed-sugar[kcal/cap/day]",
+            "diet-intake_pro-crop-processed-sweet[kcal/cap/day]",
+            "diet-intake_stm-cocoa[kcal/cap/day]",
+            "diet-intake_stm-coffee[kcal/cap/day]",
+            "diet-intake_stm-tea[kcal/cap/day]"
+          ]
+        }
+      }
+    },
+    "PathwayFoodWaste": {
+      "title": {
+        "enUS": "Food waste by food group (2050)",
+        "frFR": "Gaspillage alimentaire par groupe d'aliments (2050)",
+        "deDE": "Lebensmittelverschwendung nach Lebensmittelgruppe (2050)"
+      },
+      "type": "PathwayBar",
+      "unit": "t",
+      "year": 2050,
+      "outputs": [],
+      "groups": {
+        "cereals-starches": {
+          "label": {
+            "enUS": "Cereals & starches",
+            "frFR": "Céréales et féculents",
+            "deDE": "Getreide & Stärke"
+          },
+          "color": "#2a78d6",
+          "outputs": ["food-waste_cereals-starches[t]"]
+        },
+        "fruit-veg": {
+          "label": {
+            "enUS": "Fruit & vegetables",
+            "frFR": "Fruits et légumes",
+            "deDE": "Obst & Gemüse"
+          },
+          "color": "#eb6834",
+          "outputs": ["food-waste_fruit-veg[t]"]
+        },
+        "oilcrops": {
+          "label": {
+            "enUS": "Oil crops",
+            "frFR": "Oléagineux",
+            "deDE": "Ölpflanzen"
+          },
+          "color": "#1baf7a",
+          "outputs": ["food-waste_oilcrops[t]"]
+        },
+        "pulses": {
+          "label": {
+            "enUS": "Pulses",
+            "frFR": "Légumineuses",
+            "deDE": "Hülsenfrüchte"
+          },
+          "color": "#a8632b",
+          "outputs": ["food-waste_pulses[t]"]
+        },
+        "dairy-eggs": {
+          "label": {
+            "enUS": "Dairy & eggs",
+            "frFR": "Produits laitiers et oeufs",
+            "deDE": "Milchprodukte & Eier"
+          },
+          "color": "#eda100",
+          "outputs": ["food-waste_dairy-eggs[t]"]
+        },
+        "meat": {
+          "label": {
+            "enUS": "Meat & animal by-products",
+            "frFR": "Viande et sous-produits animaux",
+            "deDE": "Fleisch & tierische Nebenprodukte"
+          },
+          "color": "#e87ba4",
+          "outputs": ["food-waste_meat[t]"]
+        },
+        "seafood": {
+          "label": {
+            "enUS": "Fish & seafood",
+            "frFR": "Poissons et fruits de mer",
+            "deDE": "Fisch & Meeresfrüchte"
+          },
+          "color": "#008300",
+          "outputs": ["food-waste_seafood[t]"]
+        },
+        "beverages": {
+          "label": {
+            "enUS": "Alcoholic beverages",
+            "frFR": "Boissons alcoolisées",
+            "deDE": "Alkoholische Getränke"
+          },
+          "color": "#4a3aa7",
+          "outputs": ["food-waste_beverages[t]"]
+        },
+        "sweeteners-stimulants": {
+          "label": {
+            "enUS": "Sweeteners & stimulants",
+            "frFR": "Édulcorants et stimulants",
+            "deDE": "Süssungsmittel & Genussmittel"
+          },
+          "color": "#e34948",
+          "outputs": ["food-waste_sweeteners-stimulants[t]"]
+        }
+      }
+    },
+    "PathwayHealthResidual": {
+      "title": {
+        "enUS": "Residual health cost",
+        "frFR": "Coût sanitaire résiduel",
+        "deDE": "Verbleibende Gesundheitskosten"
+      },
+      "type": "PathwayLine",
+      "unit": "Billion CHF",
+      "scale": 1000000000,
+      "fromYear": 2020,
+      "outputs": ["tcaf_health-diet_cost-residual_total[CHF]"]
+    },
+    "PathwayHealthAvoided": {
+      "title": {
+        "enUS": "Health cost avoided",
+        "frFR": "Coût sanitaire évité",
+        "deDE": "Vermiedene Gesundheitskosten"
+      },
+      "type": "PathwayLine",
+      "unit": "Billion CHF",
+      "scale": 1000000000,
+      "fromYear": 2020,
+      "outputs": ["tcaf_health-diet_cost-avoided_total[CHF]"]
+    },
+    "PathwayEnvCost": {
+      "title": {
+        "enUS": "Environmental cost",
+        "frFR": "Coût environnemental",
+        "deDE": "Umweltkosten"
+      },
+      "type": "PathwayLine",
+      "unit": "Billion CHF",
+      "scale": 1000000000,
+      "fromYear": 2020,
+      "outputs": ["tcaf_lca_cost_total[CHF]"]
+    },
+    "PathwayEnvByFood": {
+      "title": {
+        "enUS": "Environmental cost by food group (2050)",
+        "frFR": "Coût environnemental par groupe d'aliments (2050)",
+        "deDE": "Umweltkosten nach Lebensmittelgruppe (2050)"
+      },
+      "type": "PathwayBar",
+      "unit": "Billion CHF",
+      "scale": 1000000000,
+      "year": 2050,
+      "outputs": [],
+      "groups": {
+        "cereals-starches": {
+          "label": {
+            "enUS": "Cereals & starches",
+            "frFR": "Céréales et féculents",
+            "deDE": "Getreide & Stärke"
+          },
+          "color": "#2a78d6",
+          "outputs": ["tcaf_lca_cost_crop-cereal[CHF]", "tcaf_lca_cost_crop-starch[CHF]"]
+        },
+        "fruit-veg": {
+          "label": {
+            "enUS": "Fruit & vegetables",
+            "frFR": "Fruits et légumes",
+            "deDE": "Obst & Gemüse"
+          },
+          "color": "#eb6834",
+          "outputs": ["tcaf_lca_cost_crop-fruit[CHF]", "tcaf_lca_cost_crop-veg[CHF]"]
+        },
+        "oilcrops": {
+          "label": {
+            "enUS": "Oil crops",
+            "frFR": "Oléagineux",
+            "deDE": "Ölpflanzen"
+          },
+          "color": "#1baf7a",
+          "outputs": ["tcaf_lca_cost_crop-oilcrop[CHF]"]
+        },
+        "pulses": {
+          "label": {
+            "enUS": "Pulses",
+            "frFR": "Légumineuses",
+            "deDE": "Hülsenfrüchte"
+          },
+          "color": "#a8632b",
+          "outputs": ["tcaf_lca_cost_crop-pulse[CHF]"]
+        },
+        "dairy-eggs": {
+          "label": {
+            "enUS": "Dairy & eggs",
+            "frFR": "Produits laitiers et oeufs",
+            "deDE": "Milchprodukte & Eier"
+          },
+          "color": "#eda100",
+          "outputs": ["tcaf_lca_cost_abp-dairy-milk[CHF]", "tcaf_lca_cost_abp-hens-egg[CHF]"]
+        },
+        "meat": {
+          "label": {
+            "enUS": "Meat & animal by-products",
+            "frFR": "Viande et sous-produits animaux",
+            "deDE": "Fleisch & tierische Nebenprodukte"
+          },
+          "color": "#e87ba4",
+          "outputs": [
+            "tcaf_lca_cost_meat-bovine[CHF]",
+            "tcaf_lca_cost_meat-oth-animal[CHF]",
+            "tcaf_lca_cost_meat-pig[CHF]",
+            "tcaf_lca_cost_meat-poultry[CHF]",
+            "tcaf_lca_cost_meat-sheep[CHF]"
+          ]
+        },
+        "sugar": {
+          "label": {
+            "enUS": "Sugar crops",
+            "frFR": "Cultures sucrières",
+            "deDE": "Zuckerpflanzen"
+          },
+          "color": "#e34948",
+          "outputs": ["tcaf_lca_cost_crop-sugarcrop[CHF]"]
+        },
+        "fish": {
+          "label": {
+            "enUS": "Fish (Swiss production)",
+            "frFR": "Poisson (production suisse)",
+            "deDE": "Fisch (Schweizer Produktion)"
+          },
+          "color": "#8e5bd0",
+          "outputs": ["tcaf_lca_cost_ffish[CHF]"]
+        }
+      }
+    }
+  }
+}

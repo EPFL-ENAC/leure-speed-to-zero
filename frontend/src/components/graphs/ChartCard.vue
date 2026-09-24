@@ -25,7 +25,7 @@ import { computed, ref } from 'vue';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { LineChart, BarChart, SankeyChart } from 'echarts/charts';
-import type { SectorData, ChartConfig } from 'stores/leversStore';
+import { BAU_2050_SNAPSHOT_YEAR, type SectorData, type ChartConfig } from 'stores/leversStore';
 import type { ECharts } from 'echarts/core';
 import {
   TitleComponent,
@@ -66,6 +66,7 @@ use([
 
 // Types
 interface ChartSeries {
+  id: string;
   name: string;
   color: string | null;
   years: number[];
@@ -111,8 +112,17 @@ const chartData = computed<ChartSeries[]>(() => {
 
   const outputs = props.chartConfig.outputs;
   const region = getCurrentRegion();
-  const countryData = props.modelData.countries?.[region];
+  let countryData = props.modelData.countries?.[region];
   if (!countryData || !outputs) return [];
+
+  // The merged dietary-habits data carries a synthetic BAU (2050) row (see
+  // BAU_2050_SNAPSHOT_YEAR) for the snapshot chart to read. Any other (time
+  // series) chart must not plot it - it would stretch the time axis out to
+  // that sentinel year and squash the real 1990-2050 range into a sliver.
+  if (!props.chartConfig.snapshotYears) {
+    countryData = countryData.filter((yd) => Number(yd.year) !== BAU_2050_SNAPSHOT_YEAR);
+  }
+
   return extractChartData(outputs, countryData);
 });
 
@@ -121,6 +131,7 @@ function extractChartData(
   countryData: YearData[],
 ): ChartSeries[] {
   const series: ChartSeries[] = [];
+  const scale = props.chartConfig.scale ?? 1;
 
   // Normalize outputs to OutputConfig objects
   const outputConfigs: Array<{ id: string; color?: string }> = outputs.map((output) => {
@@ -140,12 +151,16 @@ function extractChartData(
     countryData.forEach((yearData: YearData) => {
       if (fieldName in yearData) {
         years.push(yearData.year);
-        values.push([new Date(yearData.year, 0, 1).getTime(), yearData[fieldName] as number]);
+        values.push([
+          new Date(yearData.year, 0, 1).getTime(),
+          (yearData[fieldName] as number) / scale,
+        ]);
       }
     });
 
     if (years.length > 0) {
       series.push({
+        id: outputId,
         name: getTranslatedText(plotLabels[outputId] || outputId, i18n.locale.value, outputId),
         color: outputConfig.color || null,
         years,
@@ -206,9 +221,117 @@ function downloadCSV() {
   URL.revokeObjectURL(url);
 }
 
+// Value of a series at a given year, reading the [timestamp, value] pairs
+// produced by extractChartData. Years coming from the API can be strings, so
+// compare numerically rather than with a strict indexOf.
+function valueAtYear(series: ChartSeries, year: number): number {
+  const index = series.years.findIndex((y) => Number(y) === year);
+  if (index === -1) return 0;
+  const point = series.data[index];
+  return Array.isArray(point) ? point[1] : (point ?? 0);
+}
+
+// Snapshot chart option: compares fixed years side by side as a horizontal
+// stacked bar chart (categories on the value axis), instead of a time series.
+// When the config sets "groups", outputs are summed into a handful of legend
+// entries instead of one per raw output - keeps a long category list readable.
+const snapshotChartOption = computed(() => {
+  const years = props.chartConfig.snapshotYears || [];
+  const labels = (props.chartConfig.snapshotLabels || years.map(String)).map((label) =>
+    getTranslatedText(label, i18n.locale.value),
+  );
+
+  const groups = props.chartConfig.groups;
+  const bars = groups
+    ? Object.values(groups).map((group) => {
+        const members = chartData.value.filter((s) => group.outputs.includes(s.id));
+        return {
+          name: getTranslatedText(group.label, i18n.locale.value),
+          type: 'bar',
+          stack: 'total',
+          itemStyle: { color: group.color || null },
+          data: years.map((year) => members.reduce((sum, s) => sum + valueAtYear(s, year), 0)),
+        };
+      })
+    : chartData.value.map((s) => ({
+        name: s.name,
+        type: 'bar',
+        stack: 'total',
+        itemStyle: { color: s.color },
+        data: years.map((year) => valueAtYear(s, year)),
+      }));
+
+  const valueAxis = {
+    type: 'value' as const,
+    name: props.chartConfig.unit,
+    nameLocation: 'end' as const,
+    nameTextStyle: { padding: [0, 0, 0, 5] },
+    axisLabel: {
+      formatter: function (value: number) {
+        if (Math.abs(value) >= 10000 || (Math.abs(value) > 0 && Math.abs(value) < 0.001)) {
+          return value.toExponential(2);
+        }
+        return value;
+      },
+    },
+  };
+  const categoryAxis = { type: 'category' as const, data: labels };
+
+  return {
+    toolbox: {
+      show: true,
+      right: 10,
+      top: 5,
+      feature: {
+        myCsvDownload: {
+          show: true,
+          title: t('downloadCSV'),
+          icon: 'path://M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z',
+          onclick: () => downloadCSV(),
+        },
+      },
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params: EChartsTooltipParam[]) => {
+        const category = params[0]?.axisValueLabel;
+        const unit = props.chartConfig.unit;
+        return params.reduce((textAcc, param, i) => {
+          const value = (Array.isArray(param.value) ? param.value[1] : param.value).toFixed(2);
+          return `${textAcc}${i === 0 ? `${category}<br/>` : ''}${param.marker} ${param.seriesName}: ${value} ${unit}<br/>`;
+        }, '');
+      },
+    },
+    legend: {
+      selector: true,
+      type: 'scroll',
+      orient: 'none',
+      bottom: 0,
+      height: '10%',
+      data: bars.map((s) => s.name),
+      selected: legendSelected.value,
+    },
+    grid: {
+      top: '15%',
+      left: '3%',
+      right: '5%',
+      bottom: '13%',
+      containLabel: true,
+    },
+    // Horizontal bars: the category axis (the years being compared) runs
+    // down the y-axis, the value axis (the unit) runs along the x-axis.
+    xAxis: valueAxis,
+    yAxis: categoryAxis,
+    series: bars,
+  };
+});
+
 // Format data for ECharts
 const chartOption = computed(() => {
   if (!chartData.value.length) return {};
+
+  if (props.chartConfig.snapshotYears) return snapshotChartOption.value;
 
   // Get the max year from data to determine chart end
   const maxYear = Math.max(...chartData.value.flatMap((series) => series.years));
