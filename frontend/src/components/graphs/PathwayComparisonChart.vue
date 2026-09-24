@@ -203,7 +203,7 @@ const unitAxis = (horizontal: boolean) => ({
   axisLabel: { formatter: valueAxisLabel },
 });
 
-// Six long names wrap onto rows, so the legend must be plain (not scrolling)
+// Seven long names wrap onto rows, so the legend must be plain (not scrolling)
 // and the plot leave it room
 const legend = (names: string[]) => ({
   type: 'plain' as const,

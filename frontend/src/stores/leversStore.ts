@@ -307,7 +307,7 @@ export const useLeverStore = defineStore('lever', () => {
     }
   }
 
-  // The Pathway comparison page charts the six TCAF diet pathways side by side,
+  // The Pathway comparison page charts the seven TCAF diet pathways side by side,
   // so it needs a run of each, all fixed (none depends on the user's levers):
   // fetched once, in parallel, and kept by pathway title. The backend caches each
   // run, and the BAU one is the run the reference above already made.

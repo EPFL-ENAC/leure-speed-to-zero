@@ -5,8 +5,9 @@ import { withDietMetrics } from 'src/utils/dietMetrics';
 import { withTrueCostPerCapita, withTrueCostSavings } from 'src/utils/trueCostMetrics';
 
 /**
- * The six TCAF diet pathways the Pathway comparison tab puts side by side:
- * three diets, each with the current food waste and with low waste. They differ
+ * The seven TCAF diet pathways the Pathway comparison tab puts side by side:
+ * three diets, each with the current food waste and with low waste, and the
+ * current (2023) diet, with the current food waste only. They differ
  * in five levers only (diet adherence, diet split, food waste, crop losses and
  * livestock losses), everything else is business as usual.
  *
@@ -28,6 +29,7 @@ export const COMPARISON_PATHWAYS: ComparisonPathway[] = [
     color: '#eb6834',
     lowWaste: false,
   },
+  { title: 'Current diet', label: 'Current diet', color: '#8e5bd0', lowWaste: false },
   { title: 'Swiss food pyramid', label: 'Swiss food pyramid', color: '#2a78d6', lowWaste: false },
   {
     title: 'Planetary health diet (EAT-Lancet 2025)',
@@ -56,7 +58,7 @@ export const COMPARISON_PATHWAYS: ComparisonPathway[] = [
 ];
 
 // The reference every "saved" value is measured against: same run as the
-// True Cost tab, the first of the six.
+// True Cost tab, the first of the seven.
 const BAU_TITLE = 'Business as usual (diet)';
 
 // One pathway's model results for the current region, derived metrics included.
@@ -85,7 +87,7 @@ export interface PathwayChartConfig {
 }
 
 /**
- * Builds the six runs the charts read from the model results of each pathway,
+ * Builds the seven runs the charts read from the model results of each pathway,
  * keyed by pathway title. A pathway with no results yet is left out. The cost
  * saved is measured against the BAU run and the cost per capita against each
  * run's own population.

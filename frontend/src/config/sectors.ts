@@ -275,9 +275,9 @@ export const sectors: Sector[] = [
     value: 'pathway-comparison',
     icon: 'compare_arrows',
     description: {
-      enUS: 'The six TCAF diet pathways side by side: cost, diet, waste, health and environment',
-      frFR: 'Les six trajectoires alimentaires TCAF côte à côte : coût, alimentation, gaspillage, santé et environnement',
-      deDE: 'Die sechs TCAF-Ernährungspfade im Vergleich: Kosten, Ernährung, Verschwendung, Gesundheit und Umwelt',
+      enUS: 'The seven TCAF diet pathways side by side: cost, diet, waste, health and environment',
+      frFR: 'Les sept trajectoires alimentaires TCAF côte à côte : coût, alimentation, gaspillage, santé et environnement',
+      deDE: 'Die sieben TCAF-Ernährungspfade im Vergleich: Kosten, Ernährung, Verschwendung, Gesundheit und Umwelt',
     },
     levers: [],
   },
