@@ -46,7 +46,7 @@
         "deDE": "Wahre Gesamtkosten der Ernährung"
       },
       "type": "PathwayLine",
-      "unit": "Billion CHF",
+      "unit": { "enUS": "Billion CHF", "frFR": "Milliards CHF", "deDE": "Mrd. CHF" },
       "scale": 1000000000,
       "fromYear": 2020,
       "outputs": ["tcaf_true-cost_total[CHF]"]
@@ -58,7 +58,7 @@
         "deDE": "Wahre Kosten der Ernährung pro Kopf und Jahr (2050)"
       },
       "type": "PathwayBar",
-      "unit": "CHF/cap/year",
+      "unit": { "enUS": "CHF/cap/year", "frFR": "CHF/hab./an", "deDE": "CHF/Kopf/Jahr" },
       "year": 2050,
       "outputs": [
         {
@@ -78,7 +78,7 @@
         "deDE": "Eingesparte Kosten gegenüber dem Trend-Szenario (2050)"
       },
       "type": "PathwayBar",
-      "unit": "Billion CHF",
+      "unit": { "enUS": "Billion CHF", "frFR": "Milliards CHF", "deDE": "Mrd. CHF" },
       "scale": 1000000000,
       "year": 2050,
       "outputs": [
@@ -99,7 +99,7 @@
         "deDE": "Nahrungsaufnahme nach Lebensmittelgruppe (2050)"
       },
       "type": "PathwayBar",
-      "unit": "kcal/cap/day",
+      "unit": { "enUS": "kcal/cap/day", "frFR": "kcal/hab./jour", "deDE": "kcal/Kopf/Tag" },
       "year": 2050,
       "outputs": [],
       "groups": {
@@ -322,7 +322,7 @@
         "deDE": "Verbleibende Gesundheitskosten"
       },
       "type": "PathwayLine",
-      "unit": "Billion CHF",
+      "unit": { "enUS": "Billion CHF", "frFR": "Milliards CHF", "deDE": "Mrd. CHF" },
       "scale": 1000000000,
       "fromYear": 2020,
       "outputs": ["tcaf_health-diet_cost-residual_total[CHF]"]
@@ -334,7 +334,7 @@
         "deDE": "Vermiedene Gesundheitskosten"
       },
       "type": "PathwayLine",
-      "unit": "Billion CHF",
+      "unit": { "enUS": "Billion CHF", "frFR": "Milliards CHF", "deDE": "Mrd. CHF" },
       "scale": 1000000000,
       "fromYear": 2020,
       "outputs": ["tcaf_health-diet_cost-avoided_total[CHF]"]
@@ -346,7 +346,7 @@
         "deDE": "Umweltkosten"
       },
       "type": "PathwayLine",
-      "unit": "Billion CHF",
+      "unit": { "enUS": "Billion CHF", "frFR": "Milliards CHF", "deDE": "Mrd. CHF" },
       "scale": 1000000000,
       "fromYear": 2020,
       "outputs": ["tcaf_lca_cost_total[CHF]"]
@@ -358,7 +358,7 @@
         "deDE": "Umweltkosten nach Lebensmittelgruppe (2050)"
       },
       "type": "PathwayBar",
-      "unit": "Billion CHF",
+      "unit": { "enUS": "Billion CHF", "frFR": "Milliards CHF", "deDE": "Mrd. CHF" },
       "scale": 1000000000,
       "year": 2050,
       "outputs": [],

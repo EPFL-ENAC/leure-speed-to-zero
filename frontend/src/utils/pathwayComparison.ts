@@ -5,11 +5,11 @@ import { withDietMetrics } from 'src/utils/dietMetrics';
 import { withTrueCostPerCapita, withTrueCostSavings } from 'src/utils/trueCostMetrics';
 
 /**
- * The seven TCAF diet pathways the Pathway comparison tab puts side by side:
- * three diets, each with the current food waste and with low waste, and the
- * current (2023) diet, with the current food waste only. They differ
- * in five levers only (diet adherence, diet split, food waste, crop losses and
- * livestock losses), everything else is business as usual.
+ * The eight TCAF diet pathways the Pathway comparison tab puts side by side:
+ * four diets (business as usual, the current 2023 diet, the Swiss food pyramid
+ * and the planetary health diet), each with the current food waste and with low
+ * waste. They differ in five levers only (diet adherence, diet split, food
+ * waste, crop losses and livestock losses), everything else is business as usual.
  *
  * "title" is the pathway's title in ExamplePathways, the key its levers are read
  * by. "label" is the short name the charts show. A diet keeps its color; the
@@ -17,48 +17,65 @@ import { withTrueCostPerCapita, withTrueCostSavings } from 'src/utils/trueCostMe
  */
 export interface ComparisonPathway {
   title: string;
-  label: string;
+  label: TranslationObject;
   color: string;
   lowWaste: boolean;
 }
 
-export const COMPARISON_PATHWAYS: ComparisonPathway[] = [
+// The four diets, each run with the current food waste and with low waste
+const DIETS: Array<{ title: string; label: TranslationObject; color: string }> = [
   {
     title: 'Business as usual (diet)',
-    label: 'Business as usual',
+    label: { enUS: 'Business as usual', frFR: 'Scénario tendanciel', deDE: 'Trendszenario' },
     color: '#eb6834',
-    lowWaste: false,
   },
-  { title: 'Current diet', label: 'Current diet', color: '#8e5bd0', lowWaste: false },
-  { title: 'Swiss food pyramid', label: 'Swiss food pyramid', color: '#2a78d6', lowWaste: false },
+  {
+    title: 'Current diet',
+    label: { enUS: 'Current diet', frFR: 'Alimentation actuelle', deDE: 'Aktuelle Ernährung' },
+    color: '#8e5bd0',
+  },
+  {
+    title: 'Swiss food pyramid',
+    label: {
+      enUS: 'Swiss food pyramid',
+      frFR: 'Pyramide alimentaire suisse',
+      deDE: 'Schweizer Lebensmittelpyramide',
+    },
+    color: '#2a78d6',
+  },
   {
     title: 'Planetary health diet (EAT-Lancet 2025)',
-    label: 'Planetary health diet',
+    label: {
+      enUS: 'Planetary health diet',
+      frFR: 'Régime de santé planétaire',
+      deDE: 'Planetary Health Diet',
+    },
     color: '#1baf7a',
-    lowWaste: false,
-  },
-  {
-    title: 'Business as usual (diet) - low waste',
-    label: 'Business as usual + low waste',
-    color: '#eb6834',
-    lowWaste: true,
-  },
-  {
-    title: 'Swiss food pyramid - low waste',
-    label: 'Swiss food pyramid + low waste',
-    color: '#2a78d6',
-    lowWaste: true,
-  },
-  {
-    title: 'Planetary health diet (EAT-Lancet 2025) - low waste',
-    label: 'Planetary health diet + low waste',
-    color: '#1baf7a',
-    lowWaste: true,
   },
 ];
 
+const LOW_WASTE_SUFFIX: TranslationObject = {
+  enUS: ' + low waste',
+  frFR: ' + gaspillage réduit',
+  deDE: ' + weniger Verschwendung',
+};
+
+export const COMPARISON_PATHWAYS: ComparisonPathway[] = [
+  ...DIETS.map((diet) => ({ ...diet, lowWaste: false })),
+  ...DIETS.map((diet) => ({
+    title: `${diet.title} - low waste`,
+    label: {
+      enUS: diet.label.enUS + LOW_WASTE_SUFFIX.enUS,
+      frFR: diet.label.frFR + LOW_WASTE_SUFFIX.frFR,
+      deDE: diet.label.deDE + LOW_WASTE_SUFFIX.deDE,
+    },
+    color: diet.color,
+    lowWaste: true,
+  })),
+];
+
 // The reference every "saved" value is measured against: same run as the
-// True Cost tab, the first of the seven.
+// True Cost tab, the first of the eight.
 const BAU_TITLE = 'Business as usual (diet)';
 
 // One pathway's model results for the current region, derived metrics included.
@@ -78,7 +95,7 @@ export interface PathwayRun {
 export interface PathwayChartConfig {
   title: string | TranslationObject;
   type: 'PathwayLine' | 'PathwayBar';
-  unit: string;
+  unit: string | TranslationObject;
   scale?: number;
   fromYear?: number;
   year?: number;
@@ -87,7 +104,7 @@ export interface PathwayChartConfig {
 }
 
 /**
- * Builds the seven runs the charts read from the model results of each pathway,
+ * Builds the eight runs the charts read from the model results of each pathway,
  * keyed by pathway title. A pathway with no results yet is left out. The cost
  * saved is measured against the BAU run and the cost per capita against each
  * run's own population.

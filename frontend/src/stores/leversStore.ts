@@ -50,7 +50,7 @@ export interface OutputConfig {
 export interface ChartConfig {
   title: string | TranslationObject;
   type: string;
-  unit: string;
+  unit: string | TranslationObject;
   outputs: Array<string | OutputConfig>;
   // When set, every plotted value is divided by it, so "unit" can be a multiple
   // of the model's unit (e.g. scale 1e9 with unit "Billion CHF" for CHF outputs).
@@ -307,7 +307,7 @@ export const useLeverStore = defineStore('lever', () => {
     }
   }
 
-  // The Pathway comparison page charts the seven TCAF diet pathways side by side,
+  // The Pathway comparison page charts the eight TCAF diet pathways side by side,
   // so it needs a run of each, all fixed (none depends on the user's levers):
   // fetched once, in parallel, and kept by pathway title. The backend caches each
   // run, and the BAU one is the run the reference above already made.

@@ -52,6 +52,8 @@ const SURFACE = '#ffffff';
 const DEFAULT_YEAR = 2050;
 
 const translatedTitle = computed(() => getTranslatedText(props.chartConfig.title, locale.value));
+const unit = computed(() => getTranslatedText(props.chartConfig.unit, locale.value));
+const labelOf = (pathway: PathwayRun['pathway']) => getTranslatedText(pathway.label, locale.value);
 
 // "field[unit]" -> "field"
 const fieldOf = (outputId: string) => outputId.match(/(.+?)\[.+?\]/)?.[1] ?? outputId;
@@ -81,7 +83,7 @@ const lineSeries = computed<LineSeries[]>(() => {
   if (!output) return [];
 
   return props.runs.map(({ pathway, rows }) => ({
-    name: pathway.label,
+    name: labelOf(pathway),
     color: pathway.color,
     dashed: pathway.lowWaste,
     points: rows.flatMap((row): Array<[number, number]> => {
@@ -145,7 +147,7 @@ function downloadCSV() {
   if (isBar.value) {
     rows.push(['Pathway', ...barSeries.value.map((s) => s.name)]);
     props.runs.forEach(({ pathway }, i) =>
-      rows.push([pathway.label, ...barSeries.value.map((s) => s.values[i] ?? '')]),
+      rows.push([labelOf(pathway), ...barSeries.value.map((s) => s.values[i] ?? '')]),
     );
   } else {
     const years = [...new Set(lineSeries.value.flatMap((s) => s.points.map(([y]) => y)))].sort(
@@ -196,14 +198,14 @@ const valueAxisLabel = (value: number) =>
 // (at its end it would run off the right edge of the card)
 const unitAxis = (horizontal: boolean) => ({
   type: 'value' as const,
-  name: props.chartConfig.unit,
+  name: unit.value,
   ...(horizontal
     ? { nameLocation: 'middle' as const, nameGap: 28 }
     : { nameLocation: 'end' as const, nameTextStyle: { padding: [0, 0, 0, 5] } }),
   axisLabel: { formatter: valueAxisLabel },
 });
 
-// Seven long names wrap onto rows, so the legend must be plain (not scrolling)
+// Eight long names wrap onto rows, so the legend must be plain (not scrolling)
 // and the plot leave it room
 const legend = (names: string[]) => ({
   type: 'plain' as const,
@@ -228,7 +230,7 @@ const lineOption = computed(() => ({
     ) =>
       params.reduce(
         (text, p, i) =>
-          `${text}${i === 0 ? `${p.axisValueLabel}<br/>` : ''}${p.marker} ${p.seriesName}: ${formatValue(p.value[1])} ${props.chartConfig.unit}<br/>`,
+          `${text}${i === 0 ? `${p.axisValueLabel}<br/>` : ''}${p.marker} ${p.seriesName}: ${formatValue(p.value[1])} ${unit.value}<br/>`,
         '',
       ),
   },
@@ -249,7 +251,7 @@ const lineOption = computed(() => ({
 // Horizontal bars, one per pathway: the long pathway names read along the
 // y-axis instead of being squeezed under narrow columns.
 const barOption = computed(() => {
-  const categories = props.runs.map(({ pathway }) => pathway.label);
+  const categories = props.runs.map(({ pathway }) => labelOf(pathway));
   const stacked = barSeries.value.length > 1;
 
   return {
@@ -265,14 +267,13 @@ const barOption = computed(() => {
           marker: string;
         }>,
       ) => {
-        const unit = props.chartConfig.unit;
         const lines = params.map(
           (p) =>
-            `${p.marker} ${p.seriesName}: ${p.value === null ? '-' : formatValue(p.value)} ${unit}`,
+            `${p.marker} ${p.seriesName}: ${p.value === null ? '-' : formatValue(p.value)} ${unit.value}`,
         );
         if (stacked) {
           const total = params.reduce((sum, p) => sum + (p.value ?? 0), 0);
-          lines.push(`<b>Total: ${formatValue(total)} ${unit}</b>`);
+          lines.push(`<b>Total: ${formatValue(total)} ${unit.value}</b>`);
         }
         return `${params[0]?.axisValueLabel} (${barYear.value})<br/>${lines.join('<br/>')}`;
       },
@@ -290,7 +291,8 @@ const barOption = computed(() => {
       type: 'category' as const,
       data: categories,
       inverse: true,
-      axisLabel: { width: 130, overflow: 'break' as const, fontSize: 11 },
+      // interval 0: every pathway gets its label, even when the names wrap
+      axisLabel: { width: 160, overflow: 'break' as const, fontSize: 11, interval: 0 },
     },
     series: barSeries.value.map((s) => ({
       name: s.name,

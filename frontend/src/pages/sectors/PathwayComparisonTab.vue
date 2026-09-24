@@ -79,7 +79,7 @@ interface ComparisonConfig {
 
 const config = comparisonConfig as ComparisonConfig;
 
-// The charts come from seven fixed runs of the model, not from the levers the
+// The charts come from eight fixed runs of the model, not from the levers the
 // user is moving, so this page needs nothing from the live run. The store keeps
 // running it though: pointing it at the cheapest sector keeps that background
 // run from computing every module.

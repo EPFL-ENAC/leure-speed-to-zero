@@ -101,7 +101,10 @@ const legendSelected = ref<Record<string, boolean>>({});
 // Computed property for translated chart title
 const translatedTitle = computed<string>(() => {
   return getTranslatedText(props.chartConfig.title, i18n.locale.value);
-}); // Handle legend selection changes
+});
+const unit = computed(() => getTranslatedText(props.chartConfig.unit, i18n.locale.value));
+
+// Handle legend selection changes
 const handleLegendSelectChanged = (params: { selected: Record<string, boolean> }) => {
   legendSelected.value = { ...params.selected };
 };
@@ -263,7 +266,7 @@ const snapshotChartOption = computed(() => {
 
   const valueAxis = {
     type: 'value' as const,
-    name: props.chartConfig.unit,
+    name: unit.value,
     nameLocation: 'end' as const,
     nameTextStyle: { padding: [0, 0, 0, 5] },
     axisLabel: {
@@ -296,10 +299,9 @@ const snapshotChartOption = computed(() => {
       axisPointer: { type: 'shadow' },
       formatter: (params: EChartsTooltipParam[]) => {
         const category = params[0]?.axisValueLabel;
-        const unit = props.chartConfig.unit;
         return params.reduce((textAcc, param, i) => {
           const value = (Array.isArray(param.value) ? param.value[1] : param.value).toFixed(2);
-          return `${textAcc}${i === 0 ? `${category}<br/>` : ''}${param.marker} ${param.seriesName}: ${value} ${unit}<br/>`;
+          return `${textAcc}${i === 0 ? `${category}<br/>` : ''}${param.marker} ${param.seriesName}: ${value} ${unit.value}<br/>`;
         }, '');
       },
     },
@@ -460,11 +462,10 @@ const chartOption = computed(() => {
       trigger: 'axis',
       formatter: (params: EChartsTooltipParam[]) => {
         const year = params[0]?.axisValueLabel;
-        const unit = props.chartConfig.unit;
         return params.reduce((text, param, i) => {
           // Extract the value from the [timestamp, value] array
           const value = (Array.isArray(param.value) ? param.value[1] : param.value).toFixed(2);
-          const val = `${text}${i === 0 ? `${year}<br/>` : ''}${param.marker} ${param.seriesName}: ${value} ${unit}<br/>`;
+          const val = `${text}${i === 0 ? `${year}<br/>` : ''}${param.marker} ${param.seriesName}: ${value} ${unit.value}<br/>`;
           return val;
         }, '');
       },
@@ -493,7 +494,7 @@ const chartOption = computed(() => {
     },
     yAxis: {
       type: 'value',
-      name: props.chartConfig.unit,
+      name: unit.value,
       nameLocation: 'end',
       z: -1,
       nameTextStyle: { padding: [0, 0, 0, 5] },
