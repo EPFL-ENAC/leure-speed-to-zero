@@ -206,8 +206,6 @@
         { "id": "bld_CO2-emissions_wood[Mt]", "color": "#5d4037" },
         { "id": "bld_CO2-emissions_district-heating[Mt]", "color": "#f45b5b" },
         { "id": "bld_CO2-emissions_heat-pump[Mt]", "color": "#aee791" },
-        { "id": "bld_CO2-emissions_ambient-heat[Mt]", "color": "#7FAEC0" },
-        { "id": "bld_CO2-emissions_other[Mt]", "color": "#f7a35c" },
         { "id": "bld_CO2-emissions_solar[Mt]", "color": "#e4d354" }
       ]
     },
@@ -227,8 +225,6 @@
         { "id": "bld_CO2-emissions_heating_wood[Mt]", "color": "#5d4037" },
         { "id": "bld_CO2-emissions_heating_district-heating[Mt]", "color": "#f45b5b" },
         { "id": "bld_CO2-emissions_heating_heat-pump[Mt]", "color": "#aee791" },
-        { "id": "bld_CO2-emissions_heating_ambient-heat[Mt]", "color": "#7FAEC0" },
-        { "id": "bld_CO2-emissions_heating_other[Mt]", "color": "#f7a35c" },
         { "id": "bld_CO2-emissions_heating_solar[Mt]", "color": "#e4d354" }
       ]
     },
@@ -248,8 +244,6 @@
         { "id": "services_CO2-emissions_heating_wood[Mt]", "color": "#5d4037" },
         { "id": "services_CO2-emissions_heating_district-heating[Mt]", "color": "#f45b5b" },
         { "id": "services_CO2-emissions_heating_heat-pump[Mt]", "color": "#aee791" },
-        { "id": "services_CO2-emissions_heating_ambient-heat[Mt]", "color": "#7FAEC0" },
-        { "id": "services_CO2-emissions_heating_other[Mt]", "color": "#f7a35c" },
         { "id": "services_CO2-emissions_heating_solar[Mt]", "color": "#e4d354" }
       ]
     },
@@ -269,8 +263,6 @@
         { "id": "bld_hotwater_CO2-emissions_wood[Mt]", "color": "#5d4037" },
         { "id": "bld_hotwater_CO2-emissions_district-heating[Mt]", "color": "#f45b5b" },
         { "id": "bld_hotwater_CO2-emissions_heat-pump[Mt]", "color": "#aee791" },
-        { "id": "bld_hotwater_CO2-emissions_ambient-heat[Mt]", "color": "#7FAEC0" },
-        { "id": "bld_hotwater_CO2-emissions_other[Mt]", "color": "#f7a35c" },
         { "id": "bld_hotwater_CO2-emissions_solar[Mt]", "color": "#e4d354" }
       ]
     },
@@ -291,7 +283,7 @@
         { "id": "bld_heating_district-heating[TWh]", "color": "#f45b5b" },
         { "id": "bld_heating_heat-pump[TWh]", "color": "#aee791" },
         { "id": "bld_heating_solar[TWh]", "color": "#e4d354" },
-        { "id": "bld_heating_other[TWh]", "color": "#f7a35c" }
+        { "id": "bld_heating_other-tech[TWh]", "color": "#f7a35c" }
       ]
     },
     "EnergyDemandPerCarrier": {
@@ -311,7 +303,7 @@
         { "id": "bld_energy-demand_heating_district-heating[TWh]", "color": "#f45b5b" },
         { "id": "bld_energy-demand_heating_heat-pump[TWh]", "color": "#aee791" },
         { "id": "bld_energy-demand_heating_ambient-heat[TWh]", "color": "#7FAEC0" },
-        { "id": "bld_energy-demand_heating_other[TWh]", "color": "#f7a35c" },
+        { "id": "bld_energy-demand_heating_other-tech[TWh]", "color": "#f7a35c" },
         { "id": "bld_energy-demand_heating_solar[TWh]", "color": "#e4d354" }
       ]
     },
@@ -411,10 +403,10 @@
       "type": "StackedArea",
       "unit": "TWh",
       "outputs": [
-        "bld_services_energy-consumption_elec[TWh]",
-        "bld_services_energy-consumption_lighting[TWh]",
-        "bld_services_energy-consumption_hot-water[TWh]",
-        "bld_services_energy-consumption_space-heating[TWh]"
+        "bld_energy-demand_non-residential_space-heating[TWh]",
+        "bld_energy-demand_non-residential_hot-water[TWh]",
+        "bld_energy-demand_non-residential_appliances[TWh]",
+        "bld_energy-demand_non-residential_lighting[TWh]"
       ]
     },
     "NonResByFuel": {
