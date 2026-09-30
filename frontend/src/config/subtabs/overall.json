@@ -2,346 +2,84 @@
   "kpis": [
     {
       "name": {
-        "enUS": "Total emissions",
-        "frFR": "Émissions totales",
-        "deDE": "Gesamtemissionen"
+        "enUS": "Total emissions (all sectors)",
+        "frFR": "Émissions totales (tous secteurs)",
+        "deDE": "Gesamtemissionen (alle Sektoren)"
       },
-      "unit": "Mt",
-      "route": "building-types-emissions",
+      "unit": "Mt CO₂eq",
+      "route": "emissions",
       "maximize": false,
-      "min": 0,
-      "max": 6,
-      "thresholds": {
-        "warning": 2.5,
-        "danger": 4
-      },
       "info": {
-        "enUS": "Total CO2 emissions in 2050 from the whole buildings sector, residential and non-residential combined, including space heating and hot water across all energy carriers. Lower values indicate better environmental performance and progress toward climate goals.",
-        "frFR": "Émissions totales de CO2 en 2050 pour l'ensemble du secteur du bâtiment, résidentiel et non résidentiel confondus, y compris le chauffage des locaux et l'eau chaude pour tous les vecteurs énergétiques. Des valeurs plus faibles indiquent une meilleure performance environnementale et des progrès vers les objectifs climatiques.",
-        "deDE": "Gesamte CO2-Emissionen im Jahr 2050 für den gesamten Gebäudesektor, Wohn- und Nichtwohngebäude zusammen, einschließlich Raumheizung und Warmwasser über alle Energieträger. Niedrigere Werte zeigen bessere Umweltleistung und Fortschritte in Richtung Klimaziele."
+        "enUS": "Direct (scope 1) greenhouse gas emissions in 2050 across the sectors currently modelled in this view: buildings and transport. Emissions from electricity are attributed to the power sector, not to the sectors consuming it. Aviation is counted on a residency basis, covering the full round trip of residents' flights.",
+        "frFR": "Émissions directes (périmètre 1) de gaz à effet de serre en 2050 pour les secteurs actuellement représentés dans cette vue : bâtiments et transports. Les émissions liées à l'électricité sont attribuées au secteur de l'énergie et non aux secteurs consommateurs. L'aviation est comptabilisée sur une base de résidence, couvrant l'aller-retour complet des vols des résidents.",
+        "deDE": "Direkte Treibhausgasemissionen (Scope 1) im Jahr 2050 für die in dieser Ansicht derzeit modellierten Sektoren: Gebäude und Verkehr. Emissionen aus Strom werden dem Energiesektor zugerechnet, nicht den verbrauchenden Sektoren. Der Luftverkehr wird nach dem Wohnsitzprinzip erfasst und umfasst den gesamten Hin- und Rückflug der Einwohner."
       }
     },
     {
       "name": {
-        "enUS": "Passenger land transport CO2",
-        "frFR": "CO2 transport terrestre passagers",
-        "deDE": "CO2 Landverkehr Passagiere"
-      },
-      "unit": "Mt",
-      "route": "passenger-emissions-mode",
-      "maximize": false,
-      "info": {
-        "enUS": "CO₂ emissions from how residents travel on land. Lower emissions mean better environmental outcomes and alignment with climate goals.",
-        "frFR": "Émissions de CO₂ provenant des déplacements terrestres des résidents. Des émissions plus faibles signifient de meilleurs résultats environnementaux et un alignement avec les objectifs climatiques.",
-        "deDE": "CO₂-Emissionen aus dem Landverkehr der Einwohner. Niedrigere Emissionen bedeuten bessere Umweltergebnisse und Übereinstimmung mit Klimazielen."
-      }
-    },
-    {
-      "name": {
-        "enUS": "Total energy demand",
-        "frFR": "Demande d'énergie totale",
-        "deDE": "Gesamter Energiebedarf"
+        "enUS": "Total energy demand (all sectors)",
+        "frFR": "Demande d'énergie totale (tous secteurs)",
+        "deDE": "Gesamtenergiebedarf (alle Sektoren)"
       },
       "unit": "TWh",
-      "route": "energy-carriers",
+      "route": "energy",
       "maximize": false,
-      "min": 0,
-      "max": 110,
-      "thresholds": {
-        "warning": 60,
-        "danger": 85
-      },
       "info": {
-        "enUS": "Total final energy demand in 2050 for the whole buildings sector, residential and non-residential combined: space heating, hot water, appliances, lighting and other electricity uses across all energy carriers.",
-        "frFR": "Demande totale d'énergie finale en 2050 pour l'ensemble du secteur du bâtiment, résidentiel et non résidentiel confondus : chauffage des locaux, eau chaude, appareils, éclairage et autres usages électriques, tous vecteurs énergétiques confondus.",
-        "deDE": "Gesamter Endenergiebedarf im Jahr 2050 für den gesamten Gebäudesektor, Wohn- und Nichtwohngebäude zusammen: Raumheizung, Warmwasser, Geräte, Beleuchtung und sonstige Stromnutzung über alle Energieträger."
+        "enUS": "Total final energy demand in 2050 across the sectors currently modelled in this view: buildings (residential and non-residential, covering space heating, hot water, appliances and lighting) and transport (passenger, freight and aviation), across all energy carriers.",
+        "frFR": "Demande d'énergie finale totale en 2050 pour les secteurs actuellement représentés dans cette vue : bâtiments (résidentiel et non résidentiel, incluant chauffage des locaux, eau chaude, appareils et éclairage) et transports (passagers, fret et aviation), tous vecteurs énergétiques confondus.",
+        "deDE": "Gesamter Endenergiebedarf im Jahr 2050 für die in dieser Ansicht derzeit modellierten Sektoren: Gebäude (Wohn- und Nichtwohngebäude, einschliesslich Raumheizung, Warmwasser, Geräte und Beleuchtung) und Verkehr (Personen, Güter und Luftverkehr), über alle Energieträger."
       }
     }
   ],
   "subtabs": [
     {
       "title": {
-        "enUS": "Passenger GHG emissions per mode",
-        "frFR": "Émissions de GES des passagers par mode",
-        "deDE": "Passagier-THG-Emissionen nach Verkehrsträger"
+        "enUS": "Emissions",
+        "frFR": "Émissions",
+        "deDE": "Emissionen"
       },
-      "charts": [
-        "PassengerGHGEmissionsPerMode",
-        "PassengerAviationEmissionsTech",
-        "PassengerAviationEmissionsLocal"
-      ],
-      "route": "passenger-emissions-mode"
+      "charts": ["EmissionsBySector"],
+      "route": "emissions"
     },
     {
       "title": {
-        "enUS": "Heating emissions",
-        "frFR": "Émissions de chauffage",
-        "deDE": "Heizungsemissionen"
+        "enUS": "Energy demand",
+        "frFR": "Demande d'énergie",
+        "deDE": "Energiebedarf"
       },
-      "charts": ["SHGHGEmissionsPerBuildingType", "GHGEmissionsPerCarrier"],
-      "route": "building-types-emissions"
-    },
-    {
-      "title": {
-        "enUS": "Energy mix",
-        "frFR": "Mix énergétique",
-        "deDE": "Energiemix"
-      },
-      "charts": ["SHEnergyDemandPerCarrier", "EnergyDemandPerCarrier"],
-      "route": "energy-carriers"
-    },
-    {
-      "title": {
-        "enUS": "Floor area per building type",
-        "frFR": "Surface au sol par type de bâtiment",
-        "deDE": "Wohnfläche nach Gebäudetyp"
-      },
-      "charts": ["FloorAreaPerBuildingType", "SHEnergyDemandPerBuildingType"],
-      "route": "building-types-area"
+      "charts": ["EnergyBySector"],
+      "route": "energy"
     }
   ],
   "charts": {
-    "PassengerGHGEmissionsPerMode": {
+    "EmissionsBySector": {
       "title": {
-        "enUS": "Passenger GHG emissions per mode",
-        "frFR": "Émissions de GES passagers par mode",
-        "deDE": "Passagier-THG-Emissionen nach Verkehrsträger"
-      },
-      "unit": "Mt",
-      "type": "StackedArea",
-      "outputs": [
-        "tra_emissions-CO2e_passenger_rail[Mt]",
-        "tra_emissions-CO2e_passenger_bus[Mt]",
-        "tra_emissions-CO2e_passenger_2W[Mt]",
-        "tra_emissions-CO2e_passenger_LDV[Mt]",
-        "tra_emissions-CO2e_passenger_aviation[Mt]"
-      ]
-    },
-    "PassengerAviationEmissionsTech": {
-      "title": {
-        "enUS": "Passenger aviation emissions per technology",
-        "frFR": "Émissions aviation passagers par technologie",
-        "deDE": "Passagier-Luftverkehr-Emissionen nach Technologie"
-      },
-      "unit": "Mt",
-      "type": "StackedArea",
-      "outputs": [
-        "tra_passenger_emissions_aviation_BEV_CO2[Mt]",
-        "tra_passenger_emissions_aviation_H2_CO2[Mt]",
-        "tra_passenger_emissions_aviation_SAF_CO2[Mt]",
-        "tra_passenger_emissions_aviation_kerosene_CO2[Mt]"
-      ]
-    },
-    "PassengerAviationEmissionsLocal": {
-      "title": {
-        "enUS": "Passenger aviation emissions scope",
-        "frFR": "Périmètre émissions aviation passagers",
-        "deDE": "Passagier-Luftverkehr-Emissionsumfang"
-      },
-      "unit": "Mt",
-      "type": "Line",
-      "outputs": [
-        "tra_passenger-emissions-local_aviation[Mt]",
-        "tra_passenger-emissions-total_aviation[Mt]"
-      ]
-    },
-    "SHGHGEmissionsPerBuildingType": {
-      "title": {
-        "enUS": "CO₂ emissions for residential space heating per building envelope CECB category",
-        "frFR": "Émissions de CO₂ pour le chauffage résidentiel par catégorie d’enveloppe CECB",
-        "deDE": "CO₂-Emissionen der Raumheizung im Wohnbereich nach GEAK-Gebäudehüllenkategorie"
+        "enUS": "Emissions by sector",
+        "frFR": "Émissions par secteur",
+        "deDE": "Emissionen nach Sektor"
       },
       "type": "StackedArea",
-      "unit": "Mt",
+      "unit": "Mt CO₂eq",
       "outputs": [
-        { "id": "bld_CO2-emissions_heating_F[Mt]", "color": "#D32F2F" },
-        { "id": "bld_CO2-emissions_heating_E[Mt]", "color": "#F57C00" },
-        { "id": "bld_CO2-emissions_heating_D[Mt]", "color": "#FBC02D" },
-        { "id": "bld_CO2-emissions_heating_C[Mt]", "color": "#8BC34A" },
-        { "id": "bld_CO2-emissions_heating_B[Mt]", "color": "#388E3C" }
+        { "id": "bld_emissions-CO2e[Mt]", "color": "#C97A63" },
+        { "id": "tra_emissions-CO2e_passenger-land[Mt]", "color": "#2a78d6" },
+        { "id": "tra_emissions-CO2e_freight[Mt]", "color": "#1baf7a" },
+        { "id": "tra_emissions-CO2e_passenger_aviation[Mt]", "color": "#eda100" }
       ]
     },
-    "GHGEmissionsPerCarrier": {
+    "EnergyBySector": {
       "title": {
-        "enUS": "CO2 emissions for residential heating per carrier",
-        "frFR": "Émissions de CO2 pour le chauffage résidentiel par vecteur",
-        "deDE": "CO2-Emissionen für Raumheizung in Wohngebäuden nach Energieträger"
-      },
-      "type": "StackedArea",
-      "unit": "Mt",
-      "outputs": [
-        { "id": "bld_CO2-emissions_heating_coal[Mt]", "color": "#434348" },
-        { "id": "bld_CO2-emissions_heating_electricity[Mt]", "color": "#f15c80" },
-        { "id": "bld_CO2-emissions_heating_heating-oil[Mt]", "color": "#2b908f" },
-        { "id": "bld_CO2-emissions_heating_gas[Mt]", "color": "#e4d354" },
-        { "id": "bld_CO2-emissions_heating_wood[Mt]", "color": "#5d4037" },
-        { "id": "bld_CO2-emissions_heating_district-heating[Mt]", "color": "#f45b5b" },
-        { "id": "bld_CO2-emissions_heating_heat-pump[Mt]", "color": "#aee791" },
-        { "id": "bld_CO2-emissions_heating_ambient-heat[Mt]", "color": "#7FAEC0" },
-        { "id": "bld_CO2-emissions_heating_other[Mt]", "color": "#f7a35c" },
-        { "id": "bld_CO2-emissions_heating_solar[Mt]", "color": "#e4d354" }
-      ]
-    },
-    "SHEnergyDemandPerCarrier": {
-      "title": {
-        "enUS": "Demand for residential space heating per heating technology",
-        "frFR": "Demande d'énergie pour le chauffage résidentiel par vecteur",
-        "deDE": "Energiebedarf für Raumheizung in Wohngebäuden nach Energieträger"
+        "enUS": "Energy demand by sector",
+        "frFR": "Demande d'énergie par secteur",
+        "deDE": "Energiebedarf nach Sektor"
       },
       "type": "StackedArea",
       "unit": "TWh",
       "outputs": [
-        { "id": "bld_heating_coal[TWh]", "color": "#434348" },
-        { "id": "bld_heating_electricity[TWh]", "color": "#f15c80" },
-        { "id": "bld_heating_heating-oil[TWh]", "color": "#2b908f" },
-        { "id": "bld_heating_gas[TWh]", "color": "#e4d354" },
-        { "id": "bld_heating_wood[TWh]", "color": "#5d4037" },
-        { "id": "bld_heating_district-heating[TWh]", "color": "#f45b5b" },
-        { "id": "bld_heating_heat-pump[TWh]", "color": "#aee791" },
-        { "id": "bld_heating_solar[TWh]", "color": "#e4d354" },
-        { "id": "bld_heating_other[TWh]", "color": "#f7a35c" }
-      ]
-    },
-    "EnergyDemandPerCarrier": {
-      "title": {
-        "enUS": "Final energy demand for residential heating per carrier",
-        "frFR": "Demande d'énergie pour le chauffage résidentiel par vecteur",
-        "deDE": "Energiebedarf für Raumheizung in Wohngebäuden nach Energieträger"
-      },
-      "type": "StackedArea",
-      "unit": "TWh",
-      "outputs": [
-        { "id": "bld_energy-demand_heating_electricity[TWh]", "color": "#f15c80" },
-        { "id": "bld_energy-demand_heating_coal[TWh]", "color": "#434348" },
-        { "id": "bld_energy-demand_heating_heating-oil[TWh]", "color": "#2b908f" },
-        { "id": "bld_energy-demand_heating_gas[TWh]", "color": "#e4d354" },
-        { "id": "bld_energy-demand_heating_wood[TWh]", "color": "#5d4037" },
-        { "id": "bld_energy-demand_heating_district-heating[TWh]", "color": "#f45b5b" },
-        { "id": "bld_energy-demand_heating_heat-pump[TWh]", "color": "#aee791" },
-        { "id": "bld_energy-demand_heating_ambient-heat[TWh]", "color": "#7FAEC0" },
-        { "id": "bld_energy-demand_heating_other[TWh]", "color": "#f7a35c" },
-        { "id": "bld_energy-demand_heating_solar[TWh]", "color": "#e4d354" }
-      ]
-    },
-    "FloorAreaPerBuildingType": {
-      "title": {
-        "enUS": "Residential energy reference area per envelope CECB category",
-        "frFR": "Surface de référence énergétique résidentielle selon la catégorie d’enveloppe CECB",
-        "deDE": "Energiebezugsfläche von Wohngebäuden nach GEAK-Gebäudehüllenkategorie"
-      },
-      "type": "StackedArea",
-      "unit": "Mm²",
-      "outputs": [
-        { "id": "bld_floor-area_stock_F[Mm2]", "color": "#D32F2F" },
-        { "id": "bld_floor-area_stock_E[Mm2]", "color": "#F57C00" },
-        { "id": "bld_floor-area_stock_D[Mm2]", "color": "#FBC02D" },
-        { "id": "bld_floor-area_stock_C[Mm2]", "color": "#8BC34A" },
-        { "id": "bld_floor-area_stock_B[Mm2]", "color": "#388E3C" }
-      ]
-    },
-    "SHEnergyDemandPerBuildingType": {
-      "title": {
-        "enUS": "Demand for residential space heating per envelope category CECB",
-        "frFR": "Demande de chauffage résidentiel par catégorie d’enveloppe CECB",
-        "deDE": "Heizwärmebedarf von Wohngebäuden nach Gebäudehüllenkategorie des GEAK"
-      },
-      "type": "StackedArea",
-      "unit": "TWh",
-      "outputs": [
-        { "id": "bld_heating_F[TWh]", "color": "#D32F2F" },
-        { "id": "bld_heating_E[TWh]", "color": "#F57C00" },
-        { "id": "bld_heating_D[TWh]", "color": "#FBC02D" },
-        { "id": "bld_heating_C[TWh]", "color": "#8BC34A" },
-        { "id": "bld_heating_B[TWh]", "color": "#388E3C" }
-      ]
-    },
-    "FloorAreaBldType": {
-      "title": {
-        "enUS": "Residential building stock by type",
-        "frFR": "Surface au sol par type de bâtiment",
-        "deDE": "Wohnfläche nach Gebäudetyp"
-      },
-      "type": "StackedArea",
-      "unit": "Mm²",
-      "outputs": [
-        "bld_floor-area_stock_single-family-households[Mm2]",
-        "bld_floor-area_stock_multi-family-households[Mm2]"
-      ]
-    },
-    "FloorAreaRenovationConstruction": {
-      "title": {
-        "enUS": "Renovated and constructed residential floor area",
-        "frFR": "Surface au sol par rénovation et construction",
-        "deDE": "Wohnfläche nach Renovierung und Neubau"
-      },
-      "type": "StackedArea",
-      "unit": "Mm²",
-      "outputs": [
-        { "id": "bld_floor-area_new-cumulated[Mm2]", "color": "#bfdbf6" },
-        { "id": "bld_floor-area_renovated-cumulated[Mm2]", "color": "#7cb5ec" },
-        { "id": "bld_floor-area_unrenovated-cumulated[Mm2]", "color": "#398fe2" }
-      ]
-    },
-    "HotWaterRes": {
-      "title": {
-        "enUS": "Hot water - residential energy consumption",
-        "frFR": "Eau chaude résidentielle",
-        "deDE": "Warmwasser in Wohngebäuden"
-      },
-      "type": "StackedArea",
-      "unit": "TWh",
-      "outputs": [
-        "bld_hot-water_energy-demand_electricity[TWh]",
-        "bld_hot-water_energy-demand_heating-oil[TWh]",
-        "bld_hot-water_energy-demand_gas[TWh]",
-        "bld_hot-water_energy-demand_district-heating[TWh]",
-        "bld_hot-water_energy-demand_wood[TWh]",
-        "bld_hot-water_energy-demand_solar[TWh]",
-        "bld_hot-water_energy-demand_heat-pump[TWh]"
-      ]
-    },
-    "AppliancesLightRes": {
-      "title": {
-        "enUS": "Appliances and Lighting - residential electricity consumption",
-        "frFR": "Appareils et éclairage résidentiels",
-        "deDE": "Geräte und Beleuchtung in Wohngebäuden"
-      },
-      "type": "StackedArea",
-      "unit": "TWh",
-      "outputs": ["bld_residential-lighting[TWh]", "bld_appliances_tot-elec-demand[TWh]"]
-    },
-    "NonResByType": {
-      "title": {
-        "enUS": "Non-residential energy consumption by end-use",
-        "frFR": "Énergie non-résidentielle par type",
-        "deDE": "Energie in Nicht-Wohngebäuden nach Typ"
-      },
-      "type": "StackedArea",
-      "unit": "TWh",
-      "outputs": [
-        "bld_services_energy-consumption_elec[TWh]",
-        "bld_services_energy-consumption_lighting[TWh]",
-        "bld_services_energy-consumption_hot-water[TWh]",
-        "bld_services_energy-consumption_space-heating[TWh]"
-      ]
-    },
-    "NonResByFuel": {
-      "title": {
-        "enUS": "Non-residential energy consumption by fuel",
-        "frFR": "Énergie non-résidentielle par combustible",
-        "deDE": "Energie in Nicht-Wohngebäuden nach Brennstoff"
-      },
-      "type": "StackedArea",
-      "unit": "TWh",
-      "outputs": [
-        "bld_services_energy-consumption_coal[TWh]",
-        "bld_services_energy-consumption_heating-oil[TWh]",
-        "bld_services_energy-consumption_gas[TWh]",
-        "bld_services_energy-consumption_wood[TWh]",
-        "bld_services_energy-consumption_district-heating[TWh]",
-        "bld_services_energy-consumption_electricity[TWh]",
-        "bld_services_energy-consumption_solar[TWh]",
-        "bld_services_energy-consumption_heat-pump[TWh]"
+        { "id": "bld_energy-demand_total[TWh]", "color": "#C97A63" },
+        { "id": "tra_energy-demand_passenger-land[TWh]", "color": "#2a78d6" },
+        { "id": "tra_energy-demand_freight[TWh]", "color": "#1baf7a" },
+        { "id": "tra_passenger_energy-demand-by-mode_aviation[TWh]", "color": "#eda100" }
       ]
     }
   }

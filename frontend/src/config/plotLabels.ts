@@ -1411,6 +1411,11 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Holz',
     frFR: 'Bois',
   },
+  'bld_emissions-CO2e[Mt]': {
+    enUS: 'Buildings',
+    deDE: 'Gebäude',
+    frFR: 'Bâtiments',
+  },
   'bld_CO2-emissions_heating_coal[Mt]': {
     enUS: 'Coal',
     deDE: 'Kohle',
@@ -1625,6 +1630,11 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     enUS: 'Wood',
     deDE: 'Holz',
     frFR: 'Bois',
+  },
+  'bld_energy-demand_total[TWh]': {
+    enUS: 'Buildings',
+    deDE: 'Gebäude',
+    frFR: 'Bâtiments',
   },
   'bld_energy-demand_hot-water_electricity[TWh]': {
     enUS: 'Electricity hot water',
@@ -5727,6 +5737,21 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     frFR: 'production de gaz naturel dans le balancement hebdomadaire',
   },
   'tra_emissions-CO2e_freight[Mt]': {
+    enUS: 'Freight',
+    deDE: 'Güterverkehr',
+    frFR: 'Transport de marchandises',
+  },
+  'tra_emissions-CO2e_passenger-land[Mt]': {
+    enUS: 'Passenger (land)',
+    deDE: 'Personenverkehr (Land)',
+    frFR: 'Passagers (terrestre)',
+  },
+  'tra_energy-demand_passenger-land[TWh]': {
+    enUS: 'Passenger (land)',
+    deDE: 'Personenverkehr (Land)',
+    frFR: 'Passagers (terrestre)',
+  },
+  'tra_energy-demand_freight[TWh]': {
     enUS: 'Freight',
     deDE: 'Güterverkehr',
     frFR: 'Transport de marchandises',
