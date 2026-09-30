@@ -6071,6 +6071,21 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Biodiesel',
     frFR: 'Biodiesel',
   },
+  'tra_passenger_energy-demand-by-fuel_biogasoline[TWh]': {
+    enUS: 'Biogasoline',
+    deDE: 'Biobenzin',
+    frFR: 'Bioessence',
+  },
+  'tra_passenger_energy-demand-by-fuel_kerosenebio[TWh]': {
+    enUS: 'Bio-kerosene',
+    deDE: 'Bio-Kerosin',
+    frFR: 'Biokérosène',
+  },
+  'tra_freight_energy-demand-by-fuel_biogasoline[TWh]': {
+    enUS: 'Biogasoline',
+    deDE: 'Biobenzin',
+    frFR: 'Bioessence',
+  },
   'tra_passenger_energy-demand-by-fuel_bioethanol[TWh]': {
     enUS: 'Bioethanol',
     deDE: 'Bioethanol',
@@ -6390,6 +6405,21 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     enUS: 'Buses',
     deDE: 'Busse',
     frFR: 'Bus',
+  },
+  'tra_passenger_vehicle-fleet_rail[millions]': {
+    enUS: 'Rail',
+    deDE: 'Schiene',
+    frFR: 'Rail',
+  },
+  'tra_passenger_vehicle-fleet_metrotram[millions]': {
+    enUS: 'Metro and tram',
+    deDE: 'Metro und Tram',
+    frFR: 'Métro et tram',
+  },
+  'tra_passenger_vehicle-fleet_aviation[millions]': {
+    enUS: 'Aviation',
+    deDE: 'Luftfahrt',
+    frFR: 'Aviation',
   },
   'tra_pkm-cap': {
     enUS: 'Land transport demand per capita',
