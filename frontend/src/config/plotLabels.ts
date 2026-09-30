@@ -1586,6 +1586,36 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Umgebungswärme',
     frFR: 'Chaleur ambiante',
   },
+  'bld_energy-demand_heating_other-tech[TWh]': {
+    enUS: 'Other',
+    deDE: 'Sonstige',
+    frFR: 'Autres',
+  },
+  'bld_heating_other-tech[TWh]': {
+    enUS: 'Other',
+    deDE: 'Sonstige',
+    frFR: 'Autres',
+  },
+  'bld_energy-demand_non-residential_space-heating[TWh]': {
+    enUS: 'Space heating',
+    deDE: 'Raumheizung',
+    frFR: 'Chauffage des locaux',
+  },
+  'bld_energy-demand_non-residential_hot-water[TWh]': {
+    enUS: 'Hot water',
+    deDE: 'Warmwasser',
+    frFR: 'Eau chaude',
+  },
+  'bld_energy-demand_non-residential_appliances[TWh]': {
+    enUS: 'Appliances',
+    deDE: 'Geräte',
+    frFR: 'Appareils',
+  },
+  'bld_energy-demand_non-residential_lighting[TWh]': {
+    enUS: 'Lighting',
+    deDE: 'Beleuchtung',
+    frFR: 'Éclairage',
+  },
   'bld_energy-demand_heating_coal[TWh]': {
     enUS: 'Coal',
     deDE: 'Kohle',
