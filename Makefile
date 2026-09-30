@@ -3,7 +3,7 @@
 # Default target
 help:
 	@echo "╔════════════════════════════════════════════════════════════════╗"
-	@echo "║         TransitionCompass - Development Commands                    ║"
+	@echo "║         TransitionCompass - Development Commands               ║"
 	@echo "╚════════════════════════════════════════════════════════════════╝"
 	@echo ""
 	@echo "Setup:"
