@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.12"
 
 [[package]]
@@ -781,7 +781,6 @@ dependencies = [
     { name = "fastapi", extra = ["standard"] },
     { name = "fastapi-cache2", extra = ["redis"] },
     { name = "highspy" },
-    { name = "matplotlib" },
     { name = "numpy" },
     { name = "orjson" },
     { name = "pandas" },
@@ -805,8 +804,7 @@ requires-dist = [
     { name = "fastapi", extras = ["standard"], specifier = ">=0.115.12" },
     { name = "fastapi-cache2", extras = ["redis"], specifier = ">=0.2.2" },
     { name = "highspy", specifier = ">=1.12.0" },
-    { name = "matplotlib", specifier = "==3.8.2" },
-    { name = "numpy", specifier = ">=1.21,<2" },
+    { name = "numpy", specifier = ">=1.21" },
     { name = "orjson" },
     { name = "pandas", specifier = "==2.2.3" },
     { name = "plotly", specifier = "==5.18.0" },
