@@ -1,5 +1,23 @@
 <template>
+  <div v-if="compact" class="kpi-compact">
+    <div class="compact-row">
+      <span class="compact-name">{{ translatedName }}</span>
+      <span class="compact-metric">
+        <span class="value">{{ formatValue(value) }}</span>
+        <span class="unit">{{ unit }}</span>
+      </span>
+      <q-icon :name="statusIcon" size="1rem" :color="statusColor" />
+    </div>
+    <div class="bar">
+      <div v-for="zone in zoneStyles" :key="zone.name" class="zone" :style="zone.style" />
+      <div class="indicator" :style="indicatorStyle" />
+    </div>
+    <q-tooltip v-if="translatedInfo" max-width="15rem">
+      {{ translatedInfo }}
+    </q-tooltip>
+  </div>
   <component
+    v-else
     :is="route ? 'router-link' : 'div'"
     :to="
       route
@@ -56,7 +74,10 @@ import { getTranslatedText } from 'src/utils/translationHelpers';
 
 const { locale } = useI18n();
 const $route = useRoute();
-const props = withDefaults(defineProps<KPI>(), { maximize: false });
+const props = withDefaults(defineProps<KPI & { compact?: boolean }>(), {
+  maximize: false,
+  compact: false,
+});
 
 const translatedName = computed(() =>
   typeof props.name === 'string' ? props.name : getTranslatedText(props.name, locale.value),
@@ -310,5 +331,41 @@ const zoneStyles = computed(() => {
   font-size: 0.55rem;
   color: #6b7280;
   white-space: nowrap;
+}
+
+.kpi-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.compact-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.compact-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8rem;
+  color: #4b5563;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compact-metric {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2rem;
+  white-space: nowrap;
+
+  .value {
+    font-size: 1rem;
+    font-weight: 600;
+  }
 }
 </style>

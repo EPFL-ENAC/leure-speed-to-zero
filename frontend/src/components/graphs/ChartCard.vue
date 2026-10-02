@@ -1,12 +1,15 @@
 <template>
-  <q-card class="chart-card col" flat>
+  <q-card class="chart-card col" :class="{ fill }" flat>
     <q-card-section class="chart-section">
+      <div class="chart-header">
+        <div class="chart-title">{{ translatedTitle }}</div>
+        <slot name="header-actions" />
+      </div>
       <div v-if="!chartData.length" class="chart-placeholder">
         <q-icon name="mdi-chart-line-variant" size="2rem" color="grey-5" />
         <p>{{ $t('noDataAvailable') }}</p>
       </div>
       <div v-else class="chart-visualization">
-        <div class="chart-title">{{ translatedTitle }}</div>
         <v-chart
           ref="chartRef"
           class="chart"
@@ -90,6 +93,8 @@ const props = defineProps<{
   modelData: SectorData;
   chartId?: string;
   sectorName?: string;
+  // Stretch to the parent's height instead of the fixed default (single chart per subtab)
+  fill?: boolean;
 }>();
 
 const chartRef = ref<ECharts>();
@@ -352,12 +357,13 @@ const chartOption = computed(() => {
       type: 'scroll',
       orient: 'none',
       bottom: 0,
+      textStyle: { fontSize: 13 },
       height: '10%',
       data: legendData,
       selected: legendSelected.value,
     },
     grid: {
-      top: '15%',
+      top: 50,
       left: '5%',
       right: '5%',
       bottom: '13%',
@@ -366,6 +372,7 @@ const chartOption = computed(() => {
     xAxis: {
       type: 'time',
       z: -1,
+      axisLabel: { fontSize: 12 },
       // boundaryGap: false,
     },
     yAxis: {
@@ -373,8 +380,9 @@ const chartOption = computed(() => {
       name: props.chartConfig.unit,
       nameLocation: 'end',
       z: -1,
-      nameTextStyle: { padding: [0, 0, 0, 5] },
+      nameTextStyle: { padding: [0, 0, 0, 5], fontSize: 13 },
       axisLabel: {
+        fontSize: 12,
         formatter: function (value: number) {
           // Use scientific notation for values larger than 10,000 or smaller than 0.001
           if (Math.abs(value) >= 10000 || (Math.abs(value) > 0 && Math.abs(value) < 0.001)) {
@@ -397,12 +405,29 @@ const chartOption = computed(() => {
   flex-direction: column;
 }
 
+.chart-card.fill {
+  height: 100%;
+}
+
 .chart-section {
   flex-grow: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   padding-top: 8px;
 }
 
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  padding: 0 0.5rem 0.25rem;
+}
+
 .chart-placeholder {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -419,22 +444,17 @@ const chartOption = computed(() => {
 }
 
 .chart-visualization {
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
 .chart-title {
-  position: absolute;
-  color: #6a6a6a;
-  top: 0px;
-  left: 2rem;
-  font-size: 13px;
-  font-weight: bold;
-  white-space: wrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: calc(100% - 150px);
+  color: #374151;
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 .chart {

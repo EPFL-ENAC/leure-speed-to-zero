@@ -2,35 +2,16 @@
   <div class="sector-tab-container">
     <!-- Main content area -->
     <div class="content-area">
-      <!-- KPI bar at top - horizontal with scroll arrows -->
-      <div v-if="modelResults && currentTab && currentTab !== 'overview'" class="top-kpis-bar">
-        <q-btn
-          flat
-          dense
-          round
-          icon="chevron_left"
-          @click="scrollKpis('left')"
-          class="kpi-nav-btn"
-          :disable="!canScrollKpis"
-        />
-        <div class="kpis-container" ref="kpisContainerRef">
-          <kpi-list
-            ref="kpiListRef"
-            :kpis="kpis"
-            :horizontal="true"
-            @can-scroll="canScrollKpis = $event"
-          />
-        </div>
-        <q-btn
-          flat
-          dense
-          round
-          icon="chevron_right"
-          @click="scrollKpis('right')"
-          class="kpi-nav-btn"
-          :disable="!canScrollKpis"
-        />
-      </div>
+      <template v-if="modelResults && currentTab && currentTab !== 'overview' && $q.screen.gt.sm">
+        <h2 class="page-heading">
+          {{ sectorHeading }}
+          <template v-if="currentTabConfig">
+            <span class="page-heading-sep">·</span>
+            <span class="page-heading-sub">{{ getSubtabTitle(currentTabConfig) }}</span>
+          </template>
+        </h2>
+        <subtab-nav-bar :subtabs="config.subtabs" :kpis="kpis" :current-tab="currentTab" />
+      </template>
 
       <empty-state
         v-if="!modelResults"
@@ -47,38 +28,46 @@
         </div>
 
         <!-- Charts content - scrollable (when subtab is selected) -->
-        <q-scroll-area class="charts-content">
+        <q-scroll-area ref="chartsScrollRef" class="charts-content">
           <q-tab-panels v-if="$q.screen.gt.sm" v-model="currentTab" animated>
             <q-tab-panel
               v-for="tab in config.subtabs"
-              class="q-pa-md overflow-hidden"
+              class="q-px-md q-pb-md overflow-hidden"
               :key="tab.route"
               :name="tab.route"
             >
-              <div v-if="tab.toggle" class="view-toggle-bar">
-                <q-btn-toggle
-                  v-model="currentView"
-                  :options="getToggleOptions(tab)"
-                  dense
-                  unelevated
-                  no-caps
-                  toggle-color="primary"
-                  color="white"
-                  text-color="primary"
-                />
-              </div>
               <div v-if="tab.toggle && getPrimaryCharts(tab).length === 0" class="not-available">
+                <div class="view-toggle-bar">
+                  <q-btn-toggle
+                    v-bind="toggleProps"
+                    v-model="currentView"
+                    :options="getToggleOptions(tab)"
+                  />
+                </div>
                 {{ $t('notYetAvailable') }}
               </div>
-              <div v-else class="row flex-wrap">
+              <div
+                v-else
+                class="row flex-wrap"
+                :style="isSingleChart(tab) ? singleChartStyle : undefined"
+              >
                 <chart-card
-                  v-for="chartId in getPrimaryCharts(tab)"
+                  v-for="(chartId, i) in getPrimaryCharts(tab)"
                   :chart-config="config.charts[chartId] as ChartConfig"
                   :chart-id="chartId"
                   :sector-name="sectorName"
                   :key="chartId"
                   :model-data="modelResults"
-                />
+                  :fill="isSingleChart(tab)"
+                >
+                  <template v-if="tab.toggle && i === 0" #header-actions>
+                    <q-btn-toggle
+                      v-bind="toggleProps"
+                      v-model="currentView"
+                      :options="getToggleOptions(tab)"
+                    />
+                  </template>
+                </chart-card>
               </div>
               <template v-if="getMoreInfoCharts(tab).length">
                 <div class="more-info-toggle">
@@ -173,12 +162,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, nextTick } from 'vue';
+import { computed, onUnmounted, ref, watch } from 'vue';
+import type { QScrollArea } from 'quasar';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useLeverStore, type ChartConfig } from 'stores/leversStore';
 import type { KPI, KPIConfig } from 'src/utils/sectors';
 import KpiList from 'src/components/kpi/KpiList.vue';
+import SubtabNavBar from 'src/components/kpi/SubtabNavBar.vue';
 import ChartCard from 'components/graphs/ChartCard.vue';
 import EmptyState from 'components/EmptyState.vue';
 import { useQuasar } from 'quasar';
@@ -186,6 +177,7 @@ import { getTranslatedText } from 'src/utils/translationHelpers';
 import type { TranslationObject } from 'src/utils/translationHelpers';
 import { useCurrentSector } from 'src/composables/useCurrentSector';
 import DisclaimerBanner from 'components/DisclaimerBanner.vue';
+import { sectors } from 'src/utils/sectors';
 
 const $q = useQuasar();
 const { locale } = useI18n();
@@ -225,14 +217,18 @@ useCurrentSector(props.sectorName);
 const router = useRouter();
 const route = useRoute();
 const leverStore = useLeverStore();
-const kpisContainerRef = ref<HTMLElement | null>(null);
-const kpiListRef = ref<InstanceType<typeof KpiList> | null>(null);
-const canScrollKpis = ref(false);
 
 // Helper function to get translated subtab title
 const getSubtabTitle = (subtab: { title: string | TranslationObject; route: string }): string => {
   return getTranslatedText(subtab.title, locale.value);
 };
+
+// Desktop page heading: translated sector label (the Overall page has an empty sectorName)
+const sectorHeading = computed(() => {
+  const sectorKey = route.path.split('/')[1] || props.sectorName;
+  const sector = sectors.find((s) => s.value === sectorKey);
+  return sector ? getTranslatedText(sector.label, locale.value) : props.sectorDisplayName;
+});
 
 // Tab state - reactive to route changes
 const currentTab = computed({
@@ -249,13 +245,6 @@ const currentTab = computed({
       });
     }
   },
-});
-
-// Watch for tab changes and scroll to active KPI
-watch(currentTab, async (newTab) => {
-  if (!newTab || newTab === 'overview') return;
-  await nextTick();
-  kpiListRef.value?.scrollToRoute(newTab);
 });
 
 // Toggle state (e.g. passenger/freight, residential/non-residential) for subtabs that declare one
@@ -292,6 +281,44 @@ const getToggleOptions = (tab: SubtabConfig) =>
     value: option.value,
     label: getTranslatedText(option.label, locale.value),
   }));
+
+const toggleProps = {
+  dense: true,
+  unelevated: true,
+  noCaps: true,
+  toggleColor: 'primary',
+  color: 'white',
+  textColor: 'primary',
+} as const;
+
+// A subtab with a single primary chart gets the full available height
+const isSingleChart = (tab: SubtabConfig) => getPrimaryCharts(tab).length === 1;
+
+// Measure the visible chart area so a single chart can fill it exactly. A CSS height chain
+// doesn't work here: Quasar's scroll area content only has a min-height, so `height: 100%`
+// below it never resolves. "More info" charts then sit below the fold and scroll.
+const chartsScrollRef = ref<QScrollArea | null>(null);
+const chartsAreaHeight = ref(0);
+const SINGLE_CHART_MIN_HEIGHT = 420;
+const SINGLE_CHART_VERTICAL_PADDING = 24; // scroll content padding-top + panel bottom padding
+
+const singleChartStyle = computed(() => ({
+  height: `${Math.max(SINGLE_CHART_MIN_HEIGHT, chartsAreaHeight.value - SINGLE_CHART_VERTICAL_PADDING)}px`,
+}));
+
+let chartsAreaObserver: ResizeObserver | null = null;
+
+watch(chartsScrollRef, (scrollArea) => {
+  chartsAreaObserver?.disconnect();
+  const el = scrollArea?.$el as HTMLElement | undefined;
+  if (!el) return;
+  chartsAreaObserver = new ResizeObserver(([entry]) => {
+    chartsAreaHeight.value = entry?.contentRect.height ?? 0;
+  });
+  chartsAreaObserver.observe(el);
+});
+
+onUnmounted(() => chartsAreaObserver?.disconnect());
 
 const getPrimaryCharts = (tab: SubtabConfig): string[] => {
   if (tab.toggle) {
@@ -370,17 +397,6 @@ async function forceRunModel() {
     console.error('Error running model:', error);
   }
 }
-
-// Scroll KPIs left or right
-function scrollKpis(direction: 'left' | 'right') {
-  if (!kpiListRef.value) return;
-  const container = kpiListRef.value.$el as HTMLElement;
-  const scrollAmount = 300;
-  container.scrollBy({
-    left: direction === 'left' ? -scrollAmount : scrollAmount,
-    behavior: 'smooth',
-  });
-}
 </script>
 
 <style lang="scss" scoped>
@@ -394,58 +410,24 @@ function scrollKpis(direction: 'left' | 'right') {
   padding-top: 0.5rem;
 }
 
-.top-kpis-bar {
+.page-heading {
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  padding: 0.5rem;
-  background: white;
-  min-height: 100px;
-}
-
-.kpi-nav-btn {
-  flex-shrink: 0;
-  transition: opacity 0.3s;
-
-  &:disabled,
-  &.disabled {
-    opacity: 0.3;
-    color: #9e9e9e;
-  }
-}
-
-.kpis-container {
-  flex: 1;
-  min-width: 0;
-}
-
-.bottom-tab-selector {
-  flex-shrink: 0;
-  position: sticky;
-  bottom: 0;
-  z-index: 10;
-  background: white;
-  border-top: 1px solid #e0e0e0;
-}
-
-.tab-selector-bar {
-  flex-shrink: 0;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: white;
-}
-
-.sector-title {
-  font-size: 1.125rem;
+  margin: 0;
+  padding: 0.25rem 1.25rem 0.75rem;
+  font-size: 1.6rem;
   font-weight: 600;
+  line-height: 1.3;
   color: #111827;
-  text-align: center;
-  text-transform: uppercase;
 }
 
-.back-button {
-  flex-shrink: 0;
+.page-heading-sep {
+  margin: 0 0.5rem;
+  color: #9ca3af;
+}
+
+.page-heading-sub {
+  color: #4b5563;
+  font-weight: 500;
 }
 
 .content-area {
@@ -461,25 +443,12 @@ function scrollKpis(direction: 'left' | 'right') {
   overflow-x: hidden;
 }
 
-.overview-header {
-  text-align: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-radius: 0 0 16px 16px;
-  margin-bottom: 2rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
 .charts-content {
   flex: 1;
   :deep(.q-scrollarea__content) {
-    padding-top: 2rem;
+    padding-top: 0.5rem;
     width: 100%;
   }
-}
-
-.title {
-  padding: 1em 0 0 0;
 }
 
 .mobile-tab-section {

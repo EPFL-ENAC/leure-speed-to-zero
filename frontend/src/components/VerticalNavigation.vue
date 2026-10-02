@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { getTranslatedText, type TranslationObject } from 'src/utils/translationHelpers';
@@ -117,31 +117,8 @@ const mainPages = [
   },
 ];
 
-// Expanded sections state (persisted to localStorage)
+// Expanded sections state - collapsed by default; subpages are navigated via the subtab bar
 const expandedSections = ref<Set<string>>(new Set());
-
-// Load expanded state from localStorage
-const loadExpandedState = () => {
-  try {
-    const saved = localStorage.getItem('nav-expanded-sections');
-    if (saved) {
-      expandedSections.value = new Set(JSON.parse(saved));
-    }
-  } catch (e) {
-    console.error('Failed to load navigation state:', e);
-  }
-};
-
-// Save expanded state to localStorage
-const saveExpandedState = () => {
-  try {
-    localStorage.setItem('nav-expanded-sections', JSON.stringify([...expandedSections.value]));
-  } catch (e) {
-    console.error('Failed to save navigation state:', e);
-  }
-};
-
-loadExpandedState();
 
 // Helper function to get translated label
 const getLabel = (label: string | TranslationObject) => {
@@ -165,7 +142,6 @@ const toggleExpand = (sectionName: string) => {
   } else {
     expandedSections.value.add(sectionName);
   }
-  saveExpandedState();
 };
 
 // Handle sector click - toggle expansion
@@ -177,19 +153,6 @@ const handleSectorClick = (event: Event, sectorName: string) => {
     toggleExpand(sectorName);
   }
 };
-
-// Auto-expand current section
-watch(
-  () => route.path,
-  (newPath) => {
-    const sector = newPath.split('/')[1];
-    if (sector && (subtabsMap.value[sector]?.length ?? 0) > 0) {
-      expandedSections.value.add(sector);
-      saveExpandedState();
-    }
-  },
-  { immediate: true },
-);
 </script>
 
 <style lang="scss" scoped>
@@ -246,10 +209,10 @@ $hover-bg: #f5f5f7;
 .nav-item {
   display: flex;
   align-items: center;
-  padding: 10px 20px;
+  padding: 12px 20px;
   color: $text-muted;
   text-decoration: none;
-  font-size: small;
+  font-size: 1rem;
   transition: all 150ms;
 
   &:hover,
@@ -270,9 +233,9 @@ $hover-bg: #f5f5f7;
 }
 
 .nav-item-icon {
-  width: 20px;
-  height: 20px;
-  font-size: 20px;
+  width: 24px;
+  height: 24px;
+  font-size: 24px;
   margin-right: 12px;
   opacity: 0.7;
 }
@@ -300,7 +263,7 @@ $hover-bg: #f5f5f7;
   padding: 8px 20px 8px 52px;
   color: #999;
   text-decoration: none;
-  font-size: 13px;
+  font-size: 0.9rem;
   line-height: 1.4;
 
   &:hover,

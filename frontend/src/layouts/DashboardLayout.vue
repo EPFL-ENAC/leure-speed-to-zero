@@ -153,8 +153,8 @@ watch(
 }
 
 .vertical-nav-drawer {
-  width: clamp(180px, 16vw, 320px) !important;
-  min-width: 180px !important;
+  width: clamp(210px, 16vw, 320px) !important;
+  min-width: 210px !important;
   max-width: 320px !important;
   :deep(.q-drawer__content) {
     overflow: hidden;

@@ -75,16 +75,19 @@
           }
         ],
         "charts": {
-          "by-mode": ["TransportGHGEmissionsPerMode"],
-          "by-fuel": ["TransportGHGEmissionsPerFuel"]
+          "by-mode": ["TransportGHGEmissionsMainModes"],
+          "by-fuel": ["TransportGHGEmissionsMainFuels"]
         }
       },
-      "moreInfo": [
-        "PassengerGHGEmissionsPerMode",
-        "FreightGHGEmissionsPerMode",
-        "PassengerAviationEmissionsTech",
-        "PassengerAviationEmissionsLocal"
-      ]
+      "moreInfo": {
+        "by-mode": [
+          "TransportGHGEmissionsPerMode",
+          "PassengerGHGEmissionsPerMode",
+          "FreightGHGEmissionsPerMode",
+          "PassengerAviationEmissionsLocal"
+        ],
+        "by-fuel": ["TransportGHGEmissionsPerFuel", "PassengerAviationEmissionsTech"]
+      }
     },
     {
       "title": {
@@ -114,17 +117,23 @@
           }
         ],
         "charts": {
-          "by-mode": ["TransportEnergyDemandPerMode"],
-          "by-fuel": ["TransportEnergyDemandPerFuel"]
+          "by-mode": ["TransportEnergyDemandMainModes"],
+          "by-fuel": ["TransportEnergyDemandMainFuels"]
         }
       },
-      "moreInfo": [
-        "PassengerEnergyDemandPerMode",
-        "FreightEnergyDemandPerMode",
-        "PassengerEnergyDemandPerFuel",
-        "FreightEnergyDemandPerFuel",
-        "PassengerAviationEnergyDemandPerTech"
-      ]
+      "moreInfo": {
+        "by-mode": [
+          "TransportEnergyDemandPerMode",
+          "PassengerEnergyDemandPerMode",
+          "FreightEnergyDemandPerMode"
+        ],
+        "by-fuel": [
+          "TransportEnergyDemandPerFuel",
+          "PassengerEnergyDemandPerFuel",
+          "FreightEnergyDemandPerFuel",
+          "PassengerAviationEnergyDemandPerTech"
+        ]
+      }
     },
     {
       "title": {
@@ -144,6 +153,158 @@
     }
   ],
   "charts": {
+    "TransportGHGEmissionsMainModes": {
+      "title": {
+        "enUS": "GHG emissions by mode",
+        "frFR": "Émissions de GES par mode",
+        "deDE": "THG-Emissionen nach Verkehrsträger"
+      },
+      "unit": "Mt",
+      "type": "StackedArea",
+      "outputs": [
+        {
+          "id": "tra_emissions-CO2e-main-mode_aviation-passenger[Mt]",
+          "color": "#7328ae"
+        },
+        {
+          "id": "tra_emissions-CO2e-main-mode_aviation-freight[Mt]",
+          "color": "#a35de4"
+        },
+        {
+          "id": "tra_emissions-CO2e-main-mode_trucks[Mt]",
+          "color": "#e64343"
+        },
+        {
+          "id": "tra_emissions-CO2e-main-mode_cars[Mt]",
+          "color": "#a7031a"
+        },
+        {
+          "id": "tra_emissions-CO2e-main-mode_other-passenger[Mt]",
+          "color": "#089428"
+        },
+        {
+          "id": "tra_emissions-CO2e-main-mode_other-freight[Mt]",
+          "color": "#41ca51"
+        },
+        {
+          "id": "tra_emissions-CO2e-main-mode_rail-passenger[Mt]",
+          "color": "#0256a9"
+        },
+        {
+          "id": "tra_emissions-CO2e-main-mode_rail-freight[Mt]",
+          "color": "#0c84fa"
+        }
+      ]
+    },
+    "TransportGHGEmissionsMainFuels": {
+      "title": {
+        "enUS": "GHG emissions by fuel",
+        "frFR": "Émissions de GES par carburant",
+        "deDE": "THG-Emissionen nach Kraftstoff"
+      },
+      "unit": "Mt",
+      "type": "StackedArea",
+      "outputs": [
+        {
+          "id": "tra_emissions-CO2e-main-fuel_kerosene[Mt]",
+          "color": "#77889b"
+        },
+        {
+          "id": "tra_emissions-CO2e-main-fuel_diesel[Mt]",
+          "color": "#36322f"
+        },
+        {
+          "id": "tra_emissions-CO2e-main-fuel_other-fossil[Mt]",
+          "color": "#a0978b"
+        },
+        {
+          "id": "tra_emissions-CO2e-main-fuel_gasoline[Mt]",
+          "color": "#724727"
+        },
+        {
+          "id": "tra_emissions-CO2e-main-fuel_other-renewable[Mt]",
+          "color": "#11c98b"
+        }
+      ]
+    },
+    "TransportEnergyDemandMainModes": {
+      "title": {
+        "enUS": "Energy demand by mode",
+        "frFR": "Demande énergétique par mode",
+        "deDE": "Energiebedarf nach Verkehrsträger"
+      },
+      "unit": "TWh",
+      "type": "StackedArea",
+      "outputs": [
+        {
+          "id": "tra_energy-demand-main-mode_aviation-passenger[TWh]",
+          "color": "#7328ae"
+        },
+        {
+          "id": "tra_energy-demand-main-mode_aviation-freight[TWh]",
+          "color": "#a35de4"
+        },
+        {
+          "id": "tra_energy-demand-main-mode_trucks[TWh]",
+          "color": "#e64343"
+        },
+        {
+          "id": "tra_energy-demand-main-mode_cars[TWh]",
+          "color": "#a7031a"
+        },
+        {
+          "id": "tra_energy-demand-main-mode_other-passenger[TWh]",
+          "color": "#089428"
+        },
+        {
+          "id": "tra_energy-demand-main-mode_other-freight[TWh]",
+          "color": "#41ca51"
+        },
+        {
+          "id": "tra_energy-demand-main-mode_rail-passenger[TWh]",
+          "color": "#0256a9"
+        },
+        {
+          "id": "tra_energy-demand-main-mode_rail-freight[TWh]",
+          "color": "#0c84fa"
+        }
+      ]
+    },
+    "TransportEnergyDemandMainFuels": {
+      "title": {
+        "enUS": "Energy demand by fuel",
+        "frFR": "Demande énergétique par carburant",
+        "deDE": "Energiebedarf nach Kraftstoff"
+      },
+      "unit": "TWh",
+      "type": "StackedArea",
+      "outputs": [
+        {
+          "id": "tra_energy-demand-main-fuel_kerosene[TWh]",
+          "color": "#77889b"
+        },
+        {
+          "id": "tra_energy-demand-main-fuel_diesel[TWh]",
+          "color": "#36322f"
+        },
+        {
+          "id": "tra_energy-demand-main-fuel_other-fossil[TWh]",
+          "color": "#a0978b"
+        },
+        {
+          "id": "tra_energy-demand-main-fuel_gasoline[TWh]",
+          "color": "#724727"
+        },
+        {
+          "id": "tra_energy-demand-main-fuel_other-renewable[TWh]",
+          "color": "#11c98b"
+        },
+        {
+          "id": "tra_energy-demand-main-fuel_electricity[TWh]",
+          "color": "#2a78d6"
+        }
+      ]
+    },
     "TransportGHGEmissionsPerMode": {
       "title": {
         "enUS": "GHG emissions per mode, passenger and freight",
@@ -153,17 +314,50 @@
       "unit": "Mt",
       "type": "StackedArea",
       "outputs": [
-        "tra_emissions-CO2e_passenger_LDV[Mt]",
-        "tra_emissions-CO2e_passenger_2W[Mt]",
-        "tra_emissions-CO2e_passenger_bus[Mt]",
-        "tra_emissions-CO2e_passenger_rail[Mt]",
-        "tra_emissions-CO2e_passenger_metrotram[Mt]",
-        "tra_emissions-CO2e_passenger_aviation[Mt]",
-        "tra_emissions-CO2e_freight_HDV[Mt]",
-        "tra_emissions-CO2e_freight_rail[Mt]",
-        "tra_emissions-CO2e_freight_IWW[Mt]",
-        "tra_emissions-CO2e_freight_marine[Mt]",
-        "tra_emissions-CO2e_freight_aviation[Mt]"
+        {
+          "id": "tra_emissions-CO2e_passenger_aviation[Mt]",
+          "color": "#7328ae"
+        },
+        {
+          "id": "tra_emissions-CO2e_freight_aviation[Mt]",
+          "color": "#a35de4"
+        },
+        {
+          "id": "tra_emissions-CO2e_freight_HDV[Mt]",
+          "color": "#e64343"
+        },
+        {
+          "id": "tra_emissions-CO2e_passenger_LDV[Mt]",
+          "color": "#a7031a"
+        },
+        {
+          "id": "tra_emissions-CO2e_passenger_2W[Mt]",
+          "color": "#049863"
+        },
+        {
+          "id": "tra_emissions-CO2e_passenger_bus[Mt]",
+          "color": "#06641a"
+        },
+        {
+          "id": "tra_emissions-CO2e_freight_IWW[Mt]",
+          "color": "#14bb7c"
+        },
+        {
+          "id": "tra_emissions-CO2e_freight_marine[Mt]",
+          "color": "#0b6f49"
+        },
+        {
+          "id": "tra_emissions-CO2e_passenger_rail[Mt]",
+          "color": "#0256a9"
+        },
+        {
+          "id": "tra_emissions-CO2e_passenger_metrotram[Mt]",
+          "color": "#7cb4fc"
+        },
+        {
+          "id": "tra_emissions-CO2e_freight_rail[Mt]",
+          "color": "#0c84fa"
+        }
       ]
     },
     "TransportGHGEmissionsPerFuel": {
@@ -175,13 +369,34 @@
       "unit": "Mt",
       "type": "StackedArea",
       "outputs": [
-        "tra_emissions-CO2e-by-fuel_diesel[Mt]",
-        "tra_emissions-CO2e-by-fuel_gasoline[Mt]",
-        "tra_emissions-CO2e-by-fuel_gas[Mt]",
-        "tra_emissions-CO2e-by-fuel_kerosene[Mt]",
-        "tra_emissions-CO2e-by-fuel_marine-fuel-oil[Mt]",
-        "tra_emissions-CO2e-by-fuel_SAF[Mt]",
-        "tra_emissions-CO2e-by-fuel_hydrogen[Mt]"
+        {
+          "id": "tra_emissions-CO2e-by-fuel_kerosene[Mt]",
+          "color": "#77889b"
+        },
+        {
+          "id": "tra_emissions-CO2e-by-fuel_diesel[Mt]",
+          "color": "#36322f"
+        },
+        {
+          "id": "tra_emissions-CO2e-by-fuel_gas[Mt]",
+          "color": "#a0978b"
+        },
+        {
+          "id": "tra_emissions-CO2e-by-fuel_marine-fuel-oil[Mt]",
+          "color": "#2d2213"
+        },
+        {
+          "id": "tra_emissions-CO2e-by-fuel_gasoline[Mt]",
+          "color": "#724727"
+        },
+        {
+          "id": "tra_emissions-CO2e-by-fuel_SAF[Mt]",
+          "color": "#0d9b2c"
+        },
+        {
+          "id": "tra_emissions-CO2e-by-fuel_hydrogen[Mt]",
+          "color": "#11c98b"
+        }
       ]
     },
     "TransportEnergyDemandPerMode": {
@@ -193,17 +408,50 @@
       "unit": "TWh",
       "type": "StackedArea",
       "outputs": [
-        "tra_passenger_energy-demand-by-mode_LDV[TWh]",
-        "tra_passenger_energy-demand-by-mode_2W[TWh]",
-        "tra_passenger_energy-demand-by-mode_bus[TWh]",
-        "tra_passenger_energy-demand-by-mode_rail[TWh]",
-        "tra_passenger_energy-demand-by-mode_metrotram[TWh]",
-        "tra_passenger_energy-demand-by-mode_aviation[TWh]",
-        "tra_freight_energy-demand-by-mode_HDV[TWh]",
-        "tra_freight_energy-demand-by-mode_rail[TWh]",
-        "tra_freight_energy-demand-by-mode_IWW[TWh]",
-        "tra_freight_energy-demand-by-mode_marine[TWh]",
-        "tra_freight_energy-demand-by-mode_aviation[TWh]"
+        {
+          "id": "tra_passenger_energy-demand-by-mode_aviation[TWh]",
+          "color": "#7328ae"
+        },
+        {
+          "id": "tra_freight_energy-demand-by-mode_aviation[TWh]",
+          "color": "#a35de4"
+        },
+        {
+          "id": "tra_freight_energy-demand-by-mode_HDV[TWh]",
+          "color": "#e64343"
+        },
+        {
+          "id": "tra_passenger_energy-demand-by-mode_LDV[TWh]",
+          "color": "#a7031a"
+        },
+        {
+          "id": "tra_passenger_energy-demand-by-mode_2W[TWh]",
+          "color": "#049863"
+        },
+        {
+          "id": "tra_passenger_energy-demand-by-mode_bus[TWh]",
+          "color": "#06641a"
+        },
+        {
+          "id": "tra_freight_energy-demand-by-mode_IWW[TWh]",
+          "color": "#14bb7c"
+        },
+        {
+          "id": "tra_freight_energy-demand-by-mode_marine[TWh]",
+          "color": "#0b6f49"
+        },
+        {
+          "id": "tra_passenger_energy-demand-by-mode_rail[TWh]",
+          "color": "#0256a9"
+        },
+        {
+          "id": "tra_passenger_energy-demand-by-mode_metrotram[TWh]",
+          "color": "#7cb4fc"
+        },
+        {
+          "id": "tra_freight_energy-demand-by-mode_rail[TWh]",
+          "color": "#0c84fa"
+        }
       ]
     },
     "TransportEnergyDemandPerFuel": {
@@ -215,15 +463,42 @@
       "unit": "TWh",
       "type": "StackedArea",
       "outputs": [
-        "tra_energy-demand-by-fuel_diesel[TWh]",
-        "tra_energy-demand-by-fuel_gasoline[TWh]",
-        "tra_energy-demand-by-fuel_gas[TWh]",
-        "tra_energy-demand-by-fuel_kerosene[TWh]",
-        "tra_energy-demand-by-fuel_marine-fuel-oil[TWh]",
-        "tra_energy-demand-by-fuel_biofuels[TWh]",
-        "tra_energy-demand-by-fuel_efuels[TWh]",
-        "tra_energy-demand-by-fuel_electricity[TWh]",
-        "tra_energy-demand-by-fuel_hydrogen[TWh]"
+        {
+          "id": "tra_energy-demand-by-fuel_kerosene[TWh]",
+          "color": "#77889b"
+        },
+        {
+          "id": "tra_energy-demand-by-fuel_diesel[TWh]",
+          "color": "#36322f"
+        },
+        {
+          "id": "tra_energy-demand-by-fuel_gas[TWh]",
+          "color": "#a0978b"
+        },
+        {
+          "id": "tra_energy-demand-by-fuel_marine-fuel-oil[TWh]",
+          "color": "#2d2213"
+        },
+        {
+          "id": "tra_energy-demand-by-fuel_gasoline[TWh]",
+          "color": "#724727"
+        },
+        {
+          "id": "tra_energy-demand-by-fuel_biofuels[TWh]",
+          "color": "#049863"
+        },
+        {
+          "id": "tra_energy-demand-by-fuel_efuels[TWh]",
+          "color": "#06641a"
+        },
+        {
+          "id": "tra_energy-demand-by-fuel_hydrogen[TWh]",
+          "color": "#11c98b"
+        },
+        {
+          "id": "tra_energy-demand-by-fuel_electricity[TWh]",
+          "color": "#2a78d6"
+        }
       ]
     },
     "CarFleetPerTechnology": {
@@ -235,13 +510,34 @@
       "unit": "Million vehicles",
       "type": "StackedArea",
       "outputs": [
-        "tra_passenger_vehicle-fleet_LDV_BEV[millions]",
-        "tra_passenger_vehicle-fleet_LDV_FCEV[millions]",
-        "tra_passenger_vehicle-fleet_LDV_PHEV-diesel[millions]",
-        "tra_passenger_vehicle-fleet_LDV_PHEV-gasoline[millions]",
-        "tra_passenger_vehicle-fleet_LDV_ICE-gas[millions]",
-        "tra_passenger_vehicle-fleet_LDV_ICE-diesel[millions]",
-        "tra_passenger_vehicle-fleet_LDV_ICE-gasoline[millions]"
+        {
+          "id": "tra_passenger_vehicle-fleet_LDV_ICE-gasoline[millions]",
+          "color": "#724727"
+        },
+        {
+          "id": "tra_passenger_vehicle-fleet_LDV_ICE-gas[millions]",
+          "color": "#a0978b"
+        },
+        {
+          "id": "tra_passenger_vehicle-fleet_LDV_ICE-diesel[millions]",
+          "color": "#36322f"
+        },
+        {
+          "id": "tra_passenger_vehicle-fleet_LDV_PHEV-gasoline[millions]",
+          "color": "#aa7a5a"
+        },
+        {
+          "id": "tra_passenger_vehicle-fleet_LDV_PHEV-diesel[millions]",
+          "color": "#56524e"
+        },
+        {
+          "id": "tra_passenger_vehicle-fleet_LDV_FCEV[millions]",
+          "color": "#11c98b"
+        },
+        {
+          "id": "tra_passenger_vehicle-fleet_LDV_BEV[millions]",
+          "color": "#2a78d6"
+        }
       ]
     },
     "PassengerDistancePerMode": {
@@ -253,14 +549,38 @@
       "unit": "Billion km",
       "type": "StackedArea",
       "outputs": [
-        "tra_passenger_transport-demand-by-mode_walk[Bpkm]",
-        "tra_passenger_transport-demand-by-mode_bike[Bpkm]",
-        "tra_passenger_transport-demand-by-mode_rail[Bpkm]",
-        "tra_passenger_transport-demand-by-mode_metrotram[Bpkm]",
-        "tra_passenger_transport-demand-by-mode_bus[Bpkm]",
-        "tra_passenger_transport-demand-by-mode_2W[Bpkm]",
-        "tra_passenger_transport-demand-by-mode_LDV[Bpkm]",
-        "tra_passenger_transport-demand-by-mode_aviation[Bpkm]"
+        {
+          "id": "tra_passenger_transport-demand-by-mode_aviation[Bpkm]",
+          "color": "#7328ae"
+        },
+        {
+          "id": "tra_passenger_transport-demand-by-mode_LDV[Bpkm]",
+          "color": "#a7031a"
+        },
+        {
+          "id": "tra_passenger_transport-demand-by-mode_2W[Bpkm]",
+          "color": "#049863"
+        },
+        {
+          "id": "tra_passenger_transport-demand-by-mode_bus[Bpkm]",
+          "color": "#06641a"
+        },
+        {
+          "id": "tra_passenger_transport-demand-by-mode_rail[Bpkm]",
+          "color": "#0256a9"
+        },
+        {
+          "id": "tra_passenger_transport-demand-by-mode_metrotram[Bpkm]",
+          "color": "#7cb4fc"
+        },
+        {
+          "id": "tra_passenger_transport-demand-by-mode_bike[Bpkm]",
+          "color": "#06791f"
+        },
+        {
+          "id": "tra_passenger_transport-demand-by-mode_walk[Bpkm]",
+          "color": "#19b036"
+        }
       ]
     },
     "PassengerDistanceVkmPerMode": {
@@ -272,11 +592,26 @@
       "unit": "Billion vkm",
       "type": "StackedArea",
       "outputs": [
-        "tra_passenger_transport-demand-vkm_rail[Bvkm]",
-        "tra_passenger_transport-demand-vkm_metrotram[Bvkm]",
-        "tra_passenger_transport-demand-vkm_bus[Bvkm]",
-        "tra_passenger_transport-demand-vkm_2W[Bvkm]",
-        "tra_passenger_transport-demand-vkm_LDV[Bvkm]"
+        {
+          "id": "tra_passenger_transport-demand-vkm_LDV[Bvkm]",
+          "color": "#a7031a"
+        },
+        {
+          "id": "tra_passenger_transport-demand-vkm_2W[Bvkm]",
+          "color": "#049863"
+        },
+        {
+          "id": "tra_passenger_transport-demand-vkm_bus[Bvkm]",
+          "color": "#06641a"
+        },
+        {
+          "id": "tra_passenger_transport-demand-vkm_rail[Bvkm]",
+          "color": "#0256a9"
+        },
+        {
+          "id": "tra_passenger_transport-demand-vkm_metrotram[Bvkm]",
+          "color": "#7cb4fc"
+        }
       ]
     },
     "PassengerEnergyDemandPerMode": {
@@ -288,12 +623,30 @@
       "unit": "TWh",
       "type": "StackedArea",
       "outputs": [
-        "tra_passenger_energy-demand-by-mode_rail[TWh]",
-        "tra_passenger_energy-demand-by-mode_metrotram[TWh]",
-        "tra_passenger_energy-demand-by-mode_bus[TWh]",
-        "tra_passenger_energy-demand-by-mode_2W[TWh]",
-        "tra_passenger_energy-demand-by-mode_LDV[TWh]",
-        "tra_passenger_energy-demand-by-mode_aviation[TWh]"
+        {
+          "id": "tra_passenger_energy-demand-by-mode_aviation[TWh]",
+          "color": "#7328ae"
+        },
+        {
+          "id": "tra_passenger_energy-demand-by-mode_LDV[TWh]",
+          "color": "#a7031a"
+        },
+        {
+          "id": "tra_passenger_energy-demand-by-mode_2W[TWh]",
+          "color": "#049863"
+        },
+        {
+          "id": "tra_passenger_energy-demand-by-mode_bus[TWh]",
+          "color": "#06641a"
+        },
+        {
+          "id": "tra_passenger_energy-demand-by-mode_rail[TWh]",
+          "color": "#0256a9"
+        },
+        {
+          "id": "tra_passenger_energy-demand-by-mode_metrotram[TWh]",
+          "color": "#7cb4fc"
+        }
       ]
     },
     "PassengerEnergyDemandPerFuel": {
@@ -305,15 +658,42 @@
       "unit": "TWh",
       "type": "StackedArea",
       "outputs": [
-        "tra_passenger_energy-demand-by-fuel_electricity[TWh]",
-        "tra_passenger_energy-demand-by-fuel_hydrogen[TWh]",
-        "tra_passenger_energy-demand-by-fuel_biodiesel[TWh]",
-        "tra_passenger_energy-demand-by-fuel_biogasoline[TWh]",
-        "tra_passenger_energy-demand-by-fuel_biogas[TWh]",
-        "tra_passenger_energy-demand-by-fuel_kerosenebio[TWh]",
-        "tra_passenger_energy-demand-by-fuel_gas[TWh]",
-        "tra_passenger_energy-demand-by-fuel_diesel[TWh]",
-        "tra_passenger_energy-demand-by-fuel_gasoline[TWh]"
+        {
+          "id": "tra_passenger_energy-demand-by-fuel_diesel[TWh]",
+          "color": "#36322f"
+        },
+        {
+          "id": "tra_passenger_energy-demand-by-fuel_gas[TWh]",
+          "color": "#a0978b"
+        },
+        {
+          "id": "tra_passenger_energy-demand-by-fuel_gasoline[TWh]",
+          "color": "#724727"
+        },
+        {
+          "id": "tra_passenger_energy-demand-by-fuel_biodiesel[TWh]",
+          "color": "#0d8626"
+        },
+        {
+          "id": "tra_passenger_energy-demand-by-fuel_biogasoline[TWh]",
+          "color": "#30bd44"
+        },
+        {
+          "id": "tra_passenger_energy-demand-by-fuel_biogas[TWh]",
+          "color": "#06641a"
+        },
+        {
+          "id": "tra_passenger_energy-demand-by-fuel_kerosenebio[TWh]",
+          "color": "#0d9b2c"
+        },
+        {
+          "id": "tra_passenger_energy-demand-by-fuel_hydrogen[TWh]",
+          "color": "#11c98b"
+        },
+        {
+          "id": "tra_passenger_energy-demand-by-fuel_electricity[TWh]",
+          "color": "#2a78d6"
+        }
       ]
     },
     "PassengerAviationEnergyDemandPerTech": {
@@ -325,10 +705,22 @@
       "unit": "TWh",
       "type": "StackedArea",
       "outputs": [
-        "tra_passenger_energy-demand_aviation_electricity[TWh]",
-        "tra_passenger_energy-demand_aviation_hydrogen[TWh]",
-        "tra_passenger_energy-demand_aviation_SAF[TWh]",
-        "tra_passenger_energy-demand_aviation_kerosene[TWh]"
+        {
+          "id": "tra_passenger_energy-demand_aviation_kerosene[TWh]",
+          "color": "#77889b"
+        },
+        {
+          "id": "tra_passenger_energy-demand_aviation_SAF[TWh]",
+          "color": "#0d9b2c"
+        },
+        {
+          "id": "tra_passenger_energy-demand_aviation_hydrogen[TWh]",
+          "color": "#11c98b"
+        },
+        {
+          "id": "tra_passenger_energy-demand_aviation_electricity[TWh]",
+          "color": "#2a78d6"
+        }
       ]
     },
     "PassengerAviationEmissionsTech": {
@@ -340,9 +732,18 @@
       "unit": "Mt",
       "type": "StackedArea",
       "outputs": [
-        "tra_passenger_emissions_aviation_H2_CO2[Mt]",
-        "tra_passenger_emissions_aviation_SAF_CO2[Mt]",
-        "tra_passenger_emissions_aviation_kerosene_CO2[Mt]"
+        {
+          "id": "tra_passenger_emissions_aviation_kerosene_CO2[Mt]",
+          "color": "#77889b"
+        },
+        {
+          "id": "tra_passenger_emissions_aviation_SAF_CO2[Mt]",
+          "color": "#0d9b2c"
+        },
+        {
+          "id": "tra_passenger_emissions_aviation_H2_CO2[Mt]",
+          "color": "#11c98b"
+        }
       ]
     },
     "PassengerAviationEmissionsLocal": {
@@ -354,8 +755,14 @@
       "unit": "Mt",
       "type": "Line",
       "outputs": [
-        "tra_passenger-emissions-local_aviation[Mt]",
-        "tra_passenger-emissions-total_aviation[Mt]"
+        {
+          "id": "tra_passenger-emissions-total_aviation[Mt]",
+          "color": "#a35de4"
+        },
+        {
+          "id": "tra_passenger-emissions-local_aviation[Mt]",
+          "color": "#7328ae"
+        }
       ]
     },
     "PassengerVehiclesFleet": {
@@ -367,15 +774,42 @@
       "unit": "Million vehicles",
       "type": "StackedArea",
       "outputs": [
-        "tra_passenger_vehicle-fleet_bus[millions]",
-        "tra_passenger_vehicle-fleet_2W[millions]",
-        "tra_passenger_vehicle-fleet_LDV_BEV[millions]",
-        "tra_passenger_vehicle-fleet_LDV_FCEV[millions]",
-        "tra_passenger_vehicle-fleet_LDV_PHEV-diesel[millions]",
-        "tra_passenger_vehicle-fleet_LDV_PHEV-gasoline[millions]",
-        "tra_passenger_vehicle-fleet_LDV_ICE-gas[millions]",
-        "tra_passenger_vehicle-fleet_LDV_ICE-diesel[millions]",
-        "tra_passenger_vehicle-fleet_LDV_ICE-gasoline[millions]"
+        {
+          "id": "tra_passenger_vehicle-fleet_LDV_ICE-gasoline[millions]",
+          "color": "#724727"
+        },
+        {
+          "id": "tra_passenger_vehicle-fleet_LDV_ICE-gas[millions]",
+          "color": "#a0978b"
+        },
+        {
+          "id": "tra_passenger_vehicle-fleet_LDV_ICE-diesel[millions]",
+          "color": "#36322f"
+        },
+        {
+          "id": "tra_passenger_vehicle-fleet_LDV_PHEV-gasoline[millions]",
+          "color": "#aa7a5a"
+        },
+        {
+          "id": "tra_passenger_vehicle-fleet_LDV_PHEV-diesel[millions]",
+          "color": "#56524e"
+        },
+        {
+          "id": "tra_passenger_vehicle-fleet_LDV_FCEV[millions]",
+          "color": "#11c98b"
+        },
+        {
+          "id": "tra_passenger_vehicle-fleet_LDV_BEV[millions]",
+          "color": "#2a78d6"
+        },
+        {
+          "id": "tra_passenger_vehicle-fleet_2W[millions]",
+          "color": "#049863"
+        },
+        {
+          "id": "tra_passenger_vehicle-fleet_bus[millions]",
+          "color": "#06641a"
+        }
       ]
     },
     "PassengerFleetOtherModes": {
@@ -387,9 +821,18 @@
       "unit": "Million vehicles",
       "type": "StackedArea",
       "outputs": [
-        "tra_passenger_vehicle-fleet_rail[millions]",
-        "tra_passenger_vehicle-fleet_metrotram[millions]",
-        "tra_passenger_vehicle-fleet_aviation[millions]"
+        {
+          "id": "tra_passenger_vehicle-fleet_aviation[millions]",
+          "color": "#7328ae"
+        },
+        {
+          "id": "tra_passenger_vehicle-fleet_metrotram[millions]",
+          "color": "#7cb4fc"
+        },
+        {
+          "id": "tra_passenger_vehicle-fleet_rail[millions]",
+          "color": "#0256a9"
+        }
       ]
     },
     "FreightEnergyDemandPerMode": {
@@ -401,11 +844,26 @@
       "unit": "TWh",
       "type": "StackedArea",
       "outputs": [
-        "tra_freight_energy-demand-by-mode_HDV[TWh]",
-        "tra_freight_energy-demand-by-mode_rail[TWh]",
-        "tra_freight_energy-demand-by-mode_IWW[TWh]",
-        "tra_freight_energy-demand-by-mode_marine[TWh]",
-        "tra_freight_energy-demand-by-mode_aviation[TWh]"
+        {
+          "id": "tra_freight_energy-demand-by-mode_aviation[TWh]",
+          "color": "#a35de4"
+        },
+        {
+          "id": "tra_freight_energy-demand-by-mode_HDV[TWh]",
+          "color": "#e64343"
+        },
+        {
+          "id": "tra_freight_energy-demand-by-mode_IWW[TWh]",
+          "color": "#14bb7c"
+        },
+        {
+          "id": "tra_freight_energy-demand-by-mode_marine[TWh]",
+          "color": "#0b6f49"
+        },
+        {
+          "id": "tra_freight_energy-demand-by-mode_rail[TWh]",
+          "color": "#0c84fa"
+        }
       ]
     },
     "FreightEnergyDemandPerFuel": {
@@ -417,18 +875,54 @@
       "unit": "TWh",
       "type": "StackedArea",
       "outputs": [
-        "tra_freight_energy-demand-by-fuel_electricity[TWh]",
-        "tra_freight_energy-demand-by-fuel_hydrogen[TWh]",
-        "tra_freight_energy-demand-by-fuel_biodiesel[TWh]",
-        "tra_freight_energy-demand-by-fuel_biogasoline[TWh]",
-        "tra_freight_energy-demand-by-fuel_biogas[TWh]",
-        "tra_freight_energy-demand-by-fuel_biomarinefueloil[TWh]",
-        "tra_freight_energy-demand-by-fuel_biojetfuel[TWh]",
-        "tra_freight_energy-demand-by-fuel_gas[TWh]",
-        "tra_freight_energy-demand-by-fuel_diesel[TWh]",
-        "tra_freight_energy-demand-by-fuel_gasoline[TWh]",
-        "tra_freight_energy-demand-by-fuel_kerosene[TWh]",
-        "tra_freight_energy-demand-by-fuel_marinefueloil[TWh]"
+        {
+          "id": "tra_freight_energy-demand-by-fuel_kerosene[TWh]",
+          "color": "#77889b"
+        },
+        {
+          "id": "tra_freight_energy-demand-by-fuel_diesel[TWh]",
+          "color": "#36322f"
+        },
+        {
+          "id": "tra_freight_energy-demand-by-fuel_gas[TWh]",
+          "color": "#a0978b"
+        },
+        {
+          "id": "tra_freight_energy-demand-by-fuel_marinefueloil[TWh]",
+          "color": "#2d2213"
+        },
+        {
+          "id": "tra_freight_energy-demand-by-fuel_gasoline[TWh]",
+          "color": "#724727"
+        },
+        {
+          "id": "tra_freight_energy-demand-by-fuel_biodiesel[TWh]",
+          "color": "#0d8626"
+        },
+        {
+          "id": "tra_freight_energy-demand-by-fuel_biogasoline[TWh]",
+          "color": "#30bd44"
+        },
+        {
+          "id": "tra_freight_energy-demand-by-fuel_biogas[TWh]",
+          "color": "#06641a"
+        },
+        {
+          "id": "tra_freight_energy-demand-by-fuel_biomarinefueloil[TWh]",
+          "color": "#49d158"
+        },
+        {
+          "id": "tra_freight_energy-demand-by-fuel_biojetfuel[TWh]",
+          "color": "#0d9b2c"
+        },
+        {
+          "id": "tra_freight_energy-demand-by-fuel_hydrogen[TWh]",
+          "color": "#11c98b"
+        },
+        {
+          "id": "tra_freight_energy-demand-by-fuel_electricity[TWh]",
+          "color": "#2a78d6"
+        }
       ]
     },
     "TrucksTechnologyShare": {
@@ -440,12 +934,30 @@
       "unit": "%",
       "type": "StackedArea",
       "outputs": [
-        "tra_freight_technology-share-fleet_HDVH_ICE-diesel[%]",
-        "tra_freight_technology-share-fleet_HDVH_ICE-gas[%]",
-        "tra_freight_technology-share-fleet_HDVH_PHEV-diesel[%]",
-        "tra_freight_technology-share-fleet_HDVH_FCEV[%]",
-        "tra_freight_technology-share-fleet_HDVH_BEV[%]",
-        "tra_freight_technology-share-fleet_HDVH_CEV[%]"
+        {
+          "id": "tra_freight_technology-share-fleet_HDVH_ICE-diesel[%]",
+          "color": "#36322f"
+        },
+        {
+          "id": "tra_freight_technology-share-fleet_HDVH_ICE-gas[%]",
+          "color": "#a0978b"
+        },
+        {
+          "id": "tra_freight_technology-share-fleet_HDVH_PHEV-diesel[%]",
+          "color": "#56524e"
+        },
+        {
+          "id": "tra_freight_technology-share-fleet_HDVH_FCEV[%]",
+          "color": "#11c98b"
+        },
+        {
+          "id": "tra_freight_technology-share-fleet_HDVH_BEV[%]",
+          "color": "#2a78d6"
+        },
+        {
+          "id": "tra_freight_technology-share-fleet_HDVH_CEV[%]",
+          "color": "#6fadfe"
+        }
       ]
     },
     "PassengerGHGEmissionsPerMode": {
@@ -457,11 +969,26 @@
       "unit": "Mt",
       "type": "StackedArea",
       "outputs": [
-        "tra_emissions-CO2e_passenger_rail[Mt]",
-        "tra_emissions-CO2e_passenger_bus[Mt]",
-        "tra_emissions-CO2e_passenger_2W[Mt]",
-        "tra_emissions-CO2e_passenger_LDV[Mt]",
-        "tra_emissions-CO2e_passenger_aviation[Mt]"
+        {
+          "id": "tra_emissions-CO2e_passenger_aviation[Mt]",
+          "color": "#7328ae"
+        },
+        {
+          "id": "tra_emissions-CO2e_passenger_LDV[Mt]",
+          "color": "#a7031a"
+        },
+        {
+          "id": "tra_emissions-CO2e_passenger_2W[Mt]",
+          "color": "#049863"
+        },
+        {
+          "id": "tra_emissions-CO2e_passenger_bus[Mt]",
+          "color": "#06641a"
+        },
+        {
+          "id": "tra_emissions-CO2e_passenger_rail[Mt]",
+          "color": "#0256a9"
+        }
       ]
     },
     "FreightGHGEmissionsPerMode": {
@@ -473,11 +1000,26 @@
       "unit": "Mt",
       "type": "StackedArea",
       "outputs": [
-        "tra_freight_emissions_aviation_CO2[Mt]",
-        "tra_freight_emissions_HDV_CO2[Mt]",
-        "tra_freight_emissions_IWW_CO2[Mt]",
-        "tra_freight_emissions_marine_CO2[Mt]",
-        "tra_freight_emissions_rail_CO2[Mt]"
+        {
+          "id": "tra_freight_emissions_aviation_CO2[Mt]",
+          "color": "#a35de4"
+        },
+        {
+          "id": "tra_freight_emissions_HDV_CO2[Mt]",
+          "color": "#e64343"
+        },
+        {
+          "id": "tra_freight_emissions_IWW_CO2[Mt]",
+          "color": "#14bb7c"
+        },
+        {
+          "id": "tra_freight_emissions_marine_CO2[Mt]",
+          "color": "#0b6f49"
+        },
+        {
+          "id": "tra_freight_emissions_rail_CO2[Mt]",
+          "color": "#0c84fa"
+        }
       ]
     }
   }
