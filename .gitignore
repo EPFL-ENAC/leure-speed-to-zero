@@ -8,3 +8,4 @@ npm-shrinkwrap.json
 *.code-workspace
 CLAUDE.md
 .claude/*
+BACKLOG.md
