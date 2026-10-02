@@ -8,7 +8,6 @@
       },
       "unit": "Mt",
       "route": "emissions",
-      "view": "passenger",
       "maximize": false,
       "info": {
         "enUS": "CO₂ emissions from how residents travel on land. Lower emissions mean better environmental outcomes and alignment with climate goals.",
@@ -24,7 +23,6 @@
       },
       "unit": "Mt",
       "route": "emissions",
-      "view": "passenger",
       "maximize": false,
       "info": {
         "enUS": "The aviation emissions shown here represent the climate impact of flights taken by the resident population, including international trips. They are expressed as CO₂-equivalent emissions to account not only for CO₂ but also for other warming effects from aviation, such as water vapour, nitrogen oxides (NOₓ), contrails, and short-lived ozone. Following best-practice estimates, we assume the total climate impact of aviation is approximately three times the impact of CO₂ emissions alone.",
@@ -40,7 +38,6 @@
       },
       "unit": "TWh",
       "route": "energy",
-      "view": "passenger",
       "maximize": false,
       "info": {
         "enUS": "Total energy demand for passenger transport.",
@@ -55,8 +52,7 @@
         "deDE": "Elektroauto-Anteil"
       },
       "unit": "%",
-      "route": "stock",
-      "view": "passenger",
+      "route": "fleet",
       "maximize": true,
       "info": {
         "enUS": "Share of electric vehicles in the passenger car fleet.",
@@ -72,7 +68,6 @@
       },
       "unit": "TWh",
       "route": "energy",
-      "view": "freight",
       "maximize": false,
       "info": {
         "enUS": "Total energy demand for freight transport.",
@@ -87,8 +82,7 @@
         "deDE": "Anteil emissionsarmer LKW"
       },
       "unit": "%",
-      "route": "stock",
-      "view": "freight",
+      "route": "fleet",
       "maximize": true,
       "info": {
         "enUS": "Share of low-emission trucks in the freight vehicle fleet.",
@@ -106,26 +100,36 @@
       },
       "route": "emissions",
       "toggle": {
-        "default": "passenger",
+        "default": "by-mode",
         "options": [
           {
-            "value": "passenger",
-            "label": { "enUS": "Passenger", "frFR": "Passagers", "deDE": "Passagiere" }
+            "value": "by-mode",
+            "label": {
+              "enUS": "By mode",
+              "frFR": "Par mode",
+              "deDE": "Nach Verkehrsträger"
+            }
           },
           {
-            "value": "freight",
-            "label": { "enUS": "Freight", "frFR": "Fret", "deDE": "Fracht" }
+            "value": "by-fuel",
+            "label": {
+              "enUS": "By fuel",
+              "frFR": "Par carburant",
+              "deDE": "Nach Kraftstoff"
+            }
           }
         ],
         "charts": {
-          "passenger": ["PassengerGHGEmissionsPerMode"],
-          "freight": ["FreightGHGEmissionsPerMode"]
+          "by-mode": ["TransportGHGEmissionsPerMode"],
+          "by-fuel": ["TransportGHGEmissionsPerFuel"]
         }
       },
-      "moreInfo": {
-        "passenger": ["PassengerAviationEmissionsTech", "PassengerAviationEmissionsLocal"],
-        "freight": []
-      }
+      "moreInfo": [
+        "PassengerGHGEmissionsPerMode",
+        "FreightGHGEmissionsPerMode",
+        "PassengerAviationEmissionsTech",
+        "PassengerAviationEmissionsLocal"
+      ]
     },
     {
       "title": {
@@ -135,63 +139,156 @@
       },
       "route": "energy",
       "toggle": {
-        "default": "passenger",
+        "default": "by-mode",
         "options": [
           {
-            "value": "passenger",
-            "label": { "enUS": "Passenger", "frFR": "Passagers", "deDE": "Passagiere" }
+            "value": "by-mode",
+            "label": {
+              "enUS": "By mode",
+              "frFR": "Par mode",
+              "deDE": "Nach Verkehrsträger"
+            }
           },
           {
-            "value": "freight",
-            "label": { "enUS": "Freight", "frFR": "Fret", "deDE": "Fracht" }
+            "value": "by-fuel",
+            "label": {
+              "enUS": "By fuel",
+              "frFR": "Par carburant",
+              "deDE": "Nach Kraftstoff"
+            }
           }
         ],
         "charts": {
-          "passenger": ["PassengerEnergyDemandPerMode"],
-          "freight": ["FreightEnergyDemandPerMode"]
+          "by-mode": ["TransportEnergyDemandPerMode"],
+          "by-fuel": ["TransportEnergyDemandPerFuel"]
         }
       },
-      "moreInfo": {
-        "passenger": ["PassengerEnergyDemandPerFuel", "PassengerAviationEnergyDemandPerTech"],
-        "freight": ["FreightEnergyDemandPerFuel"]
-      }
+      "moreInfo": [
+        "PassengerEnergyDemandPerMode",
+        "FreightEnergyDemandPerMode",
+        "PassengerEnergyDemandPerFuel",
+        "FreightEnergyDemandPerFuel",
+        "PassengerAviationEnergyDemandPerTech"
+      ]
     },
     {
       "title": {
-        "enUS": "Stock",
-        "frFR": "Parc",
-        "deDE": "Bestand"
+        "enUS": "Fleet",
+        "frFR": "Flotte",
+        "deDE": "Flotte"
       },
-      "route": "stock",
-      "toggle": {
-        "default": "passenger",
-        "options": [
-          {
-            "value": "passenger",
-            "label": { "enUS": "Passenger", "frFR": "Passagers", "deDE": "Passagiere" }
-          },
-          {
-            "value": "freight",
-            "label": { "enUS": "Freight", "frFR": "Fret", "deDE": "Fracht" }
-          }
-        ],
-        "charts": {
-          "passenger": ["PassengerVehiclesFleet"],
-          "freight": ["TrucksTechnologyShare"]
-        }
-      },
-      "moreInfo": {
-        "passenger": [
-          "PassengerFleetOtherModes",
-          "PassengerDistancePerMode",
-          "PassengerDistanceVkmPerMode"
-        ],
-        "freight": []
-      }
+      "route": "fleet",
+      "charts": ["CarFleetPerTechnology"],
+      "moreInfo": [
+        "PassengerVehiclesFleet",
+        "PassengerFleetOtherModes",
+        "TrucksTechnologyShare",
+        "PassengerDistancePerMode",
+        "PassengerDistanceVkmPerMode"
+      ]
     }
   ],
-
   "charts": {
+    "TransportGHGEmissionsPerMode": {
+      "title": {
+        "enUS": "GHG emissions per mode, passenger and freight",
+        "frFR": "Émissions de GES par mode, passagers et fret",
+        "deDE": "THG-Emissionen nach Verkehrsträger, Personen- und Güterverkehr"
+      },
+      "unit": "Mt",
+      "type": "StackedArea",
+      "outputs": [
+        "tra_emissions-CO2e_passenger_LDV[Mt]",
+        "tra_emissions-CO2e_passenger_2W[Mt]",
+        "tra_emissions-CO2e_passenger_bus[Mt]",
+        "tra_emissions-CO2e_passenger_rail[Mt]",
+        "tra_emissions-CO2e_passenger_metrotram[Mt]",
+        "tra_emissions-CO2e_passenger_aviation[Mt]",
+        "tra_emissions-CO2e_freight_HDV[Mt]",
+        "tra_emissions-CO2e_freight_rail[Mt]",
+        "tra_emissions-CO2e_freight_IWW[Mt]",
+        "tra_emissions-CO2e_freight_marine[Mt]",
+        "tra_emissions-CO2e_freight_aviation[Mt]"
+      ]
+    },
+    "TransportGHGEmissionsPerFuel": {
+      "title": {
+        "enUS": "GHG emissions per fuel, passenger and freight",
+        "frFR": "Émissions de GES par carburant, passagers et fret",
+        "deDE": "THG-Emissionen nach Kraftstoff, Personen- und Güterverkehr"
+      },
+      "unit": "Mt",
+      "type": "StackedArea",
+      "outputs": [
+        "tra_emissions-CO2e-by-fuel_diesel[Mt]",
+        "tra_emissions-CO2e-by-fuel_gasoline[Mt]",
+        "tra_emissions-CO2e-by-fuel_gas[Mt]",
+        "tra_emissions-CO2e-by-fuel_kerosene[Mt]",
+        "tra_emissions-CO2e-by-fuel_marine-fuel-oil[Mt]",
+        "tra_emissions-CO2e-by-fuel_SAF[Mt]",
+        "tra_emissions-CO2e-by-fuel_hydrogen[Mt]"
+      ]
+    },
+    "TransportEnergyDemandPerMode": {
+      "title": {
+        "enUS": "Energy demand per mode, passenger and freight",
+        "frFR": "Demande énergétique par mode, passagers et fret",
+        "deDE": "Energiebedarf nach Verkehrsträger, Personen- und Güterverkehr"
+      },
+      "unit": "TWh",
+      "type": "StackedArea",
+      "outputs": [
+        "tra_passenger_energy-demand-by-mode_LDV[TWh]",
+        "tra_passenger_energy-demand-by-mode_2W[TWh]",
+        "tra_passenger_energy-demand-by-mode_bus[TWh]",
+        "tra_passenger_energy-demand-by-mode_rail[TWh]",
+        "tra_passenger_energy-demand-by-mode_metrotram[TWh]",
+        "tra_passenger_energy-demand-by-mode_aviation[TWh]",
+        "tra_freight_energy-demand-by-mode_HDV[TWh]",
+        "tra_freight_energy-demand-by-mode_rail[TWh]",
+        "tra_freight_energy-demand-by-mode_IWW[TWh]",
+        "tra_freight_energy-demand-by-mode_marine[TWh]",
+        "tra_freight_energy-demand-by-mode_aviation[TWh]"
+      ]
+    },
+    "TransportEnergyDemandPerFuel": {
+      "title": {
+        "enUS": "Energy demand per fuel, passenger and freight",
+        "frFR": "Demande énergétique par carburant, passagers et fret",
+        "deDE": "Energiebedarf nach Kraftstoff, Personen- und Güterverkehr"
+      },
+      "unit": "TWh",
+      "type": "StackedArea",
+      "outputs": [
+        "tra_energy-demand-by-fuel_diesel[TWh]",
+        "tra_energy-demand-by-fuel_gasoline[TWh]",
+        "tra_energy-demand-by-fuel_gas[TWh]",
+        "tra_energy-demand-by-fuel_kerosene[TWh]",
+        "tra_energy-demand-by-fuel_marine-fuel-oil[TWh]",
+        "tra_energy-demand-by-fuel_biofuels[TWh]",
+        "tra_energy-demand-by-fuel_efuels[TWh]",
+        "tra_energy-demand-by-fuel_electricity[TWh]",
+        "tra_energy-demand-by-fuel_hydrogen[TWh]"
+      ]
+    },
+    "CarFleetPerTechnology": {
+      "title": {
+        "enUS": "Car fleet per technology",
+        "frFR": "Parc de voitures par technologie",
+        "deDE": "Pkw-Bestand nach Technologie"
+      },
+      "unit": "Million vehicles",
+      "type": "StackedArea",
+      "outputs": [
+        "tra_passenger_vehicle-fleet_LDV_BEV[millions]",
+        "tra_passenger_vehicle-fleet_LDV_FCEV[millions]",
+        "tra_passenger_vehicle-fleet_LDV_PHEV-diesel[millions]",
+        "tra_passenger_vehicle-fleet_LDV_PHEV-gasoline[millions]",
+        "tra_passenger_vehicle-fleet_LDV_ICE-gas[millions]",
+        "tra_passenger_vehicle-fleet_LDV_ICE-diesel[millions]",
+        "tra_passenger_vehicle-fleet_LDV_ICE-gasoline[millions]"
+      ]
+    },
     "PassengerDistancePerMode": {
       "title": {
         "enUS": "Passenger distance per mode",
@@ -288,7 +385,6 @@
       "unit": "Mt",
       "type": "StackedArea",
       "outputs": [
-        "tra_passenger_emissions_aviation_BEV_CO2[Mt]",
         "tra_passenger_emissions_aviation_H2_CO2[Mt]",
         "tra_passenger_emissions_aviation_SAF_CO2[Mt]",
         "tra_passenger_emissions_aviation_kerosene_CO2[Mt]"
