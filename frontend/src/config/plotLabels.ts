@@ -5371,16 +5371,6 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Verluste',
     frFR: 'Pertes',
   },
-  'pow_production_Dam[TWh]': {
-    enUS: 'Dam',
-    deDE: 'Speicherkraftwerk',
-    frFR: 'Barrage',
-  },
-  'pow_production_RoR[TWh]': {
-    enUS: 'Run-of-River',
-    deDE: 'Laufwasserkraftwerk',
-    frFR: 'Au fil de l’eau',
-  },
   'pow_production_PV-roof[TWh]': {
     enUS: 'PV-roof',
     deDE: 'PV-dach',
@@ -5396,25 +5386,25 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Kernenergie',
     frFR: 'Nucléaire',
   },
+  'pow_production_Hydro[TWh]': {
+    enUS: 'Hydro',
+    deDE: 'Wasserkraft',
+    frFR: 'Hydraulique',
+  },
+  'pow_production_Oil[TWh]': {
+    enUS: 'Oil',
+    deDE: 'Öl',
+    frFR: 'Pétrole',
+  },
+  'pow_production_Waste[TWh]': {
+    enUS: 'Waste',
+    deDE: 'Abfall',
+    frFR: 'Déchets',
+  },
   'pow_production_Gas[TWh]': {
     enUS: 'Gas',
     deDE: 'Gaskraftwerk',
     frFR: 'Gaz',
-  },
-  'pow_production_GasCC-CCS[TWh]': {
-    enUS: 'Gas-CCS',
-    deDE: 'Gaskraftwerk mit CCS',
-    frFR: 'Gaz avec CSC',
-  },
-  'pow_capacity_Dam[GW]': {
-    enUS: 'Dam',
-    deDE: 'Speicherkraftwerk',
-    frFR: 'Barrage',
-  },
-  'pow_capacity_RoR[GW]': {
-    enUS: 'Run-of-River',
-    deDE: 'Laufwasserkraftwerk',
-    frFR: 'Au fil de l’eau',
   },
   'pow_capacity_PV-roof[GW]': {
     enUS: 'PV-roof',
@@ -5431,25 +5421,25 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Kernenergie',
     frFR: 'Nucléaire',
   },
+  'pow_capacity_Hydro[GW]': {
+    enUS: 'Hydro',
+    deDE: 'Wasserkraft',
+    frFR: 'Hydraulique',
+  },
+  'pow_capacity_Oil[GW]': {
+    enUS: 'Oil',
+    deDE: 'Öl',
+    frFR: 'Pétrole',
+  },
+  'pow_capacity_Waste[GW]': {
+    enUS: 'Waste',
+    deDE: 'Abfall',
+    frFR: 'Déchets',
+  },
   'pow_capacity_Gas[GW]': {
     enUS: 'Gas',
     deDE: 'Gaskraftwerk',
     frFR: 'Gaz',
-  },
-  'pow_capacity_GasCC-CCS[GW]': {
-    enUS: 'Gas-CCS',
-    deDE: 'Gaskraftwerk mit CCS',
-    frFR: 'Gaz avec CSC',
-  },
-  'pow_capacity-cantonal_Dam[GW]': {
-    enUS: 'Dam',
-    deDE: 'Speicherkraftwerk',
-    frFR: 'Barrage',
-  },
-  'pow_capacity-cantonal_RoR[GW]': {
-    enUS: 'Run-of-River',
-    deDE: 'Laufwasserkraftwerk',
-    frFR: 'Au fil de l’eau',
   },
   'pow_capacity-cantonal_PV-roof[GW]': {
     enUS: 'PV-roof',
@@ -5466,15 +5456,25 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Kernenergie',
     frFR: 'Nucléaire',
   },
+  'pow_capacity-cantonal_Hydro[GW]': {
+    enUS: 'Hydro',
+    deDE: 'Wasserkraft',
+    frFR: 'Hydraulique',
+  },
+  'pow_capacity-cantonal_Oil[GW]': {
+    enUS: 'Oil',
+    deDE: 'Öl',
+    frFR: 'Pétrole',
+  },
+  'pow_capacity-cantonal_Waste[GW]': {
+    enUS: 'Waste',
+    deDE: 'Abfall',
+    frFR: 'Déchets',
+  },
   'pow_capacity-cantonal_Gas[GW]': {
     enUS: 'Gas',
     deDE: 'Gaskraftwerk',
     frFR: 'Gaz',
-  },
-  'pow_capacity-cantonal_GasCC-CCS[GW]': {
-    enUS: 'Gas-CCS',
-    deDE: 'Gaskraftwerk mit CCS',
-    frFR: 'Gaz avec CSC',
   },
   'bld_energy-consumption[TWh]': {
     enUS: 'Buildings',
@@ -5771,6 +5771,116 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Güterverkehr',
     frFR: 'Transport de marchandises',
   },
+  'tra_emissions-CO2e_passenger_metrotram[Mt]': {
+    enUS: 'Metro-Tram',
+    deDE: 'Metro-Tram',
+    frFR: 'Métro-Tram',
+  },
+  'tra_emissions-CO2e_freight_HDV[Mt]': {
+    enUS: 'Trucks',
+    deDE: 'Lastwagen',
+    frFR: 'Camions',
+  },
+  'tra_emissions-CO2e_freight_rail[Mt]': {
+    enUS: 'Rail (freight)',
+    deDE: 'Eisenbahn (Güter)',
+    frFR: 'Ferroviaire (fret)',
+  },
+  'tra_emissions-CO2e_freight_IWW[Mt]': {
+    enUS: 'Inland waterways',
+    deDE: 'Binnenschifffahrt',
+    frFR: 'Voies navigables',
+  },
+  'tra_emissions-CO2e_freight_marine[Mt]': {
+    enUS: 'Marine',
+    deDE: 'Seeverkehr',
+    frFR: 'Maritime',
+  },
+  'tra_emissions-CO2e_freight_aviation[Mt]': {
+    enUS: 'Aviation (freight)',
+    deDE: 'Luftverkehr (Güter)',
+    frFR: 'Aviation (fret)',
+  },
+  'tra_emissions-CO2e-by-fuel_diesel[Mt]': {
+    enUS: 'Diesel',
+    deDE: 'Diesel',
+    frFR: 'Diesel',
+  },
+  'tra_emissions-CO2e-by-fuel_gasoline[Mt]': {
+    enUS: 'Gasoline',
+    deDE: 'Benzin',
+    frFR: 'Essence',
+  },
+  'tra_emissions-CO2e-by-fuel_gas[Mt]': {
+    enUS: 'Natural gas',
+    deDE: 'Erdgas',
+    frFR: 'Gaz naturel',
+  },
+  'tra_emissions-CO2e-by-fuel_kerosene[Mt]': {
+    enUS: 'Kerosene',
+    deDE: 'Kerosin',
+    frFR: 'Kérosène',
+  },
+  'tra_emissions-CO2e-by-fuel_marine-fuel-oil[Mt]': {
+    enUS: 'Marine fuel oil',
+    deDE: 'Schiffsdiesel',
+    frFR: 'Fioul marin',
+  },
+  'tra_emissions-CO2e-by-fuel_hydrogen[Mt]': {
+    enUS: 'Hydrogen',
+    deDE: 'Wasserstoff',
+    frFR: 'Hydrogène',
+  },
+  'tra_emissions-CO2e-by-fuel_SAF[Mt]': {
+    enUS: 'Sustainable aviation fuel',
+    deDE: 'Nachhaltiger Flugkraftstoff',
+    frFR: "Carburant d'aviation durable",
+  },
+  'tra_energy-demand-by-fuel_diesel[TWh]': {
+    enUS: 'Diesel',
+    deDE: 'Diesel',
+    frFR: 'Diesel',
+  },
+  'tra_energy-demand-by-fuel_gasoline[TWh]': {
+    enUS: 'Gasoline',
+    deDE: 'Benzin',
+    frFR: 'Essence',
+  },
+  'tra_energy-demand-by-fuel_gas[TWh]': {
+    enUS: 'Natural gas',
+    deDE: 'Erdgas',
+    frFR: 'Gaz naturel',
+  },
+  'tra_energy-demand-by-fuel_kerosene[TWh]': {
+    enUS: 'Kerosene',
+    deDE: 'Kerosin',
+    frFR: 'Kérosène',
+  },
+  'tra_energy-demand-by-fuel_marine-fuel-oil[TWh]': {
+    enUS: 'Marine fuel oil',
+    deDE: 'Schiffsdiesel',
+    frFR: 'Fioul marin',
+  },
+  'tra_energy-demand-by-fuel_hydrogen[TWh]': {
+    enUS: 'Hydrogen',
+    deDE: 'Wasserstoff',
+    frFR: 'Hydrogène',
+  },
+  'tra_energy-demand-by-fuel_biofuels[TWh]': {
+    enUS: 'Biofuels',
+    deDE: 'Biokraftstoffe',
+    frFR: 'Biocarburants',
+  },
+  'tra_energy-demand-by-fuel_efuels[TWh]': {
+    enUS: 'E-fuels',
+    deDE: 'E-Fuels',
+    frFR: 'E-carburants',
+  },
+  'tra_energy-demand-by-fuel_electricity[TWh]': {
+    enUS: 'Electricity',
+    deDE: 'Strom',
+    frFR: 'Électricité',
+  },
   'tra_emissions-CO2e_passenger-land[Mt]': {
     enUS: 'Passenger (land)',
     deDE: 'Personenverkehr (Land)',
@@ -5802,9 +5912,9 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     frFR: 'Voitures',
   },
   'tra_emissions-CO2e_passenger_aviation[Mt]': {
-    enUS: 'Aviation',
-    deDE: 'Luftverkehr',
-    frFR: 'Aviation',
+    enUS: 'Aviation (passenger)',
+    deDE: 'Luftverkehr (Personen)',
+    frFR: 'Aviation (passagers)',
   },
   'tra_emissions-CO2e_passenger_bus[Mt]': {
     enUS: 'Bus',
@@ -5812,9 +5922,9 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     frFR: 'Bus',
   },
   'tra_emissions-CO2e_passenger_rail[Mt]': {
-    enUS: 'Rail',
-    deDE: 'Eisenbahn',
-    frFR: 'Ferroviaire',
+    enUS: 'Rail (passenger)',
+    deDE: 'Eisenbahn (Personen)',
+    frFR: 'Ferroviaire (passagers)',
   },
   'tra_freight_emissions_HDV_CO2[Mt]': {
     enUS: 'Trucks',
@@ -5912,9 +6022,9 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     frFR: 'Voies navigables intérieures',
   },
   'tra_freight_energy-demand-by-mode_aviation[TWh]': {
-    enUS: 'Aviation',
-    deDE: 'Luftfahrt',
-    frFR: 'Aviation',
+    enUS: 'Aviation (freight)',
+    deDE: 'Luftfahrt (Güter)',
+    frFR: 'Aviation (fret)',
   },
   'tra_freight_energy-demand-by-mode_marine[TWh]': {
     enUS: 'Marine',
@@ -5922,9 +6032,9 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     frFR: 'Marine',
   },
   'tra_freight_energy-demand-by-mode_rail[TWh]': {
-    enUS: 'Rail',
-    deDE: 'Eisenbahn',
-    frFR: 'Ferroviaire',
+    enUS: 'Rail (freight)',
+    deDE: 'Eisenbahn (Güter)',
+    frFR: 'Ferroviaire (fret)',
   },
   'tra_freight_technology-share-fleet_HDVH_BEV[%]': {
     enUS: 'Electric truck',
@@ -6142,9 +6252,9 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     frFR: 'Voitures',
   },
   'tra_passenger_energy-demand-by-mode_aviation[TWh]': {
-    enUS: 'Aviation',
-    deDE: 'Luftfahrt',
-    frFR: 'Aviation',
+    enUS: 'Aviation (passenger)',
+    deDE: 'Luftfahrt (Personen)',
+    frFR: 'Aviation (passagers)',
   },
   'tra_passenger_energy-demand-by-mode_bus[TWh]': {
     enUS: 'Bus',
@@ -6157,9 +6267,9 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     frFR: 'Métro-Tram',
   },
   'tra_passenger_energy-demand-by-mode_rail[TWh]': {
-    enUS: 'Rail',
-    deDE: 'Eisenbahn',
-    frFR: 'Ferroviaire',
+    enUS: 'Rail (passenger)',
+    deDE: 'Eisenbahn (Personen)',
+    frFR: 'Ferroviaire (passagers)',
   },
   'tra_passenger_energy-demand_aviation_SAF[TWh]': {
     enUS: 'SAF-fueled',
