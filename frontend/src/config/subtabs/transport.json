@@ -2,47 +2,32 @@
   "kpis": [
     {
       "name": {
-        "enUS": "Passenger land transport CO2",
-        "frFR": "CO2 transport terrestre passagers",
-        "deDE": "CO2 Landverkehr Passagiere"
+        "enUS": "Total transport emissions",
+        "frFR": "Émissions totales des transports",
+        "deDE": "Gesamtemissionen Verkehr"
       },
-      "unit": "Mt",
+      "unit": "Mt CO₂eq",
       "route": "emissions",
       "maximize": false,
       "info": {
-        "enUS": "CO₂ emissions from how residents travel on land. Lower emissions mean better environmental outcomes and alignment with climate goals.",
-        "frFR": "Émissions de CO₂ provenant des déplacements terrestres des résidents. Des émissions plus faibles signifient de meilleurs résultats environnementaux et un alignement avec les objectifs climatiques.",
-        "deDE": "CO₂-Emissionen aus dem Landverkehr der Einwohner. Niedrigere Emissionen bedeuten bessere Umweltergebnisse und Übereinstimmung mit Klimazielen."
+        "enUS": "Direct (scope 1) greenhouse gas emissions in 2050 from all passenger and freight transport, aviation included. Electricity-related emissions are attributed to the power sector, not to transport. Aviation is counted on a residency basis, covering the full round trip of residents' flights.",
+        "frFR": "Émissions directes (périmètre 1) de gaz à effet de serre en 2050 pour l'ensemble du transport de passagers et de marchandises, aviation comprise. Les émissions liées à l'électricité sont attribuées au secteur de l'énergie et non aux transports. L'aviation est comptabilisée sur une base de résidence, couvrant l'aller-retour complet des vols des résidents.",
+        "deDE": "Direkte Treibhausgasemissionen (Scope 1) im Jahr 2050 aus dem gesamten Personen- und Güterverkehr, einschliesslich Luftverkehr. Strombedingte Emissionen werden dem Energiesektor zugerechnet, nicht dem Verkehr. Der Luftverkehr wird nach dem Wohnsitzprinzip erfasst und umfasst den gesamten Hin- und Rückflug der Einwohner."
       }
     },
     {
       "name": {
-        "enUS": "Passenger aviation CO2",
-        "frFR": "CO2 aviation passagers",
-        "deDE": "CO2 Luftverkehr Passagiere"
-      },
-      "unit": "Mt",
-      "route": "emissions",
-      "maximize": false,
-      "info": {
-        "enUS": "The aviation emissions shown here represent the climate impact of flights taken by the resident population, including international trips. They are expressed as CO₂-equivalent emissions to account not only for CO₂ but also for other warming effects from aviation, such as water vapour, nitrogen oxides (NOₓ), contrails, and short-lived ozone. Following best-practice estimates, we assume the total climate impact of aviation is approximately three times the impact of CO₂ emissions alone.",
-        "frFR": "Les émissions d'aviation présentées ici représentent l'impact climatique des vols effectués par la population résidente, y compris les voyages internationaux. Elles sont exprimées en émissions équivalent CO₂ pour tenir compte non seulement du CO₂ mais aussi d'autres effets de réchauffement de l'aviation, tels que la vapeur d'eau, les oxydes d'azote (NOₓ), les traînées de condensation et l'ozone de courte durée. Selon les meilleures estimations, nous supposons que l'impact climatique total de l'aviation est environ trois fois supérieur à celui des seules émissions de CO₂.",
-        "deDE": "Die hier gezeigten Luftverkehrsemissionen repräsentieren die Klimawirkung von Flügen der ansässigen Bevölkerung, einschließlich internationaler Reisen. Sie werden als CO₂-Äquivalentemissionen ausgedrückt, um nicht nur CO₂, sondern auch andere Erwärmungseffekte der Luftfahrt wie Wasserdampf, Stickoxide (NOₓ), Kondensstreifen und kurzlebiges Ozon zu berücksichtigen. Nach bewährten Schätzungen gehen wir davon aus, dass die gesamte Klimawirkung der Luftfahrt etwa dreimal so groß ist wie die der CO₂-Emissionen allein."
-      }
-    },
-    {
-      "name": {
-        "enUS": "Passenger energy demand",
-        "frFR": "Demande énergétique passagers",
-        "deDE": "Energiebedarf Passagiere"
+        "enUS": "Total transport energy demand",
+        "frFR": "Demande énergétique totale des transports",
+        "deDE": "Gesamtenergiebedarf Verkehr"
       },
       "unit": "TWh",
       "route": "energy",
       "maximize": false,
       "info": {
-        "enUS": "Total energy demand for passenger transport.",
-        "frFR": "Demande énergétique totale pour le transport de passagers.",
-        "deDE": "Gesamter Energiebedarf für den Personenverkehr."
+        "enUS": "Total final energy demand in 2050 across all passenger and freight transport modes, aviation included, over all energy carriers.",
+        "frFR": "Demande d'énergie finale totale en 2050 pour tous les modes de transport de passagers et de marchandises, aviation comprise, tous vecteurs énergétiques confondus.",
+        "deDE": "Gesamter Endenergiebedarf im Jahr 2050 über alle Personen- und Güterverkehrsträger, einschliesslich Luftverkehr, über alle Energieträger."
       }
     },
     {
@@ -58,36 +43,6 @@
         "enUS": "Share of electric vehicles in the passenger car fleet.",
         "frFR": "Part des véhicules électriques dans le parc de voitures particulières.",
         "deDE": "Anteil der Elektrofahrzeuge am Pkw-Bestand."
-      }
-    },
-    {
-      "name": {
-        "enUS": "Freight energy demand",
-        "frFR": "Demande énergétique fret",
-        "deDE": "Energiebedarf Fracht"
-      },
-      "unit": "TWh",
-      "route": "energy",
-      "maximize": false,
-      "info": {
-        "enUS": "Total energy demand for freight transport.",
-        "frFR": "Demande énergétique totale pour le transport de marchandises.",
-        "deDE": "Gesamter Energiebedarf für den Güterverkehr."
-      }
-    },
-    {
-      "name": {
-        "enUS": "Low emission truck share",
-        "frFR": "Part de camions à faibles émissions",
-        "deDE": "Anteil emissionsarmer LKW"
-      },
-      "unit": "%",
-      "route": "fleet",
-      "maximize": true,
-      "info": {
-        "enUS": "Share of low-emission trucks in the freight vehicle fleet.",
-        "frFR": "Part des camions à faibles émissions dans le parc de véhicules de fret.",
-        "deDE": "Anteil emissionsarmer LKW am Nutzfahrzeugbestand."
       }
     }
   ],

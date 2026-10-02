@@ -5881,6 +5881,141 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Strom',
     frFR: 'Électricité',
   },
+  'tra_emissions-CO2e-main-mode_aviation-passenger[Mt]': {
+    enUS: 'Aviation (passenger)',
+    deDE: 'Luftverkehr (Personen)',
+    frFR: 'Aviation (passagers)',
+  },
+  'tra_emissions-CO2e-main-mode_aviation-freight[Mt]': {
+    enUS: 'Aviation (freight)',
+    deDE: 'Luftverkehr (Güter)',
+    frFR: 'Aviation (fret)',
+  },
+  'tra_emissions-CO2e-main-mode_trucks[Mt]': {
+    enUS: 'Trucks',
+    deDE: 'Lastwagen',
+    frFR: 'Camions',
+  },
+  'tra_emissions-CO2e-main-mode_cars[Mt]': {
+    enUS: 'Cars',
+    deDE: 'Autos',
+    frFR: 'Voitures',
+  },
+  'tra_emissions-CO2e-main-mode_other-freight[Mt]': {
+    enUS: 'Other (freight)',
+    deDE: 'Andere (Güter)',
+    frFR: 'Autres (fret)',
+  },
+  'tra_emissions-CO2e-main-mode_other-passenger[Mt]': {
+    enUS: 'Other (passenger)',
+    deDE: 'Andere (Personen)',
+    frFR: 'Autres (passagers)',
+  },
+  'tra_emissions-CO2e-main-mode_rail-passenger[Mt]': {
+    enUS: 'Rail (passenger)',
+    deDE: 'Eisenbahn (Personen)',
+    frFR: 'Ferroviaire (passagers)',
+  },
+  'tra_emissions-CO2e-main-mode_rail-freight[Mt]': {
+    enUS: 'Rail (freight)',
+    deDE: 'Eisenbahn (Güter)',
+    frFR: 'Ferroviaire (fret)',
+  },
+  'tra_energy-demand-main-mode_aviation-passenger[TWh]': {
+    enUS: 'Aviation (passenger)',
+    deDE: 'Luftverkehr (Personen)',
+    frFR: 'Aviation (passagers)',
+  },
+  'tra_energy-demand-main-mode_aviation-freight[TWh]': {
+    enUS: 'Aviation (freight)',
+    deDE: 'Luftverkehr (Güter)',
+    frFR: 'Aviation (fret)',
+  },
+  'tra_energy-demand-main-mode_trucks[TWh]': {
+    enUS: 'Trucks',
+    deDE: 'Lastwagen',
+    frFR: 'Camions',
+  },
+  'tra_energy-demand-main-mode_cars[TWh]': {
+    enUS: 'Cars',
+    deDE: 'Autos',
+    frFR: 'Voitures',
+  },
+  'tra_energy-demand-main-mode_other-freight[TWh]': {
+    enUS: 'Other (freight)',
+    deDE: 'Andere (Güter)',
+    frFR: 'Autres (fret)',
+  },
+  'tra_energy-demand-main-mode_other-passenger[TWh]': {
+    enUS: 'Other (passenger)',
+    deDE: 'Andere (Personen)',
+    frFR: 'Autres (passagers)',
+  },
+  'tra_energy-demand-main-mode_rail-passenger[TWh]': {
+    enUS: 'Rail (passenger)',
+    deDE: 'Eisenbahn (Personen)',
+    frFR: 'Ferroviaire (passagers)',
+  },
+  'tra_energy-demand-main-mode_rail-freight[TWh]': {
+    enUS: 'Rail (freight)',
+    deDE: 'Eisenbahn (Güter)',
+    frFR: 'Ferroviaire (fret)',
+  },
+  'tra_emissions-CO2e-main-fuel_kerosene[Mt]': {
+    enUS: 'Kerosene',
+    deDE: 'Kerosin',
+    frFR: 'Kérosène',
+  },
+  'tra_emissions-CO2e-main-fuel_diesel[Mt]': {
+    enUS: 'Diesel',
+    deDE: 'Diesel',
+    frFR: 'Diesel',
+  },
+  'tra_emissions-CO2e-main-fuel_other-fossil[Mt]': {
+    enUS: 'Other fossil',
+    deDE: 'Andere fossile',
+    frFR: 'Autres fossiles',
+  },
+  'tra_emissions-CO2e-main-fuel_gasoline[Mt]': {
+    enUS: 'Gasoline',
+    deDE: 'Benzin',
+    frFR: 'Essence',
+  },
+  'tra_emissions-CO2e-main-fuel_other-renewable[Mt]': {
+    enUS: 'Other renewable',
+    deDE: 'Andere erneuerbare',
+    frFR: 'Autres renouvelables',
+  },
+  'tra_energy-demand-main-fuel_kerosene[TWh]': {
+    enUS: 'Kerosene',
+    deDE: 'Kerosin',
+    frFR: 'Kérosène',
+  },
+  'tra_energy-demand-main-fuel_diesel[TWh]': {
+    enUS: 'Diesel',
+    deDE: 'Diesel',
+    frFR: 'Diesel',
+  },
+  'tra_energy-demand-main-fuel_other-fossil[TWh]': {
+    enUS: 'Other fossil',
+    deDE: 'Andere fossile',
+    frFR: 'Autres fossiles',
+  },
+  'tra_energy-demand-main-fuel_gasoline[TWh]': {
+    enUS: 'Gasoline',
+    deDE: 'Benzin',
+    frFR: 'Essence',
+  },
+  'tra_energy-demand-main-fuel_other-renewable[TWh]': {
+    enUS: 'Other renewable',
+    deDE: 'Andere erneuerbare',
+    frFR: 'Autres renouvelables',
+  },
+  'tra_energy-demand-main-fuel_electricity[TWh]': {
+    enUS: 'Electricity',
+    deDE: 'Strom',
+    frFR: 'Électricité',
+  },
   'tra_emissions-CO2e_passenger-land[Mt]': {
     enUS: 'Passenger (land)',
     deDE: 'Personenverkehr (Land)',
