@@ -324,14 +324,14 @@ export const levers: Lever[] = [
       deDE: 'Frachtstrecke',
     },
     group: {
-      enUS: '',
-      frFR: '',
-      deDE: '',
+      enUS: 'Travel',
+      frFR: 'Voyages',
+      deDE: 'Reisen',
     },
     headline: {
-      enUS: '',
-      frFR: '',
-      deDE: '',
+      enUS: 'Key behaviours',
+      frFR: 'Comportements clés',
+      deDE: 'Schlüsselverhalten',
     },
     popupText: {
       enUS: 'Freight tonne-kilometers (tkm) represent the total transport work done to move freight. It is calculated by multiplying the weight of the freight (in tonnes) by the distance it is transported (in kilometers). Reducing freight tkm can be achieved through strategies such as optimizing logistics, improving supply chain efficiency, and promoting local sourcing to minimize transportation distances.',
@@ -407,14 +407,14 @@ export const levers: Lever[] = [
       deDE: 'Lastereffizienz',
     },
     group: {
-      enUS: '',
-      frFR: '',
-      deDE: '',
+      enUS: 'Transport',
+      frFR: 'Transport',
+      deDE: 'Transport',
     },
     headline: {
-      enUS: '',
-      frFR: '',
-      deDE: '',
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
     },
     popupText: {
       enUS: 'Freight vehicle efficiency refers to the effectiveness of freight vehicles in utilizing energy to transport goods. It is typically measured in terms of fuel consumption per ton-mile or ton-kilometer. Improving freight vehicle efficiency can involve adopting advanced technologies, optimizing vehicle design, and implementing better maintenance practices to reduce fuel consumption and emissions.',
@@ -438,14 +438,14 @@ export const levers: Lever[] = [
       deDE: 'Lastertechnik',
     },
     group: {
-      enUS: '',
-      frFR: '',
-      deDE: '',
+      enUS: 'Transport',
+      frFR: 'Transport',
+      deDE: 'Transport',
     },
     headline: {
-      enUS: '',
-      frFR: '',
-      deDE: '',
+      enUS: 'Technology and fuels',
+      frFR: 'Technologie et combustibles',
+      deDE: 'Technik und Brennstoffe',
     },
     popupText: {
       enUS: 'Freight technology share refers to the proportion of freight transport that utilizes advanced or alternative technologies, such as electric or hydrogen-powered vehicles, compared to traditional fossil fuel-powered vehicles. Increasing the share of advanced technologies in freight transport can help reduce greenhouse gas emissions and improve overall energy efficiency in the logistics sector.',

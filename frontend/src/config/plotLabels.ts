@@ -6017,14 +6017,14 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     frFR: 'Électricité',
   },
   'tra_emissions-CO2e_passenger-land[Mt]': {
-    enUS: 'Passenger (land)',
+    enUS: 'Transport passenger (land)',
     deDE: 'Personenverkehr (Land)',
-    frFR: 'Passagers (terrestre)',
+    frFR: 'Transport passagers (terrestre)',
   },
   'tra_energy-demand_passenger-land[TWh]': {
-    enUS: 'Passenger (land)',
+    enUS: 'Transport passenger (land)',
     deDE: 'Personenverkehr (Land)',
-    frFR: 'Passagers (terrestre)',
+    frFR: 'Transport passagers (terrestre)',
   },
   'tra_energy-demand_freight[TWh]': {
     enUS: 'Freight',
