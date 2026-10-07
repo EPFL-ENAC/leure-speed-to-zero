@@ -107,7 +107,11 @@
         "frFR": "Mix énergétique",
         "deDE": "Energiemix"
       },
-      "charts": ["SHEnergyDemandPerCarrier", "EnergyDemandPerCarrier"],
+      "charts": [
+        "SHEnergyDemandPerCarrier",
+        "EnergyDemandPerCarrier",
+        "totalenergyDemandPerCarrier"
+      ],
       "route": "energy-carriers"
     },
     {
@@ -287,6 +291,27 @@
         { "id": "bld_energy-demand_heating_ambient-heat[TWh]", "color": "#7FAEC0" },
         { "id": "bld_energy-demand_heating_other[TWh]", "color": "#f7a35c" },
         { "id": "bld_energy-demand_heating_solar[TWh]", "color": "#e4d354" }
+      ]
+    },
+    "totalenergyDemandPerCarrier": {
+      "title": {
+        "enUS": "Final energy demand for residential, hotwater and services heating per carrier",
+        "frFR": "Demande d'énergie pour le chauffage résidentiel, des services,et  de l'eau chaude par vecteur",
+        "deDE": "Energiebedarf für Raumheizung in Wohngebäuden nach Energieträger"
+      },
+      "type": "StackedArea",
+      "unit": "TWh",
+      "outputs": [
+        { "id": "energy_consumption_electricity[TWh]", "color": "#f15c80" },
+        { "id": "energy_consumption_coal[TWh]", "color": "#434348" },
+        { "id": "energy_consumption_heating-oil[TWh]", "color": "#2b908f" },
+        { "id": "energy_consumption_gas[TWh]", "color": "#e4d354" },
+        { "id": "energy_consumption_wood[TWh]", "color": "#5d4037" },
+        { "id": "energy_consumption_district-heating[TWh]", "color": "#f45b5b" },
+        { "id": "energy_consumption_heat-pump[TWh]", "color": "#aee791" },
+        { "id": "energy_consumption_ambient-heat[TWh]", "color": "#7FAEC0" },
+        { "id": "energy_consumption_other[TWh]", "color": "#f7a35c" },
+        { "id": "energy_consumption_solar[TWh]", "color": "#e4d354" }
       ]
     },
     "FloorAreaPerBuildingType": {
