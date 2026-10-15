@@ -62,7 +62,7 @@ DATAMATRIX_DIR = (
 logger.info(f"Model package: {MODEL_PACKAGE} ({model_package.__file__})")
 
 
-def load_lever_keys() -> list[str]:
-    """Lever names, in the order the model expects them in the lever string."""
+def load_lever_defaults() -> dict[str, int]:
+    """Default level of each lever, in the order of the lever string."""
     config_loader = _import(f"{MODEL_PACKAGE}.model.common.config_loader")
-    return list(config_loader.load_lever_config().keys())
+    return {key: int(level) for key, level in config_loader.load_lever_config().items()}

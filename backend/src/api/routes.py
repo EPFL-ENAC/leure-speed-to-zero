@@ -9,7 +9,7 @@ import orjson
 from fastapi import APIRouter
 from fastapi.responses import ORJSONResponse
 
-from src.api.lever_keys import LEVER_KEYS
+from src.api.lever_keys import LEVER_DEFAULTS, LEVER_KEYS, parse_lever_string
 from src.utils.cache_decorator import conditional_cache
 from src.utils.model_package import (
     DATAMATRIX_DIR,
@@ -107,26 +107,24 @@ async def app_config() -> dict:
         "available_regions": RegionConfig.get_available_regions(),
         "sectors": profile_value("SECTORS", []),
         "lever_keys": LEVER_KEYS,
+        "lever_defaults": LEVER_DEFAULTS,
     }
+
+
+def _bad_levers(exc: ValueError) -> ORJSONResponse:
+    return ORJSONResponse(
+        content={"status": "error", "message": str(exc)}, status_code=400
+    )
 
 
 @router.get("/v1/run-model")
 async def run_model(levers: str | None = None, sector: str | None = None):
     try:
-        # Parse levers string or use default (all 1s)
-        if levers is None:
-            lever_values = [1] * len(LEVER_KEYS)
-        else:
-            lever_values = [int(c) for c in levers]
-            if len(lever_values) != len(LEVER_KEYS):
-                return ORJSONResponse(
-                    content={
-                        "status": "error",
-                        "message": f"levers string must be {len(LEVER_KEYS)} digits",
-                    },
-                    status_code=400,
-                )
-        lever_setting = dict(zip(LEVER_KEYS, lever_values))
+        lever_setting = parse_lever_string(levers)
+    except ValueError as exc:
+        return _bad_levers(exc)
+
+    try:
         logger.info(f"Levers input: {str(lever_setting)}")
 
         # Get sectors to run based on requested sector or all if not specified
@@ -179,22 +177,11 @@ async def run_model_clean_structure(
     levers: str | None = None, sector: str | None = None
 ):
     try:
-        # Parse levers string or use default (all 1s)
-        if levers is None:
-            lever_values = [1] * len(LEVER_KEYS)
-        else:
-            lever_values = [int(c) for c in levers]
-            if len(lever_values) != len(LEVER_KEYS):
-                return ORJSONResponse(
-                    content={
-                        "status": "error",
-                        "message": f"levers string must be {len(LEVER_KEYS)} digits",
-                    },
-                    status_code=400,
-                )
+        lever_setting = parse_lever_string(levers)
+    except ValueError as exc:
+        return _bad_levers(exc)
 
-        lever_setting = dict(zip(LEVER_KEYS, lever_values))
-
+    try:
         # Get sectors to run based on requested sector or all if not specified
         if sector:
             sectors_to_run = SectorConfig.get_sectors_for(sector)

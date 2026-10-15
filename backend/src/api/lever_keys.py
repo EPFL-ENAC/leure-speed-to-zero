@@ -1,4 +1,4 @@
-# The lever keys, in the order the frontend sends them.
+# The lever keys, in the order the frontend sends them, and their default level.
 #
 # They come from the installed model (config/lever_position.json), so a model
 # with other levers, like the TCAF build, works without touching the app. The
@@ -93,17 +93,47 @@ _FALLBACK_LEVER_KEYS = [
 ]
 
 
-def _load_lever_keys() -> list[str]:
-    try:
-        from src.utils.model_package import load_lever_keys
+# The model data has levels 1 to 4 for every lever. The lever string has one
+# digit per lever, so a level outside this range makes the model fail deep
+# inside a module with a KeyError.
+MIN_LEVEL = 1
+MAX_LEVEL = 4
 
-        keys = load_lever_keys()
-        if keys:
-            return keys
+
+def _load_lever_defaults() -> dict[str, int]:
+    try:
+        from src.utils.model_package import load_lever_defaults
+
+        defaults = load_lever_defaults()
+        if defaults:
+            return defaults
         logger.warning("Model lever config is empty, using the built-in list")
     except Exception as exc:  # noqa: BLE001
         logger.warning(f"Could not read the lever config from the model: {exc}")
-    return _FALLBACK_LEVER_KEYS
+    return {key: MIN_LEVEL for key in _FALLBACK_LEVER_KEYS}
 
 
-LEVER_KEYS = _load_lever_keys()
+LEVER_DEFAULTS = _load_lever_defaults()
+LEVER_KEYS = list(LEVER_DEFAULTS)
+
+
+def parse_lever_string(levers: str | None) -> dict[str, int]:
+    """Read the lever string, one digit per lever in LEVER_KEYS order.
+
+    No string means every lever at level 1. Raises ValueError with a message
+    for the user when the string is wrong.
+    """
+    if levers is None:
+        return {key: MIN_LEVEL for key in LEVER_KEYS}
+    if len(levers) != len(LEVER_KEYS):
+        raise ValueError(f"levers string must be {len(LEVER_KEYS)} digits")
+    bad = [
+        f"{key}={char!r}"
+        for key, char in zip(LEVER_KEYS, levers)
+        if not char.isdigit() or not MIN_LEVEL <= int(char) <= MAX_LEVEL
+    ]
+    if bad:
+        raise ValueError(
+            f"lever levels must be {MIN_LEVEL} to {MAX_LEVEL}, got {', '.join(bad)}"
+        )
+    return {key: int(char) for key, char in zip(LEVER_KEYS, levers)}

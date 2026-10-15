@@ -6,7 +6,7 @@ import { sectors } from 'utils/sectors';
 import { ExamplePathways, type PathWay } from 'utils/examplePathways';
 import { modelService } from 'services/modelService';
 import { AxiosError } from 'axios';
-import { getCurrentRegion, getLeverKeys, type Region } from 'src/utils/region';
+import { getCurrentRegion, getLeverDefaults, getLeverKeys, type Region } from 'src/utils/region';
 import type { KpiData } from 'src/utils/sectors';
 import { getTranslatedText, type TranslationObject } from 'src/utils/translationHelpers';
 import { useI18n } from 'vue-i18n';
@@ -120,7 +120,9 @@ export interface ModelResults {
 // Helper functions moved outside the store
 function getDefaultLeverValue(leverCode: string): number {
   const lever = leversData.find((l) => l.code === leverCode);
-  if (!lever) return 0;
+  // A lever the model has but the frontend does not know yet: send the model
+  // default. The model has no level 0, it would fail on it.
+  if (!lever) return getLeverDefaults()[leverCode] ?? 1;
 
   lever.range = lever.range || [];
 

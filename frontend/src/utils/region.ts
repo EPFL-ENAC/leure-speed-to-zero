@@ -12,6 +12,8 @@ interface AppConfig {
   available_regions: string[];
   sectors: string[];
   lever_keys: string[];
+  // Default level of each lever, from the model.
+  lever_defaults: Record<string, number>;
 }
 
 // Default configuration (fallback)
@@ -23,6 +25,7 @@ const DEFAULT_CONFIG: AppConfig = {
   available_regions: ['Vaud', 'Switzerland', 'EU27'],
   sectors: [],
   lever_keys: [],
+  lever_defaults: {},
 };
 
 // Reactive state for the app configuration
@@ -47,6 +50,7 @@ export async function loadRegionConfig(): Promise<void> {
         available_regions: response.data.available_regions,
         sectors: response.data.sectors ?? [],
         lever_keys: response.data.lever_keys ?? [],
+        lever_defaults: response.data.lever_defaults ?? {},
       };
       isLoaded.value = true;
       if (appConfig.value.title) {
@@ -75,3 +79,4 @@ export const getProfileTitle = (): string | null => appConfig.value.title;
 export const getProfileLogo = (): string | null => appConfig.value.logo;
 export const getProfileSectors = (): string[] => appConfig.value.sectors;
 export const getLeverKeys = (): string[] => appConfig.value.lever_keys;
+export const getLeverDefaults = (): Record<string, number> => appConfig.value.lever_defaults;
