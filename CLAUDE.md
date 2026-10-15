@@ -61,7 +61,7 @@ Vue Components → Pinia Store (leversStore) → modelService API client → Bac
 
 - `src/stores/leversStore.ts` - Central state: levers, modelResults, pathways, autoRun
 - `src/services/modelService.ts` - API client (runModel, getLeverData, getDatamatrix)
-- `src/config/levers.ts` - Lever definitions
+- `src/config/levers/<profile>.json` - Lever texts, one file per profile (default, tcaf)
 - `src/config/sectors.ts` - Sector configuration
 - `src/pages/sectors/` - Sector tab components (OverallTab, BuildingsTab, etc.)
 - `src/components/graphs/` - ECharts chart components

@@ -1,5 +1,4 @@
 import type { TranslationObject } from './translationHelpers';
-import { levers as leversData } from 'src/config/levers';
 export interface DifficultyArea {
   min: number;
   max: number;
@@ -19,4 +18,25 @@ export interface Lever {
   difficultyColors: DifficultyArea[];
 }
 
-export const levers: Lever[] = leversData;
+// One file per profile, named after it: each model team edits only the file of
+// its own model. A profile with no file uses default.json.
+const leverFiles = import.meta.glob<Lever[]>('../config/levers/*.json', {
+  eager: true,
+  import: 'default',
+});
+
+function leverFile(profile: string): Lever[] {
+  return (
+    leverFiles[`../config/levers/${profile}.json`] ??
+    leverFiles['../config/levers/default.json'] ??
+    []
+  );
+}
+
+// Filled by loadLeversForProfile at boot, once the profile is known. It is
+// filled in place so every module that imported it sees the levers.
+export const levers: Lever[] = [];
+
+export function loadLeversForProfile(profile: string): void {
+  levers.splice(0, levers.length, ...leverFile(profile));
+}
