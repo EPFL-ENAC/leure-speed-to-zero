@@ -31,6 +31,7 @@ export const sectors: Sector[] = [
     levers: [
       'lever_heatcool-behaviour',
       'lever_floor-intensity',
+      'lever_services-floor-area',
       'lever_building-renovation-rate',
       'lever_heating-technology-fuel',
       'lever_heating-efficiency',

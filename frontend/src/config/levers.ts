@@ -158,6 +158,32 @@ export const levers: Lever[] = [
     ],
   },
   {
+    code: 'lever_services-floor-area',
+    title: {
+      enUS: 'Floor area of services',
+      frFR: 'Surface des services',
+      deDE: 'Fläche der Dienstleistungen',
+    },
+    group: {
+      enUS: 'Buildings',
+      frFR: 'Bâtiments',
+      deDE: 'Gebäude',
+    },
+    headline: {
+      enUS: 'Key behaviours',
+      frFR: 'Comportements clés',
+      deDE: 'Schlüsselverhalten',
+    },
+    range: [1, 2, 3, 4],
+    type: 'num',
+    difficultyColors: [
+      { min: 1, max: 1, color: '#CFE3F7', label: 'lever.difficulty.easy' },
+      { min: 2, max: 2, color: '#92BFEB', label: 'lever.difficulty.moderate' },
+      { min: 3, max: 3, color: '#559ADE', label: 'lever.difficulty.hard' },
+      { min: 4, max: 4, color: '#1876D2', label: 'lever.difficulty.ambitious' },
+    ],
+  },
+  {
     code: 'lever_heatcool-behaviour',
     title: {
       enUS: 'Heating temperature',
