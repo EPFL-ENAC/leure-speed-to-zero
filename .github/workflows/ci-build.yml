@@ -24,3 +24,21 @@ jobs:
           sleep 15
           curl -f http://localhost:8081/health
           docker stop backend-smoke
+
+  test-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: uv sync --frozen
+
+      # Also checks that the frontend knows every lever of every model, so a
+      # model bump PR that adds a lever fails here and not in production.
+      - name: Run backend tests
+        working-directory: backend
+        run: uv run pytest
