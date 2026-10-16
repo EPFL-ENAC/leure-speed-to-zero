@@ -31,8 +31,8 @@ export const sectors: Sector[] = [
     levers: [
       'lever_heatcool-behaviour',
       'lever_floor-intensity',
-      'lever_building-renovation-rate',
       'lever_services-floor-area',
+      'lever_building-renovation-rate',
       'lever_heating-technology-fuel',
       'lever_heating-efficiency',
     ],
@@ -109,7 +109,20 @@ export const sectors: Sector[] = [
       frFR: "Analysez la production industrielle, l'efficacité matérielle et les stratégies de réduction des émissions",
       deDE: 'Analysieren Sie die Industrieproduktion, Materialeffizienz und Emissionsreduktionsstrategien',
     },
-    levers: [],
+    levers: [
+      'lever_material-switch',
+      'lever_material-efficiency',
+      'lever_technology-development',
+      'lever_cc',
+      'lever_technology-share',
+      'lever_material-net-import',
+      'lever_product-net-import',
+      'lever_energy-carrier-mix',
+      'lever_eol-waste-management',
+      'lever_eol-material-recovery',
+      'lever_paperpack',
+      'lever_product-substitution-rate',
+    ],
   },
   {
     label: {

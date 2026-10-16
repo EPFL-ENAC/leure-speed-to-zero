@@ -1,15 +1,22 @@
 {
-  "kpis": [],
-  "subtabs": [
+  "kpis": [
     {
-      "title": {
-        "enUS": "Production",
-        "frFR": "Production",
-        "deDE": "Produktion"
+      "name": {
+        "enUS": "Total industry emissions",
+        "frFR": "Émissions totales de l'industrie",
+        "deDE": "Gesamtemissionen"
       },
-      "charts": ["ProductionOverview"],
-      "route": "production"
-    },
+      "unit": "Mt",
+      "route": "emissions",
+      "maximize": false,
+      "info": {
+        "enUS": "",
+        "frFR": "",
+        "deDE": ""
+      }
+    }
+  ],
+  "subtabs": [
     {
       "title": {
         "enUS": "Emissions",
@@ -18,6 +25,15 @@
       },
       "charts": ["IndustryEmissions"],
       "route": "emissions"
+    },
+    {
+      "title": {
+        "enUS": "Production",
+        "frFR": "Production",
+        "deDE": "Produktion"
+      },
+      "charts": ["ProductionOverview"],
+      "route": "production"
     }
   ],
   "charts": {
@@ -28,24 +44,24 @@
         "deDE": "Industrieproduktion"
       },
       "type": "StackedArea",
-      "unit": "Mt",
+      "unit": "kt",
       "outputs": [
-        "material-production_aluminium",
-        "material-production_cement",
-        "material-production_chem",
-        "material-production_copper",
-        "material-production_fbt",
-        "material-production_glass",
-        "material-production_lime",
-        "material-production_mae",
-        "material-production_ois",
-        "material-production_other",
-        "material-production_paper",
-        "material-production_steel",
-        "material-production_textiles",
-        "material-production_timber",
-        "material-production_tra-equip",
-        "material-production_wwp"
+        "material-production_aluminium[kt]",
+        "material-production_cement[kt]",
+        "material-production_chem[kt]",
+        "material-production_copper[kt]",
+        "material-production_fbt[kt]",
+        "material-production_glass[kt]",
+        "material-production_lime[kt]",
+        "material-production_mae[kt]",
+        "material-production_ois[kt]",
+        "material-production_other[kt]",
+        "material-production_paper[kt]",
+        "material-production_steel[kt]",
+        "material-production_textiles[kt]",
+        "material-production_timber[kt]",
+        "material-production_tra-equip[kt]",
+        "material-production_wwp[kt]"
       ]
     },
     "IndustryEmissions": {
@@ -56,7 +72,7 @@
       },
       "type": "StackedArea",
       "unit": "Mt CO2",
-      "outputs": ["emissions_CH4", "emissions_CO2", "emissions_N2O"]
+      "outputs": ["emissions_CH4[Mt]", "emissions_CO2[Mt]", "emissions_N2O[Mt]"]
     }
   }
 }
