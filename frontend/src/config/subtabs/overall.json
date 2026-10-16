@@ -61,10 +61,10 @@
       "type": "StackedArea",
       "unit": "Mt CO₂eq",
       "outputs": [
-        { "id": "bld_emissions-CO2e[Mt]", "color": "#C97A63" },
-        { "id": "tra_emissions-CO2e_passenger-land[Mt]", "color": "#2a78d6" },
-        { "id": "tra_emissions-CO2e_freight[Mt]", "color": "#1baf7a" },
-        { "id": "tra_emissions-CO2e_passenger_aviation[Mt]", "color": "#eda100" }
+        { "id": "bld_emissions-CO2e[Mt]", "color": "#fc8452" },
+        { "id": "tra_emissions-CO2e_passenger-land[Mt]", "color": "#5470c6" },
+        { "id": "tra_emissions-CO2e_freight[Mt]", "color": "#2f4a8f" },
+        { "id": "tra_emissions-CO2e_passenger_aviation[Mt]", "color": "#9a60b4" }
       ]
     },
     "EnergyBySector": {
@@ -76,10 +76,10 @@
       "type": "StackedArea",
       "unit": "TWh",
       "outputs": [
-        { "id": "bld_energy-demand_total[TWh]", "color": "#C97A63" },
-        { "id": "tra_energy-demand_passenger-land[TWh]", "color": "#2a78d6" },
-        { "id": "tra_energy-demand_freight[TWh]", "color": "#1baf7a" },
-        { "id": "tra_passenger_energy-demand-by-mode_aviation[TWh]", "color": "#eda100" }
+        { "id": "bld_energy-demand_total[TWh]", "color": "#fc8452" },
+        { "id": "tra_energy-demand_passenger-land[TWh]", "color": "#5470c6" },
+        { "id": "tra_energy-demand_freight[TWh]", "color": "#2f4a8f" },
+        { "id": "tra_passenger_energy-demand-by-mode_aviation[TWh]", "color": "#9a60b4" }
       ]
     }
   }

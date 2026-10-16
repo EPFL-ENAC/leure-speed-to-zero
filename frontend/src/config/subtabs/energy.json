@@ -31,15 +31,15 @@
       "unit": "TWh",
       "type": "StackedArea",
       "outputs": [
-        { "id": "pow_production_Net-import[TWh]", "color": "#5E6A71" },
-        { "id": "pow_production_Losses[TWh]", "color": "#A3ADB3" },
-        { "id": "pow_production_Hydro[TWh]", "color": "#2a78d6" },
-        { "id": "pow_production_Waste[TWh]", "color": "#eb6834" },
-        { "id": "pow_production_WindOn[TWh]", "color": "#1baf7a" },
-        { "id": "pow_production_PV-roof[TWh]", "color": "#eda100" },
-        { "id": "pow_production_Nuclear[TWh]", "color": "#e87ba4" },
-        { "id": "pow_production_Gas[TWh]", "color": "#4a3aa7" },
-        { "id": "pow_production_Oil[TWh]", "color": "#e34948" }
+        { "id": "pow_production_Net-import[TWh]", "color": "#6e7079" },
+        { "id": "pow_production_Losses[TWh]", "color": "#c8ccd4" },
+        { "id": "pow_production_Hydro[TWh]", "color": "#73c0de" },
+        { "id": "pow_production_Waste[TWh]", "color": "#3ba272" },
+        { "id": "pow_production_WindOn[TWh]", "color": "#91cc75" },
+        { "id": "pow_production_PV-roof[TWh]", "color": "#fac858" },
+        { "id": "pow_production_Nuclear[TWh]", "color": "#ea7ccc" },
+        { "id": "pow_production_Gas[TWh]", "color": "#9a60b4" },
+        { "id": "pow_production_Oil[TWh]", "color": "#fc8452" }
       ]
     },
     "PowerCapacityByTech": {
@@ -51,13 +51,13 @@
       "unit": "GW",
       "type": "StackedArea",
       "outputs": [
-        { "id": "pow_capacity_Hydro[GW]", "color": "#2a78d6" },
-        { "id": "pow_capacity_Waste[GW]", "color": "#eb6834" },
-        { "id": "pow_capacity_WindOn[GW]", "color": "#1baf7a" },
-        { "id": "pow_capacity_PV-roof[GW]", "color": "#eda100" },
-        { "id": "pow_capacity_Nuclear[GW]", "color": "#e87ba4" },
-        { "id": "pow_capacity_Gas[GW]", "color": "#4a3aa7" },
-        { "id": "pow_capacity_Oil[GW]", "color": "#e34948" }
+        { "id": "pow_capacity_Hydro[GW]", "color": "#73c0de" },
+        { "id": "pow_capacity_Waste[GW]", "color": "#3ba272" },
+        { "id": "pow_capacity_WindOn[GW]", "color": "#91cc75" },
+        { "id": "pow_capacity_PV-roof[GW]", "color": "#fac858" },
+        { "id": "pow_capacity_Nuclear[GW]", "color": "#ea7ccc" },
+        { "id": "pow_capacity_Gas[GW]", "color": "#9a60b4" },
+        { "id": "pow_capacity_Oil[GW]", "color": "#fc8452" }
       ]
     },
     "PowerCapacityByTechCantonal": {
@@ -69,13 +69,13 @@
       "unit": "GW",
       "type": "StackedArea",
       "outputs": [
-        { "id": "pow_capacity-cantonal_Hydro[GW]", "color": "#2a78d6" },
-        { "id": "pow_capacity-cantonal_Waste[GW]", "color": "#eb6834" },
-        { "id": "pow_capacity-cantonal_WindOn[GW]", "color": "#1baf7a" },
-        { "id": "pow_capacity-cantonal_PV-roof[GW]", "color": "#eda100" },
-        { "id": "pow_capacity-cantonal_Nuclear[GW]", "color": "#e87ba4" },
-        { "id": "pow_capacity-cantonal_Gas[GW]", "color": "#4a3aa7" },
-        { "id": "pow_capacity-cantonal_Oil[GW]", "color": "#e34948" }
+        { "id": "pow_capacity-cantonal_Hydro[GW]", "color": "#73c0de" },
+        { "id": "pow_capacity-cantonal_Waste[GW]", "color": "#3ba272" },
+        { "id": "pow_capacity-cantonal_WindOn[GW]", "color": "#91cc75" },
+        { "id": "pow_capacity-cantonal_PV-roof[GW]", "color": "#fac858" },
+        { "id": "pow_capacity-cantonal_Nuclear[GW]", "color": "#ea7ccc" },
+        { "id": "pow_capacity-cantonal_Gas[GW]", "color": "#9a60b4" },
+        { "id": "pow_capacity-cantonal_Oil[GW]", "color": "#fc8452" }
       ]
     },
     "PowerDemand": {
@@ -87,10 +87,10 @@
       "unit": "TWh",
       "type": "StackedArea",
       "outputs": [
-        { "id": "bld_energy-consumption[TWh]", "color": "#C97A63" },
-        { "id": "ind_energy-consumption[TWh]", "color": "#6A7C8F" },
-        { "id": "tra_energy-consumption[TWh]", "color": "#D6A55A" },
-        { "id": "agr_energy-consumption[TWh]", "color": "#86B37A" }
+        { "id": "bld_energy-consumption[TWh]", "color": "#fc8452" },
+        { "id": "ind_energy-consumption[TWh]", "color": "#6e7079" },
+        { "id": "tra_energy-consumption[TWh]", "color": "#5470c6" },
+        { "id": "agr_energy-consumption[TWh]", "color": "#91cc75" }
       ]
     }
   }

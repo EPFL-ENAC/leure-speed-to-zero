@@ -165,35 +165,35 @@
       "outputs": [
         {
           "id": "tra_emissions-CO2e-main-mode_aviation-passenger[Mt]",
-          "color": "#7328ae"
+          "color": "#9a60b4"
         },
         {
           "id": "tra_emissions-CO2e-main-mode_aviation-freight[Mt]",
-          "color": "#a35de4"
+          "color": "#c3a0d2"
         },
         {
           "id": "tra_emissions-CO2e-main-mode_trucks[Mt]",
-          "color": "#e64343"
+          "color": "#fc8452"
         },
         {
           "id": "tra_emissions-CO2e-main-mode_cars[Mt]",
-          "color": "#a7031a"
+          "color": "#ee6666"
         },
         {
           "id": "tra_emissions-CO2e-main-mode_other-passenger[Mt]",
-          "color": "#089428"
+          "color": "#fac858"
         },
         {
           "id": "tra_emissions-CO2e-main-mode_other-freight[Mt]",
-          "color": "#41ca51"
+          "color": "#3ba272"
         },
         {
           "id": "tra_emissions-CO2e-main-mode_rail-passenger[Mt]",
-          "color": "#0256a9"
+          "color": "#5470c6"
         },
         {
           "id": "tra_emissions-CO2e-main-mode_rail-freight[Mt]",
-          "color": "#0c84fa"
+          "color": "#2f4a8f"
         }
       ]
     },
@@ -208,23 +208,23 @@
       "outputs": [
         {
           "id": "tra_emissions-CO2e-main-fuel_kerosene[Mt]",
-          "color": "#77889b"
+          "color": "#fdb08f"
         },
         {
           "id": "tra_emissions-CO2e-main-fuel_diesel[Mt]",
-          "color": "#36322f"
+          "color": "#c4622f"
         },
         {
           "id": "tra_emissions-CO2e-main-fuel_other-fossil[Mt]",
-          "color": "#a0978b"
+          "color": "#6e7079"
         },
         {
           "id": "tra_emissions-CO2e-main-fuel_gasoline[Mt]",
-          "color": "#724727"
+          "color": "#fc8452"
         },
         {
           "id": "tra_emissions-CO2e-main-fuel_other-renewable[Mt]",
-          "color": "#11c98b"
+          "color": "#3ba272"
         }
       ]
     },
@@ -239,35 +239,35 @@
       "outputs": [
         {
           "id": "tra_energy-demand-main-mode_aviation-passenger[TWh]",
-          "color": "#7328ae"
+          "color": "#9a60b4"
         },
         {
           "id": "tra_energy-demand-main-mode_aviation-freight[TWh]",
-          "color": "#a35de4"
+          "color": "#c3a0d2"
         },
         {
           "id": "tra_energy-demand-main-mode_trucks[TWh]",
-          "color": "#e64343"
+          "color": "#fc8452"
         },
         {
           "id": "tra_energy-demand-main-mode_cars[TWh]",
-          "color": "#a7031a"
+          "color": "#ee6666"
         },
         {
           "id": "tra_energy-demand-main-mode_other-passenger[TWh]",
-          "color": "#089428"
+          "color": "#fac858"
         },
         {
           "id": "tra_energy-demand-main-mode_other-freight[TWh]",
-          "color": "#41ca51"
+          "color": "#3ba272"
         },
         {
           "id": "tra_energy-demand-main-mode_rail-passenger[TWh]",
-          "color": "#0256a9"
+          "color": "#5470c6"
         },
         {
           "id": "tra_energy-demand-main-mode_rail-freight[TWh]",
-          "color": "#0c84fa"
+          "color": "#2f4a8f"
         }
       ]
     },
@@ -282,27 +282,27 @@
       "outputs": [
         {
           "id": "tra_energy-demand-main-fuel_kerosene[TWh]",
-          "color": "#77889b"
+          "color": "#fdb08f"
         },
         {
           "id": "tra_energy-demand-main-fuel_diesel[TWh]",
-          "color": "#36322f"
+          "color": "#c4622f"
         },
         {
           "id": "tra_energy-demand-main-fuel_other-fossil[TWh]",
-          "color": "#a0978b"
+          "color": "#6e7079"
         },
         {
           "id": "tra_energy-demand-main-fuel_gasoline[TWh]",
-          "color": "#724727"
+          "color": "#fc8452"
         },
         {
           "id": "tra_energy-demand-main-fuel_other-renewable[TWh]",
-          "color": "#11c98b"
+          "color": "#3ba272"
         },
         {
           "id": "tra_energy-demand-main-fuel_electricity[TWh]",
-          "color": "#2a78d6"
+          "color": "#5470c6"
         }
       ]
     },
@@ -317,47 +317,47 @@
       "outputs": [
         {
           "id": "tra_emissions-CO2e_passenger_aviation[Mt]",
-          "color": "#7328ae"
+          "color": "#9a60b4"
         },
         {
           "id": "tra_emissions-CO2e_freight_aviation[Mt]",
-          "color": "#a35de4"
+          "color": "#c3a0d2"
         },
         {
           "id": "tra_emissions-CO2e_freight_HDV[Mt]",
-          "color": "#e64343"
+          "color": "#fc8452"
         },
         {
           "id": "tra_emissions-CO2e_passenger_LDV[Mt]",
-          "color": "#a7031a"
+          "color": "#ee6666"
         },
         {
           "id": "tra_emissions-CO2e_passenger_2W[Mt]",
-          "color": "#049863"
+          "color": "#ea7ccc"
         },
         {
           "id": "tra_emissions-CO2e_passenger_bus[Mt]",
-          "color": "#06641a"
+          "color": "#fac858"
         },
         {
           "id": "tra_emissions-CO2e_freight_IWW[Mt]",
-          "color": "#14bb7c"
+          "color": "#3ba272"
         },
         {
           "id": "tra_emissions-CO2e_freight_marine[Mt]",
-          "color": "#0b6f49"
+          "color": "#1f6b48"
         },
         {
           "id": "tra_emissions-CO2e_passenger_rail[Mt]",
-          "color": "#0256a9"
+          "color": "#5470c6"
         },
         {
           "id": "tra_emissions-CO2e_passenger_metrotram[Mt]",
-          "color": "#7cb4fc"
+          "color": "#73c0de"
         },
         {
           "id": "tra_emissions-CO2e_freight_rail[Mt]",
-          "color": "#0c84fa"
+          "color": "#2f4a8f"
         }
       ]
     },
@@ -372,31 +372,31 @@
       "outputs": [
         {
           "id": "tra_emissions-CO2e-by-fuel_kerosene[Mt]",
-          "color": "#77889b"
+          "color": "#fdb08f"
         },
         {
           "id": "tra_emissions-CO2e-by-fuel_diesel[Mt]",
-          "color": "#36322f"
+          "color": "#c4622f"
         },
         {
           "id": "tra_emissions-CO2e-by-fuel_gas[Mt]",
-          "color": "#a0978b"
+          "color": "#9a60b4"
         },
         {
           "id": "tra_emissions-CO2e-by-fuel_marine-fuel-oil[Mt]",
-          "color": "#2d2213"
+          "color": "#8f4a24"
         },
         {
           "id": "tra_emissions-CO2e-by-fuel_gasoline[Mt]",
-          "color": "#724727"
+          "color": "#fc8452"
         },
         {
           "id": "tra_emissions-CO2e-by-fuel_SAF[Mt]",
-          "color": "#0d9b2c"
+          "color": "#a5d9bd"
         },
         {
           "id": "tra_emissions-CO2e-by-fuel_hydrogen[Mt]",
-          "color": "#11c98b"
+          "color": "#73c0de"
         }
       ]
     },
@@ -411,47 +411,47 @@
       "outputs": [
         {
           "id": "tra_passenger_energy-demand-by-mode_aviation[TWh]",
-          "color": "#7328ae"
+          "color": "#9a60b4"
         },
         {
           "id": "tra_freight_energy-demand-by-mode_aviation[TWh]",
-          "color": "#a35de4"
+          "color": "#c3a0d2"
         },
         {
           "id": "tra_freight_energy-demand-by-mode_HDV[TWh]",
-          "color": "#e64343"
+          "color": "#fc8452"
         },
         {
           "id": "tra_passenger_energy-demand-by-mode_LDV[TWh]",
-          "color": "#a7031a"
+          "color": "#ee6666"
         },
         {
           "id": "tra_passenger_energy-demand-by-mode_2W[TWh]",
-          "color": "#049863"
+          "color": "#ea7ccc"
         },
         {
           "id": "tra_passenger_energy-demand-by-mode_bus[TWh]",
-          "color": "#06641a"
+          "color": "#fac858"
         },
         {
           "id": "tra_freight_energy-demand-by-mode_IWW[TWh]",
-          "color": "#14bb7c"
+          "color": "#3ba272"
         },
         {
           "id": "tra_freight_energy-demand-by-mode_marine[TWh]",
-          "color": "#0b6f49"
+          "color": "#1f6b48"
         },
         {
           "id": "tra_passenger_energy-demand-by-mode_rail[TWh]",
-          "color": "#0256a9"
+          "color": "#5470c6"
         },
         {
           "id": "tra_passenger_energy-demand-by-mode_metrotram[TWh]",
-          "color": "#7cb4fc"
+          "color": "#73c0de"
         },
         {
           "id": "tra_freight_energy-demand-by-mode_rail[TWh]",
-          "color": "#0c84fa"
+          "color": "#2f4a8f"
         }
       ]
     },
@@ -466,39 +466,39 @@
       "outputs": [
         {
           "id": "tra_energy-demand-by-fuel_kerosene[TWh]",
-          "color": "#77889b"
+          "color": "#fdb08f"
         },
         {
           "id": "tra_energy-demand-by-fuel_diesel[TWh]",
-          "color": "#36322f"
+          "color": "#c4622f"
         },
         {
           "id": "tra_energy-demand-by-fuel_gas[TWh]",
-          "color": "#a0978b"
+          "color": "#9a60b4"
         },
         {
           "id": "tra_energy-demand-by-fuel_marine-fuel-oil[TWh]",
-          "color": "#2d2213"
+          "color": "#8f4a24"
         },
         {
           "id": "tra_energy-demand-by-fuel_gasoline[TWh]",
-          "color": "#724727"
+          "color": "#fc8452"
         },
         {
           "id": "tra_energy-demand-by-fuel_biofuels[TWh]",
-          "color": "#049863"
+          "color": "#3ba272"
         },
         {
           "id": "tra_energy-demand-by-fuel_efuels[TWh]",
-          "color": "#06641a"
+          "color": "#ea7ccc"
         },
         {
           "id": "tra_energy-demand-by-fuel_hydrogen[TWh]",
-          "color": "#11c98b"
+          "color": "#73c0de"
         },
         {
           "id": "tra_energy-demand-by-fuel_electricity[TWh]",
-          "color": "#2a78d6"
+          "color": "#5470c6"
         }
       ]
     },
@@ -513,31 +513,31 @@
       "outputs": [
         {
           "id": "tra_passenger_vehicle-fleet_LDV_ICE-gasoline[millions]",
-          "color": "#724727"
+          "color": "#fc8452"
         },
         {
           "id": "tra_passenger_vehicle-fleet_LDV_ICE-gas[millions]",
-          "color": "#a0978b"
+          "color": "#9a60b4"
         },
         {
           "id": "tra_passenger_vehicle-fleet_LDV_ICE-diesel[millions]",
-          "color": "#36322f"
+          "color": "#c4622f"
         },
         {
           "id": "tra_passenger_vehicle-fleet_LDV_PHEV-gasoline[millions]",
-          "color": "#aa7a5a"
+          "color": "#fdb08f"
         },
         {
           "id": "tra_passenger_vehicle-fleet_LDV_PHEV-diesel[millions]",
-          "color": "#56524e"
+          "color": "#dd9468"
         },
         {
           "id": "tra_passenger_vehicle-fleet_LDV_FCEV[millions]",
-          "color": "#11c98b"
+          "color": "#73c0de"
         },
         {
           "id": "tra_passenger_vehicle-fleet_LDV_BEV[millions]",
-          "color": "#2a78d6"
+          "color": "#5470c6"
         }
       ]
     },
@@ -552,35 +552,35 @@
       "outputs": [
         {
           "id": "tra_passenger_transport-demand-by-mode_aviation[Bpkm]",
-          "color": "#7328ae"
+          "color": "#9a60b4"
         },
         {
           "id": "tra_passenger_transport-demand-by-mode_LDV[Bpkm]",
-          "color": "#a7031a"
+          "color": "#ee6666"
         },
         {
           "id": "tra_passenger_transport-demand-by-mode_2W[Bpkm]",
-          "color": "#049863"
+          "color": "#ea7ccc"
         },
         {
           "id": "tra_passenger_transport-demand-by-mode_bus[Bpkm]",
-          "color": "#06641a"
+          "color": "#fac858"
         },
         {
           "id": "tra_passenger_transport-demand-by-mode_rail[Bpkm]",
-          "color": "#0256a9"
+          "color": "#5470c6"
         },
         {
           "id": "tra_passenger_transport-demand-by-mode_metrotram[Bpkm]",
-          "color": "#7cb4fc"
+          "color": "#73c0de"
         },
         {
           "id": "tra_passenger_transport-demand-by-mode_bike[Bpkm]",
-          "color": "#06791f"
+          "color": "#91cc75"
         },
         {
           "id": "tra_passenger_transport-demand-by-mode_walk[Bpkm]",
-          "color": "#19b036"
+          "color": "#c3e3b3"
         }
       ]
     },
@@ -595,23 +595,23 @@
       "outputs": [
         {
           "id": "tra_passenger_transport-demand-vkm_LDV[Bvkm]",
-          "color": "#a7031a"
+          "color": "#ee6666"
         },
         {
           "id": "tra_passenger_transport-demand-vkm_2W[Bvkm]",
-          "color": "#049863"
+          "color": "#ea7ccc"
         },
         {
           "id": "tra_passenger_transport-demand-vkm_bus[Bvkm]",
-          "color": "#06641a"
+          "color": "#fac858"
         },
         {
           "id": "tra_passenger_transport-demand-vkm_rail[Bvkm]",
-          "color": "#0256a9"
+          "color": "#5470c6"
         },
         {
           "id": "tra_passenger_transport-demand-vkm_metrotram[Bvkm]",
-          "color": "#7cb4fc"
+          "color": "#73c0de"
         }
       ]
     },
@@ -626,27 +626,27 @@
       "outputs": [
         {
           "id": "tra_passenger_energy-demand-by-mode_aviation[TWh]",
-          "color": "#7328ae"
+          "color": "#9a60b4"
         },
         {
           "id": "tra_passenger_energy-demand-by-mode_LDV[TWh]",
-          "color": "#a7031a"
+          "color": "#ee6666"
         },
         {
           "id": "tra_passenger_energy-demand-by-mode_2W[TWh]",
-          "color": "#049863"
+          "color": "#ea7ccc"
         },
         {
           "id": "tra_passenger_energy-demand-by-mode_bus[TWh]",
-          "color": "#06641a"
+          "color": "#fac858"
         },
         {
           "id": "tra_passenger_energy-demand-by-mode_rail[TWh]",
-          "color": "#0256a9"
+          "color": "#5470c6"
         },
         {
           "id": "tra_passenger_energy-demand-by-mode_metrotram[TWh]",
-          "color": "#7cb4fc"
+          "color": "#73c0de"
         }
       ]
     },
@@ -661,39 +661,39 @@
       "outputs": [
         {
           "id": "tra_passenger_energy-demand-by-fuel_diesel[TWh]",
-          "color": "#36322f"
+          "color": "#c4622f"
         },
         {
           "id": "tra_passenger_energy-demand-by-fuel_gas[TWh]",
-          "color": "#a0978b"
+          "color": "#9a60b4"
         },
         {
           "id": "tra_passenger_energy-demand-by-fuel_gasoline[TWh]",
-          "color": "#724727"
+          "color": "#fc8452"
         },
         {
           "id": "tra_passenger_energy-demand-by-fuel_biodiesel[TWh]",
-          "color": "#0d8626"
+          "color": "#3ba272"
         },
         {
           "id": "tra_passenger_energy-demand-by-fuel_biogasoline[TWh]",
-          "color": "#30bd44"
+          "color": "#6cc196"
         },
         {
           "id": "tra_passenger_energy-demand-by-fuel_biogas[TWh]",
-          "color": "#06641a"
+          "color": "#1f6b48"
         },
         {
           "id": "tra_passenger_energy-demand-by-fuel_kerosenebio[TWh]",
-          "color": "#0d9b2c"
+          "color": "#a5d9bd"
         },
         {
           "id": "tra_passenger_energy-demand-by-fuel_hydrogen[TWh]",
-          "color": "#11c98b"
+          "color": "#73c0de"
         },
         {
           "id": "tra_passenger_energy-demand-by-fuel_electricity[TWh]",
-          "color": "#2a78d6"
+          "color": "#5470c6"
         }
       ]
     },
@@ -708,19 +708,19 @@
       "outputs": [
         {
           "id": "tra_passenger_energy-demand_aviation_kerosene[TWh]",
-          "color": "#77889b"
+          "color": "#fdb08f"
         },
         {
           "id": "tra_passenger_energy-demand_aviation_SAF[TWh]",
-          "color": "#0d9b2c"
+          "color": "#a5d9bd"
         },
         {
           "id": "tra_passenger_energy-demand_aviation_hydrogen[TWh]",
-          "color": "#11c98b"
+          "color": "#73c0de"
         },
         {
           "id": "tra_passenger_energy-demand_aviation_electricity[TWh]",
-          "color": "#2a78d6"
+          "color": "#5470c6"
         }
       ]
     },
@@ -735,15 +735,15 @@
       "outputs": [
         {
           "id": "tra_passenger_emissions_aviation_kerosene_CO2[Mt]",
-          "color": "#77889b"
+          "color": "#fdb08f"
         },
         {
           "id": "tra_passenger_emissions_aviation_SAF_CO2[Mt]",
-          "color": "#0d9b2c"
+          "color": "#a5d9bd"
         },
         {
           "id": "tra_passenger_emissions_aviation_H2_CO2[Mt]",
-          "color": "#11c98b"
+          "color": "#73c0de"
         }
       ]
     },
@@ -758,11 +758,11 @@
       "outputs": [
         {
           "id": "tra_passenger-emissions-total_aviation[Mt]",
-          "color": "#a35de4"
+          "color": "#c3a0d2"
         },
         {
           "id": "tra_passenger-emissions-local_aviation[Mt]",
-          "color": "#7328ae"
+          "color": "#9a60b4"
         }
       ]
     },
@@ -777,39 +777,39 @@
       "outputs": [
         {
           "id": "tra_passenger_vehicle-fleet_LDV_ICE-gasoline[millions]",
-          "color": "#724727"
+          "color": "#fc8452"
         },
         {
           "id": "tra_passenger_vehicle-fleet_LDV_ICE-gas[millions]",
-          "color": "#a0978b"
+          "color": "#9a60b4"
         },
         {
           "id": "tra_passenger_vehicle-fleet_LDV_ICE-diesel[millions]",
-          "color": "#36322f"
+          "color": "#c4622f"
         },
         {
           "id": "tra_passenger_vehicle-fleet_LDV_PHEV-gasoline[millions]",
-          "color": "#aa7a5a"
+          "color": "#fdb08f"
         },
         {
           "id": "tra_passenger_vehicle-fleet_LDV_PHEV-diesel[millions]",
-          "color": "#56524e"
+          "color": "#dd9468"
         },
         {
           "id": "tra_passenger_vehicle-fleet_LDV_FCEV[millions]",
-          "color": "#11c98b"
+          "color": "#73c0de"
         },
         {
           "id": "tra_passenger_vehicle-fleet_LDV_BEV[millions]",
-          "color": "#2a78d6"
+          "color": "#5470c6"
         },
         {
           "id": "tra_passenger_vehicle-fleet_2W[millions]",
-          "color": "#049863"
+          "color": "#ea7ccc"
         },
         {
           "id": "tra_passenger_vehicle-fleet_bus[millions]",
-          "color": "#06641a"
+          "color": "#fac858"
         }
       ]
     },
@@ -824,11 +824,11 @@
       "outputs": [
         {
           "id": "tra_passenger_vehicle-fleet_metrotram[millions]",
-          "color": "#7cb4fc"
+          "color": "#73c0de"
         },
         {
           "id": "tra_passenger_vehicle-fleet_rail[millions]",
-          "color": "#434348"
+          "color": "#5470c6"
         }
       ]
     },
@@ -843,7 +843,7 @@
       "outputs": [
         {
           "id": "tra_passenger_aviation-fleet-seats[thousands]",
-          "color": "#8085e9"
+          "color": "#9a60b4"
         }
       ]
     },
@@ -858,23 +858,23 @@
       "outputs": [
         {
           "id": "tra_freight_energy-demand-by-mode_aviation[TWh]",
-          "color": "#a35de4"
+          "color": "#c3a0d2"
         },
         {
           "id": "tra_freight_energy-demand-by-mode_HDV[TWh]",
-          "color": "#e64343"
+          "color": "#fc8452"
         },
         {
           "id": "tra_freight_energy-demand-by-mode_IWW[TWh]",
-          "color": "#14bb7c"
+          "color": "#3ba272"
         },
         {
           "id": "tra_freight_energy-demand-by-mode_marine[TWh]",
-          "color": "#0b6f49"
+          "color": "#1f6b48"
         },
         {
           "id": "tra_freight_energy-demand-by-mode_rail[TWh]",
-          "color": "#0c84fa"
+          "color": "#2f4a8f"
         }
       ]
     },
@@ -889,51 +889,51 @@
       "outputs": [
         {
           "id": "tra_freight_energy-demand-by-fuel_kerosene[TWh]",
-          "color": "#77889b"
+          "color": "#fdb08f"
         },
         {
           "id": "tra_freight_energy-demand-by-fuel_diesel[TWh]",
-          "color": "#36322f"
+          "color": "#c4622f"
         },
         {
           "id": "tra_freight_energy-demand-by-fuel_gas[TWh]",
-          "color": "#a0978b"
+          "color": "#9a60b4"
         },
         {
           "id": "tra_freight_energy-demand-by-fuel_marinefueloil[TWh]",
-          "color": "#2d2213"
+          "color": "#8f4a24"
         },
         {
           "id": "tra_freight_energy-demand-by-fuel_gasoline[TWh]",
-          "color": "#724727"
+          "color": "#fc8452"
         },
         {
           "id": "tra_freight_energy-demand-by-fuel_biodiesel[TWh]",
-          "color": "#0d8626"
+          "color": "#3ba272"
         },
         {
           "id": "tra_freight_energy-demand-by-fuel_biogasoline[TWh]",
-          "color": "#30bd44"
+          "color": "#6cc196"
         },
         {
           "id": "tra_freight_energy-demand-by-fuel_biogas[TWh]",
-          "color": "#06641a"
+          "color": "#1f6b48"
         },
         {
           "id": "tra_freight_energy-demand-by-fuel_biomarinefueloil[TWh]",
-          "color": "#49d158"
+          "color": "#91cc75"
         },
         {
           "id": "tra_freight_energy-demand-by-fuel_biojetfuel[TWh]",
-          "color": "#0d9b2c"
+          "color": "#a5d9bd"
         },
         {
           "id": "tra_freight_energy-demand-by-fuel_hydrogen[TWh]",
-          "color": "#11c98b"
+          "color": "#73c0de"
         },
         {
           "id": "tra_freight_energy-demand-by-fuel_electricity[TWh]",
-          "color": "#2a78d6"
+          "color": "#5470c6"
         }
       ]
     },
@@ -948,27 +948,27 @@
       "outputs": [
         {
           "id": "tra_freight_technology-share-fleet_HDVH_ICE-diesel[%]",
-          "color": "#36322f"
+          "color": "#c4622f"
         },
         {
           "id": "tra_freight_technology-share-fleet_HDVH_ICE-gas[%]",
-          "color": "#a0978b"
+          "color": "#9a60b4"
         },
         {
           "id": "tra_freight_technology-share-fleet_HDVH_PHEV-diesel[%]",
-          "color": "#56524e"
+          "color": "#dd9468"
         },
         {
           "id": "tra_freight_technology-share-fleet_HDVH_FCEV[%]",
-          "color": "#11c98b"
+          "color": "#73c0de"
         },
         {
           "id": "tra_freight_technology-share-fleet_HDVH_BEV[%]",
-          "color": "#2a78d6"
+          "color": "#5470c6"
         },
         {
           "id": "tra_freight_technology-share-fleet_HDVH_CEV[%]",
-          "color": "#6fadfe"
+          "color": "#b6c3e8"
         }
       ]
     },
@@ -983,23 +983,23 @@
       "outputs": [
         {
           "id": "tra_emissions-CO2e_passenger_aviation[Mt]",
-          "color": "#7328ae"
+          "color": "#9a60b4"
         },
         {
           "id": "tra_emissions-CO2e_passenger_LDV[Mt]",
-          "color": "#a7031a"
+          "color": "#ee6666"
         },
         {
           "id": "tra_emissions-CO2e_passenger_2W[Mt]",
-          "color": "#049863"
+          "color": "#ea7ccc"
         },
         {
           "id": "tra_emissions-CO2e_passenger_bus[Mt]",
-          "color": "#06641a"
+          "color": "#fac858"
         },
         {
           "id": "tra_emissions-CO2e_passenger_rail[Mt]",
-          "color": "#0256a9"
+          "color": "#5470c6"
         }
       ]
     },
@@ -1014,23 +1014,23 @@
       "outputs": [
         {
           "id": "tra_freight_emissions_aviation_CO2[Mt]",
-          "color": "#a35de4"
+          "color": "#c3a0d2"
         },
         {
           "id": "tra_freight_emissions_HDV_CO2[Mt]",
-          "color": "#e64343"
+          "color": "#fc8452"
         },
         {
           "id": "tra_freight_emissions_IWW_CO2[Mt]",
-          "color": "#14bb7c"
+          "color": "#3ba272"
         },
         {
           "id": "tra_freight_emissions_marine_CO2[Mt]",
-          "color": "#0b6f49"
+          "color": "#1f6b48"
         },
         {
           "id": "tra_freight_emissions_rail_CO2[Mt]",
-          "color": "#0c84fa"
+          "color": "#2f4a8f"
         }
       ]
     }

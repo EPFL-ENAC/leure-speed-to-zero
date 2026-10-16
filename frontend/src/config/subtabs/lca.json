@@ -13,12 +13,12 @@
       "type": "StackedArea",
       "unit": "kWh",
       "outputs": [
-        { "id": "heavy-metals_heavy-metals-to-soil-arsenic[kg]", "color": "#434348" },
-        { "id": "heavy-metals_heavy-metals-to-soil-cadmium[kg]", "color": "#f15c80" },
-        { "id": "heavy-metals_heavy-metals-to-soil-chromium[kg]", "color": "#2b908f" },
-        { "id": "heavy-metals_heavy-metals-to-soil-lead[kg]", "color": "#e4d354" },
-        { "id": "heavy-metals_heavy-metals-to-soil-mercury[kg]", "color": "#5d4037" },
-        { "id": "heavy-metals_heavy-metals-to-soil-nickel[kg]", "color": "#f45b5b" }
+        { "id": "heavy-metals_heavy-metals-to-soil-arsenic[kg]", "color": "#5470c6" },
+        { "id": "heavy-metals_heavy-metals-to-soil-cadmium[kg]", "color": "#91cc75" },
+        { "id": "heavy-metals_heavy-metals-to-soil-chromium[kg]", "color": "#fac858" },
+        { "id": "heavy-metals_heavy-metals-to-soil-lead[kg]", "color": "#ee6666" },
+        { "id": "heavy-metals_heavy-metals-to-soil-mercury[kg]", "color": "#73c0de" },
+        { "id": "heavy-metals_heavy-metals-to-soil-nickel[kg]", "color": "#3ba272" }
       ]
     }
   }

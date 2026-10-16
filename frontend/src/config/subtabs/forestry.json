@@ -58,8 +58,8 @@
       "type": "StackedArea",
       "unit": "ha",
       "outputs": [
-        { "id": "exploited-forest[ha]", "color": "#abd506" },
-        { "id": "unexploited-forest[ha]", "color": "#98bb0a" }
+        { "id": "exploited-forest[ha]", "color": "#3ba272" },
+        { "id": "unexploited-forest[ha]", "color": "#91cc75" }
       ]
     },
     "ExploitedForest": {
@@ -71,8 +71,8 @@
       "type": "StackedArea",
       "unit": "ha",
       "outputs": [
-        { "id": "exploited-forest[ha]", "color": "#785a33" },
-        { "id": "unexploited-forest[ha]", "color": "#3e3324" }
+        { "id": "exploited-forest[ha]", "color": "#3ba272" },
+        { "id": "unexploited-forest[ha]", "color": "#91cc75" }
       ]
     },
     "HarvestedWoodSpecies": {
