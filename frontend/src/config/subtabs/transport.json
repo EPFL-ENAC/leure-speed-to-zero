@@ -146,6 +146,7 @@
       "moreInfo": [
         "PassengerVehiclesFleet",
         "PassengerFleetOtherModes",
+        "PassengerAviationFleetSeats",
         "TrucksTechnologyShare",
         "PassengerDistancePerMode",
         "PassengerDistanceVkmPerMode"
@@ -814,24 +815,35 @@
     },
     "PassengerFleetOtherModes": {
       "title": {
-        "enUS": "Passenger fleet - rail, tram/metro and aviation",
-        "frFR": "Flotte passagers - rail, métro/tram et aviation",
-        "deDE": "Passagierflotte - Bahn, Tram/Metro und Luftfahrt"
+        "enUS": "Passenger fleet - rail and tram/metro",
+        "frFR": "Flotte passagers - rail et métro/tram",
+        "deDE": "Passagierflotte - Bahn und Tram/Metro"
       },
       "unit": "Million vehicles",
       "type": "StackedArea",
       "outputs": [
-        {
-          "id": "tra_passenger_vehicle-fleet_aviation[millions]",
-          "color": "#7328ae"
-        },
         {
           "id": "tra_passenger_vehicle-fleet_metrotram[millions]",
           "color": "#7cb4fc"
         },
         {
           "id": "tra_passenger_vehicle-fleet_rail[millions]",
-          "color": "#0256a9"
+          "color": "#434348"
+        }
+      ]
+    },
+    "PassengerAviationFleetSeats": {
+      "title": {
+        "enUS": "Passenger aviation fleet (seats)",
+        "frFR": "Flotte aviation passagers (sièges)",
+        "deDE": "Passagierflotte Luftfahrt (Sitzplätze)"
+      },
+      "unit": "Thousand seats",
+      "type": "StackedArea",
+      "outputs": [
+        {
+          "id": "tra_passenger_aviation-fleet-seats[thousands]",
+          "color": "#8085e9"
         }
       ]
     },
