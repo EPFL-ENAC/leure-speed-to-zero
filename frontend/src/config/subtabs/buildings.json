@@ -9,12 +9,6 @@
       "unit": "Mt",
       "route": "emissions",
       "maximize": false,
-      "min": 0,
-      "max": 6,
-      "thresholds": {
-        "warning": 2.5,
-        "danger": 4
-      },
       "info": {
         "enUS": "Total CO2 emissions in 2050 from the whole buildings sector, residential and non-residential combined, including space heating and hot water across all energy carriers. Lower values indicate better environmental performance and progress toward climate goals.",
         "frFR": "Émissions totales de CO2 en 2050 pour l'ensemble du secteur du bâtiment, résidentiel et non résidentiel confondus, y compris le chauffage des locaux et l'eau chaude pour tous les vecteurs énergétiques. Des valeurs plus faibles indiquent une meilleure performance environnementale et des progrès vers les objectifs climatiques.",
@@ -30,12 +24,6 @@
       "unit": "TWh",
       "route": "energy",
       "maximize": false,
-      "min": 0,
-      "max": 110,
-      "thresholds": {
-        "warning": 60,
-        "danger": 85
-      },
       "info": {
         "enUS": "Total final energy demand in 2050 for the whole buildings sector, residential and non-residential combined: space heating, hot water, appliances, lighting and other electricity uses across all energy carriers.",
         "frFR": "Demande totale d'énergie finale en 2050 pour l'ensemble du secteur du bâtiment, résidentiel et non résidentiel confondus : chauffage des locaux, eau chaude, appareils, éclairage et autres usages électriques, tous vecteurs énergétiques confondus.",
@@ -51,12 +39,6 @@
       "unit": "Mm²",
       "route": "stock",
       "maximize": false,
-      "min": 0,
-      "max": 1300,
-      "thresholds": {
-        "warning": 1150,
-        "danger": 1250
-      },
       "info": {
         "enUS": "Total building floor area stock in 2050, residential and non-residential combined.",
         "frFR": "Parc total de surface de plancher en 2050, résidentiel et non résidentiel confondus.",
@@ -66,81 +48,64 @@
   ],
   "subtabs": [
     {
-      "title": {
-        "enUS": "Emissions",
-        "frFR": "Émissions",
-        "deDE": "Emissionen"
-      },
+      "title": { "enUS": "Emissions", "frFR": "Émissions", "deDE": "Emissionen" },
       "route": "emissions",
       "toggle": {
-        "default": "residential",
+        "default": "enduse",
         "options": [
           {
-            "value": "residential",
-            "label": { "enUS": "Residential", "frFR": "Résidentiel", "deDE": "Wohngebäude" }
+            "value": "enduse",
+            "label": { "enUS": "End-use", "frFR": "Usage final", "deDE": "Verwendungszweck" }
           },
           {
-            "value": "non-residential",
-            "label": {
-              "enUS": "Non-residential",
-              "frFR": "Non-résidentiel",
-              "deDE": "Nicht-Wohngebäude"
-            }
+            "value": "fuel",
+            "label": { "enUS": "Fuel", "frFR": "Combustible", "deDE": "Brennstoff" }
           }
         ],
         "charts": {
-          "residential": ["GHGEmissionsheatingPerCarrier"],
-          "non-residential": ["GHGEmissionsservicesPerCarrier"]
+          "fuel": ["GHGEmissionstotalPerCarrier"],
+          "enduse": ["GHGEmissionstotalPerEndUse"]
         }
       },
       "moreInfo": {
-        "residential": [
-          "SHGHGEmissionsPerBuildingType",
-          "GHGEmissionshotwaterPerCarrier",
-          "GHGEmissionstotalPerCarrier"
-        ],
-        "non-residential": ["GHGEmissionstotalPerCarrier"]
+        "fuel": ["SHGHGEmissionsPerBuildingType", "GHGEmissionshotwaterPerCarrier"],
+        "enduse": []
       }
     },
     {
-      "title": {
-        "enUS": "Energy",
-        "frFR": "Énergie",
-        "deDE": "Energie"
-      },
+      "title": { "enUS": "Energy", "frFR": "Énergie", "deDE": "Energie" },
       "route": "energy",
       "toggle": {
-        "default": "residential",
+        "default": "enduse",
         "options": [
           {
-            "value": "residential",
-            "label": { "enUS": "Residential", "frFR": "Résidentiel", "deDE": "Wohngebäude" }
+            "value": "enduse",
+            "label": { "enUS": "End-use", "frFR": "Usage final", "deDE": "Verwendungszweck" }
           },
           {
-            "value": "non-residential",
-            "label": {
-              "enUS": "Non-residential",
-              "frFR": "Non-résidentiel",
-              "deDE": "Nicht-Wohngebäude"
-            }
+            "value": "fuel",
+            "label": { "enUS": "Fuel", "frFR": "Combustible", "deDE": "Brennstoff" }
           }
         ],
         "charts": {
-          "residential": ["EnergyDemandPerCarrier"],
-          "non-residential": ["NonResByFuel"]
+          "fuel": ["EnergyDemandTotalPerFuel"],
+          "enduse": ["EnergyDemandPerEndUse"]
         }
       },
       "moreInfo": {
-        "residential": ["SHEnergyDemandPerCarrier", "HotWaterRes", "AppliancesLightRes"],
-        "non-residential": ["NonResByType"]
+        "fuel": [
+          "EnergyDemandResPerFuel",
+          "EnergyDemandNonResPerFuel",
+          "EnergyDemandPerCarrier",
+          "SHEnergyDemandPerCarrier",
+          "HotWaterRes",
+          "NonResByFuel"
+        ],
+        "enduse": ["AppliancesLightRes", "NonResByType", "SHEnergyDemandPerBuildingType"]
       }
     },
     {
-      "title": {
-        "enUS": "Stock",
-        "frFR": "Parc",
-        "deDE": "Bestand"
-      },
+      "title": { "enUS": "Stock", "frFR": "Parc", "deDE": "Bestand" },
       "route": "stock",
       "toggle": {
         "default": "residential",
@@ -159,26 +124,29 @@
           }
         ],
         "charts": {
-          "residential": ["FloorAreaPerBuildingType"],
-          "non-residential": ["FloorAreaPerBuildingType"]
+          "residential": ["FloorAreaCECBRes"],
+          "non-residential": ["FloorAreaCECBNonRes"]
         }
       },
       "moreInfo": {
         "residential": [
           "FloorAreaBldType",
-          "FloorAreaRenovationConstruction",
+          "FloorAreaRenovationConstructionRes",
           "SHEnergyDemandPerBuildingType"
         ],
-        "non-residential": []
+        "non-residential": [
+          "FloorAreaRenovationConstructionNonRes",
+          "SHEnergyDemandPerBuildingType"
+        ]
       }
     }
   ],
   "charts": {
     "SHGHGEmissionsPerBuildingType": {
       "title": {
-        "enUS": "CO₂ emissions for residential space heating per building envelope CECB category",
-        "frFR": "Émissions de CO₂ pour le chauffage résidentiel par catégorie d’enveloppe CECB",
-        "deDE": "CO₂-Emissionen der Raumheizung im Wohnbereich nach GEAK-Gebäudehüllenkategorie"
+        "enUS": "Territorial CO₂ emissions from space heating of all buildings, by envelope category (CECB)",
+        "frFR": "Émissions territoriales de CO₂ liées au chauffage des locaux de tous les bâtiments, par catégorie d’enveloppe (CECB)",
+        "deDE": "Territoriale CO₂-Emissionen aus Raumheizung aller Gebäude, nach Gebäudehüllenkategorie (GEAK)"
       },
       "type": "StackedArea",
       "unit": "Mt",
@@ -192,9 +160,9 @@
     },
     "GHGEmissionstotalPerCarrier": {
       "title": {
-        "enUS": "Territorial CO₂ Emissions from the buildings sector",
-        "frFR": "Émissions totales de CO₂du secteur du batiments",
-        "deDE": "CTerritoriale CO₂-Emissionen aus dem Gebäudesektor"
+        "enUS": "Territorial CO₂ emissions of all buildings, by energy carrier",
+        "frFR": "Émissions territoriales de CO₂ de tous les bâtiments, par vecteur énergétique",
+        "deDE": "Territoriale CO₂-Emissionen aller Gebäude, nach Energieträger"
       },
       "type": "StackedArea",
       "unit": "Mt",
@@ -206,52 +174,67 @@
         { "id": "bld_CO2-emissions_wood[Mt]", "color": "#5d4037" },
         { "id": "bld_CO2-emissions_district-heating[Mt]", "color": "#f45b5b" },
         { "id": "bld_CO2-emissions_heat-pump[Mt]", "color": "#aee791" },
-        { "id": "bld_CO2-emissions_solar[Mt]", "color": "#e4d354" }
+        { "id": "bld_CO2-emissions_solar[Mt]", "color": "#ff7f0e" }
+      ]
+    },
+    "GHGEmissionstotalPerEndUse": {
+      "title": {
+        "enUS": "Territorial CO₂ emissions of all buildings, by end-use",
+        "frFR": "Émissions territoriales de CO₂ de tous les bâtiments, par usage",
+        "deDE": "Territoriale CO₂-Emissionen aller Gebäude, nach Verwendungszweck"
+      },
+      "type": "StackedArea",
+      "unit": "Mt",
+      "outputs": [
+        "bld_CO2-emissions_residential_heating[Mt]",
+        "bld_CO2-emissions_residential_hot-water[Mt]",
+        "bld_CO2-emissions_services_heating[Mt]",
+        "bld_CO2-emissions_services_hot-water[Mt]"
       ]
     },
     "GHGEmissionsheatingPerCarrier": {
       "title": {
-        "enUS": "CO2 emissions for residential heating per carrier",
-        "frFR": "Émissions de CO2 pour le chauffage résidentiel par vecteur",
-        "deDE": "CO2-Emissionen für Raumheizung in Wohngebäuden nach Energieträger"
+        "enUS": "CO₂ emissions from buildings per carrier",
+        "frFR": "Émissions de CO₂ des bâtiments par vecteur énergétique",
+        "deDE": "CO₂-Emissionen von Gebäuden nach Energieträger"
       },
       "type": "StackedArea",
       "unit": "Mt",
       "outputs": [
-        { "id": "bld_CO2-emissions_heating_coal[Mt]", "color": "#434348" },
-        { "id": "bld_CO2-emissions_heating_electricity[Mt]", "color": "#f15c80" },
-        { "id": "bld_CO2-emissions_heating_heating-oil[Mt]", "color": "#2b908f" },
-        { "id": "bld_CO2-emissions_heating_gas[Mt]", "color": "#e4d354" },
-        { "id": "bld_CO2-emissions_heating_wood[Mt]", "color": "#5d4037" },
-        { "id": "bld_CO2-emissions_heating_district-heating[Mt]", "color": "#f45b5b" },
-        { "id": "bld_CO2-emissions_heating_heat-pump[Mt]", "color": "#aee791" },
-        { "id": "bld_CO2-emissions_heating_solar[Mt]", "color": "#e4d354" }
+        { "id": "bld_CO2-emissions_coal[Mt]", "color": "#434348" },
+        { "id": "bld_CO2-emissions_electricity[Mt]", "color": "#f15c80" },
+        { "id": "bld_CO2-emissions_heating-oil[Mt]", "color": "#2b908f" },
+        { "id": "bld_CO2-emissions_gas[Mt]", "color": "#e4d354" },
+        { "id": "bld_CO2-emissions_wood[Mt]", "color": "#5d4037" },
+        { "id": "bld_CO2-emissions_district-heating[Mt]", "color": "#f45b5b" },
+        { "id": "bld_CO2-emissions_heat-pump[Mt]", "color": "#aee791" },
+        { "id": "bld_CO2-emissions_solar[Mt]", "color": "#ff7f0e" }
       ]
     },
     "GHGEmissionsservicesPerCarrier": {
       "title": {
-        "enUS": "Non-residential CO₂ Emissions by energy carrier",
-        "frFR": "Émissions de CO2 non résidentielles par source d’énergie",
-        "deDE": "CO₂-Emissionen im Nichtwohnsektor nach Energieträgern"
+        "enUS": "Non-residential hot-water CO₂ Emissions by energy carrier",
+        "frFR": "Émissions de CO₂ non résidentielles liées à l’eau chaude par source d’énergie",
+        "deDE": "CO₂-Emissionen für Warmwasser im Nichtwohnsektor nach Energieträgern"
       },
       "type": "StackedArea",
       "unit": "Mt",
       "outputs": [
-        { "id": "services_CO2-emissions_heating_coal[Mt]", "color": "#434348" },
-        { "id": "services_CO2-emissions_heating_electricity[Mt]", "color": "#f15c80" },
-        { "id": "services_CO2-emissions_heating_heating-oil[Mt]", "color": "#2b908f" },
-        { "id": "services_CO2-emissions_heating_gas[Mt]", "color": "#e4d354" },
-        { "id": "services_CO2-emissions_heating_wood[Mt]", "color": "#5d4037" },
-        { "id": "services_CO2-emissions_heating_district-heating[Mt]", "color": "#f45b5b" },
-        { "id": "services_CO2-emissions_heating_heat-pump[Mt]", "color": "#aee791" },
-        { "id": "services_CO2-emissions_heating_solar[Mt]", "color": "#e4d354" }
+        { "id": "services_CO2-emissions_hot-water_coal[Mt]", "color": "#434348" },
+        { "id": "services_CO2-emissions_hot-water_electricity[Mt]", "color": "#f15c80" },
+        { "id": "services_CO2-emissions_hot-water_heating-oil[Mt]", "color": "#2b908f" },
+        { "id": "services_CO2-emissions_hot-water_gas[Mt]", "color": "#e4d354" },
+        { "id": "services_CO2-emissions_hot-water_wood[Mt]", "color": "#5d4037" },
+        { "id": "services_CO2-emissions_hot-water_district-heating[Mt]", "color": "#f45b5b" },
+        { "id": "services_CO2-emissions_hot-water_heat-pump[Mt]", "color": "#aee791" },
+        { "id": "services_CO2-emissions_hot-water_solar[Mt]", "color": "#ff7f0e" }
       ]
     },
     "GHGEmissionshotwaterPerCarrier": {
       "title": {
-        "enUS": "CO₂ Emissions from Residential Hot Water by Energy Source",
-        "frFR": "Émissions de CO₂ liées à l’eau chaude sanitaire résidentielle par source d’énergie",
-        "deDE": "CO₂-Emissionen für die Warmwasserbereitung im Wohnbereich nach Energieträger"
+        "enUS": "Territorial CO₂ emissions from hot water of residential buildings, by energy carrier",
+        "frFR": "Émissions territoriales de CO₂ liées à l’eau chaude des bâtiments résidentiels, par vecteur énergétique",
+        "deDE": "Territoriale CO₂-Emissionen aus Warmwasser der Wohngebäude, nach Energieträger"
       },
       "type": "StackedArea",
       "unit": "Mt",
@@ -263,14 +246,14 @@
         { "id": "bld_hotwater_CO2-emissions_wood[Mt]", "color": "#5d4037" },
         { "id": "bld_hotwater_CO2-emissions_district-heating[Mt]", "color": "#f45b5b" },
         { "id": "bld_hotwater_CO2-emissions_heat-pump[Mt]", "color": "#aee791" },
-        { "id": "bld_hotwater_CO2-emissions_solar[Mt]", "color": "#e4d354" }
+        { "id": "bld_hotwater_CO2-emissions_solar[Mt]", "color": "#ff7f0e" }
       ]
     },
     "SHEnergyDemandPerCarrier": {
       "title": {
-        "enUS": "Demand for residential space heating per heating technology",
-        "frFR": "Demande d'énergie pour le chauffage résidentiel par vecteur",
-        "deDE": "Energiebedarf für Raumheizung in Wohngebäuden nach Energieträger"
+        "enUS": "Useful heat demand for space heating of all buildings, by energy carrier",
+        "frFR": "Besoin de chaleur utile pour le chauffage des locaux de tous les bâtiments, par vecteur énergétique",
+        "deDE": "Nutzwärmebedarf für Raumheizung aller Gebäude, nach Energieträger"
       },
       "type": "StackedArea",
       "unit": "TWh",
@@ -282,15 +265,97 @@
         { "id": "bld_heating_wood[TWh]", "color": "#5d4037" },
         { "id": "bld_heating_district-heating[TWh]", "color": "#f45b5b" },
         { "id": "bld_heating_heat-pump[TWh]", "color": "#aee791" },
-        { "id": "bld_heating_solar[TWh]", "color": "#e4d354" },
+        { "id": "bld_heating_solar[TWh]", "color": "#ff7f0e" },
         { "id": "bld_heating_other-tech[TWh]", "color": "#f7a35c" }
+      ]
+    },
+    "EnergyDemandPerEndUse": {
+      "title": {
+        "enUS": "Final energy demand of all buildings, by end-use",
+        "frFR": "Demande d’énergie finale de tous les bâtiments, par usage",
+        "deDE": "Endenergiebedarf aller Gebäude, nach Verwendungszweck"
+      },
+      "type": "StackedArea",
+      "unit": "TWh",
+      "outputs": [
+        { "id": "bld_energy-demand_residential_space-heating[TWh]", "color": "#C0392B" },
+        { "id": "bld_energy-demand_residential_hot-water[TWh]", "color": "#E67E22" },
+        { "id": "bld_energy-demand_residential_appliances[TWh]", "color": "#F1C40F" },
+        { "id": "bld_energy-demand_residential_lighting[TWh]", "color": "#F7DC6F" },
+        { "id": "bld_energy-demand_non-residential_space-heating[TWh]", "color": "#1F618D" },
+        { "id": "bld_energy-demand_non-residential_hot-water[TWh]", "color": "#3498DB" },
+        { "id": "bld_energy-demand_non-residential_appliances[TWh]", "color": "#48C9B0" },
+        { "id": "bld_energy-demand_non-residential_lighting[TWh]", "color": "#A3E4D7" }
+      ]
+    },
+    "EnergyDemandTotalPerFuel": {
+      "title": {
+        "enUS": "Final energy demand of all buildings, by energy carrier",
+        "frFR": "Demande d’énergie finale de tous les bâtiments, par vecteur énergétique",
+        "deDE": "Endenergiebedarf aller Gebäude, nach Energieträger"
+      },
+      "type": "StackedArea",
+      "unit": "TWh",
+      "outputs": [
+        { "id": "bld_energy-demand_electricity[TWh]", "color": "#f15c80" },
+        { "id": "bld_energy-demand_coal[TWh]", "color": "#434348" },
+        { "id": "bld_energy-demand_heating-oil[TWh]", "color": "#2b908f" },
+        { "id": "bld_energy-demand_gas[TWh]", "color": "#e4d354" },
+        { "id": "bld_energy-demand_wood[TWh]", "color": "#5d4037" },
+        { "id": "bld_energy-demand_district-heating[TWh]", "color": "#f45b5b" },
+        { "id": "bld_energy-demand_heat-pump[TWh]", "color": "#aee791" },
+        { "id": "bld_energy-demand_ambient-heat[TWh]", "color": "#7FAEC0" },
+        { "id": "bld_energy-demand_other-tech[TWh]", "color": "#f7a35c" },
+        { "id": "bld_energy-demand_solar[TWh]", "color": "#ff7f0e" }
+      ]
+    },
+    "EnergyDemandResPerFuel": {
+      "title": {
+        "enUS": "Final energy demand of residential buildings, by energy carrier",
+        "frFR": "Demande d’énergie finale des bâtiments résidentiels, par vecteur énergétique",
+        "deDE": "Endenergiebedarf der Wohngebäude, nach Energieträger"
+      },
+      "type": "StackedArea",
+      "unit": "TWh",
+      "outputs": [
+        { "id": "bld_energy-demand_residential_electricity[TWh]", "color": "#f15c80" },
+        { "id": "bld_energy-demand_residential_coal[TWh]", "color": "#434348" },
+        { "id": "bld_energy-demand_residential_heating-oil[TWh]", "color": "#2b908f" },
+        { "id": "bld_energy-demand_residential_gas[TWh]", "color": "#e4d354" },
+        { "id": "bld_energy-demand_residential_wood[TWh]", "color": "#5d4037" },
+        { "id": "bld_energy-demand_residential_district-heating[TWh]", "color": "#f45b5b" },
+        { "id": "bld_energy-demand_residential_heat-pump[TWh]", "color": "#aee791" },
+        { "id": "bld_energy-demand_residential_ambient-heat[TWh]", "color": "#7FAEC0" },
+        { "id": "bld_energy-demand_residential_other-tech[TWh]", "color": "#f7a35c" },
+        { "id": "bld_energy-demand_residential_solar[TWh]", "color": "#ff7f0e" }
+      ]
+    },
+    "EnergyDemandNonResPerFuel": {
+      "title": {
+        "enUS": "Final energy demand of non-residential buildings, by energy carrier",
+        "frFR": "Demande d’énergie finale des bâtiments non résidentiels, par vecteur énergétique",
+        "deDE": "Endenergiebedarf der Nichtwohngebäude, nach Energieträger"
+      },
+      "type": "StackedArea",
+      "unit": "TWh",
+      "outputs": [
+        { "id": "bld_energy-demand_non-residential_electricity[TWh]", "color": "#f15c80" },
+        { "id": "bld_energy-demand_non-residential_coal[TWh]", "color": "#434348" },
+        { "id": "bld_energy-demand_non-residential_heating-oil[TWh]", "color": "#2b908f" },
+        { "id": "bld_energy-demand_non-residential_gas[TWh]", "color": "#e4d354" },
+        { "id": "bld_energy-demand_non-residential_wood[TWh]", "color": "#5d4037" },
+        { "id": "bld_energy-demand_non-residential_district-heating[TWh]", "color": "#f45b5b" },
+        { "id": "bld_energy-demand_non-residential_heat-pump[TWh]", "color": "#aee791" },
+        { "id": "bld_energy-demand_non-residential_ambient-heat[TWh]", "color": "#7FAEC0" },
+        { "id": "bld_energy-demand_non-residential_other-tech[TWh]", "color": "#f7a35c" },
+        { "id": "bld_energy-demand_non-residential_solar[TWh]", "color": "#ff7f0e" }
       ]
     },
     "EnergyDemandPerCarrier": {
       "title": {
-        "enUS": "Final energy demand for residential heating per carrier",
-        "frFR": "Demande d'énergie pour le chauffage résidentiel par vecteur",
-        "deDE": "Energiebedarf für Raumheizung in Wohngebäuden nach Energieträger"
+        "enUS": "Final energy demand for space heating of all buildings, by energy carrier",
+        "frFR": "Demande d’énergie finale pour le chauffage des locaux de tous les bâtiments, par vecteur énergétique",
+        "deDE": "Endenergiebedarf für Raumheizung aller Gebäude, nach Energieträger"
       },
       "type": "StackedArea",
       "unit": "TWh",
@@ -304,30 +369,46 @@
         { "id": "bld_energy-demand_heating_heat-pump[TWh]", "color": "#aee791" },
         { "id": "bld_energy-demand_heating_ambient-heat[TWh]", "color": "#7FAEC0" },
         { "id": "bld_energy-demand_heating_other-tech[TWh]", "color": "#f7a35c" },
-        { "id": "bld_energy-demand_heating_solar[TWh]", "color": "#e4d354" }
+        { "id": "bld_energy-demand_heating_solar[TWh]", "color": "#ff7f0e" }
       ]
     },
-    "FloorAreaPerBuildingType": {
+    "FloorAreaCECBRes": {
       "title": {
-        "enUS": "Residential energy reference area per envelope CECB category",
-        "frFR": "Surface de référence énergétique résidentielle selon la catégorie d’enveloppe CECB",
-        "deDE": "Energiebezugsfläche von Wohngebäuden nach GEAK-Gebäudehüllenkategorie"
+        "enUS": "Energy reference area of residential buildings, by envelope category (CECB)",
+        "frFR": "Surface de référence énergétique des bâtiments résidentiels, par catégorie d’enveloppe (CECB)",
+        "deDE": "Energiebezugsfläche der Wohngebäude, nach Gebäudehüllenkategorie (GEAK)"
       },
       "type": "StackedArea",
       "unit": "Mm²",
       "outputs": [
-        { "id": "bld_floor-area_stock_F[Mm2]", "color": "#D32F2F" },
-        { "id": "bld_floor-area_stock_E[Mm2]", "color": "#F57C00" },
-        { "id": "bld_floor-area_stock_D[Mm2]", "color": "#FBC02D" },
-        { "id": "bld_floor-area_stock_C[Mm2]", "color": "#8BC34A" },
-        { "id": "bld_floor-area_stock_B[Mm2]", "color": "#388E3C" }
+        { "id": "bld_floor-area_stock_residential_F[Mm2]", "color": "#D32F2F" },
+        { "id": "bld_floor-area_stock_residential_E[Mm2]", "color": "#F57C00" },
+        { "id": "bld_floor-area_stock_residential_D[Mm2]", "color": "#FBC02D" },
+        { "id": "bld_floor-area_stock_residential_C[Mm2]", "color": "#8BC34A" },
+        { "id": "bld_floor-area_stock_residential_B[Mm2]", "color": "#388E3C" }
+      ]
+    },
+    "FloorAreaCECBNonRes": {
+      "title": {
+        "enUS": "Energy reference area of non-residential buildings, by envelope category (CECB)",
+        "frFR": "Surface de référence énergétique des bâtiments non résidentiels, par catégorie d’enveloppe (CECB)",
+        "deDE": "Energiebezugsfläche der Nichtwohngebäude, nach Gebäudehüllenkategorie (GEAK)"
+      },
+      "type": "StackedArea",
+      "unit": "Mm²",
+      "outputs": [
+        { "id": "bld_floor-area_stock_non-residential_F[Mm2]", "color": "#D32F2F" },
+        { "id": "bld_floor-area_stock_non-residential_E[Mm2]", "color": "#F57C00" },
+        { "id": "bld_floor-area_stock_non-residential_D[Mm2]", "color": "#FBC02D" },
+        { "id": "bld_floor-area_stock_non-residential_C[Mm2]", "color": "#8BC34A" },
+        { "id": "bld_floor-area_stock_non-residential_B[Mm2]", "color": "#388E3C" }
       ]
     },
     "SHEnergyDemandPerBuildingType": {
       "title": {
-        "enUS": "Demand for residential space heating per envelope category CECB",
-        "frFR": "Demande de chauffage résidentiel par catégorie d’enveloppe CECB",
-        "deDE": "Heizwärmebedarf von Wohngebäuden nach Gebäudehüllenkategorie des GEAK"
+        "enUS": "Useful heat demand for space heating of all buildings, by envelope category (CECB)",
+        "frFR": "Besoin de chaleur utile pour le chauffage des locaux de tous les bâtiments, par catégorie d’enveloppe (CECB)",
+        "deDE": "Nutzwärmebedarf für Raumheizung aller Gebäude, nach Gebäudehüllenkategorie (GEAK)"
       },
       "type": "StackedArea",
       "unit": "TWh",
@@ -341,9 +422,9 @@
     },
     "FloorAreaBldType": {
       "title": {
-        "enUS": "Residential building stock by type",
-        "frFR": "Surface au sol par type de bâtiment",
-        "deDE": "Wohnfläche nach Gebäudetyp"
+        "enUS": "Energy reference area of residential buildings, by building type",
+        "frFR": "Surface de référence énergétique des bâtiments résidentiels, par type de bâtiment",
+        "deDE": "Energiebezugsfläche der Wohngebäude, nach Gebäudetyp"
       },
       "type": "StackedArea",
       "unit": "Mm²",
@@ -352,25 +433,39 @@
         "bld_floor-area_stock_multi-family-households[Mm2]"
       ]
     },
-    "FloorAreaRenovationConstruction": {
+    "FloorAreaRenovationConstructionRes": {
       "title": {
-        "enUS": "Renovated and constructed residential floor area",
-        "frFR": "Surface au sol par rénovation et construction",
-        "deDE": "Wohnfläche nach Renovierung und Neubau"
+        "enUS": "Energy reference area of residential buildings, by construction and renovation status",
+        "frFR": "Surface de référence énergétique des bâtiments résidentiels, par statut de construction et de rénovation",
+        "deDE": "Energiebezugsfläche der Wohngebäude, nach Neubau- und Renovierungsstatus"
       },
       "type": "StackedArea",
       "unit": "Mm²",
       "outputs": [
-        { "id": "bld_floor-area_new-cumulated[Mm2]", "color": "#bfdbf6" },
-        { "id": "bld_floor-area_renovated-cumulated[Mm2]", "color": "#7cb5ec" },
-        { "id": "bld_floor-area_unrenovated-cumulated[Mm2]", "color": "#398fe2" }
+        { "id": "bld_floor-area_residential_new-cumulated[Mm2]", "color": "#bfdbf6" },
+        { "id": "bld_floor-area_residential_renovated-cumulated[Mm2]", "color": "#7cb5ec" },
+        { "id": "bld_floor-area_residential_unrenovated-cumulated[Mm2]", "color": "#398fe2" }
+      ]
+    },
+    "FloorAreaRenovationConstructionNonRes": {
+      "title": {
+        "enUS": "Energy reference area of non-residential buildings, by construction and renovation status",
+        "frFR": "Surface de référence énergétique des bâtiments non résidentiels, par statut de construction et de rénovation",
+        "deDE": "Energiebezugsfläche der Nichtwohngebäude, nach Neubau- und Renovierungsstatus"
+      },
+      "type": "StackedArea",
+      "unit": "Mm²",
+      "outputs": [
+        { "id": "bld_floor-area_non-residential_new-cumulated[Mm2]", "color": "#bfdbf6" },
+        { "id": "bld_floor-area_non-residential_renovated-cumulated[Mm2]", "color": "#7cb5ec" },
+        { "id": "bld_floor-area_non-residential_unrenovated-cumulated[Mm2]", "color": "#398fe2" }
       ]
     },
     "HotWaterRes": {
       "title": {
-        "enUS": "Hot water - residential energy consumption",
-        "frFR": "Eau chaude résidentielle",
-        "deDE": "Warmwasser in Wohngebäuden"
+        "enUS": "Final energy demand for hot water of residential buildings, by energy carrier",
+        "frFR": "Demande d’énergie finale pour l’eau chaude des bâtiments résidentiels, par vecteur énergétique",
+        "deDE": "Endenergiebedarf für Warmwasser der Wohngebäude, nach Energieträger"
       },
       "type": "StackedArea",
       "unit": "TWh",
@@ -386,9 +481,9 @@
     },
     "AppliancesLightRes": {
       "title": {
-        "enUS": "Appliances and Lighting - residential electricity consumption",
-        "frFR": "Appareils et éclairage résidentiels",
-        "deDE": "Geräte und Beleuchtung in Wohngebäuden"
+        "enUS": "Electricity demand for appliances and lighting of residential buildings, by end-use",
+        "frFR": "Demande d’électricité pour les appareils et l’éclairage des bâtiments résidentiels, par usage",
+        "deDE": "Strombedarf für Geräte und Beleuchtung der Wohngebäude, nach Verwendungszweck"
       },
       "type": "StackedArea",
       "unit": "TWh",
@@ -396,9 +491,9 @@
     },
     "NonResByType": {
       "title": {
-        "enUS": "Non-residential energy consumption by end-use",
-        "frFR": "Énergie non-résidentielle par type",
-        "deDE": "Energie in Nicht-Wohngebäuden nach Typ"
+        "enUS": "Final energy demand of non-residential buildings, by end-use",
+        "frFR": "Demande d’énergie finale des bâtiments non résidentiels, par usage",
+        "deDE": "Endenergiebedarf der Nichtwohngebäude, nach Verwendungszweck"
       },
       "type": "StackedArea",
       "unit": "TWh",
@@ -411,9 +506,9 @@
     },
     "NonResByFuel": {
       "title": {
-        "enUS": "Non-residential energy consumption by fuel",
-        "frFR": "Énergie non-résidentielle par combustible",
-        "deDE": "Energie in Nicht-Wohngebäuden nach Brennstoff"
+        "enUS": "Final energy demand for hot water, appliances and lighting of non-residential buildings, by energy carrier",
+        "frFR": "Demande d’énergie finale pour l’eau chaude, les appareils et l’éclairage des bâtiments non résidentiels, par vecteur énergétique",
+        "deDE": "Endenergiebedarf für Warmwasser, Geräte und Beleuchtung der Nichtwohngebäude, nach Energieträger"
       },
       "type": "StackedArea",
       "unit": "TWh",

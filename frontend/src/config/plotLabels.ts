@@ -1411,6 +1411,26 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Holz',
     frFR: 'Bois',
   },
+  'bld_CO2-emissions_residential_heating[Mt]': {
+    enUS: 'Residential, space heating',
+    deDE: 'Wohngebäude, Raumheizung',
+    frFR: 'Résidentiel, chauffage des locaux',
+  },
+  'bld_CO2-emissions_residential_hot-water[Mt]': {
+    enUS: 'Residential, hot water',
+    deDE: 'Wohngebäude, Warmwasser',
+    frFR: 'Résidentiel, eau chaude',
+  },
+  'bld_CO2-emissions_services_heating[Mt]': {
+    enUS: 'Non-residential, space heating',
+    deDE: 'Nichtwohngebäude, Raumheizung',
+    frFR: 'Non résidentiel, chauffage des locaux',
+  },
+  'bld_CO2-emissions_services_hot-water[Mt]': {
+    enUS: 'Non-residential, hot water',
+    deDE: 'Nichtwohngebäude, Warmwasser',
+    frFR: 'Non résidentiel, eau chaude',
+  },
   'bld_emissions-CO2e[Mt]': {
     enUS: 'Buildings',
     deDE: 'Gebäude',
@@ -1461,47 +1481,47 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Holz',
     frFR: 'Bois',
   },
-  'services_CO2-emissions_heating_coal[Mt]': {
+  'services_CO2-emissions_hot-water_coal[Mt]': {
     enUS: 'Coal',
     deDE: 'Kohle',
     frFR: 'Charbon',
   },
-  'services_CO2-emissions_heating_district-heating[Mt]': {
+  'services_CO2-emissions_hot-water_district-heating[Mt]': {
     enUS: 'District-heating',
     deDE: 'Fernwärme',
     frFR: 'Chauffage à distance',
   },
-  'services_CO2-emissions_heating_electricity[Mt]': {
+  'services_CO2-emissions_hot-water_electricity[Mt]': {
     enUS: 'Electricity',
     deDE: 'Strom',
     frFR: 'Électricité',
   },
-  'services_CO2-emissions_heating_gas[Mt]': {
+  'services_CO2-emissions_hot-water_gas[Mt]': {
     enUS: 'Gas',
     deDE: 'Gas',
     frFR: 'Gaz',
   },
-  'services_CO2-emissions_heating_heat-pump[Mt]': {
+  'services_CO2-emissions_hot-water_heat-pump[Mt]': {
     enUS: 'Heat-pump',
     deDE: 'Wärmepumpe',
     frFR: 'Pompe à chaleur',
   },
-  'services_CO2-emissions_heating_heating-oil[Mt]': {
+  'services_CO2-emissions_hot-water_heating-oil[Mt]': {
     enUS: 'Heating-oil',
     deDE: 'Heizöl',
     frFR: 'Huile de chauffage',
   },
-  'services_CO2-emissions_heating_other[Mt]': {
+  'services_CO2-emissions_hot-water_other[Mt]': {
     enUS: 'Other',
     deDE: 'Sonstige',
     frFR: 'Autre',
   },
-  'services_CO2-emissions_heating_solar[Mt]': {
+  'services_CO2-emissions_hot-water_solar[Mt]': {
     enUS: 'Solar-heat',
     deDE: 'Solarwärme',
     frFR: 'Chaleur solaire',
   },
-  'services_CO2-emissions_heating_wood[Mt]': {
+  'services_CO2-emissions_hot-water_wood[Mt]': {
     enUS: 'Wood',
     deDE: 'Holz',
     frFR: 'Bois',
@@ -1596,25 +1616,45 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Sonstige',
     frFR: 'Autres',
   },
+  'bld_energy-demand_residential_space-heating[TWh]': {
+    enUS: 'Residential, space heating',
+    deDE: 'Wohngebäude, Raumheizung',
+    frFR: 'Résidentiel, chauffage des locaux',
+  },
+  'bld_energy-demand_residential_hot-water[TWh]': {
+    enUS: 'Residential, hot water',
+    deDE: 'Wohngebäude, Warmwasser',
+    frFR: 'Résidentiel, eau chaude',
+  },
+  'bld_energy-demand_residential_appliances[TWh]': {
+    enUS: 'Residential, appliances',
+    deDE: 'Wohngebäude, Geräte',
+    frFR: 'Résidentiel, appareils',
+  },
+  'bld_energy-demand_residential_lighting[TWh]': {
+    enUS: 'Residential, lighting',
+    deDE: 'Wohngebäude, Beleuchtung',
+    frFR: 'Résidentiel, éclairage',
+  },
   'bld_energy-demand_non-residential_space-heating[TWh]': {
-    enUS: 'Space heating',
-    deDE: 'Raumheizung',
-    frFR: 'Chauffage des locaux',
+    enUS: 'Non-residential, space heating',
+    deDE: 'Nichtwohngebäude, Raumheizung',
+    frFR: 'Non résidentiel, chauffage des locaux',
   },
   'bld_energy-demand_non-residential_hot-water[TWh]': {
-    enUS: 'Hot water',
-    deDE: 'Warmwasser',
-    frFR: 'Eau chaude',
+    enUS: 'Non-residential, hot water',
+    deDE: 'Nichtwohngebäude, Warmwasser',
+    frFR: 'Non résidentiel, eau chaude',
   },
   'bld_energy-demand_non-residential_appliances[TWh]': {
-    enUS: 'Appliances',
-    deDE: 'Geräte',
-    frFR: 'Appareils',
+    enUS: 'Non-residential, appliances',
+    deDE: 'Nichtwohngebäude, Geräte',
+    frFR: 'Non résidentiel, appareils',
   },
   'bld_energy-demand_non-residential_lighting[TWh]': {
-    enUS: 'Lighting',
-    deDE: 'Beleuchtung',
-    frFR: 'Éclairage',
+    enUS: 'Non-residential, lighting',
+    deDE: 'Nichtwohngebäude, Beleuchtung',
+    frFR: 'Non résidentiel, éclairage',
   },
   'bld_energy-demand_heating_coal[TWh]': {
     enUS: 'Coal',
@@ -1660,6 +1700,156 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     enUS: 'Wood',
     deDE: 'Holz',
     frFR: 'Bois',
+  },
+  'bld_energy-demand_electricity[TWh]': {
+    enUS: 'Electricity',
+    deDE: 'Strom',
+    frFR: 'Électricité',
+  },
+  'bld_energy-demand_heat-pump[TWh]': {
+    enUS: 'Elec. (heat-pump)',
+    deDE: 'Elec. (Wärmepumpe)',
+    frFR: 'Élec. (pompe à chaleur)',
+  },
+  'bld_energy-demand_ambient-heat[TWh]': {
+    enUS: 'Ambient-heat',
+    deDE: 'Umgebungswärme',
+    frFR: 'Chaleur ambiante',
+  },
+  'bld_energy-demand_district-heating[TWh]': {
+    enUS: 'District-heating',
+    deDE: 'Fernwärme',
+    frFR: 'Chauffage à distance',
+  },
+  'bld_energy-demand_gas[TWh]': {
+    enUS: 'Gas',
+    deDE: 'Gas',
+    frFR: 'Gaz',
+  },
+  'bld_energy-demand_heating-oil[TWh]': {
+    enUS: 'Heating-oil',
+    deDE: 'Heizöl',
+    frFR: 'Huile de chauffage',
+  },
+  'bld_energy-demand_coal[TWh]': {
+    enUS: 'Coal',
+    deDE: 'Kohle',
+    frFR: 'Charbon',
+  },
+  'bld_energy-demand_wood[TWh]': {
+    enUS: 'Wood',
+    deDE: 'Holz',
+    frFR: 'Bois',
+  },
+  'bld_energy-demand_solar[TWh]': {
+    enUS: 'Solar-heat',
+    deDE: 'Solarwärme',
+    frFR: 'Chaleur solaire',
+  },
+  'bld_energy-demand_other-tech[TWh]': {
+    enUS: 'Other',
+    deDE: 'Sonstige',
+    frFR: 'Autres',
+  },
+  'bld_energy-demand_residential_electricity[TWh]': {
+    enUS: 'Electricity',
+    deDE: 'Strom',
+    frFR: 'Électricité',
+  },
+  'bld_energy-demand_residential_heat-pump[TWh]': {
+    enUS: 'Elec. (heat-pump)',
+    deDE: 'Elec. (Wärmepumpe)',
+    frFR: 'Élec. (pompe à chaleur)',
+  },
+  'bld_energy-demand_residential_ambient-heat[TWh]': {
+    enUS: 'Ambient-heat',
+    deDE: 'Umgebungswärme',
+    frFR: 'Chaleur ambiante',
+  },
+  'bld_energy-demand_residential_district-heating[TWh]': {
+    enUS: 'District-heating',
+    deDE: 'Fernwärme',
+    frFR: 'Chauffage à distance',
+  },
+  'bld_energy-demand_residential_gas[TWh]': {
+    enUS: 'Gas',
+    deDE: 'Gas',
+    frFR: 'Gaz',
+  },
+  'bld_energy-demand_residential_heating-oil[TWh]': {
+    enUS: 'Heating-oil',
+    deDE: 'Heizöl',
+    frFR: 'Huile de chauffage',
+  },
+  'bld_energy-demand_residential_coal[TWh]': {
+    enUS: 'Coal',
+    deDE: 'Kohle',
+    frFR: 'Charbon',
+  },
+  'bld_energy-demand_residential_wood[TWh]': {
+    enUS: 'Wood',
+    deDE: 'Holz',
+    frFR: 'Bois',
+  },
+  'bld_energy-demand_residential_solar[TWh]': {
+    enUS: 'Solar-heat',
+    deDE: 'Solarwärme',
+    frFR: 'Chaleur solaire',
+  },
+  'bld_energy-demand_residential_other-tech[TWh]': {
+    enUS: 'Other',
+    deDE: 'Sonstige',
+    frFR: 'Autres',
+  },
+  'bld_energy-demand_non-residential_electricity[TWh]': {
+    enUS: 'Electricity',
+    deDE: 'Strom',
+    frFR: 'Électricité',
+  },
+  'bld_energy-demand_non-residential_heat-pump[TWh]': {
+    enUS: 'Elec. (heat-pump)',
+    deDE: 'Elec. (Wärmepumpe)',
+    frFR: 'Élec. (pompe à chaleur)',
+  },
+  'bld_energy-demand_non-residential_ambient-heat[TWh]': {
+    enUS: 'Ambient-heat',
+    deDE: 'Umgebungswärme',
+    frFR: 'Chaleur ambiante',
+  },
+  'bld_energy-demand_non-residential_district-heating[TWh]': {
+    enUS: 'District-heating',
+    deDE: 'Fernwärme',
+    frFR: 'Chauffage à distance',
+  },
+  'bld_energy-demand_non-residential_gas[TWh]': {
+    enUS: 'Gas',
+    deDE: 'Gas',
+    frFR: 'Gaz',
+  },
+  'bld_energy-demand_non-residential_heating-oil[TWh]': {
+    enUS: 'Heating-oil',
+    deDE: 'Heizöl',
+    frFR: 'Huile de chauffage',
+  },
+  'bld_energy-demand_non-residential_coal[TWh]': {
+    enUS: 'Coal',
+    deDE: 'Kohle',
+    frFR: 'Charbon',
+  },
+  'bld_energy-demand_non-residential_wood[TWh]': {
+    enUS: 'Wood',
+    deDE: 'Holz',
+    frFR: 'Bois',
+  },
+  'bld_energy-demand_non-residential_solar[TWh]': {
+    enUS: 'Solar-heat',
+    deDE: 'Solarwärme',
+    frFR: 'Chaleur solaire',
+  },
+  'bld_energy-demand_non-residential_other-tech[TWh]': {
+    enUS: 'Other',
+    deDE: 'Sonstige',
+    frFR: 'Autres',
   },
   'bld_energy-demand_total[TWh]': {
     enUS: 'Buildings',

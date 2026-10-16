@@ -542,9 +542,9 @@ export const levers: Lever[] = [
   {
     code: 'lever_building-renovation-rate',
     title: {
-      enUS: 'Building envelope',
-      frFR: 'Enveloppe bâtiment',
-      deDE: 'Gebäudehülle',
+      enUS: 'Building renovation',
+      frFR: 'Rénovation des bâtiments',
+      deDE: 'Gebäudesanierung',
     },
     group: {
       enUS: 'Buildings',
@@ -626,9 +626,9 @@ export const levers: Lever[] = [
   {
     code: 'lever_heating-technology-fuel',
     title: {
-      enUS: 'Technology and fuel share',
-      frFR: 'Technologie chauffage',
-      deDE: 'Heiztech & Brennstoff',
+      enUS: 'Fossil-free heating',
+      frFR: 'Chauffage sans énergie fossile',
+      deDE: 'Fossilfreies Heizen',
     },
     group: {
       enUS: 'Buildings',
