@@ -6836,6 +6836,11 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Metro und Tram',
     frFR: 'Métro et tram',
   },
+  'tra_passenger_aviation-fleet-seats[thousands]': {
+    enUS: 'Aviation (seats)',
+    deDE: 'Luftfahrt (Sitzplätze)',
+    frFR: 'Aviation (sièges)',
+  },
   'tra_passenger_vehicle-fleet_aviation[millions]': {
     enUS: 'Aviation',
     deDE: 'Luftfahrt',
