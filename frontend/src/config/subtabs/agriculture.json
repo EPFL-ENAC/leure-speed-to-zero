@@ -2,133 +2,316 @@
   "kpis": [
     {
       "name": {
-        "enUS": "Land use: Cropland",
-        "frFR": "Land use: Cropland",
-        "deDE": "Land use: Cropland"
+        "enUS": "Total agriculture emissions",
+        "frFR": "Émissions totales de l'agriculture",
+        "deDE": "Gesamtemissionen Landwirtschaft"
       },
-      "unit": "ha",
-      "route": "cropland",
+      "unit": "Mt CO₂eq",
+      "route": "emissions",
       "maximize": false,
-      "min": 500000,
-      "max": 1500000,
-      "thresholds": {
-        "warning": 1000000,
-        "danger": 1250000
-      },
       "info": {
-        "enUS": "Total CO2 emissions in 2050 from residential buildings including space heating across all energy carriers. Lower values indicate better environmental performance and progress toward climate goals.",
-        "frFR": "Émissions totales de CO2 en 2050 des bâtiments résidentiels, y compris le chauffage des locaux pour tous les vecteurs énergétiques. Des valeurs plus faibles indiquent une meilleure performance environnementale et des progrès vers les objectifs climatiques.",
-        "deDE": "Gesamte CO2-Emissionen im Jahr 2050 aus Wohngebäuden einschließlich Raumheizung über alle Energieträger. Niedrigere Werte zeigen bessere Umweltleistung und Fortschritte in Richtung Klimaziele."
+        "enUS": "Direct (scope 1) greenhouse gas emissions from agriculture in 2050, in CO₂ equivalent (GWP100: CH₄ = 28, N₂O = 265): enteric fermentation and manure from livestock, fertiliser and crop residues on soils, liming, urea and on-farm fuel combustion.",
+        "frFR": "Émissions directes (périmètre 1) de gaz à effet de serre de l'agriculture en 2050, en équivalent CO₂ (PRG100 : CH₄ = 28, N₂O = 265) : fermentation entérique et effluents d'élevage, engrais et résidus de culture sur les sols, chaulage, urée et combustion de carburants sur l'exploitation.",
+        "deDE": "Direkte (Scope 1) Treibhausgasemissionen der Landwirtschaft im Jahr 2050, in CO₂-Äquivalenten (GWP100: CH₄ = 28, N₂O = 265): Verdauung und Hofdünger der Nutztiere, Dünger und Ernterückstände auf Böden, Kalkung, Harnstoff und Treibstoffverbrennung auf dem Betrieb."
+      }
+    },
+    {
+      "name": {
+        "enUS": "Total agriculture energy demand",
+        "frFR": "Demande énergétique totale de l'agriculture",
+        "deDE": "Gesamtenergiebedarf Landwirtschaft"
+      },
+      "unit": "TWh",
+      "route": "energy",
+      "maximize": false,
+      "info": {
+        "enUS": "Final energy demand of agriculture in 2050 across all energy carriers (machinery fuels, heating, bioenergy). Farm electricity is not yet modelled.",
+        "frFR": "Demande d'énergie finale de l'agriculture en 2050, tous vecteurs énergétiques confondus (carburants des machines, chauffage, bioénergie). L'électricité des exploitations n'est pas encore modélisée.",
+        "deDE": "Endenergiebedarf der Landwirtschaft im Jahr 2050 über alle Energieträger (Maschinentreibstoffe, Heizung, Bioenergie). Der Strom der Betriebe ist noch nicht modelliert."
+      }
+    },
+    {
+      "name": {
+        "enUS": "Domestic food production",
+        "frFR": "Production alimentaire indigène",
+        "deDE": "Inländische Nahrungsmittelproduktion"
+      },
+      "unit": "Gkcal",
+      "route": "production",
+      "maximize": true,
+      "info": {
+        "enUS": "Domestic production of food in 2050, in billions of kilocalories (Gkcal), across livestock products and crops.",
+        "frFR": "Production alimentaire indigène en 2050, en milliards de kilocalories (Gkcal), produits animaux et cultures confondus.",
+        "deDE": "Inländische Nahrungsmittelproduktion im Jahr 2050, in Milliarden Kilokalorien (Gkcal), tierische Produkte und Kulturen zusammen."
       }
     }
   ],
   "subtabs": [
     {
       "title": {
-        "enUS": "Commodity Supply",
-        "frFR": "Approvisionnement en produits",
-        "deDE": "Warenversorgung"
-      },
-      "charts": [
-        "CropSupply",
-        "MeatSupply",
-        "FishSupply",
-        "StimulantSupply",
-        "OtherFoodSupply",
-        "CroplandUse"
-      ],
-      "route": "food-supply"
-    },
-    {
-      "title": {
-        "enUS": "Population Diet",
-        "frFR": "Régime alimentaire",
-        "deDE": "Ernährung der Bevölkerung"
-      },
-      "charts": ["CropSupply", "MeatSupply", "FishSupply", "StimulantSupply", "OtherFoodSupply"],
-      "route": "population-diet"
-    },
-    {
-      "title": {
-        "enUS": "Food Wastes & Losses",
-        "frFR": "Gaspillage et pertes alimentaires",
-        "deDE": "Lebensmittelverschwendung und -verluste"
-      },
-      "charts": ["FoodWaste"],
-      "route": "food-waste"
-    },
-    {
-      "title": {
-        "enUS": "Self-sufficiency",
-        "frFR": "Autosuffisance",
-        "deDE": "Selbstversorgung"
-      },
-      "charts": ["CropSSR", "MeatSSR", "AlcoholSSR"],
-      "route": "self-sufficiency"
-    },
-    {
-      "title": {
-        "enUS": "Livestock raising",
-        "frFR": "Élevage",
-        "deDE": "Viehzucht"
-      },
-      "charts": [
-        "LivestockGrossPopulation",
-        "LivestockNetPopulation",
-        "Feed",
-        "ManureVolume",
-        "RuminantDensity",
-        "Grassland"
-      ],
-      "route": "livestock-population"
-    },
-    {
-      "title": {
-        "enUS": "Domestic Production",
-        "frFR": "Production domestique",
-        "deDE": "Inländische Produktion"
-      },
-      "charts": ["MeatProduction", "CropProduction"],
-      "route": "meat-production"
-    },
-    {
-      "title": {
-        "enUS": "Bioenergy",
-        "frFR": "Bioénergie",
-        "deDE": "Bioenergie"
-      },
-      "charts": ["Solid", "Liquid", "Gas"],
-      "route": "bioenergy"
-    },
-    {
-      "title": {
-        "enUS": "Input use",
-        "frFR": "Utilisation des intrants",
-        "deDE": "Inputnutzung"
-      },
-      "charts": ["Energy", "Chemical", "AgricultureLandUse"],
-      "route": "input-use"
-    },
-    {
-      "title": {
-        "enUS": "Land-use",
-        "frFR": "Utilisation des terres",
-        "deDE": "Landnutzung"
-      },
-      "charts": ["AgricultureLandUse", "CroplandUse"],
-      "route": "cropland"
-    },
-    {
-      "title": {
         "enUS": "Emissions",
         "frFR": "Émissions",
         "deDE": "Emissionen"
       },
-      "charts": ["CO2", "CH4", "N2O"],
-      "route": "emissions"
+      "route": "emissions",
+      "toggle": {
+        "default": "by-product",
+        "options": [
+          {
+            "value": "by-product",
+            "label": {
+              "enUS": "By product",
+              "frFR": "Par produit",
+              "deDE": "Nach Produkt"
+            }
+          },
+          {
+            "value": "by-gas",
+            "label": {
+              "enUS": "By gas",
+              "frFR": "Par gaz",
+              "deDE": "Nach Gas"
+            }
+          }
+        ],
+        "charts": {
+          "by-product": ["AgricultureEmissionsByProduct"],
+          "by-gas": ["AgricultureEmissionsByGas"]
+        }
+      },
+      "moreInfo": {
+        "by-product": ["CH4", "N2O", "ManureVolume"],
+        "by-gas": ["CO2", "CH4", "N2O", "Chemical"]
+      }
+    },
+    {
+      "title": {
+        "enUS": "Energy",
+        "frFR": "Énergie",
+        "deDE": "Energie"
+      },
+      "route": "energy",
+      "charts": ["AgricultureEnergyByCarrier"],
+      "moreInfo": ["Energy", "Solid", "Liquid", "Gas", "CroplandUse"]
+    },
+    {
+      "title": {
+        "enUS": "Production",
+        "frFR": "Production",
+        "deDE": "Produktion"
+      },
+      "route": "production",
+      "toggle": {
+        "default": "production",
+        "options": [
+          {
+            "value": "production",
+            "label": {
+              "enUS": "Food production",
+              "frFR": "Production alimentaire",
+              "deDE": "Nahrungsmittelproduktion"
+            }
+          },
+          {
+            "value": "land",
+            "label": {
+              "enUS": "Land use",
+              "frFR": "Utilisation du sol",
+              "deDE": "Landnutzung"
+            }
+          }
+        ],
+        "charts": {
+          "production": ["AgricultureFoodProduction"],
+          "land": ["AgricultureLandUse"]
+        }
+      },
+      "moreInfo": {
+        "production": [
+          "MeatProduction",
+          "CropProduction",
+          "CropSupply",
+          "MeatSupply",
+          "FishSupply",
+          "StimulantSupply",
+          "OtherFoodSupply",
+          "FoodWaste",
+          "CropSSR",
+          "MeatSSR",
+          "AlcoholSSR",
+          "LivestockGrossPopulation",
+          "LivestockNetPopulation",
+          "Feed"
+        ],
+        "land": ["Grassland", "RuminantDensity", "CroplandUse"]
+      }
     }
   ],
   "charts": {
+    "AgricultureEmissionsByProduct": {
+      "title": {
+        "enUS": "GHG emissions by product",
+        "frFR": "Émissions de GES par produit",
+        "deDE": "THG-Emissionen nach Produkt"
+      },
+      "unit": "Mt",
+      "type": "StackedArea",
+      "outputs": [
+        {
+          "id": "agr_emissions-CO2e-product_meat-bovine[Mt]",
+          "color": "#ee6666"
+        },
+        {
+          "id": "agr_emissions-CO2e-product_meat-pig[Mt]",
+          "color": "#ea7ccc"
+        },
+        {
+          "id": "agr_emissions-CO2e-product_meat-poultry[Mt]",
+          "color": "#fdb08f"
+        },
+        {
+          "id": "agr_emissions-CO2e-product_meat-other[Mt]",
+          "color": "#b04848"
+        },
+        {
+          "id": "agr_emissions-CO2e-product_dairy[Mt]",
+          "color": "#73c0de"
+        },
+        {
+          "id": "agr_emissions-CO2e-product_eggs[Mt]",
+          "color": "#fde49b"
+        },
+        {
+          "id": "agr_emissions-CO2e-product_crops-soils[Mt]",
+          "color": "#3ba272"
+        },
+        {
+          "id": "agr_emissions-CO2e-product_fuel[Mt]",
+          "color": "#6e7079"
+        }
+      ]
+    },
+    "AgricultureEmissionsByGas": {
+      "title": {
+        "enUS": "GHG emissions by gas",
+        "frFR": "Émissions de GES par gaz",
+        "deDE": "THG-Emissionen nach Gas"
+      },
+      "unit": "Mt",
+      "type": "StackedArea",
+      "outputs": [
+        {
+          "id": "agr_emissions-CO2e-gas_CO2[Mt]",
+          "color": "#6e7079"
+        },
+        {
+          "id": "agr_emissions-CO2e-gas_CH4[Mt]",
+          "color": "#fc8452"
+        },
+        {
+          "id": "agr_emissions-CO2e-gas_N2O[Mt]",
+          "color": "#73c0de"
+        }
+      ]
+    },
+    "AgricultureEnergyByCarrier": {
+      "title": {
+        "enUS": "Energy demand by carrier",
+        "frFR": "Demande énergétique par vecteur",
+        "deDE": "Energiebedarf nach Energieträger"
+      },
+      "unit": "TWh",
+      "type": "StackedArea",
+      "outputs": [
+        {
+          "id": "agr_energy-demand-carrier_diesel[TWh]",
+          "color": "#c4622f"
+        },
+        {
+          "id": "agr_energy-demand-carrier_oil-other[TWh]",
+          "color": "#fc8452"
+        },
+        {
+          "id": "agr_energy-demand-carrier_gas[TWh]",
+          "color": "#9a60b4"
+        },
+        {
+          "id": "agr_energy-demand-carrier_coal[TWh]",
+          "color": "#6e7079"
+        },
+        {
+          "id": "agr_energy-demand-carrier_bioenergy[TWh]",
+          "color": "#3ba272"
+        },
+        {
+          "id": "agr_energy-demand-carrier_electricity[TWh]",
+          "color": "#5470c6"
+        },
+        {
+          "id": "agr_energy-demand-carrier_other[TWh]",
+          "color": "#c8ccd4"
+        }
+      ]
+    },
+    "AgricultureFoodProduction": {
+      "title": {
+        "enUS": "Domestic food production by food family",
+        "frFR": "Production alimentaire indigène par famille d'aliments",
+        "deDE": "Inländische Nahrungsmittelproduktion nach Lebensmittelgruppe"
+      },
+      "unit": "Gkcal",
+      "type": "StackedArea",
+      "outputs": [
+        {
+          "id": "agr_food-production_meat-bovine[Gkcal]",
+          "color": "#ee6666"
+        },
+        {
+          "id": "agr_food-production_meat-pig[Gkcal]",
+          "color": "#ea7ccc"
+        },
+        {
+          "id": "agr_food-production_meat-poultry[Gkcal]",
+          "color": "#fdb08f"
+        },
+        {
+          "id": "agr_food-production_meat-other[Gkcal]",
+          "color": "#b04848"
+        },
+        {
+          "id": "agr_food-production_dairy[Gkcal]",
+          "color": "#73c0de"
+        },
+        {
+          "id": "agr_food-production_eggs[Gkcal]",
+          "color": "#fde49b"
+        },
+        {
+          "id": "agr_food-production_cereals[Gkcal]",
+          "color": "#fac858"
+        },
+        {
+          "id": "agr_food-production_fruit-veg[Gkcal]",
+          "color": "#91cc75"
+        },
+        {
+          "id": "agr_food-production_oilcrops[Gkcal]",
+          "color": "#3ba272"
+        },
+        {
+          "id": "agr_food-production_pulses[Gkcal]",
+          "color": "#9a60b4"
+        },
+        {
+          "id": "agr_food-production_starch[Gkcal]",
+          "color": "#c3a0d2"
+        },
+        {
+          "id": "agr_food-production_sugarcrops[Gkcal]",
+          "color": "#5470c6"
+        }
+      ]
+    },
     "LivestockGrossPopulation": {
       "title": {
         "enUS": "Livestock population (slaughtered)",
@@ -240,26 +423,13 @@
     },
     "CH4": {
       "title": {
-        "enUS": "CH4 emissions",
-        "frFR": "Émissions de CH4",
-        "deDE": "CH4-Emissionen"
+        "enUS": "Livestock CH₄ emissions",
+        "frFR": "Émissions de CH₄ du bétail",
+        "deDE": "CH₄-Emissionen der Nutztiere"
       },
       "type": "StackedArea",
       "unit": "t",
       "outputs": [
-        "agr_liv_CH4-emission_raw_abp-dairy-milk_enteric[t]",
-        "agr_liv_CH4-emission_raw_abp-dairy-milk_treated[t]",
-        "agr_liv_CH4-emission_raw_abp-hens-egg_treated[t]",
-        "agr_liv_CH4-emission_raw_meat-bovine_enteric[t]",
-        "agr_liv_CH4-emission_raw_meat-bovine_treated[t]",
-        "agr_liv_CH4-emission_raw_meat-oth-animals_enteric[t]",
-        "agr_liv_CH4-emission_raw_meat-oth-animals_treated[t]",
-        "agr_liv_CH4-emission_raw_meat-pig_enteric[t]",
-        "agr_liv_CH4-emission_raw_meat-pig_treated[t]",
-        "agr_liv_CH4-emission_raw_meat-poultry_enteric[t]",
-        "agr_liv_CH4-emission_raw_meat-poultry_treated[t]",
-        "agr_liv_CH4-emission_raw_meat-sheep_enteric[t]",
-        "agr_liv_CH4-emission_raw_meat-sheep_treated[t]",
         "agr_liv_CH4-emission_abp-dairy-milk_enteric[t]",
         "agr_liv_CH4-emission_abp-dairy-milk_treated[t]",
         "agr_liv_CH4-emission_abp-hens-egg_treated[t]",
@@ -276,38 +446,32 @@
     },
     "N2O": {
       "title": {
-        "enUS": "N2O emissions",
-        "frFR": "Émissions de N2O",
-        "deDE": "N2O-Emissionen"
+        "enUS": "Livestock N₂O emissions (manure)",
+        "frFR": "Émissions de N₂O du bétail (effluents)",
+        "deDE": "N₂O-Emissionen der Nutztiere (Hofdünger)"
       },
       "type": "StackedArea",
       "unit": "t",
       "outputs": [
-        "agr_liv_N2O-emission_raw_abp-dairy-milk_applied[t]",
-        "agr_liv_N2O-emission_raw_abp-dairy-milk_pasture[t]",
-        "agr_liv_N2O-emission_raw_abp-dairy-milk_treated[t]",
-        "agr_liv_N2O-emission_raw_abp-hens-egg_applied[t]",
-        "agr_liv_N2O-emission_raw_abp-hens-egg_pasture[t]",
-        "agr_liv_N2O-emission_raw_abp-hens-egg_treated[t]",
-        "agr_liv_N2O-emission_raw_meat-bovine_applied[t]",
-        "agr_liv_N2O-emission_raw_meat-bovine_pasture[t]",
-        "agr_liv_N2O-emission_raw_meat-bovine_treated[t]",
-        "agr_liv_N2O-emission_raw_meat-oth-animals_applied[t]",
-        "agr_liv_N2O-emission_raw_meat-oth-animals_pasture[t]",
-        "agr_liv_N2O-emission_raw_meat-oth-animals_treated[t]",
-        "agr_liv_N2O-emission_raw_meat-pig_applied[t]",
-        "agr_liv_N2O-emission_raw_meat-pig_pasture[t]",
-        "agr_liv_N2O-emission_raw_meat-pig_treated[t]",
-        "agr_liv_N2O-emission_raw_meat-poultry_applied[t]",
-        "agr_liv_N2O-emission_raw_meat-poultry_pasture[t]",
-        "agr_liv_N2O-emission_raw_meat-poultry_treated[t]",
-        "agr_liv_N2O-emission_raw_meat-sheep_applied[t]",
-        "agr_liv_N2O-emission_raw_meat-sheep_pasture[t]",
-        "agr_liv_N2O-emission_raw_meat-sheep_treated[t]",
         "agr_liv_N2O-emission_abp-dairy-milk_applied[t]",
         "agr_liv_N2O-emission_abp-dairy-milk_pasture[t]",
         "agr_liv_N2O-emission_abp-dairy-milk_treated[t]",
-        "agr_liv_N2O-emission_abp-hens-egg_applied[t]"
+        "agr_liv_N2O-emission_abp-hens-egg_applied[t]",
+        "agr_liv_N2O-emission_abp-hens-egg_pasture[t]",
+        "agr_liv_N2O-emission_abp-hens-egg_treated[t]",
+        "agr_liv_N2O-emission_meat-bovine_applied[t]",
+        "agr_liv_N2O-emission_meat-bovine_pasture[t]",
+        "agr_liv_N2O-emission_meat-bovine_treated[t]",
+        "agr_liv_N2O-emission_meat-oth-animals_applied[t]",
+        "agr_liv_N2O-emission_meat-oth-animals_pasture[t]",
+        "agr_liv_N2O-emission_meat-oth-animals_treated[t]",
+        "agr_liv_N2O-emission_meat-pig_applied[t]",
+        "agr_liv_N2O-emission_meat-pig_treated[t]",
+        "agr_liv_N2O-emission_meat-poultry_applied[t]",
+        "agr_liv_N2O-emission_meat-poultry_pasture[t]",
+        "agr_liv_N2O-emission_meat-poultry_treated[t]",
+        "agr_liv_N2O-emission_meat-sheep_pasture[t]",
+        "agr_liv_N2O-emission_meat-sheep_treated[t]"
       ]
     },
     "FoodConsumption": {
@@ -397,9 +561,9 @@
     },
     "CropSSR": {
       "title": {
-        "enUS": "Crop-based groups",
-        "frFR": "Groupes végétaux",
-        "deDE": "Pflanzenbasierte Gruppen"
+        "enUS": "Self-sufficiency – crop-based groups",
+        "frFR": "Autosuffisance – groupes à base de cultures",
+        "deDE": "Selbstversorgung – pflanzliche Gruppen"
       },
       "type": "Line",
       "unit": "%",
@@ -416,9 +580,9 @@
     },
     "MeatSSR": {
       "title": {
-        "enUS": "Meat-based groups",
-        "frFR": "Groupes carnés",
-        "deDE": "Fleischbasierte Gruppen"
+        "enUS": "Self-sufficiency – meat-based groups",
+        "frFR": "Autosuffisance – groupes à base de viande",
+        "deDE": "Selbstversorgung – fleischbasierte Gruppen"
       },
       "type": "Line",
       "unit": "%",
@@ -436,9 +600,9 @@
     },
     "AlcoholSSR": {
       "title": {
-        "enUS": "Other food groups",
-        "frFR": "Autres groupes alimentaires",
-        "deDE": "Andere Lebensmittelgruppen"
+        "enUS": "Self-sufficiency – other food groups",
+        "frFR": "Autosuffisance – autres groupes alimentaires",
+        "deDE": "Selbstversorgung – andere Lebensmittelgruppen"
       },
       "type": "Line",
       "unit": "%",
@@ -648,12 +812,12 @@
     },
     "ManureVolume": {
       "title": {
-        "enUS": "Manure",
-        "frFR": "Fumier",
-        "deDE": "Gülle"
+        "enUS": "Nitrogen in livestock manure (driver of N₂O emissions)",
+        "frFR": "Azote des effluents d'élevage (moteur des émissions de N₂O)",
+        "deDE": "Stickstoff im Hofdünger (Treiber der N₂O-Emissionen)"
       },
       "type": "StackedArea",
-      "unit": "tn",
+      "unit": "t N",
       "outputs": [
         "agr_liv_n-stock_abp-dairy-milk[t]",
         "agr_liv_n-stock_abp-hens-egg[t]",
@@ -672,7 +836,7 @@
       },
       "type": "StackedArea",
       "unit": "ha",
-      "outputs": ["agr_lus_land_raw_grassland[ha]"]
+      "outputs": ["agr_lus_land_grassland[ha]"]
     },
     "RuminantDensity": {
       "title": {
