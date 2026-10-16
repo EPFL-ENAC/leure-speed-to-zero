@@ -5,6 +5,7 @@
     "lifestyles": ["climate", "lifestyles"],
     "transport": ["lifestyles", "transport"],
     "buildings": ["climate", "lifestyles", "transport", "buildings"],
+    "industry": ["climate", "lifestyles", "transport", "buildings", "industry"],
     "agriculture": ["climate", "lifestyles", "transport", "buildings", "agriculture"],
     "energy": ["climate", "lifestyles", "transport", "buildings", "energy"],
     "lca": ["climate", "lifestyles", "transport", "buildings", "lca"]
