@@ -1681,6 +1681,86 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'NaN',
     frFR: 'NaN',
   },
+  'bld_floor-area_stock_residential_F[Mm2]': {
+    enUS: 'F, G',
+    deDE: 'F, G',
+    frFR: 'F, G',
+  },
+  'bld_floor-area_stock_residential_E[Mm2]': {
+    enUS: 'E',
+    deDE: 'E',
+    frFR: 'E',
+  },
+  'bld_floor-area_stock_residential_D[Mm2]': {
+    enUS: 'D',
+    deDE: 'D',
+    frFR: 'D',
+  },
+  'bld_floor-area_stock_residential_C[Mm2]': {
+    enUS: 'C',
+    deDE: 'C',
+    frFR: 'C',
+  },
+  'bld_floor-area_stock_residential_B[Mm2]': {
+    enUS: 'A, B',
+    deDE: 'A, B',
+    frFR: 'A, B',
+  },
+  'bld_floor-area_residential_new-cumulated[Mm2]': {
+    enUS: 'New',
+    deDE: 'Neu',
+    frFR: 'Neuf',
+  },
+  'bld_floor-area_residential_renovated-cumulated[Mm2]': {
+    enUS: 'Renovated since 1990',
+    deDE: 'Seit 1990 renoviert',
+    frFR: 'Rénové depuis 1990',
+  },
+  'bld_floor-area_residential_unrenovated-cumulated[Mm2]': {
+    enUS: 'Unrenovated',
+    deDE: 'Unrenoviert',
+    frFR: 'Non rénové',
+  },
+  'bld_floor-area_stock_non-residential_F[Mm2]': {
+    enUS: 'F, G',
+    deDE: 'F, G',
+    frFR: 'F, G',
+  },
+  'bld_floor-area_stock_non-residential_E[Mm2]': {
+    enUS: 'E',
+    deDE: 'E',
+    frFR: 'E',
+  },
+  'bld_floor-area_stock_non-residential_D[Mm2]': {
+    enUS: 'D',
+    deDE: 'D',
+    frFR: 'D',
+  },
+  'bld_floor-area_stock_non-residential_C[Mm2]': {
+    enUS: 'C',
+    deDE: 'C',
+    frFR: 'C',
+  },
+  'bld_floor-area_stock_non-residential_B[Mm2]': {
+    enUS: 'A, B',
+    deDE: 'A, B',
+    frFR: 'A, B',
+  },
+  'bld_floor-area_non-residential_new-cumulated[Mm2]': {
+    enUS: 'New',
+    deDE: 'Neu',
+    frFR: 'Neuf',
+  },
+  'bld_floor-area_non-residential_renovated-cumulated[Mm2]': {
+    enUS: 'Renovated since 1990',
+    deDE: 'Seit 1990 renoviert',
+    frFR: 'Rénové depuis 1990',
+  },
+  'bld_floor-area_non-residential_unrenovated-cumulated[Mm2]': {
+    enUS: 'Unrenovated',
+    deDE: 'Unrenoviert',
+    frFR: 'Non rénové',
+  },
   'bld_floor-area_new-cumulated[Mm2]': {
     enUS: 'New',
     deDE: 'Neu',
@@ -2970,6 +3050,101 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     enUS: 'NaN',
     deDE: 'NaN',
     frFR: 'NaN',
+  },
+  'ind_emissions_CH4[Mt]': {
+    enUS: 'CH4',
+    deDE: 'CH4',
+    frFR: 'CH4',
+  },
+  'ind_emissions_CO2[Mt]': {
+    enUS: 'CO2',
+    deDE: 'CO2',
+    frFR: 'CO2',
+  },
+  'ind_emissions_N2O[Mt]': {
+    enUS: 'N2O',
+    deDE: 'N2O',
+    frFR: 'N2O',
+  },
+  'ind_material-production_aluminium[kt]': {
+    enUS: 'Aluminium',
+    deDE: 'Aluminium',
+    frFR: 'Aluminium',
+  },
+  'ind_material-production_cement[kt]': {
+    enUS: 'Cement',
+    deDE: 'Zement',
+    frFR: 'Ciment',
+  },
+  'ind_material-production_chem[kt]': {
+    enUS: 'Chemicals',
+    deDE: 'Chemie',
+    frFR: 'Chimie',
+  },
+  'ind_material-production_copper[kt]': {
+    enUS: 'Copper',
+    deDE: 'Kupfer',
+    frFR: 'Cuivre',
+  },
+  'ind_material-production_fbt[kt]': {
+    enUS: 'Food, beverages, tobacco',
+    deDE: 'Lebensmittel, Getränke, Tabak',
+    frFR: 'Aliments, boissons, tabac',
+  },
+  'ind_material-production_glass[kt]': {
+    enUS: 'Glass',
+    deDE: 'Glas',
+    frFR: 'Verre',
+  },
+  'ind_material-production_lime[kt]': {
+    enUS: 'Lime',
+    deDE: 'Kalk',
+    frFR: 'Chaux',
+  },
+  'ind_material-production_mae[kt]': {
+    enUS: 'Machinery equip.',
+    deDE: 'Maschinen und Geräte',
+    frFR: 'Matériel de machinerie',
+  },
+  'ind_material-production_ois[kt]': {
+    enUS: 'Other industries',
+    deDE: 'Sonstige Industrien',
+    frFR: 'Autres industries',
+  },
+  'ind_material-production_other[kt]': {
+    enUS: 'Other',
+    deDE: 'Sonstige',
+    frFR: 'Autre',
+  },
+  'ind_material-production_paper[kt]': {
+    enUS: 'Paper',
+    deDE: 'Papier',
+    frFR: 'Papier',
+  },
+  'ind_material-production_steel[kt]': {
+    enUS: 'Steel',
+    deDE: 'Stahl',
+    frFR: 'Acier',
+  },
+  'ind_material-production_textiles[kt]': {
+    enUS: 'Textiles',
+    deDE: 'Textilien',
+    frFR: 'Textiles',
+  },
+  'ind_material-production_timber[kt]': {
+    enUS: 'Timber',
+    deDE: 'Bauholz',
+    frFR: "Bois d'œuvre",
+  },
+  'ind_material-production_tra-equip[kt]': {
+    enUS: 'Transport equip.',
+    deDE: 'Transportausrüstung',
+    frFR: 'Équipement de transport',
+  },
+  'ind_material-production_wwp[kt]': {
+    enUS: 'Wood, wood products',
+    deDE: 'Holz, Holzprodukte',
+    frFR: 'Bois, produits du bois',
   },
   'ind_CO2-emissions-CC_aluminium_prim[Mt]': {
     enUS: 'Aluminium Primary',

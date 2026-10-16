@@ -46,22 +46,22 @@
       "type": "StackedArea",
       "unit": "kt",
       "outputs": [
-        "material-production_aluminium[kt]",
-        "material-production_cement[kt]",
-        "material-production_chem[kt]",
-        "material-production_copper[kt]",
-        "material-production_fbt[kt]",
-        "material-production_glass[kt]",
-        "material-production_lime[kt]",
-        "material-production_mae[kt]",
-        "material-production_ois[kt]",
-        "material-production_other[kt]",
-        "material-production_paper[kt]",
-        "material-production_steel[kt]",
-        "material-production_textiles[kt]",
-        "material-production_timber[kt]",
-        "material-production_tra-equip[kt]",
-        "material-production_wwp[kt]"
+        "ind_material-production_aluminium[kt]",
+        "ind_material-production_cement[kt]",
+        "ind_material-production_chem[kt]",
+        "ind_material-production_copper[kt]",
+        "ind_material-production_fbt[kt]",
+        "ind_material-production_glass[kt]",
+        "ind_material-production_lime[kt]",
+        "ind_material-production_mae[kt]",
+        "ind_material-production_ois[kt]",
+        "ind_material-production_other[kt]",
+        "ind_material-production_paper[kt]",
+        "ind_material-production_steel[kt]",
+        "ind_material-production_textiles[kt]",
+        "ind_material-production_timber[kt]",
+        "ind_material-production_tra-equip[kt]",
+        "ind_material-production_wwp[kt]"
       ]
     },
     "IndustryEmissions": {
@@ -72,7 +72,7 @@
       },
       "type": "StackedArea",
       "unit": "Mt CO2",
-      "outputs": ["emissions_CH4[Mt]", "emissions_CO2[Mt]", "emissions_N2O[Mt]"]
+      "outputs": ["ind_emissions_CH4[Mt]", "ind_emissions_CO2[Mt]", "ind_emissions_N2O[Mt]"]
     }
   }
 }
