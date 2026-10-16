@@ -4,7 +4,7 @@
       <q-icon v-if="mini" name="o_explore" class="nav-item-icon" color="primary" />
       <h1
         v-else
-        class="text-subtitle1 text-primary text-weight-bold text-uppercase text-dark q-ma-none text-center logo-title"
+        class="text-subtitle1 text-primary text-weight-bold text-uppercase text-gray-strong q-ma-none text-center logo-title"
       >
         Transition C<q-icon name="o_explore" class="compass-icon" size="xs" />mpass
       </h1>
@@ -157,7 +157,7 @@ const handleSectorClick = (event: Event, sectorName: string) => {
 
 <style lang="scss" scoped>
 $text-muted: #6e6e73;
-$text-dark: #1a1a1a;
+$text-dark: var(--text-strong);
 $hover-bg: #f5f5f7;
 
 .vertical-nav {
@@ -261,7 +261,7 @@ $hover-bg: #f5f5f7;
 .sub-nav-item {
   display: block;
   padding: 8px 20px 8px 52px;
-  color: #999;
+  color: var(--text-muted);
   text-decoration: none;
   font-size: 0.9rem;
   line-height: 1.4;

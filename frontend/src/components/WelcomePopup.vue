@@ -5,11 +5,11 @@
         <div class="row items-center justify-between q-mb-sm">
           <div class="text-h5 text-weight-medium">{{ $t('welcome') }}</div>
         </div>
-        <p class="text-body1 text-grey-7">{{ $t('welcomePopup.subtitle') }}</p>
+        <p class="text-body1 text-gray-muted">{{ $t('welcomePopup.subtitle') }}</p>
       </q-card-section>
 
       <q-card-section class="q-px-lg q-pt-none">
-        <div class="text-body2 text-grey-8 q-mb-md">
+        <div class="text-body2 text-gray-body q-mb-md">
           {{ $t('welcomePopup.description') }}
         </div>
 
@@ -34,7 +34,7 @@
           v-model="dontShowAgain"
           :label="$t('welcomePopup.dontShowAgain')"
           dense
-          class="text-grey-7"
+          class="text-gray-muted"
         />
         <q-space />
         <q-btn flat color="grey" :label="$t('welcomePopup.skipTutorial')" @click="handleSkip" />

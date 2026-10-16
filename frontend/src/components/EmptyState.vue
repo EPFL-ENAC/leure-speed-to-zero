@@ -3,7 +3,7 @@
     <q-spinner-dots v-if="loading" color="primary" size="3rem" />
     <template v-else>
       <q-icon :name="icon" size="2.5rem" color="grey-5" />
-      <p class="text-grey-6">{{ message }}</p>
+      <p class="text-gray-muted">{{ message }}</p>
       <q-btn
         v-if="showRefresh"
         flat

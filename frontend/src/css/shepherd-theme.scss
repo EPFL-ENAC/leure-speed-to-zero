@@ -15,7 +15,7 @@
     padding: 1rem;
     font-size: 0.95rem;
     line-height: 1.5;
-    color: #333;
+    color: var(--text-strong);
   }
 
   .shepherd-footer {
@@ -44,7 +44,7 @@
 
     &.shepherd-button-secondary {
       background: transparent;
-      color: #666;
+      color: var(--text-muted);
 
       &:hover {
         background: #f5f5f5;
@@ -53,10 +53,10 @@
   }
 
   .shepherd-cancel-icon {
-    color: #999;
+    color: var(--text-subtle);
 
     &:hover {
-      color: #333;
+      color: var(--text-strong);
     }
   }
 }

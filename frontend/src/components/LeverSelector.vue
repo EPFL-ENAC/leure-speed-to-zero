@@ -59,7 +59,7 @@
     </div>
     <div class="row q-mt-xs" v-if="lever.difficultyColors && lever.difficultyColors.length > 0">
       <div class="col-12">
-        <div class="difficulty-labels text-caption text-grey-7">
+        <div class="difficulty-labels text-caption text-gray-muted">
           <span>{{ $t(lever.difficultyColors[0]?.label || '') }}</span>
           <q-btn
             v-if="props.variant === 'default'"
@@ -332,7 +332,7 @@ function toggleChart() {
 }
 
 .expand-btn {
-  color: #666;
+  color: var(--text-muted);
   transition: color 0.2s ease;
 
   &:hover {

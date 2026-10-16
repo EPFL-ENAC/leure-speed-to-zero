@@ -1,7 +1,7 @@
 <template>
   <q-layout view="hHh Lpr lff">
     <!-- Mobile Header with Menu Button -->
-    <q-header v-if="$q.screen.lt.md" elevated class="bg-white text-dark">
+    <q-header v-if="$q.screen.lt.md" elevated class="bg-white text-gray-strong">
       <q-toolbar>
         <q-btn flat round dense icon="menu" @click="toggleNavigation" />
         <q-toolbar-title class="color-primary text-h6">{{

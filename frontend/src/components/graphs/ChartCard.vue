@@ -228,7 +228,7 @@ const chartOption = computed(() => {
       show: true,
       position: 'top',
       fontSize: 11,
-      color: '#666',
+      color: '#6b7280', // --text-muted
     },
 
     data: [
@@ -357,7 +357,7 @@ const chartOption = computed(() => {
       type: 'scroll',
       orient: 'none',
       bottom: 0,
-      textStyle: { fontSize: 13 },
+      textStyle: { fontSize: 13, color: '#4b5563' }, // --text-body
       height: '10%',
       data: legendData,
       selected: legendSelected.value,
@@ -372,7 +372,7 @@ const chartOption = computed(() => {
     xAxis: {
       type: 'time',
       z: -1,
-      axisLabel: { fontSize: 12 },
+      axisLabel: { fontSize: 12, color: '#6b7280' }, // --text-muted
       // boundaryGap: false,
     },
     yAxis: {
@@ -380,9 +380,10 @@ const chartOption = computed(() => {
       name: props.chartConfig.unit,
       nameLocation: 'end',
       z: -1,
-      nameTextStyle: { padding: [0, 0, 0, 5], fontSize: 13 },
+      nameTextStyle: { padding: [0, 0, 0, 5], fontSize: 13, color: '#6b7280' },
       axisLabel: {
         fontSize: 12,
+        color: '#6b7280',
         formatter: function (value: number) {
           // Use scientific notation for values larger than 10,000 or smaller than 0.001
           if (Math.abs(value) >= 10000 || (Math.abs(value) > 0 && Math.abs(value) < 0.001)) {
@@ -435,7 +436,7 @@ const chartOption = computed(() => {
   height: 100%;
   background-color: #f9f9f9;
   border-radius: 8px;
-  color: #999;
+  color: var(--text-subtle);
 
   p {
     margin-top: 8px;
@@ -451,9 +452,9 @@ const chartOption = computed(() => {
 }
 
 .chart-title {
-  color: #374151;
+  color: var(--text-strong);
   font-size: 1.35rem;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.3;
 }
 

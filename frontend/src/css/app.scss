@@ -3,6 +3,31 @@
 // Import Shepherd.js theme
 @import './shepherd-theme.scss';
 
+// Text colour scale: dark grays instead of pure black, one shade per role
+:root {
+  --text-strong: #374151; // headings, titles, primary text
+  --text-body: #4b5563; // body copy, subtitles
+  --text-muted: #6b7280; // labels, captions, secondary info
+  --text-subtle: #9ca3af; // placeholders, empty states, separators
+}
+
+body {
+  color: var(--text-strong);
+}
+
+.text-gray-strong {
+  color: var(--text-strong) !important;
+}
+.text-gray-body {
+  color: var(--text-body) !important;
+}
+.text-gray-muted {
+  color: var(--text-muted) !important;
+}
+.text-gray-subtle {
+  color: var(--text-subtle) !important;
+}
+
 // Shared utility classes
 .app-disabled {
   color: #a0a0a0 !important;

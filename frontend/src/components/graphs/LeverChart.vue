@@ -20,7 +20,7 @@
       </q-btn>
     </div>
 
-    <div v-else-if="!chartData.length" class="text-center q-pa-md text-grey-7">
+    <div v-else-if="!chartData.length" class="text-center q-pa-md text-gray-muted">
       {{ $t('noChartDataAvailable') }}
     </div>
 
@@ -238,6 +238,7 @@ const chartOption = computed(() => {
           height: '15%',
           data: legendData,
           width: '90%',
+          textStyle: { color: '#4b5563' }, // --text-body
         },
     grid: {
       top: props.minimal ? '15%' : '8%',
@@ -249,13 +250,15 @@ const chartOption = computed(() => {
     },
     xAxis: {
       type: 'time',
+      axisLabel: { color: '#6b7280' }, // --text-muted
     },
     yAxis: {
       type: 'value',
       name: chartUnit.value,
       nameLocation: 'end',
-      nameTextStyle: { padding: [0, 25, 0, 0] },
+      nameTextStyle: { padding: [0, 25, 0, 0], color: '#6b7280' },
       axisLabel: {
+        color: '#6b7280',
         formatter: function (value: number) {
           // Use scientific notation for values larger than 10,000 or smaller than 0.001
           if (Math.abs(value) >= 10000 || (Math.abs(value) > 0 && Math.abs(value) < 0.001)) {

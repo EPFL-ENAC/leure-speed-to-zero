@@ -6,14 +6,14 @@
       <div class="content-section">
         <section class="q-mb-xl">
           <h2 class="text-h5 q-mb-md">{{ $t('ourMission') }}</h2>
-          <p class="text-body1 text-grey-8">
+          <p class="text-body1 text-gray-body">
             {{ $t('ourMissionDesc') }}
           </p>
         </section>
 
         <section class="q-mb-xl">
           <h2 class="text-h5 q-mb-md">{{ $t('whatWeOffer') }}</h2>
-          <p class="text-body1 text-grey-8 q-mb-md">
+          <p class="text-body1 text-gray-body q-mb-md">
             {{ $t('whatWeOfferDesc') }}
           </p>
           <q-list bordered separator>
@@ -40,24 +40,24 @@
 
         <section class="q-mb-xl">
           <h2 class="text-h5 q-mb-md">{{ $t('howItWorks') }}</h2>
-          <p class="text-body1 text-grey-8">
+          <p class="text-body1 text-gray-body">
             {{ $t('howItWorksDesc') }}
           </p>
         </section>
 
         <section class="q-mb-xl">
           <h2 class="text-h5 q-mb-md">{{ $t('theTeam') }}</h2>
-          <p class="text-body1 text-grey-8">
+          <p class="text-body1 text-gray-body">
             {{ $t('theTeamDesc') }}
           </p>
         </section>
 
         <section class="q-mb-xl">
           <h2 class="text-h5 q-mb-md">{{ $t('contact') }}</h2>
-          <p class="text-body1 text-grey-8 q-mb-md">
+          <p class="text-body1 text-gray-body q-mb-md">
             {{ $t('contactTestingNote') }}
           </p>
-          <p class="text-body1 text-grey-8">
+          <p class="text-body1 text-gray-body">
             {{ $t('contactEmailText') }}
             <a :href="'mailto:gino.baudry@epfl.ch'">gino.baudry@epfl.ch</a>
           </p>

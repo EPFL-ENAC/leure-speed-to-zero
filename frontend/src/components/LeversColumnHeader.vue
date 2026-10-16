@@ -66,7 +66,7 @@ watch(isLoading, (newValue, oldValue) => {
   flex: 1;
   font-size: 14px;
   font-weight: 500;
-  color: #6e6e73;
+  color: var(--text-muted);
   letter-spacing: 0.02em;
 }
 

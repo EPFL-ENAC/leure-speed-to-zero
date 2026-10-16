@@ -200,7 +200,7 @@ watch(tabs, () => void nextTick(checkScrollability), { deep: true });
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: #374151;
+  color: var(--text-strong);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -212,7 +212,7 @@ watch(tabs, () => void nextTick(checkScrollability), { deep: true });
   transition:
     opacity 0.15s,
     transform 0.15s;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 .subtab.active .subtab-chevron {

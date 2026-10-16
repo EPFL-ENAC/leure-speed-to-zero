@@ -6,49 +6,49 @@
       <div class="content-section">
         <section class="q-mb-xl">
           <h2 class="text-h5 q-mb-md">{{ $t('termsOfUse') }}</h2>
-          <p class="text-body1 text-grey-8">
+          <p class="text-body1 text-gray-body">
             {{ $t('termsOfUseDesc') }}
           </p>
         </section>
 
         <section class="q-mb-xl">
           <h2 class="text-h5 q-mb-md">{{ $t('privacyPolicy') }}</h2>
-          <p class="text-body1 text-grey-8">
+          <p class="text-body1 text-gray-body">
             {{ $t('privacyPolicyDesc') }}
           </p>
         </section>
 
         <section class="q-mb-xl">
           <h2 class="text-h5 q-mb-md">{{ $t('dataUsage') }}</h2>
-          <p class="text-body1 text-grey-8">
+          <p class="text-body1 text-gray-body">
             {{ $t('dataUsageDesc') }}
           </p>
         </section>
 
         <section class="q-mb-xl">
           <h2 class="text-h5 q-mb-md">{{ $t('disclaimer') }}</h2>
-          <p class="text-body1 text-grey-8">
+          <p class="text-body1 text-gray-body">
             {{ $t('disclaimerDesc') }}
           </p>
         </section>
 
         <section class="q-mb-xl">
           <h2 class="text-h5 q-mb-md">{{ $t('intellectualProperty') }}</h2>
-          <p class="text-body1 text-grey-8">
+          <p class="text-body1 text-gray-body">
             {{ $t('intellectualPropertyDesc') }}
           </p>
         </section>
 
         <section class="q-mb-xl">
           <h2 class="text-h5 q-mb-md">{{ $t('contact') }}</h2>
-          <p class="text-body1 text-grey-8">
+          <p class="text-body1 text-gray-body">
             {{ $t('contactDesc') }}
           </p>
         </section>
 
         <q-separator color="grey-3" class="q-my-lg" />
 
-        <div class="text-caption text-grey-6 text-center">
+        <div class="text-caption text-gray-muted text-center">
           {{ $t('lastUpdated') }}: {{ formattedDate }}
         </div>
       </div>

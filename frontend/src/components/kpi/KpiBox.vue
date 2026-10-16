@@ -329,7 +329,7 @@ const zoneStyles = computed(() => {
 
 .label {
   font-size: 0.55rem;
-  color: #6b7280;
+  color: var(--text-muted);
   white-space: nowrap;
 }
 
@@ -351,7 +351,7 @@ const zoneStyles = computed(() => {
   flex: 1;
   min-width: 0;
   font-size: 0.8rem;
-  color: #4b5563;
+  color: var(--text-body);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

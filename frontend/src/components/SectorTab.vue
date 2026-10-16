@@ -415,19 +415,19 @@ async function forceRunModel() {
   margin: 0;
   padding: 0.25rem 1.25rem 0.75rem;
   font-size: 1.6rem;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.3;
-  color: #111827;
+  color: var(--text-strong);
 }
 
 .page-heading-sep {
   margin: 0 0.5rem;
-  color: #9ca3af;
+  color: var(--text-subtle);
 }
 
 .page-heading-sub {
-  color: #4b5563;
-  font-weight: 500;
+  color: var(--text-body);
+  font-weight: 400;
 }
 
 .content-area {
@@ -477,7 +477,7 @@ async function forceRunModel() {
   align-items: center;
   justify-content: center;
   min-height: 200px;
-  color: #9e9e9e;
+  color: var(--text-subtle);
   font-style: italic;
 }
 
@@ -490,7 +490,7 @@ async function forceRunModel() {
 
 .mobile-tab-title {
   margin: 0;
-  color: rgba(0, 0, 0, 0.87);
+  color: var(--text-strong);
   font-weight: 500;
   font-size: 1.125rem;
   line-height: 1.4;
