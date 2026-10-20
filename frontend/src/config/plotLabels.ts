@@ -251,6 +251,96 @@ export const plotLabels: Record<string, TranslationObject | string> = {
     deDE: 'Gemüse',
     frFR: 'Légumes',
   },
+  'agr_demand_feed_crop-processed-cake[kcal]': {
+    enUS: 'Oil crop cakes',
+    deDE: 'Ölkuchen',
+    frFR: 'Tourteaux d’oléagineux',
+  },
+  'agr_demand_feed_crop-processed-molasse[kcal]': {
+    enUS: 'Molasse',
+    deDE: 'Melasse',
+    frFR: 'Mélasse',
+  },
+  'agr_demand_feed_crop-processed-sugar[kcal]': {
+    enUS: 'Sugar',
+    deDE: 'Zucker',
+    frFR: 'Sucre',
+  },
+  'agr_demand_feed_crop-processed-voil[kcal]': {
+    enUS: 'Vegetable oil',
+    deDE: 'Pflanzenöl',
+    frFR: 'Huile végétale',
+  },
+  'agr_demand_feed_fish[kcal]': {
+    enUS: 'Fish meal',
+    deDE: 'Fischmehl',
+    frFR: 'Farine de poisson',
+  },
+  'agr_feed-requirement_abp-dairy-milk[t]': {
+    enUS: 'Dairy cattle',
+    deDE: 'Milchvieh',
+    frFR: 'Bétail laitier',
+  },
+  'agr_feed-requirement_abp-hens-egg[t]': {
+    enUS: 'Laying hens',
+    deDE: 'Legehennen',
+    frFR: 'Poules pondeuses',
+  },
+  'agr_feed-requirement_meat-bovine[t]': {
+    enUS: 'Bovine',
+    deDE: 'Rinder',
+    frFR: 'Bovins',
+  },
+  'agr_feed-requirement_meat-oth-animal[t]': {
+    enUS: 'Other animals',
+    deDE: 'Sonstige Tiere',
+    frFR: 'Autres animaux',
+  },
+  'agr_feed-requirement_meat-pig[t]': {
+    enUS: 'Pigs',
+    deDE: 'Schweine',
+    frFR: 'Porcs',
+  },
+  'agr_feed-requirement_meat-poultry[t]': {
+    enUS: 'Poultry',
+    deDE: 'Geflügel',
+    frFR: 'Volailles',
+  },
+  'agr_feed-requirement_meat-sheep[t]': {
+    enUS: 'Sheep',
+    deDE: 'Schafe',
+    frFR: 'Moutons',
+  },
+  'agr_feed-requirement_grass[t]': {
+    enUS: 'Grass',
+    deDE: 'Gras',
+    frFR: 'Herbe',
+  },
+  'agr_feed-requirement_other[t]': {
+    enUS: 'Other feed',
+    deDE: 'Übriges Futter',
+    frFR: 'Autres aliments',
+  },
+  'agr_feed-pro_domestic-production_crop-processed-cake[kcal]': {
+    enUS: 'Oil crop cakes, domestic',
+    deDE: 'Ölkuchen, Inland',
+    frFR: 'Tourteaux d’oléagineux, nationaux',
+  },
+  'agr_feed-pro_domestic-production_crop-processed-molasse[kcal]': {
+    enUS: 'Molasse, domestic',
+    deDE: 'Melasse, Inland',
+    frFR: 'Mélasse, nationale',
+  },
+  'agr_feed-pro_imports_crop-processed-cake[kcal]': {
+    enUS: 'Oil crop cakes, imported',
+    deDE: 'Ölkuchen, importiert',
+    frFR: 'Tourteaux d’oléagineux, importés',
+  },
+  'agr_feed-pro_imports_crop-processed-molasse[kcal]': {
+    enUS: 'Molasse, imported',
+    deDE: 'Melasse, importiert',
+    frFR: 'Mélasse, importée',
+  },
   'agr_demand_feed_fish-fish-meal[kcal]': {
     enUS: 'Fish meals',
     deDE: 'Fischmehl',

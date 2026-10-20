@@ -45,6 +45,15 @@
     },
     {
       "title": {
+        "enUS": "Feed",
+        "frFR": "Alimentation animale",
+        "deDE": "Futtermittel"
+      },
+      "route": "feed",
+      "charts": ["FeedRequirement", "FeedRequirementSource", "FeedDemand", "FeedProcessedOrigin"]
+    },
+    {
+      "title": {
         "enUS": "Blue food",
         "frFR": "Produits de la mer",
         "deDE": "Blaue Nahrung"
@@ -448,6 +457,73 @@
       "type": "StackedArea",
       "unit": "t CO2-eq",
       "outputs": ["tcaf_fish_ghg_aquaculture[t]", "tcaf_fish_ghg_capture[t]"]
+    },
+    "FeedRequirement": {
+      "title": {
+        "enUS": "Feed requirement by livestock type (dry matter)",
+        "frFR": "Besoins en aliments par type d'élevage (matière sèche)",
+        "deDE": "Futterbedarf nach Tierart (Trockenmasse)"
+      },
+      "type": "StackedArea",
+      "unit": "t",
+      "outputs": [
+        "agr_feed-requirement_abp-dairy-milk[t]",
+        "agr_feed-requirement_abp-hens-egg[t]",
+        "agr_feed-requirement_meat-bovine[t]",
+        "agr_feed-requirement_meat-oth-animal[t]",
+        "agr_feed-requirement_meat-pig[t]",
+        "agr_feed-requirement_meat-poultry[t]",
+        "agr_feed-requirement_meat-sheep[t]"
+      ]
+    },
+    "FeedRequirementSource": {
+      "title": {
+        "enUS": "Feed requirement, grass and other feed (dry matter)",
+        "frFR": "Besoins en aliments, herbe et autres aliments (matière sèche)",
+        "deDE": "Futterbedarf, Gras und übriges Futter (Trockenmasse)"
+      },
+      "type": "StackedArea",
+      "unit": "t",
+      "outputs": ["agr_feed-requirement_grass[t]", "agr_feed-requirement_other[t]"]
+    },
+    "FeedDemand": {
+      "title": {
+        "enUS": "Feed demand by feed type (excluding grass)",
+        "frFR": "Demande en aliments par type (hors herbe)",
+        "deDE": "Futternachfrage nach Futterart (ohne Gras)"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_demand_feed_crop-cereal[kcal]",
+        "agr_demand_feed_crop-oilcrop[kcal]",
+        "agr_demand_feed_crop-pulse[kcal]",
+        "agr_demand_feed_crop-starch[kcal]",
+        "agr_demand_feed_crop-sugarcrop[kcal]",
+        "agr_demand_feed_crop-fruit[kcal]",
+        "agr_demand_feed_crop-veg[kcal]",
+        "agr_demand_feed_crop-processed-cake[kcal]",
+        "agr_demand_feed_crop-processed-molasse[kcal]",
+        "agr_demand_feed_crop-processed-sugar[kcal]",
+        "agr_demand_feed_crop-processed-voil[kcal]",
+        "agr_demand_feed_fish[kcal]",
+        "agr_demand_feed_liv-meat-meal[kcal]"
+      ]
+    },
+    "FeedProcessedOrigin": {
+      "title": {
+        "enUS": "Processed feed, domestic production and imports",
+        "frFR": "Aliments transformés, production nationale et importations",
+        "deDE": "Verarbeitete Futtermittel, Inlandproduktion und Importe"
+      },
+      "type": "StackedArea",
+      "unit": "kcal",
+      "outputs": [
+        "agr_feed-pro_domestic-production_crop-processed-cake[kcal]",
+        "agr_feed-pro_domestic-production_crop-processed-molasse[kcal]",
+        "agr_feed-pro_imports_crop-processed-cake[kcal]",
+        "agr_feed-pro_imports_crop-processed-molasse[kcal]"
+      ]
     }
   }
 }
