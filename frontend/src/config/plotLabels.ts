@@ -1,6 +1,528 @@
 import { type TranslationObject } from 'src/utils/translationHelpers';
 
 export const plotLabels: Record<string, TranslationObject | string> = {
+  // Agriculture detail charts (More info)
+  'agr_lus_land_grassland[ha]': {
+    enUS: 'Grassland',
+    deDE: 'Grasland',
+    frFR: 'Prairies et pâturages',
+  },
+  'agr_land_cropland_algae[ha]': {
+    enUS: 'Algae',
+    deDE: 'Algen',
+    frFR: 'Algues',
+  },
+  'agr_land_cropland_cereal[ha]': {
+    enUS: 'Cereals',
+    deDE: 'Getreide',
+    frFR: 'Céréales',
+  },
+  'agr_land_cropland_fruit[ha]': {
+    enUS: 'Fruit',
+    deDE: 'Obst',
+    frFR: 'Fruits',
+  },
+  'agr_land_cropland_insect[ha]': {
+    enUS: 'Insects',
+    deDE: 'Insekten',
+    frFR: 'Insectes',
+  },
+  'agr_land_cropland_lgn-energycrop[ha]': {
+    enUS: 'Lignocellulosic energy crops',
+    deDE: 'Lignocellulose-Energiepflanzen',
+    frFR: 'Cultures énergétiques lignocellulosiques',
+  },
+  'agr_land_cropland_oilcrop[ha]': {
+    enUS: 'Oilseeds',
+    deDE: 'Ölsaaten',
+    frFR: 'Oléagineux',
+  },
+  'agr_land_cropland_pulse[ha]': {
+    enUS: 'Pulses',
+    deDE: 'Hülsenfrüchte',
+    frFR: 'Légumineuses',
+  },
+  'agr_land_cropland_rice[ha]': {
+    enUS: 'Rice',
+    deDE: 'Reis',
+    frFR: 'Riz',
+  },
+  'agr_land_cropland_starch[ha]': {
+    enUS: 'Potatoes & starchy roots',
+    deDE: 'Kartoffeln und Knollen',
+    frFR: 'Pommes de terre et tubercules',
+  },
+  'agr_land_cropland_sugarcrop[ha]': {
+    enUS: 'Sugar crops',
+    deDE: 'Zuckerpflanzen',
+    frFR: 'Plantes sucrières',
+  },
+  'agr_land_cropland_veg[ha]': {
+    enUS: 'Vegetables',
+    deDE: 'Gemüse',
+    frFR: 'Légumes',
+  },
+  'agr_land_cropland_fibres-plant-eq[ha]': {
+    enUS: 'Fibre crops',
+    deDE: 'Faserpflanzen',
+    frFR: 'Plantes à fibres',
+  },
+  'agr_food-net-import_cereal[%]': {
+    enUS: 'Cereals',
+    deDE: 'Getreide',
+    frFR: 'Céréales',
+  },
+  'agr_food-net-import_fruit[%]': {
+    enUS: 'Fruit',
+    deDE: 'Obst',
+    frFR: 'Fruits',
+  },
+  'agr_food-net-import_oilcrop[%]': {
+    enUS: 'Oilseeds',
+    deDE: 'Ölsaaten',
+    frFR: 'Oléagineux',
+  },
+  'agr_food-net-import_pulse[%]': {
+    enUS: 'Pulses',
+    deDE: 'Hülsenfrüchte',
+    frFR: 'Légumineuses',
+  },
+  'agr_food-net-import_rice[%]': {
+    enUS: 'Rice',
+    deDE: 'Reis',
+    frFR: 'Riz',
+  },
+  'agr_food-net-import_starch[%]': {
+    enUS: 'Potatoes & starchy roots',
+    deDE: 'Kartoffeln und Knollen',
+    frFR: 'Pommes de terre et tubercules',
+  },
+  'agr_food-net-import_veg[%]': {
+    enUS: 'Vegetables',
+    deDE: 'Gemüse',
+    frFR: 'Légumes',
+  },
+  'agr_food-net-import_oil-voil[%]': {
+    enUS: 'Vegetable oil (bioenergy)',
+    deDE: 'Pflanzenöl (Bioenergie)',
+    frFR: 'Huile végétale (bioénergie)',
+  },
+  'agr_food-net-import_pro-liv-abp-dairy-milk[%]': {
+    enUS: 'Dairy products',
+    deDE: 'Milchprodukte',
+    frFR: 'Produits laitiers',
+  },
+  'agr_food-net-import_pro-liv-abp-hens-egg[%]': {
+    enUS: 'Eggs',
+    deDE: 'Eier',
+    frFR: 'Œufs',
+  },
+  'agr_food-net-import_pro-liv-abp-processed-afat[%]': {
+    enUS: 'Animal fats',
+    deDE: 'Tierische Fette',
+    frFR: 'Graisses animales',
+  },
+  'agr_food-net-import_pro-liv-abp-processed-offal[%]': {
+    enUS: 'Offal',
+    deDE: 'Innereien',
+    frFR: 'Abats',
+  },
+  'agr_food-net-import_pro-liv-meat-bovine[%]': {
+    enUS: 'Beef & veal',
+    deDE: 'Rind- und Kalbfleisch',
+    frFR: 'Viande bovine',
+  },
+  'agr_food-net-import_pro-liv-meat-oth-animals[%]': {
+    enUS: 'Other meat',
+    deDE: 'Anderes Fleisch',
+    frFR: 'Autres viandes',
+  },
+  'agr_food-net-import_pro-liv-meat-pig[%]': {
+    enUS: 'Pork',
+    deDE: 'Schweinefleisch',
+    frFR: 'Viande de porc',
+  },
+  'agr_food-net-import_pro-liv-meat-poultry[%]': {
+    enUS: 'Poultry',
+    deDE: 'Geflügel',
+    frFR: 'Volaille',
+  },
+  'agr_food-net-import_pro-liv-meat-sheep[%]': {
+    enUS: 'Lamb & mutton',
+    deDE: 'Schaffleisch',
+    frFR: 'Viande ovine',
+  },
+  'agr_food-net-import_pro-bev-beer[%]': {
+    enUS: 'Beer',
+    deDE: 'Bier',
+    frFR: 'Bière',
+  },
+  'agr_food-net-import_pro-bev-bev-alc[%]': {
+    enUS: 'Spirits',
+    deDE: 'Spirituosen',
+    frFR: 'Spiritueux',
+  },
+  'agr_food-net-import_pro-bev-bev-fer[%]': {
+    enUS: 'Other fermented beverages',
+    deDE: 'Andere fermentierte Getränke',
+    frFR: 'Autres boissons fermentées',
+  },
+  'agr_food-net-import_pro-bev-wine[%]': {
+    enUS: 'Wine',
+    deDE: 'Wein',
+    frFR: 'Vin',
+  },
+  'agr_food-net-import_pro-crop-processed-sweet[%]': {
+    enUS: 'Sweeteners',
+    deDE: 'Süssungsmittel',
+    frFR: 'Édulcorants',
+  },
+  'agr_food-net-import_pro-crop-processed-sugar[%]': {
+    enUS: 'Sugar',
+    deDE: 'Zucker',
+    frFR: 'Sucre',
+  },
+  'agr_liv_n-stock_abp-dairy-milk[t]': {
+    enUS: 'Dairy cows',
+    deDE: 'Milchkühe',
+    frFR: 'Vaches laitières',
+  },
+  'agr_liv_n-stock_abp-hens-egg[t]': {
+    enUS: 'Laying hens',
+    deDE: 'Legehennen',
+    frFR: 'Poules pondeuses',
+  },
+  'agr_liv_n-stock_meat-bovine[t]': {
+    enUS: 'Beef cattle',
+    deDE: 'Mastrinder',
+    frFR: 'Bovins à viande',
+  },
+  'agr_liv_n-stock_meat-oth-animals[t]': {
+    enUS: 'Other animals',
+    deDE: 'Andere Tiere',
+    frFR: 'Autres animaux',
+  },
+  'agr_liv_n-stock_meat-pig[t]': {
+    enUS: 'Pigs',
+    deDE: 'Schweine',
+    frFR: 'Porcs',
+  },
+  'agr_liv_n-stock_meat-poultry[t]': {
+    enUS: 'Poultry',
+    deDE: 'Geflügel',
+    frFR: 'Volaille',
+  },
+  'agr_liv_n-stock_meat-sheep[t]': {
+    enUS: 'Sheep',
+    deDE: 'Schafe',
+    frFR: 'Ovins',
+  },
+  'agr_liv_CH4-emission_abp-dairy-milk_enteric[t]': {
+    enUS: 'Dairy cows – enteric fermentation',
+    deDE: 'Milchkühe – Verdauung',
+    frFR: 'Vaches laitières – fermentation entérique',
+  },
+  'agr_liv_CH4-emission_abp-dairy-milk_treated[t]': {
+    enUS: 'Dairy cows – manure management',
+    deDE: 'Milchkühe – Hofdüngermanagement',
+    frFR: 'Vaches laitières – gestion des effluents',
+  },
+  'agr_liv_CH4-emission_abp-hens-egg_treated[t]': {
+    enUS: 'Laying hens – manure management',
+    deDE: 'Legehennen – Hofdüngermanagement',
+    frFR: 'Poules pondeuses – gestion des effluents',
+  },
+  'agr_liv_CH4-emission_meat-bovine_enteric[t]': {
+    enUS: 'Beef cattle – enteric fermentation',
+    deDE: 'Mastrinder – Verdauung',
+    frFR: 'Bovins à viande – fermentation entérique',
+  },
+  'agr_liv_CH4-emission_meat-bovine_treated[t]': {
+    enUS: 'Beef cattle – manure management',
+    deDE: 'Mastrinder – Hofdüngermanagement',
+    frFR: 'Bovins à viande – gestion des effluents',
+  },
+  'agr_liv_CH4-emission_meat-oth-animals_enteric[t]': {
+    enUS: 'Other animals – enteric fermentation',
+    deDE: 'Andere Tiere – Verdauung',
+    frFR: 'Autres animaux – fermentation entérique',
+  },
+  'agr_liv_CH4-emission_meat-oth-animals_treated[t]': {
+    enUS: 'Other animals – manure management',
+    deDE: 'Andere Tiere – Hofdüngermanagement',
+    frFR: 'Autres animaux – gestion des effluents',
+  },
+  'agr_liv_CH4-emission_meat-pig_enteric[t]': {
+    enUS: 'Pigs – enteric fermentation',
+    deDE: 'Schweine – Verdauung',
+    frFR: 'Porcs – fermentation entérique',
+  },
+  'agr_liv_CH4-emission_meat-pig_treated[t]': {
+    enUS: 'Pigs – manure management',
+    deDE: 'Schweine – Hofdüngermanagement',
+    frFR: 'Porcs – gestion des effluents',
+  },
+  'agr_liv_CH4-emission_meat-poultry_treated[t]': {
+    enUS: 'Poultry – manure management',
+    deDE: 'Geflügel – Hofdüngermanagement',
+    frFR: 'Volaille – gestion des effluents',
+  },
+  'agr_liv_CH4-emission_meat-sheep_enteric[t]': {
+    enUS: 'Sheep – enteric fermentation',
+    deDE: 'Schafe – Verdauung',
+    frFR: 'Ovins – fermentation entérique',
+  },
+  'agr_liv_CH4-emission_meat-sheep_treated[t]': {
+    enUS: 'Sheep – manure management',
+    deDE: 'Schafe – Hofdüngermanagement',
+    frFR: 'Ovins – gestion des effluents',
+  },
+  'agr_liv_N2O-emission_abp-dairy-milk_applied[t]': {
+    enUS: 'Dairy cows – manure applied to soils',
+    deDE: 'Milchkühe – ausgebrachter Hofdünger',
+    frFR: 'Vaches laitières – effluents épandus',
+  },
+  'agr_liv_N2O-emission_abp-dairy-milk_pasture[t]': {
+    enUS: 'Dairy cows – pasture deposits',
+    deDE: 'Milchkühe – Weideausscheidungen',
+    frFR: 'Vaches laitières – dépôts au pâturage',
+  },
+  'agr_liv_N2O-emission_abp-dairy-milk_treated[t]': {
+    enUS: 'Dairy cows – manure management',
+    deDE: 'Milchkühe – Hofdüngermanagement',
+    frFR: 'Vaches laitières – gestion des effluents',
+  },
+  'agr_liv_N2O-emission_abp-hens-egg_applied[t]': {
+    enUS: 'Laying hens – manure applied to soils',
+    deDE: 'Legehennen – ausgebrachter Hofdünger',
+    frFR: 'Poules pondeuses – effluents épandus',
+  },
+  'agr_liv_N2O-emission_abp-hens-egg_pasture[t]': {
+    enUS: 'Laying hens – pasture deposits',
+    deDE: 'Legehennen – Weideausscheidungen',
+    frFR: 'Poules pondeuses – dépôts au pâturage',
+  },
+  'agr_liv_N2O-emission_abp-hens-egg_treated[t]': {
+    enUS: 'Laying hens – manure management',
+    deDE: 'Legehennen – Hofdüngermanagement',
+    frFR: 'Poules pondeuses – gestion des effluents',
+  },
+  'agr_liv_N2O-emission_meat-bovine_applied[t]': {
+    enUS: 'Beef cattle – manure applied to soils',
+    deDE: 'Mastrinder – ausgebrachter Hofdünger',
+    frFR: 'Bovins à viande – effluents épandus',
+  },
+  'agr_liv_N2O-emission_meat-bovine_pasture[t]': {
+    enUS: 'Beef cattle – pasture deposits',
+    deDE: 'Mastrinder – Weideausscheidungen',
+    frFR: 'Bovins à viande – dépôts au pâturage',
+  },
+  'agr_liv_N2O-emission_meat-bovine_treated[t]': {
+    enUS: 'Beef cattle – manure management',
+    deDE: 'Mastrinder – Hofdüngermanagement',
+    frFR: 'Bovins à viande – gestion des effluents',
+  },
+  'agr_liv_N2O-emission_meat-oth-animals_applied[t]': {
+    enUS: 'Other animals – manure applied to soils',
+    deDE: 'Andere Tiere – ausgebrachter Hofdünger',
+    frFR: 'Autres animaux – effluents épandus',
+  },
+  'agr_liv_N2O-emission_meat-oth-animals_pasture[t]': {
+    enUS: 'Other animals – pasture deposits',
+    deDE: 'Andere Tiere – Weideausscheidungen',
+    frFR: 'Autres animaux – dépôts au pâturage',
+  },
+  'agr_liv_N2O-emission_meat-oth-animals_treated[t]': {
+    enUS: 'Other animals – manure management',
+    deDE: 'Andere Tiere – Hofdüngermanagement',
+    frFR: 'Autres animaux – gestion des effluents',
+  },
+  'agr_liv_N2O-emission_meat-pig_applied[t]': {
+    enUS: 'Pigs – manure applied to soils',
+    deDE: 'Schweine – ausgebrachter Hofdünger',
+    frFR: 'Porcs – effluents épandus',
+  },
+  'agr_liv_N2O-emission_meat-pig_treated[t]': {
+    enUS: 'Pigs – manure management',
+    deDE: 'Schweine – Hofdüngermanagement',
+    frFR: 'Porcs – gestion des effluents',
+  },
+  'agr_liv_N2O-emission_meat-poultry_applied[t]': {
+    enUS: 'Poultry – manure applied to soils',
+    deDE: 'Geflügel – ausgebrachter Hofdünger',
+    frFR: 'Volaille – effluents épandus',
+  },
+  'agr_liv_N2O-emission_meat-poultry_pasture[t]': {
+    enUS: 'Poultry – pasture deposits',
+    deDE: 'Geflügel – Weideausscheidungen',
+    frFR: 'Volaille – dépôts au pâturage',
+  },
+  'agr_liv_N2O-emission_meat-poultry_treated[t]': {
+    enUS: 'Poultry – manure management',
+    deDE: 'Geflügel – Hofdüngermanagement',
+    frFR: 'Volaille – gestion des effluents',
+  },
+  'agr_liv_N2O-emission_meat-sheep_pasture[t]': {
+    enUS: 'Sheep – pasture deposits',
+    deDE: 'Schafe – Weideausscheidungen',
+    frFR: 'Ovins – dépôts au pâturage',
+  },
+  'agr_liv_N2O-emission_meat-sheep_treated[t]': {
+    enUS: 'Sheep – manure management',
+    deDE: 'Schafe – Hofdüngermanagement',
+    frFR: 'Ovins – gestion des effluents',
+  },
+  // Agriculture main charts (agriculture_TPE_interface sector summary)
+  'agr_emissions-CO2e-product_meat-bovine[Mt]': {
+    enUS: 'Beef & veal',
+    deDE: 'Rind- und Kalbfleisch',
+    frFR: 'Viande bovine',
+  },
+  'agr_emissions-CO2e-product_meat-pig[Mt]': {
+    enUS: 'Pork',
+    deDE: 'Schweinefleisch',
+    frFR: 'Viande de porc',
+  },
+  'agr_emissions-CO2e-product_meat-poultry[Mt]': {
+    enUS: 'Poultry',
+    deDE: 'Geflügel',
+    frFR: 'Volaille',
+  },
+  'agr_emissions-CO2e-product_meat-other[Mt]': {
+    enUS: 'Other meat',
+    deDE: 'Anderes Fleisch',
+    frFR: 'Autres viandes',
+  },
+  'agr_emissions-CO2e-product_dairy[Mt]': {
+    enUS: 'Dairy products',
+    deDE: 'Milchprodukte',
+    frFR: 'Produits laitiers',
+  },
+  'agr_emissions-CO2e-product_eggs[Mt]': {
+    enUS: 'Eggs',
+    deDE: 'Eier',
+    frFR: 'Œufs',
+  },
+  'agr_emissions-CO2e-product_crops-soils[Mt]': {
+    enUS: 'Crops & soils',
+    deDE: 'Kulturen und Böden',
+    frFR: 'Cultures et sols',
+  },
+  'agr_emissions-CO2e-product_fuel[Mt]': {
+    enUS: 'Fuel combustion',
+    deDE: 'Treibstoffverbrennung',
+    frFR: 'Combustion de carburants',
+  },
+  'agr_emissions-CO2e-gas_CO2[Mt]': {
+    enUS: 'CO₂',
+    deDE: 'CO₂',
+    frFR: 'CO₂',
+  },
+  'agr_emissions-CO2e-gas_CH4[Mt]': {
+    enUS: 'Methane (CH₄)',
+    deDE: 'Methan (CH₄)',
+    frFR: 'Méthane (CH₄)',
+  },
+  'agr_emissions-CO2e-gas_N2O[Mt]': {
+    enUS: 'Nitrous oxide (N₂O)',
+    deDE: 'Lachgas (N₂O)',
+    frFR: "Protoxyde d'azote (N₂O)",
+  },
+  'agr_energy-demand-carrier_diesel[TWh]': {
+    enUS: 'Diesel',
+    deDE: 'Diesel',
+    frFR: 'Diesel',
+  },
+  'agr_energy-demand-carrier_oil-other[TWh]': {
+    enUS: 'Other oil products',
+    deDE: 'Andere Erdölprodukte',
+    frFR: 'Autres produits pétroliers',
+  },
+  'agr_energy-demand-carrier_gas[TWh]': {
+    enUS: 'Natural gas',
+    deDE: 'Erdgas',
+    frFR: 'Gaz naturel',
+  },
+  'agr_energy-demand-carrier_coal[TWh]': {
+    enUS: 'Coal',
+    deDE: 'Kohle',
+    frFR: 'Charbon',
+  },
+  'agr_energy-demand-carrier_bioenergy[TWh]': {
+    enUS: 'Bioenergy',
+    deDE: 'Bioenergie',
+    frFR: 'Bioénergie',
+  },
+  'agr_energy-demand-carrier_electricity[TWh]': {
+    enUS: 'Electricity',
+    deDE: 'Elektrizität',
+    frFR: 'Électricité',
+  },
+  'agr_energy-demand-carrier_other[TWh]': {
+    enUS: 'Other',
+    deDE: 'Andere',
+    frFR: 'Autres',
+  },
+  'agr_food-production_meat-bovine[Gkcal]': {
+    enUS: 'Beef & veal',
+    deDE: 'Rind- und Kalbfleisch',
+    frFR: 'Viande bovine',
+  },
+  'agr_food-production_meat-pig[Gkcal]': {
+    enUS: 'Pork',
+    deDE: 'Schweinefleisch',
+    frFR: 'Viande de porc',
+  },
+  'agr_food-production_meat-poultry[Gkcal]': {
+    enUS: 'Poultry',
+    deDE: 'Geflügel',
+    frFR: 'Volaille',
+  },
+  'agr_food-production_meat-other[Gkcal]': {
+    enUS: 'Other meat',
+    deDE: 'Anderes Fleisch',
+    frFR: 'Autres viandes',
+  },
+  'agr_food-production_dairy[Gkcal]': {
+    enUS: 'Dairy products',
+    deDE: 'Milchprodukte',
+    frFR: 'Produits laitiers',
+  },
+  'agr_food-production_eggs[Gkcal]': {
+    enUS: 'Eggs',
+    deDE: 'Eier',
+    frFR: 'Œufs',
+  },
+  'agr_food-production_cereals[Gkcal]': {
+    enUS: 'Cereals',
+    deDE: 'Getreide',
+    frFR: 'Céréales',
+  },
+  'agr_food-production_fruit-veg[Gkcal]': {
+    enUS: 'Fruit & vegetables',
+    deDE: 'Obst und Gemüse',
+    frFR: 'Fruits et légumes',
+  },
+  'agr_food-production_oilcrops[Gkcal]': {
+    enUS: 'Oilseeds',
+    deDE: 'Ölsaaten',
+    frFR: 'Oléagineux',
+  },
+  'agr_food-production_pulses[Gkcal]': {
+    enUS: 'Pulses',
+    deDE: 'Hülsenfrüchte',
+    frFR: 'Légumineuses',
+  },
+  'agr_food-production_starch[Gkcal]': {
+    enUS: 'Potatoes & starchy roots',
+    deDE: 'Kartoffeln und Knollen',
+    frFR: 'Pommes de terre et tubercules',
+  },
+  'agr_food-production_sugarcrops[Gkcal]': {
+    enUS: 'Sugar crops',
+    deDE: 'Zuckerpflanzen',
+    frFR: 'Plantes sucrières',
+  },
   'agr_bioenergy-capacity_bgs-tec_digestor[TWh]': {
     enUS: 'Biogas, digestor',
     deDE: 'Biogas, Vergärung',

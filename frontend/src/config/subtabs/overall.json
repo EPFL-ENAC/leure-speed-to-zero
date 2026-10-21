@@ -10,9 +10,9 @@
       "route": "emissions",
       "maximize": false,
       "info": {
-        "enUS": "Direct (scope 1) greenhouse gas emissions in 2050 across the sectors currently modelled in this view: buildings and transport. Emissions from electricity are attributed to the power sector, not to the sectors consuming it. Aviation is counted on a residency basis, covering the full round trip of residents' flights.",
-        "frFR": "Émissions directes (périmètre 1) de gaz à effet de serre en 2050 pour les secteurs actuellement représentés dans cette vue : bâtiments et transports. Les émissions liées à l'électricité sont attribuées au secteur de l'énergie et non aux secteurs consommateurs. L'aviation est comptabilisée sur une base de résidence, couvrant l'aller-retour complet des vols des résidents.",
-        "deDE": "Direkte Treibhausgasemissionen (Scope 1) im Jahr 2050 für die in dieser Ansicht derzeit modellierten Sektoren: Gebäude und Verkehr. Emissionen aus Strom werden dem Energiesektor zugerechnet, nicht den verbrauchenden Sektoren. Der Luftverkehr wird nach dem Wohnsitzprinzip erfasst und umfasst den gesamten Hin- und Rückflug der Einwohner."
+        "enUS": "Direct (scope 1) greenhouse gas emissions in 2050 across the sectors currently modelled in this view: buildings, transport and agriculture. Emissions from electricity are attributed to the power sector, not to the sectors consuming it. Aviation is counted on a residency basis, covering the full round trip of residents' flights.",
+        "frFR": "Émissions directes (périmètre 1) de gaz à effet de serre en 2050 pour les secteurs actuellement représentés dans cette vue : bâtiments, transports et agriculture. Les émissions liées à l'électricité sont attribuées au secteur de l'énergie et non aux secteurs consommateurs. L'aviation est comptabilisée sur une base de résidence, couvrant l'aller-retour complet des vols des résidents.",
+        "deDE": "Direkte Treibhausgasemissionen (Scope 1) im Jahr 2050 für die in dieser Ansicht derzeit modellierten Sektoren: Gebäude, Verkehr und Landwirtschaft. Emissionen aus Strom werden dem Energiesektor zugerechnet, nicht den verbrauchenden Sektoren. Der Luftverkehr wird nach dem Wohnsitzprinzip erfasst und umfasst den gesamten Hin- und Rückflug der Einwohner."
       }
     },
     {
@@ -25,9 +25,9 @@
       "route": "energy",
       "maximize": false,
       "info": {
-        "enUS": "Total final energy demand in 2050 across the sectors currently modelled in this view: buildings (residential and non-residential, covering space heating, hot water, appliances and lighting) and transport (passenger, freight and aviation), across all energy carriers.",
-        "frFR": "Demande d'énergie finale totale en 2050 pour les secteurs actuellement représentés dans cette vue : bâtiments (résidentiel et non résidentiel, incluant chauffage des locaux, eau chaude, appareils et éclairage) et transports (passagers, fret et aviation), tous vecteurs énergétiques confondus.",
-        "deDE": "Gesamter Endenergiebedarf im Jahr 2050 für die in dieser Ansicht derzeit modellierten Sektoren: Gebäude (Wohn- und Nichtwohngebäude, einschliesslich Raumheizung, Warmwasser, Geräte und Beleuchtung) und Verkehr (Personen, Güter und Luftverkehr), über alle Energieträger."
+        "enUS": "Total final energy demand in 2050 across the sectors currently modelled in this view: buildings (residential and non-residential, covering space heating, hot water, appliances and lighting), transport (passenger, freight and aviation) and agriculture (farm electricity not yet modelled), across all energy carriers.",
+        "frFR": "Demande d'énergie finale totale en 2050 pour les secteurs actuellement représentés dans cette vue : bâtiments (résidentiel et non résidentiel, incluant chauffage des locaux, eau chaude, appareils et éclairage), transports (passagers, fret et aviation) et agriculture (électricité des exploitations pas encore modélisée), tous vecteurs énergétiques confondus.",
+        "deDE": "Gesamter Endenergiebedarf im Jahr 2050 für die in dieser Ansicht derzeit modellierten Sektoren: Gebäude (Wohn- und Nichtwohngebäude, einschliesslich Raumheizung, Warmwasser, Geräte und Beleuchtung), Verkehr (Personen, Güter und Luftverkehr) und Landwirtschaft (Strom der Betriebe noch nicht modelliert), über alle Energieträger."
       }
     }
   ],
@@ -64,7 +64,8 @@
         { "id": "bld_emissions-CO2e[Mt]", "color": "#fc8452" },
         { "id": "tra_emissions-CO2e_passenger-land[Mt]", "color": "#5470c6" },
         { "id": "tra_emissions-CO2e_freight[Mt]", "color": "#2f4a8f" },
-        { "id": "tra_emissions-CO2e_passenger_aviation[Mt]", "color": "#9a60b4" }
+        { "id": "tra_emissions-CO2e_passenger_aviation[Mt]", "color": "#9a60b4" },
+        { "id": "agr_emissions-CO2e[Mt]", "color": "#91cc75" }
       ]
     },
     "EnergyBySector": {
@@ -79,7 +80,8 @@
         { "id": "bld_energy-demand_total[TWh]", "color": "#fc8452" },
         { "id": "tra_energy-demand_passenger-land[TWh]", "color": "#5470c6" },
         { "id": "tra_energy-demand_freight[TWh]", "color": "#2f4a8f" },
-        { "id": "tra_passenger_energy-demand-by-mode_aviation[TWh]", "color": "#9a60b4" }
+        { "id": "tra_passenger_energy-demand-by-mode_aviation[TWh]", "color": "#9a60b4" },
+        { "id": "agr_energy-demand_total[TWh]", "color": "#91cc75" }
       ]
     }
   }
