@@ -144,8 +144,6 @@ export const sectors: Sector[] = [
       'lever_climate-smart-crop',
       'lever_climate-smart-livestock',
       'lever_bioenergy-capacity',
-      'lever_alt-protein',
-      'lever_biomass-hierarchy',
       'lever_food-net-import',
     ],
   },

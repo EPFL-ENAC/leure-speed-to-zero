@@ -10,5 +10,5 @@
     "energy": ["climate", "lifestyles", "transport", "buildings", "agriculture", "energy"],
     "lca": ["climate", "lifestyles", "transport", "buildings", "lca"]
   },
-  "AVAILABLE_REGIONS": ["Vaud", "Switzerland", "EU27"]
+  "AVAILABLE_REGIONS": ["Vaud", "Switzerland", "EU27", "Schwyz", "Fribourg"]
 }
