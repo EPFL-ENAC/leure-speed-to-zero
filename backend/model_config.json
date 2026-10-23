@@ -5,10 +5,7 @@
     "lifestyles": ["climate", "lifestyles"],
     "transport": ["lifestyles", "transport"],
     "buildings": ["climate", "lifestyles", "transport", "buildings"],
-    "industry": ["climate", "lifestyles", "transport", "buildings", "industry"],
-    "agriculture": ["climate", "lifestyles", "transport", "buildings", "agriculture"],
-    "energy": ["climate", "lifestyles", "transport", "buildings", "agriculture", "energy"],
-    "lca": ["climate", "lifestyles", "transport", "buildings", "lca"]
+    "energy": ["climate", "lifestyles", "transport", "buildings", "energy"]
   },
-  "AVAILABLE_REGIONS": ["Vaud", "Switzerland", "EU27", "Schwyz", "Fribourg"]
+  "AVAILABLE_REGIONS": ["Vaud", "Switzerland", "Fribourg", "Schwyz", "EU27"]
 }
