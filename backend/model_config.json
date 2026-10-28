@@ -24,7 +24,8 @@
         "pathway-comparison",
         "agriculture",
         "production",
-        "population"
+        "population",
+        "calibration"
       ],
       "SECTORS_TO_RUN": {
         "dietary-habits": [

@@ -43,6 +43,11 @@ export default {
     'Même couleur = même régime. Les lignes pointillées et les barres « + low waste » sont la variante à faible gaspillage de ce régime.',
   noChartDataAvailable: 'Aucune donnée de graphique disponible',
   noDataAvailable: 'Aucune donnée disponible',
+  calibrationFailed: 'Impossible de charger les taux de calibration',
+  calibrationNote:
+    'Taux de calibration = données observées / résultat brut du modèle. 1 signifie aucune correction. Les taux sont calculés sur les années grisées puis maintenus à leur dernière valeur ; ils ne dépendent pas des leviers.',
+  calibrationWindow: 'Calibré {start}–{end}',
+  calibrationRate: 'Taux',
   downloadCSV: 'Télécharger CSV',
   // Time periods
   historical: 'Historique',

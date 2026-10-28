@@ -281,4 +281,19 @@ export const sectors: Sector[] = [
     },
     levers: [],
   },
+  {
+    label: {
+      enUS: 'Calibration',
+      frFR: 'Calibration',
+      deDE: 'Kalibrierung',
+    },
+    value: 'calibration',
+    icon: 'tune',
+    description: {
+      enUS: 'Calibration rates of each model module: how much the model output is corrected to match the observed data',
+      frFR: "Taux de calibration de chaque module du modèle : la correction appliquée aux résultats pour qu'ils correspondent aux données observées",
+      deDE: 'Kalibrierungsraten jedes Modellmoduls: wie stark die Modellergebnisse an die beobachteten Daten angepasst werden',
+    },
+    levers: [],
+  },
 ];

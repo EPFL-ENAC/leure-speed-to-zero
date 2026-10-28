@@ -44,6 +44,11 @@ export default {
     'Gleiche Farbe = gleiche Ernährung. Gestrichelte Linien und Balken mit „+ low waste“ sind die verschwendungsarme Variante dieser Ernährung.',
   noChartDataAvailable: 'Keine Diagrammdaten verfügbar',
   noDataAvailable: 'Keine Daten verfügbar',
+  calibrationFailed: 'Die Kalibrierungsraten konnten nicht geladen werden',
+  calibrationNote:
+    'Kalibrierungsrate = beobachtete Daten / rohes Modellergebnis. 1 bedeutet keine Korrektur. Die Raten werden über die grau hinterlegten Jahre berechnet und danach auf ihrem letzten Wert gehalten; sie hängen nicht von den Hebeln ab.',
+  calibrationWindow: 'Kalibriert {start}–{end}',
+  calibrationRate: 'Rate',
   downloadCSV: 'CSV herunterladen',
   // Time periods
   historical: 'Historisch',

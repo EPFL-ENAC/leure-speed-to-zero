@@ -1,0 +1,174 @@
+{
+  "kpis": [],
+  "subtabs": [
+    {
+      "title": {
+        "enUS": "Dietary habits",
+        "frFR": "Habitudes alimentaires",
+        "deDE": "Ernährungsgewohnheiten"
+      },
+      "route": "dietary-habits",
+      "module": "dietary_habits",
+      "charts": ["agr_demand_raw"]
+    },
+    {
+      "title": {
+        "enUS": "Alcoholic beverages",
+        "frFR": "Boissons alcoolisées",
+        "deDE": "Alkoholische Getränke"
+      },
+      "route": "alcoholic-beverages",
+      "module": "alcoholic_beverages",
+      "charts": ["agr_domestic-production_bev_raw", "agr_imported_production_raw"]
+    },
+    {
+      "title": {
+        "enUS": "Livestock",
+        "frFR": "Élevage",
+        "deDE": "Tierhaltung"
+      },
+      "route": "livestock",
+      "module": "livestock",
+      "charts": [
+        "agr_domestic_production_liv_afw_raw",
+        "agr_imported_production_total_raw",
+        "agr_liv_population_raw",
+        "agr_liv_population_organic_raw",
+        "agr_demand_feed_raw",
+        "agr_imported_production_feed_pro_raw"
+      ]
+    },
+    {
+      "title": {
+        "enUS": "Crop",
+        "frFR": "Cultures",
+        "deDE": "Ackerbau"
+      },
+      "route": "crop",
+      "module": "crop",
+      "charts": [
+        "agr_domestic_production_raw",
+        "agr_imported_production_total_raw",
+        "agr_domestic_production_raw@exporters",
+        "agr_imported-production_food_pro_raw"
+      ]
+    },
+    {
+      "title": {
+        "enUS": "Land use",
+        "frFR": "Utilisation du sol",
+        "deDE": "Landnutzung"
+      },
+      "route": "land-use",
+      "module": "land_use",
+      "charts": ["agr_cropland_total_raw", "agr_cropland_raw"]
+    },
+    {
+      "title": {
+        "enUS": "True cost (LCA)",
+        "frFR": "Coût réel (ACV)",
+        "deDE": "Wahre Kosten (LCA)"
+      },
+      "route": "tcaf",
+      "module": "tcaf",
+      "charts": [
+        "ghg_asf_production_raw",
+        "ghg_asf_population_raw",
+        "ghg_total_production_stage1",
+        "tcaf_lca_ghg-emissions_stage1"
+      ]
+    }
+  ],
+  "charts": {
+    "agr_demand_raw": {
+      "enUS": "Food supply (demand including waste)",
+      "frFR": "Disponibilités alimentaires (demande, gaspillage compris)",
+      "deDE": "Nahrungsmittelangebot (Nachfrage inkl. Verschwendung)"
+    },
+    "agr_domestic-production_bev_raw": {
+      "enUS": "Domestic production of crops for beverages",
+      "frFR": "Production nationale de cultures pour les boissons",
+      "deDE": "Inländische Produktion von Kulturen für Getränke"
+    },
+    "agr_imported_production_raw": {
+      "enUS": "Imports of beverages",
+      "frFR": "Importations de boissons",
+      "deDE": "Importe von Getränken"
+    },
+    "agr_domestic_production_liv_afw_raw": {
+      "enUS": "Domestic production of animal products",
+      "frFR": "Production nationale de produits animaux",
+      "deDE": "Inländische Produktion tierischer Produkte"
+    },
+    "agr_imported_production_total_raw": {
+      "enUS": "Imports",
+      "frFR": "Importations",
+      "deDE": "Importe"
+    },
+    "agr_liv_population_raw": {
+      "enUS": "Livestock population",
+      "frFR": "Cheptel",
+      "deDE": "Tierbestand"
+    },
+    "agr_liv_population_organic_raw": {
+      "enUS": "Organic livestock population",
+      "frFR": "Cheptel biologique",
+      "deDE": "Bio-Tierbestand"
+    },
+    "agr_demand_feed_raw": {
+      "enUS": "Feed demand",
+      "frFR": "Demande en aliments pour animaux",
+      "deDE": "Futtermittelnachfrage"
+    },
+    "agr_imported_production_feed_pro_raw": {
+      "enUS": "Imports of processed feed",
+      "frFR": "Importations d'aliments transformés pour animaux",
+      "deDE": "Importe von verarbeiteten Futtermitteln"
+    },
+    "agr_domestic_production_raw": {
+      "enUS": "Domestic crop production",
+      "frFR": "Production végétale nationale",
+      "deDE": "Inländische pflanzliche Produktion"
+    },
+    "agr_domestic_production_raw@exporters": {
+      "enUS": "Crop production abroad, per exporting country",
+      "frFR": "Production végétale à l'étranger, par pays exportateur",
+      "deDE": "Pflanzliche Produktion im Ausland, pro Exportland"
+    },
+    "agr_imported-production_food_pro_raw": {
+      "enUS": "Imports of processed food",
+      "frFR": "Importations d'aliments transformés",
+      "deDE": "Importe von verarbeiteten Lebensmitteln"
+    },
+    "agr_cropland_total_raw": {
+      "enUS": "Cropland per crop",
+      "frFR": "Terres cultivées par culture",
+      "deDE": "Ackerfläche pro Kultur"
+    },
+    "agr_cropland_raw": {
+      "enUS": "Cropland per crop and production method",
+      "frFR": "Terres cultivées par culture et mode de production",
+      "deDE": "Ackerfläche pro Kultur und Produktionsweise"
+    },
+    "ghg_asf_production_raw": {
+      "enUS": "Stage 1: animal-product GHG vs inventory 3A+3B (production-based)",
+      "frFR": "Étape 1 : GES des produits animaux vs inventaire 3A+3B (production)",
+      "deDE": "Stufe 1: THG tierischer Produkte vs. Inventar 3A+3B (Produktion)"
+    },
+    "ghg_asf_population_raw": {
+      "enUS": "Stage 1: animal-product GHG vs inventory 3A+3B (population-based)",
+      "frFR": "Étape 1 : GES des produits animaux vs inventaire 3A+3B (population)",
+      "deDE": "Stufe 1: THG tierischer Produkte vs. Inventar 3A+3B (Bevölkerung)"
+    },
+    "ghg_total_production_stage1": {
+      "enUS": "Stage 2: total GHG vs inventory category 3 (production-based)",
+      "frFR": "Étape 2 : GES totaux vs inventaire catégorie 3 (production)",
+      "deDE": "Stufe 2: THG gesamt vs. Inventar Kategorie 3 (Produktion)"
+    },
+    "tcaf_lca_ghg-emissions_stage1": {
+      "enUS": "Stage 2: total GHG vs inventory category 3 (population-based)",
+      "frFR": "Étape 2 : GES totaux vs inventaire catégorie 3 (population)",
+      "deDE": "Stufe 2: THG gesamt vs. Inventar Kategorie 3 (Bevölkerung)"
+    }
+  }
+}

@@ -43,6 +43,11 @@ export default {
     'Same colour = same diet. Dashed lines and "+ low waste" bars are the low-waste variant of that diet.',
   noChartDataAvailable: 'No chart data available',
   noDataAvailable: 'No data available',
+  calibrationFailed: 'Could not load the calibration rates',
+  calibrationNote:
+    'Calibration rate = observed data / raw model output. 1 means no correction. The rates are computed over the shaded years and held at their last value afterwards; they do not depend on the levers.',
+  calibrationWindow: 'Calibrated {start}–{end}',
+  calibrationRate: 'Rate',
   downloadCSV: 'Download CSV',
   // Time periods
   historical: 'Historical',

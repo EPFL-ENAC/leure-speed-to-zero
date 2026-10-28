@@ -37,6 +37,14 @@ export const modelService = {
     return apiClient.get('/v1/version');
   },
 
+  /**
+   * Calibration rates (reference / raw) of every calibrated model output,
+   * grouped by model module
+   */
+  getCalibrationRates() {
+    return apiClient.get('/v1/calibration-rates');
+  },
+
   getDatamatrix(name: string) {
     return apiClient.get(`/v1/datamatrix/${name}`);
   },

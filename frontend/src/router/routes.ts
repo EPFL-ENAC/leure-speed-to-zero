@@ -80,6 +80,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('src/pages/sectors/PathwayComparisonTab.vue'),
       },
       {
+        path: 'calibration/:subtab?',
+        name: 'calibration',
+        component: () => import('src/pages/sectors/CalibrationTab.vue'),
+      },
+      {
         path: 'production/:subtab?',
         name: 'production',
         component: () => import('src/pages/sectors/ProductionTab.vue'),

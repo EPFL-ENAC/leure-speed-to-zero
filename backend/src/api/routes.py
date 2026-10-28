@@ -11,6 +11,10 @@ from fastapi.responses import ORJSONResponse
 
 from src.api.lever_keys import LEVER_KEYS
 from src.utils.cache_decorator import conditional_cache
+from src.utils.calibration_capture import (
+    capture_calibration_rates,
+    serialize_calibration_record,
+)
 from src.utils.model_package import (
     DATAMATRIX_DIR,
     filter_country_and_load_data_from_pickles,
@@ -269,6 +273,55 @@ async def run_model_clean_structure(
         )
         response.headers["Server-Timing"] = "runmodel;dur=0"
         return response
+
+
+@router.get("/v1/calibration-rates")
+@conditional_cache(expire=600)
+async def get_calibration_rates():
+    """Calibration rates (reference / raw) of every calibrated model output.
+
+    The model is run with the default levers: the rates are computed on the
+    historical years and held at their last value afterwards, so the levers
+    do not change them.
+    """
+    try:
+        lever_setting = dict(zip(LEVER_KEYS, [1] * len(LEVER_KEYS)))
+        country = RegionConfig.get_current_region()
+
+        start = time.perf_counter()
+        with capture_calibration_rates() as records:
+            runner(
+                lever_setting,
+                years_setting,
+                DM_input,
+                SectorConfig.get_all_available_sectors(),
+                logger,
+            )
+        duration = (time.perf_counter() - start) * 1000
+
+        modules: dict[str, list[dict]] = {}
+        for record in records:
+            modules.setdefault(record["module"], []).append(
+                serialize_calibration_record(record, country)
+            )
+
+        response = ORJSONResponse(
+            content={
+                "status": "success",
+                "country": country,
+                "modules": [
+                    {"module": name, "calibrations": calibrations}
+                    for name, calibrations in modules.items()
+                ],
+            }
+        )
+        response.headers["Server-Timing"] = f"runmodel;dur={duration:.2f}"
+        return response
+    except Exception as e:
+        logger.error(f"Calibration rates failed: {str(e)}", exc_info=True)
+        return ORJSONResponse(
+            content={"status": "error", "message": str(e)}, status_code=500
+        )
 
 
 @router.get("/v1/version")
