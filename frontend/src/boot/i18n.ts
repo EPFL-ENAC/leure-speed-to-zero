@@ -31,6 +31,16 @@ export const i18n = createI18n({
   messages,
 });
 
+// Some texts change by profile (see `profiles` in the language files).
+// Merge the block of the active profile over the top level texts. A profile
+// with no block keeps the default texts.
+export function applyProfileMessages(profile: string): void {
+  for (const locale of Object.keys(messages) as MessageLanguages[]) {
+    const overrides = (messages[locale].profiles as Record<string, object | undefined>)[profile];
+    if (overrides) i18n.global.mergeLocaleMessage(locale, overrides);
+  }
+}
+
 export default boot(({ app }) => {
   // Set i18n instance on app
   app.use(i18n);

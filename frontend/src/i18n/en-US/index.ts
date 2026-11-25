@@ -147,4 +147,19 @@ export default {
   },
   // Nested translations
   lever: levers,
+  // Texts that change by profile. Same keys as above, merged over them at boot
+  // (applyProfileMessages in boot/i18n.ts).
+  profiles: {
+    tcaf: {
+      welcome: 'Welcome to TCAF Calc',
+      welcomePopup: {
+        subtitle: 'Interactive TCAF calculator for Switzerland',
+        description:
+          'Explore sustainable pathways by adjusting policy levers and visualizing their impact in the Swiss agrifood system.',
+        disclaimer:
+          'This is a development version, and it is provided for testing and evaluation purposes only. The official release version is planned for 2027.',
+        disclaimerShort: 'Dev version (testing only). Official release: 2027.',
+      },
+    },
+  },
 };

@@ -152,4 +152,19 @@ export default {
   },
   // Nested translations
   lever: levers,
+  // Texts that change by profile. Same keys as above, merged over them at boot
+  // (applyProfileMessages in boot/i18n.ts).
+  profiles: {
+    tcaf: {
+      welcome: 'Bienvenue sur TCAF Calc',
+      welcomePopup: {
+        subtitle: 'Calculateur TCAF interactif pour la Suisse',
+        description:
+          'Explorez des trajectoires durables en ajustant les leviers politiques et en visualisant leur impact sur le système agroalimentaire suisse.',
+        disclaimer:
+          "Ceci est une version de développement fournie uniquement à des fins de test et d'évaluation. La version officielle est prévue pour 2027.",
+        disclaimerShort: 'Version dev (test uniquement). Sortie officielle : 2027.',
+      },
+    },
+  },
 };
